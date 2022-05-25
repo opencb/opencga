@@ -21,6 +21,8 @@ import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.internal.executors.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
+import java.io.IOException;
+
 /**
  * Created by imedina on 03/02/15.
  */
@@ -104,6 +106,9 @@ public class InternalMain {
                         case "jobs":
                             commandExecutor = new JobCommandExecutor(cliOptionsParser.getJobCommandOptions());
                             break;
+                        case "panels":
+                            commandExecutor = new DiseasePanelInternalCommandExecutor(cliOptionsParser.getPanelInternalCommandOptions());
+                            break;
                         case "studies":
                             commandExecutor = new StudyCommandExecutor(cliOptionsParser.getStudyCommandOptions());
                             break;
@@ -113,14 +118,17 @@ public class InternalMain {
                     }
 
                     if (commandExecutor != null) {
-                        if (!commandExecutor.loadConfigurations()) {
-                            return 1;
-                        }
                         try {
+                            commandExecutor.loadConfiguration();
+                            commandExecutor.loadStorageConfiguration();
                             commandExecutor.execute();
+                        } catch (IOException e) {
+                            System.err.println("Configuration files not found: " + e);
+                            e.printStackTrace();
+                            System.exit(1);
                         } catch (Exception e) {
                             e.printStackTrace();
-                            return 1;
+                            System.exit(1);
                         }
                     } else {
                         cliOptionsParser.printUsage();

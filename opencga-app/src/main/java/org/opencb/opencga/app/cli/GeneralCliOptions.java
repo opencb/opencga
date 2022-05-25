@@ -44,11 +44,17 @@ public class GeneralCliOptions {
 
     public static class GeneralOptions {
 
-        @Parameter(names = {"-h", "--help"}, help = true)
+        @Parameter(names = {"-h", "--help", "?", "help"}, help = true)
         public boolean help;
 
-        @Parameter(names = {"--version"})
+        @Parameter(names = {"version"})
         public boolean version;
+
+        @Parameter(names = {"build-version"})
+        public boolean buildVersion;
+
+        @Parameter(names = {"login"})
+        public boolean login;
     }
 
     /**
@@ -65,16 +71,20 @@ public class GeneralCliOptions {
         public String logLevel;
 
         @Parameter(names = {"-C", "--conf"}, description = "Configuration folder that contains configuration.yml, "
-                + "storage-configuration.yml and client-configuration.yml files.")
+                + "storage-configuration.yml and client-configuration.yml files.", hidden = true)
         public String conf;
 
-        @Parameter(names = {"--token"}, description = "Token session ID", arity = 1)
+        @Parameter(names = {"--token"}, description = "Token session ID", arity = 1, hidden = true)
         public String token;
 
-        @Parameter(names = {"-M", "--metadata"}, description = "Include metadata information", required = false, arity = 0)
+        @Parameter(names = {"--host"}, description = "Use this server host instead of the default one in the client configuration", arity = 1)
+        public String host;
+
+        @Parameter(names = {"-M", "--metadata"}, description = "Include metadata information", required = false, arity = 0, hidden = true)
         public boolean metadata = false;
 
-        @Parameter(names = {"--no-header"}, description = "Not include headers in the output (not applicable to json output-format)", arity = 0)
+        @Parameter(names = {"--no-header"}, description = "Not include headers in the output (not applicable to json output-format)",
+                arity = 0)
         public boolean noHeader = false;
 
         @DynamicParameter(names = "-D", description = "Storage engine specific parameters go here comma separated, ie. -Dmongodb" +
@@ -86,7 +96,6 @@ public class GeneralCliOptions {
 
         @Parameter(names = {"-s", "--study"}, description = ParamConstants.STUDY_DESCRIPTION, arity = 1)
         public String study;
-
     }
 
     public static class StudyListOption {
@@ -94,7 +103,6 @@ public class GeneralCliOptions {
         @Parameter(names = {"-s", "--study"}, description = "Study list [[user@]project:]study where study and project can be either the id"
                 + " or alias.", arity = 1)
         public String study;
-
     }
 
     public static class DataModelOptions {
@@ -104,7 +112,6 @@ public class GeneralCliOptions {
 
         @Parameter(names = {"-E", "--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
         public String exclude;
-
     }
 
     public static class NumericOptions {
@@ -117,7 +124,6 @@ public class GeneralCliOptions {
 
         @Parameter(names = {"--count"}, description = "Total number of results. Default = false", arity = 0)
         public boolean count;
-
     }
 
     public static class JobOptions {
@@ -133,5 +139,4 @@ public class GeneralCliOptions {
         @Parameter(names = {"--job-tags"}, description = ParamConstants.JOB_TAGS_DESCRIPTION, arity = 1)
         public List<String> jobTags;
     }
-
 }

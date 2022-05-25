@@ -17,8 +17,8 @@
 package org.opencb.opencga.core.models.cohort;
 
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 
 import java.util.Collections;
@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 public class CohortCreateParams {
 
     private String id;
+    private String name;
     private Enums.CohortType type;
     private String description;
     private String creationDate;
@@ -36,15 +37,16 @@ public class CohortCreateParams {
     private List<SampleReferenceParam> samples;
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
-    private CustomStatusParams status;
+    private StatusParams status;
 
     public CohortCreateParams() {
     }
 
-    public CohortCreateParams(String id, Enums.CohortType type, String description, String creationDate, String modificationDate,
-                              List<SampleReferenceParam> samples, List<AnnotationSet> annotationSets, Map<String, Object> attributes,
-                              CustomStatusParams status) {
+    public CohortCreateParams(String id, String name, Enums.CohortType type, String description, String creationDate,
+                              String modificationDate, List<SampleReferenceParam> samples, List<AnnotationSet> annotationSets,
+                              Map<String, Object> attributes, StatusParams status) {
         this.id = id;
+        this.name = name;
         this.type = type;
         this.description = description;
         this.creationDate = creationDate;
@@ -56,18 +58,19 @@ public class CohortCreateParams {
     }
 
     public static CohortCreateParams of(Cohort cohort) {
-        return new CohortCreateParams(cohort.getId(), cohort.getType(), cohort.getDescription(), cohort.getCreationDate(),
+        return new CohortCreateParams(cohort.getId(), "", cohort.getType(), cohort.getDescription(), cohort.getCreationDate(),
                 cohort.getModificationDate(), cohort.getSamples() != null
-                        ? cohort.getSamples().stream().map(s -> new SampleReferenceParam(s.getId(), s.getUuid()))
-                        .collect(Collectors.toList())
-                        : Collections.emptyList(),
-                cohort.getAnnotationSets(), cohort.getAttributes(), CustomStatusParams.of(cohort.getStatus()));
+                ? cohort.getSamples().stream().map(s -> new SampleReferenceParam(s.getId(), s.getUuid()))
+                .collect(Collectors.toList())
+                : Collections.emptyList(),
+                cohort.getAnnotationSets(), cohort.getAttributes(), StatusParams.of(cohort.getStatus()));
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CohortCreateParams{");
         sb.append("id='").append(id).append('\'');
+        sb.append(", name=").append(name);
         sb.append(", type=").append(type);
         sb.append(", description='").append(description).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -87,6 +90,15 @@ public class CohortCreateParams {
 
     public CohortCreateParams setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public CohortCreateParams setName(String name) {
+        this.name = name;
         return this;
     }
 
@@ -144,11 +156,11 @@ public class CohortCreateParams {
         return this;
     }
 
-    public CustomStatusParams getStatus() {
+    public StatusParams getStatus() {
         return status;
     }
 
-    public CohortCreateParams setStatus(CustomStatusParams status) {
+    public CohortCreateParams setStatus(StatusParams status) {
         this.status = status;
         return this;
     }

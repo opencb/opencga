@@ -8,6 +8,7 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
+import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexPutBuilder;
@@ -37,6 +38,7 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
     private AnnotationIndexConverter converter;
     private int firstSampleId;
     private SampleIndexSchema schema;
+    private HBaseToVariantAnnotationConverter annotationConverter;
 
     public static void setHasGenotype(Job job, boolean hasGenotype) {
         job.getConfiguration().setBoolean(HAS_GENOTYPE, hasGenotype);
@@ -64,15 +66,16 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
         for (int i = 0; i < annotationIndices.length; i++) {
             annotationIndices[i] = new HashMap<>();
         }
-        schema = new SampleIndexSchema(VariantMapReduceUtil.getSampleIndexConfiguration(context.getConfiguration()));
+        schema = VariantMapReduceUtil.getSampleIndexSchema(context.getConfiguration());
         converter = new AnnotationIndexConverter(schema);
+        annotationConverter = new HBaseToVariantAnnotationConverter();
     }
 
     @Override
     protected void map(ImmutableBytesWritable key, Result result, Context context) throws IOException, InterruptedException {
         VariantRow variantRow = new VariantRow(result);
         context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variants").increment(1);
-        VariantAnnotation variantAnnotation = variantRow.getVariantAnnotation();
+        VariantAnnotation variantAnnotation = variantRow.getVariantAnnotation(annotationConverter);
         if (variantAnnotation == null) {
             context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variantsAnnotationNull").increment(1);
         }

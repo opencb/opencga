@@ -95,5 +95,6 @@ public abstract class SampleVariantStatsAnalysisExecutor extends OpenCgaToolExec
         }
     }
 
+    public abstract int getDefaultBatchSize();
     public abstract int getMaxBatchSize();
 }

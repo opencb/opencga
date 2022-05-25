@@ -4,12 +4,14 @@
 \alias{userClient,OpencgaR-method}
 \title{UserClient methods}
 \usage{
-\S4method{userClient}{OpencgaR}(OpencgaR, user, filterId, endpointName, params = NULL, ...)
+\S4method{userClient}{OpencgaR}(OpencgaR, filterId, user, users, endpointName, params = NULL, ...)
 }
 \arguments{
+\item{filterId}{Filter id.}
+
 \item{user}{User ID.}
 
-\item{filterId}{Filter id.}
+\item{users}{Comma separated list of user IDs.}
 
 \item{name}{Unique name (typically the name of the application).}
 
@@ -17,13 +19,15 @@
 
 \item{action}{Action to be performed: ADD or REMOVE a group. Allowed values: \link{'ADD', 'REMOVE'}}
 
+\item{limit}{Number of results to be returned.}
+
+\item{skip}{Number of results to skip.}
+
 \item{include}{Fields included in the response, whole JSON path must be provided.}
 
 \item{exclude}{Fields excluded in the response, whole JSON path must be provided.}
 
-\item{limit}{Number of results to be returned.}
-
-\item{skip}{Number of results to skip.}
+\item{includeResult}{Flag indicating to include the created or updated document result in the response.}
 
 \item{data}{JSON containing the params to be updated.}
 }
@@ -34,14 +38,15 @@ The following table summarises the available \emph{actions} for this client:\tab
    create \tab /{apiVersion}/users/create \tab body\link{*} \cr
    login \tab /{apiVersion}/users/login \tab body \cr
    password \tab /{apiVersion}/users/password \tab body\link{*} \cr
+   info \tab /{apiVersion}/users/{users}/info \tab include, exclude, users\link{*} \cr
    configs \tab /{apiVersion}/users/{user}/configs \tab user\link{*}, name \cr
    updateConfigs \tab /{apiVersion}/users/{user}/configs/update \tab user\link{*}, action, body\link{*} \cr
    filters \tab /{apiVersion}/users/{user}/filters \tab user\link{*}, id \cr
    updateFilters \tab /{apiVersion}/users/{user}/filters/update \tab user\link{*}, action, body\link{*} \cr
    updateFilter \tab /{apiVersion}/users/{user}/filters/{filterId}/update \tab user\link{*}, filterId\link{*}, body\link{*} \cr
-   info \tab /{apiVersion}/users/{user}/info \tab include, exclude, user\link{*} \cr
+   resetPassword \tab /{apiVersion}/users/{user}/password/reset \tab user\link{*} \cr
    projects \tab /{apiVersion}/users/{user}/projects \tab include, exclude, limit, skip, user\link{*} \cr
-   update \tab /{apiVersion}/users/{user}/update \tab user\link{*}, body\link{*} \cr
+   update \tab /{apiVersion}/users/{user}/update \tab include, exclude, user\link{*}, includeResult, body\link{*} \cr
 }
 }
 \section{Endpoint /{apiVersion}/users/create}{
@@ -57,6 +62,11 @@ Get identified and gain access to the system.
 \section{Endpoint /{apiVersion}/users/password}{
 
 Change the password of a user.
+}
+
+\section{Endpoint /{apiVersion}/users/{users}/info}{
+
+Return the user information including its projects and studies.
 }
 
 \section{Endpoint /{apiVersion}/users/{user}/configs}{
@@ -84,9 +94,9 @@ Add or remove a custom user filter.
 Update a custom filter.
 }
 
-\section{Endpoint /{apiVersion}/users/{user}/info}{
+\section{Endpoint /{apiVersion}/users/{user}/password/reset}{
 
-Return the user information including its projects and studies.
+Reset password.
 }
 
 \section{Endpoint /{apiVersion}/users/{user}/projects}{

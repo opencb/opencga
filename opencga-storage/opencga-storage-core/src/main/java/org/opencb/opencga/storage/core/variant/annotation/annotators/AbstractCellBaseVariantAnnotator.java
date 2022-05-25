@@ -93,6 +93,7 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
         } else {
             variantSerializer = variant -> variant.getChromosome()
                     + ':' + variant.getStart()
+                    + (variant.getStart().equals(variant.getEnd()) ? "" : ("-" + variant.getEnd()))
                     + ':' + (variant.getReference().isEmpty() ? "-" : variant.getReference())
                     + ':' + (variant.getAlternate().isEmpty() ? "-" : variant.getAlternate());
         }

@@ -21,6 +21,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentQcAnalysis;
 import org.opencb.opencga.analysis.variant.operations.VariantAnnotationIndexOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
@@ -70,7 +71,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     public void setUp() throws IOException, CatalogException {
         super.setUp();
 
-        String expiringToken = this.catalogManager.getUserManager().loginAsAdmin("admin").getToken();
+        String expiringToken = this.catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
         String nonExpiringToken = this.catalogManager.getUserManager().getNonExpiringToken("opencga", expiringToken);
         catalogManager.getConfiguration().getAnalysis().getExecution().getMaxConcurrentJobs().put(VariantIndexOperationTool.ID, 1);
 
@@ -153,16 +154,49 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     }
 
 //    @Test
+//    public void testCreateOutDir() throws Exception {
+//        HashMap<String, Object> params = new HashMap<>();
+//        params.put("outdir", "outputDir/");
+//        String jobId = catalogManager.getJobManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, token).first().getId();
+//
+//        jobDaemon.checkPendingJobs();
+//
+//        URI uri = getJob(jobId).getOutDir().getUri();
+//        Assert.assertTrue(Files.exists(Paths.get(uri)));
+//        assertTrue(!uri.getPath().startsWith("/tmp/opencga/jobs/") && uri.getPath().endsWith("outputDir/"));
+//    }
+//
+//    @Test
+//    public void testUseEmptyDirectory() throws Exception {
+//        // Create empty directory that is registered in OpenCGA
+//        org.opencb.opencga.core.models.file.File directory = catalogManager.getFileManager().createFolder(studyFqn, "outputDir/",
+//                true, "", QueryOptions.empty(), token).first();
+//        catalogManager.getIoManagerFactory().get(directory.getUri()).createDirectory(directory.getUri(), true);
+//
+//        HashMap<String, Object> params = new HashMap<>();
+//        params.put("outdir", "outputDir/");
+//        String jobId = catalogManager.getJobManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params,
+//                token).first().getId();
+//
+//        jobDaemon.checkPendingJobs();
+//
+//        URI uri = getJob(jobId).getOutDir().getUri();
+//        Assert.assertTrue(Files.exists(Paths.get(uri)));
+//        assertTrue(!uri.getPath().startsWith("/tmp/opencga/jobs/") && uri.getPath().endsWith("outputDir/"));
+//    }
+//
+//    @Test
 //    public void testNotEmptyOutDir() throws Exception {
 //        HashMap<String, Object> params = new HashMap<>();
 //        params.put("outdir", "data/");
-//        String jobId = catalogManager.getExecutionManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, token).first().getId();
+//        String jobId = catalogManager.getJobManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, token).first().getId();
 //
 //        jobDaemon.checkPendingJobs();
 //
 //        OpenCGAResult<Job> jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId, QueryOptions.empty(), token);
 //        assertEquals(1, jobOpenCGAResult.getNumResults());
-//        assertEquals(Enums.ExecutionStatus.ABORTED, jobOpenCGAResult.first().getInternal().getStatus().getName());
+//        checkStatus(getJob(jobId), Enums.ExecutionStatus.ABORTED);
+//        checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.ABORTED);
 //        assertTrue(jobOpenCGAResult.first().getInternal().getStatus().getDescription().contains("not an empty directory"));
 //    }
 
@@ -195,19 +229,19 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         // Job sent by the owner
         OpenCGAResult<Job> jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId, QueryOptions.empty(), token);
         assertEquals(1, jobOpenCGAResult.getNumResults());
-        assertEquals(Enums.ExecutionStatus.QUEUED, jobOpenCGAResult.first().getInternal().getStatus().getName());
+        checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.QUEUED);
 
         // Job sent by user2 (admin from study1 but not from study2)
         jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId2, QueryOptions.empty(), token);
         assertEquals(1, jobOpenCGAResult.getNumResults());
-        assertEquals(Enums.ExecutionStatus.ABORTED, jobOpenCGAResult.first().getInternal().getStatus().getName());
+        checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.ABORTED);
         assertTrue(jobOpenCGAResult.first().getInternal().getStatus().getDescription()
-                .contains("can only be executed by the project owners or members of @admins"));
+                .contains("can only be executed by the project owners or members of " + ParamConstants.ADMINS_GROUP));
 
         // Job sent by user3 (admin from study1 and study2)
         jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId3, QueryOptions.empty(), token);
         assertEquals(1, jobOpenCGAResult.getNumResults());
-        assertEquals(Enums.ExecutionStatus.QUEUED, jobOpenCGAResult.first().getInternal().getStatus().getName());
+        checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.QUEUED);
 
         jobOpenCGAResult = catalogManager.getJobManager().search(studyFqn2, new Query(), QueryOptions.empty(), token);
         assertEquals(0, jobOpenCGAResult.getNumResults());
@@ -289,18 +323,18 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         assertEquals("'" + inputFile.getPath() + "'", cli[i + 1]);
         assertEquals(1, getJob(jobId).getInput().size());
         assertEquals(inputFile.getPath(), getJob(jobId).getInput().get(0).getPath());
-        assertEquals(Enums.ExecutionStatus.QUEUED, getJob(jobId).getInternal().getStatus().getName());
+        checkStatus(getJob(jobId), Enums.ExecutionStatus.QUEUED);
         executor.jobStatus.put(jobId, Enums.ExecutionStatus.RUNNING);
 
         jobDaemon.checkJobs();
 
-        assertEquals(Enums.ExecutionStatus.RUNNING, getJob(jobId).getInternal().getStatus().getName());
+        checkStatus(getJob(jobId), Enums.ExecutionStatus.RUNNING);
         createAnalysisResult(jobId, "myTest", ar -> ar.setStatus(new Status(Status.Type.DONE, null, TimeUtils.getDate())));
         executor.jobStatus.put(jobId, Enums.ExecutionStatus.READY);
 
         jobDaemon.checkJobs();
 
-        assertEquals(Enums.ExecutionStatus.DONE, getJob(jobId).getInternal().getStatus().getName());
+        checkStatus(getJob(jobId), Enums.ExecutionStatus.DONE);
     }
 
     @Test
@@ -322,7 +356,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         assertEquals("'" + inputFile.getPath() + "'", cli[i + 1]);
         assertEquals(1, getJob(jobId).getInput().size());
         assertEquals(inputFile.getPath(), getJob(jobId).getInput().get(0).getPath());
-        assertEquals(Enums.ExecutionStatus.QUEUED, getJob(jobId).getInternal().getStatus().getName());
+        checkStatus(getJob(jobId), Enums.ExecutionStatus.QUEUED);
         executor.jobStatus.put(jobId, Enums.ExecutionStatus.RUNNING);
 
         Job job = catalogManager.getJobManager().get(studyFqn, jobId, null, token).first();
@@ -528,6 +562,11 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         for (Job job : execution.getJobs()) {
             assertEquals(Enums.ExecutionStatus.PENDING, job.getInternal().getStatus().getName());
         }
+    }
+
+    private void checkStatus(Job job, String status) {
+        assertEquals(status, job.getInternal().getStatus().getId());
+        assertEquals(status, job.getInternal().getStatus().getName());
     }
 
     private Job getJob(String jobId) throws CatalogException {

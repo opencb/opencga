@@ -56,9 +56,15 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             FAMILY_COLLECTION,
             CLINICAL_ANALYSIS_COLLECTION,
             INTERPRETATION_COLLECTION,
+            PIPELINE_ARCHIVE_COLLECTION,
+
             PIPELINE_COLLECTION,
 
-            LAST_PIPELINE_COLLECTION,
+            SAMPLE_ARCHIVE_COLLECTION,
+            INDIVIDUAL_ARCHIVE_COLLECTION,
+            FAMILY_ARCHIVE_COLLECTION,
+            PANEL_ARCHIVE_COLLECTION,
+            INTERPRETATION_ARCHIVE_COLLECTION,
 
             DELETED_USER_COLLECTION,
             DELETED_STUDY_COLLECTION,
@@ -94,23 +100,49 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public static final String INTERPRETATION_COLLECTION = "interpretation";
     public static final String PIPELINE_COLLECTION = "pipeline";
 
-    // Contains only the last version
-    public static final String LAST_PIPELINE_COLLECTION = "last_pipeline";
+    public static final String SAMPLE_ARCHIVE_COLLECTION = "sample_archive";
+    public static final String INDIVIDUAL_ARCHIVE_COLLECTION = "individual_archive";
+    public static final String FAMILY_ARCHIVE_COLLECTION = "family_archive";
+    public static final String PANEL_ARCHIVE_COLLECTION = "panel_archive";
+    public static final String INTERPRETATION_ARCHIVE_COLLECTION = "interpretation_archive";
+    public static final String PIPELINE_ARCHIVE_COLLECTION = "pipeline_archive";
 
-    // Contains all deleted documents
-    public static final String DELETED_USER_COLLECTION = "deleted_user";
-    public static final String DELETED_STUDY_COLLECTION = "deleted_study";
-    public static final String DELETED_FILE_COLLECTION = "deleted_file";
-    public static final String DELETED_EXECUTION_COLLECTION = "deleted_execution";
-    public static final String DELETED_JOB_COLLECTION = "deleted_job";
-    public static final String DELETED_SAMPLE_COLLECTION = "deleted_sample";
-    public static final String DELETED_INDIVIDUAL_COLLECTION = "deleted_individual";
-    public static final String DELETED_COHORT_COLLECTION = "deleted_cohort";
-    public static final String DELETED_FAMILY_COLLECTION = "deleted_family";
-    public static final String DELETED_PANEL_COLLECTION = "deleted_panel";
-    public static final String DELETED_CLINICAL_ANALYSIS_COLLECTION = "deleted_clinical";
-    public static final String DELETED_INTERPRETATION_COLLECTION = "deleted_interpretation";
-    public static final String DELETED_PIPELINE_COLLECTION = "deleted_pipeline";
+    @Deprecated
+    public static final String OLD_DELETED_USER_COLLECTION = "deleted_user";
+    @Deprecated
+    public static final String OLD_DELETED_STUDY_COLLECTION = "deleted_study";
+    @Deprecated
+    public static final String OLD_DELETED_FILE_COLLECTION = "deleted_file";
+    @Deprecated
+    public static final String OLD_DELETED_JOB_COLLECTION = "deleted_job";
+    @Deprecated
+    public static final String OLD_DELETED_SAMPLE_COLLECTION = "deleted_sample";
+    @Deprecated
+    public static final String OLD_DELETED_INDIVIDUAL_COLLECTION = "deleted_individual";
+    @Deprecated
+    public static final String OLD_DELETED_COHORT_COLLECTION = "deleted_cohort";
+    @Deprecated
+    public static final String OLD_DELETED_FAMILY_COLLECTION = "deleted_family";
+    @Deprecated
+    public static final String OLD_DELETED_PANEL_COLLECTION = "deleted_panel";
+    @Deprecated
+    public static final String OLD_DELETED_CLINICAL_ANALYSIS_COLLECTION = "deleted_clinical";
+    @Deprecated
+    public static final String OLD_DELETED_INTERPRETATION_COLLECTION = "deleted_interpretation";
+
+    public static final String DELETED_USER_COLLECTION = "user_deleted";
+    public static final String DELETED_STUDY_COLLECTION = "study_deleted";
+    public static final String DELETED_FILE_COLLECTION = "file_deleted";
+    public static final String DELETED_JOB_COLLECTION = "job_deleted";
+    public static final String DELETED_EXECUTION_COLLECTION = "execution_deleted";
+    public static final String DELETED_PIPELINE_COLLECTION = "pipeline_deleted";
+    public static final String DELETED_SAMPLE_COLLECTION = "sample_deleted";
+    public static final String DELETED_INDIVIDUAL_COLLECTION = "individual_deleted";
+    public static final String DELETED_COHORT_COLLECTION = "cohort_deleted";
+    public static final String DELETED_FAMILY_COLLECTION = "family_deleted";
+    public static final String DELETED_PANEL_COLLECTION = "panel_deleted";
+    public static final String DELETED_CLINICAL_ANALYSIS_COLLECTION = "clinical_deleted";
+    public static final String DELETED_INTERPRETATION_COLLECTION = "interpretation_deleted";
 
     public static final String METADATA_COLLECTION = "metadata";
     public static final String MIGRATION_COLLECTION = "migration";
@@ -348,7 +380,12 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         MongoDBCollection clinicalCollection = mongoDataStore.getCollection(CLINICAL_ANALYSIS_COLLECTION);
         MongoDBCollection interpretationCollection = mongoDataStore.getCollection(INTERPRETATION_COLLECTION);
 
-        MongoDBCollection lastPipelineCollection = mongoDataStore.getCollection(LAST_PIPELINE_COLLECTION);
+        MongoDBCollection pipelineArchiveCollection = mongoDataStore.getCollection(PIPELINE_ARCHIVE_COLLECTION);
+        MongoDBCollection sampleArchivedCollection = mongoDataStore.getCollection(SAMPLE_ARCHIVE_COLLECTION);
+        MongoDBCollection individualArchivedCollection = mongoDataStore.getCollection(INDIVIDUAL_ARCHIVE_COLLECTION);
+        MongoDBCollection familyArchivedCollection = mongoDataStore.getCollection(FAMILY_ARCHIVE_COLLECTION);
+        MongoDBCollection panelArchivedCollection = mongoDataStore.getCollection(PANEL_ARCHIVE_COLLECTION);
+        MongoDBCollection interpretationArchivedCollection = mongoDataStore.getCollection(INTERPRETATION_ARCHIVE_COLLECTION);
 
         MongoDBCollection deletedUserCollection = mongoDataStore.getCollection(DELETED_USER_COLLECTION);
         MongoDBCollection deletedStudyCollection = mongoDataStore.getCollection(DELETED_STUDY_COLLECTION);
@@ -384,7 +421,12 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         collections.put(CLINICAL_ANALYSIS_COLLECTION, clinicalCollection);
         collections.put(INTERPRETATION_COLLECTION, interpretationCollection);
 
-        collections.put(LAST_PIPELINE_COLLECTION, lastPipelineCollection);
+        collections.put(SAMPLE_ARCHIVE_COLLECTION, sampleArchivedCollection);
+        collections.put(INDIVIDUAL_ARCHIVE_COLLECTION, individualArchivedCollection);
+        collections.put(FAMILY_ARCHIVE_COLLECTION, familyArchivedCollection);
+        collections.put(PANEL_ARCHIVE_COLLECTION, panelArchivedCollection);
+        collections.put(INTERPRETATION_ARCHIVE_COLLECTION, interpretationArchivedCollection);
+        collections.put(PIPELINE_ARCHIVE_COLLECTION, pipelineArchiveCollection);
 
         collections.put(DELETED_USER_COLLECTION, deletedUserCollection);
         collections.put(DELETED_STUDY_COLLECTION, deletedStudyCollection);
@@ -403,21 +445,25 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         collections.put(AUDIT_COLLECTION, auditCollection);
 
         fileDBAdaptor = new FileMongoDBAdaptor(fileCollection, deletedFileCollection, catalogConfiguration, this);
-        individualDBAdaptor = new IndividualMongoDBAdaptor(individualCollection, deletedIndividualCollection, catalogConfiguration, this);
+        individualDBAdaptor = new IndividualMongoDBAdaptor(individualCollection, individualArchivedCollection, deletedIndividualCollection,
+                catalogConfiguration, this);
         executionDBAdaptor = new ExecutionMongoDBAdaptor(executionCollection, deletedExecutionCollection, catalogConfiguration, this);
         jobDBAdaptor = new JobMongoDBAdaptor(jobCollection, deletedJobCollection, catalogConfiguration, this);
         projectDBAdaptor = new ProjectMongoDBAdaptor(userCollection, deletedUserCollection, catalogConfiguration, this);
-        sampleDBAdaptor = new SampleMongoDBAdaptor(sampleCollection, deletedSampleCollection, catalogConfiguration, this);
+        sampleDBAdaptor = new SampleMongoDBAdaptor(sampleCollection, sampleArchivedCollection, deletedSampleCollection,
+                catalogConfiguration, this);
         studyDBAdaptor = new StudyMongoDBAdaptor(studyCollection, deletedStudyCollection, catalogConfiguration, this);
         userDBAdaptor = new UserMongoDBAdaptor(userCollection, deletedUserCollection, catalogConfiguration, this);
         cohortDBAdaptor = new CohortMongoDBAdaptor(cohortCollection, deletedCohortCollection, catalogConfiguration, this);
-        panelDBAdaptor = new PanelMongoDBAdaptor(panelCollection, deletedPanelCollection, catalogConfiguration, this);
-        familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, deletedFamilyCollection, catalogConfiguration, this);
+        panelDBAdaptor = new PanelMongoDBAdaptor(panelCollection, panelArchivedCollection, deletedPanelCollection, catalogConfiguration,
+                this);
+        familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, familyArchivedCollection, deletedFamilyCollection,
+                catalogConfiguration, this);
+        pipelineDBAdaptor = new PipelineMongoDBAdaptor(pipelineCollection, pipelineArchiveCollection, deletedPipelineCollection,
+                catalogConfiguration, this);
         clinicalDBAdaptor = new ClinicalAnalysisMongoDBAdaptor(clinicalCollection, deletedClinicalCollection, catalogConfiguration, this);
-        interpretationDBAdaptor = new InterpretationMongoDBAdaptor(interpretationCollection, deletedInterpretationCollection,
-                catalogConfiguration, this);
-        pipelineDBAdaptor = new PipelineMongoDBAdaptor(pipelineCollection, lastPipelineCollection, deletedPipelineCollection,
-                catalogConfiguration, this);
+        interpretationDBAdaptor = new InterpretationMongoDBAdaptor(interpretationCollection, interpretationArchivedCollection,
+                deletedInterpretationCollection, catalogConfiguration, this);
         metaDBAdaptor = new MetaMongoDBAdaptor(metaCollection, catalogConfiguration, this);
         auditDBAdaptor = new AuditMongoDBAdaptor(auditCollection, catalogConfiguration);
         migrationDBAdaptor = new MigrationMongoDBAdaptor(migrationCollection, catalogConfiguration, this);

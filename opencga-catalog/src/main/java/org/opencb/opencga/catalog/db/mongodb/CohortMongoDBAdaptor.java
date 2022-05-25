@@ -48,7 +48,7 @@ import org.opencb.opencga.core.models.cohort.CohortAclEntry;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.VariableSet;
@@ -58,7 +58,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
@@ -442,7 +442,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
+        String[] acceptedParams = {NAME.key(), QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
@@ -486,7 +486,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             }
         }
 
-        String[] acceptedObjectParams = {QueryParams.STATUS.key()};
+        String[] acceptedObjectParams = {QueryParams.STATUS.key(), QueryParams.INTERNAL_STATUS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
@@ -494,20 +494,6 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
-
-        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
-            document.getSet().put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
-            document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
-        }
-        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_DESCRIPTION.key())) {
-            document.getSet().put(QueryParams.INTERNAL_STATUS_DESCRIPTION.key(),
-                    parameters.get(QueryParams.INTERNAL_STATUS_DESCRIPTION.key()));
-            document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
-        }
-        if (parameters.containsKey(QueryParams.INTERNAL_STATUS.key())) {
-            throw new CatalogDBException("Unable to modify cohort. Use parameter '" + QueryParams.INTERNAL_STATUS_NAME.key()
-                    + "' instead of '" + QueryParams.INTERNAL_STATUS.key() + "'");
-        }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
             String time = TimeUtils.getTime();
@@ -563,6 +549,9 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     OpenCGAResult<Cohort> privateDelete(ClientSession clientSession, Document cohortDocument) throws CatalogDBException {
         long tmpStartTime = startQuery();
 
+        // Remove private _id from the document to avoid issues with mongo in case a document already exists
+        cohortDocument.remove("_id");
+
         String cohortId = cohortDocument.getString(QueryParams.ID.key());
         long cohortUid = cohortDocument.getLong(PRIVATE_UID);
         long studyUid = cohortDocument.getLong(PRIVATE_STUDY_UID);
@@ -572,13 +561,14 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         checkCohortCanBeDeleted(cohortDocument);
 
         // Add status DELETED
-        nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new CohortStatus(Status.DELETED), "status"), cohortDocument);
+        nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new CohortStatus(InternalStatus.DELETED), "status"),
+                cohortDocument);
 
         // Upsert the document into the DELETED collection
         Bson query = new Document()
                 .append(QueryParams.ID.key(), cohortId)
                 .append(PRIVATE_STUDY_UID, studyUid);
-        deletedCohortCollection.update(clientSession, query, new Document("$set", cohortDocument),
+        deletedCohortCollection.update(clientSession, query, new Document("$set", replaceDotsInKeys(cohortDocument)),
                 new QueryOptions(MongoDBCollection.UPSERT, true));
 
         // Delete the document from the main COHORT collection
@@ -718,7 +708,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
-        Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.name(), CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name());
 
         return new CohortCatalogMongoDBIterator<>(mongoCursor, clientSession, cohortConverter, iteratorFilter,
@@ -734,7 +724,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, queryOptions, user);
         Document studyDocument = getStudyDocument(null, studyUid);
-        Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.name(), CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name());
 
         return new CohortCatalogMongoDBIterator(mongoCursor, null, null, iteratorFilter, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
@@ -903,20 +893,21 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), finalQuery, queryParam.type(), andBsonList);
                         break;
                     case STATUS:
-                    case STATUS_NAME:
-                        addAutoOrQuery(QueryParams.STATUS_NAME.key(), queryParam.key(), finalQuery, QueryParams.STATUS_NAME.type(),
+                    case STATUS_ID:
+                        addAutoOrQuery(QueryParams.STATUS_ID.key(), queryParam.key(), finalQuery, QueryParams.STATUS_ID.type(),
                                 andBsonList);
                         break;
                     case INTERNAL_STATUS:
-                    case INTERNAL_STATUS_NAME:
+                    case INTERNAL_STATUS_ID:
                         // Convert the status to a positive status
                         finalQuery.put(queryParam.key(),
-                                Status.getPositiveStatus(CohortStatus.STATUS_LIST, finalQuery.getString(queryParam.key())));
-                        addAutoOrQuery(QueryParams.INTERNAL_STATUS_NAME.key(), queryParam.key(), finalQuery,
-                                QueryParams.INTERNAL_STATUS_NAME.type(), andBsonList);
+                                InternalStatus.getPositiveStatus(CohortStatus.STATUS_LIST, finalQuery.getString(queryParam.key())));
+                        addAutoOrQuery(QueryParams.INTERNAL_STATUS_ID.key(), queryParam.key(), finalQuery,
+                                QueryParams.INTERNAL_STATUS_ID.type(), andBsonList);
                         break;
                     case UUID:
                     case ID:
+                    case NAME:
                     case TYPE:
                     case RELEASE:
                     case NUM_SAMPLES:
@@ -956,7 +947,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
         // We set the status of all the matching cohorts to INVALID and add the sample to be removed
         ObjectMap params = new ObjectMap()
-                .append(QueryParams.INTERNAL_STATUS_NAME.key(), CohortStatus.INVALID)
+                .append(QueryParams.INTERNAL_STATUS_ID.key(), CohortStatus.INVALID)
                 .append(SAMPLES.key(), Collections.singletonList(new Sample().setUid(sampleUid)));
         // Add the the Remove action for the sample provided
         QueryOptions queryOptions = new QueryOptions(Constants.ACTIONS,

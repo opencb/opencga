@@ -4,29 +4,38 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
 import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.cellbase.core.result.CellBaseDataResponse;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 /**
  * Created on 15/03/19.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@RunWith(Parameterized.class)
 public class CellBaseUtilsTest {
+
+    public static final String UNKNOWN_GENE = "UNKNOWN_GENE";
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -34,11 +43,27 @@ public class CellBaseUtilsTest {
     private CellBaseUtils cellBaseUtils;
     private CellBaseClient cellBaseClient;
 
+    @Parameters(name = "{0}")
+    public static List<Object[]> data() {
+        return Arrays.asList(
+                new Object[]{"http://ws.opencb.org/cellbase/", "v4", "grch37"},
+                new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5", "grch38"});
+    }
+
+    @Parameter(0)
+    public String url;
+
+    @Parameter(1)
+    public String version;
+
+    @Parameter(2)
+    public String assembly;
+
     @Before
     public void setUp() throws Exception {
-        String assembly = "grch37";
-        cellBaseClient = new CellBaseClient("hsapiens", assembly, new ClientConfiguration().setVersion("v4").setRest(
-                new RestConfig(Collections.singletonList("http://ws.opencb.org/cellbase/"), 10)));
+        cellBaseClient = new CellBaseClient("hsapiens", assembly,
+                new ClientConfiguration().setVersion(version)
+                        .setRest(new RestConfig(Collections.singletonList(url), 10000)));
         cellBaseUtils = new CellBaseUtils(cellBaseClient, assembly);
     }
 
@@ -58,19 +83,19 @@ public class CellBaseUtilsTest {
 
     @Test
     public void testGetMissing() {
-        List<Region> list = cellBaseUtils.getGeneRegion(Arrays.asList("B3GLCT"), true);
+        List<Region> list = cellBaseUtils.getGeneRegion(Arrays.asList(UNKNOWN_GENE), true);
         assertEquals(0, list.size());
 
 
-        VariantQueryException e = VariantQueryException.geneNotFound("B3GLCT");
+        VariantQueryException e = VariantQueryException.geneNotFound(UNKNOWN_GENE);
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
-        cellBaseUtils.getGeneRegion(Arrays.asList("B3GLCT"), false);
+        cellBaseUtils.getGeneRegion(Arrays.asList(UNKNOWN_GENE), false);
     }
 
     @Test
     public void convertGeneToRegion() {
-        Query query = new Query(VariantQueryParam.GENE.key(), "BRCA2,B3GLCT,MFRP").append(VariantQueryUtils.SKIP_MISSING_GENES, true);
+        Query query = new Query(VariantQueryParam.GENE.key(), "BRCA2," + UNKNOWN_GENE + ",MFRP").append(VariantQueryUtils.SKIP_MISSING_GENES, true);
         VariantQueryUtils.convertGenesToRegionsQuery(query, cellBaseUtils);
 
         assertEquals(2, query.getAsStringList(VariantQueryUtils.ANNOT_GENE_REGIONS.key()).size());
@@ -78,9 +103,9 @@ public class CellBaseUtilsTest {
 
     @Test
     public void convertGeneToRegionFail() {
-        Query query = new Query(VariantQueryParam.GENE.key(), "BRCA2,B3GLCT,MFRP");
+        Query query = new Query(VariantQueryParam.GENE.key(), "BRCA2," + UNKNOWN_GENE + ",MFRP");
 
-        VariantQueryException e = VariantQueryException.geneNotFound("B3GLCT");
+        VariantQueryException e = VariantQueryException.geneNotFound(UNKNOWN_GENE);
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
         VariantQueryUtils.convertGenesToRegionsQuery(query, cellBaseUtils);
@@ -101,6 +126,14 @@ public class CellBaseUtilsTest {
         // Test some missing variant
         assertEquals(Arrays.asList(new Variant("1:7797503:C:G"), new Variant("19:44934489:G:A")),
                 cellBaseUtils.getVariants(Arrays.asList("rs41278952", "rs_NON_EX", "rs2571174")));
+    }
+
+    @Test(timeout = 60000)
+    public void testGetMeta() throws IOException {
+        CellBaseDataResponse<ObjectMap> versions = cellBaseClient.getMetaClient().versions();
+        assertNotNull(versions);
+        assertNotNull(versions.allResults());
+        assertNotEquals(0, versions.allResults().size());
     }
 
 }

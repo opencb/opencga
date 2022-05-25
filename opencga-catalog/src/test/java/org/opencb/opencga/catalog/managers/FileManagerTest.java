@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -145,9 +146,9 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testLinkAnalystUser() throws CatalogException {
-        catalogManager.getUserManager().create("analyst", "analyst", "a@mail.com", "analyst", "", 200000L, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("analyst", "analyst", "a@mail.com", TestParamConstants.PASSWORD, "", 200000L, Account.AccountType.GUEST, null);
         catalogManager.getStudyManager().updateAcl(studyFqn, "analyst", new StudyAclParams("", "analyst"), ParamUtils.AclAction.SET, token);
-        String analystToken = catalogManager.getUserManager().login("analyst", "analyst").getToken();
+        String analystToken = catalogManager.getUserManager().login("analyst", TestParamConstants.PASSWORD).getToken();
 
         String reference = getClass().getResource("/biofiles/cram/hg19mini.fasta").getFile();
         File referenceFile = fileManager.link(studyFqn, Paths.get(reference).toUri(), "", null, analystToken).first();
@@ -157,9 +158,9 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testLinkUserWithNoWritePermissions() throws CatalogException {
-        catalogManager.getUserManager().create("view_user", "view_user", "a@mail.com", "view_user", "", 200000L, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("view_user", "view_user", "a@mail.com", TestParamConstants.PASSWORD, "", 200000L, Account.AccountType.GUEST, null);
         catalogManager.getStudyManager().updateAcl(studyFqn, "view_user", new StudyAclParams("", "view_only"), ParamUtils.AclAction.SET, token);
-        String analystToken = catalogManager.getUserManager().login("view_user", "view_user").getToken();
+        String analystToken = catalogManager.getUserManager().login("view_user", TestParamConstants.PASSWORD).getToken();
 
         String reference = getClass().getResource("/biofiles/cram/hg19mini.fasta").getFile();
 
@@ -679,7 +680,7 @@ public class FileManagerTest extends AbstractManagerTest {
         executorService.shutdown();
 
         int unexecuted = executorService.shutdownNow().size();
-        System.out.println("Do not execute " + unexecuted + " tasks!");
+        System.out.println("Number of tasks non-executed " + unexecuted);
         System.out.println("numFailures = " + numFailures);
         System.out.println("numOk.get() = " + numOk.get());
 
@@ -696,7 +697,7 @@ public class FileManagerTest extends AbstractManagerTest {
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~myDirectory/*")
-                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.READY);
+                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), FileStatus.READY);
         DataResult<File> fileDataResultLinked = fileManager.search(studyFqn, query, null, token);
 
         System.out.println("Number of files/folders linked = " + fileDataResultLinked.getNumResults());
@@ -705,7 +706,7 @@ public class FileManagerTest extends AbstractManagerTest {
         Query updateQuery = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~myDirectory/A/*")
-                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.READY);
+                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), FileStatus.READY);
         setToPendingDelete(studyFqn, updateQuery);
 
         // Now we try to unlink them
@@ -721,7 +722,7 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals(6, fileDataResultUnlinked.getNumResults());
 
         for (File file : fileDataResultUnlinked.getResults()) {
-            assertEquals("Status should be to REMOVED", FileStatus.REMOVED, file.getInternal().getStatus().getName());
+            assertEquals("Status should be to REMOVED", FileStatus.REMOVED, file.getInternal().getStatus().getId());
             assertEquals("Name should not have changed", file.getName(), file.getName());
             assertTrue("File uri: " + file.getUri() + " should exist", ioManager.exists(file.getUri()));
         }
@@ -734,7 +735,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~myDirectory/*")
-                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.READY);
+                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), FileStatus.READY);
         DataResult<File> fileDataResultLinked = fileManager.search(studyFqn, query, null, token);
 
         int numberLinkedFiles = fileDataResultLinked.getNumResults();
@@ -752,7 +753,7 @@ public class FileManagerTest extends AbstractManagerTest {
         unlinkQuery.put(FileDBAdaptor.QueryParams.DELETED.key(), true);
         fileDataResultLinked = fileManager.search(studyFqn, unlinkQuery, QueryOptions.empty(), token);
         assertEquals(1, fileDataResultLinked.getNumResults());
-        assertEquals(FileStatus.REMOVED, fileDataResultLinked.first().getInternal().getStatus().getName());
+        assertEquals(FileStatus.REMOVED, fileDataResultLinked.first().getInternal().getStatus().getId());
 
         // Check the other root linked files/folders have not been touched
         fileDataResultLinked = fileManager.search(studyFqn, query, QueryOptions.empty(), token);
@@ -998,7 +999,7 @@ public class FileManagerTest extends AbstractManagerTest {
                         .setType(File.Type.FILE)
                         .setPath("data/" + fileName),
                 false, token);
-        assertEquals(FileStatus.READY, queryResult.first().getInternal().getStatus().getName());
+        assertEquals(FileStatus.READY, queryResult.first().getInternal().getStatus().getId());
         assertEquals(200, queryResult.first().getSize());
 
         fileManager.create(studyFqn,
@@ -1698,7 +1699,7 @@ public class FileManagerTest extends AbstractManagerTest {
         query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + filePath + "*")
-                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.READY);
+                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), FileStatus.READY);
         int numResults = fileManager.search(studyFqn, query, null, token).getNumResults();
         assertEquals(6, numResults);
 
@@ -1712,7 +1713,7 @@ public class FileManagerTest extends AbstractManagerTest {
         OpenCGAResult<File> search = fileManager.search(studyFqn, query, null, token);
         assertEquals(6, search.getNumResults());
         for (File trashedFile : search.getResults()) {
-            assertEquals(FileStatus.TRASHED, trashedFile.getInternal().getStatus().getName());
+            assertEquals(FileStatus.TRASHED, trashedFile.getInternal().getStatus().getId());
         }
     }
 
@@ -1763,7 +1764,7 @@ public class FileManagerTest extends AbstractManagerTest {
         }
 //        CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
         fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(), token).getResults().forEach(f -> {
-            assertEquals(f.getInternal().getStatus().getName(), FileStatus.TRASHED);
+            assertEquals(f.getInternal().getStatus().getId(), FileStatus.TRASHED);
         });
 
         result = fileManager.search(studyFqn2, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(), token).getResults();
@@ -1773,7 +1774,7 @@ public class FileManagerTest extends AbstractManagerTest {
             fileManager.delete(studyFqn2, new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()), null, token);
         }
         fileManager.search(studyFqn2, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(), token).getResults().forEach(f -> {
-            assertEquals(f.getInternal().getStatus().getName(), FileStatus.TRASHED);
+            assertEquals(f.getInternal().getStatus().getId(), FileStatus.TRASHED);
         });
     }
 
@@ -1800,7 +1801,7 @@ public class FileManagerTest extends AbstractManagerTest {
         file = fileManager.get(studyFqn, fileId, QueryOptions.empty(), token).first();
         assertFalse(file.getSampleIds().isEmpty());
         assertEquals(5, file.getSampleIds().size());
-        assertEquals(FileStatus.TRASHED, file.getInternal().getStatus().getName());
+        assertEquals(FileStatus.TRASHED, file.getInternal().getStatus().getId());
 
         samples = catalogManager.getSampleManager().search(studyFqn,
                 new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), fileId), QueryOptions.empty(), token).getResults();
@@ -1875,7 +1876,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + folder.getPath() + "*")
-                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.READY);
+                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), FileStatus.READY);
         setToPendingDelete(studyFqn, query);
 
         File fileTmp = fileManager.get(studyFqn, folder.getPath(), null, token).first();
@@ -1913,7 +1914,7 @@ public class FileManagerTest extends AbstractManagerTest {
         File fileTmp = fileManager.search(studyFqn, query, QueryOptions.empty(), token).first();
 
         assertEquals("Folder name should not be modified", folder.getPath(), fileTmp.getPath());
-        assertEquals("Status should be to TRASHED", FileStatus.TRASHED, fileTmp.getInternal().getStatus().getName());
+        assertEquals("Status should be to TRASHED", FileStatus.TRASHED, fileTmp.getInternal().getStatus().getId());
         assertEquals("Name should not have changed", folder.getName(), fileTmp.getName());
         assertTrue(ioManager.exists(fileTmp.getUri()));
 
@@ -1921,7 +1922,7 @@ public class FileManagerTest extends AbstractManagerTest {
             query.put(FileDBAdaptor.QueryParams.UID.key(), file.getUid());
             fileTmp = fileManager.search(studyFqn, query, QueryOptions.empty(), token).first();
             assertEquals("Folder name should not be modified", file.getPath(), fileTmp.getPath());
-            assertEquals("Status should be to TRASHED", FileStatus.TRASHED, fileTmp.getInternal().getStatus().getName());
+            assertEquals("Status should be to TRASHED", FileStatus.TRASHED, fileTmp.getInternal().getStatus().getId());
             assertEquals("Name should not have changed", file.getName(), fileTmp.getName());
             assertTrue("File uri: " + fileTmp.getUri() + " should exist", ioManager.exists(fileTmp.getUri()));
         }
@@ -1947,7 +1948,7 @@ public class FileManagerTest extends AbstractManagerTest {
                 new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.INTERNAL_STATUS.key()), token);
         assertEquals(9, results.getNumResults());
         for (File result : results.getResults()) {
-            assertEquals(FileStatus.PENDING_DELETE, result.getInternal().getStatus().getName());
+            assertEquals(FileStatus.PENDING_DELETE, result.getInternal().getStatus().getId());
         }
     }
 
@@ -1976,7 +1977,7 @@ public class FileManagerTest extends AbstractManagerTest {
         File fileTmp = fileManager.search(studyFqn, query, QueryOptions.empty(), token).first();
 
         assertEquals("Folder name should not be modified", folder.getPath(), fileTmp.getPath());
-        assertEquals("Status should be to DELETED", FileStatus.DELETED, fileTmp.getInternal().getStatus().getName());
+        assertEquals("Status should be to DELETED", FileStatus.DELETED, fileTmp.getInternal().getStatus().getId());
         assertEquals("Name should not have changed", folder.getName(), fileTmp.getName());
         assertFalse(ioManager.exists(fileTmp.getUri()));
 
@@ -1984,7 +1985,7 @@ public class FileManagerTest extends AbstractManagerTest {
             query.put(FileDBAdaptor.QueryParams.UID.key(), file.getUid());
             fileTmp = fileManager.search(studyFqn, query, QueryOptions.empty(), token).first();
             assertEquals("Folder name should not be modified", file.getPath(), fileTmp.getPath());
-            assertEquals("Status should be to DELETED", FileStatus.DELETED, fileTmp.getInternal().getStatus().getName());
+            assertEquals("Status should be to DELETED", FileStatus.DELETED, fileTmp.getInternal().getStatus().getId());
             assertEquals("Name should not have changed", file.getName(), fileTmp.getName());
             assertFalse("File uri: " + fileTmp.getUri() + " should not exist", ioManager.exists(fileTmp.getUri()));
         }
@@ -2068,18 +2069,18 @@ public class FileManagerTest extends AbstractManagerTest {
 
         query = new Query()
                 .append(FileDBAdaptor.QueryParams.PATH.key(), deletable.getPath())
-                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.TRASHED);
+                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), FileStatus.TRASHED);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.PATH.key());
         DataResult<File> fileDataResult = fileManager.search(study.getFqn(), query, options, token);
         assertEquals(1, fileDataResult.getNumResults());
 
         query = new Query()
                 .append(FileDBAdaptor.QueryParams.DIRECTORY.key(), fileDataResult.first().getPath() + ".*")
-                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.TRASHED);
+                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), FileStatus.TRASHED);
         allFilesInFolder = fileManager.search(study.getFqn(), query, null, token).getResults();
 
         for (File subFile : allFilesInFolder) {
-            assertTrue(subFile.getInternal().getStatus().getName().equals(FileStatus.TRASHED));
+            assertTrue(subFile.getInternal().getStatus().getId().equals(FileStatus.TRASHED));
         }
     }
 
@@ -2125,9 +2126,9 @@ public class FileManagerTest extends AbstractManagerTest {
                         .setPath("data/"),
                 true, token);
 
-        fileManager.updateFileIndexStatus(fileResult.first(), FileIndex.IndexStatus.TRANSFORMED, null, token);
+        fileManager.updateFileInternalVariantIndex(fileResult.first(), FileInternalVariantIndex.init().setStatus(new VariantIndexStatus(VariantIndexStatus.TRANSFORMED, null)), token);
         DataResult<File> read = fileManager.get(studyFqn, fileResult.first().getPath(), new QueryOptions(), token);
-        assertEquals(FileIndex.IndexStatus.TRANSFORMED, read.first().getInternal().getIndex().getStatus().getName());
+        assertEquals(VariantIndexStatus.TRANSFORMED, read.first().getInternal().getVariant().getIndex().getStatus().getId());
     }
 
     @Test

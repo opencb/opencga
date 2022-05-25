@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -35,6 +34,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.migration.MigrationManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
@@ -142,7 +142,6 @@ public class CatalogManager implements AutoCloseable {
             configuration.getAdmin().setSecretKey(secretKey);
         } else {
             configuration.getAdmin().setAlgorithm("HS256");
-            configuration.getAdmin().setSecretKey(RandomStringUtils.randomAlphanumeric(15));
         }
     }
 
@@ -180,6 +179,7 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public void installCatalogDB(String secretKey, String password, String email, String organization) throws CatalogException {
+
         installCatalogDB(secretKey, password, email, organization, false);
     }
 
@@ -189,7 +189,9 @@ public class CatalogManager implements AutoCloseable {
         if (existsCatalogDB()) {
             throw new CatalogException("Nothing to install. There already exists a catalog database");
         }
-
+        if (!PasswordUtils.isStrongPassword(password)) {
+            throw new CatalogException("Invalid password. Check password strength for user ");
+        }
         ParamUtils.checkParameter(secretKey, "secretKey");
         ParamUtils.checkParameter(password, "password");
 

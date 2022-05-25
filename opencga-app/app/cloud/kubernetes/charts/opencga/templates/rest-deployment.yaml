@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   name: {{ .Values.rest.name }}
   labels:
+    {{- include "opencga.labels" . | nindent 4 }}
     app: {{  .Values.rest.name  }}
 spec:
   replicas: {{ .Values.rest.replicaCount }}
@@ -84,7 +85,7 @@ spec:
             dockerd-entrypoint.sh &
             sleep 5
             export DOCKER_HOST=unix:///run/user/1000/docker.sock
-            docker pull opencb/opencga-r:{{- .Chart.AppVersion }}
+            docker pull opencb/opencga-ext-tools:{{- .Chart.AppVersion }}
             sleep infinity
           env:
               - name: DOCKER_TLS_CERTDIR

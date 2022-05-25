@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
@@ -153,30 +154,26 @@ public class UserManager extends AbstractManager {
         // Check if the users can be registered publicly or just the admin.
         ObjectMap auditParams = new ObjectMap("user", user);
 
-        String userId = user.getId();
-        // We add a condition to check if the registration is private + user (or system) is not trying to create the ADMINISTRATOR user
-        if (!authorizationManager.isPublicRegistration() && !OPENCGA.equals(user.getId())) {
-            userId = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token);
-            if (!OPENCGA.equals(userId)) {
-                String errorMsg = "The registration is closed to the public: Please talk to your administrator.";
-                auditManager.auditCreate(userId, Enums.Resource.USER, user.getId(), "", "", "", auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
-                throw new CatalogException(errorMsg);
-            }
-        }
-
+        // Initialise fields
         ParamUtils.checkObj(user, "User");
         ParamUtils.checkValidUserId(user.getId());
         ParamUtils.checkParameter(user.getName(), "name");
+        user.setEmail(ParamUtils.defaultString(user.getEmail(), ""));
         if (StringUtils.isNotEmpty(user.getEmail())) {
             checkEmail(user.getEmail());
         }
-        ParamUtils.checkObj(user.getAccount(), "account");
-        user.setQuota(ParamUtils.defaultObject(user.getQuota(), UserQuota::new));
-        user.setFilters(ParamUtils.defaultObject(user.getFilters(), LinkedList::new));
-        user.setConfigs(ParamUtils.defaultObject(user.getConfigs(), HashMap::new));
-        user.setInternal(ParamUtils.defaultObject(user.getInternal(), UserInternal::new));
         user.setOrganization(ParamUtils.defaultObject(user.getOrganization(), ""));
+        ParamUtils.checkObj(user.getAccount(), "account");
+        user.getAccount().setType(ParamUtils.defaultObject(user.getAccount().getType(), Account.AccountType.GUEST));
+        user.getAccount().setCreationDate(TimeUtils.getTime());
+        user.getAccount().setExpirationDate(ParamUtils.defaultString(user.getAccount().getExpirationDate(), ""));
+        user.setInternal(new UserInternal(new UserStatus(UserStatus.READY)));
+        user.setQuota(ParamUtils.defaultObject(user.getQuota(), UserQuota::new));
+        user.setProjects(ParamUtils.defaultObject(user.getProjects(), Collections::emptyList));
+        user.setSharedProjects(ParamUtils.defaultObject(user.getSharedProjects(), Collections::emptyList));
+        user.setConfigs(ParamUtils.defaultObject(user.getConfigs(), HashMap::new));
+        user.setFilters(ParamUtils.defaultObject(user.getFilters(), LinkedList::new));
+        user.setAttributes(ParamUtils.defaultObject(user.getAttributes(), Collections::emptyMap));
 
         if (StringUtils.isEmpty(password)) {
             // The authentication origin must be different than internal
@@ -191,15 +188,24 @@ public class UserManager extends AbstractManager {
             user.getAccount().setAuthentication(new Account.AuthenticationOrigin(INTERNAL_AUTHORIZATION, false));
         }
 
-        checkUserExists(user.getId());
-        user.getInternal().setStatus(new UserStatus());
-
-        if (user.getAccount().getType() == null) {
-            user.getAccount().setType(Account.AccountType.GUEST);
+        String userId = user.getId();
+        // We add a condition to check if the registration is private + user (or system) is not trying to create the ADMINISTRATOR user
+        if (!authorizationManager.isPublicRegistration() && !OPENCGA.equals(user.getId())) {
+            userId = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token);
+            if (!OPENCGA.equals(userId)) {
+                String errorMsg = "The registration is closed to the public: Please talk to your administrator.";
+                auditManager.auditCreate(userId, Enums.Resource.USER, user.getId(), "", "", "", auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
+                throw new CatalogException(errorMsg);
+            }
         }
-        user.getAccount().setCreationDate(TimeUtils.getTime());
+
+        checkUserExists(user.getId());
 
         try {
+            if (!PasswordUtils.isStrongPassword(password)) {
+                throw new CatalogException("Invalid password. Check password strength for user " + user.getId());
+            }
             if (user.getProjects() != null && !user.getProjects().isEmpty()) {
                 throw new CatalogException("Creating user and projects in a single transaction is forbidden");
             }
@@ -212,7 +218,7 @@ public class UserManager extends AbstractManager {
 
             return userDBAdaptor.get(user.getId(), QueryOptions.empty());
         } catch (CatalogIOException | CatalogDBException e) {
-            if (!userDBAdaptor.exists(user.getId())) {
+            if (userDBAdaptor.exists(user.getId())) {
                 logger.error("ERROR! DELETING USER! " + user.getId());
                 catalogIOManager.deleteUser(user.getId());
             }
@@ -734,7 +740,7 @@ public class UserManager extends AbstractManager {
 
                     Query query = new Query()
                             .append(UserDBAdaptor.QueryParams.ID.key(), userId)
-                            .append(UserDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), UserStatus.DELETED);
+                            .append(UserDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), UserStatus.DELETED);
                     OpenCGAResult<User> deletedUser = userDBAdaptor.get(query, QueryOptions.empty());
                     deletedUser.setTime(deletedUser.getTime() + result.getTime());
 
@@ -774,7 +780,8 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "token");
         try {
-            userId = getCatalogUserId(userId, token);
+            String authenticatedUserId = getUserId(token);
+            authorizationManager.checkIsInstallationAdministrator(authenticatedUserId);
             String authOrigin = getAuthenticationOriginId(userId);
             OpenCGAResult writeResult = authenticationManagerMap.get(authOrigin).resetPassword(userId);
             auditManager.auditUser(userId, Enums.Action.RESET_USER_PASSWORD, userId,
@@ -825,7 +832,7 @@ public class UserManager extends AbstractManager {
         if (response == null) {
             auditManager.auditUser(username, Enums.Action.LOGIN, username,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", "Incorrect user or password.")));
-            throw CatalogAuthenticationException.incorrectUserOrPassword();
+             throw CatalogAuthenticationException.incorrectUserOrPassword();
         }
 
         auditManager.auditUser(username, Enums.Action.LOGIN, username, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1026,8 +1033,8 @@ public class UserManager extends AbstractManager {
      * @param name   filter name to be deleted.
      * @param token  session id of the user asking to delete the filter.
      * @return the deleted filter.
-     * @throws CatalogException when the filter cannot be removed or the name is not correct or if the user corresponding to the
-     *                          session id is not the same as the provided user id.
+     * @throws CatalogException when the filter cannot be removed or the name is not correct or if the user corresponding to the session id
+     *                          is not the same as the provided user id.
      */
     public OpenCGAResult<UserFilter> deleteFilter(String userId, String name, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
@@ -1184,8 +1191,8 @@ public class UserManager extends AbstractManager {
      * @param name   Name of the configuration to be deleted (normally, name of the application).
      * @param token  session id of the user asking to delete the configuration.
      * @return the deleted configuration.
-     * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id or the configuration
-     *                          did not exist.
+     * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id or the configuration did
+     *                          not exist.
      */
     public OpenCGAResult deleteConfig(String userId, String name, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
@@ -1276,7 +1283,6 @@ public class UserManager extends AbstractManager {
         }
     }
 
-
     private UserFilter getFilter(String userId, String name) throws CatalogException {
         Query query = new Query()
                 .append(UserDBAdaptor.QueryParams.ID.key(), userId);
@@ -1314,7 +1320,6 @@ public class UserManager extends AbstractManager {
         return user.first().getAccount().getAuthentication().getId();
     }
 
-
     static void checkEmail(String email) throws CatalogParameterException {
         if (email == null || !EMAILPATTERN.matcher(email).matches()) {
             throw new CatalogParameterException("Email '" + email + "' not valid");
@@ -1322,9 +1327,9 @@ public class UserManager extends AbstractManager {
     }
 
     /**
-     * Extracts the user id from the token. If it doesn't match the userId provided and the userId provided is actually an email,
-     * it will fetch the user of the token from Catalog and check whether the email matches. If it matches, it will return the
-     * corresponding user id.
+     * Extracts the user id from the token. If it doesn't match the userId provided and the userId provided is actually an email, it will
+     * fetch the user of the token from Catalog and check whether the email matches. If it matches, it will return the corresponding user
+     * id.
      *
      * @param userId User id provided by the user.
      * @param token  Token.
@@ -1375,5 +1380,4 @@ public class UserManager extends AbstractManager {
         // We make this call again to get the original exception
         return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token);
     }
-
 }

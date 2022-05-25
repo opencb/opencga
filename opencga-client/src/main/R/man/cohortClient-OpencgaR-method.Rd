@@ -6,9 +6,9 @@
 \usage{
 \S4method{cohortClient}{OpencgaR}(
   OpencgaR,
-  cohorts,
-  annotationSet,
   members,
+  annotationSet,
+  cohorts,
   cohort,
   endpointName,
   params = NULL,
@@ -16,11 +16,11 @@
 )
 }
 \arguments{
-\item{cohorts}{Comma separated list of cohort ids.}
+\item{members}{Comma separated list of user or group ids.}
 
 \item{annotationSet}{AnnotationSet ID to be updated.}
 
-\item{members}{Comma separated list of user or group ids.}
+\item{cohorts}{Comma separated list of cohort ids.}
 
 \item{cohort}{Cohort ID.}
 
@@ -32,11 +32,7 @@
 
 \item{creationDayOfWeek}{Creation day of week (MONDAY, TUESDAY...).}
 
-\item{numSamples}{Number of samples.}
-
 \item{default}{Calculate default stats.}
-
-\item{field}{List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples\link{0..10}:1.}
 
 \item{variableSetId}{Variable set ID or name.}
 
@@ -46,9 +42,21 @@
 
 \item{annotationSetId}{Annotation set id. If not provided, variableSetId will be used.}
 
-\item{variableSet}{Variable set ID or name.}
+\item{variableSet}{Deprecated: Use /generate web service and filter by annotation.}
 
-\item{variable}{Variable name.}
+\item{variable}{Deprecated: Use /generate web service and filter by annotation.}
+
+\item{field}{Field for which to obtain the distinct values.}
+
+\item{somatic}{Somatic sample.}
+
+\item{individualId}{Individual ID or UUID.}
+
+\item{fileIds}{Comma separated list of file IDs, paths or UUIDs.}
+
+\item{phenotypes}{Comma separated list of phenotype ids or names.}
+
+\item{snapshot}{Snapshot value (Latest version of the entry in the specified release).}
 
 \item{limit}{Number of results to be returned.}
 
@@ -56,37 +64,49 @@
 
 \item{count}{Get the total number of results matching the query. Deactivated by default.}
 
-\item{name}{DEPRECATED: Name of the cohort.}
+\item{id}{Comma separated list of cohort IDs up to a maximum of 100.}
+
+\item{name}{Comma separated list of cohort names up to a maximum of 100.}
+
+\item{uuid}{Comma separated list of cohort IDs up to a maximum of 100.}
 
 \item{type}{Cohort type.}
 
-\item{creationDate}{Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.}
+\item{creationDate}{creationDate.}
 
-\item{modificationDate}{Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.}
+\item{modificationDate}{modificationDate.}
 
-\item{status}{Status.}
+\item{status}{status.}
 
-\item{annotation}{Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.}
+\item{internalStatus}{internalStatus.}
 
-\item{acl}{Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .}
+\item{annotation}{Cohort annotation.}
 
-\item{samples}{Sample list.}
+\item{acl}{acl.}
 
-\item{release}{Release value.}
+\item{samples}{Cohort sample IDs.}
+
+\item{numSamples}{Number of samples.}
+
+\item{release}{release.}
 
 \item{member}{User or group id.}
 
 \item{silent}{Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason.}
 
-\item{include}{Fields included in the response, whole JSON path must be provided.}
-
-\item{exclude}{Fields excluded in the response, whole JSON path must be provided.}
-
 \item{flattenAnnotations}{Flatten the annotations?.}
 
 \item{deleted}{Boolean to retrieve deleted cohorts.}
 
+\item{include}{Fields included in the response, whole JSON path must be provided.}
+
+\item{exclude}{Fields excluded in the response, whole JSON path must be provided.}
+
+\item{samplesAction}{Action to be performed if the array of samples is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
+
 \item{annotationSetsAction}{Action to be performed if the array of annotationSets is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
+
+\item{includeResult}{Flag indicating to include the created or updated document result in the response.}
 
 \item{study}{Study [\link{user@}project:]study where study and project can be either the ID or UUID.}
 
@@ -101,13 +121,15 @@ The following table summarises the available \emph{actions} for this client:\tab
    updateAcl \tab /{apiVersion}/cohorts/acl/{members}/update \tab study, members\link{*}, action\link{*}, body\link{*} \cr
    aggregationStats \tab /{apiVersion}/cohorts/aggregationStats \tab study, type, creationYear, creationMonth, creationDay, creationDayOfWeek, numSamples, status, release, annotation, default, field \cr
    loadAnnotationSets \tab /{apiVersion}/cohorts/annotationSets/load \tab study, variableSetId\link{*}, path\link{*}, parents, annotationSetId, body \cr
-   create \tab /{apiVersion}/cohorts/create \tab study, variableSet, variable, body\link{*} \cr
-   search \tab /{apiVersion}/cohorts/search \tab include, exclude, limit, skip, count, flattenAnnotations, study, name, type, creationDate, modificationDate, deleted, status, annotation, acl, samples, release \cr
+   create \tab /{apiVersion}/cohorts/create \tab include, exclude, study, variableSet, variable, includeResult, body\link{*} \cr
+   distinct \tab /{apiVersion}/cohorts/distinct \tab study, id, name, uuid, type, creationDate, modificationDate, deleted, status, internalStatus, annotation, acl, samples, numSamples, release, field\link{*} \cr
+   generate \tab /{apiVersion}/cohorts/generate \tab include, exclude, study, id, somatic, individualId, fileIds, creationDate, modificationDate, internalStatus, status, phenotypes, annotation, acl, release, snapshot, includeResult, body\link{*} \cr
+   search \tab /{apiVersion}/cohorts/search \tab include, exclude, limit, skip, count, flattenAnnotations, study, id, name, uuid, type, creationDate, modificationDate, deleted, status, internalStatus, annotation, acl, samples, numSamples, release \cr
    acl \tab /{apiVersion}/cohorts/{cohorts}/acl \tab cohorts\link{*}, study, member, silent \cr
-   delete \tab /{apiVersion}/cohorts/{cohorts}/delete \tab study, cohorts \cr
+   delete \tab /{apiVersion}/cohorts/{cohorts}/delete \tab study, cohorts\link{*} \cr
    info \tab /{apiVersion}/cohorts/{cohorts}/info \tab include, exclude, flattenAnnotations, cohorts\link{*}, study, deleted \cr
-   update \tab /{apiVersion}/cohorts/{cohorts}/update \tab cohorts\link{*}, study, annotationSetsAction, body \cr
-   updateAnnotations \tab /{apiVersion}/cohorts/{cohort}/annotationSets/{annotationSet}/annotations/update \tab cohort\link{*}, study, annotationSet, action, body \cr
+   update \tab /{apiVersion}/cohorts/{cohorts}/update \tab include, exclude, cohorts\link{*}, study, samplesAction, annotationSetsAction, includeResult, body \cr
+   updateAnnotationSetsAnnotations \tab /{apiVersion}/cohorts/{cohort}/annotationSets/{annotationSet}/annotations/update \tab cohort\link{*}, study, annotationSet\link{*}, action, body \cr
 }
 }
 \section{Endpoint /{apiVersion}/cohorts/acl/{members}/update}{
@@ -128,6 +150,16 @@ Load annotation sets from a TSV file.
 \section{Endpoint /{apiVersion}/cohorts/create}{
 
 Create a cohort.
+}
+
+\section{Endpoint /{apiVersion}/cohorts/distinct}{
+
+Cohort distinct method.
+}
+
+\section{Endpoint /{apiVersion}/cohorts/generate}{
+
+Create a cohort based on a sample query.
 }
 
 \section{Endpoint /{apiVersion}/cohorts/search}{

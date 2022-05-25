@@ -16,11 +16,11 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
 import org.opencb.commons.run.Task;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
@@ -50,7 +50,6 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Abstra
 //    private static final int ARCHIVE_FILES_READ_BATCH_SIZE = 1000;
 
     protected final StudyMetadata studyMetadata;
-    protected final GenomeHelper helper;
     protected final FillGapsTask fillGapsTask;
     protected final SortedSet<Integer> fileIds;
     protected final Map<Integer, byte[]> fileToNonRefColumnMap;
@@ -62,7 +61,7 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Abstra
     private final Map<String, Long> stats = new HashMap<>();
 
     public static final class FillResult {
-        private List<Put> variantPuts;
+        private final List<Put> variantPuts;
 
         private FillResult(List<Put> variantPuts) {
             this.variantPuts = variantPuts;
@@ -80,11 +79,10 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Abstra
     }
 
     protected AbstractFillFromArchiveTask(StudyMetadata studyMetadata,
-                                          VariantStorageMetadataManager metadataManager, GenomeHelper helper,
+                                          VariantStorageMetadataManager metadataManager, Configuration configuration,
                                           Collection<Integer> samples,
-                                          boolean skipReferenceVariants, boolean simplifiedNewMultiAllelicVariants) {
+                                          boolean skipReferenceVariants, boolean simplifiedNewMultiAllelicVariants, String gapsGenotype) {
         this.studyMetadata = studyMetadata;
-        this.helper = helper;
 
         fileIds = new TreeSet<>();
         fileToNonRefColumnMap = new HashMap<>();
@@ -112,8 +110,9 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Abstra
             }
         }
 
-        fillGapsTask = new FillGapsTask(studyMetadata, helper, skipReferenceVariants, simplifiedNewMultiAllelicVariants, metadataManager);
-        rowKeyFactory = new ArchiveRowKeyFactory(helper.getConf());
+        fillGapsTask =
+                new FillGapsTask(metadataManager, studyMetadata, skipReferenceVariants, simplifiedNewMultiAllelicVariants, gapsGenotype);
+        rowKeyFactory = new ArchiveRowKeyFactory(configuration);
     }
 
     public void setQuiet(boolean quiet) {
@@ -132,7 +131,9 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Abstra
     public void pre() throws IOException { }
 
     @Override
-    public void post() throws IOException { }
+    public void post() throws IOException, StorageEngineException {
+        fillGapsTask.updateLoadedGenotypes();
+    }
 
     @Override
     public List<FillResult> apply(List<Result> list) throws IOException {
@@ -171,18 +172,25 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Abstra
             List<Variant> variants = entry.getValue();
 
             VcfSlicePair vcfSlicePair = context.getVcfSlice(fileId);
+            VcfSlice nonRefVcfSlice;
+            ListIterator<VcfSliceProtos.VcfRecord> nonRefIterator;
+            VcfSlice refVcfSlice;
+            ListIterator<VcfSliceProtos.VcfRecord> refIterator;
             if (vcfSlicePair == null) {
-                continue;
+                nonRefVcfSlice = null;
+                nonRefIterator = Collections.emptyListIterator();
+                refVcfSlice = null;
+                refIterator = Collections.emptyListIterator();
+            } else {
+                nonRefVcfSlice = vcfSlicePair.getNonRefVcfSlice();
+                nonRefIterator = nonRefVcfSlice == null
+                        ? Collections.<VcfSliceProtos.VcfRecord>emptyList().listIterator()
+                        : nonRefVcfSlice.getRecordsList().listIterator();
+                refVcfSlice = vcfSlicePair.getRefVcfSlice();
+                refIterator = refVcfSlice == null
+                        ? Collections.<VcfSliceProtos.VcfRecord>emptyList().listIterator()
+                        : refVcfSlice.getRecordsList().listIterator();
             }
-            VcfSlice nonRefVcfSlice = vcfSlicePair.getNonRefVcfSlice();
-            ListIterator<VcfSliceProtos.VcfRecord> nonRefIterator = nonRefVcfSlice == null
-                    ? Collections.<VcfSliceProtos.VcfRecord>emptyList().listIterator()
-                    : nonRefVcfSlice.getRecordsList().listIterator();
-            VcfSlice refVcfSlice = vcfSlicePair.getRefVcfSlice();
-            ListIterator<VcfSliceProtos.VcfRecord> refIterator = refVcfSlice == null
-                    ? Collections.<VcfSliceProtos.VcfRecord>emptyList().listIterator()
-                    : refVcfSlice.getRecordsList().listIterator();
-
 
             Set<Integer> sampleIds = fileToSampleIds.get(fileId);
             for (Variant variant : variants) {
@@ -191,8 +199,8 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Abstra
                 StopWatch stopWatch = new StopWatch().start();
                 VariantOverlappingStatus overlappingStatus = fillGapsTask.fillGaps(variant, sampleIds, put, fileId,
                         nonRefVcfSlice, nonRefIterator, refVcfSlice, refIterator);
-                increment("OVERLAPPING_STATUS_" + String.valueOf(overlappingStatus), context.fileBatch, 1);
-                increment("OVERLAPPING_STATUS_" + String.valueOf(overlappingStatus), context.fileBatch, stopWatch);
+                increment("OVERLAPPING_STATUS_" + overlappingStatus, context.fileBatch, 1);
+                increment("OVERLAPPING_STATUS_" + overlappingStatus, context.fileBatch, stopWatch);
             }
             context.clearVcfSlice(fileId);
         }

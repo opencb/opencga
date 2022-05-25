@@ -42,6 +42,7 @@ import org.opencb.opencga.analysis.individual.IndividualIndexTask;
 import org.opencb.opencga.analysis.individual.IndividualTsvAnnotationLoader;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
 import org.opencb.opencga.analysis.job.JobIndexTask;
+import org.opencb.opencga.analysis.panel.PanelImportTask;
 import org.opencb.opencga.analysis.sample.SampleIndexTask;
 import org.opencb.opencga.analysis.sample.SampleTsvAnnotationLoader;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
@@ -179,6 +180,8 @@ public class JobDaemon extends MonitorParentDaemon {
             put(FamilyIndexTask.ID, "families secondary-index");
             put(FamilyTsvAnnotationLoader.ID, "families tsv-load");
 
+            put(PanelImportTask.ID, "panels import");
+
             put(JobIndexTask.ID, "jobs secondary-index");
 
             put("alignment-index-run", "alignment index-run");
@@ -246,9 +249,9 @@ public class JobDaemon extends MonitorParentDaemon {
 
         this.defaultJobDir = Paths.get(catalogManager.getConfiguration().getJobDir());
 
-        pendingJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.PENDING);
-        queuedJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED);
-        runningJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.RUNNING);
+        pendingJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.PENDING);
+        queuedJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.QUEUED);
+        runningJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.RUNNING);
 
         // Sort jobs by priority and creation date
         queryOptions = new QueryOptions()
@@ -338,7 +341,7 @@ public class JobDaemon extends MonitorParentDaemon {
     protected int checkRunningJob(Job job) {
         Enums.ExecutionStatus jobStatus = getCurrentStatus(job);
 
-        switch (jobStatus.getName()) {
+        switch (jobStatus.getId()) {
             case Enums.ExecutionStatus.RUNNING:
                 JobResult result = readExecutionResult(job);
                 if (result != null) {
@@ -365,12 +368,12 @@ public class JobDaemon extends MonitorParentDaemon {
                 return processFinishedJob(job, jobStatus);
             case Enums.ExecutionStatus.QUEUED:
                 // Running job went back to Queued?
-                logger.info("Running job '{}' went back to '{}' status", job.getId(), jobStatus.getName());
+                logger.info("Running job '{}' went back to '{}' status", job.getId(), jobStatus.getId());
                 return setStatus(job, new Enums.ExecutionStatus(Enums.ExecutionStatus.QUEUED));
             case Enums.ExecutionStatus.PENDING:
             case Enums.ExecutionStatus.UNKNOWN:
             default:
-                logger.info("Unexpected status '{}' for job '{}'", jobStatus.getName(), job.getId());
+                logger.info("Unexpected status '{}' for job '{}'", jobStatus.getId(), job.getId());
                 return 0;
 
         }
@@ -401,7 +404,7 @@ public class JobDaemon extends MonitorParentDaemon {
     protected int checkQueuedJob(Job job) {
         Enums.ExecutionStatus status = getCurrentStatus(job);
 
-        switch (status.getName()) {
+        switch (status.getId()) {
             case Enums.ExecutionStatus.QUEUED:
                 // Job is still queued
                 return 0;
@@ -423,7 +426,7 @@ public class JobDaemon extends MonitorParentDaemon {
                 logger.info("Job '{}' in status {}", job.getId(), Enums.ExecutionStatus.UNKNOWN);
                 return 0;
             default:
-                logger.info("Unexpected status '{}' for job '{}'", status.getName(), job.getId());
+                logger.info("Unexpected status '{}' for job '{}'", status.getId(), job.getId());
                 return 0;
         }
     }
@@ -808,9 +811,9 @@ public class JobDaemon extends MonitorParentDaemon {
     private boolean canBeQueued(Job job) {
         if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
             for (Job tmpJob : job.getDependsOn()) {
-                if (!Enums.ExecutionStatus.DONE.equals(tmpJob.getInternal().getStatus().getName())) {
-                    if (Enums.ExecutionStatus.ABORTED.equals(tmpJob.getInternal().getStatus().getName())
-                            || Enums.ExecutionStatus.ERROR.equals(tmpJob.getInternal().getStatus().getName())) {
+                if (!Enums.ExecutionStatus.DONE.equals(tmpJob.getInternal().getStatus().getId())) {
+                    if (Enums.ExecutionStatus.ABORTED.equals(tmpJob.getInternal().getStatus().getId())
+                            || Enums.ExecutionStatus.ERROR.equals(tmpJob.getInternal().getStatus().getId())) {
                         abortJob(job, "Job '" + tmpJob.getId() + "' it depended on did not finish successfully");
                     }
                     return false;
@@ -833,7 +836,7 @@ public class JobDaemon extends MonitorParentDaemon {
 
     private boolean canBeQueued(String toolId, int maxJobs) {
         Query query = new Query()
-                .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED + ","
+                .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.QUEUED + ","
                         + Enums.ExecutionStatus.RUNNING)
                 .append(JobDBAdaptor.QueryParams.TOOL_ID.key(), toolId);
         long currentJobs = jobsCountByType.computeIfAbsent(toolId, k -> {
@@ -878,7 +881,7 @@ public class JobDaemon extends MonitorParentDaemon {
             jobManager.update(job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             logger.error("Unexpected error. Cannot update job '{}' to status '{}'. {}", job.getId(),
-                    updateParams.getInternal().getStatus().getName(), e.getMessage(), e);
+                    updateParams.getInternal().getStatus().getId(), e.getMessage(), e);
             return 0;
         }
 
@@ -993,7 +996,7 @@ public class JobDaemon extends MonitorParentDaemon {
     }
 
     private int processFinishedJob(Job job, Enums.ExecutionStatus status) {
-        logger.info("[{}] - Processing finished job with status {}", job.getId(), status.getName());
+        logger.info("[{}] - Processing finished job with status {}", job.getId(), status.getId());
 
         Path outDirUri = Paths.get(job.getOutDir().getUri());
         Path analysisResultPath = getExecutionResultPath(job);
@@ -1163,7 +1166,7 @@ public class JobDaemon extends MonitorParentDaemon {
                     .property(ClientProperties.READ_TIMEOUT, 5000)
                     .post(Entity.json(job));
         } catch (ProcessingException e) {
-            jobInternal.getWebhook().getStatus().put(job.getInternal().getStatus().getName(), JobInternalWebhook.Status.ERROR);
+            jobInternal.getWebhook().getStatus().put(job.getInternal().getStatus().getId(), JobInternalWebhook.Status.ERROR);
             jobInternal.setEvents(Collections.singletonList(new Event(Event.Type.ERROR, "Could not notify through webhook. "
                     + e.getMessage())));
 
@@ -1172,9 +1175,9 @@ public class JobDaemon extends MonitorParentDaemon {
             return;
         }
         if (post.getStatus() == HttpStatus.SC_OK) {
-            jobInternal.getWebhook().getStatus().put(job.getInternal().getStatus().getName(), JobInternalWebhook.Status.SUCCESS);
+            jobInternal.getWebhook().getStatus().put(job.getInternal().getStatus().getId(), JobInternalWebhook.Status.SUCCESS);
         } else {
-            jobInternal.getWebhook().getStatus().put(job.getInternal().getStatus().getName(), JobInternalWebhook.Status.ERROR);
+            jobInternal.getWebhook().getStatus().put(job.getInternal().getStatus().getId(), JobInternalWebhook.Status.ERROR);
             jobInternal.setEvents(Collections.singletonList(new Event(Event.Type.ERROR, "Could not notify through webhook. HTTP response "
                     + "code: " + post.getStatus())));
         }

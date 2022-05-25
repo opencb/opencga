@@ -46,8 +46,8 @@ public class CatalogCohortToSolrCohortConverterTest {
     public void CohortToSolrTest() {
         Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>())
                 .setVariableSets(Collections.singletonList(AnnotationHelper.createVariableSet()));
-        Cohort cohort = new Cohort("id", Enums.CohortType.CASE_SET, TimeUtils.getTime(), TimeUtils.getTime(), "test",
-                Arrays.asList(new Sample().setId("1"), new Sample().setId("2")), 2, null)
+        Cohort cohort = new Cohort("id", "", Enums.CohortType.CASE_SET, TimeUtils.getTime(), TimeUtils.getTime(),
+                "test", Arrays.asList(new Sample().setId("1"), new Sample().setId("2")), 2, null)
                 .setAttributes(new HashMap<>());
         cohort.setUid(200)
                 .setInternal(new CohortInternal(TimeUtils.getTime(), TimeUtils.getTime(), new CohortStatus("CALCULATING")))
@@ -55,7 +55,7 @@ public class CatalogCohortToSolrCohortConverterTest {
         CohortSolrModel cohortSolrModel = new CatalogCohortToSolrCohortConverter(study).convertToStorageType(cohort);
 
         assertEquals(cohortSolrModel.getUid(), cohort.getUid());
-        assertEquals(cohortSolrModel.getStatus(), cohort.getInternal().getStatus().getName());
+        assertEquals(cohortSolrModel.getStatus(), cohort.getInternal().getStatus().getId());
 
         Date date = TimeUtils.toDate(cohort.getCreationDate());
         LocalDate localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
@@ -65,7 +65,7 @@ public class CatalogCohortToSolrCohortConverterTest {
         assertEquals(localDate.getDayOfMonth(), cohortSolrModel.getCreationDay());
         assertEquals(localDate.getDayOfMonth(), cohortSolrModel.getCreationDay());
         assertEquals(localDate.getDayOfWeek().toString(), cohortSolrModel.getCreationDayOfWeek());
-        cohortSolrModel.setStatus(cohort.getInternal().getStatus().getName());
+        cohortSolrModel.setStatus(cohort.getInternal().getStatus().getId());
 
         assertEquals(cohortSolrModel.getType(), cohort.getType().name());
         assertEquals(cohortSolrModel.getRelease(), cohort.getRelease());

@@ -6,6 +6,7 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
+import org.opencb.opencga.app.cli.admin.executors.MigrationCommandExecutor;
 import org.opencb.opencga.catalog.migration.Migration;
 
 import java.util.List;
@@ -21,14 +22,34 @@ public class MigrationCommandOptions extends GeneralCliOptions {
     private final SearchCommandOptions searchCommandOptions;
     private final RunCommandOptions runCommandOptions;
     private final RunManualCommandOptions runManualCommandOptions;
+    private final SummaryCommandOptions summaryCommandOptions;
     private final AdminCliOptionsParser.AdminCommonCommandOptions commonOptions;
 
     public MigrationCommandOptions(JCommander jCommander, AdminCliOptionsParser.AdminCommonCommandOptions commonOptions) {
         super(jCommander);
         this.commonOptions = commonOptions;
+        this.summaryCommandOptions = new SummaryCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
         this.runCommandOptions = new RunCommandOptions();
         this.runManualCommandOptions = new RunManualCommandOptions();
+    }
+
+
+    @Parameters(commandNames = {"summary"}, commandDescription = "Obtain migrations status summary")
+    public class SummaryCommandOptions extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = MigrationCommandOptions.this.commonOptions;
+
+//        @Parameter(names = {"--status"}, description = "Filter migrations by status. PENDING, ERROR, DONE")
+//        public List<String> status;
+//
+//        @Parameter(names = {"--domain"}, description = "Select migration domain, either CATALOG or STORAGE")
+//        public List<Migration.MigrationDomain> domain;
+//
+//        @Parameter(names = {"--version"}, description = "Migration version")
+//        public String version;
+
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search for migrations")
@@ -54,10 +75,20 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = MigrationCommandOptions.this.commonOptions;
 
         @Parameter(names = {"--domain"}, description = "Run migrations of the chosen domain only [CATALOG, STORAGE]")
-        public Migration.MigrationDomain domain;
+        public List<Migration.MigrationDomain> domain;
+
+        @Parameter(names = {"--language"}, description = "Run migrations of the chosen language only [JAVA, JAVASCRIPT]")
+        public List<Migration.MigrationLanguage> language;
+
+        @Parameter(names = {"--offline"}, description = "Safely run migrations that requires OpenCGA to be offline", arity = 0)
+        public boolean offline;
 
         @Parameter(names = {"--version"}, description = "Run all pending migrations up to this version number")
         public String version;
+
+        // TODO
+//        @Parameter(names = {"--background"}, description = "Run migrations in background using the execution")
+//        public boolean background;
 
     }
 
@@ -71,11 +102,18 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         public String id;
 
         @Parameter(names = {"--version"}, description = "Migration version")
-        public String version;
+        public String version = MigrationCommandExecutor.getDefaultVersion();
+
+        @Parameter(names = {"--offline"}, description = "Safely run migrations that requires OpenCGA to be offline", arity = 0)
+        public boolean offline;
 
         @Parameter(names = {"--force"}, description = "Force migration run even if it's on status DONE, ON_HOLD or REDUNDANT", arity = 0)
         public boolean force;
 
+    }
+
+    public SummaryCommandOptions getSummaryCommandOptions() {
+        return summaryCommandOptions;
     }
 
     public SearchCommandOptions getSearchCommandOptions() {

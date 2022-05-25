@@ -329,24 +329,24 @@ public interface AuthorizationManager {
      * Return all the ACLs defined for the execution.
      *
      * @param studyId     study id.
-     * @param executionId execution id.
+     * @param executionUUID execution UUID.
      * @param userId      user id asking for the ACLs.
      * @return a list of ExecutionAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the execution does not have proper permissions.
      */
-    OpenCGAResult<Map<String, List<String>>> getAllExecutionAcls(long studyId, String executionId, String userId) throws CatalogException;
+    OpenCGAResult<Map<String, List<String>>> getAllExecutionAcls(long studyId, String executionUUID, String userId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
      *
      * @param studyId     study id.
-     * @param executionId execution id.
+     * @param executionUUID execution UUID.
      * @param userId      user asking for the ACL.
      * @param member      member whose permissions will be retrieved.
      * @return the ExecutionAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    OpenCGAResult<Map<String, List<String>>> getExecutionAcl(long studyId, String executionId, String userId, String member)
+    OpenCGAResult<Map<String, List<String>>> getExecutionAcl(long studyId, String executionUUID, String userId, String member)
             throws CatalogException;
 
     //------------------------- End of Execution ACL ----------------------
@@ -458,12 +458,12 @@ public interface AuthorizationManager {
 
     OpenCGAResult<Map<String, List<String>>> removeAcls(List<String> members, List<CatalogAclParams> aclParams) throws CatalogException;
 
-    default void replicateAcls(long studyId, String sourceId, List<String> targetIds, Enums.Resource resource) throws CatalogException {
-        replicateAcls(studyId, sourceId, targetIds, resource, resource);
+    default void replicateAcls(long studyId, String sourceUUID, List<String> targetUUIDs, Enums.Resource resource) throws CatalogException {
+        replicateAcls(studyId, sourceUUID, targetUUIDs, resource, resource);
     }
 
-    void replicateAcls(long studyId, String sourceId, List<String> targetIds, Enums.Resource sourceResource, Enums.Resource targetResource)
-            throws CatalogException;
+    void replicateAcls(long studyId, String sourceUUID, List<String> targetUUIDs, Enums.Resource sourceResource,
+                       Enums.Resource targetResource) throws CatalogException;
 
     void resetPermissionsFromAllEntities(long studyId, List<String> members) throws CatalogException;
 

@@ -7,6 +7,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.templates.TemplateManager;
@@ -36,15 +37,15 @@ public class TemplateManagerTest {
     @Test
     public void test() throws Exception {
         CatalogManager catalogManager = catalogManagerResource.getCatalogManager();
-        String adminToken = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
+        String adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
         catalogManager.getUserManager().create(new User().setId("user1").setName("User 1").setAccount(new Account().setType(Account.AccountType.FULL)),
-                "password", adminToken);
-        catalogManager.getUserManager().create(new User().setId("user2").setName("User 2").setAccount(new Account().setType(Account.AccountType.GUEST)), "password", adminToken);
-        catalogManager.getUserManager().create(new User().setId("user3").setName("User 3").setAccount(new Account().setType(Account.AccountType.GUEST)), "password", adminToken);
-        catalogManager.getUserManager().create(new User().setId("user4").setName("User 4").setAccount(new Account().setType(Account.AccountType.GUEST)), "password", adminToken);
+                TestParamConstants.PASSWORD, adminToken);
+        catalogManager.getUserManager().create(new User().setId("user2").setName("User 2").setAccount(new Account().setType(Account.AccountType.GUEST)), TestParamConstants.PASSWORD, adminToken);
+        catalogManager.getUserManager().create(new User().setId("user3").setName("User 3").setAccount(new Account().setType(Account.AccountType.GUEST)), TestParamConstants.PASSWORD, adminToken);
+        catalogManager.getUserManager().create(new User().setId("user4").setName("User 4").setAccount(new Account().setType(Account.AccountType.GUEST)), TestParamConstants.PASSWORD, adminToken);
 
-        String token = catalogManager.getUserManager().login("user1", "password").getToken();
+        String token = catalogManager.getUserManager().login("user1", TestParamConstants.PASSWORD).getToken();
         catalogManager.getProjectManager().create("project", "Project", "", "name", "common", "GRCh38", QueryOptions.empty(), token);
         catalogManager.getStudyManager().create("project", new Study().setId("study"), QueryOptions.empty(), token);
 
@@ -63,15 +64,15 @@ public class TemplateManagerTest {
     @Test
     public void test_yaml() throws Exception {
         CatalogManager catalogManager = catalogManagerResource.getCatalogManager();
-        String adminToken = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
+        String adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
         catalogManager.getUserManager().create(new User().setId("user1").setName("User 1").setAccount(new Account().setType(Account.AccountType.FULL)),
-                "password", adminToken);
-        catalogManager.getUserManager().create(new User().setId("user2").setName("User 2").setAccount(new Account().setType(Account.AccountType.GUEST)), "password", adminToken);
-        catalogManager.getUserManager().create(new User().setId("user3").setName("User 3").setAccount(new Account().setType(Account.AccountType.GUEST)), "password", adminToken);
-        catalogManager.getUserManager().create(new User().setId("user4").setName("User 4").setAccount(new Account().setType(Account.AccountType.GUEST)), "password", adminToken);
+                TestParamConstants.PASSWORD, adminToken);
+        catalogManager.getUserManager().create(new User().setId("user2").setName("User 2").setAccount(new Account().setType(Account.AccountType.GUEST)), TestParamConstants.PASSWORD, adminToken);
+        catalogManager.getUserManager().create(new User().setId("user3").setName("User 3").setAccount(new Account().setType(Account.AccountType.GUEST)), TestParamConstants.PASSWORD, adminToken);
+        catalogManager.getUserManager().create(new User().setId("user4").setName("User 4").setAccount(new Account().setType(Account.AccountType.GUEST)), TestParamConstants.PASSWORD, adminToken);
 
-        String token = catalogManager.getUserManager().login("user1", "password").getToken();
+        String token = catalogManager.getUserManager().login("user1", TestParamConstants.PASSWORD).getToken();
         catalogManager.getProjectManager().create("project", "Project", "", "name", "common", "GRCh38", QueryOptions.empty(), token);
         catalogManager.getStudyManager().create("project", new Study().setId("study"), QueryOptions.empty(), token);
 

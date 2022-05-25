@@ -48,13 +48,13 @@ public interface AuthorizationDBAdaptor {
      * Retrieve the list of Acls for the list of members in the resource given.
      *
      * @param studyUid   Study Uid.
-     * @param resourceId id of the study, file, sample... where the Acl will be looked for.
+     * @param resourceUUID UUID of the file, sample... where the Acl will be looked for.
      * @param members    members for whom the Acls will be obtained.
      * @param entry      Entity for which the ACLs will be retrieved.
      * @return the list of Acls defined for the members.
      * @throws CatalogException CatalogException.
      */
-    OpenCGAResult<Map<String, List<String>>> get(long studyUid, String resourceId, List<String> members, Enums.Resource entry)
+    OpenCGAResult<Map<String, List<String>>> get(long studyUid, String resourceUUID, List<String> members, Enums.Resource entry)
             throws CatalogException;
 
 
@@ -100,11 +100,6 @@ public interface AuthorizationDBAdaptor {
 
     OpenCGAResult resetMembersFromAllEntries(long studyId, List<String> members)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
-
-    @Deprecated
-        // Use setAcls passing studyUid and String resourceIds
-    OpenCGAResult<Map<String, List<String>>> setAcls(List<Long> resourceIds, Map<String, List<String>> acls, Enums.Resource resource)
-            throws CatalogDBException;
 
     OpenCGAResult<Map<String, List<String>>> setAcls(long studyUid, List<String> resourceIds, Map<String, List<String>> acls,
                                                      Enums.Resource resource) throws CatalogDBException;

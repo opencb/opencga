@@ -37,10 +37,10 @@ import java.nio.file.Paths;
  */
 public class ServerCommandExecutor extends CommandExecutor {
 
-    private AdminCliOptionsParser.ServerCommandOptions serverCommandOptions;
+    private final AdminCliOptionsParser.ServerCommandOptions serverCommandOptions;
 
     public ServerCommandExecutor(AdminCliOptionsParser.ServerCommandOptions serverCommandOptions) {
-        super(serverCommandOptions.commonOptions.commonOptions);
+        super(serverCommandOptions.commonOptions.commonOptions, true);
         this.serverCommandOptions = serverCommandOptions;
     }
 
@@ -102,7 +102,7 @@ public class ServerCommandExecutor extends CommandExecutor {
 
         if (serverCommandOptions.grpcServerCommandOptions.stop) {
             ManagedChannel channel = ManagedChannelBuilder.forTarget("localhost:" + configuration.getServer().getGrpc().getPort())
-                    .usePlaintext(true)
+                    .usePlaintext()
                     .build();
             AdminServiceGrpc.AdminServiceBlockingStub stub = AdminServiceGrpc.newBlockingStub(channel);
             ServiceTypesModel.MapResponse stopResponse = stub.stop(null);

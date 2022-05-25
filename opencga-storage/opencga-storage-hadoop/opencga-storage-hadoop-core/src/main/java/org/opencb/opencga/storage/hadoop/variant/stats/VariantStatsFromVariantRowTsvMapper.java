@@ -12,6 +12,7 @@ import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
+import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantRowMapper;
 
 import java.io.IOException;
@@ -22,6 +23,7 @@ public class VariantStatsFromVariantRowTsvMapper extends VariantRowMapper<NullWr
     private Map<String, HBaseVariantStatsCalculator> calculators;
     private List<Integer> cohorts;
     private VariantStatsToTsvConverter converter;
+    private HBaseToVariantAnnotationConverter annotationConverter;
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
@@ -48,12 +50,13 @@ public class VariantStatsFromVariantRowTsvMapper extends VariantRowMapper<NullWr
 
         converter = new VariantStatsToTsvConverter(studyMetadata.getName(), new ArrayList<>(calculators.keySet()));
         context.write(NullWritable.get(), new Text(converter.createHeader()));
+        annotationConverter = new HBaseToVariantAnnotationConverter();
     }
 
     @Override
     protected void map(Object key, VariantRow result, Context context) throws IOException, InterruptedException {
         Variant variant = result.getVariant();
-        VariantAnnotation variantAnnotation = result.getVariantAnnotation();
+        VariantAnnotation variantAnnotation = result.getVariantAnnotation(annotationConverter);
         List<VariantStats> statsList = new ArrayList<>(cohorts.size());
         for (Map.Entry<String, HBaseVariantStatsCalculator> entry : calculators.entrySet()) {
             String cohort = entry.getKey();

@@ -2,24 +2,19 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
-import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PInteger;
 import org.apache.phoenix.schema.types.PVarchar;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
-import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.*;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.*;
 
 import static org.apache.hadoop.hbase.util.Bytes.SIZEOF_INT;
@@ -123,6 +118,7 @@ public final class SampleIndexSchema {
     static final String ANNOTATION_CLINICAL_PREFIX = META_PREFIX + "CL_";
     static final byte[] ANNOTATION_CLINICAL_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_CLINICAL_PREFIX);
 
+    private final int version;
     private final SampleIndexConfiguration configuration;
     private final FileIndexSchema fileIndex;
     private final PopulationFrequencyIndexSchema popFreqIndex;
@@ -133,7 +129,8 @@ public final class SampleIndexSchema {
     private final ClinicalIndexSchema clinicalIndexSchema;
 //    private final AnnotationSummaryIndexSchema annotationSummaryIndexSchema;
 
-    public SampleIndexSchema(SampleIndexConfiguration configuration) {
+    public SampleIndexSchema(SampleIndexConfiguration configuration, int version) {
+        this.version = version;
         this.configuration = configuration;
         fileIndex = new FileIndexSchema(configuration.getFileIndexConfiguration());
 //        annotationSummaryIndexSchema = new AnnotationSummaryIndexSchema();
@@ -156,7 +153,11 @@ public final class SampleIndexSchema {
      */
     public static SampleIndexSchema defaultSampleIndexSchema() {
         SampleIndexConfiguration sampleIndexConfiguration = SampleIndexConfiguration.defaultConfiguration();
-        return new SampleIndexSchema(sampleIndexConfiguration);
+        return new SampleIndexSchema(sampleIndexConfiguration, StudyMetadata.DEFAULT_SAMPLE_INDEX_VERSION);
+    }
+
+    public int getVersion() {
+        return version;
     }
 
     public SampleIndexConfiguration getConfiguration() {
@@ -197,6 +198,22 @@ public final class SampleIndexSchema {
 
     public static int getChunkStart(Integer start) {
         return (start / BATCH_SIZE) * BATCH_SIZE;
+    }
+
+    public static Region getChunkRegion(Region region) {
+        return getChunkRegion(region.getChromosome(), region.getStart(), region.getEnd());
+    }
+
+    public static Region getChunkRegion(Variant variant) {
+        // We only care about the variant start for the chunk region, not the end
+        return getChunkRegion(variant.getChromosome(), variant.getStart(), variant.getStart());
+    }
+
+    public static Region getChunkRegion(String chromosome, int start, int end) {
+        return new Region(chromosome, SampleIndexSchema.getChunkStart(start),
+                end == Integer.MAX_VALUE
+                        ? Integer.MAX_VALUE
+                        : SampleIndexSchema.getChunkStart(end + SampleIndexSchema.BATCH_SIZE));
     }
 
     public static int getExpectedSize(String chromosome) {
@@ -332,36 +349,6 @@ public final class SampleIndexSchema {
 
     public static byte[] toParentsGTColumn(String genotype) {
         return Bytes.toBytes(PARENTS_PREFIX + genotype);
-    }
-
-    public static boolean createTableIfNeeded(String sampleIndexTable, HBaseManager hBaseManager, ObjectMap options) {
-
-        int files = options.getInt(
-                HadoopVariantStorageOptions.EXPECTED_FILES_NUMBER.key(),
-                HadoopVariantStorageOptions.EXPECTED_FILES_NUMBER.defaultValue());
-        int samples = options.getInt(
-                HadoopVariantStorageOptions.EXPECTED_SAMPLES_NUMBER.key(),
-                files);
-        int preSplitSize = options.getInt(
-                HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_PRESPLIT_SIZE.key(),
-                HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_PRESPLIT_SIZE.defaultValue());
-
-        int splits = samples / preSplitSize;
-        ArrayList<byte[]> preSplits = new ArrayList<>(splits);
-        for (int i = 0; i < splits; i++) {
-            preSplits.add(toRowKey(i * preSplitSize));
-        }
-
-        Compression.Algorithm compression = Compression.getCompressionAlgorithmByName(
-                options.getString(
-                        HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_COMPRESSION.key(),
-                        HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_COMPRESSION.defaultValue()));
-
-        try {
-            return hBaseManager.createTableIfNeeded(sampleIndexTable, GenomeHelper.COLUMN_FAMILY_BYTES, preSplits, compression);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
     }
 
     public static boolean isAnnotatedGenotype(String gt) {

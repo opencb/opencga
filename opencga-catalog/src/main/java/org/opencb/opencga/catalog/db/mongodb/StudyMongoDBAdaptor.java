@@ -46,7 +46,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
@@ -116,7 +116,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         final String[] acceptedObjectParams = {QueryParams.TYPE.key(), QueryParams.SOURCES.key(), QueryParams.STATUS.key(),
                 QueryParams.INTERNAL_CONFIGURATION_CLINICAL.key(), QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key(),
-                QueryParams.INTERNAL_INDEX_RECESSIVE_GENE.key(), QueryParams.ADDITIONAL_INFO.key()};
+                QueryParams.INTERNAL_INDEX_RECESSIVE_GENE.key(), QueryParams.ADDITIONAL_INFO.key(), QueryParams.INTERNAL_STATUS.key()};
         filterObjectParams(parameters, studyParameters, acceptedObjectParams);
 
         if (studyParameters.containsKey(QueryParams.STATUS.key())) {
@@ -126,11 +126,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         if (parameters.containsKey(QueryParams.URI.key())) {
             URI uri = parameters.get(QueryParams.URI.key(), URI.class);
             studyParameters.put(QueryParams.URI.key(), uri.toString());
-        }
-
-        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
-            studyParameters.put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
-            studyParameters.put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         if (parameters.containsKey(QueryParams.NOTIFICATION_WEBHOOK.key())) {
@@ -276,7 +271,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         //Set ProjectId
         studyObject.put(PRIVATE_PROJECT, new Document()
-                .append(PRIVATE_ID, project.getId())
+                .append(ID, project.getId())
                 .append(PRIVATE_UID, project.getUid())
                 .append(PRIVATE_UUID, project.getUuid())
         );
@@ -316,7 +311,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         if (families != null) {
             for (Family family : families) {
-                dbAdaptorFactory.getCatalogFamilyDBAdaptor().insert(clientSession, study.getUid(), family, Collections.emptyList());
+                dbAdaptorFactory.getCatalogFamilyDBAdaptor().insert(clientSession, study.getUid(), family, null, Collections.emptyList());
             }
         }
 
@@ -361,7 +356,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     @Override
     public String getProjectIdByStudyUid(long studyUid) throws CatalogDBException {
         Document privateProjet = getPrivateProject(studyUid);
-        return privateProjet.getString(PRIVATE_ID);
+        return privateProjet.getString(ID);
     }
 
     int getCurrentRelease(ClientSession clientSession, long studyUid) throws CatalogDBException {
@@ -1565,7 +1560,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         // TODO: In the future, we will want to delete also all the files, samples, cohorts... associated
 
         // Add status DELETED
-        studyDocument.put(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"));
+        studyDocument.put(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new InternalStatus(InternalStatus.DELETED), "status"));
 
         // Upsert the document into the DELETED collection
         Bson query = new Document()
@@ -1893,17 +1888,17 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                         }
                         break;
                     case INTERNAL_STATUS:
-                    case INTERNAL_STATUS_NAME:
+                    case INTERNAL_STATUS_ID:
                         // Convert the status to a positive status
                         queryCopy.put(queryParam.key(),
-                                Status.getPositiveStatus(Status.STATUS_LIST, queryCopy.getString(queryParam.key())));
-                        addAutoOrQuery(StudyDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), queryParam.key(), queryCopy,
-                                StudyDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.type(), andBsonList);
+                                InternalStatus.getPositiveStatus(InternalStatus.STATUS_LIST, queryCopy.getString(queryParam.key())));
+                        addAutoOrQuery(StudyDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), queryParam.key(), queryCopy,
+                                StudyDBAdaptor.QueryParams.INTERNAL_STATUS_ID.type(), andBsonList);
                         break;
                     case STATUS:
-                    case STATUS_NAME:
-                        addAutoOrQuery(StudyDBAdaptor.QueryParams.STATUS_NAME.key(), queryParam.key(), queryCopy,
-                                StudyDBAdaptor.QueryParams.STATUS_NAME.type(), andBsonList);
+                    case STATUS_ID:
+                        addAutoOrQuery(StudyDBAdaptor.QueryParams.STATUS_ID.key(), queryParam.key(), queryCopy,
+                                StudyDBAdaptor.QueryParams.STATUS_ID.type(), andBsonList);
                         break;
                     case FQN:
                     case UUID:

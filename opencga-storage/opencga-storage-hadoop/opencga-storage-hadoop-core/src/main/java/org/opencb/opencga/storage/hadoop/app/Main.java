@@ -28,6 +28,11 @@ public abstract class Main {
             case "sampleindex":
                 new SampleIndexMain().run(args);
                 break;
+            case "pending":
+            case "pendingvariants":
+            case "pv":
+                new PendingVariantsMain().run(args);
+                break;
             case "help":
                 printHelp();
                 break;
@@ -43,5 +48,6 @@ public abstract class Main {
         System.out.println("  hbase            Run hbase utility commands");
         System.out.println("  metadata         Interact with HBase metadata manager");
         System.out.println("  sample-index     Debug options for scanning the SampleIndex");
+        System.out.println("  pending-variants Debug options for scanning the PendingVariants tables");
     }
 }

@@ -15,14 +15,14 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>2.2.0-SNAPSHOT</version>
+        <version>2.3.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -34,6 +34,7 @@
         <build.dir>${project.basedir}/../build</build.dir>
         <app.dir>${project.basedir}/app</app.dir>
         <sonar.skip>true</sonar.skip>
+        <dep.jline.version>3.12.1</dep.jline.version>
         <opencga.client.dir>opencga-client-${opencga.version}</opencga.client.dir>
     </properties>
 
@@ -70,23 +71,29 @@
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-client</artifactId>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.opencb.opencga</groupId>-->
-<!--            <artifactId>opencga-test</artifactId>-->
-<!--            <version>${opencga.version}</version>-->
-<!--            <type>pom</type>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.opencb.opencga</groupId>-->
+        <!--            <artifactId>opencga-test</artifactId>-->
+        <!--            <version>${opencga.version}</version>-->
+        <!--            <type>pom</type>-->
+        <!--        </dependency>-->
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-server</artifactId>
             <version>${opencga.version}</version>
             <!--<type>war</type>-->
         </dependency>
-        <dependency>
-            <groupId>org.glassfish.jersey.containers</groupId>
-            <artifactId>jersey-container-servlet-core</artifactId>
-            <version>${jersey.version}</version>
-        </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>com.beust</groupId>-->
+<!--            <artifactId>jcommander</artifactId>-->
+<!--            <version>1.82</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.glassfish.jersey.containers</groupId>-->
+<!--            <artifactId>jersey-container-servlet-core</artifactId>-->
+<!--            <version>${jersey.version}</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-analysis</artifactId>
@@ -108,33 +115,27 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-        <!--Uncomment if hadoop dependencies are provided-->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.hadoop</groupId>-->
-        <!--<artifactId>hadoop-common</artifactId>-->
-        <!--<version>${hadoop.version}</version>-->
-        <!--<scope>test</scope>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.hadoop</groupId>-->
-        <!--<artifactId>hadoop-client</artifactId>-->
-        <!--<version>${hadoop.version}</version>-->
-        <!--<scope>test</scope>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.hbase</groupId>-->
-        <!--<artifactId>hbase-server</artifactId>-->
-        <!--<version>${hbase.version}</version>-->
-        <!--<scope>test</scope>-->
-        <!--</dependency>-->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
+        <!--JLINE Terminal dependencies-->
         <dependency>
-            <groupId>org.fusesource.jansi</groupId>
-            <artifactId>jansi</artifactId>
-            <version>1.18</version>
+            <groupId>org.jline</groupId>
+            <artifactId>jline-reader</artifactId>
+            <version>${dep.jline.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jline-terminal</artifactId>
+            <version>${dep.jline.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jline-terminal-jna</artifactId>
+            <version>${dep.jline.version}</version>
+            <scope>runtime</scope>
         </dependency>
     </dependencies>
 
@@ -147,6 +148,14 @@
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
                 <targetPath>${project.basedir}/target/conf</targetPath>
+            </resource>
+            <resource>
+                <directory>app/cloud/docker/compose</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>docker-compose.yml</include>
+                </includes>
+                <targetPath>${project.basedir}/target/docker-compose</targetPath>
             </resource>
         </resources>
 
@@ -162,13 +171,6 @@
                             <goal>assemble</goal>
                         </goals>
                     </execution>
-                    <!--<execution>-->
-                    <!--<id>daemon-1</id>-->
-                    <!--<phase>package</phase>-->
-                    <!--<goals>-->
-                    <!--<goal>generate-daemons</goal>-->
-                    <!--</goals>-->
-                    <!--</execution>-->
                 </executions>
                 <configuration>
                     <repositoryName>libs</repositoryName>
@@ -268,20 +270,33 @@
                                     <arg value="${build.dir}"/>
                                 </exec>
 
+                                <echo>Copying docker-compose files</echo>
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/target/docker-compose/docker-compose.yml"/>
+                                    <arg value="${build.dir}/cloud/docker/compose"/>
+                                </exec>
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/../opencga-core/src/main/resources/log4j2.xml"/>
+                                    <arg value="${project.basedir}/../opencga-core/src/main/resources/log4j2.internal.xml"/>
+                                    <arg value="${project.basedir}/../opencga-core/src/main/resources/log4j2.service.xml"/>
+                                    <arg value="${build.dir}/cloud/docker/compose/conf"/>
+                                </exec>
+
                                 <exec executable="cp">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-analysis/src/main/R/"/>
                                     <arg value="${build.dir}/analysis"/>
                                 </exec>
 
-                                <echo>Copying command lines and completion scripts to ${build.dir}/bin and ${build.dir}/completion</echo>
+                                <echo>Copying command lines and completion scripts to ${build.dir}/bin and
+                                    ${build.dir}/completion
+                                </echo>
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga.sh"/>
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga-admin.sh"/>
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga-internal.sh"/>
                                     <arg value="${build.dir}/bin"/>
                                 </exec>
-
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga-clicompletion.sh"/>
                                     <arg value="${build.dir}/bin/utils"/>
@@ -314,6 +329,11 @@
                                     <arg value="${project.basedir}/../opencga-client/src/main/R"/>
                                     <arg value="${build.dir}/clients"/>
                                 </exec>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/../opencga-client/src/main/javascript"/>
+                                    <arg value="${build.dir}/clients"/>
+                                </exec>
 
                                 <echo>Copying configuration files</echo>
                                 <exec executable="cp">
@@ -338,25 +358,21 @@
                                 </exec>
 
                                 <echo>Copying Acceptance testing files</echo>
-<!--                                <exec executable="mvn">-->
-<!--                                    <arg value="-f"/>-->
-<!--                                    <arg value="${project.basedir}/../opencga-test/pom.xml"/>-->
-<!--                                    <arg value="install"/>-->
-<!--                                </exec>-->
+                                <!--                                <exec executable="mvn">-->
+                                <!--                                    <arg value="-f"/>-->
+                                <!--                                    <arg value="${project.basedir}/../opencga-test/pom.xml"/>-->
+                                <!--                                    <arg value="install"/>-->
+                                <!--                                </exec>-->
                                 <exec executable="cp">
                                     <arg value="-r"/>
-                                    <arg value="${project.basedir}/../opencga-test/target/appassembler/bin"/>
-                                    <arg value="${project.basedir}/../opencga-test/target/appassembler/dependencies"/>
-                                    <arg value="${project.basedir}/../opencga-test/README.md"/>
-                                    <arg value="${project.basedir}/../opencga-test/fitnesse"/>
-                                    <arg value="${build.dir}/test"/>
+                                    <arg value="${project.basedir}/../opencga-test/target/appassembler/bin/opencga-test.sh"/>
+                                    <arg value="${build.dir}/bin"/>
                                 </exec>
-                                <exec executable="sed">
-                                    <arg value="-i"/>
-                                    <arg value="s/target\/appassembler\/dependencies/dependencies/"/>
-                                    <arg value="${build.dir}/test/fitnesse/FitNesseRoot/OpenCga/TestsSuits/SuiteSetUp/content.txt"/>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/../opencga-test/target/appassembler/libs"/>
+                                    <arg value="${build.dir}"/>
                                 </exec>
-
                                 <exec executable="sed">
                                     <arg value="-i"/>
                                     <arg value="s/REPLACEME_OPENCGA_VERSION/${opencga.version}/"/>
@@ -396,6 +412,7 @@
                                     <arg value="${build.dir}/libs"/>
                                     <arg value="${build.dir}/clients/python"/>
                                     <arg value="${build.dir}/clients/R"/>
+                                    <arg value="${build.dir}/clients/javascript"/>
                                     <arg value="${build.dir}/LICENSE"/>
                                     <arg value="${build.dir}/README.md"/>
                                     <arg value="${build.dir}/${opencga.client.dir}"/>

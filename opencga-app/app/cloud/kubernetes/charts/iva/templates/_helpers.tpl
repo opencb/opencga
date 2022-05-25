@@ -25,6 +25,35 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 
 
+{{/*
+Create chart name and version as used by the chart label.
+*/}}
+{{- define "iva.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Common labels
+See https://helm.sh/docs/chart_best_practices/labels/#standard-labels
+*/}}
+{{- define "iva.labels" -}}
+helm.sh/chart: {{ include "iva.chart" . }}
+{{ include "iva.selectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end -}}
+
+{{/*
+Selector labels
+*/}}
+{{- define "iva.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "iva.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end -}}
+
+
 {{- define "pvIvaconf" -}}
 pv-{{ include "iva.fullname" . }}-ivaconf
 {{- end -}}

@@ -80,7 +80,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 .setUserId(user3.getId())
                 .setOutDir(new File().setUid(4)), null);
         Job job = getJob(studyId, "name");
-        assertEquals(Enums.ExecutionStatus.PENDING, job.getInternal().getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.PENDING, job.getInternal().getStatus().getId());
         catalogJobDBAdaptor.delete(job);
 
         Query query = new Query()
@@ -137,7 +137,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
             catalogJobDBAdaptor.insert(studyUid, job, QueryOptions.empty());
         }
 
-        Query query = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED);
+        Query query = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.QUEUED);
         QueryOptions options = new QueryOptions()
                 .append(QueryOptions.SORT, Arrays.asList(JobDBAdaptor.QueryParams.PRIORITY.key(),
                         JobDBAdaptor.QueryParams.CREATION_DATE.key()))
@@ -263,9 +263,9 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         for (int i = 0; i < 10; i++) {
             Enums.ExecutionStatus status = new Enums.ExecutionStatus();
             if (i < 5) {
-                status.setName(Enums.ExecutionStatus.RUNNING);
+                status.setId(Enums.ExecutionStatus.RUNNING);
             } else {
-                status.setName(Enums.ExecutionStatus.DONE);
+                status.setId(Enums.ExecutionStatus.DONE);
             }
             Job job = getNewJob("jobName" + i)
                     .setOutDir(new File().setUid(5));
@@ -274,12 +274,12 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         }
 
         Query query = new Query(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        OpenCGAResult openCGAResult = catalogJobDBAdaptor.groupBy(query, Collections.singletonList("internal.status.name"),
+        OpenCGAResult openCGAResult = catalogJobDBAdaptor.groupBy(query, Collections.singletonList("internal.status.id"),
                 new QueryOptions(QueryOptions.COUNT, true), user3.getId());
 
         assertEquals(2, openCGAResult.getResults().size());
         for (Object o : openCGAResult.getResults()) {
-            String status = ((Map) ((Map) o).get("_id")).get("internal.status.name").toString();
+            String status = ((Map) ((Map) o).get("_id")).get("internal.status.id").toString();
             long count = ((Number) ((Map) o).get("count")).longValue();
             assertThat(status, anyOf(is(Enums.ExecutionStatus.RUNNING), is(Enums.ExecutionStatus.DONE)));
             assertEquals(5, count);

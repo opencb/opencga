@@ -87,7 +87,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(),
-            ClinicalAnalysisDBAdaptor.QueryParams.TYPE.key()));
+            ClinicalAnalysisDBAdaptor.QueryParams.TYPE.key(), ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key()));
     public static final QueryOptions INCLUDE_CLINICAL_INTERPRETATION_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
@@ -1259,15 +1259,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             validateFiles(study, clinicalAnalysis, userId);
         }
 
-        if (CollectionUtils.isNotEmpty(updateParams.getPanels()) && updateParams.getPanelLock() != null && updateParams.getPanelLock()
-                && (clinicalAnalysis.getInterpretation() != null
-                || CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations()))) {
-            throw new CatalogException("Updating the list of panels and setting 'panelLock' to true at the same time is not allowed "
-                    + " when the ClinicalAnalysis has Interpretations.");
+        if (CollectionUtils.isNotEmpty(updateParams.getPanels()) && updateParams.getPanelLock() != null && updateParams.getPanelLock()) {
+            throw new CatalogException("Updating the list of panels and setting 'panelLock' to true at the same time is not allowed.");
         }
 
         if (CollectionUtils.isNotEmpty(updateParams.getPanels())) {
-            if (clinicalAnalysis.isPanelLock()) {
+            if (clinicalAnalysis.isPanelLock() && (updateParams.getPanelLock() == null || updateParams.getPanelLock())) {
                 throw new CatalogException("Cannot update panels from ClinicalAnalysis '" + clinicalAnalysis.getId() + "'. "
                         + "'panelLocked' field from ClinicalAnalysis is set to true.");
             }
@@ -1286,29 +1283,33 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         if (updateParams.getPanelLock() != null && updateParams.getPanelLock() && !clinicalAnalysis.isPanelLock()) {
             // if user wants to set panelLock to true
-            // We need to check if the CA has interpretations. If so, the interpretations should contain exactly the same panels in order
-            // to set panelLock to true. Otherwise, that action is not allowed.
+            // We need to check if the CA has interpretations. If so, the interpretations should contain at least one of the case panels
+            // in order to set panelLock to true. Otherwise, that action is not allowed.
             Set<String> panelIds = clinicalAnalysis.getPanels().stream().map(Panel::getId).collect(Collectors.toSet());
-            CatalogException exception = new CatalogException("The panels of the ClinicalAnalysis are different from the ones of at "
-                    + "least one Interpretation. 'panelLock' can only be set to true if the Interpretations use exactly the same panels");
+            String exceptionMsgPrefix = "The interpretation '";
+            String exceptionMsgSuffix = "' does not contain any of the case panels. 'panelLock' can only be set to true if all"
+                    + " all Interpretations contains a non-empty subset of the panels used by the case.";
+            String alternativeExceptionMsgSuffix = "' is using a panel not defined by the case. 'panelLock' can only be set to true if all"
+                    + " all Interpretations contains a non-empty subset of the panels used by the case.";
             if (clinicalAnalysis.getInterpretation() != null) {
-                if (clinicalAnalysis.getInterpretation().getPanels().size() != panelIds.size()) {
-                    throw exception;
+                if (CollectionUtils.isEmpty(clinicalAnalysis.getInterpretation().getPanels())) {
+                    throw new CatalogException(exceptionMsgPrefix + clinicalAnalysis.getInterpretation().getId() + exceptionMsgSuffix);
                 }
                 for (Panel panel : clinicalAnalysis.getInterpretation().getPanels()) {
                     if (!panelIds.contains(panel.getId())) {
-                        throw exception;
+                        throw new CatalogException(exceptionMsgPrefix + clinicalAnalysis.getInterpretation().getId()
+                                + alternativeExceptionMsgSuffix);
                     }
                 }
             }
             if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
                 for (Interpretation interpretation : clinicalAnalysis.getSecondaryInterpretations()) {
-                    if (interpretation.getPanels().size() != panelIds.size()) {
-                        throw exception;
+                    if (CollectionUtils.isEmpty(interpretation.getPanels())) {
+                        throw new CatalogException(exceptionMsgPrefix + interpretation.getId() + exceptionMsgSuffix);
                     }
                     for (Panel panel : interpretation.getPanels()) {
                         if (!panelIds.contains(panel.getId())) {
-                            throw exception;
+                            throw new CatalogException(exceptionMsgPrefix + interpretation.getId() + alternativeExceptionMsgSuffix);
                         }
                     }
                 }
@@ -1386,7 +1387,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.CONSENT.key(), clinicalAnalysis.getConsent());
         }
         if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key())) {
-            clinicalAnalysis.setStatus(updateParams.getStatus().toCustomStatus());
+            clinicalAnalysis.setStatus(updateParams.getStatus().toStatus());
             validateStatusParameter(clinicalAnalysis, clinicalConfiguration);
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key(), clinicalAnalysis.getStatus());
         }
@@ -1521,7 +1522,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 ClinicalAnalysisDBAdaptor.QueryParams.QUALITY_CONTROL_SUMMARY.key());
         changeQueryId(query, ParamConstants.CLINICAL_STATUS_PARAM, ClinicalAnalysisDBAdaptor.QueryParams.STATUS_ID.key());
         changeQueryId(query, ParamConstants.CLINICAL_INTERNAL_STATUS_PARAM,
-                ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key());
+                ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key());
 
         if (query.containsKey(ParamConstants.CLINICAL_PANELS_PARAM)) {
             List<String> panelList = query.getAsStringList(ParamConstants.CLINICAL_PANELS_PARAM);

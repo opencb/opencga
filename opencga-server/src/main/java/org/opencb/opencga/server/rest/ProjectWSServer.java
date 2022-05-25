@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.server.rest;
 
-import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
@@ -30,6 +29,7 @@ import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.annotations.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
@@ -126,7 +126,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
                 query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), owner);
             }
 
-            DataResult<Project> queryResult = catalogManager.getProjectManager().get(query, queryOptions, token);
+            DataResult<Project> queryResult = catalogManager.getProjectManager().search(query, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

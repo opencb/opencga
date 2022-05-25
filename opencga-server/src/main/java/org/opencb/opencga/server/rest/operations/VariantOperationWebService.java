@@ -16,9 +16,6 @@
 
 package org.opencb.opencga.server.rest.operations;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.DataResult;
@@ -34,6 +31,9 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.tools.ToolParams;
+import org.opencb.opencga.core.tools.annotations.Api;
+import org.opencb.opencga.core.tools.annotations.ApiOperation;
+import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 
 import javax.servlet.http.HttpServletRequest;
@@ -55,12 +55,14 @@ import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 @Api(value = "Operations - Variant Storage", description = "Internal operations for the variant storage engine")
 public class VariantOperationWebService extends OpenCGAWSServer {
 
-    public VariantOperationWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+    public VariantOperationWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
+                                      @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
 
-    public VariantOperationWebService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+    public VariantOperationWebService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
+                                      @Context HttpHeaders httpHeaders)
             throws VersionException {
         super(version, uriInfo, httpServletRequest, httpHeaders);
     }
@@ -78,7 +80,8 @@ public class VariantOperationWebService extends OpenCGAWSServer {
 
     @POST
     @Path("/variant/configure")
-    @ApiOperation(value = "Update Variant Storage Engine configuration. Can be updated at Project or Study level", response = ObjectMap.class)
+    @ApiOperation(value = "Update Variant Storage Engine configuration. Can be updated at Project or Study level", response =
+            ObjectMap.class)
     public Response variantConfigure(
             @ApiParam(value = ParamConstants.PROJECT_DESCRIPTION) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
@@ -178,7 +181,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     @POST
     @Path("/variant/stats/index")
     @ApiOperation(value = VariantStatsIndexOperationTool.DESCRIPTION, response = Job.class)
-    public Response statsRun(
+    public Response statsIndex(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
@@ -189,9 +192,38 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     }
 
     @POST
+    @Path("/variant/stats/delete")
+    @ApiOperation(value = VariantStatsDeleteOperationTool.DESCRIPTION, response = Job.class)
+    public Response statsDelete(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = VariantStatsDeleteParams.DESCRIPTION, required = true) VariantStatsDeleteParams params) {
+        return submitExecution(VariantStatsDeleteOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+    }
+
+
+    @Deprecated
+    @POST
     @Path("/variant/secondaryIndex")
-    @ApiOperation(value = VariantSecondaryIndexOperationTool.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = "DEPRECATED you should use the new annotation index method instead.", response = Job.class)
     public Response secondaryIndex(
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = VariantCatalogQueryUtils.PROJECT_DESC) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = VariantSecondaryIndexParams.DESCRIPTION) VariantSecondaryIndexParams params) {
+        return variantSecondaryAnnotationIndex(jobName, jobDescription, dependsOn, jobTags, project, study, params);
+    }
+
+    @POST
+    @Path("/variant/secondary/annotation/index")
+    @ApiOperation(value = VariantSecondaryIndexOperationTool.DESCRIPTION + " (New!)", response = Job.class)
+    public Response variantSecondaryAnnotationIndex(
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
@@ -246,7 +278,8 @@ public class VariantOperationWebService extends OpenCGAWSServer {
         Map<String, Object> params = new HashMap<>();
         params.put(ParamConstants.PROJECT_PARAM, project);
         params.put("annotationId", annotationId);
-        return submitOperationToProject(VariantAnnotationDeleteOperationTool.ID, project, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitOperationToProject(VariantAnnotationDeleteOperationTool.ID, project, params, jobName, jobDescription, dependsOn,
+                jobTags);
     }
 
     @POST
@@ -259,7 +292,8 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = VariantCatalogQueryUtils.PROJECT_DESC) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
             @ApiParam(value = VariantAnnotationSaveParams.DESCRIPTION) VariantAnnotationSaveParams params) {
-        return submitOperationToProject(VariantAnnotationSaveOperationTool.ID, project, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitOperationToProject(VariantAnnotationSaveOperationTool.ID, project, params, jobName, jobDescription, dependsOn,
+                jobTags);
     }
 
     @POST
@@ -296,10 +330,21 @@ public class VariantOperationWebService extends OpenCGAWSServer {
         return submitOperation(VariantScoreDeleteParams.ID, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
+    @Deprecated
     @POST
     @Path("/variant/sample/index/configure")
-    @ApiOperation(value = "Update SampleIndex configuration", response = Job.class)
+    @ApiOperation(value = "DEPRECATED You should use the new sample index configure method.", response = Job.class)
     public Response sampleIndexConfigure(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = "Skip sample index re-build") @QueryParam("skipRebuild") boolean skipRebuild,
+            @ApiParam(value = "New SampleIndexConfiguration") SampleIndexConfiguration sampleIndexConfiguration) {
+        return variantSecondarySampleIndexConfigure(study, skipRebuild, sampleIndexConfiguration);
+    }
+
+    @POST
+    @Path("/variant/secondary/sample/index/configure")
+    @ApiOperation(value = "Update SampleIndex configuration (New!)", response = Job.class)
+    public Response variantSecondarySampleIndexConfigure(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = "Skip sample index re-build") @QueryParam("skipRebuild") boolean skipRebuild,
             @ApiParam(value = "New SampleIndexConfiguration") SampleIndexConfiguration sampleIndexConfiguration) {
@@ -320,10 +365,24 @@ public class VariantOperationWebService extends OpenCGAWSServer {
         return sampleIndex(jobName, jobDescription, dependsOn, jobTags, study, params);
     }
 
+    @Deprecated
     @POST
     @Path("/variant/sample/index")
-    @ApiOperation(value = VariantSampleIndexOperationTool.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = "DEPRECATED You should use the new sample index method instead.", response = Job.class)
     public Response sampleIndex(
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = VariantSampleIndexParams.DESCRIPTION) VariantSampleIndexParams params) {
+        return variantSecondarySampleIndex(jobName, jobDescription, dependsOn, jobTags, study, params);
+    }
+
+    @POST
+    @Path("/variant/secondary/sample/index")
+    @ApiOperation(value = VariantSampleIndexOperationTool.DESCRIPTION + " (New!) ", response = Job.class)
+    public Response variantSecondarySampleIndex(
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
@@ -360,9 +419,10 @@ public class VariantOperationWebService extends OpenCGAWSServer {
         return familyIndex(jobName, jobDescription, dependsOn, jobTags, study, params);
     }
 
+    @Deprecated
     @POST
     @Path("/variant/family/index")
-    @ApiOperation(value = VariantFamilyIndexOperationTool.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = "DEPRECATED: integrated in index (" + VariantFamilyIndexOperationTool.DESCRIPTION + ")", response = Job.class)
     public Response familyIndex(
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,

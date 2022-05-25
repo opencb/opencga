@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.hadoop.variant.adaptors;
 
+import com.google.common.collect.Iterables;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.client.Scan;
@@ -69,7 +70,6 @@ import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.Variant
 public class VariantHBaseQueryParser {
     private static Logger logger = LoggerFactory.getLogger(VariantHBaseQueryParser.class);
 
-    private final GenomeHelper genomeHelper;
     private final VariantStorageMetadataManager metadataManager;
 
     private static final Set<VariantQueryParam> SUPPORTED_QUERY_PARAMS;
@@ -85,8 +85,7 @@ public class VariantHBaseQueryParser {
         //SUPPORTED_QUERY_PARAMS.add(SAMPLES); // May be supported
     }
 
-    public VariantHBaseQueryParser(GenomeHelper genomeHelper, VariantStorageMetadataManager metadataManager) {
-        this.genomeHelper = genomeHelper;
+    public VariantHBaseQueryParser(VariantStorageMetadataManager metadataManager) {
         this.metadataManager = metadataManager;
     }
 
@@ -115,6 +114,11 @@ public class VariantHBaseQueryParser {
                 }
             }
             otherParams.remove(ID);
+        }
+
+        if ((isValidParam(query, REGION) || isValidParam(query, ANNOT_GENE_REGIONS) || isValidParam(query, ID))
+                && isValidParam(query, ID_INTERSECT)) {
+            messages.add("Unable to mix REGION or ID with ID_INTERSECT");
         }
 //        if (otherParams.contains(REGION)) {
 //            if (query.getAsStringList(REGION.key()).size() != 1) {
@@ -203,6 +207,7 @@ public class VariantHBaseQueryParser {
 
         List<Region> regions = getRegions(query);
         List<Variant> variants = xrefs.getVariants();
+        List<Variant> idIntersect = query.getAsStringList(ID_INTERSECT.key()).stream().map(Variant::new).collect(Collectors.toList());
 
         regions = mergeRegions(regions);
         if (!regions.isEmpty()) {
@@ -215,15 +220,16 @@ public class VariantHBaseQueryParser {
         }
 
         List<Scan> scans;
-        if ((regions.isEmpty() || regions.size() == 1) && variants.isEmpty()) {
+        if ((regions.isEmpty() || regions.size() == 1) && variants.isEmpty() && idIntersect.isEmpty()) {
             scans = Collections.singletonList(parseQuery(selectElements, query, options));
         } else {
-            scans = new ArrayList<>(regions.size() + variants.size());
+            scans = new ArrayList<>(regions.size() + variants.size() + idIntersect.size());
             Query subQuery = new Query(query);
             subQuery.remove(REGION.key());
             subQuery.remove(ANNOT_GENE_REGIONS.key());
             subQuery.remove(ANNOT_XREF.key());
             subQuery.remove(ID.key());
+            subQuery.remove(ID_INTERSECT.key());
 
             subQuery.put(REGION.key(), "MULTI_REGION");
             Scan templateScan = parseQuery(selectElements, subQuery, options);
@@ -239,11 +245,11 @@ public class VariantHBaseQueryParser {
                 }
             }
             subQuery.remove(REGION.key());
-            for (Variant variant : variants) {
-
+            for (Variant variant : Iterables.concat(variants, idIntersect)) {
                 subQuery.put(ID.key(), variant);
                 try {
                     Scan scan = new Scan(templateScan);
+                    scan.setSmall(true);
                     addVariantIdFilter(scan, variant);
                     scans.add(scan);
                 } catch (IOException e) {

@@ -16,18 +16,18 @@
 
 package org.opencb.opencga.core.models.clinical;
 
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 
 import java.util.Arrays;
 import java.util.List;
 
-public class ClinicalAnalysisStatus extends Status {
+public class ClinicalAnalysisStatus extends InternalStatus {
 
     public static final String INCOMPLETE = "INCOMPLETE";
     public static final String READY_FOR_VALIDATION = "READY_FOR_VALIDATION";
     public static final String READY_FOR_INTERPRETATION = "READY_FOR_INTERPRETATION";
     public static final String INTERPRETATION_IN_PROGRESS = "INTERPRETATION_IN_PROGRESS";
-//        public static final String INTERPRETED = "INTERPRETED";
+    //        public static final String INTERPRETED = "INTERPRETED";
     public static final String READY_FOR_INTEPRETATION_REVIEW = "READY_FOR_INTEPRETATION_REVIEW";
     public static final String INTERPRETATION_REVIEW_IN_PROGRESS = "INTERPRETATION_REVIEW_IN_PROGRESS";
     public static final String READY_FOR_REPORT = "READY_FOR_REPORT";
@@ -58,7 +58,7 @@ public class ClinicalAnalysisStatus extends Status {
     }
 
     public static boolean isValid(String status) {
-        if (Status.isValid(status)) {
+        if (InternalStatus.isValid(status)) {
             return true;
         }
 

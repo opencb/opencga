@@ -41,7 +41,7 @@ public class FileLinkTask extends OpenCgaToolScopeStudy {
                 logger.info("File link took " + TimeUtils.durationToString(stopWatch));
                 addGeneratedFile(result.first());
                 for (File fileResult : result.getResults()) {
-                    if (fileResult.getInternal().getStatus().getName().equals(FileStatus.MISSING_SAMPLES)) {
+                    if (fileResult.getInternal().getStatus().getId().equals(FileStatus.MISSING_SAMPLES)) {
                         Map<String, Object> params = new PostLinkToolParams(Collections.singletonList(fileResult.getId()), null)
                                 .toParams(new ObjectMap(ParamConstants.STUDY_PARAM, study));
                         Execution postLinkJob = catalogManager.getExecutionManager()

@@ -4,18 +4,18 @@
 \alias{panelClient,OpencgaR-method}
 \title{PanelClient methods}
 \usage{
-\S4method{panelClient}{OpencgaR}(OpencgaR, panels, members, endpointName, params = NULL, ...)
+\S4method{panelClient}{OpencgaR}(OpencgaR, members, panels, endpointName, params = NULL, ...)
 }
 \arguments{
-\item{panels}{Comma separated list of panel ids.}
-
 \item{members}{Comma separated list of user or group ids.}
+
+\item{panels}{Comma separated list of panel ids.}
 
 \item{action}{Action to be performed \link{ADD, SET, REMOVE or RESET}.}
 
-\item{source}{Comma separated list of sources to import panels from. Current supported sources are 'panelapp' and 'genecensus'.}
+\item{source}{Comma separated list of sources to import panels from. Current supported sources are 'panelapp' and 'cancer-gene-census'.}
 
-\item{id}{Comma separated list of panel IDs to be imported from the defined source.If 'source' is provided and 'id' is empty, it will import all the panels from the source. When 'id' is provided, only one 'source' will be allowed.}
+\item{field}{Field for which to obtain the distinct values.}
 
 \item{limit}{Number of results to be returned.}
 
@@ -23,23 +23,25 @@
 
 \item{count}{Get the total number of results matching the query. Deactivated by default.}
 
-\item{name}{Panel name.}
+\item{id}{Comma separated list of panel IDs  up to a maximum of 100.}
 
-\item{phenotypes}{Panel phenotypes.}
+\item{uuid}{Comma separated list of panel UUIDs  up to a maximum of 100.}
 
-\item{variants}{Panel variants.}
+\item{name}{Comma separated list of panel names  up to a maximum of 100.}
 
-\item{genes}{Panel genes.}
+\item{disorders}{Comma separated list of disorder ids or names.}
 
-\item{regions}{Panel regions.}
+\item{variants}{Comma separated list of variant ids.}
 
-\item{categories}{Panel categories.}
+\item{genes}{Comma separated list of gene ids.}
+
+\item{regions}{Comma separated list of regions.}
+
+\item{categories}{Comma separated list of category names.}
 
 \item{tags}{Panel tags.}
 
-\item{description}{Panel description.}
-
-\item{author}{Panel author.}
+\item{status}{Filter by status.}
 
 \item{creationDate}{Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.}
 
@@ -47,25 +49,27 @@
 
 \item{acl}{Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .}
 
-\item{release}{Release value (Current release from the moment the samples were first created).}
+\item{release}{Release when it was created.}
 
-\item{snapshot}{Snapshot value (Latest version of samples in the specified release).}
+\item{snapshot}{Snapshot value (Latest version of the entry in the specified release).}
 
 \item{member}{User or group id.}
 
 \item{silent}{Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason.}
 
+\item{version}{Comma separated list of panel versions. 'all' to get all the panel versions. Not supported if multiple panel ids are provided.}
+
+\item{deleted}{Boolean to retrieve deleted panels.}
+
 \item{include}{Fields included in the response, whole JSON path must be provided.}
 
 \item{exclude}{Fields excluded in the response, whole JSON path must be provided.}
 
-\item{version}{Panel  version.}
-
-\item{deleted}{Boolean to retrieve deleted panels.}
-
 \item{study}{Study [\link{user@}project:]study where study and project can be either the ID or UUID.}
 
 \item{incVersion}{Create a new version of panel.}
+
+\item{includeResult}{Flag indicating to include the created or updated document result in the response.}
 
 \item{data}{Panel parameters.}
 }
@@ -74,12 +78,13 @@ This function implements the OpenCGA calls for managing Disease Panels.
 The following table summarises the available \emph{actions} for this client:\tabular{llr}{
    endpointName \tab Endpoint WS \tab parameters accepted \cr
    updateAcl \tab /{apiVersion}/panels/acl/{members}/update \tab study, members\link{*}, action\link{*}, body\link{*} \cr
-   create \tab /{apiVersion}/panels/create \tab study, source, id, body \cr
-   search \tab /{apiVersion}/panels/search \tab include, exclude, limit, skip, count, study, name, phenotypes, variants, genes, regions, categories, tags, description, author, deleted, creationDate, modificationDate, acl, release, snapshot \cr
+   create \tab /{apiVersion}/panels/create \tab include, exclude, study, source, id, includeResult, body \cr
+   distinct \tab /{apiVersion}/panels/distinct \tab study, id, uuid, name, disorders, variants, genes, regions, categories, tags, deleted, status, creationDate, modificationDate, acl, release, snapshot, field\link{*} \cr
+   search \tab /{apiVersion}/panels/search \tab include, exclude, limit, skip, count, study, id, uuid, name, disorders, variants, genes, regions, categories, tags, deleted, status, creationDate, modificationDate, acl, release, snapshot \cr
    acl \tab /{apiVersion}/panels/{panels}/acl \tab panels\link{*}, study, member, silent \cr
-   delete \tab /{apiVersion}/panels/{panels}/delete \tab study, panels \cr
-   info \tab /{apiVersion}/panels/{panels}/info \tab include, exclude, panels, study, version, deleted \cr
-   update \tab /{apiVersion}/panels/{panels}/update \tab study, panels, incVersion, body \cr
+   delete \tab /{apiVersion}/panels/{panels}/delete \tab study, panels\link{*} \cr
+   info \tab /{apiVersion}/panels/{panels}/info \tab include, exclude, panels\link{*}, study, version, deleted \cr
+   update \tab /{apiVersion}/panels/{panels}/update \tab include, exclude, study, panels\link{*}, incVersion, includeResult, body \cr
 }
 }
 \section{Endpoint /{apiVersion}/panels/acl/{members}/update}{
@@ -90,6 +95,11 @@ Update the set of permissions granted for the member.
 \section{Endpoint /{apiVersion}/panels/create}{
 
 Create a panel.
+}
+
+\section{Endpoint /{apiVersion}/panels/distinct}{
+
+Panel distinct method.
 }
 
 \section{Endpoint /{apiVersion}/panels/search}{

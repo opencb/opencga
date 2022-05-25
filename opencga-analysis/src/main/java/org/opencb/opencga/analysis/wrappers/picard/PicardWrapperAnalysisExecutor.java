@@ -67,8 +67,8 @@ public class PicardWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
 
         // Append mounts
         Set<String> inputFileParamNames = PicardWrapperAnalysis.getFileParamNames(command);
-        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(null, inputFileParamNames,
-                getExecutorParams());
+        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(null,
+                inputFileParamNames, getExecutorParams());
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
@@ -84,7 +84,8 @@ public class PicardWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
                 value = String.valueOf(getExecutorParams().get("OUTPUT"));
             }
             if (StringUtils.isNotEmpty(value)) {
-                List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("O", value)));
+                List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("O",
+                        value)));
                 appendOutputFiles(outputFilenames, sb);
             }
         }

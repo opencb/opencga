@@ -21,6 +21,8 @@ import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.common.Status;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
 import org.opencb.opencga.core.models.panel.Panel;
 
@@ -31,12 +33,25 @@ import java.util.Map;
 public class Interpretation extends org.opencb.biodata.models.clinical.interpretation.Interpretation implements IPrivateStudyUid {
 
     // Private fields
+
+    @DataField(id = "studyUid", indexed = true,
+            description = FieldConstants.INTERPRETATION_STUDY_UID)
     private long studyUid;
+
+    @DataField(id = "uid", indexed = true,
+            description = FieldConstants.INTERPRETATION_UID)
     private long uid;
 
+    @DataField(id = "panels", indexed = true,
+            description = FieldConstants.INTERPRETATION_PANELS)
     private List<Panel> panels;
 
+    @DataField(id = "internal", indexed = true,
+            description = FieldConstants.GENERIC_INTERNAL)
     private InterpretationInternal internal;
+
+    @DataField(id = "release", indexed = true,
+            description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
     private int release;
 
     public Interpretation() {
@@ -44,19 +59,20 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
     }
 
     public Interpretation(String id, String description, String clinicalAnalysisId, ClinicalAnalyst analyst,
-                          InterpretationMethod method, String creationDate, String modificationDate,
+                          InterpretationMethod method, String creationDate, String modificationDate, boolean locked,
                           List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings, List<Panel> panels,
                           List<ClinicalComment> comments, Status status, Map<String, Object> attributes) {
         super(id, "", description, clinicalAnalysisId, analyst, method, primaryFindings, secondaryFindings, comments, null, status,
-                creationDate, modificationDate, 0, attributes);
+                creationDate, modificationDate, locked, 0, attributes);
+
         this.panels = panels;
     }
 
     public Interpretation(org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation) {
         this(interpretation.getId(), interpretation.getDescription(), interpretation.getClinicalAnalysisId(), interpretation.getAnalyst(),
                 interpretation.getMethod(), interpretation.getCreationDate(), interpretation.getModificationDate(),
-                interpretation.getPrimaryFindings(), interpretation.getSecondaryFindings(), Collections.emptyList(),
-                interpretation.getComments(), interpretation.getStatus(), interpretation.getAttributes());
+                interpretation.isLocked(), interpretation.getPrimaryFindings(), interpretation.getSecondaryFindings(),
+                Collections.emptyList(), interpretation.getComments(), interpretation.getStatus(), interpretation.getAttributes());
     }
 
     @Override
@@ -168,4 +184,9 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
         return this;
     }
 
+    @Override
+    public Interpretation setLocked(boolean locked) {
+        super.setLocked(locked);
+        return this;
+    }
 }

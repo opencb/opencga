@@ -24,13 +24,14 @@ import java.util.stream.Collectors;
 public class StudyMetadata {
 
     public static final String UNKNOWN_HEADER_ATTRIBUTE = ".";
+    public static final int DEFAULT_SAMPLE_INDEX_VERSION = 1;
     private int id;
     private String name;
     private Aggregation aggregation;
     private Long timeStamp;
     private VariantFileHeader variantHeader;
     private List<VariantScoreMetadata> variantScores;
-    private List<SampleIndexConfigurationVersioned> sampleIndexConfigurations;
+    private List<SampleIndexConfigurationVersioned> sampleIndexConfigurations = Collections.emptyList();
 
     private ObjectMap attributes;
 
@@ -135,13 +136,23 @@ public class StudyMetadata {
     }
 
     public SampleIndexConfigurationVersioned getSampleIndexConfigurationLatest() {
+        return getSampleIndexConfigurationLatest(true);
+    }
+
+    public SampleIndexConfigurationVersioned getSampleIndexConfigurationLatest(boolean includeStagingSchemas) {
         if (sampleIndexConfigurations == null || sampleIndexConfigurations.isEmpty()) {
-            return new SampleIndexConfigurationVersioned(SampleIndexConfiguration.defaultConfiguration(), 1, Date.from(Instant.now()));
+            return new SampleIndexConfigurationVersioned(SampleIndexConfiguration.defaultConfiguration(),
+                    DEFAULT_SAMPLE_INDEX_VERSION, Date.from(Instant.now()), SampleIndexConfigurationVersioned.Status.ACTIVE);
         } else {
-            SampleIndexConfigurationVersioned conf = sampleIndexConfigurations.get(0);
+            SampleIndexConfigurationVersioned conf = null;
             for (SampleIndexConfigurationVersioned thisConf : sampleIndexConfigurations) {
-                if (thisConf.getVersion() > conf.getVersion()) {
-                    conf = thisConf;
+                if (thisConf.getStatus() == SampleIndexConfigurationVersioned.Status.ACTIVE
+                        || includeStagingSchemas && thisConf.getStatus() == SampleIndexConfigurationVersioned.Status.STAGING) {
+                    if (conf == null) {
+                        conf = thisConf;
+                    } else if (thisConf.getVersion() > conf.getVersion()) {
+                        conf = thisConf;
+                    }
                 }
             }
             return conf;
@@ -150,6 +161,24 @@ public class StudyMetadata {
 
     public List<SampleIndexConfigurationVersioned> getSampleIndexConfigurations() {
         return sampleIndexConfigurations;
+    }
+
+    public SampleIndexConfigurationVersioned getSampleIndexConfiguration(int version) {
+        if (sampleIndexConfigurations == null || sampleIndexConfigurations.isEmpty()) {
+            if (version == DEFAULT_SAMPLE_INDEX_VERSION) {
+                return new SampleIndexConfigurationVersioned(SampleIndexConfiguration.defaultConfiguration(),
+                        DEFAULT_SAMPLE_INDEX_VERSION, Date.from(Instant.now()), SampleIndexConfigurationVersioned.Status.ACTIVE);
+            } else {
+                return null;
+            }
+        } else {
+            for (SampleIndexConfigurationVersioned v : sampleIndexConfigurations) {
+                if (v.getVersion() == version) {
+                    return v;
+                }
+            }
+            return null;
+        }
     }
 
     public StudyMetadata setSampleIndexConfigurations(List<SampleIndexConfigurationVersioned> sampleIndexConfigurations) {
@@ -224,16 +253,24 @@ public class StudyMetadata {
         private SampleIndexConfiguration configuration;
         private int version;
         private Date date;
+        private Status status;
 //        private int numSamples;
 
+        public enum Status {
+            STAGING, // Index being built. Not ready. Not to be used.
+            ACTIVE, // Index ready to be used (if present)
+            DEPRECATED, // Index marked to be removed.
+            REMOVED // Index no longer exists.
+        }
 
         public SampleIndexConfigurationVersioned() {
         }
 
-        public SampleIndexConfigurationVersioned(SampleIndexConfiguration configuration, int version, Date date) {
+        public SampleIndexConfigurationVersioned(SampleIndexConfiguration configuration, int version, Date date, Status status) {
             this.configuration = configuration;
             this.version = version;
             this.date = date;
+            this.status = status;
         }
 
         public SampleIndexConfiguration getConfiguration() {
@@ -263,7 +300,16 @@ public class StudyMetadata {
             return this;
         }
 
-//        public int getNumSamples() {
+        public Status getStatus() {
+            return status;
+        }
+
+        public SampleIndexConfigurationVersioned setStatus(Status status) {
+            this.status = status;
+            return this;
+        }
+
+        //        public int getNumSamples() {
 //            return numSamples;
 //        }
 //

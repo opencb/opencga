@@ -84,12 +84,12 @@ public interface JobDBAdaptor extends CoreDBAdaptor<Job> {
 
     default OpenCGAResult setStatus(long jobId, String status)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return update(jobId, new ObjectMap(QueryParams.INTERNAL_STATUS_NAME.key(), status), QueryOptions.empty());
+        return update(jobId, new ObjectMap(QueryParams.INTERNAL_STATUS_ID.key(), status), QueryOptions.empty());
     }
 
     default OpenCGAResult setStatus(Query query, String status)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return update(query, new ObjectMap(QueryParams.INTERNAL_STATUS_NAME.key(), status), QueryOptions.empty());
+        return update(query, new ObjectMap(QueryParams.INTERNAL_STATUS_ID.key(), status), QueryOptions.empty());
     }
 
     default OpenCGAResult<Job> get(long jobId, QueryOptions options)
@@ -137,11 +137,11 @@ public interface JobDBAdaptor extends CoreDBAdaptor<Job> {
         PRIORITY("priority", TEXT, ""),
 
         STATUS("status", OBJECT, ""),
-        STATUS_NAME("status.name", TEXT, ""),
+        STATUS_ID("status.id", TEXT, ""),
 
         INTERNAL("internal", OBJECT, ""),
         INTERNAL_STATUS("internal.status", OBJECT, ""),
-        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_DESCRIPTION("internal.status.description", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         INTERNAL_WEBHOOK("internal.webhook", OBJECT, ""),

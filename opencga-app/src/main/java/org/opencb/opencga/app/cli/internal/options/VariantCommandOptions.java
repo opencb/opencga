@@ -388,6 +388,8 @@ public class VariantCommandOptions {
         public String panelConfidence;
         @Parameter(names = {"--panel-role-in-cancer"}, description = PANEL_ROLE_IN_CANCER_DESC, arity = 1)
         public String panelRoleInCancer;
+        @Parameter(names = {"--panel-feature-type"}, description = PANEL_FEATURE_TYPE_DESC, arity = 1)
+        public String panelFeatureType;
         @Parameter(names = {"--panel-intersection"}, description = PANEL_INTERSECTION_DESC, arity = 1)
         public Boolean panelIntersection;
 
@@ -513,6 +515,9 @@ public class VariantCommandOptions {
         @Parameter(names = {"--annotate"}, description = "Annotate sample index", arity = 0)
         public boolean annotate;
 
+        @Parameter(names = {"--family-index"}, description = "Annotate sample index", arity = 0)
+        public boolean familyIndex;
+
         @Parameter(names = {"--overwrite"}, description = "Overwrite existing values", arity = 0)
         public boolean overwrite;
     }
@@ -531,12 +536,15 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public Object internalJobOptions = internalJobOptionsObject;
 
-        @Parameter(names = {"--family"}, required = true, description = "Families to index. " +
+        @Parameter(names = {"--family"}, required = false, description = "Families to index. " +
                 "Use \"" + VariantQueryUtils.ALL + "\" to index all families in the study.")
         public List<String> family;
 
         @Parameter(names = {"--overwrite"}, description = "Overwrite existing values")
         public boolean overwrite = false;
+
+        @Parameter(names = {"--update-index"}, description = "Update family index")
+        public boolean update = false;
 
         @Parameter(names = {"--skip-incomplete-families"}, description = "Do not process incomplete families.")
         public boolean skipIncompleteFamilies = false;

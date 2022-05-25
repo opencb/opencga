@@ -24,7 +24,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.user.UserFilter;
 import org.opencb.opencga.core.models.user.UserInternal;
@@ -67,14 +67,14 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertFalse(userResult.getResults().isEmpty());
         assertNotNull(userResult.first());
 
-        assertEquals(Status.READY, userResult.first().getInternal().getStatus().getName());
+        assertEquals(InternalStatus.READY, userResult.first().getInternal().getStatus().getId());
 
         DataResult deleteUser = catalogUserDBAdaptor.delete(deletable1.getId(), new QueryOptions());
         assertEquals(1, deleteUser.getNumUpdated());
 
-        query.append(UserDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), UserStatus.DELETED);
+        query.append(UserDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), UserStatus.DELETED);
         DataResult<User> queryResult = catalogUserDBAdaptor.get(query, QueryOptions.empty());
-        assertEquals(Status.DELETED, queryResult.first().getInternal().getStatus().getName());
+        assertEquals(InternalStatus.DELETED, queryResult.first().getInternal().getStatus().getId());
 
 
         /*

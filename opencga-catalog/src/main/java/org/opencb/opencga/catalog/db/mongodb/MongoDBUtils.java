@@ -25,7 +25,6 @@ import com.mongodb.ErrorCategory;
 import com.mongodb.MongoWriteException;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
-import com.mongodb.util.JSON;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
@@ -46,7 +45,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.PRIVATE_ID;
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.ID;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.PRIVATE_UID;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
@@ -80,7 +79,7 @@ public class MongoDBUtils {
     @Deprecated
     static long getNewAutoIncrementId(String field, MongoDBCollection metaCollection) {
 
-        Bson query = Filters.eq(PRIVATE_ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID);
+        Bson query = Filters.eq(ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID);
         Document projection = new Document(field, true);
         Bson inc = Updates.inc(field, 1);
         QueryOptions queryOptions = new QueryOptions("returnNew", true);
@@ -141,21 +140,6 @@ public class MongoDBUtils {
             jsonReaderMap.put(tClass, jsonObjectMapper.reader(tClass));
         }
         return jsonReaderMap.get(tClass);
-    }
-
-    @Deprecated
-    static DBObject getDbObject(Object object, String objectName) throws CatalogDBException {
-        DBObject dbObject;
-        String jsonString = null;
-        try {
-            jsonString = jsonObjectWriter.writeValueAsString(object);
-            dbObject = (DBObject) JSON.parse(jsonString);
-            dbObject = replaceDotsInKeys(dbObject);
-        } catch (Exception e) {
-            throw new CatalogDBException("Error while writing to Json : " + objectName + (jsonString == null ? "" : (" -> " + jsonString)
-            ), e);
-        }
-        return dbObject;
     }
 
     public static Document getMongoDBDocument(Object object, String objectName) throws CatalogDBException {
@@ -477,20 +461,18 @@ public class MongoDBUtils {
 
 
     /**
-     * Parse the query values from the ontology terms to bson format.
-     * At this point, any value that we find in the query (as comma separated or as a list), will be looked for in the id and name
-     * attributes of the ontologyTerm java bean.
+     * Perform or query of queryKey .id and .name.
      * <p>
      * Example: ontologyTerms: X,Y
      * This will be transformed to something like ontologyTerms.id == X || ontologyTerms.name == X || ontologyTerms.id == Y ||
      * ontologyTerms.name == Y)
      *
-     * @param mongoKey Key corresponding to the data model to know how it is stored in mongoDB. (If not altered, ontologyTerms).
+     * @param mongoKey Key corresponding to the data model to know how it is stored in mongoDB.
      * @param queryKey Key by which the values will be retrieved from the query.
      * @param query    Query object containing all the query keys and values to parse. Only to get the ones regarding ontology terms.
      * @param bsonList List to which we will add the ontology terms search.
      */
-    public static void addOntologyQueryFilter(String mongoKey, String queryKey, Query query, List<Bson> bsonList) {
+    public static void addDefaultOrQueryFilter(String mongoKey, String queryKey, Query query, List<Bson> bsonList) {
         Bson ontologyId = MongoDBQueryUtils.createAutoFilter(mongoKey + ".id", queryKey, query, QueryParam.Type.STRING);
         Bson ontologyName = MongoDBQueryUtils.createAutoFilter(mongoKey + ".name", queryKey, query, QueryParam.Type.STRING);
         bsonList.add(Filters.or(ontologyId, ontologyName));

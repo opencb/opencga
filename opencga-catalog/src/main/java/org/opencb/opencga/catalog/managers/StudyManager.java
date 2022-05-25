@@ -21,6 +21,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -47,7 +48,6 @@ import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.cohort.CohortAclEntry;
-import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.FamilyAclEntry;
 import org.opencb.opencga.core.models.file.File;
@@ -268,7 +268,7 @@ public class StudyManager extends AbstractManager {
 
     @Deprecated
     public OpenCGAResult<Study> create(String projectStr, String id, String alias, String name, String description,
-                                       StudyNotification notification, StudyInternal internal, CustomStatus status,
+                                       StudyNotification notification, StudyInternal internal, Status status,
                                        Map<String, Object> attributes, QueryOptions options, String token) throws CatalogException {
         Study study = new Study()
                 .setId(id)
@@ -313,7 +313,7 @@ public class StudyManager extends AbstractManager {
             study.setSources(ParamUtils.defaultObject(study.getSources(), Collections::emptyList));
             study.setDescription(ParamUtils.defaultString(study.getDescription(), ""));
             study.setInternal(StudyInternal.init());
-            study.setStatus(ParamUtils.defaultObject(study.getStatus(), CustomStatus::new));
+            study.setStatus(ParamUtils.defaultObject(study.getStatus(), Status::new));
             study.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(study.getCreationDate(),
                     StudyDBAdaptor.QueryParams.CREATION_DATE.key()));
             study.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(study.getModificationDate(),
@@ -825,7 +825,7 @@ public class StudyManager extends AbstractManager {
         Long nFiles = fileDBAdaptor.count(
                         new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                                 .append(FileDBAdaptor.QueryParams.TYPE.key(), File.Type.FILE)
-                                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), "!=" + FileStatus.TRASHED + ";!="
+                                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), "!=" + FileStatus.TRASHED + ";!="
                                         + FileStatus.DELETED))
                 .getNumMatches();
         studySummary.setFiles(nFiles);

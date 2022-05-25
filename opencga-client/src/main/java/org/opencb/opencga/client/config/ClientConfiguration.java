@@ -16,9 +16,13 @@
 
 package org.opencb.opencga.client.config;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.client.exceptions.ClientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,35 +35,22 @@ import java.util.Map;
 /**
  * Created by imedina on 04/05/16.
  */
-public class ClientConfiguration {
+public final class ClientConfiguration {
 
+    private static final String DEFAULT_CONFIGURATION_FORMAT = "YAML";
+    private static Logger logger;
+    @Deprecated
     private String logLevel;
-
-    private String version;
-    private int cliSessionDuration;
-
     private RestConfig rest;
     private GrpcConfig grpc;
-
-    private VariantClientConfiguration variant;
-
-    private static Logger logger;
-    private static final String DEFAULT_CONFIGURATION_FORMAT = "yaml";
-
 
     public ClientConfiguration() {
         logger = LoggerFactory.getLogger(ClientConfiguration.class);
     }
 
-    public ClientConfiguration(RestConfig rest, GrpcConfig grpc) {
-        this.rest = rest;
-        this.grpc = grpc;
-
-        logger = LoggerFactory.getLogger(ClientConfiguration.class);
-    }
-
-    public static ClientConfiguration load(Path configurationPath) throws IOException {
-        InputStream inputStream = FileUtils.newInputStream(configurationPath);
+    public static ClientConfiguration load(Path clientConfigurationPath) throws IOException {
+        logger.debug("Loading client configuration file from '{}'", clientConfigurationPath.toString());
+        InputStream inputStream = FileUtils.newInputStream(clientConfigurationPath);
         return load(inputStream, DEFAULT_CONFIGURATION_FORMAT);
     }
 
@@ -69,36 +60,66 @@ public class ClientConfiguration {
 
     public static ClientConfiguration load(InputStream configurationInputStream, String format) throws IOException {
         ClientConfiguration clientConfiguration;
-        ObjectMapper objectMapper;
-        switch (format) {
-            case "json":
-                objectMapper = new ObjectMapper();
-                clientConfiguration = objectMapper.readValue(configurationInputStream, ClientConfiguration.class);
+        switch (format.toUpperCase()) {
+            case "JSON":
+                clientConfiguration = readClientConfiguration(new JsonFactory(), configurationInputStream);
                 break;
-            case "yml":
-            case "yaml":
+            case "YML":
+            case "YAML":
+                clientConfiguration = readClientConfiguration(new YAMLFactory(), configurationInputStream);
+                break;
             default:
-                objectMapper = new ObjectMapper(new YAMLFactory());
-                clientConfiguration = objectMapper.readValue(configurationInputStream, ClientConfiguration.class);
+                logger.warn("Not valid client configuration format '{}'", format);
+                logger.warn("Creating an empty client configuration object, information can be set by env variables");
+                clientConfiguration = new ClientConfiguration();
                 break;
         }
-        overwriteEnvironmentVariables(clientConfiguration);
+
+        // Multiple hosts can exist, we must check and set a valid defaultHostIndex
+        if (clientConfiguration.getRest().getHosts() != null && clientConfiguration.getRest().getHosts().size() > 0) {
+            // If hosts are defined then defaultHostIndex must be a value between 0 and the number of hosts
+            int defaultHostIndex = clientConfiguration.getRest().getDefaultHostIndex();
+            if (defaultHostIndex < 0 || defaultHostIndex >= clientConfiguration.getRest().getHosts().size()) {
+                logger.warn("Setting defaultHostIndex to first host");
+                clientConfiguration.getRest().setDefaultHostIndex(0);
+            }
+        } else {
+            // If no hosts exist then defaultHostIndex is set to -1
+            logger.warn("No hosts found, setting defaultHostIndex to -1");
+            clientConfiguration.getRest().setDefaultHostIndex(-1);
+        }
+
+        // Overwrite client configuration file with environment variables
+        parseEnvironmentVariables(clientConfiguration);
+
         return clientConfiguration;
     }
 
-    public void serialize(OutputStream configurationOutputStream) throws IOException {
-        ObjectMapper jsonMapper = new ObjectMapper(new YAMLFactory());
-        jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOutputStream, this);
+    private static ClientConfiguration readClientConfiguration(JsonFactory jf, InputStream configurationInputStream)
+            throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper(jf);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        return objectMapper.readValue(configurationInputStream, ClientConfiguration.class);
     }
 
-    private static void overwriteEnvironmentVariables(ClientConfiguration configuration) {
+    private static void parseEnvironmentVariables(ClientConfiguration configuration) {
         Map<String, String> envVariables = System.getenv();
         for (String variable : envVariables.keySet()) {
             if (variable.startsWith("OPENCGA_")) {
-                logger.debug("Overwriting environment parameter '{}'", variable);
-                switch (variable) {
+                logger.debug("Setting environment variable '{}'", variable);
+                switch (variable.toUpperCase()) {
+                    case "OPENCGA_CLIENT_REST_URL":
                     case "OPENCGA_CLIENT_REST_HOST":
-                        configuration.getRest().setHost(envVariables.get(variable));
+                        if (configuration.getRest().getHosts().size() == 0) {
+                            configuration.getRest().getHosts().add(new HostConfig("default", variable));
+                        } else {
+                            int defaultHostIndex = configuration.getRest().getDefaultHostIndex();
+                            configuration.getRest().getHosts().get(defaultHostIndex).setUrl(envVariables.get(variable));
+                        }
+                        break;
+                    case "TLS_ALLOW_INVALID_CERTIFICATES":
+                        configuration.getRest()
+                                .setTlsAllowInvalidCertificates("TRUE".equalsIgnoreCase(envVariables.get(variable)));
                         break;
                     case "OPENCGA_CLIENT_GRPC_HOST":
                         configuration.getGrpc().setHost(envVariables.get(variable));
@@ -110,56 +131,72 @@ public class ClientConfiguration {
         }
     }
 
+    public void serialize(OutputStream configurationOutputStream) throws IOException {
+        ObjectMapper jsonMapper = new ObjectMapper(new YAMLFactory());
+        jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOutputStream, this);
+    }
+
+    public HostConfig getCurrentHost() throws ClientException {
+        if (rest.getHosts() == null
+                || rest.getDefaultHostIndex() < 0 || rest.getDefaultHostIndex() >= rest.getHosts().size()) {
+
+            throw new ClientException("Hosts not found");
+        }
+        logger.debug("Default host index: {}, value: {}", rest.getDefaultHostIndex(),
+                rest.getHosts().get(rest.getDefaultHostIndex()));
+        return rest.getHosts().get(rest.getDefaultHostIndex());
+    }
+
+    public HostConfig getHostByName(String name) throws ClientException {
+
+        if (rest.getHosts() == null
+                || rest.getDefaultHostIndex() < 0 || rest.getDefaultHostIndex() >= rest.getHosts().size()) {
+
+            throw new ClientException("Hosts not found");
+        }
+        for (HostConfig hostConfig : rest.getHosts()) {
+            if (hostConfig.getName().equalsIgnoreCase(name)) {
+                return hostConfig;
+            }
+        }
+        return null;
+    }
+
+    public void setDefaultIndexByName(String name) throws ClientException {
+        if (CollectionUtils.isEmpty(rest.getHosts()) || rest.getDefaultHostIndex() < 0
+                || rest.getDefaultHostIndex() > rest.getHosts().size()) {
+            throw new ClientException("Hosts not found");
+        }
+        boolean finded = false;
+        for (int i = 0; i < rest.getHosts().size(); i++) {
+            if (rest.getHosts().get(i).getName().equalsIgnoreCase(name)) {
+                rest.setDefaultHostIndex(i);
+                finded = true;
+            }
+        }
+        if (!finded) {
+            throw new ClientException("Invalid name. Host not found");
+        }
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClientConfiguration{");
         sb.append("logLevel='").append(logLevel).append('\'');
-        sb.append(", version='").append(version).append('\'');
-        sb.append(", sessionDuration=").append(cliSessionDuration);
         sb.append(", rest=").append(rest);
         sb.append(", grpc=").append(grpc);
-        sb.append(", variant=").append(variant);
         sb.append('}');
         return sb.toString();
     }
 
+    @Deprecated
     public String getLogLevel() {
         return logLevel;
     }
 
+    @Deprecated
     public ClientConfiguration setLogLevel(String logLevel) {
         this.logLevel = logLevel;
-        return this;
-    }
-
-    @Deprecated
-    public String getLogFile() {
-        return null;
-    }
-
-    @Deprecated
-    public ClientConfiguration setLogFile(String none) {
-        if (none != null) {
-            logger.warn("Deprecated option 'client-configuration.yml#logFile'");
-        }
-        return this;
-    }
-
-    public String getVersion() {
-        return version;
-    }
-
-    public ClientConfiguration setVersion(String version) {
-        this.version = version;
-        return this;
-    }
-
-    public int getCliSessionDuration() {
-        return cliSessionDuration;
-    }
-
-    public ClientConfiguration setCliSessionDuration(int cliSessionDuration) {
-        this.cliSessionDuration = cliSessionDuration;
         return this;
     }
 
@@ -178,15 +215,6 @@ public class ClientConfiguration {
 
     public ClientConfiguration setGrpc(GrpcConfig grpc) {
         this.grpc = grpc;
-        return this;
-    }
-
-    public VariantClientConfiguration getVariant() {
-        return variant;
-    }
-
-    public ClientConfiguration setVariant(VariantClientConfiguration variant) {
-        this.variant = variant;
         return this;
     }
 }

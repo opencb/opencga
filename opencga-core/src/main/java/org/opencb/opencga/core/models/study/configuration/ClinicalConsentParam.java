@@ -1,17 +1,24 @@
 package org.opencb.opencga.core.models.study.configuration;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
+
 public class ClinicalConsentParam {
 
+    @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_ID_DESCRIPTION)
     private String id;
+    @DataField(id = "name", indexed = true,
+            description = FieldConstants.GENERIC_NAME)
     private String name;
-    private String description;
-    private Value value;
 
-    public enum Value {
-        YES,
-        NO,
-        UNKNOWN
-    }
+    @DataField(id = "description", indexed = true,
+            description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
+    private String description;
+
+    @DataField(id = "value", indexed = true, uncommentedClasses = {"Value"},
+            description = FieldConstants.CLINICAL_CONSENT_PARAM_VALUE)
+    private Value value;
 
     public ClinicalConsentParam() {
     }
@@ -68,5 +75,11 @@ public class ClinicalConsentParam {
     public ClinicalConsentParam setValue(Value value) {
         this.value = value;
         return this;
+    }
+
+    public enum Value {
+        YES,
+        NO,
+        UNKNOWN
     }
 }

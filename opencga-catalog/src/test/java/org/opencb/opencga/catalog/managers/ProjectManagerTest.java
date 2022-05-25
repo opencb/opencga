@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -39,13 +40,13 @@ import java.io.IOException;
 import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by pfurio on 28/11/16.
  */
 public class ProjectManagerTest extends GenericTest {
 
-    public final static String PASSWORD = "asdf";
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
@@ -72,13 +73,13 @@ public class ProjectManagerTest extends GenericTest {
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
-        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
-        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, null);
 
-        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD).getToken();
-        sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD).getToken();
-        sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD).getToken();
+        sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
+        sessionIdUser2 = catalogManager.getUserManager().login("user2", TestParamConstants.PASSWORD).getToken();
+        sessionIdUser3 = catalogManager.getUserManager().login("user3", TestParamConstants.PASSWORD).getToken();
 
         project1 = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first().getId();
@@ -101,10 +102,18 @@ public class ProjectManagerTest extends GenericTest {
 
     @Test
     public void getOtherUsersProject() throws CatalogException {
-        Query query = new Query(ProjectDBAdaptor.QueryParams.ID.key(), project1);
-        DataResult<Project> projectDataResult = catalogManager.getProjectManager().get(query, null, sessionIdUser3);
-        assertEquals(0, projectDataResult.getNumResults());
-        assertEquals(1, projectDataResult.getEvents().size());
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("cannot view");
+        catalogManager.getProjectManager().get(project1, null, sessionIdUser3);
+    }
+
+    @Test
+    public void searchProjects() throws CatalogException {
+        catalogManager.getUserManager().create("userid", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
+        String token = catalogManager.getUserManager().login("userid", TestParamConstants.PASSWORD).getToken();
+        OpenCGAResult<Project> projectOpenCGAResult = catalogManager.getProjectManager().search(new Query(), QueryOptions.empty(), token);
+        assertTrue(projectOpenCGAResult.getResults().isEmpty());
+        assertEquals(0, projectOpenCGAResult.getEvents().size());
     }
 
     @Test

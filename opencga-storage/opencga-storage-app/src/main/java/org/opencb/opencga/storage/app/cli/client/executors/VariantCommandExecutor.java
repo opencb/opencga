@@ -36,6 +36,8 @@ import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
@@ -273,6 +275,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         params.put(VariantStorageOptions.LOAD_HOM_REF.key(), indexVariantsCommandOptions.loadHomRef);
         params.put(VariantStorageOptions.NORMALIZATION_SKIP.key(), indexVariantsCommandOptions.normalizationSkip);
         params.put(VariantStorageOptions.NORMALIZATION_REFERENCE_GENOME.key(), indexVariantsCommandOptions.referenceGenome);
+        params.putIfNotEmpty(VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), indexVariantsCommandOptions.failOnMalformedLines);
         params.put(VariantStorageOptions.POST_LOAD_CHECK.key(), indexVariantsCommandOptions.postLoadCheck);
         params.put(VariantStorageOptions.INDEX_SEARCH.key(), indexVariantsCommandOptions.indexSearch);
         params.put(VariantStorageOptions.SPECIES.key(), indexVariantsCommandOptions.species);
@@ -609,7 +612,10 @@ public class VariantCommandExecutor extends CommandExecutor {
         options.put(VariantStorageOptions.RESUME.key(), fillGapsCommandOptions.resume);
         options.putAll(fillGapsCommandOptions.commonOptions.params);
 
-        variantStorageEngine.aggregateFamily(fillGapsCommandOptions.study, fillGapsCommandOptions.samples, options);
+        variantStorageEngine.aggregateFamily(fillGapsCommandOptions.study, new VariantAggregateFamilyParams(
+                fillGapsCommandOptions.samples,
+                fillGapsCommandOptions.gapsGenotype,
+                fillGapsCommandOptions.resume), options);
     }
 
     private void fillMissing() throws StorageEngineException {
@@ -619,7 +625,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         options.put(VariantStorageOptions.RESUME.key(), cliOptions.resume);
         options.putAll(cliOptions.commonOptions.params);
 
-        variantStorageEngine.aggregate(cliOptions.study, cliOptions.overwrite, options);
+        variantStorageEngine.aggregate(cliOptions.study, new VariantAggregateParams(cliOptions.overwrite, false), options);
     }
 
     private void export() throws URISyntaxException, StorageEngineException, IOException {

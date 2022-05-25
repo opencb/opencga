@@ -16,8 +16,10 @@
 
 package org.opencb.opencga.core.tools.result;
 
+import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.api.FieldConstants;
 
 import java.net.URI;
 import java.util.Date;
@@ -27,20 +29,47 @@ import java.util.List;
 public class JobResult {
 
     @Deprecated
+    @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_ID_DESCRIPTION)
     private String id;
+
+
+    @DataField(id = "executor", indexed = true,
+            description = FieldConstants.EXECUTION_RESULT_EXECUTION_INFO)
     private ExecutorInfo executor;
+
+    @DataField(id = "start", indexed = true,
+            description = FieldConstants.EXECUTION_RESULT_START)
     private Date start;
+
+    @DataField(id = "end", indexed = true,
+            description = FieldConstants.EXECUTION_RESULT_END)
     private Date end;
+
+    @DataField(id = "status", indexed = true,
+            description = FieldConstants.EXECUTION_RESULT_STATUS)
     private Status status;
+
+
+    @DataField(id = "externalFiles", indexed = true,
+            description = FieldConstants.EXECUTION_RESULT_EXTERNAL_FILES)
     private List<URI> externalFiles;
+
+    @DataField(id = "steps", indexed = true,
+            description = FieldConstants.EXECUTION_RESULT_STEPS)
     private List<ToolStep> steps;
+
+    @DataField(id = "events", indexed = true, uncommentedClasses = {"Event"},
+            description = FieldConstants.EXECUTION_RESULT_EVENTS)
     private List<Event> events;
 
+    @DataField(id = "attributes", indexed = true,
+            description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private ObjectMap attributes;
 
     public JobResult() {
         executor = new ExecutorInfo();
-        status = new Status();
+        status = Status.initStatus();
         events = new LinkedList<>();
         externalFiles = new LinkedList<>();
         steps = new LinkedList<>();

@@ -53,7 +53,7 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
         OpenCGAResult<File> link = fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, null, null, null), false, token);
 
         assertEquals(0, link.first().getSampleIds().size());
-        assertEquals(FileStatus.MISSING_SAMPLES, link.first().getInternal().getStatus().getName());
+        assertEquals(FileStatus.MISSING_SAMPLES, link.first().getInternal().getStatus().getId());
         assertFalse(link.first().getInternal().getMissingSamples().getNonExisting().isEmpty());
 
         Query query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), link.first().getId());
@@ -76,7 +76,7 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
 
         assertEquals(4, file.getSampleIds().size());
         assertTrue(file.getSampleIds().containsAll(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685")));
-        assertEquals(FileStatus.READY, file.getInternal().getStatus().getName());
+        assertEquals(FileStatus.READY, file.getInternal().getStatus().getId());
         assertTrue(file.getInternal().getMissingSamples().getNonExisting().isEmpty());
         assertTrue(file.getInternal().getMissingSamples().getExisting().isEmpty());
 
@@ -107,7 +107,7 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
         OpenCGAResult<File> link = fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, null, null, null), false, token);
 
         assertEquals(0, link.first().getSampleIds().size());
-        assertEquals(FileStatus.MISSING_SAMPLES, link.first().getInternal().getStatus().getName());
+        assertEquals(FileStatus.MISSING_SAMPLES, link.first().getInternal().getStatus().getId());
         assertFalse(link.first().getInternal().getMissingSamples().getNonExisting().isEmpty());
 
         Query query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), link.first().getId());
@@ -131,7 +131,7 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
 
         assertEquals(4, file.getSampleIds().size());
         assertTrue(file.getSampleIds().containsAll(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685")));
-        assertEquals(FileStatus.READY, file.getInternal().getStatus().getName());
+        assertEquals(FileStatus.READY, file.getInternal().getStatus().getId());
         assertTrue(file.getInternal().getMissingSamples().getNonExisting().isEmpty());
         assertTrue(file.getInternal().getMissingSamples().getExisting().isEmpty());
 

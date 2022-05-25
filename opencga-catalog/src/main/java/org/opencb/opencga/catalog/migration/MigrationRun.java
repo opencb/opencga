@@ -78,7 +78,15 @@ public class MigrationRun {
         /**
          * Error executing the migration. Needs to be re-executed.
          */
-        ERROR
+        ERROR;
+
+        public boolean applied() {
+            return this == DONE || this == REDUNDANT;
+        }
+
+        public boolean toBeApplied() {
+            return this == PENDING || this == ERROR || this == OUTDATED;
+        }
     }
 
     public MigrationRun() {

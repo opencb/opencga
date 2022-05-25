@@ -37,7 +37,7 @@ public class NewClinicalSignificanceFields extends StorageMigrationTool {
             Execution execution = executions.get(project);
             if (execution != null) {
                 int patch = Integer.parseInt(execution.getParams().get("patch").toString());
-                String status = execution.getInternal().getStatus().getName();
+                String status = execution.getInternal().getStatus().getId();
                 if (status.equals(Enums.ExecutionStatus.DONE)) {
                     if (patch == getAnnotation().patch()) {
                         // Skip this project. Already migrated

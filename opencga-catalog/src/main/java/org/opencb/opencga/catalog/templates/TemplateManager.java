@@ -947,7 +947,7 @@ public class TemplateManager {
 
     private String checkJob(RestResponse<Job> jobRestResponse) throws CatalogException {
         Job job = jobRestResponse.firstResult();
-        String status = job.getInternal().getStatus().getName();
+        String status = job.getInternal().getStatus().getId();
         if (status.equals(Enums.ExecutionStatus.ABORTED) || status.equals(Enums.ExecutionStatus.ERROR)) {
             throw new CatalogException("Error submitting job " + job.getTool().getId() + " " + job.getId());
         }

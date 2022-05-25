@@ -41,7 +41,7 @@ public class VariantExportTool extends OpenCgaAnalysisTool {
     }
 
     public VariantExportTool setOutputFormat(VariantWriterFactory.VariantOutputFormat outputFormat) {
-        toolParams.setOutputFormat(outputFormat.toString());
+        toolParams.setOutputFileFormat(outputFormat.toString());
         return this;
     }
 
@@ -60,14 +60,14 @@ public class VariantExportTool extends OpenCgaAnalysisTool {
         super.check();
         toolParams.updateParams(params);
 
-        if (StringUtils.isEmpty(toolParams.getOutputFormat())) {
-            toolParams.setOutputFormat(VariantWriterFactory.VariantOutputFormat.VCF.toString());
+        if (StringUtils.isEmpty(toolParams.getOutputFileFormat())) {
+            toolParams.setOutputFileFormat(VariantWriterFactory.VariantOutputFormat.VCF.toString());
         }
         if (toolParams.getLimit() != null && toolParams.getLimit() == 0) {
             toolParams.setLimit(null);
         }
 
-        outputFormat = VariantWriterFactory.toOutputFormat(toolParams.getOutputFormat(), toolParams.getOutputFileName());
+        outputFormat = VariantWriterFactory.toOutputFormat(toolParams.getOutputFileFormat(), toolParams.getOutputFileName());
         if (outputFormat.isPlain()) {
             outputFormat = outputFormat.withGzip();
         }

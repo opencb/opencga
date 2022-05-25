@@ -6,23 +6,25 @@
 \usage{
 \S4method{familyClient}{OpencgaR}(
   OpencgaR,
+  members,
+  annotationSet,
   families,
   family,
-  annotationSet,
-  members,
   endpointName,
   params = NULL,
   ...
 )
 }
 \arguments{
+\item{members}{Comma separated list of family members.}
+
+\item{annotationSet}{AnnotationSet ID to be updated.}
+
 \item{families}{Comma separated list of family ids.}
 
 \item{family}{Family id.}
 
-\item{annotationSet}{AnnotationSet ID to be updated.}
-
-\item{members}{Comma separated list of individual ids or names.}
+\item{propagate}{Propagate family permissions to related individuals and samples.}
 
 \item{creationYear}{Creation year.}
 
@@ -32,15 +34,9 @@
 
 \item{creationDayOfWeek}{Creation day of week (MONDAY, TUESDAY...).}
 
-\item{status}{Status.}
-
 \item{numMembers}{Number of members.}
 
-\item{expectedSize}{Expected size.}
-
 \item{default}{Calculate default stats.}
-
-\item{field}{List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples\link{0..10}:1.}
 
 \item{variableSetId}{Variable set ID or name.}
 
@@ -50,17 +46,23 @@
 
 \item{annotationSetId}{Annotation set id. If not provided, variableSetId will be used.}
 
+\item{field}{Field for which to obtain the distinct values.}
+
 \item{limit}{Number of results to be returned.}
 
 \item{skip}{Number of results to skip.}
 
 \item{count}{Get the total number of results matching the query. Deactivated by default.}
 
-\item{name}{Family name.}
+\item{id}{Comma separated list family IDs up to a maximum of 100.}
 
-\item{parentalConsanguinity}{Parental consanguinity.}
+\item{name}{Comma separated list family names up to a maximum of 100.}
 
-\item{samples}{Comma separated list sample IDs or UUIDs up to a maximum of 100.}
+\item{uuid}{Comma separated list family UUIDs up to a maximum of 100.}
+
+\item{expectedSize}{Expected size of the family (number of members).}
+
+\item{samples}{Comma separated list of member's samples.}
 
 \item{phenotypes}{Comma separated list of phenotype ids or names.}
 
@@ -70,35 +72,37 @@
 
 \item{modificationDate}{Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.}
 
-\item{annotationsetName}{DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}.}
+\item{internalStatus}{Filter by internal status.}
 
-\item{variableSet}{DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}.}
+\item{status}{Filter by status.}
 
 \item{annotation}{Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.}
 
 \item{acl}{Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .}
 
-\item{release}{Release value (Current release from the moment the families were first created).}
+\item{release}{Release when it was created.}
 
-\item{snapshot}{Snapshot value (Latest version of families in the specified release).}
+\item{snapshot}{Snapshot value (Latest version of the entry in the specified release).}
 
 \item{member}{User or group id.}
 
 \item{silent}{Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason.}
 
+\item{flattenAnnotations}{Flatten the annotations?.}
+
+\item{version}{Comma separated list of family versions. 'all' to get all the family versions. Not supported if multiple family ids are provided.}
+
+\item{deleted}{Boolean to retrieve deleted families.}
+
 \item{include}{Fields included in the response, whole JSON path must be provided.}
 
 \item{exclude}{Fields excluded in the response, whole JSON path must be provided.}
 
-\item{flattenAnnotations}{Flatten the annotations?.}
-
-\item{version}{Family version.}
-
-\item{deleted}{Boolean to retrieve deleted families.}
-
-\item{updateIndividualVersion}{Update all the individual references from the family to point to their latest versions.}
+\item{updateRoles}{Update the member roles within the family.}
 
 \item{annotationSetsAction}{Action to be performed if the array of annotationSets is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
+
+\item{includeResult}{Flag indicating to include the created or updated document result in the response.}
 
 \item{study}{Study [\link{user@}project:]study where study and project can be either the ID or UUID.}
 
@@ -106,24 +110,23 @@
 
 \item{incVersion}{Create a new version of family.}
 
-\item{updateSampleVersion}{Update all the individual references from the family to point to their latest versions.}
-
 \item{data}{Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only the key 'remove' containing the comma separated variables to be removed as a value when the action is REMOVE or a json with only the key 'reset' containing the comma separated variables that will be set to the default value when the action is RESET.}
 }
 \description{
 This function implements the OpenCGA calls for managing Families.
 The following table summarises the available \emph{actions} for this client:\tabular{llr}{
    endpointName \tab Endpoint WS \tab parameters accepted \cr
-   updateAcl \tab /{apiVersion}/families/acl/{members}/update \tab study, members\link{*}, action\link{*}, body\link{*} \cr
+   updateAcl \tab /{apiVersion}/families/acl/{members}/update \tab study, members\link{*}, action\link{*}, propagate, body\link{*} \cr
    aggregationStats \tab /{apiVersion}/families/aggregationStats \tab study, creationYear, creationMonth, creationDay, creationDayOfWeek, status, phenotypes, release, version, numMembers, expectedSize, annotation, default, field \cr
    loadAnnotationSets \tab /{apiVersion}/families/annotationSets/load \tab study, variableSetId\link{*}, path\link{*}, parents, annotationSetId, body \cr
-   create \tab /{apiVersion}/families/create \tab study, members, body\link{*} \cr
-   search \tab /{apiVersion}/families/search \tab include, exclude, limit, skip, count, flattenAnnotations, study, name, parentalConsanguinity, members, samples, phenotypes, disorders, creationDate, modificationDate, deleted, annotationsetName, variableSet, annotation, acl, release, snapshot \cr
+   create \tab /{apiVersion}/families/create \tab include, exclude, study, members, includeResult, body\link{*} \cr
+   distinct \tab /{apiVersion}/families/distinct \tab study, id, name, uuid, members, expectedSize, samples, phenotypes, disorders, creationDate, modificationDate, deleted, internalStatus, status, annotation, acl, release, snapshot, field\link{*} \cr
+   search \tab /{apiVersion}/families/search \tab include, exclude, limit, skip, count, flattenAnnotations, study, id, name, uuid, members, expectedSize, samples, phenotypes, disorders, creationDate, modificationDate, deleted, internalStatus, status, annotation, acl, release, snapshot \cr
    acl \tab /{apiVersion}/families/{families}/acl \tab families\link{*}, study, member, silent \cr
-   delete \tab /{apiVersion}/families/{families}/delete \tab study, families \cr
+   delete \tab /{apiVersion}/families/{families}/delete \tab study, families\link{*} \cr
    info \tab /{apiVersion}/families/{families}/info \tab include, exclude, flattenAnnotations, families\link{*}, study, version, deleted \cr
-   update \tab /{apiVersion}/families/{families}/update \tab families\link{*}, study, incVersion, updateIndividualVersion, annotationSetsAction, body \cr
-   updateAnnotations \tab /{apiVersion}/families/{family}/annotationSets/{annotationSet}/annotations/update \tab family\link{*}, study, annotationSet, action, incVersion, updateSampleVersion, body \cr
+   update \tab /{apiVersion}/families/{families}/update \tab include, exclude, families\link{*}, study, incVersion, updateRoles, annotationSetsAction, includeResult, body \cr
+   updateAnnotationSetsAnnotations \tab /{apiVersion}/families/{family}/annotationSets/{annotationSet}/annotations/update \tab family\link{*}, study, annotationSet\link{*}, action, incVersion, body \cr
 }
 }
 \section{Endpoint /{apiVersion}/families/acl/{members}/update}{
@@ -144,6 +147,11 @@ Load annotation sets from a TSV file.
 \section{Endpoint /{apiVersion}/families/create}{
 
 Create family and the individual objects if they do not exist.
+}
+
+\section{Endpoint /{apiVersion}/families/distinct}{
+
+Family distinct method.
 }
 
 \section{Endpoint /{apiVersion}/families/search}{

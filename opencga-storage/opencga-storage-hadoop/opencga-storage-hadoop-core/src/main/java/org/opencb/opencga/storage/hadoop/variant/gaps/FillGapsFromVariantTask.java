@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.gaps;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Put;
@@ -12,6 +13,7 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.run.Task;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -27,8 +29,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.*;
+
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.FILL_GAPS_GAP_GENOTYPE;
 
 /**
  * Created on 26/10/17.
@@ -40,7 +43,6 @@ public class FillGapsFromVariantTask implements Task<Variant, Put> {
     private final HBaseManager hBaseManager;
     private final String archiveTableName;
     private final StudyMetadata studyMetadata;
-    private final GenomeHelper helper;
     private final Integer anyFileId;
     private Table archiveTable;
     private final ArchiveRowKeyFactory archiveRowKeyFactory;
@@ -54,13 +56,12 @@ public class FillGapsFromVariantTask implements Task<Variant, Put> {
                                    String archiveTableName,
                                    StudyMetadata studyMetadata,
                                    VariantStorageMetadataManager metadataManager,
-                                   GenomeHelper helper,
+                                   Configuration configuration,
                                    Collection<Integer> samples) {
         this.hBaseManager = hBaseManager;
         this.archiveTableName = archiveTableName;
         this.studyMetadata = studyMetadata;
-        this.helper = helper;
-        archiveRowKeyFactory = new ArchiveRowKeyFactory(helper.getConf());
+        archiveRowKeyFactory = new ArchiveRowKeyFactory(configuration);
         this.samples = samples;
         samplesFileMap = new HashMap<>();
         for (Integer sample : samples) {
@@ -77,16 +78,15 @@ public class FillGapsFromVariantTask implements Task<Variant, Put> {
                 throw new IllegalStateException("Unable to fill gaps for files from different batches in archive!");
             }
         }
-        fillGapsTask = new FillGapsTask(studyMetadata, helper, false, false, metadataManager);
+        String gapsGenotype = configuration.get(
+                FILL_GAPS_GAP_GENOTYPE.key(),
+                FILL_GAPS_GAP_GENOTYPE.defaultValue());
+        fillGapsTask = new FillGapsTask(metadataManager, studyMetadata, false, false, gapsGenotype);
     }
 
     @Override
-    public void pre() {
-        try {
-            archiveTable = hBaseManager.getConnection().getTable(TableName.valueOf(archiveTableName));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+    public void pre() throws IOException {
+        archiveTable = hBaseManager.getConnection().getTable(TableName.valueOf(archiveTableName));
     }
 
     @Override
@@ -102,12 +102,9 @@ public class FillGapsFromVariantTask implements Task<Variant, Put> {
     }
 
     @Override
-    public void post() {
-        try {
-            archiveTable.close();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+    public void post() throws IOException, StorageEngineException {
+        fillGapsTask.updateLoadedGenotypes();
+        archiveTable.close();
     }
 
     /**

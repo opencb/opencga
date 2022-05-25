@@ -17,8 +17,6 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.apache.commons.collections4.map.LinkedMap;
-import org.opencb.biodata.models.clinical.Disorder;
-import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -32,7 +30,8 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
@@ -58,11 +57,11 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         STATUS("status", TEXT_ARRAY, ""),
-        STATUS_NAME("status.name", TEXT, ""),
+        STATUS_ID("status.id", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         STATUS_DESCRIPTION("status.description", TEXT, ""),
         INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
-        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_MSG("internal.status.msg", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         RELEASE("release", INTEGER, ""),
@@ -90,6 +89,7 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         ANNOTATION("annotation", TEXT_ARRAY, "");
 
         private static Map<String, QueryParams> map;
+
         static {
             map = new LinkedMap();
             for (QueryParams params : QueryParams.values()) {
@@ -147,8 +147,8 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
 
     OpenCGAResult nativeInsert(Map<String, Object> family, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, Family family, List<VariableSet> variableSetList, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult<Family> insert(long studyId, Family family, List<Individual> members, List<VariableSet> variableSetList,
+                                 QueryOptions options) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Family> get(long familyId, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
@@ -162,47 +162,11 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
      * be applied.
      *
-     * @param studyId study id containing the entries affected.
+     * @param studyId          study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
      * @return OpenCGAResult object.
      * @throws CatalogException if there is any database error.
      */
     OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
-    OpenCGAResult removeMembersFromFamily(Query query, List<Long> individualUids)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
-
-    default List<Phenotype> getAllPhenotypes(List<Individual> individualList) {
-        if (individualList == null || individualList.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        Map<String, Phenotype> phenotypeMap = new HashMap<>();
-        for (Individual individual : individualList) {
-            if (individual.getPhenotypes() != null && !individual.getPhenotypes().isEmpty()) {
-                for (Phenotype phenotype : individual.getPhenotypes()) {
-                    phenotypeMap.put(phenotype.getId(), phenotype);
-                }
-            }
-        }
-
-        return new ArrayList<>(phenotypeMap.values());
-    }
-
-    default List<Disorder> getAllDisorders(List<Individual> individualList) {
-        if (individualList == null || individualList.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        Map<String, Disorder> disorderMap = new HashMap<>();
-        for (Individual individual : individualList) {
-            if (individual.getDisorders() != null && !individual.getDisorders().isEmpty()) {
-                for (Disorder disorder : individual.getDisorders()) {
-                    disorderMap.put(disorder.getId(), disorder);
-                }
-            }
-        }
-
-        return new ArrayList<>(disorderMap.values());
-    }
 }

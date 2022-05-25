@@ -118,7 +118,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         NAME("name", TEXT_ARRAY, ""),
         EMAIL("email", TEXT_ARRAY, ""),
         ORGANIZATION("organization", TEXT_ARRAY, ""),
-        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         ACCOUNT("account", TEXT_ARRAY, ""),
         ACCOUNT_TYPE("account.type", TEXT, ""),
@@ -155,6 +155,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         FILTERS_ID("filters.id", TEXT, "");
 
         private static Map<String, QueryParams> map;
+
         static {
             map = new LinkedMap();
             for (QueryParams params : QueryParams.values()) {
@@ -261,6 +262,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         ACL_DELETE("acl.delete", BOOLEAN, "");
 
         private static Map<String, ToolQueryParams> map;
+
         static {
             map = new LinkedMap();
             for (ToolQueryParams params : ToolQueryParams.values()) {

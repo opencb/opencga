@@ -6,25 +6,23 @@
 \usage{
 \S4method{sampleClient}{OpencgaR}(
   OpencgaR,
-  sample,
-  annotationSet,
-  members,
   samples,
+  members,
+  annotationSet,
+  sample,
   endpointName,
   params = NULL,
   ...
 )
 }
 \arguments{
-\item{sample}{Sample ID.}
-
-\item{annotationSet}{AnnotationSet ID to be updated.}
+\item{samples}{Comma separated list sample IDs or UUIDs up to a maximum of 100.}
 
 \item{members}{Comma separated list of user or group ids.}
 
-\item{samples}{Comma separated list sample IDs or UUIDs up to a maximum of 100.}
+\item{annotationSet}{AnnotationSet ID to be updated.}
 
-\item{propagate}{Propagate sample permissions to related individuals.}
+\item{sample}{Sample ID.}
 
 \item{source}{Source.}
 
@@ -36,13 +34,9 @@
 
 \item{creationDayOfWeek}{Creation day of week (MONDAY, TUESDAY...).}
 
-\item{status}{Status.}
-
 \item{type}{Type.}
 
 \item{default}{Calculate default stats.}
-
-\item{field}{List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples\link{0..10}:1.}
 
 \item{variableSetId}{Variable set ID or name.}
 
@@ -52,7 +46,7 @@
 
 \item{annotationSetId}{Annotation set id. If not provided, variableSetId will be used.}
 
-\item{individual}{DEPRECATED: It should be passed in the body.}
+\item{field}{Field for which to obtain the distinct values.}
 
 \item{file}{file.}
 
@@ -64,15 +58,39 @@
 
 \item{count}{Get the total number of results matching the query. Deactivated by default.}
 
-\item{id}{Comma separated list sample IDs or UUIDs up to a maximum of 100.}
+\item{id}{Comma separated list sample IDs up to a maximum of 100.}
+
+\item{uuid}{Comma separated list sample UUIDs up to a maximum of 100.}
 
 \item{somatic}{Somatic sample.}
 
-\item{individualId}{Individual ID.}
+\item{individualId}{Individual ID or UUID.}
+
+\item{fileIds}{Comma separated list of file IDs, paths or UUIDs.}
+
+\item{cohortIds}{Comma separated list of cohort IDs.}
 
 \item{creationDate}{Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.}
 
 \item{modificationDate}{Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.}
+
+\item{internalStatus}{Filter by internal status.}
+
+\item{status}{Filter by status.}
+
+\item{processingProduct}{Processing product.}
+
+\item{processingPreparationMethod}{Processing preparation method.}
+
+\item{processingExtractionMethod}{Processing extraction method.}
+
+\item{processingLabSampleId}{Processing lab sample id.}
+
+\item{collectionFrom}{Collection from.}
+
+\item{collectionType}{Collection type.}
+
+\item{collectionMethod}{Collection method.}
 
 \item{phenotypes}{Comma separated list of phenotype ids or names.}
 
@@ -80,11 +98,37 @@
 
 \item{acl}{Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .}
 
-\item{attributes}{Text attributes (Format: sex=male,age>20 ...).}
+\item{internalRgaStatus}{Index status of the sample for the Recessive Gene Analysis.}
 
 \item{release}{Release when it was created.}
 
 \item{snapshot}{Snapshot value (Latest version of the entry in the specified release).}
+
+\item{statsId}{Sample variant stats Id. If this field is not provided and the user filters by other stats fields, it will automatically be set to ALL.}
+
+\item{statsVariantCount}{Sample variant stats VariantCount.}
+
+\item{statsChromosomeCount}{Sample variant stats ChromosomeCount.}
+
+\item{statsTypeCount}{Sample variant stats TypeCount.}
+
+\item{statsGenotypeCount}{Sample variant stats GenotypeCount.}
+
+\item{statsTiTvRatio}{Sample variant stats TiTvRatio.}
+
+\item{statsQualityAvg}{Sample variant stats QualityAvg.}
+
+\item{statsQualityStdDev}{Sample variant stats QualityStdDev.}
+
+\item{statsHeterozygosityRate}{Sample variant stats HeterozygosityRate.}
+
+\item{statsDepthCount}{Sample variant stats DepthCount.}
+
+\item{statsBiotypeCount}{Sample variant stats BiotypeCount.}
+
+\item{statsClinicalSignificanceCount}{Sample variant stats ClinicalSignificanceCount.}
+
+\item{statsConsequenceTypeCount}{Sample variant stats ConsequenceTypeCount.}
 
 \item{member}{User or group id.}
 
@@ -96,19 +140,23 @@
 
 \item{deleteEmptyCohorts}{Boolean indicating if the cohorts associated only to the sample to be deleted should be also deleted.}
 
-\item{include}{Fields included in the response, whole JSON path must be provided.}
-
-\item{exclude}{Fields excluded in the response, whole JSON path must be provided.}
-
 \item{includeIndividual}{Include Individual object as an attribute.}
 
 \item{flattenAnnotations}{Flatten the annotations?.}
 
-\item{version}{Sample version.}
+\item{version}{Comma separated list of sample versions. 'all' to get all the sample versions. Not supported if multiple sample ids are provided.}
 
 \item{deleted}{Boolean to retrieve deleted entries.}
 
+\item{include}{Fields included in the response, whole JSON path must be provided.}
+
+\item{exclude}{Fields excluded in the response, whole JSON path must be provided.}
+
 \item{annotationSetsAction}{Action to be performed if the array of annotationSets is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
+
+\item{phenotypesAction}{Action to be performed if the array of phenotypes is being updated \link{SET, ADD, REMOVE}. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
+
+\item{includeResult}{Flag indicating to include the created or updated document result in the response.}
 
 \item{study}{Study [\link{user@}project:]study where study and project can be either the ID or UUID.}
 
@@ -122,17 +170,18 @@
 This function implements the OpenCGA calls for managing Samples.
 The following table summarises the available \emph{actions} for this client:\tabular{llr}{
    endpointName \tab Endpoint WS \tab parameters accepted \cr
-   updateAcl \tab /{apiVersion}/samples/acl/{members}/update \tab study, members\link{*}, action\link{*}, propagate, body\link{*} \cr
+   updateAcl \tab /{apiVersion}/samples/acl/{members}/update \tab study, members\link{*}, action\link{*}, body\link{*} \cr
    aggregationStats \tab /{apiVersion}/samples/aggregationStats \tab study, source, creationYear, creationMonth, creationDay, creationDayOfWeek, status, type, phenotypes, release, version, somatic, annotation, default, field \cr
    loadAnnotationSets \tab /{apiVersion}/samples/annotationSets/load \tab study, variableSetId\link{*}, path\link{*}, parents, annotationSetId, body \cr
-   create \tab /{apiVersion}/samples/create \tab study, individual, body\link{*} \cr
+   create \tab /{apiVersion}/samples/create \tab include, exclude, study, includeResult, body\link{*} \cr
+   distinct \tab /{apiVersion}/samples/distinct \tab study, id, uuid, somatic, individualId, fileIds, cohortIds, creationDate, modificationDate, internalStatus, status, processingProduct, processingPreparationMethod, processingExtractionMethod, processingLabSampleId, collectionFrom, collectionType, collectionMethod, phenotypes, annotation, acl, internalRgaStatus, release, snapshot, deleted, statsId, statsVariantCount, statsChromosomeCount, statsTypeCount, statsGenotypeCount, statsTiTvRatio, statsQualityAvg, statsQualityStdDev, statsHeterozygosityRate, statsDepthCount, statsBiotypeCount, statsClinicalSignificanceCount, statsConsequenceTypeCount, field\link{*} \cr
    load \tab /{apiVersion}/samples/load \tab study, file\link{*}, variableSet \cr
-   search \tab /{apiVersion}/samples/search \tab include, exclude, limit, skip, count, includeIndividual, flattenAnnotations, study, id, somatic, individualId, creationDate, modificationDate, phenotypes, annotation, acl, attributes, release, deleted, snapshot \cr
+   search \tab /{apiVersion}/samples/search \tab include, exclude, limit, skip, count, includeIndividual, flattenAnnotations, study, id, uuid, somatic, individualId, fileIds, cohortIds, creationDate, modificationDate, internalStatus, status, processingProduct, processingPreparationMethod, processingExtractionMethod, processingLabSampleId, collectionFrom, collectionType, collectionMethod, phenotypes, annotation, acl, internalRgaStatus, release, snapshot, deleted, statsId, statsVariantCount, statsChromosomeCount, statsTypeCount, statsGenotypeCount, statsTiTvRatio, statsQualityAvg, statsQualityStdDev, statsHeterozygosityRate, statsDepthCount, statsBiotypeCount, statsClinicalSignificanceCount, statsConsequenceTypeCount \cr
    acl \tab /{apiVersion}/samples/{samples}/acl \tab samples\link{*}, study, member, silent \cr
-   delete \tab /{apiVersion}/samples/{samples}/delete \tab force, emptyFilesAction, deleteEmptyCohorts, study, samples \cr
+   delete \tab /{apiVersion}/samples/{samples}/delete \tab force, emptyFilesAction, deleteEmptyCohorts, study, samples\link{*} \cr
    info \tab /{apiVersion}/samples/{samples}/info \tab include, exclude, includeIndividual, flattenAnnotations, samples\link{*}, study, version, deleted \cr
-   update \tab /{apiVersion}/samples/{samples}/update \tab samples\link{*}, study, incVersion, annotationSetsAction, body \cr
-   updateAnnotations \tab /{apiVersion}/samples/{sample}/annotationSets/{annotationSet}/annotations/update \tab sample\link{*}, study, annotationSet, action, incVersion, body \cr
+   update \tab /{apiVersion}/samples/{samples}/update \tab include, exclude, samples\link{*}, study, incVersion, annotationSetsAction, phenotypesAction, includeResult, body \cr
+   updateAnnotationSetsAnnotations \tab /{apiVersion}/samples/{sample}/annotationSets/{annotationSet}/annotations/update \tab sample\link{*}, study, annotationSet\link{*}, action, incVersion, body \cr
 }
 }
 \section{Endpoint /{apiVersion}/samples/acl/{members}/update}{
@@ -153,6 +202,11 @@ Load annotation sets from a TSV file.
 \section{Endpoint /{apiVersion}/samples/create}{
 
 Create sample.
+}
+
+\section{Endpoint /{apiVersion}/samples/distinct}{
+
+Sample distinct method.
 }
 
 \section{Endpoint /{apiVersion}/samples/load}{

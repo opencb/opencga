@@ -87,10 +87,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         this.executionManager = catalogManager.getExecutionManager();
 
-        pendingExecutionsQuery = new Query(ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.PENDING);
-        processedExecutionsQuery = new Query(ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.PROCESSED);
-        queuedExecutionsQuery = new Query(ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED);
-        runningExecutionsQuery = new Query(ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.RUNNING);
+        pendingExecutionsQuery = new Query(ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.PENDING);
+        processedExecutionsQuery = new Query(ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.PROCESSED);
+        queuedExecutionsQuery = new Query(ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.QUEUED);
+        runningExecutionsQuery = new Query(ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.RUNNING);
 
         // Sort executions by priority and creation date
         queryOptions = new QueryOptions()
@@ -205,7 +205,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
 
         String status = getCurrentExecutionStatus(execution);
-        if (!status.equals(execution.getInternal().getStatus().getName())) {
+        if (!status.equals(execution.getInternal().getStatus().getId())) {
             setStatus(execution, new Enums.ExecutionStatus(status));
             return 1;
         } else {
@@ -223,7 +223,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 //        statusMap.put(Enums.ExecutionStatus.ABORTED, 0);
 //
 //        for (Job job : execution.getJobs()) {
-//            String status = job.getInternal().getStatus().getName();
+//            String status = job.getInternal().getStatus().getId();
 //            switch(status) {
 //                case Enums.ExecutionStatus.PENDING:
 //                case Enums.ExecutionStatus.RUNNING:
@@ -259,7 +259,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         int abortedJobs = 0;
 
         for (Job job : execution.getJobs()) {
-            String status = job.getInternal().getStatus().getName();
+            String status = job.getInternal().getStatus().getId();
             switch (status) {
                 case Enums.ExecutionStatus.PENDING:
                     pendingJobs++;
@@ -400,7 +400,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             Set<String> finishedJobs = new HashSet<>();
             for (Job job : execution.getJobs()) {
                 String pipelineJobId = job.getTool().getId();
-                switch (job.getInternal().getStatus().getName()) {
+                switch (job.getInternal().getStatus().getId()) {
                     case Enums.ExecutionStatus.ERROR:
                     case Enums.ExecutionStatus.ABORTED:
                         return failExecution(execution, "Job '" + pipelineJobId + "' failed with description: "
@@ -595,11 +595,11 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     private boolean canBeQueued(Execution execution) {
         if (CollectionUtils.isNotEmpty(execution.getDependsOn())) {
             for (Execution tmpExecution : execution.getDependsOn()) {
-                if (!Enums.ExecutionStatus.DONE.equals(tmpExecution.getInternal().getStatus().getName())) {
-                    if (Enums.ExecutionStatus.ABORTED.equals(tmpExecution.getInternal().getStatus().getName())
-                            || Enums.ExecutionStatus.ERROR.equals(tmpExecution.getInternal().getStatus().getName())) {
+                if (!Enums.ExecutionStatus.DONE.equals(tmpExecution.getInternal().getStatus().getId())) {
+                    if (Enums.ExecutionStatus.ABORTED.equals(tmpExecution.getInternal().getStatus().getId())
+                            || Enums.ExecutionStatus.ERROR.equals(tmpExecution.getInternal().getStatus().getId())) {
                         abortExecution(execution, "The execution '" + tmpExecution.getId() + "' it depended on finished with status '"
-                                + tmpExecution.getInternal().getStatus().getName() + "'");
+                                + tmpExecution.getInternal().getStatus().getId() + "'");
                     }
                     return false;
                 }
@@ -624,7 +624,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
 //    private boolean canBeQueued(String toolId, int maxExecutions) {
 //        Query query = new Query()
-//                .append(ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED + ","
+//                .append(ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.QUEUED + ","
 //                        + Enums.ExecutionStatus.RUNNING)
 //                .append(ExecutionDBAdaptor.QueryParams.TOOL_ID.key(), toolId);
 //        long currentExecutions = executionsCountByType.computeIfAbsent(toolId, k -> {
@@ -685,7 +685,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     private void updateExecution(Execution execution, PrivateExecutionUpdateParams updateParams) throws CatalogException {
         executionManager.privateUpdate(execution.getStudy().getId(), execution.getId(), updateParams, token);
 
-        if (!execution.getInternal().getStatus().getName().equals(updateParams.getInternal().getStatus().getName())) {
+        if (!execution.getInternal().getStatus().getId().equals(updateParams.getInternal().getStatus().getId())) {
             execution.getInternal().setStatus(updateParams.getInternal().getStatus());
             notifyStatusChange(execution);
         }
@@ -723,7 +723,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 //                    .property(ClientProperties.READ_TIMEOUT, 5000)
 //                    .post(Entity.json(execution));
 //        } catch (ProcessingException e) {
-//            executionInternal.getWebhook().getStatus().put(execution.getInternal().getStatus().getName(),
+//            executionInternal.getWebhook().getStatus().put(execution.getInternal().getStatus().getId(),
 //            ExecutionInternalWebhook.Status.ERROR);
 //            executionInternal.setEvents(Collections.singletonList(new Event(Event.Type.ERROR, "Could not notify through webhook. "
 //                    + e.getMessage())));
@@ -733,10 +733,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 //            return;
 //        }
 //        if (post.getStatus() == HttpStatus.SC_OK) {
-//            executionInternal.getWebhook().getStatus().put(execution.getInternal().getStatus().getName(),
+//            executionInternal.getWebhook().getStatus().put(execution.getInternal().getStatus().getId(),
 //            ExecutionInternalWebhook.Status.SUCCESS);
 //        } else {
-//            executionInternal.getWebhook().getStatus().put(execution.getInternal().getStatus().getName(),
+//            executionInternal.getWebhook().getStatus().put(execution.getInternal().getStatus().getId(),
 //            ExecutionInternalWebhook.Status.ERROR);
 //            executionInternal.setEvents(Collections.singletonList(new Event(Event.Type.ERROR, "Could not notify through webhook.
 //            HTTP response "

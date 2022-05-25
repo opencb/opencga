@@ -22,11 +22,13 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
+import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Modifier;
+import java.net.URL;
 import java.util.*;
 
 public class ToolFactory {
@@ -83,6 +85,20 @@ public class ToolFactory {
             ToolFactory.toolsCache = cache;
         }
         return toolsCache;
+    }
+
+    static Collection<URL> getUrls() {
+        // TODO: What if there are third party libraries that implement Tools?
+        //  Currently they must contain "opencga" in the jar name.
+        //  e.g.  acme-rockets-opencga-5.4.0.jar
+        Collection<URL> urls = new LinkedList<>();
+        for (URL url : ClasspathHelper.forPackage("org.opencb.opencga")) {
+            String name = url.getPath().substring(url.getPath().lastIndexOf('/') + 1);
+            if (name.isEmpty() || (name.contains("opencga") && !name.contains("opencga-storage-hadoop-deps"))) {
+                urls.add(url);
+            }
+        }
+        return urls;
     }
 
     public final Class<? extends OpenCgaTool> getToolClass(String toolId) throws ToolException {

@@ -21,6 +21,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -38,7 +39,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -186,7 +186,7 @@ public class MongoDBAdaptorTest extends GenericTest {
         user3 = new User("imedina", "Nacho", "nacho@gmail", "SPAIN", null, new UserInternal(new UserStatus()), new UserQuota(-1, -1, -1, -1),
                 Collections.emptyList(), Collections.emptyList(), new HashMap<>(), new LinkedList<>(), new HashMap<>());
         catalogUserDBAdaptor.insert(user3, "2222", null);
-        catalogProjectDBAdaptor.insert(new Project("pr1", "90 GigaGenomes", TimeUtils.getTime(), TimeUtils.getTime(), "very long description", null,
+        catalogProjectDBAdaptor.insert(new Project("pr1", "90 GigaGenomes", TimeUtils.getTime(), TimeUtils.getTime(), "very long description", null, null,
                 Collections.emptyList(), 1, ProjectInternal.init(), Collections.emptyMap()
         ), "imedina", null);
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr1"), null).first(),
@@ -198,14 +198,14 @@ public class MongoDBAdaptorTest extends GenericTest {
                                 FileInternal.init(), 1000, 1)
                 ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                         new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(),
-                        null, null, 1, new CustomStatus(), StudyInternal.init(), new LinkedList<>(), Collections.emptyMap()), null);
+                        null, null, 1, new Status(), StudyInternal.init(), new LinkedList<>(), Collections.emptyMap()), null);
 
         user4 = new User("pfurio", "Pedro", "pfurio@blabla", "Organization", null, new UserInternal(new UserStatus()),
                 new UserQuota(-1, -1, -1, -1), Collections.emptyList(), Collections.emptyList(), new HashMap<>(), new LinkedList<>(),
                 new HashMap<>());
 
         catalogUserDBAdaptor.insert(user4, "pfuriopass", null);
-        catalogProjectDBAdaptor.insert(new Project("pr", "lncRNAs", TimeUtils.getTime(), TimeUtils.getTime(), "My description", null,
+        catalogProjectDBAdaptor.insert(new Project("pr", "lncRNAs", TimeUtils.getTime(), TimeUtils.getTime(), "My description", null, null,
                 Collections.emptyList(), 1, ProjectInternal.init(), Collections.emptyMap()), "pfurio", null);
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr"), null).first(),
                 new Study("spongeScan", "spongeScan", "sponges", TimeUtils.getTime(), TimeUtils.getTime(), "", null, null, null,
@@ -219,7 +219,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                         new File("alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
                                 "data/alignment.bam", null, "Tophat alignment file", FileInternal.init(), 5000, 1)
                 ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                        Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), null, null, 1, new CustomStatus(),
+                        Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), null, null, 1, new Status(),
                         StudyInternal.init(), new LinkedList<>(), Collections.emptyMap()), null);
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr"), null).first(),
                 new Study("mineco", "MINECO", "mineco", TimeUtils.getTime(), TimeUtils.getTime(), "", null, null, null, 0,
@@ -231,7 +231,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                         new File("m_alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
                                 "data/alignment.bam", null, "Tophat alignment file", FileInternal.init(), 5000, 1)
                 ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                        Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), null, null, 1, new CustomStatus(),
+                        Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), null, null, 1, new Status(),
                         StudyInternal.init(), new LinkedList<>(), Collections.emptyMap()), null);
 
         QueryOptions options = new QueryOptions("includeStudies", true);

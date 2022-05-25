@@ -43,7 +43,6 @@ public interface PendingVariantsDescriptor {
             preSplits.add(VariantPhoenixKeyFactory.generateVariantRowKey(String.valueOf(i), 0));
         }
         preSplits.add(VariantPhoenixKeyFactory.generateVariantRowKey("X", 0));
-        new GenomeHelper(conf);
         return hBaseManager.createTableIfNeeded(tableName,
                 GenomeHelper.COLUMN_FAMILY_BYTES, preSplits, compression);
     }

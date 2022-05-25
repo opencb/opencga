@@ -47,10 +47,10 @@ public class IndividualOntologyTermMigration extends MigrationTool {
         );
 
         MongoCollection<Document> collection = getMongoCollection(MongoDBAdaptorFactory.INDIVIDUAL_COLLECTION);
-        collection.dropIndex(new Document().append("sex", 1).append("studyUid", 1));
-        collection.dropIndex(new Document().append("ethnicity", 1).append("studyUid", 1));
-        collection.createIndex(new Document().append("sex.id", 1).append("studyUid", 1), new IndexOptions().background(true));
-        collection.createIndex(new Document().append("ethnicity.id", 1).append("studyUid", 1), new IndexOptions().background(true));
+        dropIndex(collection, new Document().append("sex", 1).append("studyUid", 1));
+        dropIndex(collection, new Document().append("ethnicity", 1).append("studyUid", 1));
+        createIndex(collection, new Document().append("sex.id", 1).append("studyUid", 1), new IndexOptions().background(true));
+        createIndex(collection, new Document().append("ethnicity.id", 1).append("studyUid", 1), new IndexOptions().background(true));
     }
 
 }

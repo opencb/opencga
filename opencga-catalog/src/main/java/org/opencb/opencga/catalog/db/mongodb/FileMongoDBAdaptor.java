@@ -45,7 +45,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
@@ -59,7 +59,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -590,11 +590,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             throw new CatalogDBException("File update: It was impossible updating the files. " + e.getMessage());
         }
 
-        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
-            document.getSet().put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
-            document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
-        }
-
         if (parameters.containsKey(QueryParams.RELATED_FILES.key())) {
             List<FileRelatedFile> relatedFiles = parameters.getAsList(QueryParams.RELATED_FILES.key(), FileRelatedFile.class);
             List<Document> relatedFileDocument = fileConverter.convertRelatedFiles(relatedFiles);
@@ -614,10 +609,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 default:
                     throw new IllegalArgumentException("Unknown operation " + operation);
             }
-        }
-        if (parameters.containsKey(QueryParams.INTERNAL_INDEX_TRANSFORMED_FILE.key())) {
-            document.getSet().put(QueryParams.INTERNAL_INDEX_TRANSFORMED_FILE.key(),
-                    getMongoDBDocument(parameters.get(QueryParams.INTERNAL_INDEX_TRANSFORMED_FILE.key()), "TransformedFile"));
         }
 
         String[] acceptedLongParams = {QueryParams.SIZE.key()};
@@ -681,8 +672,10 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        String[] acceptedObjectParams = {QueryParams.INTERNAL_INDEX.key(), QueryParams.SOFTWARE.key(), QueryParams.EXPERIMENT.key(),
-                QueryParams.STATUS.key(), QueryParams.INTERNAL_MISSING_SAMPLES.key(), QueryParams.QUALITY_CONTROL.key()};
+        String[] acceptedObjectParams = {QueryParams.INTERNAL_VARIANT_INDEX.key(), QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(),
+                QueryParams.INTERNAL_VARIANT_SECONDARY_INDEX.key(), QueryParams.INTERNAL_ALIGNMENT_INDEX.key(), QueryParams.SOFTWARE.key(),
+                QueryParams.EXPERIMENT.key(), QueryParams.STATUS.key(), QueryParams.INTERNAL_MISSING_SAMPLES.key(),
+                QueryParams.QUALITY_CONTROL.key(), QueryParams.INTERNAL_STATUS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
@@ -843,7 +836,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new FileStatus(status), "status"), tmpFile);
 
                 // Insert the document in the DELETE collection
-                deletedFileCollection.insert(clientSession, tmpFile, null);
+                deletedFileCollection.insert(clientSession, replaceDotsInKeys(tmpFile), null);
                 logger.debug("Inserted file uid '{}' in DELETE collection", tmpFileUid);
 
                 // Remove the document from the main FILE collection
@@ -1068,7 +1061,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options);
         return new FileCatalogMongoDBIterator<>(mongoCursor, null, fileConverter, null, this,
-                dbAdaptorFactory.getCatalogSampleDBAdaptor(), options);
+                options);
     }
 
     @Override
@@ -1084,7 +1077,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
         return new FileCatalogMongoDBIterator<>(mongoCursor, clientSession, null, null, this,
-                dbAdaptorFactory.getCatalogSampleDBAdaptor(), queryOptions);
+                queryOptions);
     }
 
     @Override
@@ -1094,12 +1087,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, options, user);
 
         Document studyDocument = getStudyDocument(null, studyUid);
-        Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
                 FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
 
         return new FileCatalogMongoDBIterator<File>(mongoCursor, null, fileConverter, iteratorFilter, this,
-                dbAdaptorFactory.getCatalogSampleDBAdaptor(), studyUid, user, options);
+                studyUid, user, options);
     }
 
     @Override
@@ -1117,12 +1110,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
 
         Document studyDocument = getStudyDocument(clientSession, studyUid);
-        Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
                 FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
 
         return new FileCatalogMongoDBIterator<>(mongoCursor, null, null, iteratorFilter, this,
-                dbAdaptorFactory.getCatalogSampleDBAdaptor(), studyUid, user, options);
+                studyUid, user, options);
     }
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)
@@ -1294,22 +1287,25 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
                     case STATUS:
-                    case STATUS_NAME:
-                        addAutoOrQuery(QueryParams.STATUS_NAME.key(), queryParam.key(), myQuery, QueryParams.STATUS_NAME.type(),
+                    case STATUS_ID:
+                        addAutoOrQuery(QueryParams.STATUS_ID.key(), queryParam.key(), myQuery, QueryParams.STATUS_ID.type(),
                                 andBsonList);
                         break;
                     case INTERNAL_STATUS:
-                    case INTERNAL_STATUS_NAME:
+                    case INTERNAL_STATUS_ID:
+                    case INTERNAL_VARIANT_ANNOTATION_INDEX_STATUS_ID:
+                    case INTERNAL_VARIANT_SECONDARY_INDEX_STATUS_ID:
+                    case INTERNAL_ALIGNMENT_INDEX_STATUS_ID:
                         // Convert the status to a positive status
                         myQuery.put(queryParam.key(),
-                                Status.getPositiveStatus(FileStatus.STATUS_LIST, myQuery.getString(queryParam.key())));
-                        addAutoOrQuery(QueryParams.INTERNAL_STATUS_NAME.key(), queryParam.key(), myQuery,
-                                QueryParams.INTERNAL_STATUS_NAME.type(), andBsonList);
+                                InternalStatus.getPositiveStatus(FileStatus.STATUS_LIST, myQuery.getString(queryParam.key())));
+                        addAutoOrQuery(QueryParams.INTERNAL_STATUS_ID.key(), queryParam.key(), myQuery,
+                                QueryParams.INTERNAL_STATUS_ID.type(), andBsonList);
                         break;
-                    case INTERNAL_INDEX_STATUS_NAME:
+                    case INTERNAL_VARIANT_INDEX_STATUS_ID:
                         // Convert the status to a positive status
                         myQuery.put(queryParam.key(),
-                                Status.getPositiveStatus(FileIndex.IndexStatus.STATUS_LIST, myQuery.getString(queryParam.key())));
+                                InternalStatus.getPositiveStatus(VariantIndexStatus.STATUS_LIST, myQuery.getString(queryParam.key())));
                         addAutoOrQuery(queryParam.key(), queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
                     case SAMPLE_IDS:

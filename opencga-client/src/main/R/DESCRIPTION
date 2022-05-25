@@ -1,7 +1,7 @@
 Package: opencgaR
 Type: Package
 Title: Querying Opencga Data
-Version: 2.0.0
+Version: 2.2.0
 Author: Marta Bleda <martableda@gmail.com>
 Maintainer: Marta Bleda <martableda@gmail.com>
 Description: R client that contains classes and methods for working with
@@ -47,5 +47,5 @@ Collate:
     'Study-methods.R'
     'User-methods.R'
     'Variant-methods.R'
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.2
 VignetteBuilder: knitr

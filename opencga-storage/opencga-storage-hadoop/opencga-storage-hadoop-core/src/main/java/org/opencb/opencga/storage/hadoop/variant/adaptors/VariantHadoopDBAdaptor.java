@@ -95,11 +95,9 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     protected static Logger logger = LoggerFactory.getLogger(VariantHadoopDBAdaptor.class);
     private final String variantTable;
     private final PhoenixHelper phoenixHelper;
-    private final HBaseCredentials credentials;
     private final AtomicReference<VariantStorageMetadataManager> studyConfigurationManager = new AtomicReference<>(null);
     private final Configuration configuration;
     private final HBaseVariantTableNameGenerator tableNameGenerator;
-    private final GenomeHelper genomeHelper;
     private final AtomicReference<java.sql.Connection> phoenixCon = new AtomicReference<>();
     private final VariantSqlQueryParser queryParser;
     private final VariantHBaseQueryParser hbaseQueryParser;
@@ -108,10 +106,16 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private boolean clientSideSkip;
     private HBaseManager hBaseManager;
 
-    public VariantHadoopDBAdaptor(HBaseManager hBaseManager, HBaseCredentials credentials, StorageConfiguration configuration,
+    public VariantHadoopDBAdaptor(HBaseManager hBaseManager, StorageConfiguration configuration,
                                   Configuration conf, HBaseVariantTableNameGenerator tableNameGenerator)
             throws IOException {
-        this.credentials = credentials;
+        this(hBaseManager, conf, tableNameGenerator,
+                configuration.getVariantEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getOptions());
+    }
+
+    public VariantHadoopDBAdaptor(HBaseManager hBaseManager,
+                                  Configuration conf, HBaseVariantTableNameGenerator tableNameGenerator, ObjectMap options)
+            throws IOException {
         this.configuration = conf;
         this.tableNameGenerator = tableNameGenerator;
         if (hBaseManager == null) {
@@ -120,17 +124,16 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             // Create a new instance of HBaseManager to close only if needed
             this.hBaseManager = new HBaseManager(hBaseManager);
         }
-        this.genomeHelper = new GenomeHelper(this.configuration);
-        this.variantTable = credentials.getTable();
-        ObjectMap options = configuration.getVariantEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getOptions();
+        this.variantTable = tableNameGenerator.getVariantTableName();
+
         HBaseVariantStorageMetadataDBAdaptorFactory factory = new HBaseVariantStorageMetadataDBAdaptorFactory(
                 hBaseManager, tableNameGenerator.getMetaTableName(), conf);
         this.studyConfigurationManager.set(new VariantStorageMetadataManager(factory));
         this.variantFileMetadataDBAdaptor = factory.buildFileMetadataDBAdaptor();
 
         clientSideSkip = !options.getBoolean(PhoenixHelper.PHOENIX_SERVER_OFFSET_AVAILABLE, true);
-        this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable,
-                studyConfigurationManager.get(), clientSideSkip);
+        this.queryParser = new VariantSqlQueryParser(this.variantTable,
+                studyConfigurationManager.get(), clientSideSkip, this.configuration);
 
         phoenixFetchSize = options.getInt(
                 HadoopVariantStorageOptions.DBADAPTOR_PHOENIX_FETCH_SIZE.key(),
@@ -138,7 +141,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
         phoenixHelper = new PhoenixHelper(this.configuration);
 
-        hbaseQueryParser = new VariantHBaseQueryParser(genomeHelper, studyConfigurationManager.get());
+        hbaseQueryParser = new VariantHBaseQueryParser(studyConfigurationManager.get());
     }
 
     public java.sql.Connection getJdbcConnection() {
@@ -157,16 +160,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         return phoenixCon.get();
     }
 
-    public GenomeHelper getGenomeHelper() {
-        return genomeHelper;
-    }
-
     public HBaseManager getHBaseManager() {
         return hBaseManager;
-    }
-
-    public HBaseCredentials getCredentials() {
-        return credentials;
     }
 
     public Configuration getConfiguration() {
@@ -202,7 +197,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         if (fileMetadata == null) {
             throw VariantQueryException.fileNotFound(fileId, studyId);
         }
-        return new ArchiveTableHelper(genomeHelper, studyId, fileMetadata);
+        return new ArchiveTableHelper(configuration, studyId, fileMetadata);
 
     }
 
@@ -614,7 +609,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
         long start = System.currentTimeMillis();
 
-        final GenomeHelper genomeHelper1 = new GenomeHelper(configuration);
         int currentAnnotationId = getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getId();
         VariantAnnotationToPhoenixConverter converter = new VariantAnnotationToPhoenixConverter(GenomeHelper.COLUMN_FAMILY_BYTES,
                 currentAnnotationId);

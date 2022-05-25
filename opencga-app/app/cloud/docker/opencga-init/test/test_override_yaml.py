@@ -181,7 +181,7 @@ class Test_init_script(unittest.TestCase):
         )
         self.assertEqual(config["analysis"]["execution"]["id"], "test-analysis-execution-mode")
         self.assertEqual(config["analysis"]["execution"]["maxConcurrentJobs"]["variant-index"], 25)
-        self.assertEqual(client_config["rest"]["host"], "test-rest-host")
+        self.assertEqual(client_config["rest"]["hosts"][0]["url"], "test-rest-host")
         self.assertEqual(client_config["grpc"]["host"], "test-grpc-host")
 
     def test_azure_batch_execution(self):
@@ -252,7 +252,7 @@ class Test_init_script(unittest.TestCase):
             config["analysis"]["execution"]["options"]["azure.batchPoolId"], "test-batch-pool-id"
         )
 
-        self.assertEqual(client_config["rest"]["host"], "test-rest-host")
+        self.assertEqual(client_config["rest"]["hosts"][0]["url"], "test-rest-host")
         self.assertEqual(client_config["grpc"]["host"], "test-grpc-host")
 
 

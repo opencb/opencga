@@ -49,6 +49,8 @@ public class ClinicalAnalysisUpdateParams {
     private Boolean locked;
     private ClinicalAnalystParam analyst;
     private ClinicalReport report;
+
+
     private ClinicalAnalysisQualityControlUpdateParam qualityControl;
 
     private ClinicalConsentAnnotationParam consent;
@@ -110,7 +112,7 @@ public class ClinicalAnalysisUpdateParams {
                 family != null ? family.toFamily() : null,
                 panels != null ? panels.stream().map(p -> new Panel().setId(p.getId())).collect(Collectors.toList()) : null,
                 panelLock != null ? panelLock : false,
-                locked == null ? false : locked,
+                locked != null && locked,
                 null, null,
                 consent != null ? consent.toClinicalConsentAnnotation() : null,
                 analyst != null ? analyst.toClinicalAnalyst() : null, report,
@@ -118,7 +120,7 @@ public class ClinicalAnalysisUpdateParams {
                 flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null, creationDate, modificationDate, dueDate,
                 1,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
-                qualityControl != null ? qualityControl.toClinicalQualityControl() : null, null, null, attributes, status != null ? status.toCustomStatus() : null);
+                qualityControl != null ? qualityControl.toClinicalQualityControl() : null, null, null, attributes, status != null ? status.toStatus() : null);
     }
 
     @Override
@@ -199,6 +201,11 @@ public class ClinicalAnalysisUpdateParams {
         return panels;
     }
 
+    public ClinicalAnalysisUpdateParams setPanels(List<PanelReferenceParam> panels) {
+        this.panels = panels;
+        return this;
+    }
+
     public ProbandParam getProband() {
         return proband;
     }
@@ -214,11 +221,6 @@ public class ClinicalAnalysisUpdateParams {
 
     public ClinicalAnalysisUpdateParams setFamily(FamilyParam family) {
         this.family = family;
-        return this;
-    }
-
-    public ClinicalAnalysisUpdateParams setPanels(List<PanelReferenceParam> panels) {
-        this.panels = panels;
         return this;
     }
 
@@ -338,4 +340,14 @@ public class ClinicalAnalysisUpdateParams {
         this.status = status;
         return this;
     }
+
+    public ClinicalReport getReport() {
+        return report;
+    }
+
+    public ClinicalAnalysisUpdateParams setReport(ClinicalReport report) {
+        this.report = report;
+        return this;
+    }
+
 }

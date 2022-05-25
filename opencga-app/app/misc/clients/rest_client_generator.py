@@ -1,20 +1,21 @@
+import json
 import os
 import re
 import sys
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-import requests
-
 
 class RestClientGenerator(ABC):
 
-    def __init__(self, server_url, output_dir):
-        self.server_url = server_url
+    def __init__(self, rest_api_file, output_dir):
+        f = open(rest_api_file, 'r')
+        rest_api = json.load(f)
+        f.close()
+
+        self.rest_api = rest_api
         self.output_dir = output_dir
-        self.version = requests.get(
-            server_url + '/webservices/rest/v2/meta/about'
-        ).json()['responses'][0]['results'][0]['Version'].split('-')[0]
+        self.version = rest_api['version'] + ' [' + rest_api['commit'] + ']'
         self.parameters = {}
         self.category = None
         self.subcategory = None
@@ -25,9 +26,13 @@ class RestClientGenerator(ABC):
         self.endpoints = {
             'users/{user}/filters/{filterId}/update': {'method_name': 'update_filter'},
             'ga4gh/reads/{study}/{file}': {'method_name': 'fetch_reads'},
-            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/merge': {'method_name': 'merge_interpretation'},
-            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/update': {'method_name': 'update_interpretation'},
-            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/delete': {'method_name': 'delete_interpretation'}
+            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/merge': {
+                'method_name': 'merge_interpretation'},
+            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/update': {
+                'method_name': 'update_interpretation'},
+            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/delete': {
+                'method_name': 'delete_interpretation'},
+            'panels/import': {'method_name': 'import_panels'}
         }
         self.categories = {
             'Users': 'User',
@@ -126,8 +131,12 @@ class RestClientGenerator(ABC):
         return params
 
     def get_parameter_description(self, parameter):
-        return self.parameters[parameter]['description'] if self.parameters[parameter]['description'].endswith(".") \
-            else self.parameters[parameter]['description'] + "."
+        if parameter not in self.parameters or 'description' not in self.parameters[parameter]:
+            return ''
+        if self.parameters[parameter]['description'].endswith("."):
+            return self.parameters[parameter]['description']
+        else:
+            return self.parameters[parameter]['description'] + "."
 
     def get_parameter_allowed_values(self, parameter):
         return self.parameters[parameter]['allowedValues']
@@ -184,14 +193,18 @@ class RestClientGenerator(ABC):
         elif len(items) == 4:
             # e.g. /{apiVersion}/operation/variant/sample/genotype/index
             if not self.any_arg(items):
-                method_name = '_'.join([items[3], items[1], items[2]])
+                method_name = '_'.join([items[0], items[1], items[2], items[3]])
             # /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/merge
             elif self.all_arg([items[0], items[2]]) and not self.any_arg([items[1], items[3]]):
                 method_name = '_'.join([items[3], items[1]])
         elif len(items) == 5:
             # e.g. /{apiVersion}/files/{file}/annotationSets/{annotationSet}/annotations/update
             if self.all_arg([items[0], items[2]]) and not self.any_arg([items[1], items[3], items[4]]):
-                method_name = '_'.join([items[4], items[3]])
+                method_name = '_'.join([items[4], items[1], items[3]])
+            elif not self.any_arg(items):
+                # e.g. /{apiVersion}/operation/variant/secondary/sample/index/configure
+                method_name = '_'.join(
+                    [items[4], items[0], items[1], items[2], items[3]])  # configure-variant-secondary-sample-index
         if not method_name:
             raise NotImplementedError('Case not implemented for PATH: "{}"'.format(self.get_endpoint_path(endpoint)))
         return re.sub(r'(?<!^)(?=[A-Z])', '_', method_name).lower()
@@ -217,16 +230,15 @@ class RestClientGenerator(ABC):
         pass
 
     def create_rest_clients(self):
-        for category in requests.get(self.server_url + '/webservices/rest/v2/meta/api').json()['responses'][0]['results'][0]:
+        for category in self.rest_api['categories']:
             text = []
             text.append(self.get_class_definition(category))
 
             for endpoint in category['endpoints']:
                 # We update the dictionary of parameters of the endpoint
                 self.parameters = {}
-                if self.get_endpoint_path(endpoint) != 'files/upload':
-                    for parameter in endpoint['parameters']:
-                        self.parameters[parameter['name'] if parameter['name'] != 'body' else 'data'] = parameter
+                for parameter in endpoint['parameters']:
+                    self.parameters[parameter['name'] if parameter['name'] != 'body' else 'data'] = parameter
 
                 # We extract the resources of the endpoint
                 self.parse_resources(category, endpoint)
@@ -252,9 +264,12 @@ class RestClientGenerator(ABC):
             self.action = ''
         else:
             subpath = endpoint['path'].replace('/{apiVersion}/', '')
-            resources = re.findall('([a-zA-Z0-9\/]+)(\/\{[a-zA-Z0-9]+\})?(\/[a-zA-Z0-9]+)?(\/\{[a-zA-Z0-9]+\})?(\/[a-zA-Z0-9\/]+)', subpath)
+            resources = re.findall(
+                '([a-zA-Z0-9\/]+)(\/\{[a-zA-Z0-9]+\})?(\/[a-zA-Z0-9]+)?(\/\{[a-zA-Z0-9]+\})?(\/[a-zA-Z0-9\/]+)',
+                subpath)
             if resources:
-                [self.category, self.id1, self.subcategory, self.id2, self.action] = resources if type(resources[0]) != tuple else list(resources[0])
+                [self.category, self.id1, self.subcategory, self.id2, self.action] = resources if type(
+                    resources[0]) != tuple else list(resources[0])
 
             if self.id1.startswith("/"):
                 self.id1 = self.id1[2:-1]

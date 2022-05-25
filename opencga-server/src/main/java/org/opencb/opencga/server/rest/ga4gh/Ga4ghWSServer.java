@@ -16,9 +16,9 @@
 
 package org.opencb.opencga.server.rest.ga4gh;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
+import org.opencb.opencga.core.tools.annotations.Api;
+import org.opencb.opencga.core.tools.annotations.ApiOperation;
+import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.apache.solr.common.StringUtils;
 import org.ga4gh.methods.SearchReadsRequest;
 import org.ga4gh.methods.SearchReadsResponse;

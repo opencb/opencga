@@ -45,7 +45,7 @@ import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
@@ -117,7 +117,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         user.setProjects(Collections.emptyList());
 
         Document userDocument = userConverter.convertToStorageType(user);
-        userDocument.append(PRIVATE_ID, user.getId());
+        userDocument.append(ID, user.getId());
         userDocument.append(PRIVATE_PASSWORD, encryptPassword(password));
 
         userCollection.insert(clientSession, userDocument, null);
@@ -133,7 +133,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     @Override
     public OpenCGAResult changePassword(String userId, String oldPassword, String newPassword)
             throws CatalogDBException, CatalogAuthenticationException {
-        Document bson = new Document(PRIVATE_ID, userId)
+        Document bson = new Document(ID, userId)
                 .append(PRIVATE_PASSWORD, encryptPassword(oldPassword));
         Bson set = Updates.set(PRIVATE_PASSWORD, encryptPassword(newPassword));
 
@@ -149,7 +149,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         Document bson;
         try {
             bson = new Document()
-                    .append(PRIVATE_ID, userId)
+                    .append(ID, userId)
                     .append(PRIVATE_PASSWORD, encryptPassword(password));
         } catch (CatalogDBException e) {
             throw new CatalogAuthenticationException("Could not encrypt password: " + e.getMessage(), e);
@@ -165,7 +165,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         query.append(QueryParams.EMAIL.key(), email);
         Bson bson = parseQuery(query);
 
-        Bson set = Updates.set(PRIVATE_PASSWORD, new Document(PRIVATE_PASSWORD, encryptPassword(newPassword)));
+        Bson set = Updates.set(PRIVATE_PASSWORD, encryptPassword(newPassword));
 
         DataResult result = userCollection.update(bson, set, null);
         if (result.getNumUpdated() == 0) {  //0 query matches.
@@ -261,7 +261,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         }
 
         Query query = new Query()
-                .append(ID.key(), userId)
+                .append(ID, userId)
                 .append(FILTERS_ID.key(), name);
         return new OpenCGAResult(userCollection.update(parseQuery(query), new Document("$set", parameters), null));
     }
@@ -305,9 +305,9 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         Bson bson = parseQuery(query);
         QueryOptions userOptions;
         if (includeProjects(options)) {
-            userOptions = filterQueryOptions(options, Arrays.asList(ID.key(), PROJECTS_UID.key()));
+            userOptions = filterQueryOptions(options, Arrays.asList(ID, PROJECTS_UID.key()));
         } else {
-            userOptions = filterQueryOptions(options, Collections.singletonList(ID.key()));
+            userOptions = filterQueryOptions(options, Collections.singletonList(ID));
         }
         DataResult<User> userDataResult = userCollection.find(bson, null, userConverter, userOptions);
 
@@ -468,8 +468,8 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
 
     @Override
     public OpenCGAResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
-            query.append(QueryParams.INTERNAL_STATUS_NAME.key(), "!=" + Status.DELETED);
+        if (!query.containsKey(QueryParams.INTERNAL_STATUS_ID.key())) {
+            query.append(QueryParams.INTERNAL_STATUS_ID.key(), "!=" + InternalStatus.DELETED);
         }
         Bson bson = parseQuery(query);
         DataResult<Document> queryResult = userCollection.find(bson, options);
@@ -499,8 +499,8 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.EMAIL.key(), QueryParams.ORGANIZATION.key()};
         filterStringParams(parameters, userParameters, acceptedParams);
 
-        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
-            userParameters.put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_ID.key())) {
+            userParameters.put(QueryParams.INTERNAL_STATUS_ID.key(), parameters.get(QueryParams.INTERNAL_STATUS_ID.key()));
             userParameters.put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
         }
 
@@ -551,12 +551,12 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     OpenCGAResult setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.INTERNAL_STATUS_NAME.key(), status), QueryOptions.empty());
+        return update(query, new ObjectMap(QueryParams.INTERNAL_STATUS_ID.key(), status), QueryOptions.empty());
     }
 
     public OpenCGAResult setStatus(String userId, String status)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return update(userId, new ObjectMap(QueryParams.INTERNAL_STATUS_NAME.key(), status));
+        return update(userId, new ObjectMap(QueryParams.INTERNAL_STATUS_ID.key(), status));
     }
 
     @Override
@@ -571,12 +571,12 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         checkId(id);
         // Check the user is active or banned
         Query query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.INTERNAL_STATUS_NAME.key(), UserStatus.READY + "," + UserStatus.BANNED);
+                .append(QueryParams.INTERNAL_STATUS_ID.key(), UserStatus.READY + "," + UserStatus.BANNED);
         if (count(query).getNumMatches() == 0) {
-            query.put(QueryParams.INTERNAL_STATUS_NAME.key(), UserStatus.DELETED);
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.INTERNAL_STATUS_NAME.key());
+            query.put(QueryParams.INTERNAL_STATUS_ID.key(), UserStatus.DELETED);
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.INTERNAL_STATUS_ID.key());
             User user = get(query, options).first();
-            throw new CatalogDBException("The user {" + id + "} was already " + user.getInternal().getStatus().getName());
+            throw new CatalogDBException("The user {" + id + "} was already " + user.getInternal().getStatus().getId());
         }
 
         // If we don't find the force parameter, we check first if the user does not have an active project.
@@ -603,7 +603,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     private void checkCanDelete(String userId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         checkId(userId);
         Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId)
-                .append(ProjectDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Status.READY);
+                .append(ProjectDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), InternalStatus.READY);
         Long count = dbAdaptorFactory.getCatalogProjectDbAdaptor().count(query).getNumMatches();
         if (count > 0) {
             throw new CatalogDBException("The user {" + userId + "} cannot be deleted. The user has " + count + " projects in use.");
@@ -613,7 +613,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     @Override
     public OpenCGAResult delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Remove not yet implemented.");
-
     }
 
     @Override
@@ -628,8 +627,8 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
 
     @Override
     public OpenCGAResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        query.put(QueryParams.INTERNAL_STATUS_NAME.key(), Status.DELETED);
-        return setStatus(query, Status.READY);
+        query.put(QueryParams.INTERNAL_STATUS_ID.key(), InternalStatus.DELETED);
+        return setStatus(query, InternalStatus.READY);
     }
 
     @Override
@@ -641,12 +640,12 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         checkId(id);
         Query query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.INTERNAL_STATUS_NAME.key(), Status.DELETED);
+                .append(QueryParams.INTERNAL_STATUS_ID.key(), InternalStatus.DELETED);
         if (count(query).getNumMatches() == 0) {
             throw new CatalogDBException("The user {" + id + "} is not deleted");
         }
 
-        return setStatus(id, Status.READY);
+        return setStatus(id, InternalStatus.READY);
     }
 
     /***
@@ -748,7 +747,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             try {
                 switch (queryParam) {
                     case ID:
-                        addAutoOrQuery(PRIVATE_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(ID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);
@@ -761,10 +760,10 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
-                    case INTERNAL_STATUS_NAME:
+                    case INTERNAL_STATUS_ID:
                         // Convert the status to a positive status
                         query.put(queryParam.key(),
-                                Status.getPositiveStatus(UserStatus.STATUS_LIST, query.getString(queryParam.key())));
+                                InternalStatus.getPositiveStatus(UserStatus.STATUS_LIST, query.getString(queryParam.key())));
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case NAME:

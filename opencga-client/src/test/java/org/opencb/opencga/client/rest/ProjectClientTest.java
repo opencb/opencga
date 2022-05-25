@@ -27,8 +27,6 @@ import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.RestResponse;
 
-import java.io.IOException;
-
 import static org.junit.Assert.assertNotNull;
 
 /**
@@ -46,7 +44,7 @@ public class ProjectClientTest {
             clientConfiguration = ClientConfiguration.load(getClass().getResourceAsStream("/client-configuration.yml"));
 //            clientConfiguration.getRest().setHost("http://localhost:8890/opencga/webservices/rest");
             openCGAClient = new OpenCGAClient("swaathi", "swaathi", clientConfiguration);
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -92,5 +90,4 @@ public class ProjectClientTest {
         RestResponse<Study> info = projectClient.studies("25", null);
         assertNotNull(info.firstResult());
     }
-
 }

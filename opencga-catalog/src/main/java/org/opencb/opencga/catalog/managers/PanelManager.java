@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -44,9 +45,9 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelAclEntry;
+import org.opencb.opencga.core.models.panel.PanelInternal;
 import org.opencb.opencga.core.models.panel.PanelUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
@@ -171,27 +172,7 @@ public class PanelManager extends ResourceManager<Panel> {
             // 1. We check everything can be done
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_PANELS);
 
-            // Check all the panel fields
-            ParamUtils.checkIdentifier(panel.getId(), "id");
-            panel.setName(ParamUtils.defaultString(panel.getName(), panel.getId()));
-            panel.setRelease(studyManager.getCurrentRelease(study));
-            panel.setVersion(1);
-            panel.setAuthor(ParamUtils.defaultString(panel.getAuthor(), ""));
-            panel.setCreationDate(TimeUtils.getTime());
-            panel.setModificationDate(TimeUtils.getTime());
-            panel.setStatus(new Status());
-            panel.setCategories(ParamUtils.defaultObject(panel.getCategories(), Collections.emptyList()));
-            panel.setTags(ParamUtils.defaultObject(panel.getTags(), Collections.emptyList()));
-            panel.setDescription(ParamUtils.defaultString(panel.getDescription(), ""));
-            panel.setDisorders(ParamUtils.defaultObject(panel.getDisorders(), Collections.emptyList()));
-            panel.setVariants(ParamUtils.defaultObject(panel.getVariants(), Collections.emptyList()));
-            panel.setRegions(ParamUtils.defaultObject(panel.getRegions(), Collections.emptyList()));
-            panel.setGenes(ParamUtils.defaultObject(panel.getGenes(), Collections.emptyList()));
-            panel.setAttributes(ParamUtils.defaultObject(panel.getAttributes(), Collections.emptyMap()));
-            panel.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PANEL));
-
-            fillDefaultStats(panel);
-
+            autoCompletePanel(study, panel);
             options = ParamUtils.defaultObject(options, QueryOptions::new);
 
             OpenCGAResult<Panel> insert = panelDBAdaptor.insert(study.getUid(), panel, options);
@@ -248,6 +229,7 @@ public class PanelManager extends ResourceManager<Panel> {
             // Obtain available sources from panel host
             Set<String> availableSources = new HashSet<>();
             URL url = new URL(host + "sources.txt");
+            logger.info("Fetching available sources from '{}'", url);
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
@@ -268,6 +250,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 // Obtain available panel ids from panel host
                 Set<String> availablePanelIds = new HashSet<>();
                 url = new URL(host + auxSource + "/panels.txt");
+                logger.info("Fetching available panel ids from '{}'", url);
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
@@ -293,6 +276,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 // First we download all the parsed panels to avoid possible issues
                 for (String panelId : panelIdList) {
                     url = new URL(host + auxSource + "/" + panelId + ".json");
+                    logger.info("Downloading panel '{}' from '{}'", panelId, url);
                     try (InputStream inputStream = url.openStream()) {
                         Panel panel = JacksonUtils.getDefaultObjectMapper().readValue(inputStream, Panel.class);
                         autoCompletePanel(study, panel);
@@ -300,6 +284,7 @@ public class PanelManager extends ResourceManager<Panel> {
                     }
                 }
 
+                logger.info("Inserting panels in database");
                 result.append(panelDBAdaptor.insert(study.getUid(), panelList));
             }
             result.setResults(importedPanels);
@@ -328,12 +313,25 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     private void autoCompletePanel(Study study, Panel panel) throws CatalogException {
-        ParamUtils.checkParameter(panel.getId(), "id");
-
-        panel.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PANEL));
-        panel.setCreationDate(TimeUtils.getTime());
+        // Check all the panel fields
+        ParamUtils.checkIdentifier(panel.getId(), "id");
+        panel.setName(ParamUtils.defaultString(panel.getName(), panel.getId()));
         panel.setRelease(studyManager.getCurrentRelease(study));
         panel.setVersion(1);
+        panel.setAuthor(ParamUtils.defaultString(panel.getAuthor(), ""));
+        panel.setCreationDate(TimeUtils.getTime());
+        panel.setModificationDate(TimeUtils.getTime());
+        panel.setStatus(new Status());
+        panel.setInternal(PanelInternal.init());
+        panel.setCategories(ParamUtils.defaultObject(panel.getCategories(), Collections.emptyList()));
+        panel.setTags(ParamUtils.defaultObject(panel.getTags(), Collections.emptyList()));
+        panel.setDescription(ParamUtils.defaultString(panel.getDescription(), ""));
+        panel.setDisorders(ParamUtils.defaultObject(panel.getDisorders(), Collections.emptyList()));
+        panel.setVariants(ParamUtils.defaultObject(panel.getVariants(), Collections.emptyList()));
+        panel.setRegions(ParamUtils.defaultObject(panel.getRegions(), Collections.emptyList()));
+        panel.setGenes(ParamUtils.defaultObject(panel.getGenes(), Collections.emptyList()));
+        panel.setAttributes(ParamUtils.defaultObject(panel.getAttributes(), Collections.emptyMap()));
+        panel.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PANEL));
     }
 
     public OpenCGAResult<Panel> update(String studyId, Query query, PanelUpdateParams updateParams, QueryOptions options, String token)
@@ -543,9 +541,7 @@ public class PanelManager extends ResourceManager<Panel> {
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {
-            ParamUtils.checkUpdateParametersMap(parameters);
-        }
+        ParamUtils.checkUpdateParametersMap(parameters);
 
         // Check update permissions
         authorizationManager.checkPanelPermission(study.getUid(), panel.getUid(), userId, PanelAclEntry.PanelPermissions.WRITE);
@@ -553,11 +549,6 @@ public class PanelManager extends ResourceManager<Panel> {
         if (parameters.containsKey(PanelDBAdaptor.QueryParams.ID.key())) {
             ParamUtils.checkIdentifier(parameters.getString(PanelDBAdaptor.QueryParams.ID.key()),
                     PanelDBAdaptor.QueryParams.ID.key());
-        }
-
-        if (options.getBoolean(Constants.INCREMENT_VERSION)) {
-            // We do need to get the current release to properly create a new version
-            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
         OpenCGAResult<Panel> update = panelDBAdaptor.update(panel.getUid(), parameters, options);
@@ -1037,18 +1028,7 @@ public class PanelManager extends ResourceManager<Panel> {
 
     protected void fixQueryObject(Query query) {
         super.fixQueryObject(query);
-        changeQueryId(query, ParamConstants.PANEL_STATUS_PARAM, PanelDBAdaptor.QueryParams.STATUS_NAME.key());
-    }
-
-    void fillDefaultStats(Panel panel) {
-        if (panel.getStats() == null || panel.getStats().isEmpty()) {
-            Map<String, Integer> stats = new HashMap<>();
-            stats.put("numberOfVariants", panel.getVariants().size());
-            stats.put("numberOfGenes", panel.getGenes().size());
-            stats.put("numberOfRegions", panel.getRegions().size());
-
-            panel.setStats(stats);
-        }
+        changeQueryId(query, ParamConstants.PANEL_STATUS_PARAM, PanelDBAdaptor.QueryParams.STATUS_ID.key());
     }
 
 }

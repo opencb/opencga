@@ -7,6 +7,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.exec.Command;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.slf4j.Logger;
@@ -26,8 +27,14 @@ public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor
     public static final String STDOUT_FILENAME = "stdout.txt";
     public static final String STDERR_FILENAME = "stderr.txt";
 
-    public abstract String getDockerImageName();
-    public abstract String getDockerImageVersion();
+    public String getDockerImageName() {
+        return "opencb/opencga-ext-tools";
+    }
+
+    public String getDockerImageVersion() {
+        return GitRepositoryState.get().getBuildVersion();
+    }
+
     private Logger privateLogger = LoggerFactory.getLogger(DockerWrapperAnalysisExecutor.class);
 
     public String getShortPrefix() {

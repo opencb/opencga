@@ -21,7 +21,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.common.ExternalSource;
 
 import java.util.Collections;
@@ -45,7 +45,7 @@ public class SampleUpdateParams {
     private List<Phenotype> phenotypes;
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
-    private CustomStatusParams status;
+    private StatusParams status;
 
     public SampleUpdateParams() {
     }
@@ -53,7 +53,7 @@ public class SampleUpdateParams {
     public SampleUpdateParams(String id, String description, String creationDate, String modificationDate, String individualId,
                               ExternalSource source, SampleProcessing processing, SampleCollection collection,
                               SampleQualityControl qualityControl, Boolean somatic, List<Phenotype> phenotypes,
-                              List<AnnotationSet> annotationSets, Map<String, Object> attributes, CustomStatusParams status) {
+                              List<AnnotationSet> annotationSets, Map<String, Object> attributes, StatusParams status) {
         this.id = id;
         this.description = description;
         this.creationDate = creationDate;
@@ -90,7 +90,7 @@ public class SampleUpdateParams {
     public Sample toSample() {
         return new Sample(id, "", source, processing, collection, qualityControl, 1, 1, creationDate, modificationDate,
                 description, somatic != null && somatic, phenotypes, individualId, Collections.emptyList(), Collections.emptyList(),
-                status != null ? status.toCustomStatus() : null, new SampleInternal(), annotationSets, attributes);
+                status != null ? status.toStatus() : null, new SampleInternal(), annotationSets, attributes);
     }
 
     @Override
@@ -232,11 +232,11 @@ public class SampleUpdateParams {
         return this;
     }
 
-    public CustomStatusParams getStatus() {
+    public StatusParams getStatus() {
         return status;
     }
 
-    public SampleUpdateParams setStatus(CustomStatusParams status) {
+    public SampleUpdateParams setStatus(StatusParams status) {
         this.status = status;
         return this;
     }

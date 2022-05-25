@@ -353,7 +353,7 @@ public class GwasAnalysis extends OpenCgaAnalysisTool {
                         : new HashSet<>(Arrays.asList(null, Phenotype.Status.NOT_OBSERVED));
                 Query query;
                 if (observedPhenotype) {
-                    query = new Query(SampleDBAdaptor.QueryParams.PHENOTYPES_NAME.key(), phenotype);
+                    query = new Query(SampleDBAdaptor.QueryParams.PHENOTYPES.key(), phenotype);
                 } else {
                     // If not observed, fetch all samples, and filter manually.
                     query = new Query();

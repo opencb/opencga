@@ -21,7 +21,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.core.OntologyTerm;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.models.common.Status;
 
 import java.util.List;
 import java.util.Map;
@@ -76,7 +75,7 @@ public class PanelUpdateParams {
     }
 
     public Panel toPanel() {
-        return new Panel(id, name, categories, disorders, tags, variants, genes, regions, strs, stats, 1, 1, author, source, new Status(),
+        return new Panel(id, name, categories, disorders, tags, variants, genes, regions, strs, stats, 1, 1, author, source, null, null,
                 description, attributes);
     }
 

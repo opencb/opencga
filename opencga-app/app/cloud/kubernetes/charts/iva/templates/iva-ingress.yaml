@@ -1,21 +1,22 @@
-{{- if .Values.iva.ingress.enabled -}}
-{{- $fullName := .Values.iva.name -}}
-{{- $svcPort := .Values.iva.service.port -}}
-{{- $paths := .Values.iva.ingress.paths -}}
-apiVersion: networking.k8s.io/v1beta1
+{{- $ingressBase := omit (deepCopy .Values.iva.ingress) "sites" -}}
+{{- range $key, $val := .Values.iva.ingress.sites }}
+{{- $ingress := merge (deepCopy $ingressBase) (deepCopy $val) -}}
+{{- if $ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ .Values.iva.name }}
+  name: {{ $.Values.iva.name }}-{{ $key }}
   labels:
-    app: {{ $fullName }}
-  {{- with .Values.iva.ingress.annotations }}
+    {{- include "iva.labels" $ | nindent 4 }}
+    app: {{ $.Values.iva.name }}
+  {{- with $ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-{{- if .Values.iva.ingress.tls }}
+{{- if $ingress.tls }}
   tls:
-  {{- range .Values.iva.ingress.tls }}
+  {{- range $ingress.tls }}
     - hosts:
       {{- range .hosts }}
         - {{ . | quote }}
@@ -24,15 +25,20 @@ spec:
   {{- end }}
 {{- end }}
   rules:
-  {{- range .Values.iva.ingress.hosts }}
+  {{- range $ingress.hosts }}
     - host: {{ . | quote }}
       http:
         paths:
-          {{- range $paths }}
+          {{- range $ingress.paths }}
           - path: {{ . }}
+            pathType: ImplementationSpecific
             backend:
-              serviceName: {{ $fullName }}
-              servicePort: {{ $svcPort }}
+              service:
+                name: {{ $.Values.iva.name }}
+                port:
+                  number: {{ $.Values.iva.service.port }}
           {{- end }}
   {{- end }}
+---
+{{- end }}
 {{- end }}

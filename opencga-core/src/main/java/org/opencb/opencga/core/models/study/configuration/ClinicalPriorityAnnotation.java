@@ -1,12 +1,24 @@
 package org.opencb.opencga.core.models.study.configuration;
 
-import java.util.Date;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 
 public class ClinicalPriorityAnnotation {
 
+    @DataField(id = "id", indexed = true,
+            description = FieldConstants.GENERIC_ID_DESCRIPTION)
     private String id;
+
+    @DataField(id = "description", indexed = true,
+            description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+
+    @DataField(id = "rank", indexed = true,
+            description = FieldConstants.CLINICAL_PRIORITY_ANNOTATION_RANK_DESCRIPTION)
     private int rank;
+
+    @DataField(id = "date", indexed = true,
+            description = FieldConstants.CLINICAL_PRIORITY_DATE)
     private String date;
 
     public ClinicalPriorityAnnotation() {

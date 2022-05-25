@@ -11,7 +11,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.SplitData;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDataWriter;
@@ -23,7 +22,8 @@ import java.io.UncheckedIOException;
 import java.util.*;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.INCLUDE_GENOTYPE;
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.getChunkStart;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.validGenotype;
 
 /**
  * Created on 14/05/18.
@@ -46,13 +46,12 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
     private final VariantFileIndexConverter variantFileIndexConverter;;
     private final boolean includeGenotype;
     private final SampleIndexSchema schema;
-    private final StudyMetadata.SampleIndexConfigurationVersioned sampleIndexConfiguration;
 
     public SampleIndexDBLoader(SampleIndexDBAdaptor dbAdaptor, HBaseManager hBaseManager,
                                VariantStorageMetadataManager metadataManager,
                                int studyId, int fileId, List<Integer> sampleIds,
-                               SplitData splitData, ObjectMap options) {
-        super(hBaseManager, dbAdaptor.getSampleIndexTableName(studyId));
+                               SplitData splitData, ObjectMap options, SampleIndexSchema schema) {
+        super(hBaseManager, dbAdaptor.getSampleIndexTableName(studyId, schema.getVersion()));
         this.studyId = studyId;
         this.sampleIds = sampleIds;
         family = GenomeHelper.COLUMN_FAMILY_BYTES;
@@ -88,9 +87,8 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
         }
         includeGenotype = YesNoAuto.parse(options, INCLUDE_GENOTYPE.key()).yesOrAuto();
         this.dbAdaptor = dbAdaptor;
-        sampleIndexConfiguration = dbAdaptor.getSampleIndexConfiguration(studyId);
-        schema = dbAdaptor.getSchema(studyId);
-        variantFileIndexConverter = new VariantFileIndexConverter(schema);
+        this.schema = schema;
+        variantFileIndexConverter = new VariantFileIndexConverter(this.schema);
     }
 
     private class Chunk implements Iterable<SampleIndexEntryPutBuilder> {
@@ -113,7 +111,9 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
                         merging = true;
                     }
                 } else {
-                    builder = new SampleIndexEntryPutBuilder(sampleId, indexChunk.chromosome, indexChunk.position, schema);
+                    // This loader can't ensure an ordered input data to the SampleIndexEntryPutBuilder.
+                    builder = new SampleIndexEntryPutBuilder(sampleId, indexChunk.chromosome, indexChunk.position, schema,
+                            false, multiFileIndex);
                 }
                 samples.add(builder);
             }
@@ -186,7 +186,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
     @Override
     public boolean open() {
         super.open();
-        SampleIndexSchema.createTableIfNeeded(tableName, hBaseManager, options);
+        dbAdaptor.createTableIfNeeded(studyId, schema.getVersion(), options);
         return true;
     }
 
@@ -273,6 +273,6 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
     }
 
     public int getSampleIndexVersion() {
-        return sampleIndexConfiguration.getVersion();
+        return schema.getVersion();
     }
 }

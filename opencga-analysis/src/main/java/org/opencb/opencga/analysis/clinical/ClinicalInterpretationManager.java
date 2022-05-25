@@ -20,8 +20,8 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.*;
 import org.opencb.biodata.models.clinical.interpretation.*;
@@ -80,7 +80,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.*;
+import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.calculateAcmgClassification;
+import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.computeClinicalSignificance;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.INCLUDE_SAMPLE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
@@ -271,10 +272,20 @@ public class ClinicalInterpretationManager extends StorageManager {
             for (String panelId : panels) {
                 org.opencb.opencga.core.models.panel.Panel panel = catalogQueryUtils.getPanel(studyId, panelId, token);
                 for (DiseasePanel.GenePanel genePanel : panel.getGenes()) {
-                    if (!genePanelMap.containsKey(genePanel.getName())) {
-                        genePanelMap.put(genePanel.getName(), new HashSet<>());
+                    // Check gene name to be inserted in the panel map
+                    if (StringUtils.isNotEmpty(genePanel.getName())) {
+                        if (!genePanelMap.containsKey(genePanel.getName())) {
+                            genePanelMap.put(genePanel.getName(), new HashSet<>());
+                        }
+                        genePanelMap.get(genePanel.getName()).add(panelId);
                     }
-                    genePanelMap.get(genePanel.getName()).add(panelId);
+                    // Check gene ID to be inserted in the panel map
+                    if (StringUtils.isNotEmpty(genePanel.getId())) {
+                        if (!genePanelMap.containsKey(genePanel.getId())) {
+                            genePanelMap.put(genePanel.getId(), new HashSet<>());
+                        }
+                        genePanelMap.get(genePanel.getId()).add(panelId);
+                    }
                 }
             }
         }
@@ -394,16 +405,12 @@ public class ClinicalInterpretationManager extends StorageManager {
                     for (String panelId : panelIds) {
                         evidence = createEvidence(variant.getId(), ct, gFeature, panelId, null, null, variant.getAnnotation(),
                                 roleInCancer, actionableVariants, config);
-                        if (config == null || !config.isSkipUntieredVariants() || evidence.getClassification().getTier() != UNTIERED) {
-                            evidences.add(evidence);
-                        }
+                        evidences.add(evidence);
                     }
                 } else if (genePanelMap.size() == 0) {
                     evidence = createEvidence(variant.getId(), ct, gFeature, null, null, null, variant.getAnnotation(), roleInCancer,
                             actionableVariants, config);
-                    if (config == null || !config.isSkipUntieredVariants() || evidence.getClassification().getTier() != UNTIERED) {
-                        evidences.add(evidence);
-                    }
+                    evidences.add(evidence);
                 }
             }
         }
@@ -443,14 +450,14 @@ public class ClinicalInterpretationManager extends StorageManager {
         clinicalVariantEvidence.setPanelId(panelId);
 
         // Panel ID and compute tier based on SO terms
-        String tier = UNTIERED;
-        if (config != null) {
-            if (isTier1(panelId, consequenceType.getSequenceOntologyTerms(), config)) {
-                tier = TIER_1;
-            } else if (isTier2(panelId, consequenceType.getSequenceOntologyTerms(), config)) {
-                tier = TIER_2;
-            }
-        }
+//        String tier = UNTIERED;
+//        if (config != null) {
+//            if (isTier1(panelId, consequenceType.getSequenceOntologyTerms(), config)) {
+//                tier = TIER_1;
+//            } else if (isTier2(panelId, consequenceType.getSequenceOntologyTerms(), config)) {
+//                tier = TIER_2;
+//            }
+//        }
 
         // Mode of inheritance
         if (mois != null) {
@@ -484,11 +491,11 @@ public class ClinicalInterpretationManager extends StorageManager {
             clinicalVariantEvidence.setActionable(true);
 
             // Set tier 3 only if it is null or untiered
-            if (UNTIERED.equals(tier)) {
-                clinicalVariantEvidence.getClassification().setTier(TIER_3);
-            } else {
-                clinicalVariantEvidence.getClassification().setTier(tier);
-            }
+//            if (UNTIERED.equals(tier)) {
+//                clinicalVariantEvidence.getClassification().setTier(TIER_3);
+//            } else {
+//                clinicalVariantEvidence.getClassification().setTier(tier);
+//            }
 
             // Add 'actionable' phenotypes
             if (CollectionUtils.isNotEmpty(actionableVariants.get(variantId))) {
@@ -500,8 +507,8 @@ public class ClinicalInterpretationManager extends StorageManager {
                     clinicalVariantEvidence.setPhenotypes(phenotypes);
                 }
             }
-        } else {
-            clinicalVariantEvidence.getClassification().setTier(tier);
+//        } else {
+//            clinicalVariantEvidence.getClassification().setTier(tier);
         }
 
         return clinicalVariantEvidence;
@@ -1046,7 +1053,7 @@ public class ClinicalInterpretationManager extends StorageManager {
     public String getAssembly(String studyId, String sessionId) throws CatalogException {
         String assembly = "";
         OpenCGAResult<Project> projectQueryResult;
-        projectQueryResult = catalogManager.getProjectManager().get(new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId),
+        projectQueryResult = catalogManager.getProjectManager().search(new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId),
                 new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), sessionId);
         if (CollectionUtils.isNotEmpty(projectQueryResult.getResults())) {
             assembly = projectQueryResult.first().getOrganism().getAssembly();

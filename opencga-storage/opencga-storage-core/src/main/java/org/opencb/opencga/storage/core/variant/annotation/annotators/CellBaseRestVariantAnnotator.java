@@ -23,6 +23,7 @@ import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.cellbase.core.result.CellBaseDataResult;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
@@ -88,6 +89,11 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
     @Override
     public ProjectMetadata.VariantAnnotatorProgram getVariantAnnotatorProgram() throws IOException {
         CellBaseDataResponse<ObjectMap> response = cellBaseClient.getMetaClient().about();
+        Event event = errorEvent(response);
+        if (event != null) {
+            throw new IOException("Error fetching CellBase program information from meta/about. "
+                    + event.getName() + " : " + event.getMessage());
+        }
         ObjectMap about = response.firstResult();
         if (about == null) {
             throw new IOException("Error fetching CellBase program information from meta/about");
@@ -109,12 +115,31 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
         return program;
     }
 
+
     @Override
     public List<ObjectMap> getVariantAnnotatorSourceVersion() throws IOException {
-        List<ObjectMap> objectMaps = cellBaseClient.getMetaClient().versions().allResults();
+        CellBaseDataResponse<ObjectMap> response = cellBaseClient.getMetaClient().versions();
+        Event event = errorEvent(response);
+        if (event != null) {
+            throw new IOException("Error fetching CellBase source information from meta/versions. "
+                    + event.getName() + " : " + event.getMessage());
+        }
+        List<ObjectMap> objectMaps = response.allResults();
         if (objectMaps == null) {
             throw new IOException("Error fetching CellBase source information from meta/versions");
         }
         return objectMaps;
+    }
+
+    private Event errorEvent(CellBaseDataResponse<ObjectMap> response) {
+        if (response.getEvents() == null) {
+            return null;
+        } else {
+            return response.getEvents()
+                    .stream()
+                    .filter(e -> e.getType() == Event.Type.ERROR)
+                    .findAny()
+                    .orElse(null);
+        }
     }
 }

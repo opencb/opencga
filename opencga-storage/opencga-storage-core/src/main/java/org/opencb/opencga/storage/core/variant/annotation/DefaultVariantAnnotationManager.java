@@ -44,6 +44,8 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -93,6 +95,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
     private final AtomicLong numAnnotationsToLoad = new AtomicLong(0);
     protected static Logger logger = LoggerFactory.getLogger(DefaultVariantAnnotationManager.class);
     protected Map<Integer, List<Integer>> filesToBeAnnotated = new HashMap<>();
+    protected Map<Integer, Collection<Integer>> samplesToBeAnnotated = new HashMap<>();
     protected Map<Integer, List<Integer>> alreadyAnnotatedFiles = new HashMap<>();
     private final IOConnectorProvider ioConnectorProvider;
     private final VariantReaderUtils variantReaderUtils;
@@ -129,8 +132,16 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         preAnnotate(query, doCreate, doLoad, params);
 
         if (doCreate && doLoad) {
+            ProjectMetadata.VariantAnnotatorProgram newAnnotator;
+            List<ObjectMap> newSourceVersion;
+            try {
+                newAnnotator = variantAnnotator.getVariantAnnotatorProgram();
+                newSourceVersion = variantAnnotator.getVariantAnnotatorSourceVersion();
+            } catch (IOException e) {
+                throw new VariantAnnotatorException("Error reading annotation metadata", e);
+            }
             dbAdaptor.getMetadataManager().updateProjectMetadata(projectMetadata -> {
-                checkCurrentAnnotation(variantAnnotator, projectMetadata, overwrite);
+                checkCurrentAnnotation(projectMetadata, overwrite, newAnnotator, newSourceVersion);
                 return projectMetadata;
             });
         }
@@ -433,15 +444,26 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             List<Integer> studies = VariantQueryProjectionParser.getIncludeStudies(query, null, metadataManager);
             for (Integer studyId : studies) {
                 List<Integer> files = new LinkedList<>();
+                Collection<Integer> samples;
                 List<Integer> annotatedFiles = new LinkedList<>();
                 if (!filesFilter.isEmpty()) {
+                    samples = new HashSet<>();
                     for (String file : filesFilter) {
                         FileMetadata fileMetadata = metadataManager.getFileMetadata(studyId, file);
-                        if (fileMetadata != null && fileMetadata.isIndexed() && !fileMetadata.isAnnotated()) {
-                            files.add(fileMetadata.getId());
+                        if (fileMetadata != null) {
+                            if (fileMetadata.isIndexed() && !fileMetadata.isAnnotated()) {
+                                files.add(fileMetadata.getId());
+                            }
+                            for (Integer sample : fileMetadata.getSamples()) {
+                                SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sample);
+                                if (sampleMetadata.isIndexed() && !sampleMetadata.isAnnotated()) {
+                                    samples.add(sample);
+                                }
+                            }
                         }
                     }
                 } else {
+                    samples = new LinkedList<>();
                     metadataManager.fileMetadataIterator(studyId).forEachRemaining(fileMetadata -> {
                         if (fileMetadata.isIndexed()) {
                             if (fileMetadata.isAnnotated()) {
@@ -451,10 +473,22 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                             }
                         }
                     });
+                    metadataManager.sampleMetadataIterator(studyId).forEachRemaining(sampleMetadata -> {
+                        if (sampleMetadata.isIndexed()) {
+                            if (!sampleMetadata.isAnnotated()) {
+                                samples.add(sampleMetadata.getId());
+                            }
+                        }
+                    });
                 }
                 filesToBeAnnotated.put(studyId, files);
+                samplesToBeAnnotated.put(studyId, samples);
                 alreadyAnnotatedFiles.put(studyId, annotatedFiles);
             }
+            logger.info("Annotating {} new files and {} new samples",
+                    filesToBeAnnotated.values().stream().mapToInt(Collection::size).sum(),
+                    samplesToBeAnnotated.values().stream().mapToInt(Collection::size).sum()
+            );
         }
     }
 
@@ -474,8 +508,17 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             throws VariantAnnotatorException, StorageEngineException, IOException {
         boolean overwrite = params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false);
         if (doLoad && doCreate) {
+            ProjectMetadata.VariantAnnotatorProgram newAnnotator;
+            List<ObjectMap> newSourceVersion;
+            try {
+                newAnnotator = variantAnnotator.getVariantAnnotatorProgram();
+                newSourceVersion = variantAnnotator.getVariantAnnotatorSourceVersion();
+            } catch (IOException e) {
+                throw new VariantAnnotatorException("Error reading current annotation metadata!", e);
+            }
+
             dbAdaptor.getMetadataManager().updateProjectMetadata(projectMetadata -> {
-                updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite);
+                updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite, newAnnotator, newSourceVersion);
                 return projectMetadata;
             });
         }
@@ -483,23 +526,24 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         if (doLoad && filesToBeAnnotated != null) {
             VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
 
-            for (Map.Entry<Integer, List<Integer>> entry : filesToBeAnnotated.entrySet()) {
+            for (Map.Entry<Integer, Collection<Integer>> entry : samplesToBeAnnotated.entrySet()) {
                 Integer studyId = entry.getKey();
-                List<Integer> fileIds = entry.getValue();
-                Set<Integer> sampleIds = new HashSet<>();
-
-                for (Integer file : fileIds) {
-                    metadataManager.updateFileMetadata(studyId, file, fileMetadata -> {
-                        sampleIds.addAll(fileMetadata.getSamples());
-                        fileMetadata.setAnnotationStatus(TaskMetadata.Status.READY);
-                        return fileMetadata;
-                    });
-                }
-
+                Collection<Integer> sampleIds = entry.getValue();
                 for (Integer sampleId : sampleIds) {
                     metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
                         sampleMetadata.setAnnotationStatus(TaskMetadata.Status.READY);
-                        return sampleMetadata;
+                    });
+                }
+            }
+
+            for (Map.Entry<Integer, List<Integer>> entry : filesToBeAnnotated.entrySet()) {
+                Integer studyId = entry.getKey();
+                List<Integer> fileIds = entry.getValue();
+
+                for (Integer file : fileIds) {
+                    metadataManager.updateFileMetadata(studyId, file, fileMetadata -> {
+                        fileMetadata.setAnnotationStatus(TaskMetadata.Status.READY);
+                        return fileMetadata;
                     });
                 }
             }

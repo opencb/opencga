@@ -1,14 +1,14 @@
 package org.opencb.opencga.server.rest;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
 import org.opencb.opencga.catalog.managers.PipelineManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.job.Pipeline;
 import org.opencb.opencga.core.models.job.PipelineCreateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.annotations.Api;
+import org.opencb.opencga.core.tools.annotations.ApiOperation;
+import org.opencb.opencga.core.tools.annotations.ApiParam;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;

@@ -18,7 +18,7 @@ public class initialiseGroups extends MigrationTool {
     protected void run() throws CatalogException {
         StopWatch stopWatch = new StopWatch();
         // Initialise all list of users from groups
-        for (Project project : catalogManager.getProjectManager().get(new Query(), new QueryOptions(), token).getResults()) {
+        for (Project project : catalogManager.getProjectManager().search(new Query(), new QueryOptions(), token).getResults()) {
             if (project.getStudies() != null) {
                 for (Study study : project.getStudies()) {
                     stopWatch.start();

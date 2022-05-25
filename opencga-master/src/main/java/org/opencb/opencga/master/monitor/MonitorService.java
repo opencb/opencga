@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.master.monitor;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -69,8 +71,22 @@ public class MonitorService {
     }
 
     private void init(String token) throws CatalogException {
-        System.setProperty("opencga.log.file.name", "opencga-master");
-        System.setProperty("opencga.log.file.enabled", "true");
+        String logDir = configuration.getLogDir();
+        boolean logFileEnabled;
+
+        if (StringUtils.isNotBlank(configuration.getLogLevel())) {
+            Level level = Level.toLevel(configuration.getLogLevel(), Level.INFO);
+            System.setProperty("opencga.log.level", level.name());
+        }
+
+        if (StringUtils.isBlank(logDir) || logDir.equalsIgnoreCase("null")) {
+            logFileEnabled = false;
+        } else {
+            logFileEnabled = true;
+            System.setProperty("opencga.log.file.name", "opencga-master");
+            System.setProperty("opencga.log.dir", logDir);
+        }
+        System.setProperty("opencga.log.file.enabled", Boolean.toString(logFileEnabled));
         Configurator.reconfigure(Paths.get(appHome, "conf", "log4j2.service.xml").toUri());
 
         logger = LoggerFactory.getLogger(this.getClass());

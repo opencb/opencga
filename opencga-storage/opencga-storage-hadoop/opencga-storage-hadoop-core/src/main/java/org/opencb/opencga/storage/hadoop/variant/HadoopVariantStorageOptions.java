@@ -55,6 +55,8 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     MR_EXECUTOR_SSH_KEY("storage.hadoop.mr.executor.ssh.key"),
     MR_EXECUTOR_SSH_PASSWORD("storage.hadoop.mr.executor.ssh.password"),
     MR_EXECUTOR_SSH_REMOTE_OPENCGA_HOME("storage.hadoop.mr.executor.ssh.remoteOpenCgaHome"),
+    MR_EXECUTOR_SSH_HADOOP_SSH_BIN("storage.hadoop.mr.executor.ssh.hadoop-ssh.bin", "misc/scripts/hadoop-ssh.sh"),
+    MR_EXECUTOR_SSH_HADOOP_SCP_BIN("storage.hadoop.mr.executor.ssh.hadoop-scp.bin", "misc/scripts/hadoop-scp.sh"),
 
     /////////////////////////
     // Variant table configuration
@@ -86,8 +88,8 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     /////////////////////////
     SAMPLE_INDEX_TABLE_COMPRESSION("storage.hadoop.sampleIndex.table.compression", Compression.Algorithm.SNAPPY.getName()),
     SAMPLE_INDEX_TABLE_PRESPLIT_SIZE("storage.hadoop.sampleIndex.table.preSplit.samplesPerSplit", 15),
-    SAMPLE_INDEX_BUILD_MAX_SAMPLES_PER_MR("storage.hadoop.sampleIndex.build.maxSamplesPerMR", 5000),
-    SAMPLE_INDEX_ANNOTATION_MAX_SAMPLES_PER_MR("storage.hadoop.sampleIndex.annotation.maxSamplesPerMR", 5000),
+    SAMPLE_INDEX_BUILD_MAX_SAMPLES_PER_MR("storage.hadoop.sampleIndex.build.maxSamplesPerMR", 2000),
+    SAMPLE_INDEX_ANNOTATION_MAX_SAMPLES_PER_MR("storage.hadoop.sampleIndex.annotation.maxSamplesPerMR", 2000),
     SAMPLE_INDEX_FAMILY_MAX_TRIOS_PER_MR("storage.hadoop.sampleIndex.family.maxTriosPerMR", 1000),
 
     /////////////////////////
@@ -102,6 +104,8 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     INTERMEDIATE_HDFS_DIRECTORY("storage.hadoop.intermediate.hdfs.directory"),
     FILL_MISSING_WRITE_MAPPERS_LIMIT_FACTOR("storage.hadoop.fill_missing.write.mappers.limit.factor", 1.5F),
     FILL_MISSING_SIMPLIFIED_MULTIALLELIC_VARIANTS("storage.hadoop.fill_missing.simplifiedMultiAllelicVariants", true),
+    FILL_MISSING_GAP_GENOTYPE("storage.hadoop.fill_missing.gap_genotype", "0/0"),
+    FILL_GAPS_GAP_GENOTYPE("storage.hadoop.fill_gaps.gap_genotype", "0/0"),
 
     WRITE_MAPPERS_LIMIT_FACTOR("storage.hadoop.write.mappers.limit.factor", 1.5F),
 

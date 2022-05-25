@@ -16,21 +16,33 @@
 
 package org.opencb.opencga.core.models.study;
 
+import org.opencb.biodata.models.common.Status;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Internal;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
 
 public class StudyInternal extends Internal {
 
+
+    @DataField(id = "status", indexed = true,
+            description = FieldConstants.GENERIC_STATUS_DESCRIPTION)
     private Status status;
+
+    @DataField(id = "index", indexed = true,
+            description = FieldConstants.STUDY_INTERNAL_INDEX)
     private StudyIndex index;
+
+    @DataField(id = "configuration", indexed = true, uncommentedClasses = {"StudyConfiguration"},
+            description = FieldConstants.STUDY_INTERNAL_CONFIGURATION)
     private StudyConfiguration configuration;
 
     public StudyInternal() {
     }
 
-    public StudyInternal(Status status, String registrationDate, String modificationDate, StudyIndex index,
+    public StudyInternal(InternalStatus status, String registrationDate, String modificationDate, StudyIndex index,
                          StudyConfiguration configuration) {
         super(status, registrationDate, modificationDate);
         this.index = index;
@@ -38,7 +50,7 @@ public class StudyInternal extends Internal {
     }
 
     public static StudyInternal init() {
-        return new StudyInternal(new Status(), TimeUtils.getTime(), TimeUtils.getTime(), StudyIndex.init(), StudyConfiguration.init());
+        return new StudyInternal(new InternalStatus(), TimeUtils.getTime(), TimeUtils.getTime(), StudyIndex.init(), StudyConfiguration.init());
     }
 
     @Override
@@ -51,15 +63,6 @@ public class StudyInternal extends Internal {
         sb.append(", configuration=").append(configuration);
         sb.append('}');
         return sb.toString();
-    }
-
-    public Status getStatus() {
-        return status;
-    }
-
-    public StudyInternal setStatus(Status status) {
-        this.status = status;
-        return this;
     }
 
     public String getRegistrationDate() {

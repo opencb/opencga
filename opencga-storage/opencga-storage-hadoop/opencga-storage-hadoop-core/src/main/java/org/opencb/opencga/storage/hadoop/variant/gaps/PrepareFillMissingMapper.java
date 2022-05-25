@@ -42,12 +42,11 @@ public class PrepareFillMissingMapper extends TableMapper<ImmutableBytesWritable
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
-        GenomeHelper helper = new GenomeHelper(context.getConfiguration());
         family = GenomeHelper.COLUMN_FAMILY_BYTES;
         rowKeyFactory = new ArchiveRowKeyFactory(context.getConfiguration());
         indexedFiles = getIndexedFiles(context.getConfiguration());
         allFileBatches = indexedFiles.stream().map(rowKeyFactory::getFileBatch).collect(Collectors.toSet());
-        fillMissingColumn = VariantPhoenixSchema.getFillMissingColumn(helper.getStudyId());
+        fillMissingColumn = VariantPhoenixSchema.getFillMissingColumn(GenomeHelper.getStudyId(context.getConfiguration()));
         timestamp = context.getConfiguration().getLong(AbstractVariantsTableDriver.TIMESTAMP, 0);
         if (timestamp <= 0) {
             throw new IllegalArgumentException(AbstractVariantsTableDriver.TIMESTAMP + " not defined!");

@@ -29,7 +29,7 @@
 
 \item{modificationDate}{Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.}
 
-\item{status}{Status.}
+\item{internalStatus}{Filter by internal status.}
 
 \item{attributes}{Attributes.}
 
@@ -47,13 +47,15 @@
 
 \item{jobFields}{List of job fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type.}
 
+\item{limit}{Number of results to be returned.}
+
+\item{skip}{Number of results to skip.}
+
 \item{include}{Fields included in the response, whole JSON path must be provided.}
 
 \item{exclude}{Fields excluded in the response, whole JSON path must be provided.}
 
-\item{limit}{Number of results to be returned.}
-
-\item{skip}{Number of results to skip.}
+\item{includeResult}{Flag indicating to include the created or updated document result in the response.}
 
 \item{data}{JSON containing the params to be updated. It will be only possible to update organism fields not previously defined.}
 }
@@ -61,13 +63,13 @@
 This function implements the OpenCGA calls for managing Projects.
 The following table summarises the available \emph{actions} for this client:\tabular{llr}{
    endpointName \tab Endpoint WS \tab parameters accepted \cr
-   create \tab /{apiVersion}/projects/create \tab body\link{*} \cr
-   search \tab /{apiVersion}/projects/search \tab include, exclude, limit, skip, owner, id, name, fqn, organization, description, study, creationDate, modificationDate, status, attributes \cr
+   create \tab /{apiVersion}/projects/create \tab include, exclude, includeResult, body\link{*} \cr
+   search \tab /{apiVersion}/projects/search \tab include, exclude, limit, skip, owner, id, name, fqn, organization, description, study, creationDate, modificationDate, internalStatus, attributes \cr
    aggregationStats \tab /{apiVersion}/projects/{projects}/aggregationStats \tab projects\link{*}, default, fileFields, individualFields, familyFields, sampleFields, cohortFields, jobFields \cr
    info \tab /{apiVersion}/projects/{projects}/info \tab include, exclude, projects\link{*} \cr
    incRelease \tab /{apiVersion}/projects/{project}/incRelease \tab project\link{*} \cr
    studies \tab /{apiVersion}/projects/{project}/studies \tab include, exclude, limit, skip, project\link{*} \cr
-   update \tab /{apiVersion}/projects/{project}/update \tab project\link{*}, body\link{*} \cr
+   update \tab /{apiVersion}/projects/{project}/update \tab include, exclude, project\link{*}, includeResult, body\link{*} \cr
 }
 }
 \section{Endpoint /{apiVersion}/projects/create}{

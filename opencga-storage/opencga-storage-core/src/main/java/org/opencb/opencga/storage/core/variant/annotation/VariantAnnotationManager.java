@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.core.variant.annotation;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -93,8 +94,10 @@ public abstract class VariantAnnotationManager {
         // Check using same annotator and same source version
         VariantAnnotatorProgram currentAnnotator = current.getAnnotator();
         if (currentAnnotator != null && !currentAnnotator.equals(newAnnotator)) {
+            String currentVersion = removePatchFromVersion(currentAnnotator.getVersion());
+            String newVersion = removePatchFromVersion(newAnnotator.getVersion());
             if (!currentAnnotator.getName().equals(newAnnotator.getName())
-                    || !currentAnnotator.getVersion().equals(newAnnotator.getVersion())) {
+                    || !currentVersion.equals(newVersion)) {
                 String msg = "Using a different annotator! "
                         + "Existing annotation calculated with " + currentAnnotator.toString()
                         + ", attempting to annotate with " + newAnnotator.toString();
@@ -104,7 +107,7 @@ public abstract class VariantAnnotationManager {
                     throw new VariantAnnotatorException(msg);
                 }
             } else if (!currentAnnotator.getCommit().equals(newAnnotator.getCommit())) {
-                String msg = "Using a different commit for annotating variants. "
+                String msg = "Using a different patch version for annotating variants. "
                         + "Existing annotation calculated with " + currentAnnotator.toString()
                         + ", attempting to annotate with " + newAnnotator.toString();
                 if (overwrite) {
@@ -122,14 +125,30 @@ public abstract class VariantAnnotationManager {
                     + currentSourceVersion.stream().map(ObjectMap::toJson).collect(Collectors.joining(" , ", "[ ", " ]"))
                     + ", attempting to annotate with "
                     + newSourceVersion.stream().map(ObjectMap::toJson).collect(Collectors.joining(" , ", "[ ", " ]"));
+
             if (overwrite) {
                 logger.info(msg);
             } else {
-                throw new VariantAnnotatorException(msg);
+                // List of sources from cellbase 5.0.x is not reliable, and should
+                // not be taken into account to force a full annotation overwrite
+                if (newAnnotator.getName().toLowerCase().contains("cellbase") && newAnnotator.getVersion().startsWith("5.0")) {
+                    logger.warn(msg);
+                    logger.info("Ignore source version change at Cellbase v5.0.x");
+                } else {
+                    throw new VariantAnnotatorException(msg);
+                }
             }
         }
 
         return current;
+    }
+
+    private static String removePatchFromVersion(String version) {
+        String[] split = StringUtils.split(version, '.');
+        if (split.length <= 1) {
+            return version;
+        }
+        return split[0] + "." + split[1];
     }
 
     private boolean sameSourceVersion(List<ObjectMap> newSourceVersion, List<ObjectMap> currentSourceVersion) {
@@ -140,8 +159,7 @@ public abstract class VariantAnnotationManager {
         return newSourceVersionSet.containsAll(currentSourceVersion);
     }
 
-    protected final void updateCurrentAnnotation(VariantAnnotator annotator, ProjectMetadata projectMetadata,
-                                                                     boolean overwrite)
+    protected final void updateCurrentAnnotation(VariantAnnotator annotator, ProjectMetadata projectMetadata, boolean overwrite)
             throws VariantAnnotatorException {
         VariantAnnotatorProgram newAnnotator;
         List<ObjectMap> newSourceVersion;
@@ -151,6 +169,13 @@ public abstract class VariantAnnotationManager {
         } catch (IOException e) {
             throw new VariantAnnotatorException("Error reading current annotation metadata!", e);
         }
+        updateCurrentAnnotation(annotator, projectMetadata, overwrite, newAnnotator, newSourceVersion);
+    }
+
+    protected final void updateCurrentAnnotation(VariantAnnotator annotator, ProjectMetadata projectMetadata,
+                                                 boolean overwrite, VariantAnnotatorProgram newAnnotator,
+                                                 List<ObjectMap> newSourceVersion)
+            throws VariantAnnotatorException {
         if (newSourceVersion == null) {
             newSourceVersion = Collections.emptyList();
         }

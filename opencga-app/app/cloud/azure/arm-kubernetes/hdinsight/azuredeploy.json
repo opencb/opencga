@@ -15,6 +15,12 @@
                 "description": "Storage account name"
             }
         },
+        "storageAccountBlobName": {
+            "type": "string",
+            "metadata": {
+                "description": "Storage account blob file name"
+            }
+        },
         "clusterLoginUserName": {
             "type": "string",
             "defaultValue": "admin",
@@ -37,7 +43,7 @@
         },
         "clusterHeadNodeCount": {
             "type": "int",
-            "defaultValue": 1,
+            "defaultValue": 2,
             "metadata": {
                 "description": "The number of head nodes in the HDInsight cluster."
             }
@@ -84,6 +90,22 @@
                 "description": "The type of the HDInsight cluster to create."
             }
         },
+        "clusterComponentVersion": {
+            "type": "object",
+            "defaultValue": {
+                "HBase": "2.1"
+            },
+            "metadata": {
+                "description": "The type of the HDInsight cluster to create."
+            }
+        },
+        "clusterConfigurations":{
+            "type": "object",
+            "defaultValue": {},
+            "metadata": {
+                "description": "Extra cluster configurations to be merged with 'base' configurations"
+            }
+        },
         "sshUserName": {
             "type": "string",
             "defaultValue": "sshuser",
@@ -93,8 +115,33 @@
         },
         "sshPassword": {
             "type": "securestring",
+            "defaultValue": null,
             "metadata": {
                 "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        },
+        "sshPublicKey": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "SSH public key"
+            }
+        },
+        "sqlServerName": {
+            "type": "string",
+            "defaultValue": "hadoopmysql",
+            "metadata": {
+                "description": "SQL Server name"
+            }
+        },
+        "sqlAdministratorLogin": {
+            "type": "string",
+            "defaultValue": "hadoopAmbariDB"
+        },
+        "sqlAdministratorLoginPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "SQL Server administrator login password"
             }
         },
         "vnetId": {
@@ -126,7 +173,7 @@
             "metadata": {
                 "description": "Log Analytics Workspace Resource ID"
             }
-        },    
+        },
         "yarnSiteMemoryInMb": {
             "type": "int",
             "metadata": {
@@ -150,29 +197,94 @@
         }
     },
     "variables": {
+        "osProfilePublicKeys": {
+            "linuxOperatingSystemProfile": {
+                "sshProfile": {
+                    "publicKeys":[
+                        {
+                            "certificateData": "[parameters('sshPublicKey')]"
+                        }
+                    ]
+                }
+            }
+        },
+        "osProfileBase": {
+            "linuxOperatingSystemProfile": {
+                "username": "[parameters('sshUserName')]",
+                "password": "[parameters('sshPassword')]"
+            }
+        },
+        "osProfile": "[if(empty(parameters('sshPublicKey')), variables('osProfileBase'), union(variables('osProfileBase'), variables('osProfilePublicKeys')))]",
         "dataDisksGroups1": {"dataDisksGroups":[{ "disksPerNode": 1 }]},
         "storageIdentityName": "hdinsight-storage-identity",
-        "storageRoleAssignmentId": "[guid(concat(resourceGroup().id, 'storagecontributor'))]",
+        "storageRoleAssignmentId": "[guid(concat(resourceGroup().id, 'storagecontributor', parameters('storageAccountName')))]",
         "storageBlobDataOwnerRoleDefinitionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b')]",
         "workernodeBase": {
-                            "name": "workernode",
-                            "targetInstanceCount": "[parameters('clusterWorkerNodeCount')]",
-                            "hardwareProfile": {
-                                "vmSize": "[parameters('clusterWorkerNodeSize')]"
-                            },
-                            "osProfile": {
-                                "linuxOperatingSystemProfile": {
-                                    "username": "[parameters('sshUserName')]",
-                                    "password": "[parameters('sshPassword')]"
-                                }
-                            },
-                            "virtualNetworkProfile": {
-                                "id": "[parameters('vnetId')]",
-                                "subnet": "[parameters('subnetId')]"
-                            }
-                        },
+            "name": "workernode",
+            "targetInstanceCount": "[parameters('clusterWorkerNodeCount')]",
+            "hardwareProfile": {
+                "vmSize": "[parameters('clusterWorkerNodeSize')]"
+            },
+            "osProfile": "[variables('osProfile')]",
+            "virtualNetworkProfile": {
+                "id": "[parameters('vnetId')]",
+                "subnet": "[parameters('subnetId')]"
+            }
+        },
         "workernode": "[if(parameters('enableHBaseAcceleratedWrites'), union(variables('workernodeBase'), variables('dataDisksGroups1')), variables('workernodeBase'))]",
-        "privateDnsZonesName": "azurehdinsight.net"
+        "privateDnsZonesName": "azurehdinsight.net",
+        "clusterConfigurationsBase": {
+            "gateway": {
+                "restAuthCredential.isEnabled": true,
+                "restAuthCredential.username": "[parameters('clusterLoginUserName')]",
+                "restAuthCredential.password": "[parameters('clusterLoginPassword')]"
+            },
+            "yarn-site": {
+                "yarn.nodemanager.resource.memory-mb": "[parameters('yarnSiteMemoryInMb')]"
+            },
+            "hbase-site": {
+                "hbase.client.keyvalue.maxsize": "0"
+            }
+        },
+        "clusterConfigurationsExternalSqlServer": {
+            "hive-site": {
+                "javax.jdo.option.ConnectionDriverName": "com.microsoft.sqlserver.jdbc.SQLServerDriver",
+                "javax.jdo.option.ConnectionURL": "[concat('jdbc:sqlserver://', parameters('sqlServerName'),'.database.windows.net;database=hive;encrypt=true;trustServerCertificate=true;create=false;loginTimeout=300')]",
+                "javax.jdo.option.ConnectionUserName": "[parameters('sqlAdministratorLogin')]",
+                "javax.jdo.option.ConnectionPassword": "[parameters('sqlAdministratorLoginPassword')]"
+            },
+            "hive-env": {
+                "hive_database": "Existing MSSQL Server database with SQL authentication",
+                "hive_database_name": "hive",
+                "hive_database_type": "mssql",
+                "hive_existing_mssql_server_database": "hive",
+                "hive_existing_mssql_server_host": "[concat(parameters('sqlServerName'), '.database.windows.net')]",
+                "hive_hostname": "[concat(parameters('sqlServerName'), '.database.windows.net')]"
+            },
+            "oozie-site": {
+                "oozie.service.JPAService.jdbc.driver": "com.microsoft.sqlserver.jdbc.SQLServerDriver",
+                "oozie.service.JPAService.jdbc.url": "[concat('jdbc:sqlserver://', parameters('sqlServerName'),'.database.windows.net;database=oozie;encrypt=true;trustServerCertificate=true;create=false;loginTimeout=300')]",
+                "oozie.service.JPAService.jdbc.username": "[parameters('sqlAdministratorLogin')]",
+                "oozie.service.JPAService.jdbc.password": "[parameters('sqlAdministratorLoginPassword')]",
+                "oozie.db.schema.name": "oozie"
+            },
+            "oozie-env": {
+                "oozie_database": "Existing MSSQL Server database with SQL authentication",
+                "oozie_database_name": "oozie",
+                "oozie_database_type": "mssql",
+                "oozie_existing_mssql_server_database": "oozie",
+                "oozie_existing_mssql_server_host": "[concat(parameters('sqlServerName'), '.database.windows.net')]",
+                "oozie_hostname": "[concat(parameters('sqlServerName'), '.database.windows.net')]"
+            },
+            "ambari-conf": {
+                "database-server": "[concat(parameters('sqlServerName'), '.database.windows.net')]",
+                "database-name": "ambari",
+                "database-user-name": "[parameters('sqlAdministratorLogin')]",
+                "database-user-password": "[parameters('sqlAdministratorLoginPassword')]"
+            }
+        },
+        "clusterConfigurationsAux": "[union(variables('clusterConfigurationsBase'), variables('clusterConfigurationsExternalSqlServer'))]",
+        "clusterConfigurations": "[union(variables('clusterConfigurationsAux'), parameters('clusterConfigurations'))]"
     },
     "resources": [
         {
@@ -208,23 +320,22 @@
             "sku": {
                 "name": "[parameters('accountType')]"
             },
-            "kind": "StorageV2",
-            "resources": [
-                {
-                    "condition": "[not(parameters('skipRoleAssignment'))]",
-                    "type": "Microsoft.Authorization/roleAssignments",
-                    "apiVersion": "2018-01-01-preview",
-                    "name": "[variables('storageRoleAssignmentId')]",
-                    "properties": {
-                        "roleDefinitionId": "[variables('storageBlobDataOwnerRoleDefinitionId')]",
-                        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('storageIdentityName')), '2015-08-31-preview').principalId]",
-                        "principalType":"ServicePrincipal"
-                    },
-                    "dependsOn": [
-                        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('storageIdentityName'))]",
-                        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
-                    ]
-                }
+            "kind": "StorageV2"
+        },
+        {
+            "condition": "[not(parameters('skipRoleAssignment'))]",
+            "type": "Microsoft.Authorization/roleAssignments",
+            "apiVersion": "2018-01-01-preview",
+            "name": "[variables('storageRoleAssignmentId')]",
+            "scope": "[format('Microsoft.Storage/storageAccounts/{0}', parameters('storageAccountName'))]",
+            "properties": {
+                "roleDefinitionId": "[variables('storageBlobDataOwnerRoleDefinitionId')]",
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('storageIdentityName')), '2015-08-31-preview').principalId]",
+                "principalType":"ServicePrincipal"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('storageIdentityName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
             ]
         },
         {
@@ -234,7 +345,9 @@
             "location": "[resourceGroup().location]",
             "dependsOn": [
                 "[resourceId('Microsoft.Storage/storageAccounts',parameters('storageAccountName'))]",
-                "[resourceId('Microsoft.Authorization/roleAssignments',variables('storageRoleAssignmentId'))]"
+                "[variables('storageRoleAssignmentId')]",
+                "[variables('privateDnsZonesName')]",
+                "sqlServer"
             ],
             "properties": {
                 "clusterVersion": "[parameters('clusterVersion')]",
@@ -242,29 +355,15 @@
                 "tier": "Standard",
                 "clusterDefinition": {
                     "kind": "[parameters('clusterKind')]",
-                    "componentVersion": {
-                        "HBase": "2.0"
-                    },
-                    "configurations": {
-                        "gateway": {
-                            "restAuthCredential.isEnabled": true,
-                            "restAuthCredential.username": "[parameters('clusterLoginUserName')]",
-                            "restAuthCredential.password": "[parameters('clusterLoginPassword')]"
-                        },
-                        "yarn-site": {
-                            "yarn.nodemanager.resource.memory-mb": "[parameters('yarnSiteMemoryInMb')]"
-                        },
-                        "hbase-site": {
-                            "hbase.client.keyvalue.maxsize": "0"
-                        }
-                    }
+                    "componentVersion": "[parameters('clusterComponentVersion')]",
+                    "configurations": "[variables('clusterConfigurations')]"
                 },
                 "storageProfile": {
                     "storageaccounts": [
                         {
                             "name": "[concat(parameters('storageAccountName'),'.dfs.core.windows.net')]",
                             "isDefault": true,
-                            "fileSystem": "opencga",
+                            "fileSystem": "[parameters('storageAccountBlobName')]",
                             "resourceId":   "[resourceId('Microsoft.Storage/storageAccounts',parameters('storageAccountName'))]",
                             "msiResourceId": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('storageIdentityName'))]"
                         }
@@ -279,12 +378,7 @@
                             "hardwareProfile": {
                                 "vmSize": "[parameters('clusterHeadNodeSize')]"
                             },
-                            "osProfile": {
-                                "linuxOperatingSystemProfile": {
-                                    "username": "[parameters('sshUserName')]",
-                                    "password": "[parameters('sshPassword')]"
-                                }
-                            },
+                            "osProfile": "[variables('osProfile')]",
                             "virtualNetworkProfile": {
                                 "id": "[parameters('vnetId')]",
                                 "subnet": "[parameters('subnetId')]"
@@ -300,12 +394,7 @@
                             "hardwareProfile": {
                                 "vmSize": "[parameters('clusterZookeeperNodeSize')]"
                             },
-                            "osProfile": {
-                                "linuxOperatingSystemProfile": {
-                                    "username": "[parameters('sshUserName')]",
-                                    "password": "[parameters('sshPassword')]"
-                                }
-                            },
+                            "osProfile": "[variables('osProfile')]",
                             "virtualNetworkProfile": {
                                 "id": "[parameters('vnetId')]",
                                 "subnet": "[parameters('subnetId')]"
@@ -318,7 +407,8 @@
                 "networkProperties": {
                     "resourceProviderConnection": "Outbound",
                     "privateLink": "Disabled"
-                }
+                },
+                "minSupportedTlsVersion": "1.2"
             },
             "identity": {
                 "type": "UserAssigned",
@@ -357,7 +447,10 @@
             "name": "[variables('privateDnsZonesName')]",
             "location": "global",
             "tags": {},
-            "properties": {}
+            "properties": {},
+            "dependsOn": [
+                "[variables('storageRoleAssignmentId')]"
+            ]
         },
         {
             "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
@@ -377,7 +470,7 @@
 
         {
             "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2018-05-01",
+            "apiVersion": "2019-05-01",
             "name": "hdInsightRecords",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/privateDnsZones', variables('privateDnsZonesName'))]",
@@ -412,14 +505,7 @@
                             },
                             "type": "Microsoft.Network/privateDnsZones/A",
                             "apiVersion": "2018-09-01",
-                            "name": "[concat(
-                                variables('privateDnsZonesName'), 
-                                '/',
-                                replace(
-                                    parameters('connectivityEndpoints')[copyIndex()].location, 
-                                    concat('.' , variables('privateDnsZonesName')), 
-                                    '')
-                                )]",
+                            "name": "[concat(variables('privateDnsZonesName'),'/',replace(parameters('connectivityEndpoints')[copyIndex()].location,concat('.' , variables('privateDnsZonesName')),''))]",
                             "properties": {
                                 "ttl": 3600,
                                 "aRecords": [
@@ -427,6 +513,265 @@
                                         "ipv4Address": "[parameters('connectivityEndpoints')[copyIndex()].privateIPAddress]"
                                     }
                                 ]
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2019-05-01",
+            "name": "sqlServer",
+            "dependsOn": [
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "expressionEvaluationOptions": {
+                    "scope": "inner"
+                },
+                "parameters": {
+                    "vnetId" : {
+                        "value": "[parameters('vnetId')]"
+                    },
+                    "subnetId" : {
+                        "value": "[parameters('subnetId')]"
+                    },
+                    "sqlServerName" : {
+                        "value": "[parameters('sqlServerName')]"
+                    },
+                    "administratorLogin" : {
+                        "value": "[parameters('sqlAdministratorLogin')]"
+                    },
+                    "administratorLoginPassword" : {
+                        "value": "[parameters('sqlAdministratorLoginPassword')]"
+                    }
+                },
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "vnetId": {
+                            "type": "string"
+                        },
+                        "subnetId": {
+                            "type": "string"
+                        },
+                        "sqlServerName": {
+                            "type": "string"
+                        },
+                        "administratorLogin": {
+                            "type": "string"
+                        },
+                        "administratorLoginPassword": {
+                            "type": "string"
+                        },
+                        
+                        
+                        
+                        "minimalTlsVersion": {
+                            "type": "string",
+                            "defaultValue": "1.2"
+                        },
+                        "tier": {
+                            "type": "string",
+                            "defaultValue": "GeneralPurpose"
+                        },
+                        "skuName": {
+                            "type": "string",
+                            "defaultValue": "GP_Gen5_2"
+                        }
+                    },
+                    "variables": {
+                        "privateEndpointName": "[concat(parameters('sqlServerName'),'-privatelink')]",
+                        "databases": ["ambari", "ranger", "hive", "oozie"],
+                        "databaseProperties": {
+                            "collation": "SQL_Latin1_General_CP1_CI_AS",
+                            "maxSizeBytes": 34359738368,
+                            "sampleName": "",
+                            "zoneRedundant": false,
+                            "licenseType": "LicenseIncluded",
+                            "readScale": "Disabled",
+                            "highAvailabilityReplicaCount": 0,
+                            "minCapacity": "",
+                            "autoPauseDelay": "",
+                            "requestedBackupStorageRedundancy": "Local",
+                            "isLedgerOn": false
+                        },
+                        "privateDnsForPrivateEndpointTemplateLink": "https://sqlazureextension.hosting.portal.azure.net/sqlazureextension/Content/2.1.01846207/DeploymentTemplates/PrivateDnsForPrivateEndpoint.json",
+                        "privateDnsForPrivateEndpointNicTemplateLink": "https://sqlazureextension.hosting.portal.azure.net/sqlazureextension/Content/2.1.01846207/DeploymentTemplates/PrivateDnsForPrivateEndpointNic.json",
+                        "privateDnsForPrivateEndpointIpConfigTemplateLink": "https://sqlazureextension.hosting.portal.azure.net/sqlazureextension/Content/2.1.01846207/DeploymentTemplates/PrivateDnsForPrivateEndpointIpConfig.json"
+                    },
+                    "resources": [
+                        {
+                            "type": "Microsoft.Sql/servers",
+                            "apiVersion": "2020-11-01-preview",
+                            "name": "[parameters('sqlServerName')]",
+                            "location": "[resourceGroup().location]",
+                            "tags": {},
+                            "properties": {
+                                "version": "12.0",
+                                "minimalTlsVersion": "[parameters('minimalTlsVersion')]",
+                                "administratorLogin": "[parameters('administratorLogin')]",
+                                "administratorLoginPassword": "[parameters('administratorLoginPassword')]",
+                                "primaryUserAssignedIdentityId": ""
+                            },
+                            "resources": [
+                                {
+                                    "type": "databases",
+                                    "apiVersion": "2021-02-01-preview",
+                                    "name": "[variables('databases')[0]]",
+                                    "location": "[resourceGroup().location]",
+                                    "dependsOn": [
+                                        "[concat('Microsoft.Sql/servers/', parameters('sqlServerName'))]"
+                                    ],
+                                    "tags": {},
+                                    "sku": {
+                                        "name": "[parameters('skuName')]",
+                                        "tier": "[parameters('tier')]"
+                                    },
+                                    "properties": "[variables('databaseProperties')]"
+                                },
+                                {
+                                    "type": "databases",
+                                    "apiVersion": "2021-02-01-preview",
+                                    "name": "[variables('databases')[1]]",
+                                    "location": "[resourceGroup().location]",
+                                    "dependsOn": [
+                                        "[concat('Microsoft.Sql/servers/', parameters('sqlServerName'))]"
+                                    ],
+                                    "tags": {},
+                                    "sku": {
+                                        "name": "[parameters('skuName')]",
+                                        "tier": "[parameters('tier')]"
+                                    },
+                                    "properties": "[variables('databaseProperties')]"
+                                },
+                                {
+                                    "type": "databases",
+                                    "apiVersion": "2021-02-01-preview",
+                                    "name": "[variables('databases')[2]]",
+                                    "location": "[resourceGroup().location]",
+                                    "dependsOn": [
+                                        "[concat('Microsoft.Sql/servers/', parameters('sqlServerName'))]"
+                                    ],
+                                    "tags": {},
+                                    "sku": {
+                                        "name": "[parameters('skuName')]",
+                                        "tier": "[parameters('tier')]"
+                                    },
+                                    "properties": "[variables('databaseProperties')]"
+                                },
+                                {
+                                    "type": "databases",
+                                    "apiVersion": "2021-02-01-preview",
+                                    "name": "[variables('databases')[3]]",
+                                    "location": "[resourceGroup().location]",
+                                    "dependsOn": [
+                                        "[concat('Microsoft.Sql/servers/', parameters('sqlServerName'))]"
+                                    ],
+                                    "tags": {},
+                                    "sku": {
+                                        "name": "[parameters('skuName')]",
+                                        "tier": "[parameters('tier')]"
+                                    },
+                                    "properties": "[variables('databaseProperties')]"
+                                },
+                                {
+                                    "type": "connectionPolicies",
+                                    "apiVersion": "2014-04-01",
+                                    "name": "Default",
+                                    "location": "[resourceGroup().location]",
+                                    "dependsOn": [
+                                        "[concat('Microsoft.Sql/servers/', parameters('sqlServerName'))]"
+                                    ],
+                                    "properties": {
+                                        "connectionType": "Default"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "Microsoft.Network/privateDnsZones",
+                            "apiVersion": "2018-09-01",
+                            "name": "privatelink.database.windows.net",
+                            "location": "global",
+                            "tags": {},
+                            "properties": {}
+                        },
+                        {
+                            "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+                            "apiVersion": "2018-09-01",
+                            "name": "[concat('privatelink.database.windows.net', '/', uniqueString(parameters('vnetId')))]",
+                            "location": "global",
+                            "dependsOn": [
+                                "privatelink.database.windows.net"
+                            ],
+                            "properties": {
+                                "virtualNetwork": {
+                                    "id": "[parameters('vnetId')]"
+                                },
+                                "registrationEnabled": false
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Network/privateEndpoints",
+                            "apiVersion": "2019-04-01",
+                            "name": "[variables('privateEndpointName')]",
+                            "location": "[resourceGroup().location]",
+                            "tags": {},
+                            "properties": {
+                                "privateLinkServiceConnections": [
+                                    {
+                                        "id": "",
+                                        "name": "[variables('privateEndpointName')]",
+                                        "properties": {
+                                            "privateLinkServiceId": "[resourceId('Microsoft.Sql/servers/', parameters('sqlServerName'))]",
+                                            "groupIds": [
+                                                "SqlServer"
+                                            ]
+                                        }
+                                    }
+                                ],
+                                "subnet": {
+                                    "id": "[parameters('subnetId')]"
+                                }
+                            }
+                        },
+                        {
+                            "apiVersion": "2019-05-01",
+                            "name": "SqlServerEndpointDnsRecords",
+                            "type": "Microsoft.Resources/deployments",
+                            "dependsOn": [
+                                "privatelink.database.windows.net"
+                            ],
+                            "properties": {
+                                "mode": "Incremental",
+                                "templatelink": {
+                                    "contentVersion": "1.0.0.0",
+                                    "uri": "[variables('privateDnsForPrivateEndpointTemplateLink')]"
+                                },
+                                "parameters": {
+                                    "privateDnsName": {
+                                        "value": "privatelink.database.windows.net"
+                                    },
+                                    "privateEndpointNicResourceId": {
+                                        "value": "[reference(resourceId('Microsoft.Network/privateEndpoints', variables('privateEndpointName')), '2019-04-01').networkInterfaces[0].id]"
+                                    },
+                                    "nicRecordsTemplateUri": {
+                                        "value": "[variables('privateDnsForPrivateEndpointNicTemplateLink')]"
+                                    },
+                                    "ipConfigRecordsTemplateUri": {
+                                        "value": "[variables('privateDnsForPrivateEndpointIpConfigTemplateLink')]"
+                                    },
+                                    "uniqueId": {
+                                        "value": "[uniqueString(resourceGroup().id)]"
+                                    },
+                                    "existingRecords": {
+                                        "value": {}
+                                    }
+                                }
                             }
                         }
                     ]

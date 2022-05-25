@@ -645,14 +645,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public OpenCGAResult<Map<String, List<String>>> getAllExecutionAcls(long studyId, String executionId, String userId)
+    public OpenCGAResult<Map<String, List<String>>> getAllExecutionAcls(long studyId, String executionUUID, String userId)
             throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(studyId, executionId, null, Enums.Resource.EXECUTION);
+        return aclDBAdaptor.get(studyId, executionUUID, null, Enums.Resource.EXECUTION);
     }
 
     @Override
-    public OpenCGAResult<Map<String, List<String>>> getExecutionAcl(long studyId, String executionId, String userId, String member)
+    public OpenCGAResult<Map<String, List<String>>> getExecutionAcl(long studyId, String executionUUID, String userId, String member)
             throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
@@ -669,7 +669,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
         }
 
-        return aclDBAdaptor.get(studyId, executionId, memberList, Enums.Resource.EXECUTION);
+        return aclDBAdaptor.get(studyId, executionUUID, memberList, Enums.Resource.EXECUTION);
     }
 
     @Override
@@ -1176,17 +1176,17 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void replicateAcls(long studyUid, String sourceId, List<String> targetIds, Enums.Resource sourceResource,
+    public void replicateAcls(long studyUid, String sourceUUID, List<String> targetUUIDs, Enums.Resource sourceResource,
                               Enums.Resource targetResource) throws CatalogException {
-        if (org.apache.commons.collections4.CollectionUtils.isEmpty(targetIds)) {
+        if (org.apache.commons.collections4.CollectionUtils.isEmpty(targetUUIDs)) {
             throw new CatalogDBException("Missing identifiers to set ACLs");
         }
 
         // Obtain all ACLs from source
-        OpenCGAResult<Map<String, List<String>>> aclResult = aclDBAdaptor.get(studyUid, sourceId, null, sourceResource);
+        OpenCGAResult<Map<String, List<String>>> aclResult = aclDBAdaptor.get(studyUid, sourceUUID, null, sourceResource);
         if (aclResult.getNumResults() == 1) {
             // Set those same ACLs on targets
-            aclDBAdaptor.setAcls(studyUid, targetIds, aclResult.first(), targetResource);
+            aclDBAdaptor.setAcls(studyUid, targetUUIDs, aclResult.first(), targetResource);
         }
     }
 

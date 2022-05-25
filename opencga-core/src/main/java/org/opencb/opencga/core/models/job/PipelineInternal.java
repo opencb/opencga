@@ -2,19 +2,19 @@ package org.opencb.opencga.core.models.job;
 
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Internal;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 
 public class PipelineInternal extends Internal {
 
     public PipelineInternal() {
     }
 
-    public PipelineInternal(Status status, String registrationDate, String lastModified) {
+    public PipelineInternal(InternalStatus status, String registrationDate, String lastModified) {
         super(status, registrationDate, lastModified);
     }
 
     public static PipelineInternal init() {
-        return new PipelineInternal(new Status(Status.READY), TimeUtils.getTime(), TimeUtils.getTime());
+        return new PipelineInternal(new InternalStatus(InternalStatus.READY), TimeUtils.getTime(), TimeUtils.getTime());
     }
 
     @Override
@@ -28,12 +28,12 @@ public class PipelineInternal extends Internal {
     }
 
     @Override
-    public Status getStatus() {
+    public InternalStatus getStatus() {
         return super.getStatus();
     }
 
     @Override
-    public PipelineInternal setStatus(Status status) {
+    public PipelineInternal setStatus(InternalStatus status) {
         super.setStatus(status);
         return this;
     }

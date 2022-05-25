@@ -16,12 +16,20 @@
 
 package org.opencb.opencga.core.models.job;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
+
 import java.util.LinkedList;
 import java.util.List;
 
 public class JobStudyParam {
 
+    @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_ID_DESCRIPTION)
     private String id;
+
+    @DataField(id = "others", indexed = true,
+            description = FieldConstants.JOB_STUDY_PARAM_OTHERS)
     private List<String> others;
 
     public JobStudyParam() {

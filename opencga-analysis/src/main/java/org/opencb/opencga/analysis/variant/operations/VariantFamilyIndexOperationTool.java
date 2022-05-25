@@ -19,43 +19,65 @@ package org.opencb.opencga.analysis.variant.operations;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Event;
-import org.opencb.opencga.core.tools.annotations.Tool;
-import org.opencb.opencga.core.models.operations.variant.VariantFamilyIndexParams;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.operations.variant.VariantFamilyIndexParams;
+import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.ToolParams;
 
+import java.util.Collections;
 import java.util.List;
 
+@Deprecated
 @Tool(id = VariantFamilyIndexOperationTool.ID, description = VariantFamilyIndexOperationTool.DESCRIPTION,
         type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
 public class VariantFamilyIndexOperationTool extends OperationTool {
 
     public static final String ID = "variant-family-index";
-    public static final String DESCRIPTION = "Build the family index";
+    public static final String DESCRIPTION = "DEPRECATED Build the family index";
 
     private String study;
-    private VariantFamilyIndexParams variantFamilyIndexParams;
+
+    @ToolParams
+    protected VariantFamilyIndexParams variantFamilyIndexParams;
 
     @Override
     protected void check() throws Exception {
         super.check();
 
-        variantFamilyIndexParams = VariantFamilyIndexParams.fromParams(VariantFamilyIndexParams.class, params);
         study = getStudyFqn();
 
-        if (CollectionUtils.isEmpty(variantFamilyIndexParams.getFamily())) {
-            throw new IllegalArgumentException("Empty list of families");
+        List<String> list = variantFamilyIndexParams.getFamily();
+        if (list == null) {
+            list = Collections.emptyList();
+            variantFamilyIndexParams.setFamily(Collections.emptyList());
         }
+        if (variantFamilyIndexParams.isUpdateIndex()) {
+            if (list.size() > 1 || list.size() == 1 && !list.get(0).equals(ParamConstants.ALL)) {
+                throw new IllegalArgumentException("Unaccepted parameter \"family\" when updating index.");
+            }
+        } else {
+            if (CollectionUtils.isEmpty(list)) {
+                throw new IllegalArgumentException("Empty list of families");
+            }
+        }
+
     }
 
     @Override
     protected void run() throws Exception {
         step(() -> {
-            DataResult<List<String>> trios = variantStorageManager.familyIndex(
-                    study,
-                    variantFamilyIndexParams.getFamily(),
-                    variantFamilyIndexParams.isSkipIncompleteFamilies(),
-                    params,
-                    token);
+            DataResult<List<String>> trios;
+            if (variantFamilyIndexParams.isUpdateIndex()) {
+                trios = variantStorageManager.familyIndexUpdate(study, params, token);
+            } else {
+                trios = variantStorageManager.familyIndex(
+                        study,
+                        variantFamilyIndexParams.getFamily(),
+                        variantFamilyIndexParams.isSkipIncompleteFamilies(),
+                        params,
+                        token);
+            }
             if (trios.getEvents() != null) {
                 for (Event event : trios.getEvents()) {
                     addEvent(event.getType(), event.getMessage());

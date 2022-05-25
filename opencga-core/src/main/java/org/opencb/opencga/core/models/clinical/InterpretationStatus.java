@@ -16,12 +16,12 @@
 
 package org.opencb.opencga.core.models.clinical;
 
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 
 import java.util.Arrays;
 import java.util.List;
 
-public class InterpretationStatus extends Status {
+public class InterpretationStatus extends InternalStatus {
 
     public static final String NOT_REVIEWED = "NOT_REVIEWED";
     public static final String UNDER_REVIEW = "UNDER_REVIEW";
@@ -47,7 +47,7 @@ public class InterpretationStatus extends Status {
     }
 
     public static boolean isValid(String status) {
-        if (Status.isValid(status)) {
+        if (InternalStatus.isValid(status)) {
             return true;
         }
 

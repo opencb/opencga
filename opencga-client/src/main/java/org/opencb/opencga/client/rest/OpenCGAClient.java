@@ -41,33 +41,22 @@ public class OpenCGAClient {
     private String userId;
     private String token;
     private String refreshToken;
-    private final ClientConfiguration clientConfiguration;
+    private ClientConfiguration clientConfiguration;
 
-    private final Map<String, AbstractParentClient> clients;
+    private Map<String, AbstractParentClient> clients;
     private boolean throwExceptionOnError;
 
     public OpenCGAClient(ClientConfiguration clientConfiguration) {
-        this(null, clientConfiguration);
+        this.init(null, clientConfiguration);
     }
 
     public OpenCGAClient(String user, String password, ClientConfiguration clientConfiguration) throws ClientException {
-        this(null, clientConfiguration);
-        login(user, password);
+        AuthenticationResponse login = login(user, password);
+        this.init(login, clientConfiguration);
     }
 
     public OpenCGAClient(AuthenticationResponse authenticationTokens, ClientConfiguration clientConfiguration) {
-        this.clients = new HashMap<>(20);
-        this.clientConfiguration = clientConfiguration;
-
-        init(authenticationTokens);
-    }
-
-    private void init(AuthenticationResponse tokens) {
-        if (tokens != null) {
-            this.userId = getUserFromToken(tokens.getToken());
-            setToken(tokens.getToken());
-            setRefreshToken(tokens.getRefreshToken());
-        }
+        this.init(authenticationTokens, clientConfiguration);
     }
 
     protected static String getUserFromToken(String token) {
@@ -75,13 +64,26 @@ public class OpenCGAClient {
         // https://github.com/jwtk/jjwt/issues/86
         // https://stackoverflow.com/questions/34998859/android-jwt-parsing-payload-claims-when-signed
         String withoutSignature = token.substring(0, token.lastIndexOf('.') + 1);
-        Claims claims = (Claims)  Jwts.parser()
+        Claims claims = (Claims) Jwts.parser()
                 .setAllowedClockSkewSeconds(TimeUnit.DAYS.toSeconds(3650))
                 .parse(withoutSignature)
                 .getBody();
         return claims.getSubject();
     }
 
+    private void init(AuthenticationResponse tokens, ClientConfiguration clientConfiguration) {
+        this.clients = new HashMap<>(25);
+
+        if (tokens != null) {
+            setToken(tokens.getToken());
+            setRefreshToken(tokens.getRefreshToken());
+            this.userId = getUserFromToken(tokens.getToken());
+        }
+
+
+        this.clientConfiguration = clientConfiguration;
+
+    }
 
     public UserClient getUserClient() {
         return getClient(UserClient.class, () -> new UserClient(token, clientConfiguration));
@@ -115,8 +117,8 @@ public class OpenCGAClient {
         return getClient(CohortClient.class, () -> new CohortClient(token, clientConfiguration));
     }
 
-    public ClinicalClient getClinicalAnalysisClient() {
-        return getClient(ClinicalClient.class, () -> new ClinicalClient(token, clientConfiguration));
+    public ClinicalAnalysisClient getClinicalAnalysisClient() {
+        return getClient(ClinicalAnalysisClient.class, () -> new ClinicalAnalysisClient(token, clientConfiguration));
     }
 
     public DiseasePanelClient getDiseasePanelClient() {
@@ -153,21 +155,6 @@ public class OpenCGAClient {
     }
 
     /**
-     * Logs in the user.
-     *
-     * @param user userId.
-     * @param password Password.
-     * @return AuthenticationResponse object.
-     * @throws ClientException when it is not possible logging in.
-     */
-    public AuthenticationResponse login(String user, String password) throws ClientException {
-        RestResponse<AuthenticationResponse> login = getUserClient().login(new LoginParams(user, password), null);
-        updateTokenFromClients(login);
-        setUserId(user);
-        return login.firstResult();
-    }
-
-    /**
      * Refresh the user token.
      *
      * @return the new AuthenticationResponse object.
@@ -180,6 +167,21 @@ public class OpenCGAClient {
         RestResponse<AuthenticationResponse> refresh = getUserClient().login(new LoginParams(refreshToken), null);
         updateTokenFromClients(refresh);
         return refresh.firstResult();
+    }
+
+    /**
+     * Logs in the user.
+     *
+     * @param user     userId.
+     * @param password Password.
+     * @return AuthenticationResponse object.
+     * @throws ClientException when it is not possible logging in.
+     */
+    public AuthenticationResponse login(String user, String password) throws ClientException {
+        RestResponse<AuthenticationResponse> login = getUserClient().login(new LoginParams(user, password), null);
+        updateTokenFromClients(login);
+        this.userId = user;
+        return login.firstResult();
     }
 
     public void updateTokenFromClients(RestResponse<AuthenticationResponse> loginResponse) throws ClientException {
@@ -203,6 +205,24 @@ public class OpenCGAClient {
         }
     }
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("OpenCGAClient{");
+        sb.append("userId='").append(userId).append('\'');
+        sb.append(", token='").append(token).append('\'');
+        sb.append(", refreshToken='").append(refreshToken).append('\'');
+        sb.append(", clientConfiguration=").append(clientConfiguration);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
 
     public String getToken() {
         return token;
@@ -228,8 +248,22 @@ public class OpenCGAClient {
         return this;
     }
 
+    public ClientConfiguration getClientConfiguration() {
+        return clientConfiguration;
+    }
+
+    public OpenCGAClient setClientConfiguration(ClientConfiguration clientConfiguration) {
+        this.clientConfiguration = clientConfiguration;
+        return this;
+    }
+
+    public boolean isThrowExceptionOnError() {
+        return throwExceptionOnError;
+    }
+
     public OpenCGAClient setThrowExceptionOnError(boolean throwExceptionOnError) {
         this.throwExceptionOnError = throwExceptionOnError;
+        // We have to set the value to all existing clients
         clients.values().stream()
                 .filter(Objects::nonNull)
                 .forEach(abstractParentClient -> {
@@ -238,11 +272,4 @@ public class OpenCGAClient {
         return this;
     }
 
-    public String getUserId() {
-        return userId;
-    }
-
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
 }

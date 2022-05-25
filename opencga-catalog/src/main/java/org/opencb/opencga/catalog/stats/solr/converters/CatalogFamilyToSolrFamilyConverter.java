@@ -78,10 +78,10 @@ public class CatalogFamilyToSolrFamilyConverter implements ComplexTypeConverter<
         familySolrModel.setCreationMonth(localDate.getMonth().toString());
         familySolrModel.setCreationDay(localDate.getDayOfMonth());
         familySolrModel.setCreationDayOfWeek(localDate.getDayOfWeek().toString());
-        familySolrModel.setStatus(family.getInternal().getStatus().getName());
+        familySolrModel.setStatus(family.getInternal().getStatus().getId());
 
         if (family.getInternal().getStatus() != null) {
-            familySolrModel.setStatus(family.getInternal().getStatus().getName());
+            familySolrModel.setStatus(family.getInternal().getStatus().getId());
         }
         familySolrModel.setPhenotypes(SolrConverterUtil.populatePhenotypes(family.getPhenotypes()));
         familySolrModel.setPhenotypes(SolrConverterUtil.populateDisorders(family.getDisorders()));

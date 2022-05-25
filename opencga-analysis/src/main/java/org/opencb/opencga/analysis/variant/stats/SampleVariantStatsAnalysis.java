@@ -22,11 +22,13 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -63,7 +65,6 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
     private SampleVariantStatsAnalysisExecutor toolExecutor;
     private List<List<String>> batches;
     private int numBatches;
-    private int batchSize;
 
     @Override
     protected void check() throws Exception {
@@ -185,23 +186,17 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
         }
 
         toolExecutor = getToolExecutor(SampleVariantStatsAnalysisExecutor.class);
-        if (toolParams.getBatchSize() == null || toolParams.getBatchSize() > toolExecutor.getMaxBatchSize()) {
+        if (toolParams.getBatchSize() == null) {
+            toolParams.setBatchSize(toolExecutor.getDefaultBatchSize());
+        } else if (toolParams.getBatchSize() > toolExecutor.getMaxBatchSize()) {
             toolParams.setBatchSize(toolExecutor.getMaxBatchSize());
         }
-        numBatches = (int) (Math.ceil(checkedSamplesList.size() / ((float) toolParams.getBatchSize())));
-        batchSize = (int) (Math.ceil(checkedSamplesList.size() / (float) numBatches));
+        batches = BatchUtils.splitBatches(checkedSamplesList, toolParams.getBatchSize());
+        numBatches = batches.size();
         if (numBatches > 1) {
-            logger.info("Execute sample stats in {} batches of {} samples", numBatches, batchSize);
+            logger.info("Execute sample stats in {} batches of {} samples", numBatches, batches.get(0).size());
         }
 
-        if (numBatches > 1) {
-            batches = new ArrayList<>(numBatches);
-            for (int batch = 0; batch < numBatches; batch++) {
-                batches.add(checkedSamplesList.subList(batch * batchSize, Math.min(checkedSamplesList.size(), (batch + 1) * batchSize)));
-            }
-        } else {
-            batches = Collections.singletonList(checkedSamplesList);
-        }
     }
 
     @Override
@@ -275,6 +270,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
                             .filter(e -> e.getValue() != null)
                             .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
 
+                    ProgressLogger progressLogger = new ProgressLogger("Index variant sample stats", batchSamples.size());
                     ObjectReader reader = JacksonUtils.getDefaultObjectMapper().readerFor(SampleVariantStats.class);
                     try (MappingIterator<SampleVariantStats> it = reader.readValues(tmpOutputFile.toFile())) {
                         while (it.hasNext()) {
@@ -328,6 +324,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
                             getCatalogManager().getSampleManager()
                                     .update(study, sampleVariantStats.getId(), updateParams, new QueryOptions(), getToken());
 
+                            progressLogger.increment(1);
                         }
                     }
                 });

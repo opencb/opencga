@@ -34,32 +34,33 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
 public class PipelineMongoDBAdaptor extends MongoDBAdaptor implements PipelineDBAdaptor {
 
-    private final MongoDBCollection pipelineCollection;
-    private final MongoDBCollection lastPipelineCollection;
-    private final MongoDBCollection deletedPipelineCollection;
-    private PipelineConverter pipelineConverter;
+    private final MongoDBCollection collection;
+    private final MongoDBCollection archiveCollection;
+    private final MongoDBCollection deletedCollection;
+    private final PipelineConverter pipelineConverter;
+    private final VersionedMongoDBAdaptor versionedMongoDBAdaptor;
 
     private static final String PRIVATE_STUDY_UIDS = "_studyUids";
 
-    public PipelineMongoDBAdaptor(MongoDBCollection pipelineCollection, MongoDBCollection lastPipelineCollection,
-                                  MongoDBCollection deletedPipelineCollection, Configuration configuration,
-                                  MongoDBAdaptorFactory dbAdaptorFactory) {
+    public PipelineMongoDBAdaptor(MongoDBCollection collection, MongoDBCollection archiveCollection, MongoDBCollection deletedCollection,
+                                  Configuration configuration, MongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(PipelineMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
-        this.pipelineCollection = pipelineCollection;
-        this.lastPipelineCollection = lastPipelineCollection;
-        this.deletedPipelineCollection = deletedPipelineCollection;
+        this.collection = collection;
+        this.archiveCollection = archiveCollection;
+        this.deletedCollection = deletedCollection;
         this.pipelineConverter = new PipelineConverter();
+        this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(collection, archiveCollection, deletedCollection);
     }
 
-    public MongoDBCollection getLastPipelineCollection() {
-        return lastPipelineCollection;
+    public MongoDBCollection getArchiveCollection() {
+        return archiveCollection;
     }
 
     @Override
     public OpenCGAResult nativeInsert(Map<String, Object> pipeline, String userId) throws CatalogDBException {
         Document document = getMongoDBDocument(pipeline, "pipeline");
-        return new OpenCGAResult(lastPipelineCollection.insert(document, null));
+        return new OpenCGAResult(archiveCollection.insert(document, null));
     }
 
     @Override
@@ -86,7 +87,7 @@ public class PipelineMongoDBAdaptor extends MongoDBAdaptor implements PipelineDB
         filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyId));
 
         Bson bson = Filters.and(filterList);
-        DataResult<Long> count = lastPipelineCollection.count(clientSession, bson);
+        DataResult<Long> count = archiveCollection.count(clientSession, bson);
 
         if (count.getNumMatches() > 0) {
             throw new CatalogDBException("Pipeline { id: '" + pipeline.getId() + "'} already exists.");
@@ -108,8 +109,7 @@ public class PipelineMongoDBAdaptor extends MongoDBAdaptor implements PipelineDB
         pipelineObject.put(LAST_OF_VERSION, true);
 
         logger.debug("Inserting pipeline '{}' ({})...", pipeline.getId(), pipeline.getUid());
-        pipelineCollection.insert(clientSession, pipelineObject, null);
-        lastPipelineCollection.insert(clientSession, pipelineObject, null);
+        versionedMongoDBAdaptor.insert(clientSession, pipelineObject);
         logger.debug("Pipeline '{}' successfully inserted", pipeline.getId());
         return pipelineUid;
     }
@@ -156,7 +156,7 @@ public class PipelineMongoDBAdaptor extends MongoDBAdaptor implements PipelineDB
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, user);
         logger.debug("Execution count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return new OpenCGAResult<>(lastPipelineCollection.count(bson));
+        return new OpenCGAResult<>(archiveCollection.count(bson));
     }
 
     @Override
@@ -174,7 +174,7 @@ public class PipelineMongoDBAdaptor extends MongoDBAdaptor implements PipelineDB
     @Override
     public OpenCGAResult<Long> count(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bsonDocument = parseQuery(query);
-        return new OpenCGAResult<>(lastPipelineCollection.count(bsonDocument));
+        return new OpenCGAResult<>(archiveCollection.count(bsonDocument));
     }
 
     @Override
@@ -234,41 +234,36 @@ public class PipelineMongoDBAdaptor extends MongoDBAdaptor implements PipelineDB
 
         Query tmpQuery = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyUid)
-                .append(QueryParams.UID.key(), pipelineUid)
-                .append(LAST_OF_VERSION, true);
+                .append(QueryParams.UID.key(), pipelineUid);
+        Bson bsonQuery = parseQuery(tmpQuery);
+        return versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
+            UpdateDocument updateParams = parseAndValidateUpdateParams(clientSession, parameters, queryOptions);
+            Document pipelineUpdate = updateParams.toFinalUpdateDocument();
 
-        createNewVersion(clientSession, pipelineCollection, lastPipelineCollection, pipelineDocument);
-
-        UpdateDocument updateParams = parseAndValidateUpdateParams(clientSession, parameters, queryOptions);
-        Document pipelineUpdate = updateParams.toFinalUpdateDocument();
-
-        if (pipelineUpdate.isEmpty()) {
-            if (!parameters.isEmpty()) {
-                logger.error("Non-processed update parameters: {}", parameters.keySet());
+            if (pipelineUpdate.isEmpty()) {
+                if (!parameters.isEmpty()) {
+                    logger.error("Non-processed update parameters: {}", parameters.keySet());
+                }
+                throw new CatalogDBException("Nothing to be updated");
             }
-            throw new CatalogDBException("Nothing to be updated");
-        }
 
-        List<Event> events = new ArrayList<>();
+            List<Event> events = new ArrayList<>();
 
-        Bson finalQuery = parseQuery(tmpQuery);
-        logger.debug("Pipeline update: query : {}, update: {}",
-                finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                pipelineUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        DataResult updateResult = pipelineCollection.update(clientSession, finalQuery, pipelineUpdate, QueryOptions.empty());
-        if (updateResult.getNumMatches() == 0) {
-            throw new CatalogDBException("Could not update pipeline '" + pipelineId + "'. Pipeline not found.");
-        }
-        updateResult = lastPipelineCollection.update(clientSession, finalQuery, pipelineUpdate, QueryOptions.empty());
-        if (updateResult.getNumMatches() == 0) {
-            throw new CatalogDBException("Could not update pipeline '" + pipelineId + "'. Pipeline not found.");
-        }
-        if (updateResult.getNumUpdated() == 0) {
-            events.add(new Event(Event.Type.WARNING, pipelineId, "Pipeline was already updated"));
-        }
-        logger.debug("Pipeline {} successfully updated", pipelineId);
+            Bson finalQuery = parseQuery(tmpQuery);
+            logger.debug("Pipeline update: query : {}, update: {}",
+                    finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                    pipelineUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            DataResult updateResult = collection.update(clientSession, finalQuery, pipelineUpdate, QueryOptions.empty());
+            if (updateResult.getNumMatches() == 0) {
+                throw new CatalogDBException("Could not update pipeline '" + pipelineId + "'. Pipeline not found.");
+            }
+            if (updateResult.getNumUpdated() == 0) {
+                events.add(new Event(Event.Type.WARNING, pipelineId, "Pipeline was already updated"));
+            }
+            logger.debug("Pipeline {} successfully updated", pipelineId);
 
-        return endWrite(tmpStartTime, 1, 1, events);
+            return endWrite(tmpStartTime, 1, 1, events);
+        }, null);
     }
 
     private UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, QueryOptions queryOptions) {
@@ -374,15 +369,8 @@ public class PipelineMongoDBAdaptor extends MongoDBAdaptor implements PipelineDB
         Bson bson = parseQuery(query, user);
 
         logger.debug("Pipeline get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        if (!query.getBoolean(ParamConstants.DELETED_PARAM)) {
-            if (isQueryingOldVersions(query)) {
-                return pipelineCollection.iterator(session, bson, null, null, qOptions);
-            } else {
-                return lastPipelineCollection.iterator(session, bson, null, null, qOptions);
-            }
-        } else {
-            return deletedPipelineCollection.iterator(session, bson, null, null, qOptions);
-        }
+        MongoDBCollection collection = getQueryCollection(query, this.collection, archiveCollection, deletedCollection);
+        return collection.iterator(session, bson, null, null, qOptions);
     }
 
     private boolean isQueryingOldVersions(Query query) {
@@ -422,10 +410,10 @@ public class PipelineMongoDBAdaptor extends MongoDBAdaptor implements PipelineDB
 //
 //            query.remove(ParamConstants.ACL_PARAM);
 //        }
-
-        if (query.containsKey(LAST_OF_VERSION)) {
-            addAutoOrQuery(LAST_OF_VERSION, LAST_OF_VERSION, query, QueryParam.Type.BOOLEAN, andBsonList);
-        }
+//
+//        if (query.containsKey(LAST_OF_VERSION)) {
+//            addAutoOrQuery(LAST_OF_VERSION, LAST_OF_VERSION, query, QueryParam.Type.BOOLEAN, andBsonList);
+//        }
 
         Query queryCopy = new Query(query);
         queryCopy.remove(ParamConstants.DELETED_PARAM);

@@ -27,16 +27,6 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
-    public String getDockerImageName() {
-        return "opencb/opencga-samtools";
-    }
-
-    @Override
-    public String getDockerImageVersion() {
-        return GitRepositoryState.get().getBuildVersion();
-    }
-
-    @Override
     public void run() throws ToolException {
         switch (command) {
             case "depth":
@@ -76,8 +66,8 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Append mounts
         Set<String> inputFileParamNames = SamtoolsWrapperAnalysis.getFileParamNames(command);
-        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(), inputFileParamNames,
-                getExecutorParams());
+        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(),
+                inputFileParamNames, getExecutorParams());
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
@@ -101,8 +91,8 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Append mounts
         Set<String> inputFileParamNames = SamtoolsWrapperAnalysis.getFileParamNames(command);
-        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(), inputFileParamNames,
-                getExecutorParams());
+        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(),
+                inputFileParamNames, getExecutorParams());
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
@@ -118,7 +108,8 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
                 value = String.valueOf(getExecutorParams().get("output"));
             }
             if (StringUtils.isNotEmpty(value)) {
-                List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("o", value)));
+                List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("o",
+                        value)));
                 appendOutputFiles(outputFilenames, sb);
             }
         }
@@ -138,8 +129,8 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Append mounts
         Set<String> inputFileParamNames = SamtoolsWrapperAnalysis.getFileParamNames(command);
-        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(), inputFileParamNames,
-                getExecutorParams());
+        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(),
+                inputFileParamNames, getExecutorParams());
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
@@ -152,7 +143,8 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         if (getExecutorParams().containsKey("o")) {
             String value = String.valueOf(getExecutorParams().get("o"));
             if (StringUtils.isNotEmpty(value)) {
-                List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("o", value)));
+                List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("o",
+                        value)));
                 appendOutputFiles(outputFilenames, sb);
             }
         }
@@ -172,7 +164,8 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Append mounts
         Set<String> inputFileParamNames = SamtoolsWrapperAnalysis.getFileParamNames(command);
-        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(), inputFileParamNames,
+        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(),
+                inputFileParamNames,
                 getExecutorParams());
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
@@ -194,9 +187,9 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         StringBuilder sb = initCommandLine();
 
         // Append mounts
-        // Append mounts
         Set<String> inputFileParamNames = SamtoolsWrapperAnalysis.getFileParamNames(command);
-        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(), inputFileParamNames,
+        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(),
+                inputFileParamNames,
                 getExecutorParams());
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
@@ -210,7 +203,8 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         if (getExecutorParams().containsKey("o")) {
             String value = String.valueOf(getExecutorParams().get("o"));
             if (StringUtils.isNotEmpty(value)) {
-                List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("o", value)));
+                List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("o",
+                        value)));
                 appendOutputFiles(outputFilenames, sb);
             }
         }
@@ -230,8 +224,8 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Append mounts
         Set<String> inputFileParamNames = SamtoolsWrapperAnalysis.getFileParamNames(command);
-        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(), inputFileParamNames,
-                getExecutorParams());
+        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(),
+                inputFileParamNames, getExecutorParams());
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
@@ -253,8 +247,8 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Append mounts
         Set<String> inputFileParamNames = SamtoolsWrapperAnalysis.getFileParamNames(command);
-        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(), inputFileParamNames,
-                getExecutorParams());
+        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(),
+                inputFileParamNames, getExecutorParams());
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
@@ -276,8 +270,8 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Append mounts
         Set<String> inputFileParamNames = SamtoolsWrapperAnalysis.getFileParamNames(command);
-        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(), inputFileParamNames,
-                getExecutorParams());
+        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(),
+                inputFileParamNames, getExecutorParams());
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
@@ -305,8 +299,8 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Append mounts
         Set<String> inputFileParamNames = SamtoolsWrapperAnalysis.getFileParamNames(command);
-        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(), inputFileParamNames,
-                getExecutorParams());
+        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(),
+                inputFileParamNames, getExecutorParams());
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command

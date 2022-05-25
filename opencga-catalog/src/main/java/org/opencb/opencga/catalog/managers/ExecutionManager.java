@@ -557,9 +557,9 @@ public class ExecutionManager extends ResourceManager<Execution> {
                     try {
                         OpenCGAResult<Map<String, List<String>>> allExecutionAcls;
                         if (StringUtils.isNotEmpty(member)) {
-                            allExecutionAcls = authorizationManager.getExecutionAcl(study.getUid(), execution.getId(), user, member);
+                            allExecutionAcls = authorizationManager.getExecutionAcl(study.getUid(), execution.getUuid(), user, member);
                         } else {
-                            allExecutionAcls = authorizationManager.getAllExecutionAcls(study.getUid(), execution.getId(), user);
+                            allExecutionAcls = authorizationManager.getAllExecutionAcls(study.getUid(), execution.getUuid(), user);
                         }
                         executionAclList.append(allExecutionAcls);
                         auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.EXECUTION, execution.getId(),

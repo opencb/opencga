@@ -29,7 +29,7 @@ import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.IndividualPopulation;
@@ -155,17 +155,6 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void testModifyIndividualBadGender() throws Exception {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initUnknown(), null, null, null, null, "",
-                Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), null), Collections.emptyList(), null);
-        long individualUid = getIndividual(studyId, "in1").getUid();
-
-        thrown.expect(CatalogDBException.class);
-        catalogIndividualDBAdaptor.update(individualUid, new ObjectMap("sex", "bad sex"), QueryOptions.empty());
-    }
-
-    @Test
     public void testModifyIndividualBadFatherId() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initUnknown(), null, null, null, null, "",
@@ -211,11 +200,11 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testAvoidDuplicatedSamples() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        new Status();
+        new InternalStatus();
         catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyId, new Sample().setId("sample1").setInternal(SampleInternal.init()),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample1 = getSample(studyId, "sample1");
-        new Status();
+        new InternalStatus();
         catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyId, new Sample().setId("sample2").setInternal(SampleInternal.init()),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample2 = getSample(studyId, "sample2");
@@ -230,8 +219,11 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertTrue(individualStored.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet()).containsAll(Arrays.asList(
                 sample1.getUid(), sample2.getUid())));
 
+        List<Sample> sampleList = Arrays.asList(individualStored.getSamples().get(0), individualStored.getSamples().get(1),
+                individualStored.getSamples().get(0), individualStored.getSamples().get(1));
+
         // Update samples
-        ObjectMap params = new ObjectMap(IndividualDBAdaptor.QueryParams.SAMPLES.key(), individual.getSamples());
+        ObjectMap params = new ObjectMap(IndividualDBAdaptor.QueryParams.SAMPLES.key(), sampleList);
         DataResult result = catalogIndividualDBAdaptor.update(individualStored.getUid(), params, QueryOptions.empty());
         assertEquals(1, result.getNumUpdated());
 
@@ -241,6 +233,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertEquals(2, individual.getSamples().size());
         assertTrue(individual.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet()).containsAll(Arrays.asList(sample1.getUid(),
                 sample2.getUid())));
+        assertEquals(2, individual.getSamples().stream().map(Sample::getVersion).filter(v -> v == 2).count());
     }
 
 //    @Test

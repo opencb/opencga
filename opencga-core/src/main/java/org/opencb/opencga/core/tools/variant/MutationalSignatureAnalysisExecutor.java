@@ -45,8 +45,8 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
     public MutationalSignatureAnalysisExecutor() {
     }
 
-    public static String getContextIndexFilename(String sampleName) {
-        return "OPENCGA_" + sampleName + "_genome_context.csv";
+    protected String getContextIndexFilename() {
+        return "OPENCGA_" + sample + "_" + assembly + "_genome_context.csv";
     }
 
     protected String getMutationalSignatureFilename() {

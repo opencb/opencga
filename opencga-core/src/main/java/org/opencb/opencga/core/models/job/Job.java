@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.core.models.job;
 
+import org.opencb.commons.annotations.DataClass;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.PrivateStudyUid;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
@@ -27,70 +30,124 @@ import java.util.Map;
 /**
  * Created by jacobo on 11/09/14.
  */
+@DataClass(id = "Job", since = "1.0",
+        description = "Job data model hosts information about any job.")
 public class Job extends PrivateStudyUid {
 
+    public static final String OPENCGA_PARENTS = "OPENCGA_PARENTS";
     /**
      * Job ID is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment.
      *
      * @apiNote Required, Immutable, Unique
      */
+    @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_ID_DESCRIPTION)
     private String id;
     /**
      * Global unique ID at the whole OpenCGA installation. This is automatically created during the sample creation and cannot be changed.
      *
      * @apiNote Internal, Unique, Immutable
      */
+
+    @DataField(id = "uuid", managed = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_UUID_DESCRIPTION)
     private String uuid;
     /**
      * An string to describe the properties of the Job.
      *
      * @apiNote
      */
+    @DataField(id = "description", defaultValue = "No description available",
+            description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
-    private String executionId;
-    private ToolInfo tool;
-    private String userId;
-    private String commandLine;
-    private Map<String, Object> params;
-    /**
-     * String representing when the sample was created, this is automatically set by OpenCGA.
-     *
-     * @apiNote Internal
-     */
-    private String creationDate;
-    /**
-     * String representing when was the last time the sample was modified, this is automatically set by OpenCGA.
-     *
-     * @apiNote Internal
-     */
-    private String modificationDate;
-    private Enums.Priority priority;
-    /**
-     * An object describing the internal information of the Sample. This is managed by OpenCGA.
-     *
-     * @apiNote Internal
-     */
-    private JobInternal internal;
-    private File outDir;
-    private List<File> input;    // input files to this job
-    private List<File> output;   // output files of this job
-    private List<String> tags;
-    private List<Job> dependsOn;
-    private JobResult execution;
-    private File stdout;
-    private File stderr;
-    private boolean visited;
 
+    @DataField(id = "executionId", description = FieldConstants.JOB_EXECUTION_ID)
+    private String executionId;
+
+    @DataField(id = "tool", indexed = true,
+            description = FieldConstants.JOB_TOOL)
+    private ToolInfo tool;
+
+    @DataField(id = "userId", indexed = true,
+            description = FieldConstants.JOB_USER_ID)
+    private String userId;
+
+    @DataField(id = "commandLine", indexed = true,
+            description = FieldConstants.JOB_COMMAND_LINE)
+    private String commandLine;
+
+
+    @DataField(id = "params", indexed = true,
+            description = FieldConstants.JOB_PARAMS)
+    private Map<String, Object> params;
+
+    @DataField(id = "creationDate", indexed = true,
+            description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
+    private String creationDate;
+
+    @DataField(id = "modificationDate", indexed = true, since = "1.0",
+            description = FieldConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
+    private String modificationDate;
+
+    @DataField(id = "priority", indexed = true,
+            description = FieldConstants.JOB_PRIORITY_DESCRIPTION)
+    private Enums.Priority priority;
+
+    @DataField(id = "release", indexed = true,
+            description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
+    private JobInternal internal;
+
+    @DataField(id = "outDir", indexed = true,
+            description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
+    private File outDir;
+
+    @DataField(id = "input", indexed = true,
+            description = FieldConstants.JOB_INPUT_DESCRIPTION)
+    private List<File> input;    // input files to this job
+
+    @DataField(id = "output", indexed = true,
+            description = FieldConstants.JOB_OUTPUT_DESCRIPTION)
+    private List<File> output;   // output files of this job
+
+    @DataField(id = "tags", indexed = true,
+            description = FieldConstants.JOB_TAGS_DESCRIPTION)
+    private List<String> tags;
+
+    @DataField(id = "dependsOn", indexed = true,
+            description = FieldConstants.JOB_DEPENDS_ON_DESCRIPTION)
+    private List<Job> dependsOn;
+
+    @DataField(id = "execution", indexed = true, description = FieldConstants.JOB_EXECUTION_DESCRIPTION)
+    private JobResult execution;
+
+    @DataField(id = "stdout", indexed = true,
+            description = FieldConstants.JOB_STDOUT_DESCRIPTION)
+    private File stdout;
+
+    @DataField(id = "stderr", indexed = true,
+            description = FieldConstants.JOB_STDERR_DESCRIPTION)
+    private File stderr;
+
+    @DataField(id = "visited", indexed = true,
+            description = FieldConstants.JOB_VISITED)
+    private boolean visited;
     /**
      * An integer describing the current data release.
      *
      * @apiNote Internal
      */
-    private int release;
-    private JobStudyParam study;
-    private Map<String, Object> attributes;
 
-    public static final String OPENCGA_PARENTS = "OPENCGA_PARENTS";
+    @DataField(id = "release", indexed = true,
+            description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
+    private int release;
+
+    @DataField(id = "study", indexed = true,
+            description = FieldConstants.JOB_STUDY)
+    private JobStudyParam study;
+
+    @DataField(id = "attributes", indexed = true,
+            description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
+    private Map<String, Object> attributes;
 
     public Job() {
     }

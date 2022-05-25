@@ -248,7 +248,7 @@ public final class Enums {
         COLLECTION
     }
 
-    public static class ExecutionStatus extends Status {
+    public static class ExecutionStatus extends InternalStatus {
 
         /**
          * PENDING status means that the execution or job is ready to be processed or put into the queue.
@@ -313,7 +313,7 @@ public final class Enums {
 
 
         public static boolean isValid(String status) {
-            if (Status.isValid(status)) {
+            if (InternalStatus.isValid(status)) {
                 return true;
             }
             if (status != null && STATUS_LIST.contains(status)) {

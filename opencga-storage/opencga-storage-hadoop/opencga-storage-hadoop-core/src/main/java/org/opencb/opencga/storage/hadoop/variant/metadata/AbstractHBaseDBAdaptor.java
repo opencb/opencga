@@ -59,7 +59,6 @@ public abstract class AbstractHBaseDBAdaptor {
         Objects.requireNonNull(configuration);
         this.tableName = Objects.requireNonNull(metaTableName);
         HBaseVariantTableNameGenerator.checkValidMetaTableName(metaTableName);
-        new GenomeHelper(configuration);
         family = GenomeHelper.COLUMN_FAMILY_BYTES;
         objectMapper = new ObjectMapper();
         objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);

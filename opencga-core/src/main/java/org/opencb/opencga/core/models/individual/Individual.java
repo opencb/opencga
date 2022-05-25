@@ -19,14 +19,17 @@ package org.opencb.opencga.core.models.individual;
 import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.core.OntologyTermAnnotation;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty.KaryotypicSex;
 import org.opencb.biodata.models.pedigree.IndividualProperty.LifeStatus;
+import org.opencb.commons.annotations.DataClass;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.sample.Sample;
 
 import java.util.*;
@@ -34,6 +37,8 @@ import java.util.*;
 /**
  * Created by jacobo on 11/09/14.
  */
+@DataClass(id = "Individual", since = "1.0",
+        description = "Individual data model hosts information about any indvidual.")
 public class Individual extends Annotable {
 
     /**
@@ -42,6 +47,8 @@ public class Individual extends Annotable {
      *
      * @apiNote Required, Immutable, Unique
      */
+    @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.INDIVIDUAL_ID_DESCRIPTION)
     private String id;
 
     /**
@@ -49,20 +56,41 @@ public class Individual extends Annotable {
      *
      * @apiNote Internal, Unique, Immutable
      */
+    @DataField(id = "uuid", managed = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_UUID_DESCRIPTION)
     private String uuid;
+
+    @DataField(id = "name", indexed = true, description = FieldConstants.INDIVIDUAL_NAME)
     private String name;
 
+    @DataField(id = "father", indexed = true, description = FieldConstants.INDIVIDUAL_FATHER)
     private Individual father;
+
+    @DataField(id = "mother", indexed = true, description = FieldConstants.INDIVIDUAL_MOTHER)
     private Individual mother;
+
+    @DataField(id = "familyIds", indexed = true, description = FieldConstants.INDIVIDUAL_FAMILY_IDS)
     private List<String> familyIds;
+
+    @DataField(id = "location", indexed = true, description = FieldConstants.INDIVIDUAL_LOCATION)
     private Location location;
 
+    @DataField(id = "qualityControl", indexed = true, description = FieldConstants.GENERIC_QUALITY_CONTROL)
     private IndividualQualityControl qualityControl;
 
+    @DataField(id = "sex", indexed = true, description = FieldConstants.INDIVIDUAL_SEX)
     private SexOntologyTermAnnotation sex;
+
+    @DataField(id = "karyotypicSex", indexed = true, description = FieldConstants.INDIVIDUAL_KARYOTYPIC_SEX)
     private KaryotypicSex karyotypicSex;
+
+    @DataField(id = "ethnicity", indexed = true, description = FieldConstants.INDIVIDUAL_ETHNICITY)
     private OntologyTermAnnotation ethnicity;
+
+    @DataField(id = "ethnicity", indexed = true, description = FieldConstants.INDIVIDUAL_ETHNICITY)
     private IndividualPopulation population;
+
+    @DataField(id = "dateOfBirth", indexed = true, description = FieldConstants.INDIVIDUAL_DATE_OF_BIRTH)
     private String dateOfBirth;
 
     /**
@@ -70,6 +98,8 @@ public class Individual extends Annotable {
      *
      * @apiNote Internal
      */
+    @DataField(id = "release", managed = true, indexed = true,
+            description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
     private int release;
 
     /**
@@ -77,6 +107,8 @@ public class Individual extends Annotable {
      *
      * @apiNote Internal
      */
+    @DataField(id = "version", managed = true, indexed = true,
+            description = FieldConstants.GENERIC_VERSION_DESCRIPTION)
     private int version;
 
     /**
@@ -84,6 +116,8 @@ public class Individual extends Annotable {
      *
      * @apiNote Internal
      */
+    @DataField(id = "creationDate", indexed = true, since = "1.0",
+            description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
 
     /**
@@ -91,8 +125,11 @@ public class Individual extends Annotable {
      *
      * @apiNote Internal
      */
+    @DataField(id = "modificationDate", indexed = true, since = "1.0",
+            description = FieldConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
 
+    @DataField(id = "lifeStatus", indexed = true, description = FieldConstants.INDIVIDUAL_LIFE_STATUS)
     private LifeStatus lifeStatus;
 
     /**
@@ -100,6 +137,8 @@ public class Individual extends Annotable {
      *
      * @apiNote
      */
+    @DataField(id = "phenotypes", alias = {"phenotypes.id", "phenotypesId"},
+            description = FieldConstants.GENERIC_PHENOTYPES_DESCRIPTION)
     private List<Phenotype> phenotypes;
 
     /**
@@ -107,6 +146,9 @@ public class Individual extends Annotable {
      *
      * @apiNote
      */
+
+    @DataField(id = "disorders", indexed = true,
+            description = FieldConstants.INDIVIDUAL_DISORDERS)
     private List<Disorder> disorders;
 
     /**
@@ -114,12 +156,22 @@ public class Individual extends Annotable {
      *
      * @apiNote
      */
+    @DataField(id = "samples", indexed = true,
+            description = FieldConstants.INDIVIDUAL_SAMPLES)
     private List<Sample> samples;
 
+    @DataField(id = "parentalConsanguinity", indexed = true,
+            description = FieldConstants.INDIVIDUAL_PARENTAL_CONSANGUINITY)
     private boolean parentalConsanguinity;
 
-    private CustomStatus status;
+    @DataField(id = "status", since = "2.0",
+            description = FieldConstants.GENERIC_CUSTOM_STATUS)
 
+    private Status status;
+
+
+    @DataField(id = "internal", since = "2.0",
+            description = FieldConstants.GENERIC_INTERNAL)
     private IndividualInternal internal;
 
     /**
@@ -127,6 +179,8 @@ public class Individual extends Annotable {
      *
      * @apiNote
      */
+    @DataField(id = "attributes", since = "1.0",
+            description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public Individual() {
@@ -139,7 +193,7 @@ public class Individual extends Annotable {
                       IndividualInternal internal, Map<String, Object> attributes) {
         this(id, name, father, mother, Collections.emptyList(), location, null, sex, karyotypicSex, ethnicity, population, dateOfBirth,
                 release, 1, TimeUtils.getTime(), TimeUtils.getTime(), lifeStatus, phenotypeList, disorders, samples,
-                parentalConsanguinity, annotationSets, new CustomStatus(), internal, attributes);
+                parentalConsanguinity, annotationSets, new Status(), internal, attributes);
     }
 
     public Individual(String id, String name, Individual father, Individual mother, List<String> familyIds, Location location,
@@ -147,7 +201,7 @@ public class Individual extends Annotable {
                       OntologyTermAnnotation ethnicity, IndividualPopulation population, String dateOfBirth, int release, int version,
                       String creationDate, String modificationDate, LifeStatus lifeStatus, List<Phenotype> phenotypes,
                       List<Disorder> disorders, List<Sample> samples, boolean parentalConsanguinity, List<AnnotationSet> annotationSets,
-                      CustomStatus status, IndividualInternal internal, Map<String, Object> attributes) {
+                      Status status, IndividualInternal internal, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.father = ObjectUtils.defaultIfNull(father, new Individual());
@@ -469,11 +523,11 @@ public class Individual extends Annotable {
         return this;
     }
 
-    public CustomStatus getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public Individual setStatus(CustomStatus status) {
+    public Individual setStatus(Status status) {
         this.status = status;
         return this;
     }

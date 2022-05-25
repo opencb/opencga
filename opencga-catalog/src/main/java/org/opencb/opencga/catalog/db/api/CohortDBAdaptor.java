@@ -41,17 +41,18 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
+        NAME("name", TEXT, ""),
         UID("uid", DECIMAL, ""),
         UUID("uuid", TEXT, ""),
         TYPE("type", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
         STATUS("status", TEXT_ARRAY, ""),
-        STATUS_NAME("status.name", TEXT, ""),
+        STATUS_ID("status.id", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         STATUS_DESCRIPTION("status.description", TEXT, ""),
         INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
-        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_DESCRIPTION("internal.status.description", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
@@ -76,6 +77,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
         STUDY("study", INTEGER_ARRAY, ""); // Alias to studyId in the database. Only for the webservices.
 
         private static Map<String, QueryParams> map;
+
         static {
             map = new HashMap<>();
             for (QueryParams params : QueryParams.values()) {
@@ -148,7 +150,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
      * be applied.
      *
-     * @param studyId study id containing the entries affected.
+     * @param studyId          study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
      * @return OpenCGAResult object.
      * @throws CatalogException if there is any database error.

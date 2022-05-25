@@ -25,14 +25,16 @@ public class VariantFamilyIndexParams extends ToolParams {
     public static final String DESCRIPTION = "Variant family index params.";
     private List<String> family;
     private boolean overwrite;
+    private boolean updateIndex;
     private boolean skipIncompleteFamilies;
 
     public VariantFamilyIndexParams() {
     }
 
-    public VariantFamilyIndexParams(List<String> family, boolean overwrite, boolean skipIncompleteFamilies) {
+    public VariantFamilyIndexParams(List<String> family, boolean overwrite, boolean updateIndex, boolean skipIncompleteFamilies) {
         this.family = family;
         this.overwrite = overwrite;
+        this.updateIndex = updateIndex;
         this.skipIncompleteFamilies = skipIncompleteFamilies;
     }
 
@@ -42,6 +44,15 @@ public class VariantFamilyIndexParams extends ToolParams {
 
     public VariantFamilyIndexParams setFamily(List<String> family) {
         this.family = family;
+        return this;
+    }
+
+    public boolean isUpdateIndex() {
+        return updateIndex;
+    }
+
+    public VariantFamilyIndexParams setUpdateIndex(boolean updateIndex) {
+        this.updateIndex = updateIndex;
         return this;
     }
 
@@ -58,7 +69,8 @@ public class VariantFamilyIndexParams extends ToolParams {
         return skipIncompleteFamilies;
     }
 
-    public void setSkipIncompleteFamilies(boolean skipIncompleteFamilies) {
+    public VariantFamilyIndexParams setSkipIncompleteFamilies(boolean skipIncompleteFamilies) {
         this.skipIncompleteFamilies = skipIncompleteFamilies;
+        return this;
     }
 }

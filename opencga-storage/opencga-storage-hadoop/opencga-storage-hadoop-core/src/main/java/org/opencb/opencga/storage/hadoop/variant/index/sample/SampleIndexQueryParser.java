@@ -4,6 +4,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
@@ -39,18 +40,24 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser.DEFAULT_LOADED_GENOTYPES;
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR;
 
 /**
  * Created by jacobo on 06/01/19.
  */
 public class SampleIndexQueryParser {
     private static Logger logger = LoggerFactory.getLogger(SampleIndexQueryParser.class);
-    private final SampleIndexSchema schema;
     private final VariantStorageMetadataManager metadataManager;
+    private final SampleIndexSchemaFactory schemaFactory;
 
-    public SampleIndexQueryParser(VariantStorageMetadataManager metadataManager, SampleIndexSchema schema) {
-        this.schema = schema;
+    public SampleIndexQueryParser(VariantStorageMetadataManager metadataManager) {
         this.metadataManager = metadataManager;
+        this.schemaFactory = new SampleIndexSchemaFactory(metadataManager);
+    }
+
+    public SampleIndexQueryParser(VariantStorageMetadataManager metadataManager, SampleIndexSchemaFactory schemaFactory) {
+        this.metadataManager = metadataManager;
+        this.schemaFactory = schemaFactory;
     }
 
     /**
@@ -60,8 +67,8 @@ public class SampleIndexQueryParser {
      */
     public static boolean validSampleIndexQuery(Query query) {
         ParsedVariantQuery.VariantQueryXref xref = VariantQueryParser.parseXrefs(query);
-        if (!xref.getIds().isEmpty() || !xref.getVariants().isEmpty() || !xref.getOtherXrefs().isEmpty()) {
-            // Can not be used for specific variant IDs. Only regions and genes
+        if (!xref.getIds().isEmpty() || !xref.getOtherXrefs().isEmpty()) {
+            // Can not be used for specific variant xrefs. Only variant, regions and genes
             return false;
         }
 
@@ -126,8 +133,6 @@ public class SampleIndexQueryParser {
      * @see SampleIndexQueryParser#validSampleIndexQuery(Query)
      */
     public SampleIndexQuery parse(Query query) {
-        // TODO: Accept variant IDs?
-
         // Extract study
         StudyMetadata defaultStudy = VariantQueryParser.getDefaultStudy(query, metadataManager);
 
@@ -145,8 +150,10 @@ public class SampleIndexQueryParser {
         boolean partialIndex = false;
 
         QueryOperation queryOperation;
+        // Unprocessed input genotype query
+        Map<String, List<String>> sampleGenotypeInputQuery = new HashMap<>();
         // Map from all samples to query to its list of genotypes.
-        Map<String, List<String>> samplesMap = new HashMap<>();
+        Map<String, List<String>> sampleGenotypeQuery = new HashMap<>();
         // Samples that are returning data from more than one file
         Set<String> multiFileSamples = new HashSet<>();
         // Samples that are querying
@@ -166,71 +173,32 @@ public class SampleIndexQueryParser {
         boolean onlyDeNovo = false;
         boolean partialGtIndex = false;
 
+        Map<String, SampleMetadata> sampleMetadatas = new HashMap<>();
+
+
         // Extract sample and genotypes to filter
         if (isValidParam(query, GENOTYPE)) {
             // Get samples with non negated genotypes
-
             Map<Object, List<String>> map = new HashMap<>();
-            Map<String, SampleMetadata> allSamples = new HashMap<>();
             queryOperation = parseGenotypeFilter(query.getString(GENOTYPE.key()), map);
 
-            // Extract parents from each sample
-            Map<String, List<String>> gtMap = new HashMap<>();
-            Map<String, List<String>> parentsMap = new HashMap<>();
             for (Map.Entry<Object, List<String>> entry : map.entrySet()) {
                 Object sample = entry.getKey();
                 Integer sampleId = metadataManager.getSampleId(studyId, sample);
 
                 SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
-                allSamples.put(sampleMetadata.getName(), sampleMetadata);
+                String sampleName = sampleMetadata.getName();
+                sampleMetadatas.put(sampleName, sampleMetadata);
+
+                if (VariantStorageEngine.SplitData.MULTI == sampleMetadata.getSplitData()) {
+                    multiFileSamples.add(sampleName);
+                }
 
                 List<String> gts = GenotypeClass.filter(entry.getValue(), allGenotypes);
-                if (gts.stream().allMatch(SampleIndexSchema::validGenotype)) {
-                    if (sampleMetadata.getFamilyIndexStatus() == TaskMetadata.Status.READY) {
-                        String fatherName = null;
-                        if (sampleMetadata.getFather() != null) {
-                            fatherName = metadataManager.getSampleName(studyId, sampleMetadata.getFather());
-                        }
-                        String motherName = null;
-                        if (sampleMetadata.getMother() != null) {
-                            motherName = metadataManager.getSampleName(studyId, sampleMetadata.getMother());
-                        }
-                        if (fatherName != null || motherName != null) {
-                            parentsMap.put(sampleMetadata.getName(), Arrays.asList(fatherName, motherName));
-                        }
-                    }
-                } else {
-                    negatedSamples.add(sampleMetadata.getName());
-                }
-                if (VariantStorageEngine.SplitData.MULTI.equals(sampleMetadata.getSplitData())) {
-                    multiFileSamples.add(sampleMetadata.getName());
+                if (!gts.stream().allMatch(SampleIndexSchema::validGenotype)) {
+                    negatedSamples.add(sampleName);
                 }
 
-                gtMap.put(sampleMetadata.getName(), gts);
-            }
-
-            // Determine which samples are parents, and which are children
-            Set<String> childrenSet = findChildren(gtMap, queryOperation, parentsMap);
-            Set<String> parentsSet = new HashSet<>();
-            for (String child : childrenSet) {
-                // may add null values
-                parentsSet.addAll(parentsMap.get(child));
-            }
-
-            for (Map.Entry<String, List<String>> entry : gtMap.entrySet()) {
-                String sampleName = entry.getKey();
-                if (queryOperation != QueryOperation.OR && parentsSet.contains(sampleName) && !childrenSet.contains(sampleName)) {
-                    // We can skip parents, as their genotype filter will be tested in the child
-                    // Discard parents that are not children of another sample
-                    // Parents filter can only be used when intersecting (AND) with child
-                    logger.debug("Discard parent {}", sampleName);
-                    parentsInQuery.add(sampleName);
-
-                    // Remove from negatedSamples (if present)
-                    negatedSamples.remove(sampleName);
-
-                    continue;
-                }
                 if (hasNegatedGenotypeFilter(queryOperation, entry.getValue())) {
                     // Discard samples with negated genotypes
                     negatedGenotypesSamples.add(sampleName);
@@ -238,71 +206,9 @@ public class SampleIndexQueryParser {
                     logger.info("Set partialGtIndex to true. Prev value: {}", partialGtIndex);
                     partialGtIndex = true;
                 } else {
-                    samplesMap.put(sampleName, entry.getValue());
-                    if (queryOperation != QueryOperation.OR && childrenSet.contains(sampleName)) {
-                        // Parents filter can only be used when intersecting (AND) with child
-                        List<String> parents = parentsMap.get(sampleName);
-                        String father = parents.get(0);
-                        String mother = parents.get(1);
-
-                        if (father != null) {
-                            Integer fatherId = metadataManager.getSampleId(studyId, father);
-                            boolean includeDiscrepancies = VariantStorageEngine.SplitData.MULTI
-                                    .equals(metadataManager.getLoadSplitData(studyId, fatherId));
-                            List<Integer> fatherFiles = allSamples.get(father).getFiles();
-                            List<Integer> sampleFiles = allSamples.get(sampleName).getFiles();
-                            boolean parentInSeparatedFile =
-                                    fatherFiles.size() != sampleFiles.size() || !fatherFiles.containsAll(sampleFiles);
-                            boolean[] filter = buildParentGtFilter(gtMap.get(father), includeDiscrepancies, parentInSeparatedFile);
-                            if (!isFullyCoveredParentFilter(filter)) {
-                                logger.debug("FATHER - Set partialGtIndex to true. Prev value: {}", partialGtIndex);
-                                partialGtIndex = true;
-                            }
-//                            logger.info("Father={}, includeDiscrepancies={}, fatherFiles={}, sampleFiles={}, "
-//                                            + "parentInSeparatedFile={}, fullyCoveredFilter={}",
-//                                    father, includeDiscrepancies, fatherFiles, sampleFiles,
-//                                    parentInSeparatedFile, isFullyCoveredParentFilter(filter));
-                            fatherFilterMap.put(sampleName, filter);
-                        }
-                        if (mother != null) {
-                            Integer motherId = metadataManager.getSampleId(studyId, mother);
-                            boolean includeDiscrepancies = VariantStorageEngine.SplitData.MULTI
-                                    .equals(metadataManager.getLoadSplitData(studyId, motherId));
-                            List<Integer> motherFiles = allSamples.get(mother).getFiles();
-                            List<Integer> sampleFiles = allSamples.get(sampleName).getFiles();
-                            boolean parentInSeparatedFile =
-                                    motherFiles.size() != sampleFiles.size() || !motherFiles.containsAll(sampleFiles);
-                            boolean[] filter = buildParentGtFilter(gtMap.get(mother), includeDiscrepancies, parentInSeparatedFile);
-                            if (!isFullyCoveredParentFilter(filter)) {
-                                logger.debug("MOTHER - Set partialGtIndex to true. Prev value: {}", partialGtIndex);
-                                partialGtIndex = true;
-                            }
-//                            logger.info("Mother={}, includeDiscrepancies={}, motherFiles={}, sampleFiles={}, "
-//                                            + "parentInSeparatedFile={}, fullyCoveredFilter={}",
-//                                    mother, includeDiscrepancies, motherFiles, sampleFiles,
-//                                    parentInSeparatedFile, isFullyCoveredParentFilter(filter));
-                            motherFilterMap.put(sampleName, filter);
-                        }
-                    }
+                    sampleGenotypeQuery.put(sampleName, entry.getValue());
                 }
-            }
-            // If not all genotypes are valid, query is not covered
-            if (!negatedSamples.isEmpty()) {
-                logger.debug("NEG_SAMPLES - Set partialGtIndex to true. Prev value: {}", partialGtIndex);
-                partialGtIndex = true;
-            }
-
-            for (String negatedSample : negatedSamples) {
-                List<String> negatedGenotypes = new ArrayList<>(validGenotypes);
-                negatedGenotypes.removeAll(samplesMap.get(negatedSample));
-                samplesMap.put(negatedSample, negatedGenotypes);
-            }
-
-            if (!partialGtIndex) {
-                // Do not remove genotypes list if FORMAT is present.
-                if (!isValidParam(query, SAMPLE_DATA)) {
-                    query.remove(GENOTYPE.key());
-                }
+                sampleGenotypeInputQuery.put(sampleName, gts);
             }
         } else if (isValidParam(query, SAMPLE)) {
             // Filter by all non negated samples
@@ -311,7 +217,8 @@ public class SampleIndexQueryParser {
             List<String> samples = VariantQueryUtils.splitValue(samplesStr, queryOperation);
             for (String s : samples) {
                 if (!isNegated(s)) {
-                    samplesMap.put(s, mainGenotypes);
+                    sampleGenotypeQuery.put(s, mainGenotypes);
+                    sampleGenotypeInputQuery.put(s, mainGenotypes);
                 }
             }
 
@@ -326,7 +233,7 @@ public class SampleIndexQueryParser {
             queryOperation = mendelianError.getOperation();
             for (String s : mendelianErrorSet) {
                 // Return any genotype
-                samplesMap.put(s, mainGenotypes);
+                sampleGenotypeQuery.put(s, mainGenotypes);
             }
             query.remove(SAMPLE_MENDELIAN_ERROR.key());
             // Reading any MendelianError could return variants from GT=0/0, which is not annotated in the SampleIndex,
@@ -339,7 +246,7 @@ public class SampleIndexQueryParser {
             queryOperation = sampleDeNovo.getOperation();
             for (String s : mendelianErrorSet) {
                 // Return any genotype
-                samplesMap.put(s, mainGenotypes);
+                sampleGenotypeQuery.put(s, mainGenotypes);
             }
             query.remove(SAMPLE_DE_NOVO.key());
         //} else if (isValidParam(query, FILE)) {
@@ -347,19 +254,157 @@ public class SampleIndexQueryParser {
         } else {
             throw new IllegalStateException("Unable to query SamplesIndex");
         }
+        boolean requireFamilyIndex = !mendelianErrorSet.isEmpty();
+        SampleIndexSchema schema = schemaFactory.getSchema(studyId, sampleGenotypeQuery.keySet(), false, requireFamilyIndex);
+
+
+        if (queryOperation == QueryOperation.AND && mendelianErrorSet.isEmpty()) {
+            // Parents filter can only be used when intersecting (AND) with child
+            // And if not filtering by mendelian error
+            Map<String, List<String>> parentsMap = new HashMap<>();
+
+            // Get parents "tree" from valid samples filter
+            for (String sampleName : sampleGenotypeQuery.keySet()) {
+                if (!negatedSamples.contains(sampleName)) {
+                    SampleMetadata sampleMetadata = getSampleMetadata(sampleMetadatas, sampleName, studyId);
+
+                    if (sampleMetadata.getFamilyIndexStatus(schema.getVersion()) == TaskMetadata.Status.READY) {
+                        String fatherName = null;
+                        if (sampleMetadata.getFather() != null) {
+                            fatherName = metadataManager.getSampleName(studyId, sampleMetadata.getFather());
+                        }
+                        String motherName = null;
+                        if (sampleMetadata.getMother() != null) {
+                            motherName = metadataManager.getSampleName(studyId, sampleMetadata.getMother());
+                        }
+                        if (fatherName != null || motherName != null) {
+                            parentsMap.put(sampleMetadata.getName(), Arrays.asList(fatherName, motherName));
+                        }
+                    }
+                }
+            }
+
+            // Determine which samples are parents, and which are children
+            Set<String> childrenSet = findChildren(sampleGenotypeQuery, parentsMap);
+            Set<String> parentsSet = findParents(childrenSet, parentsMap);
+
+            // Copy list of samples, so we can modify the map internally
+            for (String sampleName : new ArrayList<>(sampleGenotypeQuery.keySet())) {
+                if (parentsSet.contains(sampleName) && !childrenSet.contains(sampleName)) {
+                    parentsInQuery.add(sampleName);
+                    // We can skip parents, as their genotype filter will be tested in the child
+                    // Discard parents that are not children of another sample
+                    // Parents filter can only be used when intersecting (AND) with child
+                    boolean discardParent = true;
+
+                    // We should avoid discarding parents if there were other sampleData filters covered by the parent sample index
+                    // Samples of this map will determine which set of sampleIndexes should be read
+                    if (isValidParam(query, SAMPLE_DATA)) {
+                        ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> sampleDataParsedQuery = parseSampleData(query);
+                        KeyValues<String, KeyOpValue<String, String>> sampleDataFilter
+                                = sampleDataParsedQuery.getValue(k -> k.getKey().equals(sampleName));
+                        if (sampleDataFilter != null) {
+                            // SampleData filter exists for this sample!
+                            // Check if ANY filter is covered by the index
+                            for (KeyOpValue<String, String> entry : sampleDataFilter.getValues()) {
+                                if (schema.getFileIndex().getField(IndexFieldConfiguration.Source.SAMPLE, entry.getKey()) != null) {
+                                    // This key is covered by the sample index. Do not discard this parent!
+                                    discardParent = false;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (discardParent) {
+                        logger.debug("Discard parent {}", sampleName);
+                        // Remove from negatedSamples (if present)
+                        negatedSamples.remove(sampleName);
+                        sampleGenotypeQuery.remove(sampleName);
+                    }
+                } else if (childrenSet.contains(sampleName)) {
+                    // Parents filter can only be used when intersecting (AND) with child
+                    List<String> parents = parentsMap.get(sampleName);
+                    String father = parents.get(0);
+                    String mother = parents.get(1);
+
+                    if (father != null) {
+                        Integer fatherId = metadataManager.getSampleId(studyId, father);
+                        boolean includeDiscrepancies = VariantStorageEngine.SplitData.MULTI
+                                == metadataManager.getLoadSplitData(studyId, fatherId);
+                        List<Integer> fatherFiles = sampleMetadatas.get(father).getFiles();
+                        List<Integer> sampleFiles = sampleMetadatas.get(sampleName).getFiles();
+                        boolean parentInSeparatedFile =
+                                fatherFiles.size() != sampleFiles.size() || !fatherFiles.containsAll(sampleFiles);
+                        boolean[] filter = buildParentGtFilter(
+                                sampleGenotypeInputQuery.get(father),
+                                includeDiscrepancies,
+                                parentInSeparatedFile);
+                        if (!isFullyCoveredParentFilter(filter)) {
+                            logger.debug("FATHER - Set partialGtIndex to true. Prev value: {}", partialGtIndex);
+                            partialGtIndex = true;
+                        }
+//                            logger.info("Father={}, includeDiscrepancies={}, fatherFiles={}, sampleFiles={}, "
+//                                            + "parentInSeparatedFile={}, fullyCoveredFilter={}",
+//                                    father, includeDiscrepancies, fatherFiles, sampleFiles,
+//                                    parentInSeparatedFile, isFullyCoveredParentFilter(filter));
+                        fatherFilterMap.put(sampleName, filter);
+                    }
+                    if (mother != null) {
+                        Integer motherId = metadataManager.getSampleId(studyId, mother);
+                        boolean includeDiscrepancies = VariantStorageEngine.SplitData.MULTI
+                                .equals(metadataManager.getLoadSplitData(studyId, motherId));
+                        List<Integer> motherFiles = sampleMetadatas.get(mother).getFiles();
+                        List<Integer> sampleFiles = sampleMetadatas.get(sampleName).getFiles();
+                        boolean parentInSeparatedFile =
+                                motherFiles.size() != sampleFiles.size() || !motherFiles.containsAll(sampleFiles);
+                        boolean[] filter = buildParentGtFilter(
+                                sampleGenotypeInputQuery.get(mother),
+                                includeDiscrepancies,
+                                parentInSeparatedFile);
+                        if (!isFullyCoveredParentFilter(filter)) {
+                            logger.debug("MOTHER - Set partialGtIndex to true. Prev value: {}", partialGtIndex);
+                            partialGtIndex = true;
+                        }
+//                            logger.info("Mother={}, includeDiscrepancies={}, motherFiles={}, sampleFiles={}, "
+//                                            + "parentInSeparatedFile={}, fullyCoveredFilter={}",
+//                                    mother, includeDiscrepancies, motherFiles, sampleFiles,
+//                                    parentInSeparatedFile, isFullyCoveredParentFilter(filter));
+                        motherFilterMap.put(sampleName, filter);
+                    }
+                }
+            }
+        }
+
+        // If not all genotypes are valid, query is not covered
+        if (!negatedSamples.isEmpty()) {
+            logger.debug("NEG_SAMPLES - Set partialGtIndex to true. Prev value: {}", partialGtIndex);
+            partialGtIndex = true;
+        }
+        for (String negatedSample : negatedSamples) {
+            List<String> negatedGenotypes = new ArrayList<>(validGenotypes);
+            negatedGenotypes.removeAll(sampleGenotypeQuery.get(negatedSample));
+            sampleGenotypeQuery.put(negatedSample, negatedGenotypes);
+        }
+        if (!partialGtIndex) {
+            if (isValidParam(query, GENOTYPE)) {
+                // Do not remove genotypes list if FORMAT is present.
+                if (!isValidParam(query, SAMPLE_DATA)) {
+                    query.remove(GENOTYPE.key());
+                }
+            }
+        }
 
         boolean partialFilesIndex = false;
         if (!negatedGenotypesSamples.isEmpty() || !parentsInQuery.isEmpty()) {
-            Set<Integer> sampleFiles = new HashSet<>(samplesMap.size());
-            for (String sample : samplesMap.keySet()) {
-                Integer sampleId = metadataManager.getSampleId(studyId, sample);
-                sampleFiles.addAll(metadataManager.getSampleMetadata(studyId, sampleId).getFiles());
+            Set<Integer> sampleFiles = new HashSet<>(sampleGenotypeQuery.size());
+            for (String sample : sampleGenotypeQuery.keySet()) {
+                sampleFiles.addAll(getSampleMetadata(sampleMetadatas, sample, studyId).getFiles());
             }
 
             // If the file of any other sample is not between the files of the samples in the query, mark as partial
             for (String sample : negatedGenotypesSamples) {
-                Integer sampleId = metadataManager.getSampleId(studyId, sample);
-                for (Integer file : metadataManager.getSampleMetadata(studyId, sampleId).getFiles()) {
+                for (Integer file : getSampleMetadata(sampleMetadatas, sample, studyId).getFiles()) {
                     if (!sampleFiles.contains(file)) {
                         partialFilesIndex = true;
                         break;
@@ -368,8 +413,7 @@ public class SampleIndexQueryParser {
             }
             // If the file of any parent is not between the files of the samples in the query, mark as partial
             for (String sample : parentsInQuery) {
-                Integer sampleId = metadataManager.getSampleId(studyId, sample);
-                for (Integer file : metadataManager.getSampleMetadata(studyId, sampleId).getFiles()) {
+                for (Integer file : getSampleMetadata(sampleMetadatas, sample, studyId).getFiles()) {
                     if (!sampleFiles.contains(file)) {
                         partialFilesIndex = true;
                         break;
@@ -379,16 +423,15 @@ public class SampleIndexQueryParser {
 
         }
         Map<String, Values<SampleFileIndexQuery>> fileIndexMap
-                = parseSampleSpecificQuery(query, studyId, queryOperation, samplesMap, multiFileSamples, partialGtIndex, partialFilesIndex);
+                = parseSampleSpecificQuery(schema, query, studyId, queryOperation, sampleGenotypeQuery, multiFileSamples,
+                partialGtIndex, partialFilesIndex);
 
-        int sampleIndexVersion = defaultStudy.getSampleIndexConfigurationLatest().getVersion();
+        // It might happen that some sampleIndexes are not fully annotated.
         boolean allSamplesAnnotated = true;
         if (negatedGenotypesSamples.isEmpty()) {
-            for (String sample : samplesMap.keySet()) {
-                Integer sampleId = metadataManager.getSampleId(studyId, sample);
-                SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
-                if (!SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata, sampleIndexVersion)
-                        .equals(TaskMetadata.Status.READY)) {
+            for (String sample : sampleGenotypeQuery.keySet()) {
+                SampleMetadata sampleMetadata = getSampleMetadata(sampleMetadatas, sample, studyId);
+                if (sampleMetadata.getSampleIndexAnnotationStatus(schema.getVersion()) != TaskMetadata.Status.READY) {
                     allSamplesAnnotated = false;
                     break;
                 }
@@ -397,8 +440,9 @@ public class SampleIndexQueryParser {
             allSamplesAnnotated = false;
         }
 
+
         boolean completeIndex = allSamplesAnnotated && !partialIndex;
-        SampleAnnotationIndexQuery annotationIndexQuery = parseAnnotationIndexQuery(query, completeIndex);
+        SampleAnnotationIndexQuery annotationIndexQuery = parseAnnotationIndexQuery(schema, query, completeIndex);
         Set<VariantType> variantTypes = null;
         if (isValidParam(query, TYPE)) {
             List<String> typesStr = query.getAsStringList(VariantQueryParam.TYPE.key());
@@ -423,28 +467,75 @@ public class SampleIndexQueryParser {
             }
         }
 
+        ParsedVariantQuery.VariantQueryXref xref = VariantQueryParser.parseXrefs(query);
+        boolean mixRegionsOrIdsWithGenesAndCtBt =
+                (isValidParam(query, REGION) || !xref.getVariants().isEmpty())
+                &&
+                (!xref.getGenes().isEmpty() && (isValidParam(query, ANNOT_CONSEQUENCE_TYPE) || isValidParam(query, ANNOT_BIOTYPE)));
+
         // Extract regions
         List<Region> regions = new ArrayList<>();
         if (isValidParam(query, REGION)) {
             regions.addAll(Region.parseRegions(query.getString(REGION.key()), true));
-            query.remove(REGION.key());
+            if (!mixRegionsOrIdsWithGenesAndCtBt) {
+                query.remove(REGION.key());
+            }
+//            else {
+//                logger.info("Keep region!");
+//            }
+        }
+        // Extract IDs
+        List<Variant> variants = xref.getVariants();
+        if (!variants.isEmpty()) {
+            if (!mixRegionsOrIdsWithGenesAndCtBt) {
+                query.remove(ID.key());
+            }
+//            else {
+//                logger.info("Keep variants!");
+//            }
         }
 
         if (isValidParam(query, ANNOT_GENE_REGIONS)) {
             regions.addAll(Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key()), true));
-            if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE) || isValidParam(query, ANNOT_BIOTYPE)) {
-                query.put(ANNOT_GENE_REGIONS.key(), SKIP_GENE_REGIONS);
-            } else {
-                query.remove(ANNOT_GENE_REGIONS.key());
-                query.remove(GENE.key());
+            if (!mixRegionsOrIdsWithGenesAndCtBt) {
+                if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE) || isValidParam(query, ANNOT_BIOTYPE)) {
+                    query.put(ANNOT_GENE_REGIONS.key(), SKIP_GENE_REGIONS);
+                } else {
+                    query.remove(ANNOT_GENE_REGIONS.key());
+                    query.remove(GENE.key());
+                }
             }
+//            else {
+//                logger.info("Keep genes!");
+//            }
         }
-        List<List<Region>> regionGroups = groupRegions(regions);
 
-        return new SampleIndexQuery(schema, regionGroups, variantTypes, study, samplesMap, multiFileSamples, negatedSamples,
+        Collection<LocusQuery> regionGroups = buildLocusQueries(regions, variants);
+
+        return new SampleIndexQuery(schema, regionGroups, variantTypes, study, sampleGenotypeQuery, multiFileSamples, negatedSamples,
                 fatherFilterMap, motherFilterMap,
                 fileIndexMap, annotationIndexQuery, mendelianErrorSet, onlyDeNovo, queryOperation);
     }
+
+    private Set<String> findParents(Set<String> childrenSet, Map<String, List<String>> parentsMap) {
+        Set<String> parentsSet = new HashSet<>();
+        for (String child : childrenSet) {
+            // may add null values
+            parentsSet.addAll(parentsMap.get(child));
+        }
+        return parentsSet;
+    }
+
+    private SampleMetadata getSampleMetadata(Map<String, SampleMetadata> sampleMetadatas, String sampleName, int studyId) {
+        SampleMetadata sampleMetadata = sampleMetadatas.get(sampleName);
+        if (sampleMetadata == null) {
+            Integer sampleId = metadataManager.getSampleId(studyId, sampleName);
+            sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
+            sampleMetadatas.put(sampleName, sampleMetadata);
+        }
+        return sampleMetadata;
+    }
+
 
     /**
      * Merge and group regions by chunk start.
@@ -453,40 +544,50 @@ public class SampleIndexQueryParser {
      * Each group will be translated to a SCAN.
      *
      * @param regions List of regions to group
-     * @return Grouped regions
+     * @param variants List of variants to group
+     * @return Locus Queries
      */
-    public static List<List<Region>> groupRegions(List<Region> regions) {
+    public static Collection<LocusQuery> buildLocusQueries(List<Region> regions, List<Variant> variants) {
         regions = mergeRegions(regions);
-        List<List<Region>> regionGroups = new ArrayList<>(regions
-                .stream()
-                .collect(Collectors.groupingBy(r -> r.getChromosome() + "_" + SampleIndexSchema.getChunkStart(r.getStart())))
-                .values());
+        Map<Region, LocusQuery> groupsMap = new HashMap<>();
+        for (Region region : regions) {
+            Region chunkRegion = SampleIndexSchema.getChunkRegion(region);
+            groupsMap.computeIfAbsent(chunkRegion, LocusQuery::new).getRegions().add(region);
+        }
+        for (Variant variant : variants) {
+            Region chunkRegion = SampleIndexSchema.getChunkRegion(variant);
+            groupsMap.computeIfAbsent(chunkRegion, LocusQuery::new).getVariants().add(variant);
+        }
 
-        if (!regionGroups.isEmpty()) {
-            regionGroups.forEach(l -> l.sort(REGION_COMPARATOR));
-            regionGroups.sort(Comparator.comparing(l -> l.get(0), REGION_COMPARATOR));
+        List<LocusQuery> locusQueries = new ArrayList<>(groupsMap.values());
+
+        if (!locusQueries.isEmpty()) {
+            locusQueries.forEach(rg -> rg.getRegions().sort(REGION_COMPARATOR));
+            locusQueries.forEach(rg -> rg.getVariants().sort(INTRA_CHROMOSOME_VARIANT_COMPARATOR));
+            locusQueries.sort(Comparator.comparing(LocusQuery::getChunkRegion, REGION_COMPARATOR));
 
             //Merge consecutive groups
-            Iterator<List<Region>> iterator = regionGroups.iterator();
-            List<Region> prevGroup = iterator.next();
+            Iterator<LocusQuery> iterator = locusQueries.iterator();
+            LocusQuery prevQuery = iterator.next();
             while (iterator.hasNext()) {
-                List<Region> group = iterator.next();
-                Region prevRegion = prevGroup.get(prevGroup.size() - 1);
-                Region region = group.get(0);
+                LocusQuery query = iterator.next();
+                Region prevRegion = prevQuery.getChunkRegion();
+                Region region = query.getChunkRegion();
                 // Merge if the distance between groups is less than 1 batch size
                 // TODO: This rule could be changed to reduce the number of small queries, even if more data is fetched.
                 if (region.getChromosome().equals(prevRegion.getChromosome())
-                        && Math.abs(region.getStart() - prevRegion.getEnd()) < SampleIndexSchema.BATCH_SIZE) {
+                        && (region.getStart() - prevRegion.getEnd()) < SampleIndexSchema.BATCH_SIZE) {
                     // Merge groups
-                    prevGroup.addAll(group);
+                    prevQuery.merge(query);
                     iterator.remove();
                 } else {
-                    prevGroup = group;
+                    prevQuery = query;
                 }
             }
         }
-        return regionGroups;
+        return locusQueries;
     }
+
 
     protected static boolean hasNegatedGenotypeFilter(QueryOperation queryOperation, List<String> gts) {
         boolean anyNegated = false;
@@ -505,27 +606,25 @@ public class SampleIndexQueryParser {
      *
      * i.e. sample with non negated genotype filter and parents in the query
      *
-     * @param gtMap Genotype filter map
-     * @param queryOperation Query operation
+     * @param samplesMap     Genotype filter map
      * @param parentsMap Parents map
      * @return Set with all children from the query
      */
-    protected Set<String> findChildren(Map<String, List<String>> gtMap, QueryOperation queryOperation,
-                                              Map<String, List<String>> parentsMap) {
+    protected Set<String> findChildren(Map<String, List<String>> samplesMap, Map<String, List<String>> parentsMap) {
         Set<String> childrenSet = new HashSet<>(parentsMap.size());
         for (Map.Entry<String, List<String>> entry : parentsMap.entrySet()) {
             String child = entry.getKey();
             List<String> parents = entry.getValue();
 
-            if (hasNegatedGenotypeFilter(queryOperation, gtMap.get(child))) {
-                // Discard children with negated iterators
-                continue;
-            }
+//            if (hasNegatedGenotypeFilter(queryOperation, gtMap.get(child))) {
+//                // Discard children with negated iterators
+//                continue;
+//            }
 
             // Remove parents not in query
             for (int i = 0; i < parents.size(); i++) {
                 String parent = parents.get(i);
-                if (!gtMap.containsKey(parent)) {
+                if (!samplesMap.containsKey(parent)) {
                     parents.set(i, null);
                 }
             }
@@ -571,10 +670,9 @@ public class SampleIndexQueryParser {
 
 
 
-    private Map<String, Values<SampleFileIndexQuery>> parseSampleSpecificQuery(Query query, int studyId, QueryOperation queryOperation,
-                                                                               Map<String, List<String>> samplesMap,
-                                                                               Set<String> multiFileSamples,
-                                                                               boolean partialGtIndex, boolean partialFilesIndex) {
+    private Map<String, Values<SampleFileIndexQuery>> parseSampleSpecificQuery(
+            SampleIndexSchema schema, Query query, int studyId, QueryOperation queryOperation,
+            Map<String, List<String>> samplesMap, Set<String> multiFileSamples, boolean partialGtIndex, boolean partialFilesIndex) {
         // 1. Split query -- getQueriesPerSample
         // 2. Parse Files Query
         //   2.1. Parse File query
@@ -586,8 +684,8 @@ public class SampleIndexQueryParser {
         Map<String, Query> queriesPerSample = getQueriesPerSample(studyId, query, queryOperation, samplesMap.keySet(), nonCoveredQuery);
         for (String sample : samplesMap.keySet()) {
             Query sampleQuery = queriesPerSample.get(sample);
-            Values<SampleFileIndexQuery> fileIndexQuery =
-                    parseFilesQuery(sampleQuery, studyId, sample, multiFileSamples.contains(sample), partialGtIndex, partialFilesIndex);
+            Values<SampleFileIndexQuery> fileIndexQuery = parseFilesQuery(
+                    schema, sampleQuery, studyId, sample, multiFileSamples.contains(sample), partialGtIndex, partialFilesIndex);
             fileIndexMap.put(sample, fileIndexQuery);
         }
 
@@ -754,9 +852,16 @@ public class SampleIndexQueryParser {
     }
 
 
-    protected Values<SampleFileIndexQuery> parseFilesQuery(Query query, int studyId, String sample,
+    protected Values<SampleFileIndexQuery> parseFilesQuery(SampleIndexSchema schema, Query query, int studyId, String sample,
                                                            boolean multiFileSample, boolean partialGtIndex, boolean partialFilesIndex) {
-        return parseFilesQuery(query, sample, multiFileSample, partialGtIndex, partialFilesIndex, s -> getFilesFromSample(studyId, s));
+        return parseFilesQuery(
+                schema,
+                query,
+                sample,
+                multiFileSample,
+                partialGtIndex,
+                partialFilesIndex,
+                s -> getFilesFromSample(studyId, s));
     }
 
     private List<String> getFilesFromSample(int studyId, String s) {
@@ -769,7 +874,7 @@ public class SampleIndexQueryParser {
         return fileNames;
     }
 
-    protected Values<SampleFileIndexQuery> parseFilesQuery(Query query, String sample, boolean multiFileSample,
+    protected Values<SampleFileIndexQuery> parseFilesQuery(SampleIndexSchema schema, Query query, String sample, boolean multiFileSample,
                                                            boolean partialGtIndex, boolean partialFilesIndex,
                                                            Function<String, List<String>> filesFromSample) {
         ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> fileDataParsedQuery = parseFileData(query);
@@ -812,7 +917,8 @@ public class SampleIndexQueryParser {
                 } else {
                     subQuery.put(FILE_DATA.key(), fileDataQuery.toQuery());
                 }
-                fileIndexQueries.add(parseFileQuery(subQuery, sample, multiFileSample, partialGtIndex, partialFilesIndex, filesFromSample));
+                fileIndexQueries.add(parseFileQuery(schema, subQuery, sample, multiFileSample,
+                        partialGtIndex, partialFilesIndex, filesFromSample));
                 if (isValidParam(subQuery, FILE_DATA)) {
                     // This subquery did not remove the fileData, so it's not fully covered. Can't remove the fileData filter.
                     fileDataCovered = false;
@@ -850,11 +956,11 @@ public class SampleIndexQueryParser {
             return new Values<>(filesOperation, fileIndexQueries);
         } else {
             return new Values<>(null, Collections.singletonList(
-                    parseFileQuery(query, sample, multiFileSample, partialGtIndex, partialFilesIndex, filesFromSample)));
+                    parseFileQuery(schema, query, sample, multiFileSample, partialGtIndex, partialFilesIndex, filesFromSample)));
         }
     }
 
-    protected SampleFileIndexQuery parseFileQuery(Query query, String sample, boolean multiFileSample,
+    protected SampleFileIndexQuery parseFileQuery(SampleIndexSchema schema, Query query, String sample, boolean multiFileSample,
                                                   boolean partialGtIndex, boolean partialFilesIndex,
                                                   Function<String, List<String>> filesFromSample) {
 
@@ -1051,19 +1157,20 @@ public class SampleIndexQueryParser {
         return types.contains(VariantType.COPY_NUMBER_LOSS.name()) && !types.contains(VariantType.COPY_NUMBER.name());
     }
 
-    protected SampleAnnotationIndexQuery parseAnnotationIndexQuery(Query query) {
-        return parseAnnotationIndexQuery(query, false);
+    protected SampleAnnotationIndexQuery parseAnnotationIndexQuery(SampleIndexSchema schema, Query query) {
+        return parseAnnotationIndexQuery(schema, query, false);
     }
 
     /**
      * Builds the SampleAnnotationIndexQuery given a VariantQuery.
      *
+     * @param schema Sample index schema for the set of samples in the query
      * @param query Input VariantQuery. If the index is complete, covered filters could be removed from here.
      * @param completeIndex Indicates if the annotation index is complete for the samples in the query.
      *                      Otherwise, the index can only be used as a hint, and should be completed with further filtering.
      * @return SampleAnnotationIndexQuery
      */
-    protected SampleAnnotationIndexQuery parseAnnotationIndexQuery(Query query, boolean completeIndex) {
+    protected SampleAnnotationIndexQuery parseAnnotationIndexQuery(SampleIndexSchema schema, Query query, boolean completeIndex) {
         byte annotationIndex = 0;
         IndexFieldFilter biotypeFilter = schema.getBiotypeIndex().getField().noOpFilter();
         IndexFieldFilter consequenceTypeFilter = schema.getCtIndex().getField().noOpFilter();
@@ -1073,8 +1180,8 @@ public class SampleIndexQueryParser {
 
         Boolean intergenic = null;
 
+        ParsedVariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
         if (!isValidParam(query, REGION)) {
-            ParsedVariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
             if (!variantQueryXref.getGenes().isEmpty()
                     && variantQueryXref.getIds().isEmpty()
                     && variantQueryXref.getOtherXrefs().isEmpty()

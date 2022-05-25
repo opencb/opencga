@@ -16,13 +16,21 @@
 
 package org.opencb.opencga.core.models.job;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
+
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
 public class JobInternalWebhook implements Cloneable {
 
+    @DataField(id = "webhook", indexed = true,
+            description = FieldConstants.JOB_INTERNAL_WEBHOOK_URL_DESCRIPTION)
     private URL url;
+
+    @DataField(id = "status", indexed = true, uncommentedClasses = {"Status"},
+            description = FieldConstants.JOB_INTERNAL_WEBHOOK_STATUS_DESCRIPTION)
     private Map<String, Status> status;
 
     public JobInternalWebhook() {
@@ -31,11 +39,6 @@ public class JobInternalWebhook implements Cloneable {
     public JobInternalWebhook(URL url, Map<String, Status> status) {
         this.url = url;
         this.status = status;
-    }
-
-    public enum Status {
-        SUCCESS,
-        ERROR
     }
 
     @Override
@@ -70,5 +73,10 @@ public class JobInternalWebhook implements Cloneable {
     public JobInternalWebhook setStatus(Map<String, Status> status) {
         this.status = status;
         return this;
+    }
+
+    public enum Status {
+        SUCCESS,
+        ERROR
     }
 }
