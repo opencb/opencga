@@ -47,8 +47,8 @@ public class PipelineManagerTest extends AbstractManagerTest {
                 new QueryOptions(INCLUDE_RESULT_PARAM, true), token).first();
         assertEquals("hello", pipeline.getDescription());
         assertEquals(2, pipeline.getVersion());
-        assertEquals(1, pipeline.getJobs());
-        assertEquals("hello", pipeline.getJobs().get(0).getDescription());
+        assertEquals(1, pipeline.getJobs().size());
+        assertEquals("hello", pipeline.getJobs().get("a").getDescription());
     }
 
 

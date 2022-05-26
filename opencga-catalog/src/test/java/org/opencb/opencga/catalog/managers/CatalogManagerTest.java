@@ -912,7 +912,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         try {
             catalogManager.getExecutionManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), sessionIdUser3);
-            fail("Sumbmission should have failed with a message saying the user does not have EXECUTION permissions");
+            fail("Submission should have failed with a message saying the user does not have EXECUTION permissions");
         } catch (CatalogException e) {
             assertTrue(e.getMessage().contains("Permission denied"));
         }

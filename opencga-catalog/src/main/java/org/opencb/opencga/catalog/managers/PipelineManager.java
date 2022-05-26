@@ -124,7 +124,8 @@ public class PipelineManager extends ResourceManager<Pipeline> {
     }
 
     @Override
-    public OpenCGAResult<Pipeline> create(String studyStr, Pipeline pipeline, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Pipeline> create(String studyStr, Pipeline pipeline, QueryOptions options, String token)
+            throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(token);
@@ -135,6 +136,7 @@ public class PipelineManager extends ResourceManager<Pipeline> {
                 .append("pipeline", pipeline)
                 .append("options", options)
                 .append("token", token);
+
         try {
             // 1. We check everything can be done
             authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
@@ -366,6 +368,7 @@ public class PipelineManager extends ResourceManager<Pipeline> {
 
         pipeline.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PIPELINE));
         pipeline.setVersion(1);
+        pipeline.setRelease(this.studyManager.getCurrentRelease(study));
     }
 
     @Override

@@ -38,9 +38,9 @@
 {"collections": ["execution"], "fields": {"uid": 1}, "options": {"unique": true, "background": true}}
 {"collections": ["execution"], "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
 
-{"collections": ["pipeline", "pipeline_archive"], "fields": {"uuid": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["pipeline", "pipeline_archive"], "fields": {"uid": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["pipeline", "pipeline_archive"], "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
+{"collections": ["pipeline", "pipeline_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true, "background": true}}
+{"collections": ["pipeline", "pipeline_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true, "background": true}}
+{"collections": ["pipeline", "pipeline_archive"], "fields": {"id": 1, "studyUid": 1, "version": 1}, "options": {"unique": true, "background": true}}
 
 {"collections": ["file"], "fields": {"uuid": 1}, "options": {"unique": true, "background": true}}
 {"collections": ["file"], "fields": {"uid": 1}, "options": {"unique": true, "background": true}}

@@ -2,6 +2,8 @@ package org.opencb.opencga.core.models.job;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.PrivateStudyUid;
 
 import java.io.IOException;
@@ -17,6 +19,15 @@ public class Pipeline extends PrivateStudyUid {
     private String description;
 
     private boolean disabled;
+
+    /**
+     * An integer describing the current data release.
+     *
+     * @apiNote Immutable
+     */
+    @DataField(id = "release", managed = true, indexed = true,
+            description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
+    private int release;
     private int version;
 
     private String creationDate;
@@ -33,13 +44,11 @@ public class Pipeline extends PrivateStudyUid {
     public Pipeline() {
     }
 
-    public Pipeline(String id, String description, boolean disabled, int version, String creationDate, String modificationDate,
-                    PipelineInternal internal, Map<String, Object> params, PipelineConfig config,
-                    LinkedHashMap<String, PipelineJob> jobs) {
+    public Pipeline(String id, String description, boolean disabled, String creationDate, String modificationDate,
+                    PipelineInternal internal, Map<String, Object> params, PipelineConfig config, LinkedHashMap<String, PipelineJob> jobs) {
         this.id = id;
         this.description = description;
         this.disabled = disabled;
-        this.version = version;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.internal = internal;
@@ -92,6 +101,7 @@ public class Pipeline extends PrivateStudyUid {
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", disabled=").append(disabled);
+        sb.append(", release=").append(release);
         sb.append(", version=").append(version);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
@@ -146,6 +156,15 @@ public class Pipeline extends PrivateStudyUid {
 
     public Pipeline setVersion(int version) {
         this.version = version;
+        return this;
+    }
+
+    public int getRelease() {
+        return release;
+    }
+
+    public Pipeline setRelease(int release) {
+        this.release = release;
         return this;
     }
 

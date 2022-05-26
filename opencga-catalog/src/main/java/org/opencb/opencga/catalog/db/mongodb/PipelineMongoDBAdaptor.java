@@ -338,7 +338,7 @@ public class PipelineMongoDBAdaptor extends MongoDBAdaptor implements PipelineDB
         queryOptions.put(NATIVE_QUERY, true);
 
         MongoDBIterator<Document> mongoCursor = getMongoCursor(session, query, queryOptions);
-        return new CatalogMongoDBIterator(mongoCursor, pipelineConverter);
+        return new CatalogMongoDBIterator(mongoCursor, null);
     }
 
     @Override

@@ -36,7 +36,7 @@ public class PipelineCreateParams {
     }
 
     public Pipeline toPipeline() {
-        return new Pipeline(id, description, disabled, 0, creationDate, modificationDate, null, params, config, jobs);
+        return new Pipeline(id, description, disabled, creationDate, modificationDate, null, params, config, jobs);
     }
 
     public String getId() {
