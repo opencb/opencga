@@ -97,7 +97,7 @@ public class JwtManager {
         jwtBuilder.setSubject(userId)
                 .setAudience("OpenCGA users")
                 .setIssuedAt(new Date(currentTime))
-                .signWith(algorithm, privateKey);
+                .signWith(privateKey, algorithm);
 
         // Set the expiration in number of seconds only if 'expiration' is greater than 0
         if (expiration > 0) {

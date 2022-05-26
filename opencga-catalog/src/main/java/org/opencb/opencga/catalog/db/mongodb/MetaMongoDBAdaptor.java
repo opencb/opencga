@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.JwtUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
@@ -185,6 +186,8 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         String secretKey = configuration.getAdmin().getSecretKey();
         if (StringUtils.isEmpty(secretKey)) {
             throw new CatalogDBException("Missing JWT secret key");
+        } else {
+            JwtUtils.validateJWTKey(configuration.getAdmin().getAlgorithm(), secretKey);
         }
 
         Document metadataObject = getMongoDBDocument(metadata, "Metadata");
@@ -227,6 +230,10 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
 
         Document adminDocument = new Document();
         if (StringUtils.isNotEmpty(params.getString(SECRET_KEY))) {
+            String algorithm = readAlgorithm();
+            String secretKey = params.getString(SECRET_KEY);
+
+            JwtUtils.validateJWTKey(algorithm, secretKey);
             adminDocument.append("admin.secretKey", params.getString(SECRET_KEY));
         }
 
