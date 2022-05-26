@@ -120,7 +120,6 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         createIndexes(MongoDBAdaptorFactory.STUDY_COLLECTION, indexes);
         createIndexes(MongoDBAdaptorFactory.FILE_COLLECTION, indexes);
         createIndexes(MongoDBAdaptorFactory.COHORT_COLLECTION, indexes);
-        createIndexes(MongoDBAdaptorFactory.PIPELINE_ARCHIVE_COLLECTION, indexes);
         createIndexes(MongoDBAdaptorFactory.EXECUTION_COLLECTION, indexes);
         createIndexes(MongoDBAdaptorFactory.JOB_COLLECTION, indexes);
         createIndexes(MongoDBAdaptorFactory.JOB_COLLECTION, indexes);
@@ -138,6 +137,8 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         createIndexes(MongoDBAdaptorFactory.PANEL_ARCHIVE_COLLECTION, indexes);
         createIndexes(MongoDBAdaptorFactory.INTERPRETATION_COLLECTION, indexes);
         createIndexes(MongoDBAdaptorFactory.INTERPRETATION_ARCHIVE_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.PIPELINE_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.PIPELINE_ARCHIVE_COLLECTION, indexes);
     }
 
     private void createIndexes(String collection, Map<String, List<Map<String, ObjectMap>>> indexCollectionMap) {

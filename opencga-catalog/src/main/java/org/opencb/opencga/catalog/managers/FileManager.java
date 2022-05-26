@@ -2959,7 +2959,7 @@ public class FileManager extends AnnotationSetManager<File> {
         String parentPath = getParentPath(path);
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(FileDBAdaptor.QueryParams.PATH.key(), path);
+                .append(FileDBAdaptor.QueryParams.PATH.key(), parentPath);
         return fileDBAdaptor.get(query, INCLUDE_FILE_IDS);
     }
 
@@ -3237,19 +3237,17 @@ public class FileManager extends AnnotationSetManager<File> {
      * @throws CatalogDBException
      */
     private File createParents(Study study, String userId, URI studyURI, Path path, boolean checkPermissions) throws CatalogException {
-        if (path == null) {
-            if (checkPermissions) {
-                authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_FILES);
-            }
-            return null;
-        }
+        String stringPath = path != null ? path.toString() : "/";
 
-        String stringPath = path.toString();
         if (("/").equals(stringPath)) {
             Query query = new Query()
                     .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                     .append(FileDBAdaptor.QueryParams.NAME.key(), ".");
-            return fileDBAdaptor.get(query, INCLUDE_FILE_IDS).first();
+            File file = fileDBAdaptor.get(query, INCLUDE_FILE_IDS).first();
+            if (checkPermissions) {
+                authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
+            }
+            return file;
         }
 
         logger.debug("Path: {}", stringPath);

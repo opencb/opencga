@@ -88,7 +88,7 @@ public class AbstractManagerTest extends GenericTest {
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
-        adminToken = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
+        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
         catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);

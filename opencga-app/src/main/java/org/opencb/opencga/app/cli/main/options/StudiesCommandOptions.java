@@ -4,12 +4,9 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-
-import java.util.List;
-
 import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandOptions;
 
-import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
+import static org.opencb.opencga.app.cli.GeneralCliOptions.CommonCommandOptions;
 
 
 /*
