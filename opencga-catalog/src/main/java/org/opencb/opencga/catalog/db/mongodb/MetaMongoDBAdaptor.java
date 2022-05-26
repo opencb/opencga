@@ -27,12 +27,10 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Metadata;
@@ -187,8 +185,6 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         String secretKey = configuration.getAdmin().getSecretKey();
         if (StringUtils.isEmpty(secretKey)) {
             throw new CatalogDBException("Missing JWT secret key");
-        } else if (!PasswordUtils.isStrongPassword(secretKey)) {
-            throw CatalogDBException.jwtSecretKeyException();
         }
 
         Document metadataObject = getMongoDBDocument(metadata, "Metadata");
@@ -231,11 +227,6 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
 
         Document adminDocument = new Document();
         if (StringUtils.isNotEmpty(params.getString(SECRET_KEY))) {
-            // Ensure JWT secret key is long and secure
-            String secretKey = params.getString(SECRET_KEY);
-            if (!PasswordUtils.isStrongPassword(secretKey, JwtManager.SECRET_KEY_MIN_LENGTH)) {
-                throw CatalogDBException.jwtSecretKeyException();
-            }
             adminDocument.append("admin.secretKey", params.getString(SECRET_KEY));
         }
 
