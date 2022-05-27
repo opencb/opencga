@@ -16,9 +16,9 @@
 
 package org.opencb.opencga.storage.app.cli.server;
 
-import com.beust.jcommander.*;
+import com.beust.jcommander.JCommander;
 import org.opencb.commons.utils.CommandLineUtils;
-import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.commons.utils.GitRepositoryState;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.app.cli.server.options.BenchmarkCommandOptions;
 import org.opencb.opencga.storage.app.cli.server.options.ServerCommandOptions;

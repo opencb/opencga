@@ -21,10 +21,9 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.SolrResourceLoader;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.solr.SolrManager;
-import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.commons.utils.GitRepositoryState;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
@@ -124,10 +123,9 @@ public class VariantSolrExternalResource extends ExternalResource {
     /**
      * Cleans the given solrHome directory and creates a new EmbeddedSolrServer.
      *
-     * @param solrHome the Solr home directory to use
+     * @param solrHome      the Solr home directory to use
      * @param configSetHome the directory containing config sets
-     * @param coreName the name of the core, must have a matching directory in configHome
-     *
+     * @param coreName      the name of the core, must have a matching directory in configHome
      * @return an EmbeddedSolrServer with a core created for the given coreName
      * @throws IOException
      */
@@ -137,11 +135,10 @@ public class VariantSolrExternalResource extends ExternalResource {
     }
 
     /**
-     * @param solrHome the Solr home directory to use
+     * @param solrHome      the Solr home directory to use
      * @param configSetHome the directory containing config sets
-     * @param coreName the name of the core, must have a matching directory in configHome
+     * @param coreName      the name of the core, must have a matching directory in configHome
      * @param cleanSolrHome if true the directory for solrHome will be deleted and re-created if it already exists
-     *
      * @return an EmbeddedSolrServer with a core created for the given coreName
      * @throws IOException
      */

@@ -4,7 +4,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
-import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.slf4j.Logger;
@@ -285,7 +284,7 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         appendOutputFiles(outputFilenames, sb);
 
         // Append other params
-        Set<String> skipParams =  new HashSet<>(Arrays.asList("p", "prefix"));
+        Set<String> skipParams = new HashSet<>(Arrays.asList("p", "prefix"));
         skipParams.addAll(inputFileParamNames);
         appendOtherParams(skipParams, sb);
 
@@ -310,7 +309,7 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         appendInputFiles(inputFilenames, mountMap, sb);
 
         // Append other params
-        Set<String> skipParams =  new HashSet<>(Arrays.asList("input-fmt-option"));
+        Set<String> skipParams = new HashSet<>(Arrays.asList("input-fmt-option"));
         skipParams.addAll(inputFileParamNames);
         appendOtherParams(skipParams, sb);
 

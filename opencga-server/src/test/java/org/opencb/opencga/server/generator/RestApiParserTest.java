@@ -18,8 +18,9 @@ package org.opencb.opencga.server.generator;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.opencb.opencga.server.generator.models.RestApi;
-import org.opencb.opencga.server.generator.models.RestEndpoint;
+import org.opencb.commons.api.RestApiParser;
+import org.opencb.commons.api.models.RestApi;
+import org.opencb.commons.api.models.RestEndpoint;
 import org.opencb.opencga.server.rest.*;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
 import org.opencb.opencga.server.rest.analysis.AlignmentWebService;

@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.models;
 
-import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.commons.utils.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 
 /**

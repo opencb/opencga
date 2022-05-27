@@ -20,9 +20,8 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.SolrResourceLoader;
+import org.opencb.commons.utils.GitRepositoryState;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
-import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.io.File;
 import java.io.IOException;
@@ -132,9 +131,8 @@ public class SolrExternalResource extends CatalogManagerExternalResource {
 //    }
 
     /**
-     * @param solrHome the Solr home directory to use
+     * @param solrHome      the Solr home directory to use
      * @param configSetHome the directory containing config sets
-     *
      * @return an EmbeddedSolrServer with a core created for the given coreName
      * @throws IOException
      */

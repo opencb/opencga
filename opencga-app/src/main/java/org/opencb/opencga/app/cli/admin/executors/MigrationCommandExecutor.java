@@ -3,6 +3,7 @@ package org.opencb.opencga.app.cli.admin.executors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.utils.GitRepositoryState;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
 import org.opencb.opencga.app.cli.main.io.Table;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -11,7 +12,6 @@ import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationManager;
 import org.opencb.opencga.catalog.migration.MigrationRun;
 import org.opencb.opencga.catalog.migration.MigrationSummary;
-import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 

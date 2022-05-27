@@ -18,7 +18,7 @@ package org.opencb.opencga.core.models.common;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.common.Status;
-import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.commons.utils.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.*;

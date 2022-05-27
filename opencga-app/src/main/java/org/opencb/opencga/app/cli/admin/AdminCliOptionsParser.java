@@ -21,11 +21,11 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.commons.utils.CommandLineUtils;
+import org.opencb.commons.utils.GitRepositoryState;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
-import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.models.user.Account;
 
 import java.util.List;
@@ -311,7 +311,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         }
     }
 
-    @Parameters( commandNames = {"meta"}, commandDescription = "Manage Meta data")
+    @Parameters(commandNames = {"meta"}, commandDescription = "Manage Meta data")
     public class MetaCommandOptions extends AdminCliOptionsParser.CommandOptions {
 
         public MetaKeyCommandOptions metaKeyCommandOptions;
@@ -766,15 +766,15 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public boolean background;
     }
 
-    @Parameters( commandNames = {"update"}, commandDescription = "Update secret key|algorithm" )
+    @Parameters(commandNames = {"update"}, commandDescription = "Update secret key|algorithm")
     public class MetaKeyCommandOptions extends CatalogDatabaseCommandOptions {
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
-        @Parameter( names = {"--key"}, description = "Update secret key in OpenCGA", arity = 1)
+        @Parameter(names = {"--key"}, description = "Update secret key in OpenCGA", arity = 1)
         public String updateSecretKey;
 
-        @Parameter( names = {"--algorithm"}, description = "Update JWT algorithm in OpenCGA", arity = 1 )
+        @Parameter(names = {"--algorithm"}, description = "Update JWT algorithm in OpenCGA", arity = 1)
         public String algorithm;
     }
 

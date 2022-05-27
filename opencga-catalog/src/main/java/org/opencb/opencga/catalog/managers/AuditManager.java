@@ -20,7 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.models.audit.AuditRecord;
+import org.opencb.commons.utils.GitRepositoryState;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
@@ -29,9 +29,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
-import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -156,7 +156,7 @@ public class AuditManager {
     }
 
     public void auditDistinct(String userId, Enums.Resource resource, String studyId, String studyUuid, ObjectMap params,
-                            AuditRecord.Status status) {
+                              AuditRecord.Status status) {
         audit(userId, Enums.Action.DISTINCT, resource, "", "", studyId, studyUuid, params, status, new ObjectMap());
     }
 

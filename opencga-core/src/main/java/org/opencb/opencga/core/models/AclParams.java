@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.models;
 
-import org.opencb.opencga.core.tools.annotations.CliParam;
+import org.opencb.commons.annotations.CliParam;
 
 /**
  * Created by pfurio on 29/03/17.

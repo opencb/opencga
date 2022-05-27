@@ -7,7 +7,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.exec.Command;
-import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.commons.utils.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.slf4j.Logger;
@@ -19,7 +19,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.util.*;
 
-public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor {
+public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor {
 
     public final static String DOCKER_INPUT_PATH = "/data/input";
     public final static String DOCKER_OUTPUT_PATH = "/data/output";

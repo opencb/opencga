@@ -1,10 +1,10 @@
 package org.opencb.opencga.app.cli.main.utils;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.opencb.commons.utils.GitRepositoryState;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaMain;
-import org.opencb.opencga.core.common.GitRepositoryState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

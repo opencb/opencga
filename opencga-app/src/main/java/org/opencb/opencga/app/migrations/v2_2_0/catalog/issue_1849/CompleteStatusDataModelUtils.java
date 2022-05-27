@@ -2,7 +2,7 @@ package org.opencb.opencga.app.migrations.v2_2_0.catalog.issue_1849;
 
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
-import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.commons.utils.GitRepositoryState;
 
 public class CompleteStatusDataModelUtils {
 

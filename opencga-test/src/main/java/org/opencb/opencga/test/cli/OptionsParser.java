@@ -4,8 +4,8 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterDescription;
 import org.apache.commons.collections4.CollectionUtils;
+import org.opencb.commons.utils.GitRepositoryState;
 import org.opencb.commons.utils.PrintUtils;
-import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.test.cli.executors.DatasetCommandExecutor;
 import org.opencb.opencga.test.cli.options.DatasetCommandOptions;
 

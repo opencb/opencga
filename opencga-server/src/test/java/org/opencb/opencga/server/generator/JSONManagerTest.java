@@ -1,6 +1,7 @@
 package org.opencb.opencga.server.generator;
 
 import junit.framework.TestCase;
+import org.opencb.commons.api.RestApiParser;
 import org.opencb.opencga.server.rest.SampleWSServer;
 
 public class JSONManagerTest extends TestCase {

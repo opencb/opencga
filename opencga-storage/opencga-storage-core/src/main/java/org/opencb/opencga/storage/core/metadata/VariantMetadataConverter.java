@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.core.metadata;
 import org.opencb.biodata.models.metadata.*;
 import org.opencb.biodata.models.variant.metadata.*;
 import org.opencb.biodata.tools.variant.metadata.VariantMetadataManager;
-import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.commons.utils.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
@@ -15,7 +15,7 @@ import java.util.*;
 
 /**
  * Converts from VariantMetadata to Collection&lt;StudyMetadata&gt; and vice versa
- *
+ * <p>
  * Created on 02/08/17.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;

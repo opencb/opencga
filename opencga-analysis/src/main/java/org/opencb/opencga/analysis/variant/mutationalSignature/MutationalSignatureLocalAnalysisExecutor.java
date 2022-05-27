@@ -20,16 +20,15 @@ import htsjdk.samtools.reference.BlockCompressedIndexedFastaSequenceFile;
 import htsjdk.samtools.reference.FastaSequenceIndex;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.GZIIndex;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
+import org.opencb.commons.utils.GitRepositoryState;
 import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -49,7 +48,7 @@ import java.util.*;
 
 import static org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis.GENOME_CONTEXT_FILENAME;
 
-@ToolExecutor(id="opencga-local", tool = MutationalSignatureAnalysis.ID,
+@ToolExecutor(id = "opencga-local", tool = MutationalSignatureAnalysis.ID,
         framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.STORAGE)
 public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatureAnalysisExecutor
         implements StorageToolExecutor {
@@ -89,7 +88,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         // if the genome context file does not exist, it will be created !!!
         computeFromContextFile();
     }
-    
+
     private void computeFromContextFile() throws ToolExecutorException {
         // Context index filename
         File indexFile = null;

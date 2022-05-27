@@ -25,11 +25,11 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.commons.utils.CollectionUtils;
+import org.opencb.commons.utils.GitRepositoryState;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.core.models.study.Study;
 import org.slf4j.Logger;
@@ -189,7 +189,7 @@ public class CatalogSolrManager implements AutoCloseable {
      * @param query        Query
      * @param queryOptions Query options (contains the facet and facetRange options)
      * @return List of Variant objects
-     * @throws IOException   IOException
+     * @throws IOException      IOException
      * @throws CatalogException CatalogException
      */
     @Deprecated

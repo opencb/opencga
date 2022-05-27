@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.core.models.file;
 
+import org.opencb.commons.annotations.CliParam;
 import org.opencb.opencga.core.models.common.StatusParams;
-import org.opencb.opencga.core.tools.annotations.CliParam;
 
 import java.util.Collections;
 import java.util.List;

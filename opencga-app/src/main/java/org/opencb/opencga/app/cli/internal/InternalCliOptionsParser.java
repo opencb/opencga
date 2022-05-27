@@ -21,10 +21,10 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.commons.utils.CommandLineUtils;
+import org.opencb.commons.utils.GitRepositoryState;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.options.*;
-import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.List;
 

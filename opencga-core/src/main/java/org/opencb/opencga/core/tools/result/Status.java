@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.tools.result;
 
-import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.commons.utils.GitRepositoryState;
 
 import java.util.Date;
 
@@ -26,22 +26,22 @@ public class Status {
         /**
          * PENDING status: The job or step has not started yet.
          */
-         PENDING,
+        PENDING,
 
         /**
          * RUNNING status: The job or step is running.
          */
-         RUNNING,
+        RUNNING,
 
         /**
          * DONE status: The job or step has finished the execution, but the output is still not ready.
          */
-         DONE,
+        DONE,
 
         /**
          * ERROR status: The job or step finished with an error.
          */
-         ERROR
+        ERROR
     }
 
     private Type name;

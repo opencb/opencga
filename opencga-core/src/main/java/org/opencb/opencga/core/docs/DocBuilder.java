@@ -3,7 +3,7 @@ package org.opencb.opencga.core.docs;
 import org.opencb.commons.docs.DocParser;
 import org.opencb.commons.docs.config.DocConfiguration;
 import org.opencb.commons.docs.doc.DocFactory;
-import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.commons.utils.GitRepositoryState;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.family.Family;

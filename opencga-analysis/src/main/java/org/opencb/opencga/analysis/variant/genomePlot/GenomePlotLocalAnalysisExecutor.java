@@ -30,9 +30,9 @@ import org.opencb.biodata.models.variant.avro.StructuralVariation;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
+import org.opencb.commons.utils.GitRepositoryState;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -56,7 +56,7 @@ import static org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalys
 import static org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor.DOCKER_OUTPUT_PATH;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 
-@ToolExecutor(id="opencga-local", tool = GenomePlotAnalysis.ID,
+@ToolExecutor(id = "opencga-local", tool = GenomePlotAnalysis.ID,
         framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.STORAGE)
 public class GenomePlotLocalAnalysisExecutor extends GenomePlotAnalysisExecutor implements StorageToolExecutor {
 
@@ -159,8 +159,8 @@ public class GenomePlotLocalAnalysisExecutor extends GenomePlotAnalysisExecutor 
     /**
      * Create file with SNV variants.
      *
-     * @param query General query
-     * @param storageManager    Variant storage manager
+     * @param query          General query
+     * @param storageManager Variant storage manager
      * @return True or false depending on successs
      */
     private boolean snvQuery(Query query, VariantStorageManager storageManager) {
@@ -226,7 +226,7 @@ public class GenomePlotLocalAnalysisExecutor extends GenomePlotAnalysisExecutor 
                     prevStart = v.getStart();
                 }
             }
-        } catch(Exception e) {
+        } catch (Exception e) {
             errors.put("SNV", e);
             return false;
         } finally {
@@ -243,8 +243,8 @@ public class GenomePlotLocalAnalysisExecutor extends GenomePlotAnalysisExecutor 
     /**
      * Create file with copy-number variants.
      *
-     * @param query General query
-     * @param storageManager    Variant storage manager
+     * @param query          General query
+     * @param storageManager Variant storage manager
      * @return True or false depending on successs
      */
     private boolean copyNumberQuery(Query query, VariantStorageManager storageManager) {
@@ -297,7 +297,7 @@ public class GenomePlotLocalAnalysisExecutor extends GenomePlotAnalysisExecutor 
                                     int mcn = Integer.parseInt(strMcn);
                                     pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd()
                                             + "\tNONE\t" + (tcn - mcn) + "\t" + mcn);
-                                } catch (NumberFormatException e){
+                                } catch (NumberFormatException e) {
                                     pwOut.println(v.toString() + "\tError parsing TCN/MCN: " + e.getMessage());
                                 }
                             }
@@ -322,8 +322,8 @@ public class GenomePlotLocalAnalysisExecutor extends GenomePlotAnalysisExecutor 
     /**
      * Create file with INDEL variants.
      *
-     * @param query General query
-     * @param storageManager    Variant storage manager
+     * @param query          General query
+     * @param storageManager Variant storage manager
      * @return True or false depending on successs
      */
     private boolean indelQuery(Query query, VariantStorageManager storageManager) {
@@ -355,14 +355,14 @@ public class GenomePlotLocalAnalysisExecutor extends GenomePlotAnalysisExecutor 
                     Variant v = iterator.next();
                     if (StringUtils.isEmpty(v.getReference())) {
                         pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tI\tNone");
-                    } else if (StringUtils.isEmpty(v.getAlternate())){
+                    } else if (StringUtils.isEmpty(v.getAlternate())) {
                         pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tD\tNone");
                     } else {
                         pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tDI\tNone");
                     }
                 }
             }
-        } catch(Exception e){
+        } catch (Exception e) {
             errors.put("INDEL", e);
             return false;
         } finally {
@@ -379,8 +379,8 @@ public class GenomePlotLocalAnalysisExecutor extends GenomePlotAnalysisExecutor 
     /**
      * Create file with rearrangement variants.
      *
-     * @param query General query
-     * @param storageManager    Variant storage manager
+     * @param query          General query
+     * @param storageManager Variant storage manager
      * @return True or false depending on successs
      */
     private boolean rearrangementQuery(Query query, VariantStorageManager storageManager) {

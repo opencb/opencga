@@ -18,7 +18,7 @@ package org.opencb.opencga.storage.app.cli.client;
 
 import com.beust.jcommander.JCommander;
 import org.opencb.commons.utils.CommandLineUtils;
-import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.commons.utils.GitRepositoryState;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.app.cli.client.options.StorageAlignmentCommandOptions;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;

@@ -19,7 +19,7 @@ package org.opencb.opencga.storage.hadoop.variant.executors;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.util.Tool;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.commons.utils.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.slf4j.Logger;

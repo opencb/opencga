@@ -1,5 +1,7 @@
 package org.opencb.opencga.core.tools.annotations;
 
+import org.opencb.commons.annotations.RestParamType;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
