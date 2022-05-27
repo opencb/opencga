@@ -22,6 +22,7 @@ import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,7 +110,7 @@ public class HBaseManager implements AutoCloseable {
             synchronized (this.connection) {
                 Connection con = this.connection.getAndSet(null);
                 if (null != con) {
-                    LOGGER.info("Close HBase connection {}", con);
+                    LOGGER.info("Close HBase connection {}, {}", con, ExceptionUtils.getOpencbStackTrace());
                     con.close();
                     OPEN_CONNECTIONS.decrementAndGet();
                     LOGGER.info("Remaining HBase open connections: {}", getOpenConnections());
@@ -126,14 +127,13 @@ public class HBaseManager implements AutoCloseable {
                 con = this.connection.get();
                 if (con == null || con.isClosed()) {
                     try {
-                        con = ConnectionFactory.createConnection(this.getConf());
+                        con = ConnectionFactory.createConnection(conf);
                     } catch (IOException e) {
                         throw new IllegalStateException("Problems opening connection to DB", e);
                     }
                     OPEN_CONNECTIONS.incrementAndGet();
                     //                    CONNECTIONS.add(con);
-                    StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-                    LOGGER.info("Opened Hadoop DB connection {} called from {}", con, stackTrace);
+                    LOGGER.info("Opened Hadoop DB connection {} called from {}", con, ExceptionUtils.getOpencbStackTrace());
                     this.connection.set(con);
                 }
             }
@@ -151,9 +151,9 @@ public class HBaseManager implements AutoCloseable {
      */
     public ResultScanner getScanner(String tableName, Scan scan) throws IOException {
         if (isValid(scan)) {
-            return act(tableName, (Table table) -> table.getScanner(scan));
+            return new PersistentResultScanner(this, scan, tableName);
         }
-        return new PersistentResultScanner(this, scan, tableName);
+        return act(tableName, (Table table) -> table.getScanner(scan));
     }
 
     /**

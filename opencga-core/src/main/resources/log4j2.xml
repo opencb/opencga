@@ -10,7 +10,7 @@
     <Properties>
         <Property name="name">${sys:opencga.log.file.name:-opencga}</Property>
         <Property name="logDir">${sys:opencga.log.dir:-${sys:user.home}/.opencga/logs}</Property>
-        <Property name="logLevel">${sys:opencga.log.level:-warn}</Property>
+        <Property name="logLevel">${sys:opencga.log.level:-info}</Property>
         <Property name="logFile">${name}.log</Property>
         <Property name="logFileArchive">${name}.%d{yyyy-MM-dd}.%i.log</Property>
     </Properties>
@@ -63,12 +63,12 @@
 
         <Routing name="RollingFileJsonOrNull">
             <Routes pattern="${upper:${sys:opencga.log.file.enabled}}">
-                <Route ref="RollingFileJson" key="TRUE" />
+                <Route ref="RollingFileJson" key="TRUE"/>
             </Routes>
         </Routing>
         <Routing name="RollingFileTxtOrNull">
             <Routes pattern="${upper:${sys:opencga.log.file.enabled}}">
-                <Route ref="RollingFileTxt" key="TRUE" />
+                <Route ref="RollingFileTxt" key="TRUE"/>
             </Routes>
         </Routing>
 
@@ -79,7 +79,6 @@
             <AppenderRef ref="RollingFileJsonOrNull"/>
             <AppenderRef ref="RollingFileTxtOrNull"/>
         </Root>
-
         <Logger name="org.mongodb.driver.cluster" level="WARN"/>
         <Logger name="org.mongodb.driver.connection" level="WARN"/>
         <Logger name="org.mongodb.driver.protocol.command" level="WARN"/>

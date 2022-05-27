@@ -22,6 +22,7 @@ import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
 import org.opencb.opencga.server.generator.models.RestApi;
 import org.opencb.opencga.server.generator.models.RestCategory;
 import org.opencb.opencga.server.generator.models.RestEndpoint;
+import org.opencb.opencga.server.generator.models.RestParameter;
 import org.opencb.opencga.server.generator.utils.CommandLineUtils;
 
 import java.io.File;
@@ -112,7 +113,7 @@ public abstract class ParentClientRestApiWriter {
 
         validTypes = new HashMap<>();
         validTypes.put("String", "String");
-        validTypes.put("Map", "Map");
+        validTypes.put("Map", "Map<String, ?>");
         validTypes.put("string", "String");
         validTypes.put("object", "Object");
         validTypes.put("Object", "Object");
@@ -123,7 +124,8 @@ public abstract class ParentClientRestApiWriter {
         validTypes.put("enum", "String");
         validTypes.put("long", "Long");
         validTypes.put("Long", "Long");
-        validTypes.put("ObjectMap", "ObjectMap");
+        validTypes.put("ObjectMap", "Map<String, ?>");
+        validTypes.put("Query", "Map<String, Object>");
         validTypes.put("java.lang.String", "String");
         validTypes.put("java.lang.Boolean", "Boolean");
         validTypes.put("java.lang.Integer", "Integer");
@@ -135,13 +137,12 @@ public abstract class ParentClientRestApiWriter {
         validTypes.put("java.util.List", "String");
     }
 
-    public String getValidValue(String key) {
-        String res = key;
-
-        if (validTypes.containsKey(key)) {
-            res = validTypes.get(key);
+    public String getValidValue(RestParameter parameter) {
+        String type = parameter.getType();
+        if (type.equals("Map")) {
+            return parameter.getGenericType();
         }
-        return res;
+        return validTypes.getOrDefault(type, type);
     }
 
     public String getIdCategory(RestCategory cat) {
@@ -168,12 +169,12 @@ public abstract class ParentClientRestApiWriter {
         return path.replace("/{apiVersion}/", "").replace("/", "_");
     }
 
-    protected static String getCommandName(RestCategory restCategory, RestEndpoint restEndpoint) {
+    public static String getCommandName(RestCategory restCategory, RestEndpoint restEndpoint) {
         return getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
     }
-
-
+    
     protected static String getMethodName(RestCategory restCategory, RestEndpoint restEndpoint) {
+
         String methodName = "";
         String subpath = restEndpoint.getPath().replace(restCategory.getPath() + "/", "");
         return getMethodName(subpath);

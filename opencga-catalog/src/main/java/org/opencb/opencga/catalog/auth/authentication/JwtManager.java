@@ -40,7 +40,7 @@ public class JwtManager {
     // 32 characters to ensure it is at least 256 bits long
     public static final int SECRET_KEY_MIN_LENGTH = 32;
 
-    JwtManager(String algorithm) {
+    public JwtManager(String algorithm) {
         this(algorithm, null, null);
     }
 
@@ -97,7 +97,7 @@ public class JwtManager {
         jwtBuilder.setSubject(userId)
                 .setAudience("OpenCGA users")
                 .setIssuedAt(new Date(currentTime))
-                .signWith(algorithm, privateKey);
+                .signWith(privateKey, algorithm);
 
         // Set the expiration in number of seconds only if 'expiration' is greater than 0
         if (expiration > 0) {

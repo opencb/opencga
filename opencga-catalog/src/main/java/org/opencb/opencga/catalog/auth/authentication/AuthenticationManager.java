@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.Key;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -151,6 +152,10 @@ public abstract class AuthenticationManager {
      */
     public String createNonExpiringToken(String userId) {
         return jwtManager.createJWTToken(userId, Collections.emptyMap(), 0L);
+    }
+
+    public Date getExpirationDate(String token) throws CatalogAuthenticationException {
+        return jwtManager.getExpiration(token);
     }
 
 }

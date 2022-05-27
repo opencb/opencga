@@ -9,59 +9,61 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.common.JacksonUtils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import java.util.HashMap;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.AnalysisVariantCommandOptions;
 
-import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
-import org.opencb.commons.datastore.core.FacetField;
-import org.opencb.opencga.core.models.variant.CircosAnalysisParams;
-import org.opencb.opencga.core.models.variant.VariantExportParams;
-import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
-import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
-import org.opencb.biodata.models.variant.metadata.Aggregation;
-import org.opencb.biodata.models.variant.metadata.VariantMetadata;
-import org.opencb.opencga.core.models.variant.IndividualQcAnalysisParams;
-import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
-import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.opencga.core.models.variant.PlinkWrapperParams;
-import org.opencb.opencga.core.models.variant.MendelianErrorAnalysisParams;
-import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
-import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
-import org.opencb.opencga.core.models.variant.CohortVariantStatsAnalysisParams;
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.biodata.models.clinical.qc.Signature;
-import org.opencb.opencga.core.models.variant.RelatednessAnalysisParams;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.models.variant.FamilyQcAnalysisParams;
-import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
-import org.opencb.opencga.core.models.variant.GwasAnalysisParams;
-import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
 import java.util.Map;
 import org.opencb.biodata.models.clinical.ClinicalProperty.ModeOfInheritance;
-import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
-import org.opencb.opencga.core.models.variant.VariantIndexParams;
 import org.opencb.biodata.models.clinical.ClinicalProperty.Penetrance;
+import org.opencb.biodata.models.clinical.qc.Signature;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
+import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
+import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
-import org.opencb.opencga.core.models.variant.GatkWrapperParams;
+import org.opencb.commons.datastore.core.FacetField;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
+import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
 import org.opencb.opencga.core.models.variant.AnnotationVariantQueryParams;
-import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
-import org.opencb.opencga.core.models.variant.RvtestsWrapperParams;
-import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
+import org.opencb.opencga.core.models.variant.CircosAnalysisParams;
+import org.opencb.opencga.core.models.variant.CohortVariantStatsAnalysisParams;
+import org.opencb.opencga.core.models.variant.FamilyQcAnalysisParams;
+import org.opencb.opencga.core.models.variant.GatkWrapperParams;
 import org.opencb.opencga.core.models.variant.GenomePlotAnalysisParams;
+import org.opencb.opencga.core.models.variant.GwasAnalysisParams;
+import org.opencb.opencga.core.models.variant.IndividualQcAnalysisParams;
 import org.opencb.opencga.core.models.variant.InferredSexAnalysisParams;
+import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
+import org.opencb.opencga.core.models.variant.MendelianErrorAnalysisParams;
+import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
+import org.opencb.opencga.core.models.variant.PlinkWrapperParams;
+import org.opencb.opencga.core.models.variant.RelatednessAnalysisParams;
+import org.opencb.opencga.core.models.variant.RvtestsWrapperParams;
+import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
+import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
+import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
+import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
+import org.opencb.opencga.core.models.variant.VariantExportParams;
+import org.opencb.opencga.core.models.variant.VariantIndexParams;
+import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
+import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
 
 /*
 * WARNING: AUTOGENERATED CODE
 *
 * This code was generated by a tool.
-* Autogenerated on: 2022-05-25
+* Autogenerated on: 2022-05-27
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
@@ -70,7 +72,7 @@ import org.opencb.opencga.core.models.variant.InferredSexAnalysisParams;
 
 /**
  * This class contains methods for the Analysis - Variant command line.
- *    OpenCGA version: 2.3.0-SNAPSHOT
+ *    OpenCGA version: 2.4.0-SNAPSHOT
  *    PATH: /{apiVersion}/analysis/variant
  */
 public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
@@ -316,11 +318,12 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             circosAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), CircosAnalysisParams.class);
-        }  else {
-        ((CircosAnalysisParams)circosAnalysisParams)
-            .setTitle(commandOptions.title)
-            .setDensity(commandOptions.density)
-            .setOutdir(commandOptions.outdir);
+        } else {
+            circosAnalysisParams.setTitle(commandOptions.title);
+            circosAnalysisParams.setDensity(commandOptions.density);
+            circosAnalysisParams.setQuery(new HashMap<>(commandOptions.query));
+            //circosAnalysisParams.setTracks(commandOptions.tracks); // Unsupported param. FIXME 
+            circosAnalysisParams.setOutdir(commandOptions.outdir);
 
         }
         return openCGAClient.getVariantClient().runCircos(circosAnalysisParams, queryParams);
@@ -383,17 +386,15 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             cohortVariantStatsAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), CohortVariantStatsAnalysisParams.class);
-        }  else {
-        ((CohortVariantStatsAnalysisParams)cohortVariantStatsAnalysisParams)
-            .setCohort(commandOptions.cohort)
-            .setSamples(splitWithTrim(commandOptions.samples))
-            .setSampleAnnotation(commandOptions.sampleAnnotation)
-            .setOutdir(commandOptions.outdir);
+        } else {
+            cohortVariantStatsAnalysisParams.setCohort(commandOptions.cohort);
+            cohortVariantStatsAnalysisParams.setSamples(splitWithTrim(commandOptions.samples));
+            cohortVariantStatsAnalysisParams.setSampleAnnotation(commandOptions.sampleAnnotation);
+            cohortVariantStatsAnalysisParams.setOutdir(commandOptions.outdir);
 
-            if (commandOptions.index != null){
-                ((CohortVariantStatsAnalysisParams)cohortVariantStatsAnalysisParams).setIndex(commandOptions.index);
-             }
-
+            if (commandOptions.index != null) {
+                cohortVariantStatsAnalysisParams.setIndex(commandOptions.index);
+            }
         }
         return openCGAClient.getVariantClient().runCohortStats(cohortVariantStatsAnalysisParams, queryParams);
     }
@@ -427,83 +428,106 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             variantExportParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantExportParams.class);
-        }  else {
-        ((VariantExportParams)variantExportParams)
-            .setOutdir(commandOptions.outdir)
-            .setOutputFileName(commandOptions.outputFileName)
-            .setOutputFileFormat(commandOptions.outputFileFormat)
-            .setVariantsFile(commandOptions.variantsFile)
-            .setInclude(commandOptions.bodyInclude)
-            .setExclude(commandOptions.bodyExclude)
-            .setLimit(commandOptions.limit)
-            .setSkip(commandOptions.skip)
-            .setSavedFilter(commandOptions.savedFilter)
-            .setChromosome(commandOptions.chromosome)
-            .setReference(commandOptions.reference)
-            .setAlternate(commandOptions.alternate)
-            .setRelease(commandOptions.release)
-            .setIncludeStudy(commandOptions.includeStudy)
-            .setIncludeSample(commandOptions.includeSample)
-            .setIncludeFile(commandOptions.includeFile)
-            .setIncludeSampleData(commandOptions.includeSampleData)
-            .setIncludeSampleId(commandOptions.includeSampleId)
-            .setIncludeGenotype(commandOptions.includeGenotype)
-            .setFile(commandOptions.file)
-            .setQual(commandOptions.qual)
-            .setFilter(commandOptions.filter)
-            .setFileData(commandOptions.fileData)
-            .setGenotype(commandOptions.genotype)
-            .setSample(commandOptions.sample)
-            .setSampleLimit(commandOptions.sampleLimit)
-            .setSampleSkip(commandOptions.sampleSkip)
-            .setSampleData(commandOptions.sampleData)
-            .setSampleAnnotation(commandOptions.sampleAnnotation)
-            .setFamily(commandOptions.family)
-            .setFamilyMembers(commandOptions.familyMembers)
-            .setFamilyDisorder(commandOptions.familyDisorder)
-            .setFamilyProband(commandOptions.familyProband)
-            .setFamilySegregation(commandOptions.familySegregation)
-            .setCohort(commandOptions.cohort)
-            .setCohortStatsPass(commandOptions.cohortStatsPass)
-            .setCohortStatsMgf(commandOptions.cohortStatsMgf)
-            .setMissingAlleles(commandOptions.missingAlleles)
-            .setMissingGenotypes(commandOptions.missingGenotypes)
-            .setScore(commandOptions.score)
-            .setPolyphen(commandOptions.polyphen)
-            .setSift(commandOptions.sift)
-            .setGeneTraitId(commandOptions.geneTraitId)
-            .setGeneTraitName(commandOptions.geneTraitName)
-            .setTrait(commandOptions.trait)
-            .setCosmic(commandOptions.cosmic)
-            .setClinvar(commandOptions.clinvar)
-            .setHpo(commandOptions.hpo)
-            .setGo(commandOptions.go)
-            .setExpression(commandOptions.expression)
-            .setProteinKeyword(commandOptions.proteinKeyword)
-            .setDrug(commandOptions.drug)
-            .setCustomAnnotation(commandOptions.customAnnotation)
-            .setUnknownGenotype(commandOptions.unknownGenotype);
+        } else {
+            variantExportParams.setId(commandOptions.bodyId);
+            variantExportParams.setRegion(commandOptions.bodyRegion);
+            variantExportParams.setGene(commandOptions.bodyGene);
+            variantExportParams.setType(commandOptions.bodyType);
+            variantExportParams.setPanel(commandOptions.bodyPanel);
+            variantExportParams.setPanelModeOfInheritance(commandOptions.bodyPanelModeOfInheritance);
+            variantExportParams.setPanelConfidence(commandOptions.bodyPanelConfidence);
+            variantExportParams.setPanelRoleInCancer(commandOptions.bodyPanelRoleInCancer);
+            variantExportParams.setCohortStatsRef(commandOptions.bodyCohortStatsRef);
+            variantExportParams.setCohortStatsAlt(commandOptions.bodyCohortStatsAlt);
+            variantExportParams.setCohortStatsMaf(commandOptions.bodyCohortStatsMaf);
+            variantExportParams.setCt(commandOptions.bodyCt);
+            variantExportParams.setXref(commandOptions.bodyXref);
+            variantExportParams.setBiotype(commandOptions.bodyBiotype);
+            variantExportParams.setProteinSubstitution(commandOptions.bodyProteinSubstitution);
+            variantExportParams.setConservation(commandOptions.bodyConservation);
+            variantExportParams.setPopulationFrequencyMaf(commandOptions.bodyPopulationFrequencyMaf);
+            variantExportParams.setPopulationFrequencyAlt(commandOptions.bodyPopulationFrequencyAlt);
+            variantExportParams.setPopulationFrequencyRef(commandOptions.bodyPopulationFrequencyRef);
+            variantExportParams.setTranscriptFlag(commandOptions.bodyTranscriptFlag);
+            variantExportParams.setFunctionalScore(commandOptions.bodyFunctionalScore);
+            variantExportParams.setClinical(commandOptions.bodyClinical);
+            variantExportParams.setClinicalSignificance(commandOptions.bodyClinicalSignificance);
+            variantExportParams.setClinicalConfirmedStatus(commandOptions.bodyClinicalConfirmedStatus);
+            variantExportParams.setProject(commandOptions.bodyProject);
+            variantExportParams.setStudy(commandOptions.bodyStudy);
+            variantExportParams.setSavedFilter(commandOptions.bodySavedFilter);
+            variantExportParams.setChromosome(commandOptions.bodyChromosome);
+            variantExportParams.setReference(commandOptions.bodyReference);
+            variantExportParams.setAlternate(commandOptions.bodyAlternate);
+            variantExportParams.setRelease(commandOptions.bodyRelease);
+            variantExportParams.setIncludeStudy(commandOptions.bodyIncludeStudy);
+            variantExportParams.setIncludeSample(commandOptions.bodyIncludeSample);
+            variantExportParams.setIncludeFile(commandOptions.bodyIncludeFile);
+            variantExportParams.setIncludeSampleData(commandOptions.bodyIncludeSampleData);
+            variantExportParams.setIncludeSampleId(commandOptions.bodyIncludeSampleId);
+            variantExportParams.setIncludeGenotype(commandOptions.bodyIncludeGenotype);
+            variantExportParams.setFile(commandOptions.bodyFile);
+            variantExportParams.setQual(commandOptions.bodyQual);
+            variantExportParams.setFilter(commandOptions.bodyFilter);
+            variantExportParams.setFileData(commandOptions.bodyFileData);
+            variantExportParams.setGenotype(commandOptions.bodyGenotype);
+            variantExportParams.setSample(commandOptions.bodySample);
+            variantExportParams.setSampleLimit(commandOptions.bodySampleLimit);
+            variantExportParams.setSampleSkip(commandOptions.bodySampleSkip);
+            variantExportParams.setSampleData(commandOptions.bodySampleData);
+            variantExportParams.setSampleAnnotation(commandOptions.bodySampleAnnotation);
+            variantExportParams.setFamily(commandOptions.bodyFamily);
+            variantExportParams.setFamilyMembers(commandOptions.bodyFamilyMembers);
+            variantExportParams.setFamilyDisorder(commandOptions.bodyFamilyDisorder);
+            variantExportParams.setFamilyProband(commandOptions.bodyFamilyProband);
+            variantExportParams.setFamilySegregation(commandOptions.bodyFamilySegregation);
+            variantExportParams.setCohort(commandOptions.bodyCohort);
+            variantExportParams.setCohortStatsPass(commandOptions.bodyCohortStatsPass);
+            variantExportParams.setCohortStatsMgf(commandOptions.bodyCohortStatsMgf);
+            variantExportParams.setMissingAlleles(commandOptions.bodyMissingAlleles);
+            variantExportParams.setMissingGenotypes(commandOptions.bodyMissingGenotypes);
+            variantExportParams.setScore(commandOptions.bodyScore);
+            variantExportParams.setPolyphen(commandOptions.bodyPolyphen);
+            variantExportParams.setSift(commandOptions.bodySift);
+            variantExportParams.setGeneTraitId(commandOptions.bodyGeneTraitId);
+            variantExportParams.setGeneTraitName(commandOptions.bodyGeneTraitName);
+            variantExportParams.setTrait(commandOptions.bodyTrait);
+            variantExportParams.setCosmic(commandOptions.bodyCosmic);
+            variantExportParams.setClinvar(commandOptions.bodyClinvar);
+            variantExportParams.setHpo(commandOptions.bodyHpo);
+            variantExportParams.setGo(commandOptions.bodyGo);
+            variantExportParams.setExpression(commandOptions.bodyExpression);
+            variantExportParams.setProteinKeyword(commandOptions.bodyProteinKeyword);
+            variantExportParams.setDrug(commandOptions.bodyDrug);
+            variantExportParams.setCustomAnnotation(commandOptions.bodyCustomAnnotation);
+            variantExportParams.setUnknownGenotype(commandOptions.bodyUnknownGenotype);
+            variantExportParams.setOutdir(commandOptions.bodyOutdir);
+            variantExportParams.setOutputFileName(commandOptions.bodyOutputFileName);
+            variantExportParams.setOutputFileFormat(commandOptions.bodyOutputFileFormat);
+            variantExportParams.setVariantsFile(commandOptions.bodyVariantsFile);
+            variantExportParams.setInclude(commandOptions.bodyInclude);
+            variantExportParams.setExclude(commandOptions.bodyExclude);
+            variantExportParams.setLimit(commandOptions.bodyLimit);
+            variantExportParams.setSkip(commandOptions.bodySkip);
 
-            if (commandOptions.compress != null){
-                ((VariantExportParams)variantExportParams).setCompress(commandOptions.compress);
-             }
-
-            if (commandOptions.summary != null){
-                ((VariantExportParams)variantExportParams).setSummary(commandOptions.summary);
-             }
-
-            if (commandOptions.annotationExists != null){
-                ((VariantExportParams)variantExportParams).setAnnotationExists(commandOptions.annotationExists);
-             }
-
-            if (commandOptions.sampleMetadata != null){
-                ((VariantExportParams)variantExportParams).setSampleMetadata(commandOptions.sampleMetadata);
-             }
-
-            if (commandOptions.sort != null){
-                ((VariantExportParams)variantExportParams).setSort(commandOptions.sort);
-             }
-
+            if (commandOptions.bodyPanelIntersection != null) {
+                variantExportParams.setPanelIntersection(commandOptions.bodyPanelIntersection);
+            }
+            if (commandOptions.bodyAnnotationExists != null) {
+                variantExportParams.setAnnotationExists(commandOptions.bodyAnnotationExists);
+            }
+            if (commandOptions.bodySampleMetadata != null) {
+                variantExportParams.setSampleMetadata(commandOptions.bodySampleMetadata);
+            }
+            if (commandOptions.bodySort != null) {
+                variantExportParams.setSort(commandOptions.bodySort);
+            }
+            if (commandOptions.bodyCompress != null) {
+                variantExportParams.setCompress(commandOptions.bodyCompress);
+            }
+            if (commandOptions.bodySummary != null) {
+                variantExportParams.setSummary(commandOptions.bodySummary);
+            }
         }
         return openCGAClient.getVariantClient().runExport(variantExportParams, queryParams);
     }
@@ -553,12 +577,11 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             familyQcAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), FamilyQcAnalysisParams.class);
-        }  else {
-        ((FamilyQcAnalysisParams)familyQcAnalysisParams)
-            .setFamily(commandOptions.family)
-            .setRelatednessMethod(commandOptions.relatednessMethod)
-            .setRelatednessMaf(commandOptions.relatednessMaf)
-            .setOutdir(commandOptions.outdir);
+        } else {
+            familyQcAnalysisParams.setFamily(commandOptions.family);
+            familyQcAnalysisParams.setRelatednessMethod(commandOptions.relatednessMethod);
+            familyQcAnalysisParams.setRelatednessMaf(commandOptions.relatednessMaf);
+            familyQcAnalysisParams.setOutdir(commandOptions.outdir);
 
         }
         return openCGAClient.getVariantClient().runFamilyQc(familyQcAnalysisParams, queryParams);
@@ -611,10 +634,10 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             gatkWrapperParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), GatkWrapperParams.class);
-        }  else {
-        ((GatkWrapperParams)gatkWrapperParams)
-            .setCommand(commandOptions.command)
-            .setOutdir(commandOptions.outdir);
+        } else {
+            gatkWrapperParams.setCommand(commandOptions.command);
+            gatkWrapperParams.setOutdir(commandOptions.outdir);
+            gatkWrapperParams.setGatkParams(new HashMap<>(commandOptions.gatkParams));
 
         }
         return openCGAClient.getVariantClient().runGatk(gatkWrapperParams, queryParams);
@@ -646,13 +669,12 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             genomePlotAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), GenomePlotAnalysisParams.class);
-        }  else {
-        ((GenomePlotAnalysisParams)genomePlotAnalysisParams)
-            .setSample(commandOptions.sample)
-            .setId(commandOptions.id)
-            .setDescription(commandOptions.description)
-            .setConfigFile(commandOptions.configFile)
-            .setOutdir(commandOptions.outdir);
+        } else {
+            genomePlotAnalysisParams.setSample(commandOptions.sample);
+            genomePlotAnalysisParams.setId(commandOptions.id);
+            genomePlotAnalysisParams.setDescription(commandOptions.description);
+            genomePlotAnalysisParams.setConfigFile(commandOptions.configFile);
+            genomePlotAnalysisParams.setOutdir(commandOptions.outdir);
 
         }
         return openCGAClient.getVariantClient().runGenomePlot(genomePlotAnalysisParams, queryParams);
@@ -674,16 +696,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        GwasConfiguration.Method methodParam = null;
-        if (commandOptions.method != null) {
-         methodParam = GwasConfiguration.Method.valueOf(commandOptions.method);
-
-        } 
-        GwasConfiguration.FisherMode fisherModeParam = null;
-        if (commandOptions.fisherMode != null) {
-         fisherModeParam = GwasConfiguration.FisherMode.valueOf(commandOptions.fisherMode);
-
-        } 
 
         GwasAnalysisParams gwasAnalysisParams = new GwasAnalysisParams();
         if (commandOptions.jsonDataModel) {
@@ -694,22 +706,22 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             gwasAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), GwasAnalysisParams.class);
-        }  else {
-        ((GwasAnalysisParams)gwasAnalysisParams)
-            .setPhenotype(commandOptions.phenotype)
-            .setIndexScoreId(commandOptions.indexScoreId)
-            .setCaseCohort(commandOptions.caseCohort)
-            .setCaseCohortSamplesAnnotation(commandOptions.caseCohortSamplesAnnotation)
-            .setCaseCohortSamples(splitWithTrim(commandOptions.caseCohortSamples))
-            .setControlCohort(commandOptions.controlCohort)
-            .setControlCohortSamplesAnnotation(commandOptions.controlCohortSamplesAnnotation)
-            .setControlCohortSamples(splitWithTrim(commandOptions.controlCohortSamples))
-            .setOutdir(commandOptions.outdir);
+        } else {
+            gwasAnalysisParams.setPhenotype(commandOptions.phenotype);
+            gwasAnalysisParams.setIndexScoreId(commandOptions.indexScoreId);
+            gwasAnalysisParams.setMethod(commandOptions.method == null ? null : GwasConfiguration.Method.valueOf(commandOptions.method));
+            gwasAnalysisParams.setFisherMode(commandOptions.fisherMode == null ? null : GwasConfiguration.FisherMode.valueOf(commandOptions.fisherMode));
+            gwasAnalysisParams.setCaseCohort(commandOptions.caseCohort);
+            gwasAnalysisParams.setCaseCohortSamplesAnnotation(commandOptions.caseCohortSamplesAnnotation);
+            gwasAnalysisParams.setCaseCohortSamples(splitWithTrim(commandOptions.caseCohortSamples));
+            gwasAnalysisParams.setControlCohort(commandOptions.controlCohort);
+            gwasAnalysisParams.setControlCohortSamplesAnnotation(commandOptions.controlCohortSamplesAnnotation);
+            gwasAnalysisParams.setControlCohortSamples(splitWithTrim(commandOptions.controlCohortSamples));
+            gwasAnalysisParams.setOutdir(commandOptions.outdir);
 
-            if (commandOptions.index != null){
-                ((GwasAnalysisParams)gwasAnalysisParams).setIndex(commandOptions.index);
-             }
-
+            if (commandOptions.index != null) {
+                gwasAnalysisParams.setIndex(commandOptions.index);
+            }
         }
         return openCGAClient.getVariantClient().runGwas(gwasAnalysisParams, queryParams);
     }
@@ -740,76 +752,63 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             variantIndexParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantIndexParams.class);
-        }  else {
-        ((VariantIndexParams)variantIndexParams)
-            .setFile(commandOptions.file)
-            .setOutdir(commandOptions.outdir)
-            .setReferenceGenome(commandOptions.referenceGenome)
-            .setFailOnMalformedLines(commandOptions.failOnMalformedLines)
-            .setLoadSplitData(commandOptions.loadSplitData)
-            .setLoadSampleIndex(commandOptions.loadSampleIndex)
-            .setLoadArchive(commandOptions.loadArchive)
-            .setLoadHomRef(commandOptions.loadHomRef)
-            .setPostLoadCheck(commandOptions.postLoadCheck)
-            .setIncludeGenotypes(commandOptions.includeGenotypes)
-            .setIncludeSampleData(commandOptions.includeSampleData)
-            .setMerge(commandOptions.merge)
-            .setDeduplicationPolicy(commandOptions.deduplicationPolicy)
-            .setAggregationMappingFile(commandOptions.aggregationMappingFile)
-            .setAnnotator(commandOptions.annotator);
+        } else {
+            variantIndexParams.setFile(commandOptions.file);
+            variantIndexParams.setOutdir(commandOptions.outdir);
+            variantIndexParams.setReferenceGenome(commandOptions.referenceGenome);
+            variantIndexParams.setFailOnMalformedLines(commandOptions.failOnMalformedLines);
+            variantIndexParams.setLoadSplitData(commandOptions.loadSplitData);
+            variantIndexParams.setLoadSampleIndex(commandOptions.loadSampleIndex);
+            variantIndexParams.setLoadArchive(commandOptions.loadArchive);
+            variantIndexParams.setLoadHomRef(commandOptions.loadHomRef);
+            variantIndexParams.setPostLoadCheck(commandOptions.postLoadCheck);
+            variantIndexParams.setIncludeGenotypes(commandOptions.includeGenotypes);
+            variantIndexParams.setIncludeSampleData(commandOptions.includeSampleData);
+            variantIndexParams.setMerge(commandOptions.merge);
+            variantIndexParams.setDeduplicationPolicy(commandOptions.deduplicationPolicy);
+            variantIndexParams.setAggregated(commandOptions.aggregated == null ? null : Aggregation.valueOf(commandOptions.aggregated));
+            variantIndexParams.setAggregationMappingFile(commandOptions.aggregationMappingFile);
+            variantIndexParams.setAnnotator(commandOptions.annotator);
 
-            if (commandOptions.resume != null){
-                ((VariantIndexParams)variantIndexParams).setResume(commandOptions.resume);
-             }
-
-            if (commandOptions.transform != null){
-                ((VariantIndexParams)variantIndexParams).setTransform(commandOptions.transform);
-             }
-
-            if (commandOptions.gvcf != null){
-                ((VariantIndexParams)variantIndexParams).setGvcf(commandOptions.gvcf);
-             }
-
-            if (commandOptions.normalizationSkip != null){
-                ((VariantIndexParams)variantIndexParams).setNormalizationSkip(commandOptions.normalizationSkip);
-             }
-
-            if (commandOptions.family != null){
-                ((VariantIndexParams)variantIndexParams).setFamily(commandOptions.family);
-             }
-
-            if (commandOptions.somatic != null){
-                ((VariantIndexParams)variantIndexParams).setSomatic(commandOptions.somatic);
-             }
-
-            if (commandOptions.load != null){
-                ((VariantIndexParams)variantIndexParams).setLoad(commandOptions.load);
-             }
-
-            if (commandOptions.loadMultiFileData != null){
-                ((VariantIndexParams)variantIndexParams).setLoadMultiFileData(commandOptions.loadMultiFileData);
-             }
-
-            if (commandOptions.calculateStats != null){
-                ((VariantIndexParams)variantIndexParams).setCalculateStats(commandOptions.calculateStats);
-             }
-
-            if (commandOptions.annotate != null){
-                ((VariantIndexParams)variantIndexParams).setAnnotate(commandOptions.annotate);
-             }
-
-            if (commandOptions.overwriteAnnotations != null){
-                ((VariantIndexParams)variantIndexParams).setOverwriteAnnotations(commandOptions.overwriteAnnotations);
-             }
-
-            if (commandOptions.indexSearch != null){
-                ((VariantIndexParams)variantIndexParams).setIndexSearch(commandOptions.indexSearch);
-             }
-
-            if (commandOptions.skipIndexedFiles != null){
-                ((VariantIndexParams)variantIndexParams).setSkipIndexedFiles(commandOptions.skipIndexedFiles);
-             }
-
+            if (commandOptions.resume != null) {
+                variantIndexParams.setResume(commandOptions.resume);
+            }
+            if (commandOptions.transform != null) {
+                variantIndexParams.setTransform(commandOptions.transform);
+            }
+            if (commandOptions.gvcf != null) {
+                variantIndexParams.setGvcf(commandOptions.gvcf);
+            }
+            if (commandOptions.normalizationSkip != null) {
+                variantIndexParams.setNormalizationSkip(commandOptions.normalizationSkip);
+            }
+            if (commandOptions.family != null) {
+                variantIndexParams.setFamily(commandOptions.family);
+            }
+            if (commandOptions.somatic != null) {
+                variantIndexParams.setSomatic(commandOptions.somatic);
+            }
+            if (commandOptions.load != null) {
+                variantIndexParams.setLoad(commandOptions.load);
+            }
+            if (commandOptions.loadMultiFileData != null) {
+                variantIndexParams.setLoadMultiFileData(commandOptions.loadMultiFileData);
+            }
+            if (commandOptions.calculateStats != null) {
+                variantIndexParams.setCalculateStats(commandOptions.calculateStats);
+            }
+            if (commandOptions.annotate != null) {
+                variantIndexParams.setAnnotate(commandOptions.annotate);
+            }
+            if (commandOptions.overwriteAnnotations != null) {
+                variantIndexParams.setOverwriteAnnotations(commandOptions.overwriteAnnotations);
+            }
+            if (commandOptions.indexSearch != null) {
+                variantIndexParams.setIndexSearch(commandOptions.indexSearch);
+            }
+            if (commandOptions.skipIndexedFiles != null) {
+                variantIndexParams.setSkipIndexedFiles(commandOptions.skipIndexedFiles);
+            }
         }
         return openCGAClient.getVariantClient().runIndex(variantIndexParams, queryParams);
     }
@@ -840,12 +839,11 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             individualQcAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), IndividualQcAnalysisParams.class);
-        }  else {
-        ((IndividualQcAnalysisParams)individualQcAnalysisParams)
-            .setIndividual(commandOptions.individual)
-            .setSample(commandOptions.sample)
-            .setInferredSexMethod(commandOptions.inferredSexMethod)
-            .setOutdir(commandOptions.outdir);
+        } else {
+            individualQcAnalysisParams.setIndividual(commandOptions.individual);
+            individualQcAnalysisParams.setSample(commandOptions.sample);
+            individualQcAnalysisParams.setInferredSexMethod(commandOptions.inferredSexMethod);
+            individualQcAnalysisParams.setOutdir(commandOptions.outdir);
 
         }
         return openCGAClient.getVariantClient().runIndividualQc(individualQcAnalysisParams, queryParams);
@@ -877,11 +875,10 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             inferredSexAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), InferredSexAnalysisParams.class);
-        }  else {
-        ((InferredSexAnalysisParams)inferredSexAnalysisParams)
-            .setIndividual(commandOptions.individual)
-            .setSample(commandOptions.sample)
-            .setOutdir(commandOptions.outdir);
+        } else {
+            inferredSexAnalysisParams.setIndividual(commandOptions.individual);
+            inferredSexAnalysisParams.setSample(commandOptions.sample);
+            inferredSexAnalysisParams.setOutdir(commandOptions.outdir);
 
         }
         return openCGAClient.getVariantClient().runInferredSex(inferredSexAnalysisParams, queryParams);
@@ -949,25 +946,22 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             knockoutAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), KnockoutAnalysisParams.class);
-        }  else {
-        ((KnockoutAnalysisParams)knockoutAnalysisParams)
-            .setSample(splitWithTrim(commandOptions.sample))
-            .setGene(splitWithTrim(commandOptions.gene))
-            .setPanel(splitWithTrim(commandOptions.panel))
-            .setBiotype(commandOptions.biotype)
-            .setConsequenceType(commandOptions.consequenceType)
-            .setFilter(commandOptions.filter)
-            .setQual(commandOptions.qual)
-            .setOutdir(commandOptions.outdir);
+        } else {
+            knockoutAnalysisParams.setSample(splitWithTrim(commandOptions.sample));
+            knockoutAnalysisParams.setGene(splitWithTrim(commandOptions.gene));
+            knockoutAnalysisParams.setPanel(splitWithTrim(commandOptions.panel));
+            knockoutAnalysisParams.setBiotype(commandOptions.biotype);
+            knockoutAnalysisParams.setConsequenceType(commandOptions.consequenceType);
+            knockoutAnalysisParams.setFilter(commandOptions.filter);
+            knockoutAnalysisParams.setQual(commandOptions.qual);
+            knockoutAnalysisParams.setOutdir(commandOptions.outdir);
 
-            if (commandOptions.skipGenesFile != null){
-                ((KnockoutAnalysisParams)knockoutAnalysisParams).setSkipGenesFile(commandOptions.skipGenesFile);
-             }
-
-            if (commandOptions.index != null){
-                ((KnockoutAnalysisParams)knockoutAnalysisParams).setIndex(commandOptions.index);
-             }
-
+            if (commandOptions.skipGenesFile != null) {
+                knockoutAnalysisParams.setSkipGenesFile(commandOptions.skipGenesFile);
+            }
+            if (commandOptions.index != null) {
+                knockoutAnalysisParams.setIndex(commandOptions.index);
+            }
         }
         return openCGAClient.getVariantClient().runKnockout(knockoutAnalysisParams, queryParams);
     }
@@ -998,12 +992,11 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             mendelianErrorAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), MendelianErrorAnalysisParams.class);
-        }  else {
-        ((MendelianErrorAnalysisParams)mendelianErrorAnalysisParams)
-            .setFamily(commandOptions.family)
-            .setIndividual(commandOptions.individual)
-            .setSample(commandOptions.sample)
-            .setOutdir(commandOptions.outdir);
+        } else {
+            mendelianErrorAnalysisParams.setFamily(commandOptions.family);
+            mendelianErrorAnalysisParams.setIndividual(commandOptions.individual);
+            mendelianErrorAnalysisParams.setSample(commandOptions.sample);
+            mendelianErrorAnalysisParams.setOutdir(commandOptions.outdir);
 
         }
         return openCGAClient.getVariantClient().runMendelianError(mendelianErrorAnalysisParams, queryParams);
@@ -1088,18 +1081,17 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             mutationalSignatureAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), MutationalSignatureAnalysisParams.class);
-        }  else {
-        ((MutationalSignatureAnalysisParams)mutationalSignatureAnalysisParams)
-            .setSample(commandOptions.sample)
-            .setId(commandOptions.id)
-            .setDescription(commandOptions.description)
-            .setRelease(commandOptions.release)
-            .setOutdir(commandOptions.outdir);
+        } else {
+            mutationalSignatureAnalysisParams.setSample(commandOptions.sample);
+            mutationalSignatureAnalysisParams.setId(commandOptions.id);
+            mutationalSignatureAnalysisParams.setDescription(commandOptions.description);
+            mutationalSignatureAnalysisParams.setQuery(new ObjectMap(commandOptions.query));
+            mutationalSignatureAnalysisParams.setRelease(commandOptions.release);
+            mutationalSignatureAnalysisParams.setOutdir(commandOptions.outdir);
 
-            if (commandOptions.fitting != null){
-                ((MutationalSignatureAnalysisParams)mutationalSignatureAnalysisParams).setFitting(commandOptions.fitting);
-             }
-
+            if (commandOptions.fitting != null) {
+                mutationalSignatureAnalysisParams.setFitting(commandOptions.fitting);
+            }
         }
         return openCGAClient.getVariantClient().runMutationalSignature(mutationalSignatureAnalysisParams, queryParams);
     }
@@ -1130,9 +1122,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             plinkWrapperParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), PlinkWrapperParams.class);
-        }  else {
-        ((PlinkWrapperParams)plinkWrapperParams)
-            .setOutdir(commandOptions.outdir);
+        } else {
+            plinkWrapperParams.setOutdir(commandOptions.outdir);
+            plinkWrapperParams.setPlinkParams(new HashMap<>(commandOptions.plinkParams));
 
         }
         return openCGAClient.getVariantClient().runPlink(plinkWrapperParams, queryParams);
@@ -1255,13 +1247,12 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             relatednessAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), RelatednessAnalysisParams.class);
-        }  else {
-        ((RelatednessAnalysisParams)relatednessAnalysisParams)
-            .setIndividuals(splitWithTrim(commandOptions.individuals))
-            .setSamples(splitWithTrim(commandOptions.samples))
-            .setMinorAlleleFreq(commandOptions.minorAlleleFreq)
-            .setMethod(commandOptions.method)
-            .setOutdir(commandOptions.outdir);
+        } else {
+            relatednessAnalysisParams.setIndividuals(splitWithTrim(commandOptions.individuals));
+            relatednessAnalysisParams.setSamples(splitWithTrim(commandOptions.samples));
+            relatednessAnalysisParams.setMinorAlleleFreq(commandOptions.minorAlleleFreq);
+            relatednessAnalysisParams.setMethod(commandOptions.method);
+            relatednessAnalysisParams.setOutdir(commandOptions.outdir);
 
         }
         return openCGAClient.getVariantClient().runRelatedness(relatednessAnalysisParams, queryParams);
@@ -1293,10 +1284,10 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             rvtestsWrapperParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), RvtestsWrapperParams.class);
-        }  else {
-        ((RvtestsWrapperParams)rvtestsWrapperParams)
-            .setCommand(commandOptions.command)
-            .setOutdir(commandOptions.outdir);
+        } else {
+            rvtestsWrapperParams.setCommand(commandOptions.command);
+            rvtestsWrapperParams.setOutdir(commandOptions.outdir);
+            rvtestsWrapperParams.setRvtestsParams(new HashMap<>(commandOptions.rvtestsParams));
 
         }
         return openCGAClient.getVariantClient().runRvtests(rvtestsWrapperParams, queryParams);
@@ -1364,15 +1355,13 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             sampleEligibilityAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), SampleEligibilityAnalysisParams.class);
-        }  else {
-        ((SampleEligibilityAnalysisParams)sampleEligibilityAnalysisParams)
-            .setQuery(commandOptions.query)
-            .setCohortId(commandOptions.cohortId);
+        } else {
+            sampleEligibilityAnalysisParams.setQuery(commandOptions.query);
+            sampleEligibilityAnalysisParams.setCohortId(commandOptions.cohortId);
 
-            if (commandOptions.index != null){
-                ((SampleEligibilityAnalysisParams)sampleEligibilityAnalysisParams).setIndex(commandOptions.index);
-             }
-
+            if (commandOptions.index != null) {
+                sampleEligibilityAnalysisParams.setIndex(commandOptions.index);
+            }
         }
         return openCGAClient.getVariantClient().runSampleEligibility(sampleEligibilityAnalysisParams, queryParams);
     }
@@ -1394,33 +1383,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        AnnotationVariantQueryParams annotationVariantQueryParams= new AnnotationVariantQueryParams();
-        invokeSetter(annotationVariantQueryParams, "id", commandOptions.variantStatsQueryId);
-        invokeSetter(annotationVariantQueryParams, "region", commandOptions.variantStatsQueryRegion);
-        invokeSetter(annotationVariantQueryParams, "gene", commandOptions.variantStatsQueryGene);
-        invokeSetter(annotationVariantQueryParams, "type", commandOptions.variantStatsQueryType);
-        invokeSetter(annotationVariantQueryParams, "panel", commandOptions.variantStatsQueryPanel);
-        invokeSetter(annotationVariantQueryParams, "panelModeOfInheritance", commandOptions.variantStatsQueryPanelModeOfInheritance);
-        invokeSetter(annotationVariantQueryParams, "panelConfidence", commandOptions.variantStatsQueryPanelConfidence);
-        invokeSetter(annotationVariantQueryParams, "panelRoleInCancer", commandOptions.variantStatsQueryPanelRoleInCancer);
-        invokeSetter(annotationVariantQueryParams, "panelIntersection", commandOptions.variantStatsQueryPanelIntersection);
-        invokeSetter(annotationVariantQueryParams, "cohortStatsRef", commandOptions.variantStatsQueryCohortStatsRef);
-        invokeSetter(annotationVariantQueryParams, "cohortStatsAlt", commandOptions.variantStatsQueryCohortStatsAlt);
-        invokeSetter(annotationVariantQueryParams, "cohortStatsMaf", commandOptions.variantStatsQueryCohortStatsMaf);
-        invokeSetter(annotationVariantQueryParams, "ct", commandOptions.variantStatsQueryCt);
-        invokeSetter(annotationVariantQueryParams, "xref", commandOptions.variantStatsQueryXref);
-        invokeSetter(annotationVariantQueryParams, "biotype", commandOptions.variantStatsQueryBiotype);
-        invokeSetter(annotationVariantQueryParams, "proteinSubstitution", commandOptions.variantStatsQueryProteinSubstitution);
-        invokeSetter(annotationVariantQueryParams, "conservation", commandOptions.variantStatsQueryConservation);
-        invokeSetter(annotationVariantQueryParams, "populationFrequencyMaf", commandOptions.variantStatsQueryPopulationFrequencyMaf);
-        invokeSetter(annotationVariantQueryParams, "populationFrequencyAlt", commandOptions.variantStatsQueryPopulationFrequencyAlt);
-        invokeSetter(annotationVariantQueryParams, "populationFrequencyRef", commandOptions.variantStatsQueryPopulationFrequencyRef);
-        invokeSetter(annotationVariantQueryParams, "transcriptFlag", commandOptions.variantStatsQueryTranscriptFlag);
-        invokeSetter(annotationVariantQueryParams, "functionalScore", commandOptions.variantStatsQueryFunctionalScore);
-        invokeSetter(annotationVariantQueryParams, "clinical", commandOptions.variantStatsQueryClinical);
-        invokeSetter(annotationVariantQueryParams, "clinicalSignificance", commandOptions.variantStatsQueryClinicalSignificance);
-        invokeSetter(annotationVariantQueryParams, "clinicalConfirmedStatus", commandOptions.variantStatsQueryClinicalConfirmedStatus);
-
         SampleQcAnalysisParams sampleQcAnalysisParams = new SampleQcAnalysisParams();
         if (commandOptions.jsonDataModel) {
             RestResponse<Job> res = new RestResponse<>();
@@ -1430,19 +1392,48 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             sampleQcAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), SampleQcAnalysisParams.class);
-        }  else {
-        ((SampleQcAnalysisParams)sampleQcAnalysisParams)
-            .setSample(commandOptions.sample)
-            .setVariantStatsId(commandOptions.variantStatsId)
-            .setVariantStatsDescription(commandOptions.variantStatsDescription)
-            .setVariantStatsQuery(annotationVariantQueryParams)
-            .setSignatureId(commandOptions.signatureId)
-            .setSignatureDescription(commandOptions.signatureDescription)
-            .setSignatureRelease(commandOptions.signatureRelease)
-            .setGenomePlotId(commandOptions.genomePlotId)
-            .setGenomePlotDescription(commandOptions.genomePlotDescription)
-            .setGenomePlotConfigFile(commandOptions.genomePlotConfigFile)
-            .setOutdir(commandOptions.outdir);
+        } else {
+            // Generate beans for nested objects
+            AnnotationVariantQueryParams variantStatsQueryParam = new AnnotationVariantQueryParams();
+            variantStatsQueryParam.setId(commandOptions.variantStatsQueryId);
+            variantStatsQueryParam.setRegion(commandOptions.variantStatsQueryRegion);
+            variantStatsQueryParam.setGene(commandOptions.variantStatsQueryGene);
+            variantStatsQueryParam.setType(commandOptions.variantStatsQueryType);
+            variantStatsQueryParam.setPanel(commandOptions.variantStatsQueryPanel);
+            variantStatsQueryParam.setPanelModeOfInheritance(commandOptions.variantStatsQueryPanelModeOfInheritance);
+            variantStatsQueryParam.setPanelConfidence(commandOptions.variantStatsQueryPanelConfidence);
+            variantStatsQueryParam.setPanelRoleInCancer(commandOptions.variantStatsQueryPanelRoleInCancer);
+            variantStatsQueryParam.setPanelIntersection(commandOptions.variantStatsQueryPanelIntersection);
+            variantStatsQueryParam.setCohortStatsRef(commandOptions.variantStatsQueryCohortStatsRef);
+            variantStatsQueryParam.setCohortStatsAlt(commandOptions.variantStatsQueryCohortStatsAlt);
+            variantStatsQueryParam.setCohortStatsMaf(commandOptions.variantStatsQueryCohortStatsMaf);
+            variantStatsQueryParam.setCt(commandOptions.variantStatsQueryCt);
+            variantStatsQueryParam.setXref(commandOptions.variantStatsQueryXref);
+            variantStatsQueryParam.setBiotype(commandOptions.variantStatsQueryBiotype);
+            variantStatsQueryParam.setProteinSubstitution(commandOptions.variantStatsQueryProteinSubstitution);
+            variantStatsQueryParam.setConservation(commandOptions.variantStatsQueryConservation);
+            variantStatsQueryParam.setPopulationFrequencyMaf(commandOptions.variantStatsQueryPopulationFrequencyMaf);
+            variantStatsQueryParam.setPopulationFrequencyAlt(commandOptions.variantStatsQueryPopulationFrequencyAlt);
+            variantStatsQueryParam.setPopulationFrequencyRef(commandOptions.variantStatsQueryPopulationFrequencyRef);
+            variantStatsQueryParam.setTranscriptFlag(commandOptions.variantStatsQueryTranscriptFlag);
+            variantStatsQueryParam.setFunctionalScore(commandOptions.variantStatsQueryFunctionalScore);
+            variantStatsQueryParam.setClinical(commandOptions.variantStatsQueryClinical);
+            variantStatsQueryParam.setClinicalSignificance(commandOptions.variantStatsQueryClinicalSignificance);
+            variantStatsQueryParam.setClinicalConfirmedStatus(commandOptions.variantStatsQueryClinicalConfirmedStatus);
+
+            //Set main body params
+            sampleQcAnalysisParams.setSample(commandOptions.sample);
+            sampleQcAnalysisParams.setVariantStatsId(commandOptions.variantStatsId);
+            sampleQcAnalysisParams.setVariantStatsDescription(commandOptions.variantStatsDescription);
+            sampleQcAnalysisParams.setVariantStatsQuery(variantStatsQueryParam);
+            sampleQcAnalysisParams.setSignatureId(commandOptions.signatureId);
+            sampleQcAnalysisParams.setSignatureDescription(commandOptions.signatureDescription);
+            sampleQcAnalysisParams.setSignatureQuery(new ObjectMap(commandOptions.signatureQuery));
+            sampleQcAnalysisParams.setSignatureRelease(commandOptions.signatureRelease);
+            sampleQcAnalysisParams.setGenomePlotId(commandOptions.genomePlotId);
+            sampleQcAnalysisParams.setGenomePlotDescription(commandOptions.genomePlotDescription);
+            sampleQcAnalysisParams.setGenomePlotConfigFile(commandOptions.genomePlotConfigFile);
+            sampleQcAnalysisParams.setOutdir(commandOptions.outdir);
 
         }
         return openCGAClient.getVariantClient().runSampleQc(sampleQcAnalysisParams, queryParams);
@@ -1493,44 +1484,41 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             sampleVariantFilterParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), SampleVariantFilterParams.class);
-        }  else {
-        ((SampleVariantFilterParams)sampleVariantFilterParams)
-            .setGenotypes(splitWithTrim(commandOptions.genotypes))
-            .setSample(splitWithTrim(commandOptions.sample))
-            .setMaxVariants(commandOptions.maxVariants)
-            .setId(commandOptions.id)
-            .setRegion(commandOptions.region)
-            .setGene(commandOptions.gene)
-            .setType(commandOptions.type)
-            .setPanel(commandOptions.panel)
-            .setPanelModeOfInheritance(commandOptions.panelModeOfInheritance)
-            .setPanelConfidence(commandOptions.panelConfidence)
-            .setPanelRoleInCancer(commandOptions.panelRoleInCancer)
-            .setCohortStatsRef(commandOptions.cohortStatsRef)
-            .setCohortStatsAlt(commandOptions.cohortStatsAlt)
-            .setCohortStatsMaf(commandOptions.cohortStatsMaf)
-            .setCt(commandOptions.ct)
-            .setXref(commandOptions.xref)
-            .setBiotype(commandOptions.biotype)
-            .setProteinSubstitution(commandOptions.proteinSubstitution)
-            .setConservation(commandOptions.conservation)
-            .setPopulationFrequencyMaf(commandOptions.populationFrequencyMaf)
-            .setPopulationFrequencyAlt(commandOptions.populationFrequencyAlt)
-            .setPopulationFrequencyRef(commandOptions.populationFrequencyRef)
-            .setTranscriptFlag(commandOptions.transcriptFlag)
-            .setFunctionalScore(commandOptions.functionalScore)
-            .setClinical(commandOptions.clinical)
-            .setClinicalSignificance(commandOptions.clinicalSignificance)
-            .setClinicalConfirmedStatus(commandOptions.clinicalConfirmedStatus);
+        } else {
+            sampleVariantFilterParams.setId(commandOptions.id);
+            sampleVariantFilterParams.setRegion(commandOptions.region);
+            sampleVariantFilterParams.setGene(commandOptions.gene);
+            sampleVariantFilterParams.setType(commandOptions.type);
+            sampleVariantFilterParams.setPanel(commandOptions.panel);
+            sampleVariantFilterParams.setPanelModeOfInheritance(commandOptions.panelModeOfInheritance);
+            sampleVariantFilterParams.setPanelConfidence(commandOptions.panelConfidence);
+            sampleVariantFilterParams.setPanelRoleInCancer(commandOptions.panelRoleInCancer);
+            sampleVariantFilterParams.setCohortStatsRef(commandOptions.cohortStatsRef);
+            sampleVariantFilterParams.setCohortStatsAlt(commandOptions.cohortStatsAlt);
+            sampleVariantFilterParams.setCohortStatsMaf(commandOptions.cohortStatsMaf);
+            sampleVariantFilterParams.setCt(commandOptions.ct);
+            sampleVariantFilterParams.setXref(commandOptions.xref);
+            sampleVariantFilterParams.setBiotype(commandOptions.biotype);
+            sampleVariantFilterParams.setProteinSubstitution(commandOptions.proteinSubstitution);
+            sampleVariantFilterParams.setConservation(commandOptions.conservation);
+            sampleVariantFilterParams.setPopulationFrequencyMaf(commandOptions.populationFrequencyMaf);
+            sampleVariantFilterParams.setPopulationFrequencyAlt(commandOptions.populationFrequencyAlt);
+            sampleVariantFilterParams.setPopulationFrequencyRef(commandOptions.populationFrequencyRef);
+            sampleVariantFilterParams.setTranscriptFlag(commandOptions.transcriptFlag);
+            sampleVariantFilterParams.setFunctionalScore(commandOptions.functionalScore);
+            sampleVariantFilterParams.setClinical(commandOptions.clinical);
+            sampleVariantFilterParams.setClinicalSignificance(commandOptions.clinicalSignificance);
+            sampleVariantFilterParams.setClinicalConfirmedStatus(commandOptions.clinicalConfirmedStatus);
+            sampleVariantFilterParams.setGenotypes(splitWithTrim(commandOptions.genotypes));
+            sampleVariantFilterParams.setSample(splitWithTrim(commandOptions.sample));
+            sampleVariantFilterParams.setMaxVariants(commandOptions.maxVariants);
 
-            if (commandOptions.samplesInAllVariants != null){
-                ((SampleVariantFilterParams)sampleVariantFilterParams).setSamplesInAllVariants(commandOptions.samplesInAllVariants);
-             }
-
-            if (commandOptions.panelIntersection != null){
-                ((SampleVariantFilterParams)sampleVariantFilterParams).setPanelIntersection(commandOptions.panelIntersection);
-             }
-
+            if (commandOptions.panelIntersection != null) {
+                sampleVariantFilterParams.setPanelIntersection(commandOptions.panelIntersection);
+            }
+            if (commandOptions.samplesInAllVariants != null) {
+                sampleVariantFilterParams.setSamplesInAllVariants(commandOptions.samplesInAllVariants);
+            }
         }
         return openCGAClient.getVariantClient().runSample(sampleVariantFilterParams, queryParams);
     }
@@ -1590,23 +1578,52 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             sampleVariantStatsAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), SampleVariantStatsAnalysisParams.class);
-        }  else {
-        ((SampleVariantStatsAnalysisParams)sampleVariantStatsAnalysisParams)
-            .setSample(splitWithTrim(commandOptions.sample))
-            .setIndividual(splitWithTrim(commandOptions.individual))
-            .setOutdir(commandOptions.outdir)
-            .setIndexId(commandOptions.indexId)
-            .setIndexDescription(commandOptions.indexDescription)
-            .setBatchSize(commandOptions.batchSize);
+        } else {
+            // Generate beans for nested objects
+            SampleVariantStatsAnalysisParams.VariantQueryParams variantQueryParam = new SampleVariantStatsAnalysisParams.VariantQueryParams();
+            variantQueryParam.setId(commandOptions.variantQueryId);
+            variantQueryParam.setRegion(commandOptions.variantQueryRegion);
+            variantQueryParam.setGene(commandOptions.variantQueryGene);
+            variantQueryParam.setType(commandOptions.variantQueryType);
+            variantQueryParam.setPanel(commandOptions.variantQueryPanel);
+            variantQueryParam.setPanelModeOfInheritance(commandOptions.variantQueryPanelModeOfInheritance);
+            variantQueryParam.setPanelConfidence(commandOptions.variantQueryPanelConfidence);
+            variantQueryParam.setPanelRoleInCancer(commandOptions.variantQueryPanelRoleInCancer);
+            variantQueryParam.setPanelIntersection(commandOptions.variantQueryPanelIntersection);
+            variantQueryParam.setCohortStatsRef(commandOptions.variantQueryCohortStatsRef);
+            variantQueryParam.setCohortStatsAlt(commandOptions.variantQueryCohortStatsAlt);
+            variantQueryParam.setCohortStatsMaf(commandOptions.variantQueryCohortStatsMaf);
+            variantQueryParam.setCt(commandOptions.variantQueryCt);
+            variantQueryParam.setXref(commandOptions.variantQueryXref);
+            variantQueryParam.setBiotype(commandOptions.variantQueryBiotype);
+            variantQueryParam.setProteinSubstitution(commandOptions.variantQueryProteinSubstitution);
+            variantQueryParam.setConservation(commandOptions.variantQueryConservation);
+            variantQueryParam.setPopulationFrequencyMaf(commandOptions.variantQueryPopulationFrequencyMaf);
+            variantQueryParam.setPopulationFrequencyAlt(commandOptions.variantQueryPopulationFrequencyAlt);
+            variantQueryParam.setPopulationFrequencyRef(commandOptions.variantQueryPopulationFrequencyRef);
+            variantQueryParam.setTranscriptFlag(commandOptions.variantQueryTranscriptFlag);
+            variantQueryParam.setFunctionalScore(commandOptions.variantQueryFunctionalScore);
+            variantQueryParam.setClinical(commandOptions.variantQueryClinical);
+            variantQueryParam.setClinicalSignificance(commandOptions.variantQueryClinicalSignificance);
+            variantQueryParam.setClinicalConfirmedStatus(commandOptions.variantQueryClinicalConfirmedStatus);
+            variantQueryParam.setSampleData(commandOptions.variantQuerySampleData);
+            variantQueryParam.setFileData(commandOptions.variantQueryFileData);
 
-            if (commandOptions.index != null){
-                ((SampleVariantStatsAnalysisParams)sampleVariantStatsAnalysisParams).setIndex(commandOptions.index);
-             }
+            //Set main body params
+            sampleVariantStatsAnalysisParams.setSample(splitWithTrim(commandOptions.sample));
+            sampleVariantStatsAnalysisParams.setIndividual(splitWithTrim(commandOptions.individual));
+            sampleVariantStatsAnalysisParams.setVariantQuery(variantQueryParam);
+            sampleVariantStatsAnalysisParams.setOutdir(commandOptions.outdir);
+            sampleVariantStatsAnalysisParams.setIndexId(commandOptions.indexId);
+            sampleVariantStatsAnalysisParams.setIndexDescription(commandOptions.indexDescription);
+            sampleVariantStatsAnalysisParams.setBatchSize(commandOptions.batchSize);
 
-            if (commandOptions.indexOverwrite != null){
-                ((SampleVariantStatsAnalysisParams)sampleVariantStatsAnalysisParams).setIndexOverwrite(commandOptions.indexOverwrite);
-             }
-
+            if (commandOptions.index != null) {
+                sampleVariantStatsAnalysisParams.setIndex(commandOptions.index);
+            }
+            if (commandOptions.indexOverwrite != null) {
+                sampleVariantStatsAnalysisParams.setIndexOverwrite(commandOptions.indexOverwrite);
+            }
         }
         return openCGAClient.getVariantClient().runSampleStats(sampleVariantStatsAnalysisParams, queryParams);
     }
@@ -1638,13 +1655,12 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             variantStatsExportParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantStatsExportParams.class);
-        }  else {
-        ((VariantStatsExportParams)variantStatsExportParams)
-            .setCohorts(splitWithTrim(commandOptions.cohorts))
-            .setOutput(commandOptions.output)
-            .setRegion(commandOptions.region)
-            .setGene(commandOptions.gene)
-            .setOutputFileFormat(commandOptions.outputFileFormat);
+        } else {
+            variantStatsExportParams.setCohorts(splitWithTrim(commandOptions.cohorts));
+            variantStatsExportParams.setOutput(commandOptions.output);
+            variantStatsExportParams.setRegion(commandOptions.region);
+            variantStatsExportParams.setGene(commandOptions.gene);
+            variantStatsExportParams.setOutputFileFormat(commandOptions.outputFileFormat);
 
         }
         return openCGAClient.getVariantClient().runStatsExport(variantStatsExportParams, queryParams);
@@ -1676,15 +1692,15 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             variantStatsAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantStatsAnalysisParams.class);
-        }  else {
-        ((VariantStatsAnalysisParams)variantStatsAnalysisParams)
-            .setCohort(splitWithTrim(commandOptions.cohort))
-            .setSamples(splitWithTrim(commandOptions.samples))
-            .setRegion(commandOptions.region)
-            .setGene(commandOptions.gene)
-            .setOutdir(commandOptions.outdir)
-            .setOutputFileName(commandOptions.outputFileName)
-            .setAggregationMappingFile(commandOptions.aggregationMappingFile);
+        } else {
+            variantStatsAnalysisParams.setCohort(splitWithTrim(commandOptions.cohort));
+            variantStatsAnalysisParams.setSamples(splitWithTrim(commandOptions.samples));
+            variantStatsAnalysisParams.setRegion(commandOptions.region);
+            variantStatsAnalysisParams.setGene(commandOptions.gene);
+            variantStatsAnalysisParams.setOutdir(commandOptions.outdir);
+            variantStatsAnalysisParams.setOutputFileName(commandOptions.outputFileName);
+            variantStatsAnalysisParams.setAggregated(commandOptions.aggregated == null ? null : Aggregation.valueOf(commandOptions.aggregated));
+            variantStatsAnalysisParams.setAggregationMappingFile(commandOptions.aggregationMappingFile);
 
         }
         return openCGAClient.getVariantClient().runStats(variantStatsAnalysisParams, queryParams);

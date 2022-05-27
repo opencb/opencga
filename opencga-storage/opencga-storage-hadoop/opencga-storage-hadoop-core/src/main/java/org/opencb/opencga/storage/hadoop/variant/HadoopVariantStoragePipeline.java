@@ -52,6 +52,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -274,12 +275,15 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
     protected void registerLoadedFiles(List<Integer> fileIds) throws StorageEngineException {
         int studyId = getStudyId();
 
-        VariantPhoenixSchemaManager schemaManager = new VariantPhoenixSchemaManager(dbAdaptor);
-        schemaManager.registerNewFiles(studyId, fileIds);
-        if (options.getBoolean(HadoopVariantStorageOptions.VARIANT_TABLE_INDEXES_SKIP.key(), false)) {
-            logger.info("Skip create indexes!!");
-        } else {
-            schemaManager.createPhoenixIndexes();
+        try (VariantPhoenixSchemaManager schemaManager = new VariantPhoenixSchemaManager(dbAdaptor)) {
+            schemaManager.registerNewFiles(studyId, fileIds);
+            if (options.getBoolean(HadoopVariantStorageOptions.VARIANT_TABLE_INDEXES_SKIP.key(), false)) {
+                logger.info("Skip create indexes!!");
+            } else {
+                schemaManager.createPhoenixIndexes();
+            }
+        } catch (SQLException e) {
+            throw new StorageEngineException("Error closing schema manager", e);
         }
     }
 

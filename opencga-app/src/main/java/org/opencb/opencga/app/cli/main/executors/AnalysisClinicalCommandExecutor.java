@@ -9,53 +9,56 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.common.JacksonUtils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import java.util.HashMap;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.AnalysisClinicalCommandOptions;
 
-import org.opencb.opencga.core.models.clinical.ClinicalReport;
-import org.opencb.opencga.core.models.clinical.ProbandParam;
-import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
-import org.opencb.commons.datastore.core.FacetField;
-import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
-import org.opencb.opencga.core.models.clinical.InterpretationCreateParams;
-import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
-import org.opencb.opencga.catalog.utils.ParamUtils.UpdateAction;
-import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
-import org.opencb.opencga.core.models.common.StatusParam;
-import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
-import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.clinical.FamilyParam;
-import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
-import org.opencb.opencga.core.models.clinical.DisorderReferenceParam;
-import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveReplaceAction;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysisCreateParams;
-import org.opencb.opencga.core.models.clinical.CancerTieringInterpretationAnalysisParams;
-import org.opencb.opencga.core.models.clinical.TeamInterpretationAnalysisParams;
-import org.opencb.opencga.catalog.utils.ParamUtils.SaveInterpretationAs;
-import org.opencb.opencga.core.models.clinical.ZettaInterpretationAnalysisParams;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.clinical.TieringInterpretationAnalysisParams;
-import org.opencb.opencga.core.models.clinical.Interpretation;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.models.clinical.PriorityParam;
-import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
-import org.opencb.opencga.core.models.study.configuration.ClinicalConsentAnnotationParam;
-import org.opencb.opencga.core.models.clinical.InterpretationUpdateParams;
-import org.opencb.opencga.core.models.study.configuration.ClinicalConsentConfiguration;
-import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGeneSummary;
 import java.util.Map;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalystParam;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
+import org.opencb.commons.datastore.core.FacetField;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveReplaceAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.SaveInterpretationAs;
+import org.opencb.opencga.catalog.utils.ParamUtils.UpdateAction;
+import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGeneSummary;
+import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividualSummary;
+import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariantSummary;
+import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
+import org.opencb.opencga.core.models.clinical.CancerTieringInterpretationAnalysisParams;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisCreateParams;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisQualityControl;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisQualityControlUpdateParam;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalystParam;
+import org.opencb.opencga.core.models.clinical.ClinicalReport;
+import org.opencb.opencga.core.models.clinical.DisorderReferenceParam;
+import org.opencb.opencga.core.models.clinical.FamilyParam;
+import org.opencb.opencga.core.models.clinical.Interpretation;
+import org.opencb.opencga.core.models.clinical.InterpretationCreateParams;
+import org.opencb.opencga.core.models.clinical.InterpretationUpdateParams;
+import org.opencb.opencga.core.models.clinical.PriorityParam;
+import org.opencb.opencga.core.models.clinical.ProbandParam;
+import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
+import org.opencb.opencga.core.models.clinical.TeamInterpretationAnalysisParams;
+import org.opencb.opencga.core.models.clinical.TieringInterpretationAnalysisParams;
+import org.opencb.opencga.core.models.clinical.ZettaInterpretationAnalysisParams;
+import org.opencb.opencga.core.models.common.StatusParam;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
+import org.opencb.opencga.core.models.study.configuration.ClinicalConsentAnnotationParam;
+import org.opencb.opencga.core.models.study.configuration.ClinicalConsentConfiguration;
 import org.opencb.opencga.core.models.study.configuration.InterpretationStudyConfiguration;
 
 
@@ -63,7 +66,7 @@ import org.opencb.opencga.core.models.study.configuration.InterpretationStudyCon
 * WARNING: AUTOGENERATED CODE
 *
 * This code was generated by a tool.
-* Autogenerated on: 2022-05-25
+* Autogenerated on: 2022-05-27
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
@@ -72,7 +75,7 @@ import org.opencb.opencga.core.models.study.configuration.InterpretationStudyCon
 
 /**
  * This class contains methods for the Analysis - Clinical command line.
- *    OpenCGA version: 2.3.0-SNAPSHOT
+ *    OpenCGA version: 2.4.0-SNAPSHOT
  *    PATH: /{apiVersion}/analysis/clinical
  */
 public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
@@ -219,10 +222,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             clinicalAnalysisAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), ClinicalAnalysisAclUpdateParams.class);
-        }  else {
-        ((ClinicalAnalysisAclUpdateParams)clinicalAnalysisAclUpdateParams)
-            .setClinicalAnalysis(commandOptions.clinicalAnalysis)
-            .setPermissions(commandOptions.permissions);
+        } else {
+            clinicalAnalysisAclUpdateParams.setPermissions(commandOptions.permissions);
+            clinicalAnalysisAclUpdateParams.setClinicalAnalysis(commandOptions.clinicalAnalysis);
 
         }
         return openCGAClient.getClinicalAnalysisClient().updateAcl(commandOptions.members, commandOptions.action, clinicalAnalysisAclUpdateParams, queryParams);
@@ -250,7 +252,8 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             clinicalAnalysisStudyConfiguration = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), ClinicalAnalysisStudyConfiguration.class);
-        }         return openCGAClient.getClinicalAnalysisClient().updateClinicalConfiguration(clinicalAnalysisStudyConfiguration, queryParams);
+        }
+        return openCGAClient.getClinicalAnalysisClient().updateClinicalConfiguration(clinicalAnalysisStudyConfiguration, queryParams);
     }
 
     private RestResponse<ClinicalAnalysis> create() throws Exception {
@@ -270,45 +273,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        PriorityParam priorityParam= new PriorityParam();
-        invokeSetter(priorityParam, "id", commandOptions.priorityId);
-
-        ClinicalReport clinicalReport= new ClinicalReport();
-        invokeSetter(clinicalReport, "title", commandOptions.reportTitle);
-        invokeSetter(clinicalReport, "overview", commandOptions.reportOverview);
-        invokeSetter(clinicalReport, "discussion", commandOptions.reportDiscussion);
-        invokeSetter(clinicalReport, "logo", commandOptions.reportLogo);
-        invokeSetter(clinicalReport, "signedBy", commandOptions.reportSignedBy);
-        invokeSetter(clinicalReport, "signature", commandOptions.reportSignature);
-        invokeSetter(clinicalReport, "date", commandOptions.reportDate);
-
-        StatusParam statusParam= new StatusParam();
-        invokeSetter(statusParam, "id", commandOptions.statusId);
-
-        ProbandParam probandParam= new ProbandParam();
-        invokeSetter(probandParam, "id", commandOptions.probandId);
-
-        InterpretationCreateParams interpretationCreateParams= new InterpretationCreateParams();
-        invokeSetter(interpretationCreateParams, "description", commandOptions.interpretationDescription);
-        invokeSetter(interpretationCreateParams, "clinicalAnalysisId", commandOptions.interpretationClinicalAnalysisId);
-        invokeSetter(interpretationCreateParams, "creationDate", commandOptions.interpretationCreationDate);
-        invokeSetter(interpretationCreateParams, "modificationDate", commandOptions.interpretationModificationDate);
-        invokeSetter(interpretationCreateParams, "locked", commandOptions.interpretationLocked);
-
-        ClinicalAnalystParam clinicalAnalystParam= new ClinicalAnalystParam();
-        invokeSetter(clinicalAnalystParam, "id", commandOptions.analystId);
-
-        DisorderReferenceParam disorderReferenceParam= new DisorderReferenceParam();
-        invokeSetter(disorderReferenceParam, "id", commandOptions.disorderId);
-
-        FamilyParam familyParam= new FamilyParam();
-        invokeSetter(familyParam, "id", commandOptions.familyId);
-        ClinicalAnalysis.Type typeParam = null;
-        if (commandOptions.type != null) {
-         typeParam = ClinicalAnalysis.Type.valueOf(commandOptions.type);
-
-        } 
-
         ClinicalAnalysisCreateParams clinicalAnalysisCreateParams = new ClinicalAnalysisCreateParams();
         if (commandOptions.jsonDataModel) {
             RestResponse<ClinicalAnalysis> res = new RestResponse<>();
@@ -318,27 +282,84 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             clinicalAnalysisCreateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), ClinicalAnalysisCreateParams.class);
-        }  else {
-        ((ClinicalAnalysisCreateParams)clinicalAnalysisCreateParams)
-            .setId(commandOptions.id)
-            .setDescription(commandOptions.description)
-            .setType(typeParam)
-            .setDisorder(disorderReferenceParam)
-            .setProband(probandParam)
-            .setFamily(familyParam)
-            .setAnalyst(clinicalAnalystParam)
-            .setReport(clinicalReport)
-            .setInterpretation(interpretationCreateParams)
-            .setCreationDate(commandOptions.creationDate)
-            .setModificationDate(commandOptions.modificationDate)
-            .setDueDate(commandOptions.dueDate)
-            .setPriority(priorityParam)
-            .setStatus(statusParam);
+        } else {
+            // Generate beans for nested objects
+            DisorderReferenceParam disorderParam = new DisorderReferenceParam();
+            disorderParam.setId(commandOptions.disorderId);
 
-            if (commandOptions.panelLock != null){
-                ((ClinicalAnalysisCreateParams)clinicalAnalysisCreateParams).setPanelLock(commandOptions.panelLock);
-             }
+            ProbandParam probandParam = new ProbandParam();
+            probandParam.setId(commandOptions.probandId);
+            //probandParam.setSamples(commandOptions.probandSamples);  // Unsupported param. FIXME
 
+            FamilyParam familyParam = new FamilyParam();
+            familyParam.setId(commandOptions.familyId);
+            //familyParam.setMembers(commandOptions.familyMembers);  // Unsupported param. FIXME
+
+            ClinicalAnalystParam analystParam = new ClinicalAnalystParam();
+            analystParam.setId(commandOptions.analystId);
+
+            ClinicalReport reportParam = new ClinicalReport();
+            reportParam.setTitle(commandOptions.reportTitle);
+            reportParam.setOverview(commandOptions.reportOverview);
+            reportParam.setDiscussion(commandOptions.reportDiscussion);
+            reportParam.setLogo(commandOptions.reportLogo);
+            reportParam.setSignedBy(commandOptions.reportSignedBy);
+            reportParam.setSignature(commandOptions.reportSignature);
+            reportParam.setDate(commandOptions.reportDate);
+
+            InterpretationCreateParams interpretationParam = new InterpretationCreateParams();
+            interpretationParam.setDescription(commandOptions.interpretationDescription);
+            interpretationParam.setClinicalAnalysisId(commandOptions.interpretationClinicalAnalysisId);
+            interpretationParam.setCreationDate(commandOptions.interpretationCreationDate);
+            interpretationParam.setModificationDate(commandOptions.interpretationModificationDate);
+            //interpretationParam.setAnalyst(commandOptions.interpretationAnalyst);  // Unsupported param. FIXME
+            //interpretationParam.setMethod(commandOptions.interpretationMethod);  // Unsupported param. FIXME
+            //interpretationParam.setPrimaryFindings(commandOptions.interpretationPrimaryFindings);  // Unsupported param. FIXME
+            //interpretationParam.setSecondaryFindings(commandOptions.interpretationSecondaryFindings);  // Unsupported param. FIXME
+            //interpretationParam.setPanels(commandOptions.interpretationPanels);  // Unsupported param. FIXME
+            //interpretationParam.setComments(commandOptions.interpretationComments);  // Unsupported param. FIXME
+            interpretationParam.setLocked(commandOptions.interpretationLocked);
+            //interpretationParam.setStatus(commandOptions.interpretationStatus);  // Unsupported param. FIXME
+            interpretationParam.setAttributes(new HashMap<>(commandOptions.interpretationAttributes));
+
+            ClinicalAnalysisQualityControlUpdateParam qualityControlParam = new ClinicalAnalysisQualityControlUpdateParam();
+            qualityControlParam.setSummary(commandOptions.qualityControlSummary == null ? null : ClinicalAnalysisQualityControl.QualityControlSummary.valueOf(commandOptions.qualityControlSummary));
+
+            ClinicalConsentAnnotationParam consentParam = new ClinicalConsentAnnotationParam();
+            //consentParam.setConsents(commandOptions.consentConsents);  // Unsupported param. FIXME
+
+            PriorityParam priorityParam = new PriorityParam();
+            priorityParam.setId(commandOptions.priorityId);
+
+            StatusParam statusParam = new StatusParam();
+            statusParam.setId(commandOptions.statusId);
+
+            //Set main body params
+            clinicalAnalysisCreateParams.setId(commandOptions.id);
+            clinicalAnalysisCreateParams.setDescription(commandOptions.description);
+            clinicalAnalysisCreateParams.setType(commandOptions.type == null ? null : ClinicalAnalysis.Type.valueOf(commandOptions.type));
+            clinicalAnalysisCreateParams.setDisorder(disorderParam);
+            //clinicalAnalysisCreateParams.setFiles(commandOptions.files); // Unsupported param. FIXME 
+            clinicalAnalysisCreateParams.setProband(probandParam);
+            clinicalAnalysisCreateParams.setFamily(familyParam);
+            //clinicalAnalysisCreateParams.setPanels(commandOptions.panels); // Unsupported param. FIXME 
+            clinicalAnalysisCreateParams.setAnalyst(analystParam);
+            clinicalAnalysisCreateParams.setReport(reportParam);
+            clinicalAnalysisCreateParams.setInterpretation(interpretationParam);
+            clinicalAnalysisCreateParams.setQualityControl(qualityControlParam);
+            clinicalAnalysisCreateParams.setConsent(consentParam);
+            clinicalAnalysisCreateParams.setCreationDate(commandOptions.creationDate);
+            clinicalAnalysisCreateParams.setModificationDate(commandOptions.modificationDate);
+            clinicalAnalysisCreateParams.setDueDate(commandOptions.dueDate);
+            //clinicalAnalysisCreateParams.setComments(commandOptions.comments); // Unsupported param. FIXME 
+            clinicalAnalysisCreateParams.setPriority(priorityParam);
+            //clinicalAnalysisCreateParams.setFlags(commandOptions.flags); // Unsupported param. FIXME 
+            clinicalAnalysisCreateParams.setAttributes(new HashMap<>(commandOptions.attributes));
+            clinicalAnalysisCreateParams.setStatus(statusParam);
+
+            if (commandOptions.panelLock != null) {
+                clinicalAnalysisCreateParams.setPanelLock(commandOptions.panelLock);
+            }
         }
         return openCGAClient.getClinicalAnalysisClient().create(clinicalAnalysisCreateParams, queryParams);
     }
@@ -488,15 +509,13 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             cancerTieringInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), CancerTieringInterpretationAnalysisParams.class);
-        }  else {
-        ((CancerTieringInterpretationAnalysisParams)cancerTieringInterpretationAnalysisParams)
-            .setClinicalAnalysis(commandOptions.clinicalAnalysis)
-            .setDiscardedVariants(splitWithTrim(commandOptions.discardedVariants));
+        } else {
+            cancerTieringInterpretationAnalysisParams.setClinicalAnalysis(commandOptions.clinicalAnalysis);
+            cancerTieringInterpretationAnalysisParams.setDiscardedVariants(splitWithTrim(commandOptions.discardedVariants));
 
-            if (commandOptions.primary != null){
-                ((CancerTieringInterpretationAnalysisParams)cancerTieringInterpretationAnalysisParams).setPrimary(commandOptions.primary);
-             }
-
+            if (commandOptions.primary != null) {
+                cancerTieringInterpretationAnalysisParams.setPrimary(commandOptions.primary);
+            }
         }
         return openCGAClient.getClinicalAnalysisClient().runInterpreterCancerTiering(cancerTieringInterpretationAnalysisParams, queryParams);
     }
@@ -527,16 +546,14 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             teamInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), TeamInterpretationAnalysisParams.class);
-        }  else {
-        ((TeamInterpretationAnalysisParams)teamInterpretationAnalysisParams)
-            .setClinicalAnalysis(commandOptions.clinicalAnalysis)
-            .setPanels(splitWithTrim(commandOptions.panels))
-            .setFamilySegregation(commandOptions.familySegregation);
+        } else {
+            teamInterpretationAnalysisParams.setClinicalAnalysis(commandOptions.clinicalAnalysis);
+            teamInterpretationAnalysisParams.setPanels(splitWithTrim(commandOptions.panels));
+            teamInterpretationAnalysisParams.setFamilySegregation(commandOptions.familySegregation);
 
-            if (commandOptions.primary != null){
-                ((TeamInterpretationAnalysisParams)teamInterpretationAnalysisParams).setPrimary(commandOptions.primary);
-             }
-
+            if (commandOptions.primary != null) {
+                teamInterpretationAnalysisParams.setPrimary(commandOptions.primary);
+            }
         }
         return openCGAClient.getClinicalAnalysisClient().runInterpreterTeam(teamInterpretationAnalysisParams, queryParams);
     }
@@ -557,11 +574,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        ClinicalProperty.Penetrance penetranceParam = null;
-        if (commandOptions.penetrance != null) {
-         penetranceParam = ClinicalProperty.Penetrance.valueOf(commandOptions.penetrance);
-
-        } 
 
         TieringInterpretationAnalysisParams tieringInterpretationAnalysisParams = new TieringInterpretationAnalysisParams();
         if (commandOptions.jsonDataModel) {
@@ -572,15 +584,14 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             tieringInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), TieringInterpretationAnalysisParams.class);
-        }  else {
-        ((TieringInterpretationAnalysisParams)tieringInterpretationAnalysisParams)
-            .setClinicalAnalysis(commandOptions.clinicalAnalysis)
-            .setPanels(splitWithTrim(commandOptions.panels));
+        } else {
+            tieringInterpretationAnalysisParams.setClinicalAnalysis(commandOptions.clinicalAnalysis);
+            tieringInterpretationAnalysisParams.setPanels(splitWithTrim(commandOptions.panels));
+            tieringInterpretationAnalysisParams.setPenetrance(commandOptions.penetrance == null ? null : ClinicalProperty.Penetrance.valueOf(commandOptions.penetrance));
 
-            if (commandOptions.primary != null){
-                ((TieringInterpretationAnalysisParams)tieringInterpretationAnalysisParams).setPrimary(commandOptions.primary);
-             }
-
+            if (commandOptions.primary != null) {
+                tieringInterpretationAnalysisParams.setPrimary(commandOptions.primary);
+            }
         }
         return openCGAClient.getClinicalAnalysisClient().runInterpreterTiering(tieringInterpretationAnalysisParams, queryParams);
     }
@@ -611,66 +622,63 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             zettaInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), ZettaInterpretationAnalysisParams.class);
-        }  else {
-        ((ZettaInterpretationAnalysisParams)zettaInterpretationAnalysisParams)
-            .setClinicalAnalysis(commandOptions.clinicalAnalysis)
-            .setId(splitWithTrim(commandOptions.id))
-            .setRegion(commandOptions.region)
-            .setType(commandOptions.type)
-            .setStudy(commandOptions.bodyStudy)
-            .setFile(commandOptions.file)
-            .setFilter(commandOptions.filter)
-            .setQual(commandOptions.qual)
-            .setFileData(commandOptions.fileData)
-            .setSample(commandOptions.sample)
-            .setSampleData(commandOptions.sampleData)
-            .setSampleAnnotation(commandOptions.sampleAnnotation)
-            .setSampleMetadata(commandOptions.sampleMetadata)
-            .setCohort(commandOptions.cohort)
-            .setCohortStatsRef(commandOptions.cohortStatsRef)
-            .setCohortStatsAlt(commandOptions.cohortStatsAlt)
-            .setCohortStatsMaf(commandOptions.cohortStatsMaf)
-            .setCohortStatsMgf(commandOptions.cohortStatsMgf)
-            .setCohortStatsPass(commandOptions.cohortStatsPass)
-            .setScore(commandOptions.score)
-            .setFamily(commandOptions.family)
-            .setFamilyDisorder(commandOptions.familyDisorder)
-            .setFamilySegregation(commandOptions.familySegregation)
-            .setFamilyMembers(commandOptions.familyMembers)
-            .setFamilyProband(commandOptions.familyProband)
-            .setGene(commandOptions.gene)
-            .setCt(commandOptions.ct)
-            .setXref(commandOptions.xref)
-            .setBiotype(commandOptions.biotype)
-            .setProteinSubstitution(commandOptions.proteinSubstitution)
-            .setConservation(commandOptions.conservation)
-            .setPopulationFrequencyAlt(commandOptions.populationFrequencyAlt)
-            .setPopulationFrequencyRef(commandOptions.populationFrequencyRef)
-            .setPopulationFrequencyMaf(commandOptions.populationFrequencyMaf)
-            .setTranscriptFlag(commandOptions.transcriptFlag)
-            .setGeneTraitId(commandOptions.geneTraitId)
-            .setGo(commandOptions.go)
-            .setExpression(commandOptions.expression)
-            .setProteinKeyword(commandOptions.proteinKeyword)
-            .setDrug(commandOptions.drug)
-            .setFunctionalScore(commandOptions.functionalScore)
-            .setClinical(commandOptions.clinical)
-            .setClinicalSignificance(commandOptions.clinicalSignificance)
-            .setCustomAnnotation(commandOptions.customAnnotation)
-            .setPanel(commandOptions.panel)
-            .setPanelModeOfInheritance(commandOptions.panelModeOfInheritance)
-            .setPanelConfidence(commandOptions.panelConfidence)
-            .setPanelRoleInCancer(commandOptions.panelRoleInCancer)
-            .setTrait(commandOptions.trait);
+        } else {
+            zettaInterpretationAnalysisParams.setClinicalAnalysis(commandOptions.bodyClinicalAnalysis);
+            zettaInterpretationAnalysisParams.setId(splitWithTrim(commandOptions.bodyId));
+            zettaInterpretationAnalysisParams.setRegion(commandOptions.bodyRegion);
+            zettaInterpretationAnalysisParams.setType(commandOptions.bodyType);
+            zettaInterpretationAnalysisParams.setStudy(commandOptions.bodyStudy);
+            zettaInterpretationAnalysisParams.setFile(commandOptions.bodyFile);
+            zettaInterpretationAnalysisParams.setFilter(commandOptions.bodyFilter);
+            zettaInterpretationAnalysisParams.setQual(commandOptions.bodyQual);
+            zettaInterpretationAnalysisParams.setFileData(commandOptions.bodyFileData);
+            zettaInterpretationAnalysisParams.setSample(commandOptions.bodySample);
+            zettaInterpretationAnalysisParams.setSampleData(commandOptions.bodySampleData);
+            zettaInterpretationAnalysisParams.setSampleAnnotation(commandOptions.bodySampleAnnotation);
+            zettaInterpretationAnalysisParams.setSampleMetadata(commandOptions.bodySampleMetadata);
+            zettaInterpretationAnalysisParams.setCohort(commandOptions.bodyCohort);
+            zettaInterpretationAnalysisParams.setCohortStatsRef(commandOptions.bodyCohortStatsRef);
+            zettaInterpretationAnalysisParams.setCohortStatsAlt(commandOptions.bodyCohortStatsAlt);
+            zettaInterpretationAnalysisParams.setCohortStatsMaf(commandOptions.bodyCohortStatsMaf);
+            zettaInterpretationAnalysisParams.setCohortStatsMgf(commandOptions.bodyCohortStatsMgf);
+            zettaInterpretationAnalysisParams.setCohortStatsPass(commandOptions.bodyCohortStatsPass);
+            zettaInterpretationAnalysisParams.setScore(commandOptions.bodyScore);
+            zettaInterpretationAnalysisParams.setFamily(commandOptions.bodyFamily);
+            zettaInterpretationAnalysisParams.setFamilyDisorder(commandOptions.bodyFamilyDisorder);
+            zettaInterpretationAnalysisParams.setFamilySegregation(commandOptions.bodyFamilySegregation);
+            zettaInterpretationAnalysisParams.setFamilyMembers(commandOptions.bodyFamilyMembers);
+            zettaInterpretationAnalysisParams.setFamilyProband(commandOptions.bodyFamilyProband);
+            zettaInterpretationAnalysisParams.setGene(commandOptions.bodyGene);
+            zettaInterpretationAnalysisParams.setCt(commandOptions.bodyCt);
+            zettaInterpretationAnalysisParams.setXref(commandOptions.bodyXref);
+            zettaInterpretationAnalysisParams.setBiotype(commandOptions.bodyBiotype);
+            zettaInterpretationAnalysisParams.setProteinSubstitution(commandOptions.bodyProteinSubstitution);
+            zettaInterpretationAnalysisParams.setConservation(commandOptions.bodyConservation);
+            zettaInterpretationAnalysisParams.setPopulationFrequencyAlt(commandOptions.bodyPopulationFrequencyAlt);
+            zettaInterpretationAnalysisParams.setPopulationFrequencyRef(commandOptions.bodyPopulationFrequencyRef);
+            zettaInterpretationAnalysisParams.setPopulationFrequencyMaf(commandOptions.bodyPopulationFrequencyMaf);
+            zettaInterpretationAnalysisParams.setTranscriptFlag(commandOptions.bodyTranscriptFlag);
+            zettaInterpretationAnalysisParams.setGeneTraitId(commandOptions.bodyGeneTraitId);
+            zettaInterpretationAnalysisParams.setGo(commandOptions.bodyGo);
+            zettaInterpretationAnalysisParams.setExpression(commandOptions.bodyExpression);
+            zettaInterpretationAnalysisParams.setProteinKeyword(commandOptions.bodyProteinKeyword);
+            zettaInterpretationAnalysisParams.setDrug(commandOptions.bodyDrug);
+            zettaInterpretationAnalysisParams.setFunctionalScore(commandOptions.bodyFunctionalScore);
+            zettaInterpretationAnalysisParams.setClinical(commandOptions.bodyClinical);
+            zettaInterpretationAnalysisParams.setClinicalSignificance(commandOptions.bodyClinicalSignificance);
+            zettaInterpretationAnalysisParams.setCustomAnnotation(commandOptions.bodyCustomAnnotation);
+            zettaInterpretationAnalysisParams.setPanel(commandOptions.bodyPanel);
+            zettaInterpretationAnalysisParams.setPanelModeOfInheritance(commandOptions.bodyPanelModeOfInheritance);
+            zettaInterpretationAnalysisParams.setPanelConfidence(commandOptions.bodyPanelConfidence);
+            zettaInterpretationAnalysisParams.setPanelRoleInCancer(commandOptions.bodyPanelRoleInCancer);
+            zettaInterpretationAnalysisParams.setTrait(commandOptions.bodyTrait);
 
-            if (commandOptions.clinicalConfirmedStatus != null){
-                ((ZettaInterpretationAnalysisParams)zettaInterpretationAnalysisParams).setClinicalConfirmedStatus(commandOptions.clinicalConfirmedStatus);
-             }
-
-            if (commandOptions.primary != null){
-                ((ZettaInterpretationAnalysisParams)zettaInterpretationAnalysisParams).setPrimary(commandOptions.primary);
-             }
-
+            if (commandOptions.bodyClinicalConfirmedStatus != null) {
+                zettaInterpretationAnalysisParams.setClinicalConfirmedStatus(commandOptions.bodyClinicalConfirmedStatus);
+            }
+            if (commandOptions.bodyPrimary != null) {
+                zettaInterpretationAnalysisParams.setPrimary(commandOptions.bodyPrimary);
+            }
         }
         return openCGAClient.getClinicalAnalysisClient().runInterpreterZetta(zettaInterpretationAnalysisParams, queryParams);
     }
@@ -820,9 +828,8 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             rgaAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), RgaAnalysisParams.class);
-        }  else {
-        ((RgaAnalysisParams)rgaAnalysisParams)
-            .setFile(commandOptions.file);
+        } else {
+            rgaAnalysisParams.setFile(commandOptions.file);
 
         }
         return openCGAClient.getClinicalAnalysisClient().runRgaIndex(rgaAnalysisParams, queryParams);
@@ -1170,38 +1177,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        PriorityParam priorityParam= new PriorityParam();
-        invokeSetter(priorityParam, "id", commandOptions.priorityId);
-
-        ClinicalReport clinicalReport= new ClinicalReport();
-        invokeSetter(clinicalReport, "title", commandOptions.reportTitle);
-        invokeSetter(clinicalReport, "overview", commandOptions.reportOverview);
-        invokeSetter(clinicalReport, "discussion", commandOptions.reportDiscussion);
-        invokeSetter(clinicalReport, "logo", commandOptions.reportLogo);
-        invokeSetter(clinicalReport, "signedBy", commandOptions.reportSignedBy);
-        invokeSetter(clinicalReport, "signature", commandOptions.reportSignature);
-        invokeSetter(clinicalReport, "date", commandOptions.reportDate);
-
-        StatusParam statusParam= new StatusParam();
-        invokeSetter(statusParam, "id", commandOptions.statusId);
-
-        ProbandParam probandParam= new ProbandParam();
-        invokeSetter(probandParam, "id", commandOptions.probandId);
-
-        ClinicalAnalystParam clinicalAnalystParam= new ClinicalAnalystParam();
-        invokeSetter(clinicalAnalystParam, "id", commandOptions.analystId);
-
-        DisorderReferenceParam disorderReferenceParam= new DisorderReferenceParam();
-        invokeSetter(disorderReferenceParam, "id", commandOptions.disorderId);
-
-        FamilyParam familyParam= new FamilyParam();
-        invokeSetter(familyParam, "id", commandOptions.familyId);
-        ClinicalAnalysis.Type typeParam = null;
-        if (commandOptions.type != null) {
-         typeParam = ClinicalAnalysis.Type.valueOf(commandOptions.type);
-
-        } 
-
         ClinicalAnalysisUpdateParams clinicalAnalysisUpdateParams = new ClinicalAnalysisUpdateParams();
         if (commandOptions.jsonDataModel) {
             RestResponse<ClinicalAnalysis> res = new RestResponse<>();
@@ -1211,29 +1186,71 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             clinicalAnalysisUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), ClinicalAnalysisUpdateParams.class);
-        }  else {
-        ((ClinicalAnalysisUpdateParams)clinicalAnalysisUpdateParams)
-            .setId(commandOptions.id)
-            .setDescription(commandOptions.description)
-            .setDisorder(disorderReferenceParam)
-            .setProband(probandParam)
-            .setFamily(familyParam)
-            .setAnalyst(clinicalAnalystParam)
-            .setReport(clinicalReport)
-            .setCreationDate(commandOptions.creationDate)
-            .setModificationDate(commandOptions.modificationDate)
-            .setDueDate(commandOptions.dueDate)
-            .setPriority(priorityParam)
-            .setStatus(statusParam);
+        } else {
+            // Generate beans for nested objects
+            DisorderReferenceParam disorderParam = new DisorderReferenceParam();
+            disorderParam.setId(commandOptions.disorderId);
 
-            if (commandOptions.panelLock != null){
-                ((ClinicalAnalysisUpdateParams)clinicalAnalysisUpdateParams).setPanelLock(commandOptions.panelLock);
-             }
+            ProbandParam probandParam = new ProbandParam();
+            probandParam.setId(commandOptions.probandId);
+            //probandParam.setSamples(commandOptions.probandSamples);  // Unsupported param. FIXME
 
-            if (commandOptions.locked != null){
-                ((ClinicalAnalysisUpdateParams)clinicalAnalysisUpdateParams).setLocked(commandOptions.locked);
-             }
+            FamilyParam familyParam = new FamilyParam();
+            familyParam.setId(commandOptions.familyId);
+            //familyParam.setMembers(commandOptions.familyMembers);  // Unsupported param. FIXME
 
+            ClinicalAnalystParam analystParam = new ClinicalAnalystParam();
+            analystParam.setId(commandOptions.analystId);
+
+            ClinicalReport reportParam = new ClinicalReport();
+            reportParam.setTitle(commandOptions.reportTitle);
+            reportParam.setOverview(commandOptions.reportOverview);
+            reportParam.setDiscussion(commandOptions.reportDiscussion);
+            reportParam.setLogo(commandOptions.reportLogo);
+            reportParam.setSignedBy(commandOptions.reportSignedBy);
+            reportParam.setSignature(commandOptions.reportSignature);
+            reportParam.setDate(commandOptions.reportDate);
+
+            ClinicalAnalysisQualityControlUpdateParam qualityControlParam = new ClinicalAnalysisQualityControlUpdateParam();
+            qualityControlParam.setSummary(commandOptions.qualityControlSummary == null ? null : ClinicalAnalysisQualityControl.QualityControlSummary.valueOf(commandOptions.qualityControlSummary));
+
+            ClinicalConsentAnnotationParam consentParam = new ClinicalConsentAnnotationParam();
+            //consentParam.setConsents(commandOptions.consentConsents);  // Unsupported param. FIXME
+
+            PriorityParam priorityParam = new PriorityParam();
+            priorityParam.setId(commandOptions.priorityId);
+
+            StatusParam statusParam = new StatusParam();
+            statusParam.setId(commandOptions.statusId);
+
+            //Set main body params
+            clinicalAnalysisUpdateParams.setId(commandOptions.id);
+            clinicalAnalysisUpdateParams.setDescription(commandOptions.description);
+            clinicalAnalysisUpdateParams.setType(commandOptions.type == null ? null : ClinicalAnalysis.Type.valueOf(commandOptions.type));
+            clinicalAnalysisUpdateParams.setDisorder(disorderParam);
+            //clinicalAnalysisUpdateParams.setFiles(commandOptions.files); // Unsupported param. FIXME 
+            //clinicalAnalysisUpdateParams.setPanels(commandOptions.panels); // Unsupported param. FIXME 
+            clinicalAnalysisUpdateParams.setProband(probandParam);
+            clinicalAnalysisUpdateParams.setFamily(familyParam);
+            clinicalAnalysisUpdateParams.setAnalyst(analystParam);
+            clinicalAnalysisUpdateParams.setReport(reportParam);
+            clinicalAnalysisUpdateParams.setQualityControl(qualityControlParam);
+            clinicalAnalysisUpdateParams.setConsent(consentParam);
+            clinicalAnalysisUpdateParams.setCreationDate(commandOptions.creationDate);
+            clinicalAnalysisUpdateParams.setModificationDate(commandOptions.modificationDate);
+            clinicalAnalysisUpdateParams.setDueDate(commandOptions.dueDate);
+            //clinicalAnalysisUpdateParams.setComments(commandOptions.comments); // Unsupported param. FIXME 
+            clinicalAnalysisUpdateParams.setPriority(priorityParam);
+            //clinicalAnalysisUpdateParams.setFlags(commandOptions.flags); // Unsupported param. FIXME 
+            clinicalAnalysisUpdateParams.setAttributes(new HashMap<>(commandOptions.attributes));
+            clinicalAnalysisUpdateParams.setStatus(statusParam);
+
+            if (commandOptions.panelLock != null) {
+                clinicalAnalysisUpdateParams.setPanelLock(commandOptions.panelLock);
+            }
+            if (commandOptions.locked != null) {
+                clinicalAnalysisUpdateParams.setLocked(commandOptions.locked);
+            }
         }
         return openCGAClient.getClinicalAnalysisClient().update(commandOptions.clinicalAnalyses, clinicalAnalysisUpdateParams, queryParams);
     }
@@ -1273,17 +1290,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        StatusParam statusParam= new StatusParam();
-        invokeSetter(statusParam, "id", commandOptions.statusId);
-
-        InterpretationMethod interpretationMethod= new InterpretationMethod();
-        invokeSetter(interpretationMethod, "name", commandOptions.methodName);
-        invokeSetter(interpretationMethod, "version", commandOptions.methodVersion);
-        invokeSetter(interpretationMethod, "commit", commandOptions.methodCommit);
-
-        ClinicalAnalystParam clinicalAnalystParam= new ClinicalAnalystParam();
-        invokeSetter(clinicalAnalystParam, "id", commandOptions.analystId);
-
         InterpretationCreateParams interpretationCreateParams = new InterpretationCreateParams();
         if (commandOptions.jsonDataModel) {
             RestResponse<Interpretation> res = new RestResponse<>();
@@ -1293,20 +1299,37 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             interpretationCreateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), InterpretationCreateParams.class);
-        }  else {
-        ((InterpretationCreateParams)interpretationCreateParams)
-            .setDescription(commandOptions.description)
-            .setClinicalAnalysisId(commandOptions.clinicalAnalysisId)
-            .setCreationDate(commandOptions.creationDate)
-            .setModificationDate(commandOptions.modificationDate)
-            .setAnalyst(clinicalAnalystParam)
-            .setMethod(interpretationMethod)
-            .setStatus(statusParam);
+        } else {
+            // Generate beans for nested objects
+            ClinicalAnalystParam analystParam = new ClinicalAnalystParam();
+            analystParam.setId(commandOptions.analystId);
 
-            if (commandOptions.locked != null){
-                ((InterpretationCreateParams)interpretationCreateParams).setLocked(commandOptions.locked);
-             }
+            InterpretationMethod methodParam = new InterpretationMethod();
+            methodParam.setName(commandOptions.methodName);
+            methodParam.setVersion(commandOptions.methodVersion);
+            methodParam.setCommit(commandOptions.methodCommit);
+            //methodParam.setDependencies(commandOptions.methodDependencies);  // Unsupported param. FIXME
 
+            StatusParam statusParam = new StatusParam();
+            statusParam.setId(commandOptions.statusId);
+
+            //Set main body params
+            interpretationCreateParams.setDescription(commandOptions.description);
+            interpretationCreateParams.setClinicalAnalysisId(commandOptions.clinicalAnalysisId);
+            interpretationCreateParams.setCreationDate(commandOptions.creationDate);
+            interpretationCreateParams.setModificationDate(commandOptions.modificationDate);
+            interpretationCreateParams.setAnalyst(analystParam);
+            interpretationCreateParams.setMethod(methodParam);
+            //interpretationCreateParams.setPrimaryFindings(commandOptions.primaryFindings); // Unsupported param. FIXME 
+            //interpretationCreateParams.setSecondaryFindings(commandOptions.secondaryFindings); // Unsupported param. FIXME 
+            //interpretationCreateParams.setPanels(commandOptions.panels); // Unsupported param. FIXME 
+            //interpretationCreateParams.setComments(commandOptions.comments); // Unsupported param. FIXME 
+            interpretationCreateParams.setStatus(statusParam);
+            interpretationCreateParams.setAttributes(new HashMap<>(commandOptions.attributes));
+
+            if (commandOptions.locked != null) {
+                interpretationCreateParams.setLocked(commandOptions.locked);
+            }
         }
         return openCGAClient.getClinicalAnalysisClient().createInterpretation(commandOptions.clinicalAnalysis, interpretationCreateParams, queryParams);
     }
@@ -1374,17 +1397,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        StatusParam statusParam= new StatusParam();
-        invokeSetter(statusParam, "id", commandOptions.statusId);
-
-        InterpretationMethod interpretationMethod= new InterpretationMethod();
-        invokeSetter(interpretationMethod, "name", commandOptions.methodName);
-        invokeSetter(interpretationMethod, "version", commandOptions.methodVersion);
-        invokeSetter(interpretationMethod, "commit", commandOptions.methodCommit);
-
-        ClinicalAnalystParam clinicalAnalystParam= new ClinicalAnalystParam();
-        invokeSetter(clinicalAnalystParam, "id", commandOptions.analystId);
-
         InterpretationUpdateParams interpretationUpdateParams = new InterpretationUpdateParams();
         if (commandOptions.jsonDataModel) {
             RestResponse<Interpretation> res = new RestResponse<>();
@@ -1394,19 +1406,36 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             interpretationUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), InterpretationUpdateParams.class);
-        }  else {
-        ((InterpretationUpdateParams)interpretationUpdateParams)
-            .setDescription(commandOptions.description)
-            .setAnalyst(clinicalAnalystParam)
-            .setMethod(interpretationMethod)
-            .setCreationDate(commandOptions.creationDate)
-            .setModificationDate(commandOptions.modificationDate)
-            .setStatus(statusParam);
+        } else {
+            // Generate beans for nested objects
+            ClinicalAnalystParam analystParam = new ClinicalAnalystParam();
+            analystParam.setId(commandOptions.analystId);
 
-            if (commandOptions.locked != null){
-                ((InterpretationUpdateParams)interpretationUpdateParams).setLocked(commandOptions.locked);
-             }
+            InterpretationMethod methodParam = new InterpretationMethod();
+            methodParam.setName(commandOptions.methodName);
+            methodParam.setVersion(commandOptions.methodVersion);
+            methodParam.setCommit(commandOptions.methodCommit);
+            //methodParam.setDependencies(commandOptions.methodDependencies);  // Unsupported param. FIXME
 
+            StatusParam statusParam = new StatusParam();
+            statusParam.setId(commandOptions.statusId);
+
+            //Set main body params
+            interpretationUpdateParams.setDescription(commandOptions.description);
+            interpretationUpdateParams.setAnalyst(analystParam);
+            interpretationUpdateParams.setMethod(methodParam);
+            interpretationUpdateParams.setCreationDate(commandOptions.creationDate);
+            interpretationUpdateParams.setModificationDate(commandOptions.modificationDate);
+            //interpretationUpdateParams.setPrimaryFindings(commandOptions.primaryFindings); // Unsupported param. FIXME 
+            //interpretationUpdateParams.setSecondaryFindings(commandOptions.secondaryFindings); // Unsupported param. FIXME 
+            //interpretationUpdateParams.setPanels(commandOptions.panels); // Unsupported param. FIXME 
+            //interpretationUpdateParams.setComments(commandOptions.comments); // Unsupported param. FIXME 
+            interpretationUpdateParams.setStatus(statusParam);
+            interpretationUpdateParams.setAttributes(new HashMap<>(commandOptions.attributes));
+
+            if (commandOptions.locked != null) {
+                interpretationUpdateParams.setLocked(commandOptions.locked);
+            }
         }
         return openCGAClient.getClinicalAnalysisClient().updateInterpretation(commandOptions.clinicalAnalysis, commandOptions.interpretation, interpretationUpdateParams, queryParams);
     }
