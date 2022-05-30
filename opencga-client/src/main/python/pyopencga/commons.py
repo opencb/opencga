@@ -87,7 +87,7 @@ def _fetch(host, version, sid, category, resource, method, subcategory=None, que
             opts['skip'] = call_skip
         # If 'limit' is specified, a maximum of 'limit' results will be returned
         if 'limit' in opts:
-            max_limit = opts['limit']
+            max_limit = int(opts['limit'])
         # Server must be always queried for results in groups of 1000
         opts['limit'] = call_limit
 
