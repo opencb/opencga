@@ -224,7 +224,7 @@ public abstract class AbstractManager {
      * @param field   field that needs to remain.
      * @return a new QueryOptions with the necessary modifications.
      */
-    QueryOptions keepFieldInQueryOptions(QueryOptions options, String field) {
+    static QueryOptions keepFieldInQueryOptions(QueryOptions options, String field) {
         return keepFieldsInQueryOptions(options, Collections.singletonList(field));
     }
 
