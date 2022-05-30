@@ -495,8 +495,9 @@ public class ParamConstants {
     public static final String PANEL_SNAPSHOT_DESCRIPTION = SNAPSHOT_DESCRIPTION;
     public static final String PANEL_VERSION_DESCRIPTION = "Comma separated list of panel versions. 'all' to get all the "
             + "panel versions. Not supported if multiple panel ids are provided";
-    public static final String PANEL_SOURCE = "source";
-    public static final String PANEL_SOURCE_DESCRIPTION = "Comma separated list of sources to import panels from. Current supported "
+    public static final String PANEL_SOURCE_PARAM = "source";
+    public static final String PANEL_SOURCE_DESCRIPTION = "Comma separated list of source ids or names.";
+    public static final String PANEL_IMPORT_SOURCE_DESCRIPTION = "Comma separated list of sources to import panels from. Current supported "
             + "sources are 'panelapp' and 'cancer-gene-census'";
     public static final String PANEL_SOURCE_ID = "id";
     public static final String PANEL_SOURCE_ID_DESCRIPTION = "Comma separated list of panel IDs to be imported from the defined source."

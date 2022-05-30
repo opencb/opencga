@@ -6,7 +6,7 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 public class PanelImportParams extends ToolParams {
 
-    @DataField(id = ParamConstants.PANEL_SOURCE, description = ParamConstants.PANEL_SOURCE_DESCRIPTION)
+    @DataField(id = ParamConstants.PANEL_SOURCE_PARAM, description = ParamConstants.PANEL_IMPORT_SOURCE_DESCRIPTION)
     private String source;
 
     @DataField(id = ParamConstants.PANEL_SOURCE_ID, description = ParamConstants.PANEL_SOURCE_ID_DESCRIPTION)
