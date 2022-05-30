@@ -58,6 +58,8 @@ public interface PanelDBAdaptor extends CoreDBAdaptor<Panel> {
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
 
         SOURCE("source", TEXT_ARRAY, ""),
+        SOURCE_ID("source.id", TEXT, ""),
+        SOURCE_NAME("source.name", TEXT, ""),
 
         STATS("stats", TEXT_ARRAY, ""),
 
@@ -87,8 +89,6 @@ public interface PanelDBAdaptor extends CoreDBAdaptor<Panel> {
         REGIONS_ID("regions.id", TEXT, ""),
         REGIONS_SCORE("regions.score", DOUBLE, ""),
 
-        SOURCE_ID("source.id", TEXT, ""),
-        SOURCE_NAME("source.name", TEXT, ""),
         SOURCE_VERSION("source.version", TEXT, ""),
         SOURCE_AUTHOR("source.author", TEXT, ""),
         SOURCE_PROJECT("source.project", TEXT, ""),
