@@ -763,6 +763,9 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                     case DISORDERS:
                         addDefaultOrQueryFilter(queryParam.key(), queryParam.key(), queryCopy, andBsonList);
                         break;
+                    case SOURCE:
+                        addDefaultOrQueryFilter(queryParam.key(), queryParam.key(), queryCopy, andBsonList);
+                        break;
                     case REGIONS:
                     case REGIONS_ID:
                         addAutoOrQuery(QueryParams.REGIONS_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);

@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public abstract class MigrationTool {
@@ -212,6 +213,18 @@ public abstract class MigrationTool {
 
     protected final void createIndex(String collection, Document index) {
         createIndex(getMongoCollection(collection), index, new IndexOptions().background(true));
+    }
+
+    protected final void createIndex(List<String> collections, Document index) {
+        createIndexes(collections, Collections.singletonList(index));
+    }
+
+    protected final void createIndexes(List<String> collections, List<Document> indexes) {
+        for (String collection : collections) {
+            for (Document index : indexes) {
+                createIndex(getMongoCollection(collection), index, new IndexOptions().background(true));
+            }
+        }
     }
 
     protected final void createIndex(String collection, Document index, IndexOptions options) {

@@ -183,6 +183,8 @@
 {"collections": ["panel", "panel_archive"], "fields": {"variants.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collections": ["panel", "panel_archive"], "fields": {"genes.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collections": ["panel", "panel_archive"], "fields": {"genes.name": 1, "studyUid": 1}, "options": {"background": true}}
+{"collections": ["panel", "panel_archive"], "fields": {"source.id": 1, "studyUid": 1}, "options": {"background": true}}
+{"collections": ["panel", "panel_archive"], "fields": {"source.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collections": ["panel", "panel_archive"], "fields": {"regions.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collections": ["panel", "panel_archive"], "fields": {"categories.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collections": ["panel", "panel_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
