@@ -152,7 +152,7 @@ public class VersionedMongoDBAdaptor {
                 String transactionId = result.getString(PRIVATE_TRANSACTION_ID);
                 allUids.add(uid);
 
-                if (!transactionId.equals(uuid)) {
+                if (!uuid.equals(transactionId)) {
                     // If the version hasn't been incremented yet in this transaction
                     uidsChanged.add(uid);
 

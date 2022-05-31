@@ -16,7 +16,7 @@ fi
 
 
 FILE="${PERSISTENT_CONF}/configuration.yml"
-if [ -f "$FILE" ] && [ "${OVERWRITE_CONFIGURATION:-false}" == "false" ]; then
+if [ -f "$FILE" ] && [ "${OVERWRITE_CONFIGURATION:-false}" = "false" ]; then
     echo "$FILE already exists"
     cp -r -v "${PERSISTENT_CONF}/"* "${OPENCGA_CONF}"
 else
@@ -46,7 +46,7 @@ fi
 CATALOG_STATUS=$(/opt/opencga/bin/opencga-admin.sh catalog status --log-level warn)
 # wait for mongodb
 echo "About to wait for MongoDB"
-until [ "$(echo "$CATALOG_STATUS" | jq -r .mongodbStatus)" == "true" ]; do
+until [ "$(echo "$CATALOG_STATUS" | jq -r .mongodbStatus)" = "true" ]; do
     echo "Waiting for Mongo DB"
     CATALOG_STATUS=$(/opt/opencga/bin/opencga-admin.sh catalog status --log-level warn)
 done
@@ -56,7 +56,7 @@ DB_NAME="$(echo "$CATALOG_STATUS" | jq -r .catalogDBName)"
 echo "DB Name: $INSTALLED"
 echo "Catalog installed : $INSTALLED"
 
-if [ "$INSTALLED" == false ]; then
+if [ "$INSTALLED" = false ]; then
     # Disable debug output. Do not print password
     set +x
     echo "Installing catalog"
