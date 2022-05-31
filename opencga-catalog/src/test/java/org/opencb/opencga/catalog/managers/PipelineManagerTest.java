@@ -4,6 +4,7 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.job.Pipeline;
+import org.opencb.opencga.core.models.job.PipelineCreateParams;
 import org.opencb.opencga.core.models.job.PipelineUpdateParams;
 
 import java.io.IOException;
@@ -16,7 +17,7 @@ public class PipelineManagerTest extends AbstractManagerTest {
 
     @Test
     public void createPipelineTest() throws IOException, CatalogException {
-        Pipeline pipeline = Pipeline.load(getClass().getResource("/pipelines/pipeline-correct.yml").openStream());
+        PipelineCreateParams pipeline = PipelineCreateParams.load(getClass().getResource("/pipelines/pipeline-correct.yml").openStream());
         catalogManager.getPipelineManager().create(studyFqn, pipeline, QueryOptions.empty(), token);
 
         Pipeline pipeline2 = catalogManager.getPipelineManager().get(studyFqn, pipeline.getId(), QueryOptions.empty(), token).first();
@@ -34,7 +35,7 @@ public class PipelineManagerTest extends AbstractManagerTest {
 
     @Test
     public void updatePipelineTest() throws IOException, CatalogException {
-        Pipeline pipeline = Pipeline.load(getClass().getResource("/pipelines/pipeline-correct.yml").openStream());
+        PipelineCreateParams pipeline = PipelineCreateParams.load(getClass().getResource("/pipelines/pipeline-correct.yml").openStream());
         catalogManager.getPipelineManager().create(studyFqn, pipeline, QueryOptions.empty(), token);
 
         LinkedHashMap<String, Pipeline.PipelineJob> jobMap = new LinkedHashMap<>();
@@ -43,18 +44,18 @@ public class PipelineManagerTest extends AbstractManagerTest {
                 .setDescription("hello")
                 .setJobs(jobMap);
 
-        pipeline = catalogManager.getPipelineManager().update(studyFqn, pipeline.getId(), updateParams,
+        Pipeline pipeline2 = catalogManager.getPipelineManager().update(studyFqn, pipeline.getId(), updateParams,
                 new QueryOptions(INCLUDE_RESULT_PARAM, true), token).first();
-        assertEquals("hello", pipeline.getDescription());
-        assertEquals(2, pipeline.getVersion());
-        assertEquals(1, pipeline.getJobs().size());
-        assertEquals("hello", pipeline.getJobs().get("a").getDescription());
+        assertEquals("hello", pipeline2.getDescription());
+        assertEquals(2, pipeline2.getVersion());
+        assertEquals(1, pipeline2.getJobs().size());
+        assertEquals("hello", pipeline2.getJobs().get("a").getDescription());
     }
 
 
     @Test
     public void createPipelineErrorTest() throws IOException, CatalogException {
-        Pipeline pipeline = Pipeline.load(getClass().getResource("/pipelines/pipeline-incorrect.yml").openStream());
+        PipelineCreateParams pipeline = PipelineCreateParams.load(getClass().getResource("/pipelines/pipeline-incorrect.yml").openStream());
         thrown.expect(CatalogException.class);
         thrown.expectMessage("depends on");
         catalogManager.getPipelineManager().create(studyFqn, pipeline, QueryOptions.empty(), token);

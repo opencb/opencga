@@ -1,13 +1,9 @@
 package org.opencb.opencga.core.models.job;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.PrivateStudyUid;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,8 +35,6 @@ public class Pipeline extends PrivateStudyUid {
     private PipelineConfig config;
     private LinkedHashMap<String, PipelineJob> jobs;
 
-    private static final String DEFAULT_PIPELINE_FORMAT = "yaml";
-
     public Pipeline() {
     }
 
@@ -55,43 +49,6 @@ public class Pipeline extends PrivateStudyUid {
         this.params = params;
         this.config = config;
         this.jobs = jobs;
-    }
-
-    public static Pipeline load(InputStream configurationInputStream) throws IOException {
-        return load(configurationInputStream, DEFAULT_PIPELINE_FORMAT);
-    }
-
-    public static Pipeline load(InputStream configurationInputStream, String format) throws IOException {
-        if (configurationInputStream == null) {
-            throw new IOException("Pipeline file not found");
-        }
-        Pipeline pipeline;
-        ObjectMapper objectMapper;
-        try {
-            switch (format) {
-                case "json":
-                    objectMapper = new ObjectMapper();
-                    pipeline = objectMapper.readValue(configurationInputStream, Pipeline.class);
-                    break;
-                case "yml":
-                case "yaml":
-                default:
-                    objectMapper = new ObjectMapper(new YAMLFactory());
-                    pipeline = objectMapper.readValue(configurationInputStream, Pipeline.class);
-                    break;
-            }
-        } catch (IOException e) {
-            throw new IOException("Pipeline file could not be parsed: " + e.getMessage(), e);
-        }
-
-        if (pipeline.getStudyUid() > 0) {
-            throw new IllegalStateException("'studyUid' should be undefined");
-        }
-        if (pipeline.getUid() > 0) {
-            throw new IllegalStateException("'uid' should be undefined");
-        }
-
-        return pipeline;
     }
 
     @Override

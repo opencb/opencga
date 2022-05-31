@@ -23,6 +23,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Pipeline;
+import org.opencb.opencga.core.models.job.PipelineCreateParams;
 import org.opencb.opencga.core.models.job.PipelineInternal;
 import org.opencb.opencga.core.models.job.PipelineUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
@@ -123,8 +124,7 @@ public class PipelineManager extends ResourceManager<Pipeline> {
         return idQueryParam;
     }
 
-    @Override
-    public OpenCGAResult<Pipeline> create(String studyStr, Pipeline pipeline, QueryOptions options, String token)
+    public OpenCGAResult<Pipeline> create(String studyStr, PipelineCreateParams pipelineCreate, QueryOptions options, String token)
             throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
@@ -133,7 +133,7 @@ public class PipelineManager extends ResourceManager<Pipeline> {
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
-                .append("pipeline", pipeline)
+                .append("pipeline", pipelineCreate)
                 .append("options", options)
                 .append("token", token);
 
@@ -143,15 +143,16 @@ public class PipelineManager extends ResourceManager<Pipeline> {
 
             // 2. Process dynamic variables
             try {
-                String pipelineJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(pipeline);
+                String pipelineJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(pipelineCreate);
                 ObjectMap pipelineMap = JacksonUtils.getDefaultObjectMapper().readValue(pipelineJsonString, ObjectMap.class);
                 ParamUtils.processDynamicVariables(pipelineMap, PIPELINE_VARIABLE_PATTERN);
                 pipelineJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(pipelineMap);
-                pipeline = JacksonUtils.getDefaultObjectMapper().readValue(pipelineJsonString, Pipeline.class);
+                pipelineCreate = JacksonUtils.getDefaultObjectMapper().readValue(pipelineJsonString, PipelineCreateParams.class);
             } catch (JsonProcessingException e) {
                 throw new CatalogException("Could not process JSON properly", e);
             }
 
+            Pipeline pipeline = pipelineCreate.toPipeline();
             validate(pipeline);
             validateForCreation(study, pipeline);
 
@@ -168,10 +169,16 @@ public class PipelineManager extends ResourceManager<Pipeline> {
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return insert;
         } catch (CatalogException e) {
-            auditManager.auditCreate(userId, Enums.Resource.PIPELINE, pipeline.getId(), "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            auditManager.auditCreate(userId, Enums.Resource.PIPELINE, pipelineCreate.getId(), "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
+    }
+
+    @Override
+    public OpenCGAResult<Pipeline> create(String studyStr, Pipeline pipeline, QueryOptions options, String token)
+            throws CatalogException {
+       throw new UnsupportedOperationException("Please use create method passing PipelineCreateParam data");
     }
 
     public OpenCGAResult<Pipeline> update(String studyStr, String pipelineId, PipelineUpdateParams updateParams, QueryOptions options,

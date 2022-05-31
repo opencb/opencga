@@ -1,5 +1,10 @@
 package org.opencb.opencga.core.models.job;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -17,7 +22,39 @@ public class PipelineCreateParams {
     private Pipeline.PipelineConfig config;
     private LinkedHashMap<String, Pipeline.PipelineJob> jobs;
 
+    private static final String DEFAULT_FORMAT = "yaml";
+
     public PipelineCreateParams() {
+    }
+
+    public static PipelineCreateParams load(InputStream configurationInputStream) throws IOException {
+        return load(configurationInputStream, DEFAULT_FORMAT);
+    }
+
+    public static PipelineCreateParams load(InputStream configurationInputStream, String format) throws IOException {
+        if (configurationInputStream == null) {
+            throw new IOException("Pipeline file not found");
+        }
+        PipelineCreateParams pipeline;
+        ObjectMapper objectMapper;
+        try {
+            switch (format) {
+                case "json":
+                    objectMapper = new ObjectMapper();
+                    pipeline = objectMapper.readValue(configurationInputStream, PipelineCreateParams.class);
+                    break;
+                case "yml":
+                case "yaml":
+                default:
+                    objectMapper = new ObjectMapper(new YAMLFactory());
+                    pipeline = objectMapper.readValue(configurationInputStream, PipelineCreateParams.class);
+                    break;
+            }
+        } catch (IOException e) {
+            throw new IOException("Pipeline file could not be parsed: " + e.getMessage(), e);
+        }
+
+        return pipeline;
     }
 
     @Override

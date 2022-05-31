@@ -501,7 +501,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         catalogManager.getFileManager().link(studyFqn, new FileLinkParams().setUri(bamUri).setPath("."), false, token);
 
         // Load and create the pipeline
-        Pipeline pipeline = Pipeline.load(getClass().getResource("/pipelines/alignment-qc-2.yml").openStream());
+        PipelineCreateParams pipeline = PipelineCreateParams.load(getClass().getResource("/pipelines/alignment-qc-2.yml").openStream());
         catalogManager.getPipelineManager().create(studyFqn, pipeline, QueryOptions.empty(), token);
 
         // Submit an alignment-qc execution
