@@ -108,7 +108,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -1139,7 +1138,6 @@ public class JobDaemon extends MonitorParentDaemon {
             executor.submit(() -> {
                 try {
                     sendWebhookNotification(job, job.getInternal().getWebhook().getUrl());
-//                } catch (URISyntaxException | CatalogException | CloneNotSupportedException e) {
                 } catch (Exception e) {
                     logger.warn("Could not store notification status: {}", e.getMessage(), e);
                 }
@@ -1147,7 +1145,7 @@ public class JobDaemon extends MonitorParentDaemon {
         }
     }
 
-    private void sendWebhookNotification(Job job, URL url) throws URISyntaxException, CatalogException, CloneNotSupportedException {
+    private void sendWebhookNotification(Job job, URL url) throws CatalogException, CloneNotSupportedException {
         JobInternal jobInternal = new JobInternal(null, null, null, job.getInternal().getWebhook().clone(), null);
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams()
                 .setInternal(jobInternal);
