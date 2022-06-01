@@ -1078,7 +1078,7 @@ public class JobDaemon extends MonitorParentDaemon {
             updateParams.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR,
                     "Job could not finish successfully"));
         } else {
-            switch (status.getName()) {
+            switch (status.getId()) {
                 case Enums.ExecutionStatus.DONE:
                 case Enums.ExecutionStatus.READY:
                     updateParams.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE));
@@ -1140,7 +1140,8 @@ public class JobDaemon extends MonitorParentDaemon {
             executor.submit(() -> {
                 try {
                     sendWebhookNotification(job, job.getInternal().getWebhook().getUrl());
-                } catch (URISyntaxException | CatalogException | CloneNotSupportedException e) {
+//                } catch (URISyntaxException | CatalogException | CloneNotSupportedException e) {
+                } catch (Exception e) {
                     logger.warn("Could not store notification status: {}", e.getMessage(), e);
                 }
             });
@@ -1156,7 +1157,12 @@ public class JobDaemon extends MonitorParentDaemon {
         actionMap.put(JobDBAdaptor.QueryParams.INTERNAL_EVENTS.key(), ParamUtils.BasicUpdateAction.ADD.name());
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
-        Client client = ClientBuilder.newClient();
+        Client client;
+        try {
+            client = ClientBuilder.newClient();
+        } catch (RuntimeException e) {
+            throw e;
+        }
         Response post;
         try {
             post = client

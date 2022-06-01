@@ -59,7 +59,7 @@ public class ToolExecutorFactory {
         //  Currently they must contain "opencga" in the jar name.
         //  e.g.  acme-rockets-opencga-5.4.0.jar
         Collection<URL> urls = new LinkedList<>();
-        for (URL url : ClasspathHelper.forClassLoader()) {
+        for (URL url : ClasspathHelper.forPackage("org.opencb.opencga")) {
             String name = url.getPath().substring(url.getPath().lastIndexOf('/') + 1);
             if (name.isEmpty() || (name.contains("opencga") && !name.contains("opencga-storage-hadoop-deps"))) {
                 urls.add(url);

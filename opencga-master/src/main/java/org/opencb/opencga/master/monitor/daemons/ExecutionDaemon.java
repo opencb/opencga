@@ -106,7 +106,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 Thread.sleep(interval);
             } catch (InterruptedException e) {
                 if (!exit) {
-                    e.printStackTrace();
+                    logger.error("{}", e.getMessage(), e);
                 }
             }
 
@@ -674,7 +674,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         try {
             updateExecution(execution, updateParams);
         } catch (CatalogException e) {
-            logger.error("Unexpected error. Cannot update execution '{}' to status '{}'. {}", execution.getId(), status.getName(),
+            logger.error("Unexpected error. Cannot update execution '{}' to status '{}'. {}", execution.getId(), status.getId(),
                     e.getMessage(), e);
             return 0;
         }

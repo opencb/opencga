@@ -264,15 +264,15 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         OpenCGAResult<Execution> executionResult = catalogManager.getExecutionManager().get(studyFqn, execution1, QueryOptions.empty(), token);
         assertEquals(1, executionResult.getNumResults());
-        assertEquals(Enums.ExecutionStatus.PROCESSED, executionResult.first().getInternal().getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.PROCESSED, executionResult.first().getInternal().getStatus().getId());
 
         OpenCGAResult<Job> jobResult = catalogManager.getJobManager().get(studyFqn, executionResult.first().getJobs().get(0).getId(), QueryOptions.empty(), token);
         assertEquals(1, jobResult.getNumResults());
-        assertEquals(Enums.ExecutionStatus.QUEUED, jobResult.first().getInternal().getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.QUEUED, jobResult.first().getInternal().getStatus().getId());
 
         executionResult = catalogManager.getExecutionManager().get(studyFqn, execution2, QueryOptions.empty(), token);
         assertEquals(1, executionResult.getNumResults());
-        assertEquals(Enums.ExecutionStatus.PENDING, executionResult.first().getInternal().getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.PENDING, executionResult.first().getInternal().getStatus().getId());
 
         // Set the status of job1 to ERROR
         catalogManager.getJobManager().privateUpdate(studyFqn, jobResult.first().getId(),
@@ -281,12 +281,12 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         executionDaemon.checkExecutions();
         executionResult = catalogManager.getExecutionManager().get(studyFqn, execution1, QueryOptions.empty(), token);
         assertEquals(1, executionResult.getNumResults());
-        assertEquals(Enums.ExecutionStatus.ERROR, executionResult.first().getInternal().getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.ERROR, executionResult.first().getInternal().getStatus().getId());
 
         executionDaemon.checkExecutions();
         executionResult = catalogManager.getExecutionManager().get(studyFqn, execution2, QueryOptions.empty(), token);
         assertEquals(1, executionResult.getNumResults());
-        assertEquals(Enums.ExecutionStatus.ABORTED, executionResult.first().getInternal().getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.ABORTED, executionResult.first().getInternal().getStatus().getId());
         assertTrue(executionResult.first().getInternal().getStatus().getDescription().contains("depended on"));
     }
 
@@ -362,7 +362,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         Job job = catalogManager.getJobManager().get(studyFqn, jobId, null, token).first();
 
         jobDaemon.checkJobs();
-        assertEquals(Enums.ExecutionStatus.RUNNING, getJob(jobId).getInternal().getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.RUNNING, getJob(jobId).getInternal().getStatus().getId());
 
         InputStream inputStream = new ByteArrayInputStream("my log content\nlast line".getBytes(StandardCharsets.UTF_8));
         catalogManager.getIoManagerFactory().getDefault().copy(inputStream,
@@ -391,12 +391,12 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 //        assertEquals("'" + inputFile.getPath() + "'", cli[i + 1]);
 //        assertEquals(1, getJob(jobId).getInput().size());
 //        assertEquals(inputFile.getPath(), getJob(jobId).getInput().get(0).getPath());
-//        assertEquals(Enums.ExecutionStatus.QUEUED, getJob(jobId).getInternal().getStatus().getName());
+//        assertEquals(Enums.ExecutionStatus.QUEUED, getJob(jobId).getInternal().getStatus().getId());
 //        executor.jobStatus.put(jobId, Enums.ExecutionStatus.RUNNING);
 //
 //        jobDaemon.checkJobs();
 //
-//        assertEquals(Enums.ExecutionStatus.RUNNING, getJob(jobId).getInternal().getStatus().getName());
+//        assertEquals(Enums.ExecutionStatus.RUNNING, getJob(jobId).getInternal().getStatus().getId());
 //        createAnalysisResult(jobId, "myTest", ar -> ar.setStatus(new Status(Status.Type.DONE, null, TimeUtils.getDate())));
 //        executor.jobStatus.put(jobId, Enums.ExecutionStatus.READY);
 //
@@ -411,7 +411,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 //
 //        jobDaemon.checkJobs();
 //
-//        assertEquals(Enums.ExecutionStatus.DONE, getJob(jobId).getInternal().getStatus().getName());
+//        assertEquals(Enums.ExecutionStatus.DONE, getJob(jobId).getInternal().getStatus().getId());
 //
 //        job = catalogManager.getJobManager().get(studyFqn, job.getId(), QueryOptions.empty(), token).first();
 //
@@ -452,18 +452,18 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 //
 //        jobDaemon.checkJobs();
 //
-//        assertEquals(Enums.ExecutionStatus.QUEUED, getJob(jobId).getInternal().getStatus().getName());
+//        assertEquals(Enums.ExecutionStatus.QUEUED, getJob(jobId).getInternal().getStatus().getId());
 //        executor.jobStatus.put(jobId, Enums.ExecutionStatus.RUNNING);
 //
 //        jobDaemon.checkJobs();
 //
-//        assertEquals(Enums.ExecutionStatus.RUNNING, getJob(jobId).getInternal().getStatus().getName());
+//        assertEquals(Enums.ExecutionStatus.RUNNING, getJob(jobId).getInternal().getStatus().getId());
 //        createAnalysisResult(jobId, "myTest", ar -> ar.setStatus(new Status(Status.Type.ERROR, null, TimeUtils.getDate())));
 //        executor.jobStatus.put(jobId, Enums.ExecutionStatus.ERROR);
 //
 //        jobDaemon.checkJobs();
 //
-//        assertEquals(Enums.ExecutionStatus.ERROR, getJob(jobId).getInternal().getStatus().getName());
+//        assertEquals(Enums.ExecutionStatus.ERROR, getJob(jobId).getInternal().getStatus().getId());
 //        assertEquals("Job could not finish successfully", getJob(jobId).getInternal().getStatus().getDescription());
 //    }
 
@@ -477,21 +477,21 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         List<Job> jobs = getExecution(execution.getId()).getJobs();
         assertEquals(1, jobs.size());
         String jobId = jobs.get(0).getId();
-        assertEquals(Enums.ExecutionStatus.PENDING, jobs.get(0).getInternal().getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.PENDING, jobs.get(0).getInternal().getStatus().getId());
 
         jobDaemon.checkJobs();
 
-        assertEquals(Enums.ExecutionStatus.QUEUED, getJob(jobId).getInternal().getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.QUEUED, getJob(jobId).getInternal().getStatus().getId());
         executor.jobStatus.put(jobId, Enums.ExecutionStatus.RUNNING);
 
         jobDaemon.checkJobs();
 
-        assertEquals(Enums.ExecutionStatus.RUNNING, getJob(jobId).getInternal().getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.RUNNING, getJob(jobId).getInternal().getStatus().getId());
         executor.jobStatus.put(jobId, Enums.ExecutionStatus.READY);
 
         jobDaemon.checkJobs();
 
-        assertEquals(Enums.ExecutionStatus.ERROR, getJob(jobId).getInternal().getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.ERROR, getJob(jobId).getInternal().getStatus().getId());
         assertEquals("Job could not finish successfully. Missing execution result", getJob(jobId).getInternal().getStatus().getDescription());
     }
 
@@ -517,10 +517,10 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         executionResult = catalogManager.getExecutionManager().get(studyFqn, executionResult.first().getId(), QueryOptions.empty(), token);
         assertEquals(1, executionResult.getNumResults());
-        assertEquals(Enums.ExecutionStatus.PENDING, executionResult.first().getInternal().getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.PENDING, executionResult.first().getInternal().getStatus().getId());
         assertEquals(3, executionResult.first().getJobs().size());
         for (Job job : executionResult.first().getJobs()) {
-            assertEquals(Enums.ExecutionStatus.PENDING, job.getInternal().getStatus().getName());
+            assertEquals(Enums.ExecutionStatus.PENDING, job.getInternal().getStatus().getId());
         }
 
         // Update job status to DONE
@@ -531,7 +531,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         executionDaemon.checkPendingExecutions();
         executionResult = catalogManager.getExecutionManager().get(studyFqn, executionResult.first().getId(), QueryOptions.empty(), token);
         assertEquals(1, executionResult.getNumResults());
-        assertEquals(Enums.ExecutionStatus.PROCESSED, executionResult.first().getInternal().getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.PROCESSED, executionResult.first().getInternal().getStatus().getId());
         assertEquals(4, executionResult.first().getJobs().size());
         Job stats = executionResult.first().getJobs().get(0);
         job = executionResult.first().getJobs().get(3);
@@ -552,7 +552,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
                 AlignmentQcAnalysis.ID, Enums.Priority.MEDIUM, params, "", "", null, null, token).first();
 
         assertNotNull(execution);
-        assertEquals(Enums.ExecutionStatus.PENDING, execution.getInternal().getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.PENDING, execution.getInternal().getStatus().getId());
 
         executionDaemon.checkPendingExecutions();
         execution = getExecution(execution.getId());
@@ -560,13 +560,13 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         assertEquals(1, execution.getJobs().size());
         for (Job job : execution.getJobs()) {
-            assertEquals(Enums.ExecutionStatus.PENDING, job.getInternal().getStatus().getName());
+            assertEquals(Enums.ExecutionStatus.PENDING, job.getInternal().getStatus().getId());
         }
     }
 
     private void checkStatus(Job job, String status) {
         assertEquals(status, job.getInternal().getStatus().getId());
-        assertEquals(status, job.getInternal().getStatus().getName());
+        assertEquals(status, job.getInternal().getStatus().getId());
     }
 
     private Job getJob(String jobId) throws CatalogException {

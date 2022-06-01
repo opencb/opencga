@@ -741,7 +741,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals("quantity", testSample.first().getCollection().getQuantity());
         assertEquals("method", testSample.first().getCollection().getMethod());
         assertEquals("date", testSample.first().getCollection().getDate());
-        assertEquals("status1", testSample.first().getStatus().getName());
+        assertEquals("status1", testSample.first().getStatus().getId());
         assertEquals("my description", testSample.first().getStatus().getDescription());
         assertNotNull(testSample.first().getStatus().getDate());
         assertTrue(testSample.first().getCollection().getAttributes().isEmpty());
@@ -757,7 +757,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                         .setStatus(new Status("stat1", "stat1", "my description", time)),
                 INCLUDE_RESULT, token);
         assertEquals(1, sampleDataResult.getNumResults());
-        assertEquals("stat1", sampleDataResult.first().getStatus().getName());
+        assertEquals("stat1", sampleDataResult.first().getStatus().getId());
         assertEquals(time, sampleDataResult.first().getStatus().getDate());
         assertEquals("my description", sampleDataResult.first().getStatus().getDescription());
     }

@@ -1164,7 +1164,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertTrue(myCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId2.getUid()));
         assertTrue(myCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId3.getUid()));
         assertNotNull(myCohort.getStatus());
-        assertEquals("custom", myCohort.getStatus().getName());
+        assertEquals("custom", myCohort.getStatus().getId());
         assertEquals("description", myCohort.getStatus().getDescription());
     }
 
@@ -1718,7 +1718,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 .setStatus(new Status("custom", "custom", "description", TimeUtils.getTime())), INCLUDE_RESULT, token).first();
         assertEquals(3, myCohort.getSamples().size());
         assertNotNull(myCohort.getStatus());
-        assertEquals("custom", myCohort.getStatus().getName());
+        assertEquals("custom", myCohort.getStatus().getId());
         assertEquals("description", myCohort.getStatus().getDescription());
     }
 

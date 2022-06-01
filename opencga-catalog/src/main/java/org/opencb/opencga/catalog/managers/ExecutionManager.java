@@ -169,12 +169,12 @@ public class ExecutionManager extends ResourceManager<Execution> {
                                           String executionId, String description, List<String> dependsOn, List<String> tags, String token)
             throws CatalogException {
         Execution execution = get(studyStr, executionRetry.getExecution(), new QueryOptions(), token).first();
-        if (execution.getInternal().getStatus().getName().equals(Enums.ExecutionStatus.ERROR)
-                || execution.getInternal().getStatus().getName().equals(Enums.ExecutionStatus.ABORTED)) {
+        if (execution.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.ERROR)
+                || execution.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.ABORTED)) {
             return submit(studyStr, execution.getInternal().getToolId(), priority, execution.getParams(), executionId, description,
                     dependsOn, tags, token);
         } else {
-            throw new CatalogException("Unable to retry execution with status " + execution.getInternal().getStatus().getName());
+            throw new CatalogException("Unable to retry execution with status " + execution.getInternal().getStatus().getId());
         }
     }
 
