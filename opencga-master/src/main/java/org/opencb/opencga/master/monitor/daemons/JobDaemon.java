@@ -98,7 +98,6 @@ import org.opencb.opencga.core.tools.result.JobResult;
 import org.opencb.opencga.core.tools.result.Status;
 import org.opencb.opencga.master.monitor.models.PrivateJobUpdateParams;
 
-import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -1157,38 +1156,31 @@ public class JobDaemon extends MonitorParentDaemon {
         actionMap.put(JobDBAdaptor.QueryParams.INTERNAL_EVENTS.key(), ParamUtils.BasicUpdateAction.ADD.name());
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
-        Client client;
-        try {
-            client = ClientBuilder.newClient();
-        } catch (RuntimeException e) {
-            throw e;
-        }
-        Response post;
-        try {
-            post = client
-                    .target(url.toURI())
-                    .request(MediaType.APPLICATION_JSON)
-                    .property(ClientProperties.CONNECT_TIMEOUT, 1000)
-                    .property(ClientProperties.READ_TIMEOUT, 5000)
-                    .post(Entity.json(job));
-        } catch (ProcessingException e) {
+        Client client = ClientBuilder.newClient();
+
+        try (Response post = client
+                .target(url.toURI())
+                .request(MediaType.APPLICATION_JSON)
+                .property(ClientProperties.CONNECT_TIMEOUT, 1000)
+                .property(ClientProperties.READ_TIMEOUT, 5000)
+                .post(Entity.json(job))) {
+
+            if (post.getStatus() == HttpStatus.SC_OK) {
+                jobInternal.getWebhook().getStatus().put(job.getInternal().getStatus().getId(), JobInternalWebhook.Status.SUCCESS);
+            } else {
+                jobInternal.getWebhook().getStatus().put(job.getInternal().getStatus().getId(), JobInternalWebhook.Status.ERROR);
+                jobInternal.setEvents(Collections.singletonList(new Event(Event.Type.ERROR, "Could not notify through webhook. "
+                        + "HTTP response code: " + post.getStatus())));
+            }
+
+            jobManager.update(job.getStudy().getId(), job.getId(), updateParams, options, token);
+        } catch (Exception e) {
             jobInternal.getWebhook().getStatus().put(job.getInternal().getStatus().getId(), JobInternalWebhook.Status.ERROR);
             jobInternal.setEvents(Collections.singletonList(new Event(Event.Type.ERROR, "Could not notify through webhook. "
                     + e.getMessage())));
 
             jobManager.update(job.getStudy().getId(), job.getId(), updateParams, options, token);
-
-            return;
         }
-        if (post.getStatus() == HttpStatus.SC_OK) {
-            jobInternal.getWebhook().getStatus().put(job.getInternal().getStatus().getId(), JobInternalWebhook.Status.SUCCESS);
-        } else {
-            jobInternal.getWebhook().getStatus().put(job.getInternal().getStatus().getId(), JobInternalWebhook.Status.ERROR);
-            jobInternal.setEvents(Collections.singletonList(new Event(Event.Type.ERROR, "Could not notify through webhook. HTTP response "
-                    + "code: " + post.getStatus())));
-        }
-
-        jobManager.update(job.getStudy().getId(), job.getId(), updateParams, options, token);
     }
 
     private String getErrorLogFileName(Job job) {
