@@ -8,9 +8,13 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.analysis.StorageToolExecutor;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.slf4j.Logger;
@@ -32,21 +36,23 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
     public final static String ID = ExomiserWrapperAnalysis.ID + "-local";
 
+    public final static String DOCKER_IMAGE_NAME = "exomiser/exomiser-cli";
+    public final static String DOCKER_IMAGE_VERSION = "";
+
     private String study;
     private String sample;
 
     private VariantDBAdaptor dbAdaptor;
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-
     @Override
     public void run() throws ToolException {
-
         Path vcfPath = getOutDir().resolve(sample + ".vcf.gz");
         Query query = new Query(SAMPLE.key(), sample);
         try {
-            export(vcfPath, query, QueryOptions.empty());
-        } catch (IOException e) {
+            getVariantStorageManager().exportData(vcfPath.toString(), VariantWriterFactory.VariantOutputFormat.VCF_GZ, null, query,
+                    QueryOptions.empty(), getToken());
+        } catch (StorageEngineException | CatalogException e) {
             throw new ToolException(e);
         }
 
@@ -57,8 +63,8 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 //                null, getExecutorParams());
 //        Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 //
-//        // Append docker image, version and command
-//        appendCommand("bwa " + command, sb);
+        // Append docker image, version and command
+        appendCommand("", sb);
 //
 //        // Append other params
 //        appendOtherParams(null, sb);
@@ -71,20 +77,15 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         runCommandLine(sb.toString());
     }
 
-    private int export(Path outputVcf, Query query, QueryOptions options) throws IOException {
-        try (GZIPOutputStream outputStream = new GZIPOutputStream(new FileOutputStream(outputVcf.toFile()))) {
-            DataWriter<Variant> writer = new VariantWriterFactory(dbAdaptor).newDataWriter(VariantWriterFactory.VariantOutputFormat.VCF_GZ,
-                    outputStream, query, options);
-
-            writer.open();
-            writer.pre();
-            dbAdaptor.iterator(query, options).forEachRemaining(writer::write);
-            writer.post();
-            writer.close();
-        }
-        return 0;
+    @Override
+    public String getDockerImageName() {
+        return DOCKER_IMAGE_NAME;
     }
 
+    @Override
+    public String getDockerImageVersion() {
+        return DOCKER_IMAGE_VERSION;
+    }
 
     public String getStudy() {
         return study;
