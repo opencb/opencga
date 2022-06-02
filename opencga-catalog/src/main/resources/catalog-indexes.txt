@@ -191,6 +191,8 @@
 {"collections": ["panel", "panel_archive"], "fields": {"variants.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collections": ["panel", "panel_archive"], "fields": {"genes.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collections": ["panel", "panel_archive"], "fields": {"genes.name": 1, "studyUid": 1}, "options": {"background": true}}
+{"collections": ["panel", "panel_archive"], "fields": {"source.id": 1, "studyUid": 1}, "options": {"background": true}}
+{"collections": ["panel", "panel_archive"], "fields": {"source.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collections": ["panel", "panel_archive"], "fields": {"regions.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collections": ["panel", "panel_archive"], "fields": {"categories.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collections": ["panel", "panel_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
@@ -214,7 +216,7 @@
 {"collections": ["clinical"], "fields": {"panels.uid": 1, "studyUid": 1}, "options": {"background": true}}
 {"collections": ["clinical"], "fields": {"panelLock": 1, "studyUid": 1}, "options": {"background": true}}
 {"collections": ["clinical"], "fields": {"locked": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["clinical"], "fields": {"dueDate": 1, "studyUid": 1}, "options": {"background": true}}
+{"collections": ["clinical"], "fields": {"_dueDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collections": ["clinical"], "fields": {"disorder.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collections": ["clinical"], "fields": {"disorder.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collections": ["clinical"], "fields": {"analyst.id": 1, "studyUid": 1}, "options": {"background": true}}

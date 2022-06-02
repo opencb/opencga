@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -48,7 +49,7 @@ public abstract class MigrationTool {
     private int batchSize;
 
     public MigrationTool() {
-        this(1000);
+        this(500);
     }
 
     public MigrationTool(int batchSize) {
@@ -188,7 +189,12 @@ public abstract class MigrationTool {
         List<WriteModel<Document>> list = new ArrayList<>(batchSize);
 
         ProgressLogger progressLogger = new ProgressLogger("Execute bulk update").setBatchSize(batchSize);
-        try (MongoCursor<Document> it = inputCollection.find(query).noCursorTimeout(true).projection(projection).cursor()) {
+        try (MongoCursor<Document> it = inputCollection
+                .find(query)
+                .batchSize(batchSize)
+                .noCursorTimeout(true)
+                .projection(projection)
+                .cursor()) {
             while (it.hasNext()) {
                 Document document = it.next();
                 migrateFunc.accept(document, list);
@@ -218,6 +224,18 @@ public abstract class MigrationTool {
         createIndex(getMongoCollection(collection), index, new IndexOptions().background(true));
     }
 
+    protected final void createIndex(List<String> collections, Document index) {
+        createIndexes(collections, Collections.singletonList(index));
+    }
+
+    protected final void createIndexes(List<String> collections, List<Document> indexes) {
+        for (String collection : collections) {
+            for (Document index : indexes) {
+                createIndex(getMongoCollection(collection), index, new IndexOptions().background(true));
+            }
+        }
+    }
+
     protected final void createIndex(String collection, Document index, IndexOptions options) {
         createIndex(getMongoCollection(collection), index, options);
     }
@@ -245,7 +263,12 @@ public abstract class MigrationTool {
     protected final void queryMongo(String inputCollectionStr, Bson query, Bson projection, QueryCollectionFunc queryCollectionFunc) {
         MongoCollection<Document> inputCollection = getMongoCollection(inputCollectionStr);
 
-        try (MongoCursor<Document> it = inputCollection.find(query).projection(projection).noCursorTimeout(true).cursor()) {
+        try (MongoCursor<Document> it = inputCollection
+                .find(query)
+                .batchSize(batchSize)
+                .projection(projection)
+                .noCursorTimeout(true)
+                .cursor()) {
             while (it.hasNext()) {
                 Document document = it.next();
                 queryCollectionFunc.accept(document);

@@ -260,6 +260,35 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         OpenCGAResult<ClinicalAnalysis> clinical = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis,
                 INCLUDE_RESULT, sessionIdUser);
         assertEquals(1, clinical.getNumResults());
+        assertTrue(StringUtils.isNotEmpty(clinical.first().getDueDate()));
+    }
+
+    @Test
+    public void queryClinicalAnalysisByDate() throws CatalogException {
+        DataResult<ClinicalAnalysis> result = createDummyEnvironment(true, true);
+        assertTrue(StringUtils.isNotEmpty(result.first().getDueDate()));
+
+        Query query = new Query()
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.DUE_DATE.key(),
+                        ">=" + TimeUtils.getTime(TimeUtils.add24HtoDate(TimeUtils.getDate()))
+                );
+        OpenCGAResult<ClinicalAnalysis> search = catalogManager.getClinicalAnalysisManager().search(STUDY, query, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, search.getNumResults());
+        assertEquals(result.first().getId(), search.first().getId());
+
+        String dueDate = TimeUtils.getTime();
+        ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
+                .setDueDate(dueDate);
+        catalogManager.getClinicalAnalysisManager().update(STUDY, result.first().getId(), updateParams, QueryOptions.empty(), sessionIdUser);
+        search = catalogManager.getClinicalAnalysisManager().search(STUDY, query, QueryOptions.empty(), sessionIdUser);
+        assertEquals(0, search.getNumResults());
+
+        query.put(ClinicalAnalysisDBAdaptor.QueryParams.DUE_DATE.key(),
+                "<" + TimeUtils.getTime(TimeUtils.add24HtoDate(TimeUtils.getDate())));
+        search = catalogManager.getClinicalAnalysisManager().search(STUDY, query, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, search.getNumResults());
+        assertEquals(result.first().getId(), search.first().getId());
+        assertEquals(dueDate, search.first().getDueDate());
     }
 
     @Test
