@@ -16,34 +16,32 @@
 
 package org.opencb.opencga.server.rest;
 
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.managers.JobManager;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.core.models.job.*;
-import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
-import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
+import static org.opencb.opencga.core.api.ParamConstants.EXECUTION_DEPENDS_ON;
 
 @Path("/{apiVersion}/jobs")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Jobs", description = "Methods for working with 'jobs' endpoint")
+@Api(value = "Jobs", description = "DEPRECATED: Moved to /executions endpoint. These WS will be removed in next release.")
 public class JobWSServer extends OpenCGAWSServer {
 
     private JobManager jobManager;
@@ -63,12 +61,9 @@ public class JobWSServer extends OpenCGAWSServer {
     public Response createJobPOST(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "job", required = true) JobCreateParams inputJob) {
-        try {
-            OpenCGAResult<Job> result = catalogManager.getJobManager().create(studyStr, inputJob.toJob(), queryOptions, token);
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+        return run(() -> {
+            throw new ServerErrorException("Use /executions/create instead.", Response.Status.GONE);
+        });
     }
 
     @POST
@@ -76,34 +71,15 @@ public class JobWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Relaunch a failed execution", response = Job.class)
     public Response retryJob(
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobId,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTagsStr,
+            @ApiParam(value = ParamConstants.EXECUTION_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobId,
+            @ApiParam(value = ParamConstants.EXECUTION_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.EXECUTION_DEPENDS_ON_DESCRIPTION) @QueryParam(EXECUTION_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.EXECUTION_TAGS_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_TAGS) String jobTagsStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = "job", required = true) ExecutionRetryParams params
-
-    ) {
-        try {
-            List<String> jobDependsOn;
-            if (StringUtils.isNotEmpty(dependsOn)) {
-                jobDependsOn = Arrays.asList(dependsOn.split(","));
-            } else {
-                jobDependsOn = Collections.emptyList();
-            }
-
-            List<String> jobTags;
-            if (StringUtils.isNotEmpty(jobTagsStr)) {
-                jobTags = Arrays.asList(jobTagsStr.split(","));
-            } else {
-                jobTags = Collections.emptyList();
-            }
-            OpenCGAResult<Execution> result = catalogManager.getExecutionManager().retry(study, params, null, jobId, jobDescription,
-                    jobDependsOn, jobTags, token);
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+            @ApiParam(value = "job", required = true) ExecutionRetryParams params) {
+        return run(() -> {
+            throw new ServerErrorException("Use /executions/retry instead.", Response.Status.GONE);
+        });
     }
 
     @GET
@@ -191,7 +167,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
             @ApiParam(value = ParamConstants.JOB_VISITED_DESCRIPTION) @DefaultValue("") @QueryParam(ParamConstants.JOB_VISITED_PARAM) Boolean visited,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS_PARAM) String tags,
+            @ApiParam(value = ParamConstants.EXECUTION_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS_PARAM) String tags,
             @ApiParam(value = ParamConstants.JOB_INPUT_FILES_DESCRIPTION) @QueryParam(ParamConstants.JOB_INPUT_FILES_PARAM) String input,
             @ApiParam(value = ParamConstants.JOB_OUTPUT_FILES_DESCRIPTION) @QueryParam(ParamConstants.JOB_OUTPUT_FILES_PARAM) String output,
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
@@ -222,7 +198,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
             @ApiParam(value = ParamConstants.JOB_VISITED_DESCRIPTION) @DefaultValue("") @QueryParam(ParamConstants.JOB_VISITED_PARAM) Boolean visited,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS_PARAM) String tags,
+            @ApiParam(value = ParamConstants.EXECUTION_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS_PARAM) String tags,
             @ApiParam(value = ParamConstants.JOB_INPUT_FILES_DESCRIPTION) @QueryParam(ParamConstants.JOB_INPUT_FILES_PARAM) String input,
             @ApiParam(value = ParamConstants.JOB_OUTPUT_FILES_DESCRIPTION) @QueryParam(ParamConstants.JOB_OUTPUT_FILES_PARAM) String output,
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
@@ -294,11 +270,9 @@ public class JobWSServer extends OpenCGAWSServer {
     public Response delete(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of job ids") @PathParam("jobs") String jobs) {
-        try {
-            return createOkResponse(jobManager.delete(studyStr, getIdList(jobs), queryOptions, true, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+        return run(() -> {
+            throw new ServerErrorException("Use /executions/{executions}/delete instead.", Response.Status.GONE);
+        });
     }
 
     @GET
@@ -322,34 +296,28 @@ public class JobWSServer extends OpenCGAWSServer {
     }
 
 
-//    @GET
-//    @Path("/{jobs}/acl")
-//    @ApiOperation(value = "Return the acl of the job. If member is provided, it will only return the acl for the member.", response = Map.class)
-//    public Response getAcls(@ApiParam(value = ParamConstants.JOBS_DESCRIPTION, required = true) @PathParam("jobs") String jobIdsStr,
-//                            @ApiParam(value = "User or group id") @QueryParam("member") String member,
-//                            @ApiParam(value = ParamConstants.SILENT_DESCRIPTION, defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
-//        return run(() -> {
-//            List<String> idList = getIdList(jobIdsStr);
-//            return jobManager.getAcls(null, idList, member, silent, token);
-//        });
-//    }
+    @GET
+    @Path("/{jobs}/acl")
+    @ApiOperation(value = "Return the acl of the job. If member is provided, it will only return the acl for the member.", response = Map.class)
+    public Response getAcls(@ApiParam(value = ParamConstants.JOBS_DESCRIPTION, required = true) @PathParam("jobs") String jobIdsStr,
+                            @ApiParam(value = "User or group id") @QueryParam("member") String member,
+                            @ApiParam(value = ParamConstants.SILENT_DESCRIPTION, defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
+        return run(() -> {
+            throw new ServerErrorException("ACLs are now defined for an execution.", Response.Status.GONE);
+        });
+    }
 
-//    @POST
-//    @Path("/acl/{members}/update")
-//    @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
-//    public Response updateAcl(
-//            @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
-//            @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true, defaultValue = "ADD") @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
-//            @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) JobAclUpdateParams params) {
-//        try {
-//            ObjectUtils.defaultIfNull(params, new JobAclUpdateParams());
-//            AclParams aclParams = new AclParams(params.getPermissions());
-//            List<String> idList = getIdList(params.getJob(), false);
-//            return createOkResponse(jobManager.updateAcl(null, idList, memberId, aclParams, action, token));
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
+    @POST
+    @Path("/acl/{members}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
+    public Response updateAcl(
+            @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
+            @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true, defaultValue = "ADD") @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
+            @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) JobAclUpdateParams params) {
+        return run(() -> {
+            throw new ServerErrorException("ACLs are now defined for an execution.", Response.Status.GONE);
+        });
+    }
 
 
     @GET

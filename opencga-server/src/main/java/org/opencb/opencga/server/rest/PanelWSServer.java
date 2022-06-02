@@ -37,7 +37,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
+import static org.opencb.opencga.core.api.ParamConstants.EXECUTION_DEPENDS_ON;
 
 @Path("/{apiVersion}/panels")
 @Produces(MediaType.APPLICATION_JSON)
@@ -79,10 +79,10 @@ public class PanelWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Import panels", response = Job.class)
     public Response importPanel(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobId,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.EXECUTION_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobId,
+            @ApiParam(value = ParamConstants.EXECUTION_DEPENDS_ON_DESCRIPTION) @QueryParam(EXECUTION_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.EXECUTION_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.EXECUTION_TAGS_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_TAGS) String jobTags,
             @ApiParam(name = "body", value = "Panel parameters") PanelImportParams params) {
         return submitExecution(PanelImportTask.ID, studyStr, params, jobId, jobDescription, dependsOn, jobTags);
     }

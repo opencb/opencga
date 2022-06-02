@@ -57,7 +57,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.SAVED_FILTER_DESCR;
-import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
+import static org.opencb.opencga.core.api.ParamConstants.EXECUTION_DEPENDS_ON;
 import static org.opencb.opencga.server.rest.analysis.VariantWebService.getVariantQuery;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
@@ -1017,10 +1017,10 @@ public class ClinicalWebService extends AnalysisWebService {
     @ApiOperation(value = RgaAnalysis.DESCRIPTION, response = Job.class)
     public Response rgaIndexRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.EXECUTION_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.EXECUTION_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.EXECUTION_DEPENDS_ON_DESCRIPTION) @QueryParam(EXECUTION_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.EXECUTION_TAGS_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.INDEX_AUXILIAR_COLLECTION_DESCRIPTION, defaultValue = "false")
             @QueryParam(ParamConstants.INDEX_AUXILIAR_COLLECTION) boolean indexAuxiliarColl,
             @ApiParam(value = RgaAnalysisParams.DESCRIPTION, required = true) RgaAnalysisParams params) {
@@ -1151,10 +1151,10 @@ public class ClinicalWebService extends AnalysisWebService {
     @ApiOperation(value = TieringInterpretationAnalysis.DESCRIPTION, response = Job.class)
     public Response interpretationTieringRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.EXECUTION_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.EXECUTION_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.EXECUTION_DEPENDS_ON_DESCRIPTION) @QueryParam(EXECUTION_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.EXECUTION_TAGS_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_TAGS) String jobTags,
             @ApiParam(value = TieringInterpretationAnalysisParams.DESCRIPTION, required = true) TieringInterpretationAnalysisParams params) {
         return submitExecution(TieringInterpretationAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
@@ -1164,10 +1164,10 @@ public class ClinicalWebService extends AnalysisWebService {
     @ApiOperation(value = TeamInterpretationAnalysis.DESCRIPTION, response = Job.class)
     public Response interpretationTeamRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.EXECUTION_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.EXECUTION_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.EXECUTION_DEPENDS_ON_DESCRIPTION) @QueryParam(EXECUTION_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.EXECUTION_TAGS_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_TAGS) String jobTags,
             @ApiParam(value = TeamInterpretationAnalysisParams.DESCRIPTION, required = true) TeamInterpretationAnalysisParams params) {
         return submitExecution(TeamInterpretationAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
@@ -1177,10 +1177,10 @@ public class ClinicalWebService extends AnalysisWebService {
     @ApiOperation(value = ZettaInterpretationAnalysis.DESCRIPTION, response = Job.class)
     public Response interpretationZettaRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.EXECUTION_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.EXECUTION_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.EXECUTION_DEPENDS_ON_DESCRIPTION) @QueryParam(EXECUTION_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.EXECUTION_TAGS_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_TAGS) String jobTags,
             @ApiParam(value = ZettaInterpretationAnalysisParams.DESCRIPTION, required = true) ZettaInterpretationAnalysisParams params) {
         return submitExecution(ZettaInterpretationAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
@@ -1190,10 +1190,10 @@ public class ClinicalWebService extends AnalysisWebService {
     @ApiOperation(value = CancerTieringInterpretationAnalysis.DESCRIPTION, response = Job.class)
     public Response interpretationCancerTieringRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.EXECUTION_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.EXECUTION_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.EXECUTION_DEPENDS_ON_DESCRIPTION) @QueryParam(EXECUTION_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.EXECUTION_TAGS_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_TAGS) String jobTags,
             @ApiParam(value = CancerTieringInterpretationAnalysisParams.DESCRIPTION, required = true) CancerTieringInterpretationAnalysisParams params) {
         return submitExecution(CancerTieringInterpretationAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }

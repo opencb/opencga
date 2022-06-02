@@ -82,10 +82,10 @@ public class AlignmentWebService extends AnalysisWebService {
     @ApiOperation(value = ALIGNMENT_INDEX_DESCRIPTION, response = Job.class)
     public Response indexRun(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.EXECUTION_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.EXECUTION_DEPENDS_ON_DESCRIPTION) @QueryParam(EXECUTION_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.EXECUTION_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.EXECUTION_TAGS_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_TAGS) String jobTags,
             @ApiParam(value = AlignmentIndexParams.DESCRIPTION, required = true) AlignmentIndexParams params) {
         return submitExecution(AlignmentIndexOperation.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
@@ -176,10 +176,10 @@ public class AlignmentWebService extends AnalysisWebService {
     @ApiOperation(value = "Compute coverage for a list of alignment files", response = Job.class)
     public Response coverageRun(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.EXECUTION_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.EXECUTION_DEPENDS_ON_DESCRIPTION) @QueryParam(EXECUTION_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.EXECUTION_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.EXECUTION_TAGS_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_TAGS) String jobTags,
             @ApiParam(value = CoverageIndexParams.DESCRIPTION, required = true) CoverageIndexParams params) {
 
         return null;
@@ -384,10 +384,10 @@ public class AlignmentWebService extends AnalysisWebService {
     @ApiOperation(value = ALIGNMENT_GENE_COVERAGE_STATS_DESCRIPTION, response = Job.class)
     public Response geneCoverageStatsRun(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.EXECUTION_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.EXECUTION_DEPENDS_ON_DESCRIPTION) @QueryParam(EXECUTION_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.EXECUTION_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.EXECUTION_TAGS_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_TAGS) String jobTags,
             @ApiParam(value = AlignmentGeneCoverageStatsParams.DESCRIPTION, required = true) AlignmentGeneCoverageStatsParams params) {
 
         return submitExecution(AlignmentGeneCoverageStatsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
@@ -402,10 +402,10 @@ public class AlignmentWebService extends AnalysisWebService {
     @ApiOperation(value = ALIGNMENT_QC_DESCRIPTION, response = Job.class)
     public Response qcRun(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.EXECUTION_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.EXECUTION_DEPENDS_ON_DESCRIPTION) @QueryParam(EXECUTION_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.EXECUTION_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.EXECUTION_TAGS_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_TAGS) String jobTags,
             @ApiParam(value = AlignmentQcParams.DESCRIPTION, required = true) AlignmentQcParams params) {
 
         return submitExecution(AlignmentQcAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
@@ -420,10 +420,10 @@ public class AlignmentWebService extends AnalysisWebService {
     @ApiOperation(value = BwaWrapperAnalysis.DESCRIPTION, response = Job.class)
     public Response bwaRun(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.EXECUTION_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.EXECUTION_DEPENDS_ON_DESCRIPTION) @QueryParam(EXECUTION_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.EXECUTION_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.EXECUTION_TAGS_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_TAGS) String jobTags,
             @ApiParam(value = BwaWrapperParams.DESCRIPTION, required = true) BwaWrapperParams params) {
         return submitExecution(BwaWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
@@ -433,10 +433,10 @@ public class AlignmentWebService extends AnalysisWebService {
     @ApiOperation(value = SamtoolsWrapperAnalysis.DESCRIPTION, response = Job.class)
     public Response samtoolsRun(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.EXECUTION_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.EXECUTION_DEPENDS_ON_DESCRIPTION) @QueryParam(EXECUTION_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.EXECUTION_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.EXECUTION_TAGS_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_TAGS) String jobTags,
             @ApiParam(value = SamtoolsWrapperParams.DESCRIPTION, required = true) SamtoolsWrapperParams params) {
         return submitExecution(SamtoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
@@ -446,10 +446,10 @@ public class AlignmentWebService extends AnalysisWebService {
     @ApiOperation(value = DeeptoolsWrapperAnalysis.DESCRIPTION, response = Job.class)
     public Response deeptoolsRun(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.EXECUTION_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.EXECUTION_DEPENDS_ON_DESCRIPTION) @QueryParam(EXECUTION_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.EXECUTION_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.EXECUTION_TAGS_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_TAGS) String jobTags,
             @ApiParam(value = DeeptoolsWrapperParams.DESCRIPTION, required = true) DeeptoolsWrapperParams params) {
         return submitExecution(DeeptoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
@@ -459,10 +459,10 @@ public class AlignmentWebService extends AnalysisWebService {
     @ApiOperation(value = FastqcWrapperAnalysis.DESCRIPTION, response = Job.class)
     public Response fastqcRun(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.EXECUTION_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.EXECUTION_DEPENDS_ON_DESCRIPTION) @QueryParam(EXECUTION_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.EXECUTION_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.EXECUTION_TAGS_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_TAGS) String jobTags,
             @ApiParam(value = FastqcWrapperParams.DESCRIPTION, required = true) FastqcWrapperParams params) {
         return submitExecution(FastqcWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
@@ -472,10 +472,10 @@ public class AlignmentWebService extends AnalysisWebService {
     @ApiOperation(value = PicardWrapperAnalysis.DESCRIPTION, response = Job.class)
     public Response picardRun(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.EXECUTION_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.EXECUTION_DEPENDS_ON_DESCRIPTION) @QueryParam(EXECUTION_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.EXECUTION_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.EXECUTION_TAGS_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_TAGS) String jobTags,
             @ApiParam(value = PicardWrapperParams.DESCRIPTION, required = true) PicardWrapperParams params) {
         return submitExecution(PicardWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }

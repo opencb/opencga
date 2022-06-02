@@ -127,16 +127,16 @@ public class GeneralCliOptions {
     }
 
     public static class JobOptions {
-        @Parameter(names = {"--job-id"}, description = ParamConstants.JOB_ID_CREATION_DESCRIPTION, arity = 1)
+        @Parameter(names = {"--job-id"}, description = ParamConstants.EXECUTION_ID_CREATION_DESCRIPTION, arity = 1)
         public String jobId;
 
-        @Parameter(names = {"--job-description"}, description = ParamConstants.JOB_DESCRIPTION_DESCRIPTION, arity = 1)
+        @Parameter(names = {"--job-description"}, description = ParamConstants.EXECUTION_DESCRIPTION_DESCRIPTION, arity = 1)
         public String jobDescription;
 
-        @Parameter(names = {"--job-depends-on"}, description = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION, arity = 1)
+        @Parameter(names = {"--job-depends-on"}, description = ParamConstants.EXECUTION_DEPENDS_ON_DESCRIPTION, arity = 1)
         public List<String> jobDependsOn;
 
-        @Parameter(names = {"--job-tags"}, description = ParamConstants.JOB_TAGS_DESCRIPTION, arity = 1)
+        @Parameter(names = {"--job-tags"}, description = ParamConstants.EXECUTION_TAGS_DESCRIPTION, arity = 1)
         public List<String> jobTags;
     }
 }

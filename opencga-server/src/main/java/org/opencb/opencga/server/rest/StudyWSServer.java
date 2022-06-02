@@ -51,7 +51,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
+import static org.opencb.opencga.core.api.ParamConstants.EXECUTION_DEPENDS_ON;
 
 @Path("/{apiVersion}/studies")
 @Produces(MediaType.APPLICATION_JSON)
@@ -270,40 +270,22 @@ public class StudyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Add or remove a pipeline", response = Pipeline.class)
     public Response addRemovePipeline(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Action to be performed: ADD or REMOVE a group", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
-            @QueryParam("action") ParamUtils.AddRemoveAction action,
+            @ApiParam(value = "Action to be performed: ADD, REMOVE or REPLACE a pipeline", allowableValues = "ADD,REMOVE,REPLACE",
+                    defaultValue = "ADD") @QueryParam("action") ParamUtils.AddRemoveReplaceAction action,
             @ApiParam(value = "JSON containing the parameters", required = true) PipelineCreateParams pipeline) {
-        try {
-            if (action == null) {
-                action = ParamUtils.AddRemoveAction.ADD;
+        return run(() -> {
+            ParamUtils.AddRemoveReplaceAction userAction = action != null ? action : ParamUtils.AddRemoveReplaceAction.ADD;
+            switch (userAction) {
+                case ADD:
+                    return catalogManager.getPipelineManager().create(studyStr, pipeline.toPipeline(), QueryOptions.empty(), token);
+                case REMOVE:
+                    return catalogManager.getPipelineManager().delete(studyStr, Collections.singletonList(pipeline.getId()), QueryOptions.empty(), token);
+                case REPLACE:
+                default:
+                    return null;
             }
-            OpenCGAResult<Pipeline> pipelineResult;
-            if (action == ParamUtils.AddRemoveAction.ADD) {
-                pipelineResult = catalogManager.getPipelineManager().create(studyStr, pipeline.toPipeline(), QueryOptions.empty(), token);
-            } else {
-                pipelineResult = catalogManager.getPipelineManager().delete(studyStr, Collections.singletonList(pipeline.getId()), QueryOptions.empty(), token);
-            }
-            return createOkResponse(pipelineResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+        });
     }
-
-//    @POST
-//    @Path("/{study}/pipelines/{pipeline}/update")
-//    @ApiOperation(value = "Update a specific pipeline", response = Pipeline.class)
-//    public Response updatePipeline(
-//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
-//            @ApiParam(value = "Pipeline id") @PathParam("pipeline") String pipelineId,
-//            @ApiParam(value = "JSON containing the parameters", required = true) Pipeline pipeline) {
-//        try {
-//            OpenCGAResult<Pipeline> pipelineResult = null;
-////                pipelineResult = catalogManager.getStudyManager().createPipeline(studyStr, pipeline, token);
-//            return createOkResponse(pipelineResult);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
 
     @GET
     @Path("/{study}/permissionRules")
@@ -604,10 +586,10 @@ public class StudyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Execute template", response = Job.class)
     public Response executeTemplate(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.EXECUTION_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.EXECUTION_DEPENDS_ON_DESCRIPTION) @QueryParam(EXECUTION_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.EXECUTION_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.EXECUTION_TAGS_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_TAGS) String jobTags,
             @ApiParam(value = TemplateParams.DESCRIPTION, required = true) TemplateParams params) {
         return submitExecution(TemplateRunner.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
