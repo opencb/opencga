@@ -105,7 +105,7 @@ public class MetaWSServer extends OpenCGAWSServer {
     public Response model(@QueryParam("model") String modelStr) {
         OpenCGAResult<String> queryResult = null;
         try {
-            queryResult = new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(DataModelsUtils.dataModelToJsonString(Class.forName(modelStr))), 1);
+            queryResult = new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(DataModelsUtils.dataModelToJsonString(Class.forName(modelStr), false)), 1);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
