@@ -329,6 +329,11 @@
                                     <arg value="${project.basedir}/../opencga-client/src/main/R"/>
                                     <arg value="${build.dir}/clients"/>
                                 </exec>
+                                <!-- We need to read DESCRIPTION from target folder because we have renamed the version -->
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/../opencga-client/target/classes/DESCRIPTION"/>
+                                    <arg value="${build.dir}/clients/R/"/>
+                                </exec>
                                 <exec executable="cp">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-client/src/main/javascript"/>
@@ -571,6 +576,7 @@
         <profile>
             <id>RClient</id>
             <activation>
+                <activeByDefault>false</activeByDefault>
                 <property>
                     <name>RClient</name>
                 </property>
@@ -596,13 +602,14 @@
                                         <exec executable="R">
                                             <arg value="CMD"/>
                                             <arg value="build"/>
-                                            <arg value="${project.basedir}/../opencga-client/src/main/R"/>
+<!--                                            <arg value="${project.basedir}/../opencga-client/src/main/R"/>-->
+                                            <arg value="${build.dir}/clients/R"/>
                                         </exec>
                                         <echo>Copying docker-compose files</echo>
                                         <echo>Moving R client to ${build.dir}/clients/R/</echo>
                                         <exec executable="mv">
-                                            <!--<arg value="${project.basedir}/opencgaR_${opencga.version}.tar.gz"/>-->
-                                            <arg value="${project.basedir}/opencgaR_2.2.0.tar.gz"/>
+                                            <arg value="${project.basedir}/opencgaR_${opencga.version}.tar.gz"/>
+<!--                                            <arg value="${project.basedir}/opencgaR_2.2.0.tar.gz"/>-->
                                             <arg value="${build.dir}/clients/R/"/>
                                         </exec>
                                         <!--<exec executable="cd">
