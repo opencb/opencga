@@ -147,7 +147,10 @@
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
-                <targetPath>${project.basedir}/target/conf</targetPath>
+                <targetPath>${project.basedir}/target/clients/R</targetPath>
+                <includes>
+                    <include>compileR.sh</include>
+                </includes>
             </resource>
             <resource>
                 <directory>app/cloud/docker/compose</directory>
@@ -319,6 +322,7 @@
                                     <arg value="${project.basedir}/../opencga-client/src/main/python"/>
                                     <arg value="${build.dir}/clients"/>
                                 </exec>
+
                                 <exec executable="sed">
                                     <arg value="-i"/>
                                     <arg value="s/PYOPENCGA_VERSION/${pyopencga.version}/"/>
@@ -599,22 +603,33 @@
                                 <configuration>
                                     <target>
                                         <echo>Compiling R client</echo>
-                                        <exec executable="R">
-                                            <arg value="CMD"/>
-                                            <arg value="build"/>
-<!--                                            <arg value="${project.basedir}/../opencga-client/src/main/R"/>-->
-                                            <arg value="${build.dir}/clients/R"/>
+                                        <!-- R version should be numeric -->
+                                        <exec executable="cp">
+                                            <arg value="${project.basedir}/target/clients/R/compileR.sh"/>
+                                            <arg value="${build.dir}/clients/R/compileR.sh"/>
                                         </exec>
-                                        <echo>Copying docker-compose files</echo>
-                                        <echo>Moving R client to ${build.dir}/clients/R/</echo>
-                                        <exec executable="mv">
-                                            <arg value="${project.basedir}/opencgaR_${opencga.version}.tar.gz"/>
-<!--                                            <arg value="${project.basedir}/opencgaR_2.2.0.tar.gz"/>-->
-                                            <arg value="${build.dir}/clients/R/"/>
+                                        <exec executable="chmod">
+                                            <arg value="+x"/>
+                                            <arg value="${build.dir}/clients/R/compileR.sh"/>
                                         </exec>
-                                        <!--<exec executable="cd">
-                                            <arg value="${project.basedir}/../opencga-client/src/main/R"/>
-                                        </exec>-->
+                                        <exec executable="${build.dir}/clients/R/compileR.sh">
+                                        </exec>
+                                        <!--  <exec executable="sed">
+                                              <arg value="-i"/>
+                                              <arg value="s/-rc/.0001/g"/>
+                                              <arg value="${build.dir}/clients/R/DESCRIPTION"/>
+                                          </exec>
+                                          &lt;!&ndash; R version should be numeric &ndash;&gt;
+                                          <exec executable="sed">
+                                              <arg value="-i"/>
+                                              <arg value="s/SNAPSHOT/000/g"/>
+                                              <arg value="${build.dir}/clients/R/DESCRIPTION"/>
+                                          </exec>
+                                          <echo>Moving R client to ${build.dir}/clients/R/</echo>
+                                          <exec executable="mv">
+                                              <arg value="${project.basedir}/opencgaR_${opencga.version}.tar.gz"/>
+                                              <arg value="${build.dir}/clients/R/"/>
+                                          </exec>-->
                                     </target>
                                 </configuration>
                                 <goals>
