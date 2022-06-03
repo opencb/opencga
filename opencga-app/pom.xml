@@ -84,16 +84,16 @@
             <!--<type>war</type>-->
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>com.beust</groupId>-->
-<!--            <artifactId>jcommander</artifactId>-->
-<!--            <version>1.82</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>org.glassfish.jersey.containers</groupId>-->
-<!--            <artifactId>jersey-container-servlet-core</artifactId>-->
-<!--            <version>${jersey.version}</version>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>com.beust</groupId>-->
+        <!--            <artifactId>jcommander</artifactId>-->
+        <!--            <version>1.82</version>-->
+        <!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.glassfish.jersey.containers</groupId>-->
+        <!--            <artifactId>jersey-container-servlet-core</artifactId>-->
+        <!--            <version>${jersey.version}</version>-->
+        <!--        </dependency>-->
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-analysis</artifactId>
@@ -557,6 +557,57 @@
                                             <arg value="${project.basedir}/../opencga-storage/opencga-storage-hadoop/opencga-storage-hadoop-core/target/opencga-storage-hadoop-core-${opencga.version}-jar-with-dependencies.jar"/>
                                             <arg value="${build.dir}"/>
                                         </exec>
+                                    </target>
+                                </configuration>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>RClient</id>
+            <activation>
+                <property>
+                    <name>RClient</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>opencga-client</artifactId>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.8</version>
+                        <executions>
+                            <execution>
+                                <id>R-client-compile</id>
+                                <phase>install</phase>
+                                <configuration>
+                                    <target>
+                                        <echo>Compiling R client</echo>
+                                        <exec executable="R">
+                                            <arg value="CMD"/>
+                                            <arg value="build"/>
+                                            <arg value="${project.basedir}/../opencga-client/src/main/R"/>
+                                        </exec>
+                                        <echo>Copying docker-compose files</echo>
+                                        <echo>Moving R client to ${build.dir}/clients/R/</echo>
+                                        <exec executable="mv">
+                                            <!--<arg value="${project.basedir}/opencgaR_${opencga.version}.tar.gz"/>-->
+                                            <arg value="${project.basedir}/opencgaR_2.2.0.tar.gz"/>
+                                            <arg value="${build.dir}/clients/R/"/>
+                                        </exec>
+                                        <!--<exec executable="cd">
+                                            <arg value="${project.basedir}/../opencga-client/src/main/R"/>
+                                        </exec>-->
                                     </target>
                                 </configuration>
                                 <goals>
