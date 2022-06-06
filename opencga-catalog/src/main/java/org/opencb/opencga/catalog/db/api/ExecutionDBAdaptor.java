@@ -34,7 +34,7 @@ public interface ExecutionDBAdaptor extends CoreDBAdaptor<Execution> {
 
     OpenCGAResult nativeInsert(Map<String, Object> execution, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, Execution execution, QueryOptions options)
+    OpenCGAResult<Execution> insert(long studyId, Execution execution, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     default OpenCGAResult<Execution> get(long executionId, QueryOptions options)

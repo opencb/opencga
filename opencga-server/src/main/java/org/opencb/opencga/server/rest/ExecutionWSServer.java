@@ -32,14 +32,14 @@ import static org.opencb.opencga.core.api.ParamConstants.EXECUTION_DEPENDS_ON;
 @Api(value = "Executions", description = "Methods for working with 'executions' endpoint")
 public class ExecutionWSServer extends OpenCGAWSServer {
 
-    private ExecutionManager executionManager;
-    private JobManager jobManager;
+    private final ExecutionManager executionManager;
+    private final JobManager jobManager;
 
     public ExecutionWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
-        jobManager = catalogManager.getJobManager();
         executionManager = catalogManager.getExecutionManager();
+        jobManager = catalogManager.getJobManager();
     }
 
     /*
@@ -50,12 +50,17 @@ public class ExecutionWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Register a past execution",
             notes = "Registers an execution that has been previously run outside catalog into catalog.", response = Execution.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
     public Response create(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr) {
-//            @ApiParam(value = "execution", required = true) ExecutionCreateParams inputExecution) {
-        return run(() -> {
-            throw new NotImplementedException("Not yet implemented");
-        });
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @ApiParam(value = "execution", required = true) ExecutionCreateParams execution) {
+        return run(() -> executionManager.register(studyStr, execution, queryOptions, token));
     }
 
 

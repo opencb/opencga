@@ -20,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.result.Error;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by jacobo on 12/12/14.
@@ -51,6 +52,11 @@ public class CatalogException extends Exception {
         } else {
             return new CatalogException(fullMessage, e.getCause());
         }
+    }
+
+    public static CatalogException notValidStatus(String entity, String status, Set<String> validStatuses) {
+        return new CatalogException(entity + " status '" + status + "' is not one of the accepted statuses. Valid statuses are: ["
+                + String.join(", ", validStatuses) + "]");
     }
 
     public Error getError() {

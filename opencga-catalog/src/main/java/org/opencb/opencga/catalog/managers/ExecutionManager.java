@@ -19,15 +19,18 @@ import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.audit.AuditRecord;
+import org.opencb.opencga.core.models.common.EntryParam;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.study.Study;
@@ -141,6 +144,96 @@ public class ExecutionManager extends ResourceManager<Execution> {
     public OpenCGAResult<Execution> create(String studyStr, Execution entry, QueryOptions options, String token) throws CatalogException {
         throw new NotImplementedException("Create operation not implemented. Please, use submit instead.");
     }
+
+    public OpenCGAResult<Execution> register(String studyStr, ExecutionCreateParams entry, QueryOptions options, String token)
+            throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("execution", entry)
+                .append("options", options)
+                .append("token", token);
+        try {
+            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_EXECUTIONS);
+
+            ParamUtils.checkObj(entry, ExecutionCreateParams.class.getName());
+            options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+            String user = StringUtils.isNotEmpty(entry.getUserId()) ? entry.getUserId() : userId;
+
+            // Validate toolId
+            ParamUtils.checkObj(entry.getInternal(), "internal");
+            ParamUtils.checkParameter(entry.getInternal().getToolId(), "toolId");
+            ParamUtils.checkObj(entry.getInternal().getStatus(), ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS.key());
+            String toolId = entry.getInternal().getToolId();
+
+            // Validate execution status
+            Set<String> allowedStatuses = new HashSet<>(Arrays.asList(Enums.ExecutionStatus.DONE, Enums.ExecutionStatus.ERROR,
+                    Enums.ExecutionStatus.ABORTED));
+            if (!allowedStatuses.contains(entry.getInternal().getStatus().getId())) {
+                throw CatalogException.notValidStatus("Execution", entry.getInternal().getStatus().getId(), allowedStatuses);
+            }
+
+            // Validate jobs
+            if (CollectionUtils.isEmpty(entry.getJobs())) {
+                throw new CatalogException("The executions needs to contain at least 1 job");
+            }
+            List<Job> jobs = new LinkedList<>();
+            for (JobCreateParams jobCreateParam : entry.getJobs()) {
+                ParamUtils.checkObj(jobCreateParam.getInternal(), "jobs.internal");
+                ParamUtils.checkObj(jobCreateParam.getInternal().getStatus(), "jobs.internal.status");
+                Job job = jobCreateParam.toJob();
+                job.setUserId(user);
+                try {
+                    catalogManager.getJobManager().autoCompleteNewJob(study, job, token);
+                } catch (CatalogException e) {
+                    throw new CatalogParameterException("Job: " + e.getMessage(), e);
+                }
+                job.getInternal().setStatus(jobCreateParam.getInternal().getStatus());
+                if (!allowedStatuses.contains(job.getInternal().getStatus().getId())) {
+                    throw CatalogException.notValidStatus("Job", job.getInternal().getStatus().getId(), allowedStatuses);
+                }
+                jobs.add(job);
+            }
+
+            // Extract pipeline object
+            Pipeline pipeline = null;
+            if (entry.getPipeline() != null && StringUtils.isNotEmpty(entry.getPipeline().getId())) {
+                pipeline = catalogManager.getPipelineManager().get(studyStr, entry.getPipeline().getId(), QueryOptions.empty(), token)
+                        .first();
+            }
+
+            // Extract dependsOn executions
+            List<String> dependsOn = entry.getDependsOn() != null
+                    ? entry.getDependsOn().stream().map(EntryParam::getId).collect(Collectors.toList())
+                    : Collections.emptyList();
+
+            Execution execution = new Execution(entry.getId(), entry.getDescription(), user, entry.getCreationDate(),
+                    entry.getModificationDate(), entry.getPriority(), entry.getInternal(), entry.getParams(), null, entry.getTags(),
+                    null, pipeline, pipeline != null, entry.isVisited(), jobs, entry.getAttributes());
+            autoCompleteNewExecution(study, execution, toolId, dependsOn, token);
+            execution.getInternal().setStatus(entry.getInternal().getStatus());
+
+            OpenCGAResult<Execution> insert = executionDBAdaptor.insert(study.getUid(), execution, new QueryOptions());
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch created execution
+                OpenCGAResult<Execution> executionResult = executionDBAdaptor.get(execution.getUid(), new QueryOptions());
+                insert.setResults(executionResult.getResults());
+            }
+
+            auditManager.auditCreate(userId, Enums.Resource.EXECUTION, execution.getId(), "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return insert;
+        } catch (CatalogException e) {
+            auditManager.audit(userId, Enums.Action.REGISTER, Enums.Resource.EXECUTION, entry.getId(), "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
 //
 //    public OpenCGAResult<Execution> submitTool(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params,
 //                                               String token) throws CatalogException {
@@ -296,6 +389,7 @@ public class ExecutionManager extends ResourceManager<Execution> {
 
         execution.setTags(ParamUtils.defaultObject(execution.getTags(), Collections::emptyList));
         execution.setDependsOn(ParamUtils.defaultObject(execution.getDependsOn(), Collections::emptyList));
+        execution.setStudy(new JobStudyParam(study.getFqn()));
         execution.setAttributes(ParamUtils.defaultObject(execution.getAttributes(), HashMap::new));
 
         if (CollectionUtils.isNotEmpty(dependsOn)) {

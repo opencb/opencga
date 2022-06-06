@@ -348,6 +348,10 @@ public class JobManager extends ResourceManager<Job> {
         if (StringUtils.isEmpty(job.getId())) {
             job.setId(job.getTool().getId() + "." + TimeUtils.getTime() + "." + RandomStringUtils.randomAlphanumeric(6));
         }
+        job.setDescription(ParamUtils.defaultString(job.getDescription(), ""));
+        job.setExecutionId(ParamUtils.defaultString(job.getExecutionId(), ""));
+        job.setCommandLine(ParamUtils.defaultString(job.getCommandLine(), ""));
+        job.setTags(ParamUtils.defaultObject(job.getTags(), Collections::emptyList));
         job.setPriority(ParamUtils.defaultObject(job.getPriority(), Enums.Priority.MEDIUM));
         job.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.JOB));
         job.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(job.getCreationDate(), JobDBAdaptor.QueryParams.CREATION_DATE.key()));

@@ -112,6 +112,7 @@ public final class Enums {
 
     public enum Action {
         CREATE,
+        REGISTER,
         GENERATE,
         CLEAR,
         UPDATE,

@@ -57,6 +57,27 @@ public class Execution extends PrivateStudyUid {
         this.attributes = attributes;
     }
 
+    public Execution(String id, String description, String userId, String creationDate, String modificationDate, Enums.Priority priority,
+                     ExecutionInternal internal, Map<String, Object> params, File outDir, List<String> tags, List<Execution> dependsOn,
+                     Pipeline pipeline, boolean isPipeline, boolean visited, List<Job> jobs, Map<String, Object> attributes) {
+        this.id = id;
+        this.description = description;
+        this.userId = userId;
+        this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
+        this.priority = priority;
+        this.internal = internal;
+        this.params = params;
+        this.outDir = outDir;
+        this.tags = tags;
+        this.dependsOn = dependsOn;
+        this.pipeline = pipeline;
+        this.isPipeline = isPipeline;
+        this.visited = visited;
+        this.jobs = jobs;
+        this.attributes = attributes;
+    }
+
     public Execution(long studyUid, String id, String uuid, String description, String userId, String creationDate, String modificationDate,
                      Map<String, Object> params, Enums.Priority priority, ExecutionInternal internal, File outDir, List<String> tags,
                      List<Execution> dependsOn, File stdout, File stderr, Pipeline pipeline, boolean isPipeline, boolean visited,

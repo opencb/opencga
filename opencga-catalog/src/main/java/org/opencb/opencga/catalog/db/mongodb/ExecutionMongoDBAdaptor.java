@@ -76,7 +76,7 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
     }
 
     @Override
-    public OpenCGAResult insert(long studyId, Execution execution, QueryOptions options)
+    public OpenCGAResult<Execution> insert(long studyId, Execution execution, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
             return runTransaction(clientSession -> {
