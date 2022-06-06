@@ -419,6 +419,75 @@ public class ExecutionManager extends ResourceManager<Execution> {
     }
 
     /**
+     * Update Execution from catalog.
+     *
+     * @param studyStr     Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param executionIds       List of execution ids. Could be either the id or uuid.
+     * @param updateParams Data model filled only with the parameters to be updated.
+     * @param options      QueryOptions object.
+     * @param token        Session id of the user logged in.
+     * @return A OpenCGAResult with the objects updated.
+     * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
+     *                          exist or is not allowed to be updated.
+     */
+    public OpenCGAResult<Execution> update(String studyStr, List<String> executionIds, ExecutionUpdateParams updateParams,
+                                           QueryOptions options, String token) throws CatalogException {
+        return update(studyStr, executionIds, updateParams, false, options, token);
+    }
+
+    public OpenCGAResult<Execution> update(String studyStr, List<String> executionIds, ExecutionUpdateParams updateParams,
+                                           boolean ignoreException, QueryOptions options, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("executionIds", executionIds)
+                .append("updateParams", updateParams)
+                .append("ignoreException", ignoreException)
+                .append("options", options)
+                .append("token", token);
+
+        auditManager.initAuditBatch(operationId);
+        OpenCGAResult<Execution> result = OpenCGAResult.empty();
+        for (String id : executionIds) {
+            String executionId = id;
+            String executionUuid = "";
+
+            try {
+                OpenCGAResult<Execution> internalResult = internalGet(study.getUid(), id, INCLUDE_EXECUTION_IDS, userId);
+                if (internalResult.getNumResults() == 0) {
+                    throw new CatalogException("Job '" + id + "' not found");
+                }
+                Execution execution = internalResult.first();
+
+                // We set the proper values for the audit
+                executionId = execution.getId();
+                executionUuid = execution.getUuid();
+
+                OpenCGAResult<Execution> updateResult = update(study, execution, updateParams, options, userId);
+                result.append(updateResult);
+
+                auditManager.auditUpdate(operationId, userId, Enums.Resource.EXECUTION, execution.getId(), execution.getUuid(),
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            } catch (CatalogException e) {
+                Event event = new Event(Event.Type.ERROR, executionId, e.getMessage());
+                result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
+
+                logger.error("Could not update execution {}: {}", executionId, e.getMessage(), e);
+                auditManager.auditUpdate(operationId, userId, Enums.Resource.EXECUTION, executionId, executionUuid, study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            }
+        }
+        auditManager.finishAuditBatch(operationId);
+
+        return endResult(result, ignoreException);
+    }
+
+    /**
      * Update fields of a Execution.
      *
      * @param studyStr    Study id.
@@ -440,20 +509,8 @@ public class ExecutionManager extends ResourceManager<Execution> {
         try {
             Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
             Execution execution = internalGet(study.getUid(), executionId, INCLUDE_EXECUTION_IDS, userId).first();
-            authorizationManager.checkExecutionPermission(study.getUid(), execution.getUid(), userId,
-                    ExecutionAclEntry.ExecutionPermissions.WRITE);
 
-            ParamUtils.checkObj(params, "ExecutionUpdateParams");
-
-            ObjectMap updateMap;
-            try {
-                String jsonString = JacksonUtils.getDefaultNonNullObjectMapper().writeValueAsString(params);
-                updateMap = JacksonUtils.getDefaultNonNullObjectMapper().readValue(jsonString, ObjectMap.class);
-            } catch (JsonProcessingException e) {
-                throw new CatalogException("Could not parse ExecutionUpdateParams object: " + e.getMessage(), e);
-            }
-
-            OpenCGAResult<Execution> update = executionDBAdaptor.update(execution.getUid(), updateMap, QueryOptions.empty());
+            OpenCGAResult<Execution> update = update(study, execution, params, QueryOptions.empty(), userId);
             auditManager.auditUpdate(userId, Enums.Resource.EXECUTION, execution.getId(), execution.getUuid(), study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -463,6 +520,37 @@ public class ExecutionManager extends ResourceManager<Execution> {
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
+    }
+
+    private OpenCGAResult<Execution> update(Study study, Execution execution, ExecutionUpdateParams params, QueryOptions options,
+                                           String userId) throws CatalogException {
+        if (params == null) {
+            throw new CatalogException("Missing parameters to update");
+        }
+
+        ObjectMap updateMap;
+        try {
+            String jsonString = JacksonUtils.getDefaultNonNullObjectMapper().writeValueAsString(params);
+            updateMap = JacksonUtils.getDefaultNonNullObjectMapper().readValue(jsonString, ObjectMap.class);
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse ExecutionUpdateParams object: " + e.getMessage(), e);
+        }
+        if (updateMap.isEmpty()) {
+            throw new CatalogException("Missing parameters to update");
+        }
+
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        authorizationManager.checkExecutionPermission(study.getUid(), execution.getUid(), userId,
+                ExecutionAclEntry.ExecutionPermissions.WRITE);
+
+        OpenCGAResult<Execution> update = executionDBAdaptor.update(execution.getUid(), updateMap, options);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated execution
+            OpenCGAResult<Execution> result = executionDBAdaptor.get(study.getUid(),
+                    new Query(JobDBAdaptor.QueryParams.UID.key(), execution.getUid()), options, userId);
+            update.setResults(result.getResults());
+        }
+        return update;
     }
 
     /**

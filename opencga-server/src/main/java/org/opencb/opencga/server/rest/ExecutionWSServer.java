@@ -109,10 +109,7 @@ public class ExecutionWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
             @ApiParam(value = "body") ExecutionUpdateParams parameters) {
-        return run(() -> {
-            throw new NotImplementedException("Not yet implemented");
-//            return createOkResponse(jobManager.update(studyStr, getIdList(jobStr), parameters, queryOptions, token));
-        });
+        return run(() -> executionManager.update(studyStr, getIdList(executionStr), parameters, queryOptions, token));
     }
 
 
