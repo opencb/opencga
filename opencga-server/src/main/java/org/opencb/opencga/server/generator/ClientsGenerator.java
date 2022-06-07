@@ -51,6 +51,7 @@ public class ClientsGenerator {
         classes.add(ProjectWSServer.class);
         classes.add(StudyWSServer.class);
         classes.add(FileWSServer.class);
+        classes.add(ExecutionWSServer.class);
         classes.add(JobWSServer.class);
         classes.add(SampleWSServer.class);
         classes.add(IndividualWSServer.class);
