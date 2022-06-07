@@ -17,3 +17,5 @@ RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt
     R -e "BiocManager::install('BiocStyle')" && \
     rm -rf /var/lib/apt/lists/* /tmp/* && \
     strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
+
+WORKDIR /opt/opencga

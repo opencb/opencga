@@ -603,46 +603,16 @@
                                 <configuration>
                                     <target>
                                         <echo>Compiling R client</echo>
-                                        <!-- R version should be numeric -->
-                                        <exec executable="cp">
-                                            <arg value="${project.basedir}/target/clients/R/compileR.sh"/>
-                                            <arg value="${build.dir}/clients/R/compileR.sh"/>
-                                        </exec>
-                                        <exec executable="chmod">
-                                            <arg value="+x"/>
-                                            <arg value="${build.dir}/clients/R/compileR.sh"/>
-                                        </exec>
-                                        <exec executable="docker">
-                                            <arg value="run"/>
-                                            <arg value="--mount"/>
-                                            <arg value="type=bind,source=/home/imedina/appl/opencga/build,target=/opt/opencga/"/>
-                                            <arg value="opencb/opencga-ext-tools:${opencga.version}"/>
-                                            <arg value="R CMD build /opt/opencga/clients/R"/>
-                                            <arg value="${build.dir}/clients/R"/>
+                                        <exec executable="${project.basedir}/../opencga-client/src/main/R/build.sh">
+                                            <arg value="${project.basedir}/../opencga-client/target/classes"/>
+                                            <arg value="${opencga.version}"/>
                                         </exec>
                                         <echo>Copying docker-compose files</echo>
                                         <echo>Moving R client to ${build.dir}/clients/R/</echo>
                                         <exec executable="mv">
-                                            <arg value="${project.basedir}/opencgaR_${opencga.version}.tar.gz"/>
-<!--                                            <arg value="${project.basedir}/opencgaR_2.2.0.tar.gz"/>-->
+                                            <arg value="/tmp/opencgaR_${opencgar.version}.tar.gz"/>
                                             <arg value="${build.dir}/clients/R/"/>
                                         </exec>
-                                        <!--  <exec executable="sed">
-                                              <arg value="-i"/>
-                                              <arg value="s/-rc/.0001/g"/>
-                                              <arg value="${build.dir}/clients/R/DESCRIPTION"/>
-                                          </exec>
-                                          &lt;!&ndash; R version should be numeric &ndash;&gt;
-                                          <exec executable="sed">
-                                              <arg value="-i"/>
-                                              <arg value="s/SNAPSHOT/000/g"/>
-                                              <arg value="${build.dir}/clients/R/DESCRIPTION"/>
-                                          </exec>
-                                          <echo>Moving R client to ${build.dir}/clients/R/</echo>
-                                          <exec executable="mv">
-                                              <arg value="${project.basedir}/opencgaR_${opencga.version}.tar.gz"/>
-                                              <arg value="${build.dir}/clients/R/"/>
-                                          </exec>-->
                                     </target>
                                 </configuration>
                                 <goals>
