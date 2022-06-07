@@ -5,7 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.ExecutionDBAdaptor;
 import org.opencb.opencga.catalog.managers.ExecutionManager;
 import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -229,7 +229,7 @@ public class ExecutionWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/top")
-    @ApiOperation(value = "Provide a summary of the running executions", response = JobTop.class)
+    @ApiOperation(value = "Provide a summary of the running executions", response = ExecutionTop.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Maximum number of executions to be returned", dataType = "integer", paramType = "query", defaultValue = "20")
     })
@@ -240,11 +240,11 @@ public class ExecutionWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.EXECUTION_USER_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_USER_PARAM) String user,
             @ApiParam(value = ParamConstants.EXECUTION_TOOL_ID_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_TOOL_ID_PARAM) String tool) {
         return run(() -> {
-            query.remove(JobDBAdaptor.QueryParams.STUDY.key());
+            query.remove(ExecutionDBAdaptor.QueryParams.STUDY.key());
             if (limit == 0) {
                 limit = 20;
             }
-            throw new NotImplementedException("Not yet implemented");
+            return catalogManager.getExecutionManager().top(study, query, limit, token);
         });
     }
 

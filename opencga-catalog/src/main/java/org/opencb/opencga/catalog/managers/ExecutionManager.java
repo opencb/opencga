@@ -5,6 +5,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -40,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -598,6 +600,186 @@ public class ExecutionManager extends ResourceManager<Execution> {
             throw e;
         }
     }
+
+
+    public OpenCGAResult<ExecutionTop> top(Query baseQuery, int limit, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        List<String> studies = studyManager.search(new Query(StudyDBAdaptor.QueryParams.OWNER.key(), userId),
+                        new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.UUID.key()), token).getResults()
+                .stream()
+                .map(Study::getUuid)
+                .collect(Collectors.toList());
+        return top(studies, baseQuery, limit, token);
+    }
+
+    public OpenCGAResult<ExecutionTop> top(String studyStr, Query baseQuery, int limit, String token) throws CatalogException {
+        if (StringUtils.isEmpty(studyStr)) {
+            return top(baseQuery, limit, token);
+        } else {
+            return top(Collections.singletonList(studyStr), baseQuery, limit, token);
+        }
+    }
+
+    public OpenCGAResult<ExecutionTop> top(List<String> studiesStr, Query baseQuery, int limit, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        fixQueryObject(baseQuery);
+        List<Study> studies = new ArrayList<>(studiesStr.size());
+        for (String studyStr : studiesStr) {
+            Study study = studyManager.resolveId(studyStr, userId);
+            authorizationManager.checkCanViewStudy(study.getUid(), userId);
+            studies.add(study);
+        }
+
+        StopWatch stopWatch = StopWatch.createStarted();
+        QueryOptions queryOptions = new QueryOptions()
+                .append(QueryOptions.INCLUDE, Arrays.asList(ExecutionDBAdaptor.QueryParams.ID.key(),
+                        ExecutionDBAdaptor.QueryParams.INTERNAL.key(), ExecutionDBAdaptor.QueryParams.DEPENDS_ON.key(),
+                        ExecutionDBAdaptor.QueryParams.CREATION_DATE.key(), ExecutionDBAdaptor.QueryParams.PRIORITY.key(),
+                        ExecutionDBAdaptor.QueryParams.STUDY.key()))
+                .append(QueryOptions.COUNT, false)
+                .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
+
+        int executionsLimit = limit;
+        List<Execution> running = new ArrayList<>(executionsLimit);
+        for (Study study : studies) {
+            if (executionsLimit == 0) {
+                break;
+            }
+            List<Execution> results = executionDBAdaptor.get(
+                    study.getUid(),
+                    new Query(baseQuery)
+                            .append(ExecutionDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                            .append(ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.RUNNING),
+                    new QueryOptions(queryOptions)
+                            .append(QueryOptions.LIMIT, executionsLimit)
+                            .append(QueryOptions.SORT, "execution.start"),
+                    userId).getResults();
+            running.addAll(results);
+        }
+//        running.sort(Comparator.comparing(
+//                j -> j.getExecution() == null || j.getExecution().getStart() == null
+//                        ? new Date()
+//                        : j.getExecution().getStart()));
+        if (running.size() > executionsLimit) {
+            running = running.subList(0, executionsLimit);
+        }
+        executionsLimit -= running.size();
+
+        List<Execution> queued = new ArrayList<>(executionsLimit);
+        for (Study study : studies) {
+            if (executionsLimit == 0) {
+                break;
+            }
+            List<Execution> results = executionDBAdaptor.get(
+                    study.getUid(),
+                    new Query(baseQuery)
+                            .append(ExecutionDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                            .append(ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.QUEUED),
+                    new QueryOptions(queryOptions)
+                            .append(QueryOptions.LIMIT, executionsLimit)
+                            .append(QueryOptions.SORT, ExecutionDBAdaptor.QueryParams.CREATION_DATE.key()),
+                    userId).getResults();
+            queued.addAll(results);
+        }
+        queued.sort(Comparator.comparing(Execution::getCreationDate));
+        if (queued.size() > executionsLimit) {
+            queued = queued.subList(0, executionsLimit);
+        }
+        executionsLimit -= queued.size();
+
+        List<Execution> pending = new ArrayList<>(executionsLimit);
+        for (Study study : studies) {
+            if (executionsLimit == 0) {
+                break;
+            }
+            List<Execution> results = executionDBAdaptor.get(
+                    study.getUid(),
+                    new Query(baseQuery)
+                            .append(ExecutionDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                            .append(ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.PENDING),
+                    new QueryOptions(queryOptions)
+                            .append(QueryOptions.LIMIT, executionsLimit)
+                            .append(QueryOptions.SORT, ExecutionDBAdaptor.QueryParams.CREATION_DATE.key()),
+                    userId).getResults();
+            pending.addAll(results);
+        }
+        pending.sort(Comparator.comparing(Execution::getCreationDate));
+        if (pending.size() > executionsLimit) {
+            pending = pending.subList(0, executionsLimit);
+        }
+        executionsLimit -= pending.size();
+
+        List<Execution> finishedExecutions = new ArrayList<>(executionsLimit);
+        for (Study study : studies) {
+            if (executionsLimit == 0) {
+                break;
+            }
+            List<Execution> results = executionDBAdaptor.get(
+                    study.getUid(),
+                    new Query(baseQuery)
+                            .append(ExecutionDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                            .append(ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.DONE + ","
+                                    + Enums.ExecutionStatus.ERROR + ","
+                                    + Enums.ExecutionStatus.ABORTED),
+                    new QueryOptions(queryOptions)
+                            .append(QueryOptions.LIMIT, executionsLimit)
+                            .append(QueryOptions.SORT, "execution.end")
+                            .append(QueryOptions.ORDER, QueryOptions.DESCENDING), // Get last n elements,
+                    userId).getResults();
+            Collections.reverse(results); // Reverse elements
+            finishedExecutions.addAll(results);
+        }
+//        finishedExecutions.sort(Comparator.comparing((Execution j) -> j.getExecution() == null || j.getExecution().getStart() == null
+//                ? new Date()
+//                : j.getExecution().getStart()).reversed());
+        if (finishedExecutions.size() > executionsLimit) {
+            finishedExecutions = finishedExecutions.subList(0, executionsLimit);
+        }
+
+        List<Execution> allExecutions = new ArrayList<>(finishedExecutions.size() + running.size() + pending.size() + queued.size());
+        allExecutions.addAll(running);
+        allExecutions.addAll(queued);
+        allExecutions.addAll(pending);
+        allExecutions.addAll(finishedExecutions);
+
+        JobTopStats stats = new JobTopStats();
+        for (Study study : studies) {
+            OpenCGAResult result = executionDBAdaptor.groupBy(new Query(baseQuery)
+                            .append(ExecutionDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid()),
+                    Collections.singletonList(ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key()),
+                    new QueryOptions(QueryOptions.COUNT, true),
+                    userId);
+            for (Object o : result.getResults()) {
+                String status = ((Map) ((Map) o).get("_id")).get(ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key()).toString();
+                int count = ((Number) ((Map) o).get("count")).intValue();
+                switch (status) {
+                    case Enums.ExecutionStatus.RUNNING:
+                        stats.setRunning(stats.getRunning() + count);
+                        break;
+                    case Enums.ExecutionStatus.QUEUED:
+                        stats.setQueued(stats.getQueued() + count);
+                        break;
+                    case Enums.ExecutionStatus.PENDING:
+                        stats.setPending(stats.getPending() + count);
+                        break;
+                    case Enums.ExecutionStatus.DONE:
+                        stats.setDone(stats.getDone() + count);
+                        break;
+                    case Enums.ExecutionStatus.ERROR:
+                        stats.setError(stats.getError() + count);
+                        break;
+                    case Enums.ExecutionStatus.ABORTED:
+                        stats.setAborted(stats.getAborted() + count);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        ExecutionTop top = new ExecutionTop(Date.from(Instant.now()), stats, allExecutions);
+        return new OpenCGAResult<>(((int) stopWatch.getTime()), null, 1, Collections.singletonList(top), 1);
+    }
+
 
     @Override
     public DBIterator<Execution> iterator(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
