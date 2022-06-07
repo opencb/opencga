@@ -25,8 +25,8 @@
 {"collections": ["job"], "fields": {"outDir.uid": 1, "studyUid": 1}, "options": {"background": true}}
 {"collections": ["job"], "fields": {"tags": 1, "studyUid": 1}, "options": {"background": true}}
 {"collections": ["job"], "fields": {"visited": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["job"], "fields": {"status.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["job"], "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}
+{"collections": ["job"], "fields": {"status.id": 1, "studyUid": 1}, "options": {"background": true}}
+{"collections": ["job"], "fields": {"internal.status.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collections": ["job"], "fields": {"_priority": 1, "_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collections": ["job"], "fields": {"_priority": 1, "studyUid": 1}, "options": {"background": true}}
 {"collections": ["job"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
@@ -37,6 +37,17 @@
 {"collections": ["execution"], "fields": {"uuid": 1}, "options": {"unique": true, "background": true}}
 {"collections": ["execution"], "fields": {"uid": 1}, "options": {"unique": true, "background": true}}
 {"collections": ["execution"], "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
+{"collections": ["execution"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
+{"collections": ["execution"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
+{"collections": ["execution"], "fields": {"internal.status.id": 1, "studyUid": 1}, "options": {"background": true}}
+{"collections": ["execution"], "fields": {"internal.toolId": 1, "studyUid": 1}, "options": {"background": true}}
+{"collections": ["execution"], "fields": {"userId": 1, "studyUid": 1}, "options": {"background": true}}
+{"collections": ["execution"], "fields": {"_priority": 1, "studyUid": 1}, "options": {"background": true}}
+{"collections": ["execution"], "fields": {"tags": 1, "studyUid": 1}, "options": {"background": true}}
+{"collections": ["execution"], "fields": {"studyUid": 1, "_acl": 1}, "options": {"background": true}}
+{"collections": ["execution"], "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {"background": true}}
+{"collections": ["execution"], "fields": {"visited": 1, "studyUid": 1}, "options": {"background": true}}
+{"collections": ["execution"], "fields": {"isPipeline": 1, "studyUid": 1}, "options": {"background": true}}
 
 {"collections": ["pipeline", "pipeline_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true, "background": true}}
 {"collections": ["pipeline", "pipeline_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true, "background": true}}

@@ -709,6 +709,12 @@ public class ExecutionManager extends ResourceManager<Execution> {
         throw new NotImplementedException("GroupBy operation not implemented");
     }
 
+    @Override
+    protected void fixQueryObject(Query query) {
+        changeQueryId(query, ParamConstants.EXECUTION_TOOL_ID_PARAM, ExecutionDBAdaptor.QueryParams.INTERNAL_TOOL_ID.key());
+        super.fixQueryObject(query);
+    }
+
     // **************************   ACLs  ******************************** //
     public OpenCGAResult<Map<String, List<String>>> getAcls(String studyId, List<String> executionList, String member,
                                                             boolean ignoreException, String token) throws CatalogException {

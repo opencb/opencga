@@ -516,16 +516,25 @@ public class ParamConstants {
     public static final String EXECUTION_DEPENDS_ON_DESCRIPTION = "Comma separated list of existing execution IDs the execution will"
             + " depend on.";
     public static final String EXECUTION_TAGS = "executionTags";
+    public static final String EXECUTION_TAGS_PARAM = "tags";
     public static final String EXECUTION_TAGS_DESCRIPTION = "Execution tags";
     public static final String EXECUTION_PRIORITY_PARAM = "priority";
     public static final String EXECUTION_PRIORITY_DESCRIPTION = "Priority of the execution";
     public static final String EXECUTION_USER_PARAM = "userId";
     public static final String EXECUTION_USER_DESCRIPTION = "User that created the execution";
-    public static final String EXECUTION_TOOL_ID_PARAM = "toolId";
+    public static final String EXECUTION_TOOL_ID_PARAM = "internalToolId";
     public static final String EXECUTION_TOOL_ID_DESCRIPTION = "Tool ID executed by the execution";
-
+    public static final String EXECUTION_ID_PARAM = ID;
+    public static final String EXECUTION_IDS_DESCRIPTION = "Comma separated list of execution IDs" + UP_TO_100;
+    public static final String EXECUTION_UUID_PARAM = "uuid";
+    public static final String EXECUTION_UUIDS_DESCRIPTION = "Comma separated list of execution UUIDs" + UP_TO_100;
     public static final String EXECUTIONS_DESCRIPTION = "Comma separated list of execution IDs or UUIDs" + UP_TO_100;
-
+    public static final String EXECUTION_INTERNAL_STATUS_PARAM = INTERNAL_STATUS_PARAM;
+    public static final String EXECUTION_INTERNAL_STATUS_DESCRIPTION = INTERNAL_STATUS_DESCRIPTION;
+    public static final String EXECUTION_VISITED_PARAM = "visited";
+    public static final String EXECUTION_VISITED_DESCRIPTION = "Visited status of execution";
+    public static final String EXECUTION_IS_PIPELINE_PARAM = "isPipeline";
+    public static final String EXECUTION_IS_PIPELINE_DESCRIPTION = "Filter by pipeline/not pipeline executions";
 
     public static final String JOB_ID = "jobId";
     public static final String JOB_ID_DESCRIPTION = "Job ID or UUID";

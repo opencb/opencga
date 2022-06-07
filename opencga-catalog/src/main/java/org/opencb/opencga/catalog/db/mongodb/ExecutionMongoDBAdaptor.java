@@ -130,7 +130,7 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
         executionObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(execution.getCreationDate()));
         executionObject.put(PRIVATE_MODIFICATION_DATE, executionObject.get(PRIVATE_CREATION_DATE));
 //        executionObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
-//        executionObject.put(PRIVATE_PRIORITY, execution.getPriority().getValue());
+        executionObject.put(PRIVATE_PRIORITY, execution.getPriority().getValue());
         executionObject.put(PRIVATE_STUDY_UIDS, Collections.singletonList(studyUid));
 
         logger.debug("Inserting execution '{}' ({})...", execution.getId(), execution.getUid());
@@ -628,9 +628,6 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
                             addAutoOrQuery(PRIVATE_STUDY_UIDS, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         }
                         break;
-                    case ATTRIBUTES:
-                        addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
@@ -652,6 +649,8 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
                     case RELEASE:
                     case TAGS:
                     case VISITED:
+                    case IS_PIPELINE:
+                    case INTERNAL_TOOL_ID:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     default:
