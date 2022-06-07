@@ -9,13 +9,11 @@ LABEL org.label-schema.vendor="OpenCB" \
 
 # run update and install necessary packages
 RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt-get install -y \
-    gnuplot  \
-    samtools \
-    bcftools \
-    fastqc \
-    plink1.9 \
-    bwa \
+    libcurl4 libssl-dev libcurl4-openssl-dev \
+    gnuplot pandoc samtools bcftools fastqc plink1.9 bwa \
     r-base && \
-    R -e "install.packages(c('nnls', 'ggplot2', 'jsonlite', 'optparse', 'BiocManager', 'RCircos'))" && \
+    ## Installation dependencies using R install.packages() is slower than apt-get but final size is 400GB smaller.
+    R -e "install.packages(c('BiocManager', 'RCircos', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr'))" && \
+    R -e "BiocManager::install('BiocStyle')" && \
     rm -rf /var/lib/apt/lists/* /tmp/* && \
     strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5

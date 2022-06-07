@@ -605,6 +605,14 @@
 <!--                                            <arg value="${project.basedir}/../opencga-client/src/main/R"/>-->
                                             <arg value="${build.dir}/clients/R"/>
                                         </exec>
+                                        <exec executable="docker">
+                                            <arg value="run"/>
+                                            <arg value="--mount"/>
+                                            <arg value="type=bind,source=/home/imedina/appl/opencga/build,target=/opt/opencga/"/>
+                                            <arg value="opencb/opencga-ext-tools:${opencga.version}"/>
+                                            <arg value="R CMD build /opt/opencga/clients/R"/>
+                                            <arg value="${build.dir}/clients/R"/>
+                                        </exec>
                                         <echo>Copying docker-compose files</echo>
                                         <echo>Moving R client to ${build.dir}/clients/R/</echo>
                                         <exec executable="mv">
