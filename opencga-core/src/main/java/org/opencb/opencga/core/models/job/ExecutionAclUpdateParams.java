@@ -18,37 +18,37 @@ package org.opencb.opencga.core.models.job;
 
 import org.opencb.opencga.core.models.AclParams;
 
-public class JobAclUpdateParams extends AclParams {
+public class ExecutionAclUpdateParams extends AclParams {
 
-    private String job;
+    private String execution;
 
-    public JobAclUpdateParams() {
+    public ExecutionAclUpdateParams() {
     }
 
-    public JobAclUpdateParams(String job, String permissions) {
+    public ExecutionAclUpdateParams(String execution, String permissions) {
         super(permissions);
-        this.job = job;
+        this.execution = execution;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("JobAclUpdateParams{");
-        sb.append("job='").append(job).append('\'');
+        final StringBuilder sb = new StringBuilder("ExecutionAclUpdateParams{");
+        sb.append("execution='").append(execution).append('\'');
         sb.append(", permissions='").append(permissions).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public String getJob() {
-        return job;
+    public String getExecution() {
+        return execution;
     }
 
-    public JobAclUpdateParams setJob(String job) {
-        this.job = job;
+    public ExecutionAclUpdateParams setExecution(String execution) {
+        this.execution = execution;
         return this;
     }
 
-    public JobAclUpdateParams setPermissions(String permissions) {
+    public ExecutionAclUpdateParams setPermissions(String permissions) {
         super.setPermissions(permissions);
         return this;
     }

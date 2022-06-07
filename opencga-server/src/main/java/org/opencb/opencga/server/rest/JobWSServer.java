@@ -313,7 +313,7 @@ public class JobWSServer extends OpenCGAWSServer {
     public Response updateAcl(
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true, defaultValue = "ADD") @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
-            @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) JobAclUpdateParams params) {
+            @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) Object params) {
         return run(() -> {
             throw new ServerErrorException("ACLs are now defined for an execution.", Response.Status.GONE);
         });

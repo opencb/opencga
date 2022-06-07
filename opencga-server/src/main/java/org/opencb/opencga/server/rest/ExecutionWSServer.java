@@ -12,6 +12,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
+import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.tools.annotations.*;
@@ -214,16 +215,15 @@ public class ExecutionWSServer extends OpenCGAWSServer {
     @Path("/acl/{members}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
     public Response updateAcl(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
-            @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true, defaultValue = "ADD") @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action) {
-//            @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) ExecutionAclUpdateParams params) {
+            @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true, defaultValue = "ADD") @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
+            @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) ExecutionAclUpdateParams params) {
         return run(() -> {
-            throw new NotImplementedException("Not yet implemented");
+            AclParams aclParams = new AclParams(params.getPermissions());
+            List<String> idList = getIdList(params.getExecution(), false);
+            return executionManager.updateAcl(studyStr, idList, memberId, aclParams, action, token);
         });
-//            ObjectUtils.defaultIfNull(params, new ExecutionAclUpdateParams());
-//            AclParams aclParams = new AclParams(params.getPermissions());
-//            List<String> idList = getIdList(params.getJob(), false);
-//            return createOkResponse(jobManager.updateAcl(null, idList, memberId, aclParams, action, token));
     }
 
 
