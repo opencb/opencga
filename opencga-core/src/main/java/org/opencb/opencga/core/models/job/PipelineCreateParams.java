@@ -13,7 +13,7 @@ public class PipelineCreateParams {
     private String id;
     private String description;
 
-    private boolean disabled;
+    private Boolean disabled;
 
     private String creationDate;
     private String modificationDate;
@@ -73,7 +73,8 @@ public class PipelineCreateParams {
     }
 
     public Pipeline toPipeline() {
-        return new Pipeline(id, description, disabled, creationDate, modificationDate, null, params, config, jobs);
+        return new Pipeline(id, description, disabled != null ? disabled : false, creationDate, modificationDate, null, params, config,
+                jobs);
     }
 
     public String getId() {
@@ -94,11 +95,11 @@ public class PipelineCreateParams {
         return this;
     }
 
-    public boolean isDisabled() {
+    public Boolean getDisabled() {
         return disabled;
     }
 
-    public PipelineCreateParams setDisabled(boolean disabled) {
+    public PipelineCreateParams setDisabled(Boolean disabled) {
         this.disabled = disabled;
         return this;
     }

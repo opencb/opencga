@@ -190,6 +190,7 @@ public class PipelineManager extends ResourceManager<Pipeline> {
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
+                .append("pipelineId", pipelineId)
                 .append("updateParams", updateParams)
                 .append("options", options)
                 .append("token", token);

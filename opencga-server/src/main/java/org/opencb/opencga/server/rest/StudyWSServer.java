@@ -37,6 +37,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.Pipeline;
 import org.opencb.opencga.core.models.job.PipelineCreateParams;
+import org.opencb.opencga.core.models.job.PipelineUpdateParams;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
@@ -274,15 +275,17 @@ public class StudyWSServer extends OpenCGAWSServer {
                     defaultValue = "ADD") @QueryParam("action") ParamUtils.AddRemoveReplaceAction action,
             @ApiParam(value = "JSON containing the parameters", required = true) PipelineCreateParams pipeline) {
         return run(() -> {
-            ParamUtils.AddRemoveReplaceAction userAction = action != null ? action : ParamUtils.AddRemoveReplaceAction.ADD;
-            switch (userAction) {
-                case ADD:
-                    return catalogManager.getPipelineManager().create(studyStr, pipeline.toPipeline(), QueryOptions.empty(), token);
+            switch (action) {
                 case REMOVE:
                     return catalogManager.getPipelineManager().delete(studyStr, Collections.singletonList(pipeline.getId()), QueryOptions.empty(), token);
                 case REPLACE:
+                    PipelineUpdateParams updateParams = new PipelineUpdateParams(pipeline.getDescription(), pipeline.getDisabled(),
+                            pipeline.getCreationDate(), pipeline.getModificationDate(), pipeline.getParams(), pipeline.getConfig(),
+                            pipeline.getJobs());
+                    return catalogManager.getPipelineManager().update(studyStr, pipeline.getId(), updateParams, QueryOptions.empty(), token);
+                case ADD:
                 default:
-                    return null;
+                    return catalogManager.getPipelineManager().create(studyStr, pipeline.toPipeline(), QueryOptions.empty(), token);
             }
         });
     }
