@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core.variant.query;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
@@ -23,6 +24,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -42,6 +45,8 @@ public class VariantQueryParser {
     protected final CellBaseUtils cellBaseUtils;
     protected final VariantStorageMetadataManager metadataManager;
     protected final VariantQueryProjectionParser projectionParser;
+
+    private static Logger logger = LoggerFactory.getLogger(VariantQueryParser.class);
 
     private static final Map<VariantType, VariantType> DEPRECATED_VARIANT_TYPES = new HashMap<>();
     static {
@@ -839,6 +844,77 @@ public class VariantQueryParser {
             }
         }
         return defaultStudy;
+    }
+
+    public void optimize(ParsedVariantQuery variantQuery) {
+        if (variantQuery.isOptimized()) {
+            return;
+        }
+        variantQuery.setOptimized(true);
+        Query query = variantQuery.getQuery();
+        if (isValidParam(query, ID_INTERSECT)) {
+            List<Variant> idIntersect = query.getAsStringList(ID_INTERSECT.key()).stream().map(Variant::new).collect(Collectors.toList());
+            ParsedVariantQuery.VariantQueryXref xrefs = parseXrefs(query);
+            if (isValidParam(query, ANNOT_GENE_REGIONS) && !query.getString(ANNOT_GENE_REGIONS.key()).equals(SKIP_GENE_REGIONS)) {
+                List<Region> regions = new LinkedList<>(Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key()), true));
+                int removed = removeRegionsNotInVariants(idIntersect, regions);
+                if (removed > 0) {
+                    logger.info("Optimizer - Removed {}/{} regions from param '{}'",
+                            removed, regions.size() + removed, ANNOT_GENE_REGIONS.key());
+                }
+                if (regions.isEmpty()) {
+                    query.put(ANNOT_GENE_REGIONS.key(), SKIP_GENE_REGIONS);
+                } else {
+                    query.put(ANNOT_GENE_REGIONS.key(), regions);
+                }
+            }
+            if (!xrefs.getGenes().isEmpty()) {
+                Map<String, Region> geneRegionMap;
+                if (isValidParam(query, ANNOT_GENE_REGIONS_MAP)) {
+                    Set<String> genes = new HashSet<>(xrefs.getGenes());
+                    geneRegionMap = new HashMap<>(query.get(ANNOT_GENE_REGIONS_MAP.key(), Map.class));
+                    geneRegionMap.keySet().removeIf(gene -> !genes.contains(gene));
+                } else {
+                    geneRegionMap = cellBaseUtils.getGeneRegionMap(
+                            query.getAsStringList(GENE.key()),
+                            query.getBoolean(SKIP_MISSING_GENES, false));
+                }
+                int removed = removeRegionsNotInVariants(idIntersect, geneRegionMap.values());
+                if (removed > 0) {
+                    logger.info("Optimizer - Removed {}/{} genes from param '{}'", removed, geneRegionMap.size() + removed, GENE.key());
+                }
+                query.put(GENE.key(), new ArrayList<>(geneRegionMap.keySet()));
+            }
+
+            if (isValidParam(query, REGION)) {
+                List<Region> regions = new LinkedList<>(Region.parseRegions(query.getString(REGION.key()), true));
+                int removed = removeRegionsNotInVariants(idIntersect, regions);
+                if (removed > 0) {
+                    logger.info("Optimizer - Removed {}/{} regions from param '{}'", removed, regions.size() + removed, REGION.key());
+                }
+                query.put(REGION.key(), regions);
+            }
+        }
+    }
+
+    private int removeRegionsNotInVariants(List<Variant> variants, Collection<Region> regions) {
+        Iterator<Region> iterator = regions.iterator();
+        int removedRegions = 0;
+        while (iterator.hasNext()) {
+            Region region = iterator.next();
+            boolean containsRegion = false;
+            for (Variant variant : variants) {
+                if (region.contains(variant.getChromosome(), variant.getStart())) {
+                    containsRegion = true;
+                    break;
+                }
+            }
+            if (!containsRegion) {
+                iterator.remove();
+                removedRegions++;
+            }
+        }
+        return removedRegions;
     }
 
 }

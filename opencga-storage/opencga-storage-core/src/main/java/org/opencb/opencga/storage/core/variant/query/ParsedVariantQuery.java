@@ -16,6 +16,7 @@ public class ParsedVariantQuery {
     private Query inputQuery;
     private QueryOptions inputOptions;
     private Query query;
+    private boolean optimized = false;
 
     private VariantQueryProjection projection;
 
@@ -50,6 +51,15 @@ public class ParsedVariantQuery {
 
     public ParsedVariantQuery setQuery(Query query) {
         this.query = query;
+        return this;
+    }
+
+    public boolean isOptimized() {
+        return optimized;
+    }
+
+    public ParsedVariantQuery setOptimized(boolean optimized) {
+        this.optimized = optimized;
         return this;
     }
 
@@ -177,6 +187,10 @@ public class ParsedVariantQuery {
             all.addAll(ids);
             all.addAll(otherXrefs);
             return all;
+        }
+
+        public boolean isEmpty() {
+            return genes.isEmpty() && variants.isEmpty() && ids.isEmpty() && otherXrefs.isEmpty();
         }
     }
 }

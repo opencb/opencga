@@ -121,6 +121,7 @@ public class VariantSqlQueryParser {
     }
 
     public String parse(ParsedVariantQuery variantQuery, QueryOptions options) {
+        new VariantQueryParser(null, metadataManager).optimize(variantQuery);
         Query query = variantQuery.getQuery();
 
         StringBuilder sb = new StringBuilder("SELECT ");
