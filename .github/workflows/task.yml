@@ -12,13 +12,13 @@ jobs:
     with:
       maven_opts: -P storage-hadoop,hdp3.1,RClient -Dopencga.war.name=opencga
 
-  sonar:
-    uses: opencb/java-common-libs/.github/workflows/sonar-analysis-workflow.yml@develop
-    needs: build
-    with:
-      sonarProjectKey: opencb_opencga
-    secrets:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+#  sonar:
+#    uses: opencb/java-common-libs/.github/workflows/sonar-analysis-workflow.yml@develop
+#    needs: build
+#    with:
+#      sonarProjectKey: opencb_opencga
+#    secrets:
+#      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   test:
     name: Test OpenCGA
