@@ -81,7 +81,7 @@ jobs:
 
   release:
     uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop
-    needs: deploy-docker
+    needs: test
     with:
       artifact: build-folder
       file: |
