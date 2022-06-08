@@ -20,44 +20,44 @@ jobs:
 #    secrets:
 #      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-#  test:
-#    name: Test OpenCGA
-#    runs-on: ubuntu-20.04
-#    needs: build
-#    strategy:
-#      matrix:
-#        mongodb: ["4.2"]
-#    steps:
-#      - uses: actions/checkout@v2
-#        with:
-#          fetch-depth: '10'
-#      - name: Set up JDK 8
-#        uses: actions/setup-java@v2
-#        with:
-#          distribution: 'temurin'
-#          java-version: '8'
-#          cache: 'maven'
-#      - name: Cache Maven packages
-#        uses: actions/cache@v2
-#        with:
-#          path: ~/.m2/repository
-#          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-#          restore-keys: ${{ runner.os }}-maven
-#      - name: Start MongoDB v${{ matrix.mongodb }}
-#        uses: supercharge/mongodb-github-action@1.7.0
-#        with:
-#          mongodb-version: ${{ matrix.mongodb }}
-#          mongodb-replica-set: rs-test
-#      - name: Run Maven Tests
-#        run: mvn -T 2 clean install -DskipTests -P storage-hadoop,hdp3.1
-#      - uses: avides/actions-project-version-check@latest
-#        id: actions_project_version_check
-#        with:
-#          token: ${{ secrets.GITHUB_TOKEN }}
-#          file-to-check: pom.xml
-#      - name: use-version-from-check
-#        run:
-#          echo "New version is " ${{ steps.actions_project_version_check.outputs.version }}
+  test:
+    name: Test OpenCGA
+    runs-on: ubuntu-20.04
+    needs: build
+    strategy:
+      matrix:
+        mongodb: ["4.2"]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: '10'
+      - name: Set up JDK 8
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'temurin'
+          java-version: '8'
+          cache: 'maven'
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven
+      - name: Start MongoDB v${{ matrix.mongodb }}
+        uses: supercharge/mongodb-github-action@1.7.0
+        with:
+          mongodb-version: ${{ matrix.mongodb }}
+          mongodb-replica-set: rs-test
+      - name: Run Maven Tests
+        run: mvn -T 2 clean install -DskipTests -P storage-hadoop,hdp3.1
+      - id: get_project_version
+        uses: avides/actions-project-version-check@v1.3.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          file-to-check: pom.xml
+      - name: use-version-from-check
+        run:
+          echo "New version is " ${{ steps.get_project_version.outputs.version }}
 
 #  deploy-maven:
 #    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
@@ -79,11 +79,11 @@ jobs:
 #      DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
 #      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
-#  release:
-#    uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop
-#    needs: deploy-docker
-#    with:
-#      artifact: build-folder
-#      file: |
-#        opencga-client-${{ needs.test.actions_project_version_check.outputs.version }}.tar.gz
-#        clients/R/opencgaR_${{ needs.test.actions_project_version_check.outputs.version }}.tar.gz
+  release:
+    uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop
+    needs: deploy-docker
+    with:
+      artifact: build-folder
+      file: |
+        opencga-client-${{ needs.test.get_project_version.outputs.version }}.tar.gz
+        clients/R/opencgaR_${{ needs.test.get_project_version.outputs.version }}.tar.gz
