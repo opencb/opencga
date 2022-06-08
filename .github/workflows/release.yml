@@ -50,7 +50,14 @@ jobs:
           mongodb-replica-set: rs-test
       - name: Run Maven Tests
         run: mvn -T 2 clean install -DskipTests -P storage-hadoop,hdp3.1
-
+      - uses: avides/actions-project-version-check@latest
+        id: actions_project_version_check
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          file-to-check: pom.xml
+      - name: use-version-from-check
+        run:
+          echo "New version is " ${{ steps.actions_project_version_check.outputs.version }}
   deploy-maven:
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
     needs: test
@@ -77,5 +84,5 @@ jobs:
     with:
       artifact: build-folder
       file: |
-        opencga-client-${{ github.ref }}.tar.gz
-        clients/R/opencgaR_${{ github.ref }}.tar.gz
+        opencga-client-${{ steps.actions_project_version_check.outputs.version }}.tar.gz
+        clients/R/opencgaR_${{ steps.actions_project_version_check.outputs.version }}.tar.gz
