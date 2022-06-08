@@ -603,13 +603,13 @@
                                 <configuration>
                                     <target>
                                         <echo>Compiling R client</echo>
-                                        <exec executable="${project.basedir}/../opencga-client/src/main/R/build.sh">
-                                            <arg value="${project.basedir}/../opencga-client/target/classes"/>
+                                        <exec executable="${build.dir}/clients/R/build.sh">
+                                            <arg value="${build.dir}/clients/R"/>
                                             <arg value="${opencga.version}"/>
                                         </exec>
                                         <echo>Copying docker-compose files</echo>
                                         <echo>Moving R client to ${build.dir}/clients/R/</echo>
-                                        <exec executable="mv">
+                                        <exec executable="cp">
                                             <arg value="/tmp/opencgaR_${opencgar.version}.tar.gz"/>
                                             <arg value="${build.dir}/clients/R/"/>
                                         </exec>
