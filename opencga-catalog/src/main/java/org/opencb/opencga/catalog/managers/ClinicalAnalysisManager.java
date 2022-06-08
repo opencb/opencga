@@ -47,7 +47,7 @@ import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.common.FlagValue;
-import org.opencb.opencga.core.models.common.StatusValue;
+import org.opencb.opencga.core.models.clinical.ClinicalStatusValue;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileReferenceParam;
@@ -573,16 +573,16 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     + "'. Please add a proper set of valid statuses.");
         }
         if (StringUtils.isNotEmpty(clinicalAnalysis.getStatus().getId())) {
-            Map<String, StatusValue> statusMap = new HashMap<>();
-            for (StatusValue status : clinicalConfiguration.getStatus().get(clinicalAnalysis.getType())) {
+            Map<String, ClinicalStatusValue> statusMap = new HashMap<>();
+            for (ClinicalStatusValue status : clinicalConfiguration.getStatus().get(clinicalAnalysis.getType())) {
                 statusMap.put(status.getId(), status);
             }
             if (!statusMap.containsKey(clinicalAnalysis.getStatus().getId())) {
                 throw new CatalogException("Unknown status '" + clinicalAnalysis.getStatus().getId() + "'. The list of valid statuses is: '"
                         + String.join(",", statusMap.keySet()) + "'");
             }
-            StatusValue statusValue = statusMap.get(clinicalAnalysis.getStatus().getId());
-            clinicalAnalysis.getStatus().setDescription(statusValue.getDescription());
+            ClinicalStatusValue clinicalStatusValue = statusMap.get(clinicalAnalysis.getStatus().getId());
+            clinicalAnalysis.getStatus().setDescription(clinicalStatusValue.getDescription());
             clinicalAnalysis.getStatus().setDate(TimeUtils.getTime());
         }
     }

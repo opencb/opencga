@@ -49,7 +49,7 @@ import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.StatusParam;
-import org.opencb.opencga.core.models.common.StatusValue;
+import org.opencb.opencga.core.models.clinical.ClinicalStatusValue;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
@@ -1451,16 +1451,16 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                     + "'. Please add a proper set of valid statuses.");
         }
         if (StringUtils.isNotEmpty(interpretation.getStatus().getId())) {
-            Map<String, StatusValue> statusMap = new HashMap<>();
-            for (StatusValue status : interpretationConfiguration.getStatus().get(type)) {
+            Map<String, ClinicalStatusValue> statusMap = new HashMap<>();
+            for (ClinicalStatusValue status : interpretationConfiguration.getStatus().get(type)) {
                 statusMap.put(status.getId(), status);
             }
             if (!statusMap.containsKey(interpretation.getStatus().getId())) {
                 throw new CatalogException("Unknown status '" + interpretation.getStatus().getId() + "'. The list of valid statuses is: '"
                         + String.join(",", statusMap.keySet()) + "'");
             }
-            StatusValue statusValue = statusMap.get(interpretation.getStatus().getId());
-            interpretation.getStatus().setDescription(statusValue.getDescription());
+            ClinicalStatusValue clinicalStatusValue = statusMap.get(interpretation.getStatus().getId());
+            interpretation.getStatus().setDescription(clinicalStatusValue.getDescription());
             interpretation.getStatus().setDate(TimeUtils.getTime());
         }
     }

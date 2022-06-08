@@ -50,7 +50,7 @@ import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.common.FlagValue;
 import org.opencb.opencga.core.models.common.StatusParam;
-import org.opencb.opencga.core.models.common.StatusValue;
+import org.opencb.opencga.core.models.clinical.ClinicalStatusValue;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
@@ -1130,7 +1130,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
 
-        StatusValue status = configuration.getStatus().get(dummyEnvironment.first().getType()).get(0);
+        ClinicalStatusValue status = configuration.getStatus().get(dummyEnvironment.first().getType()).get(0);
 
         ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
                 .setStatus(new StatusParam(status.getId()));
@@ -1298,7 +1298,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         InterpretationStudyConfiguration configuration = study.getInternal().getConfiguration().getClinical().getInterpretation();
 
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, true);
-        StatusValue status = configuration.getStatus().get(dummyEnvironment.first().getType()).get(0);
+        ClinicalStatusValue status = configuration.getStatus().get(dummyEnvironment.first().getType()).get(0);
 
         InterpretationUpdateParams updateParams = new InterpretationUpdateParams()
                 .setStatus(new StatusParam(status.getId()));
