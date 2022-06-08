@@ -10,7 +10,7 @@ jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P storage-hadoop,hdp3.1 -Dopencga.war.name=opencga
+      maven_opts: -P storage-hadoop,hdp3.1,RClient -Dopencga.war.name=opencga
 
   sonar:
     uses: opencb/java-common-libs/.github/workflows/sonar-analysis-workflow.yml@develop
