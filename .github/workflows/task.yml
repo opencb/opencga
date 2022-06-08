@@ -50,3 +50,5 @@ jobs:
           mongodb-replica-set: rs-test
       - name: Run Maven Tests
         run: mvn -T 2 clean install -P storage-hadoop,hdp3.1 -DskipTests
+      - name: test-version-from-check
+        run: echo "Project version is " ${{ needs.build.outputs.version }}
