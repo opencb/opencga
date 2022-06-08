@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -2130,9 +2131,15 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         try {
             authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
-            ParamUtils.checkObj(clinicalConfiguration, "clinical configuration");
+            ParamUtils.checkObj(clinicalConfiguration, "ClinicalConfiguration");
+            ParamUtils.checkObj(clinicalConfiguration.getFlags(), "flags");
+            ParamUtils.checkObj(clinicalConfiguration.getPriorities(), "priorities");
+            ParamUtils.checkObj(clinicalConfiguration.getConsent(), "consent");
+            ParamUtils.checkObj(clinicalConfiguration.getInterpretation(), "interpretation");
 
-            // TODO: Check fields
+            // Validate clinical configuration object
+            validateClinicalStatus(clinicalConfiguration.getStatus(), "status");
+            validateClinicalStatus(clinicalConfiguration.getInterpretation().getStatus(), "interpretation.status");
 
             ObjectMap update = new ObjectMap();
             try {
@@ -2151,6 +2158,27 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             auditManager.auditUpdate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
+        }
+    }
+
+    private void validateClinicalStatus(Map<ClinicalAnalysis.Type, List<ClinicalStatusValue>> status, String field)
+            throws CatalogException {
+        if (status == null) {
+            throw CatalogParameterException.isNull(field);
+        }
+        for (ClinicalAnalysis.Type value : ClinicalAnalysis.Type.values()) {
+            if (!status.containsKey(value)) {
+                throw new CatalogParameterException(field + ": Missing status values for ClinicalAnalysis type '" + value + "'");
+            }
+            List<ClinicalStatusValue> statuses = status.get(value);
+            for (ClinicalStatusValue clinicalStatusValue : statuses) {
+                if (StringUtils.isEmpty(clinicalStatusValue.getId())) {
+                    throw CatalogParameterException.isNull(field + ".{" + value + "}.id");
+                }
+                if (clinicalStatusValue.getType() == null) {
+                    throw CatalogParameterException.isNull(field + ".{" + value + "}.type");
+                }
+            }
         }
     }
 }
