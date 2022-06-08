@@ -84,5 +84,5 @@ jobs:
     with:
       artifact: build-folder
       file: |
-        opencga-client-${{ steps.actions_project_version_check.outputs.version }}.tar.gz
-        clients/R/opencgaR_${{ steps.actions_project_version_check.outputs.version }}.tar.gz
+        opencga-client-${{ needs.test.actions_project_version_check.outputs.version }}.tar.gz
+        clients/R/opencgaR_${{ needs.test.actions_project_version_check.outputs.version }}.tar.gz
