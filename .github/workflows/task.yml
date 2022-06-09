@@ -43,7 +43,7 @@ jobs:
           mongodb-version: ${{ matrix.mongodb }}
           mongodb-replica-set: rs-test
       - name: Run Maven Tests
-        run: mvn -T 2 clean install -P storage-hadoop,hdp3.1 -DskipTests}
+        run: mvn -T 2 clean install -P storage-hadoop,hdp3.1 -DskipTests
 
   deploy-docker:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
