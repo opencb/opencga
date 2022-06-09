@@ -1,4 +1,4 @@
-name: Release new OpenCGA version
+name: Release new AWS EMR OpenCGA version
 
 on:
   push:
