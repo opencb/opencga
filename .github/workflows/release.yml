@@ -70,6 +70,7 @@ jobs:
     needs: test
     with:
       cli: ./build/clients/python/python-build.sh push-test
+      artifact: build-folder
     secrets:
       PYPI_TWINE_USER: ${{ secrets.PYPI_TWINE_USER }}
       PYPI_TWINE_PASSWORD: ${{ secrets.PYPI_TWINE_PASSWORD }}
