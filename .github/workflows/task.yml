@@ -12,13 +12,13 @@ jobs:
     with:
       maven_opts: -P storage-hadoop,hdp3.1,RClient -Dopencga.war.name=opencga
 
-#  sonar:
-#    uses: opencb/java-common-libs/.github/workflows/sonar-analysis-workflow.yml@develop
-#    needs: build
-#    with:
-#      sonarProjectKey: opencb_opencga
-#    secrets:
-#      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  sonar:
+    uses: opencb/java-common-libs/.github/workflows/sonar-analysis-workflow.yml@develop
+    needs: build
+    with:
+      sonarProjectKey: opencb_opencga
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   test:
     name: Test OpenCGA
@@ -37,21 +37,13 @@ jobs:
           distribution: 'temurin'
           java-version: '8'
           cache: 'maven'
-#      - name: Cache Maven packages
-#        uses: actions/cache@v2
-#        with:
-#          path: ~/.m2/repository
-#          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-#          restore-keys: ${{ runner.os }}-maven
       - name: Start MongoDB v${{ matrix.mongodb }}
         uses: supercharge/mongodb-github-action@1.7.0
         with:
           mongodb-version: ${{ matrix.mongodb }}
           mongodb-replica-set: rs-test
       - name: Run Maven Tests
-        run: mvn -T 2 clean install -P storage-hadoop,hdp3.1 -DskipTests
-      - name: test-version-from-check
-        run: echo "Project version is " ${{ needs.build.outputs.version }}
+        run: mvn -T 2 clean install -P storage-hadoop,hdp3.1 -DskipTests}
 
   deploy-docker:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop

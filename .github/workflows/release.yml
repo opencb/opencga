@@ -12,13 +12,13 @@ jobs:
     with:
       maven_opts: -P storage-hadoop,hdp3.1,RClient -Dopencga.war.name=opencga
 
-#  sonar:
-#    uses: opencb/java-common-libs/.github/workflows/sonar-analysis-workflow.yml@develop
-#    needs: build
-#    with:
-#      sonarProjectKey: opencb_opencga
-#    secrets:
-#      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  sonar:
+    uses: opencb/java-common-libs/.github/workflows/sonar-analysis-workflow.yml@develop
+    needs: build
+    with:
+      sonarProjectKey: opencb_opencga
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   test:
     name: Test OpenCGA
@@ -37,12 +37,6 @@ jobs:
           distribution: 'temurin'
           java-version: '8'
           cache: 'maven'
-#      - name: Cache Maven packages
-#        uses: actions/cache@v2
-#        with:
-#          path: ~/.m2/repository
-#          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-#          restore-keys: ${{ runner.os }}-maven
       - name: Start MongoDB v${{ matrix.mongodb }}
         uses: supercharge/mongodb-github-action@1.7.0
         with:
@@ -50,34 +44,26 @@ jobs:
           mongodb-replica-set: rs-test
       - name: Run Maven Tests
         run: mvn -T 2 clean install -DskipTests -P storage-hadoop,hdp3.1
-#      - id: get_project_version
-#        uses: avides/actions-project-version-check@v1.3.0
-#        with:
-#          token: ${{ secrets.GITHUB_TOKEN }}
-#          file-to-check: pom.xml
-#      - name: use-version-from-check
-#        run:
-#          echo "New version is " ${{ steps.get_project_version.outputs.version }}
 
-#  deploy-maven:
-#    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
-#    needs: test
-#    with:
-#      maven_opts: -P storage-hadoop,hdp3.1 -Dopencga.war.name=opencga
-#    secrets:
-#      MAVEN_NEXUS_USER: ${{ secrets.MAVEN_NEXUS_USER }}
-#      MAVEN_NEXUS_PASSWORD: ${{ secrets.MAVEN_NEXUS_PASSWORD }}
-#      MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-#      MAVEN_GPG_PRIVATE_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+  deploy-maven:
+    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
+    needs: test
+    with:
+      maven_opts: -P storage-hadoop,hdp3.1 -Dopencga.war.name=opencga
+    secrets:
+      MAVEN_NEXUS_USER: ${{ secrets.MAVEN_NEXUS_USER }}
+      MAVEN_NEXUS_PASSWORD: ${{ secrets.MAVEN_NEXUS_PASSWORD }}
+      MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+      MAVEN_GPG_PRIVATE_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
 
-#  deploy-docker:
-#    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
-#    needs: test
-#    with:
-#      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init,ext-tools
-#    secrets:
-#      DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
-#      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+  deploy-docker:
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    needs: test
+    with:
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init,ext-tools
+    secrets:
+      DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
+      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
   release:
     uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop
