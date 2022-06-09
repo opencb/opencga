@@ -52,3 +52,12 @@ jobs:
         run: mvn -T 2 clean install -P storage-hadoop,hdp3.1 -DskipTests
       - name: test-version-from-check
         run: echo "Project version is " ${{ needs.build.outputs.version }}
+
+  deploy-docker:
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    needs: test
+    with:
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init
+    secrets:
+      DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
+      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}

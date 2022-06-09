@@ -1,0 +1,26 @@
+name: Push OpenCGA develop
+
+on:
+  push:
+    branches:
+      - develop
+      - release-*
+      - TASK-*
+    paths:
+      - opencga-app/app/cloud/docker/opencga-r-builder/Dockerfile
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    with:
+      maven_opts:
+
+  deploy-docker:
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    needs: test
+    with:
+      cli: python3 ./build/cloud/docker/docker-build.py push --images r-builder --tag 1.0.0
+    secrets:
+      DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
+      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
