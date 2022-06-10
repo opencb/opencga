@@ -67,6 +67,9 @@
         <opencga.war.name>opencga</opencga.war.name>
         <opencga.env.file>opencga-env.sh</opencga.env.file>
         <opencga-storage-hadoop-deps.id-default>hdp3.1</opencga-storage-hadoop-deps.id-default>
+        <opencga-storage-hadoop-deps.artifactId-default>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}</opencga-storage-hadoop-deps.artifactId-default>
+        <opencga-storage-hadoop-deps.id>${opencga-storage-hadoop-deps.id-default}</opencga-storage-hadoop-deps.id>
+        <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}</opencga-storage-hadoop-deps.artifactId>
 
         <sonar.organization>opencb</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -175,6 +178,25 @@
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-hadoop-core</artifactId>
                 <version>${opencga.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.opencb.opencga</groupId>
+                        <artifactId>${opencga-storage-hadoop-deps.artifactId-default}</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-storage-hadoop-core</artifactId>
+                <version>${opencga.version}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.opencb.opencga</groupId>
+                        <artifactId>${opencga-storage-hadoop-deps.artifactId-default}</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <!-- OpenCB dependencies -->
@@ -613,7 +635,10 @@
         <profile>
             <id>default-config</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
+                <!-- Do not use "activeByDefault" as it might get deactivated when using any hadoop profile -->
+                <property>
+                    <name>!skipDefaultConfig</name>
+                </property>
             </activation>
             <properties>
                 <opencga.war.name>opencga-${opencga.version}</opencga.war.name>
@@ -770,6 +795,27 @@
                     <url>https://oss.sonatype.org/content/repositories/snapshots</url>
                 </snapshotRepository>
             </distributionManagement>
+        </profile>
+        <profile>
+            <id>hdp3.1</id>
+            <properties>
+                <opencga-storage-hadoop-deps.id>hdp3.1</opencga-storage-hadoop-deps.id>
+                <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}</opencga-storage-hadoop-deps.artifactId>
+            </properties>
+        </profile>
+        <profile>
+            <id>emr6.1</id>
+            <properties>
+                <opencga-storage-hadoop-deps.id>emr6.1</opencga-storage-hadoop-deps.id>
+                <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}</opencga-storage-hadoop-deps.artifactId>
+            </properties>
+        </profile>
+        <profile>
+            <id>hdp2.6</id>
+            <properties>
+                <opencga-storage-hadoop-deps.id>hdp2.6</opencga-storage-hadoop-deps.id>
+                <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}</opencga-storage-hadoop-deps.artifactId>
+            </properties>
         </profile>
     </profiles>
 
