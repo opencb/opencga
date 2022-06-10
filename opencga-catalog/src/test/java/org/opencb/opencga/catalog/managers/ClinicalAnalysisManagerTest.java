@@ -247,6 +247,37 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
+    public void automaticallyLockCaseTest() throws CatalogException {
+        Individual individual = new Individual()
+                .setId("proband")
+                .setSamples(Collections.singletonList(new Sample().setId("sample")));
+        catalogManager.getIndividualManager().create(STUDY, individual, QueryOptions.empty(), sessionIdUser);
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("Clinical")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setProband(individual);
+        OpenCGAResult<ClinicalAnalysis> clinical = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis,
+                INCLUDE_RESULT, sessionIdUser);
+        assertTrue(StringUtils.isEmpty(clinical.first().getStatus().getId()));
+        assertFalse(clinical.first().isLocked());
+
+        clinical = catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
+                new ClinicalAnalysisUpdateParams().setStatus(new StatusParam("CLOSED")), INCLUDE_RESULT, sessionIdUser);
+        assertEquals("CLOSED", clinical.first().getStatus().getId());
+        assertTrue(clinical.first().isLocked());
+
+        clinicalAnalysis = new ClinicalAnalysis()
+                .setId("Clinical2")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setStatus(new ClinicalAnalysisStatus().setId("CLOSED"))
+                .setProband(individual);
+        clinical = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, INCLUDE_RESULT, sessionIdUser);
+        assertEquals("CLOSED", clinical.first().getStatus().getId());
+        assertTrue(clinical.first().isLocked());
+    }
+
+    @Test
     public void createSingleClinicalAnalysisTestWithoutDisorder() throws CatalogException {
         Individual individual = new Individual()
                 .setId("proband")

@@ -247,6 +247,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             ParamUtils.checkObj(clinicalAnalysis.getType(), "type");
             ParamUtils.checkObj(clinicalAnalysis.getProband(), "proband");
 
+            List<Event> events = new LinkedList<>();
+
             clinicalAnalysis.setStatus(ParamUtils.defaultObject(clinicalAnalysis.getStatus(), Status::new));
             clinicalAnalysis.setInternal(ClinicalAnalysisInternal.init());
             clinicalAnalysis.setDisorder(ParamUtils.defaultObject(clinicalAnalysis.getDisorder(),
@@ -526,6 +528,22 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             validateCustomConsentParameters(clinicalAnalysis, clinicalConfiguration);
             validateStatusParameter(clinicalAnalysis, clinicalConfiguration);
 
+            if (StringUtils.isNotEmpty(clinicalAnalysis.getStatus().getId())) {
+                List<ClinicalStatusValue> clinicalStatusValues = clinicalConfiguration.getStatus().get(clinicalAnalysis.getType());
+                for (ClinicalStatusValue clinicalStatusValue : clinicalStatusValues) {
+                    if (clinicalAnalysis.getStatus().getId().equals(clinicalStatusValue.getId())) {
+                        if (clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED) {
+                            String msg = "Case '" + clinicalAnalysis.getId() + "' created with status '"
+                                    + clinicalAnalysis.getStatus().getId() + "', which is of type CLOSED. Automatically locking "
+                                    + "ClinicalAnalysis.";
+                            logger.info(msg);
+                            clinicalAnalysis.setLocked(true);
+                            events.add(new Event(Event.Type.INFO, clinicalAnalysis.getId(), msg));
+                        }
+                    }
+                }
+            }
+
             sortMembersFromFamily(clinicalAnalysis);
 
             List<ClinicalAudit> clinicalAuditList = new ArrayList<>();
@@ -546,6 +564,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.CREATE_CLINICAL_ANALYSIS,
                     "Create ClinicalAnalysis '" + clinicalAnalysis.getId() + "'", TimeUtils.getTime()));
             OpenCGAResult<ClinicalAnalysis> insert = clinicalDBAdaptor.insert(study.getUid(), clinicalAnalysis, clinicalAuditList, options);
+            insert.addEvents(events);
 
             auditManager.auditCreate(userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(), clinicalAnalysis.getUuid(),
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -579,8 +598,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 statusMap.put(status.getId(), status);
             }
             if (!statusMap.containsKey(clinicalAnalysis.getStatus().getId())) {
-                throw new CatalogException("Unknown status '" + clinicalAnalysis.getStatus().getId() + "'. The list of valid statuses is: '"
-                        + String.join(",", statusMap.keySet()) + "'");
+                throw new CatalogException("Unknown status '" + clinicalAnalysis.getStatus().getId()
+                        + "'. The list of valid statuses are: '" + String.join(", ", statusMap.keySet()) + "'");
             }
             ClinicalStatusValue clinicalStatusValue = statusMap.get(clinicalAnalysis.getStatus().getId());
             clinicalAnalysis.getStatus().setDescription(clinicalStatusValue.getDescription());
@@ -1161,6 +1180,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
+        List<Event> events = new LinkedList<>();
 
         if (StringUtils.isNotEmpty(clinicalAnalysis.getCreationDate())) {
             ParamUtils.checkDateFormat(clinicalAnalysis.getCreationDate(), ClinicalAnalysisDBAdaptor.QueryParams.CREATION_DATE.key());
@@ -1391,12 +1411,29 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             clinicalAnalysis.setStatus(updateParams.getStatus().toStatus());
             validateStatusParameter(clinicalAnalysis, clinicalConfiguration);
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key(), clinicalAnalysis.getStatus());
+
+            if (StringUtils.isNotEmpty(updateParams.getStatus().getId())) {
+                List<ClinicalStatusValue> clinicalStatusValues = clinicalConfiguration.getStatus().get(clinicalAnalysis.getType());
+                for (ClinicalStatusValue clinicalStatusValue : clinicalStatusValues) {
+                    if (updateParams.getStatus().getId().equals(clinicalStatusValue.getId())) {
+                        if (clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED) {
+                            String msg = "User '" + userId + "' changed case '" + clinicalAnalysis.getId() + "' to status '"
+                                    + updateParams.getStatus().getId() + "', which is of type CLOSED. Automatically locking "
+                                    + "ClinicalAnalysis";
+                            logger.info(msg);
+                            parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), true);
+                            events.add(new Event(Event.Type.INFO, clinicalAnalysis.getId(), msg));
+                        }
+                    }
+                }
+            }
         }
 
         ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.UPDATE_CLINICAL_ANALYSIS,
                 "Update ClinicalAnalysis '" + clinicalAnalysis.getId() + "'", TimeUtils.getTime());
         OpenCGAResult<ClinicalAnalysis> update = clinicalDBAdaptor.update(clinicalAnalysis.getUid(), parameters,
                 Collections.singletonList(clinicalAudit), options);
+        update.addEvents(events);
         if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
             // Fetch updated clinical analysis
             OpenCGAResult<ClinicalAnalysis> result = clinicalDBAdaptor.get(study.getUid(),
