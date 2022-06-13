@@ -110,8 +110,8 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
 
 //            new TieringInterpretationAnalysisExecutor()
             getToolExecutor(ExomiserWrapperAnalysisExecutor.class)
-                    .setStudy(studyId)
-                    .setSample(sampleId)
+                    .setStudyId(studyId)
+                    .setSampleId(sampleId)
                     .execute();
 
             saveInterpretation(studyId, clinicalAnalysis, null);

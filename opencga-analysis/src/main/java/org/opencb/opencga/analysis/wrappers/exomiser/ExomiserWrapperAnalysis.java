@@ -16,25 +16,13 @@
 
 package org.opencb.opencga.analysis.wrappers.exomiser;
 
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
-import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.alignment.BwaWrapperParams;
 import org.opencb.opencga.core.models.clinical.ExomiserWrapperParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static org.opencb.opencga.core.api.ParamConstants.BWA_COMMANDS_SUPPORTED;
 
 
 @Tool(id = ExomiserWrapperAnalysis.ID, resource = Enums.Resource.CLINICAL_ANALYSIS,
@@ -62,7 +50,7 @@ public class ExomiserWrapperAnalysis extends OpenCgaToolScopeStudy {
 
         step(() -> {
             getToolExecutor(ExomiserWrapperAnalysisExecutor.class)
-                    .setSample(analysisParams.getSample())
+                    .setSampleId(analysisParams.getSample())
                     .execute();
         });
     }
