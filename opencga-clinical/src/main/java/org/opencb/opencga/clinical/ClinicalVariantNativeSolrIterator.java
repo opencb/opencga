@@ -29,7 +29,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 
-public class ReportedVariantNativeSolrIterator implements Iterator<ReportedVariantSearchModel>, AutoCloseable {
+public class ClinicalVariantNativeSolrIterator implements Iterator<ClinicalVariantSearchModel>, AutoCloseable {
 
     private SolrClient solrClient;
     private String collection;
@@ -38,18 +38,18 @@ public class ReportedVariantNativeSolrIterator implements Iterator<ReportedVaria
     private String cursorMark;
     private String nextCursorMark;
 
-    private Iterator<ReportedVariantSearchModel> solrIterator;
+    private Iterator<ClinicalVariantSearchModel> solrIterator;
 
     private int remaining;
 
     private static final int BATCH_SIZE = 100;
 
     @Deprecated
-    public ReportedVariantNativeSolrIterator(Iterator<ReportedVariantSearchModel> solrIterator) {
+    public ClinicalVariantNativeSolrIterator(Iterator<ClinicalVariantSearchModel> solrIterator) {
         this.solrIterator = solrIterator;
     }
 
-    public ReportedVariantNativeSolrIterator(SolrClient solrClient, String collection, SolrQuery solrQuery)
+    public ClinicalVariantNativeSolrIterator(SolrClient solrClient, String collection, SolrQuery solrQuery)
             throws IOException, SolrServerException {
         this.solrClient = solrClient;
         this.collection = collection;
@@ -113,7 +113,7 @@ public class ReportedVariantNativeSolrIterator implements Iterator<ReportedVaria
                     remaining -= solrResponse.getResults().size();
                 }
                 nextCursorMark = solrResponse.getNextCursorMark();
-                solrIterator = solrResponse.getBeans(ReportedVariantSearchModel.class).iterator();
+                solrIterator = solrResponse.getBeans(ClinicalVariantSearchModel.class).iterator();
                 return solrIterator.hasNext();
             } catch (SolrServerException | IOException e) {
                 throw new VariantQueryException("Error searching more variants", e);
@@ -122,7 +122,7 @@ public class ReportedVariantNativeSolrIterator implements Iterator<ReportedVaria
     }
 
     @Override
-    public ReportedVariantSearchModel next() {
+    public ClinicalVariantSearchModel next() {
         // Sanity check
         if (hasNext()) {
             return solrIterator.next();

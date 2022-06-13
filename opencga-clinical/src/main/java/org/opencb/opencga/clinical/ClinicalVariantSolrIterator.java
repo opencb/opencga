@@ -19,33 +19,33 @@ package org.opencb.opencga.clinical;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.opencb.opencga.core.models.clinical.ReportedVariant;
-import org.opencb.opencga.storage.core.clinical.ReportedVariantIterator;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.opencga.storage.core.clinical.ClinicalVariantIterator;
 
 import java.io.IOException;
 
 /**
  * Created by jtarraga on 01/03/17.
  */
-public class ReportedVariantSolrIterator implements ReportedVariantIterator {
+public class ClinicalVariantSolrIterator implements ClinicalVariantIterator {
 
-    private ReportedVariantNativeSolrIterator reportedVariantNativeSolrIterator;
+    private ClinicalVariantNativeSolrIterator clinicalVariantNativeSolrIterator;
     private InterpretationConverter reportedVariantSearchToReportedVariantConverter;
 
-    public ReportedVariantSolrIterator(SolrClient solrClient, String collection, SolrQuery solrQuery)
+    public ClinicalVariantSolrIterator(SolrClient solrClient, String collection, SolrQuery solrQuery)
             throws IOException, SolrServerException {
-        reportedVariantNativeSolrIterator = new ReportedVariantNativeSolrIterator(solrClient, collection, solrQuery);
+        clinicalVariantNativeSolrIterator = new ClinicalVariantNativeSolrIterator(solrClient, collection, solrQuery);
         reportedVariantSearchToReportedVariantConverter = new InterpretationConverter();
     }
 
     @Override
     public boolean hasNext() {
-        return reportedVariantNativeSolrIterator.hasNext();
+        return clinicalVariantNativeSolrIterator.hasNext();
     }
 
     @Override
-    public ReportedVariant next() {
-        return reportedVariantSearchToReportedVariantConverter.toReportedVariant(reportedVariantNativeSolrIterator.next());
+    public ClinicalVariant next() {
+        return reportedVariantSearchToReportedVariantConverter.toClinicalVariant(clinicalVariantNativeSolrIterator.next());
     }
 
     @Override
@@ -54,6 +54,6 @@ public class ReportedVariantSolrIterator implements ReportedVariantIterator {
     }
 
     public long getNumFound() {
-        return reportedVariantNativeSolrIterator.getNumFound();
+        return clinicalVariantNativeSolrIterator.getNumFound();
     }
 }

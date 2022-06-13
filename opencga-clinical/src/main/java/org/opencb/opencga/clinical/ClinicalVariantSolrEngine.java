@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.clinical;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -25,20 +26,17 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.biodata.models.clinical.ClinicalComment;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.core.models.clinical.Comment;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.clinical.Interpretation;
-import org.opencb.opencga.core.models.clinical.ReportedVariant;
 import org.opencb.opencga.storage.core.clinical.ClinicalVariantEngine;
 import org.opencb.opencga.storage.core.clinical.ClinicalVariantException;
-import org.opencb.opencga.storage.core.clinical.ReportedVariantIterator;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.clinical.ClinicalVariantIterator;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,12 +62,12 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
     private static final String CONF_SET = "ClinicalConfSet";
     private static final int DEFAULT_LIMIT = 1000000;
 
-    public ClinicalVariantSolrEngine(StudyConfigurationManager studyConfigurationManager, StorageConfiguration storageConfig) {
+    public ClinicalVariantSolrEngine(VariantStorageMetadataManager variantStorageMetadataManager, StorageConfiguration storageConfig) {
         solrManager = new SolrManager(storageConfig.getSearch().getHost(), storageConfig.getSearch().getMode(),
                 storageConfig.getSearch().getTimeout());
 
         this.interpretaionConverter = new InterpretationConverter();
-        this.queryParser = new ClinicalQueryParser(studyConfigurationManager);
+        this.queryParser = new ClinicalQueryParser(variantStorageMetadataManager);
 
         this.logger = LoggerFactory.getLogger(ClinicalVariantSolrEngine.class);
     }
@@ -97,7 +95,6 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
         }
     }
 
-
     /**
      * Insert an Interpretation object into Solr: previously the Interpretation object is
      * converted to multiple ReportedVariantSearchModel objects and they will be stored in Solr.
@@ -107,15 +104,16 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
      * @throws IOException                      IOException
      * @throws ClinicalVariantException   ClinicalVariantException
      */
-//    @Override
-    public void insert(Interpretation interpretation, String collection) throws IOException, ClinicalVariantException {
-        List<ReportedVariantSearchModel> reportedVariantSearchModels;
-        reportedVariantSearchModels = interpretaionConverter.toReportedVariantSearchList(interpretation);
+    @Override
+    public void insert(org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation, String collection)
+            throws IOException, ClinicalVariantException {
+        List<ClinicalVariantSearchModel> clinicalVariantSearchModels;
+        clinicalVariantSearchModels = interpretaionConverter.toReportedVariantSearchList(interpretation);
 
-        if (ListUtils.isNotEmpty(reportedVariantSearchModels)) {
+        if (CollectionUtils.isNotEmpty(clinicalVariantSearchModels)) {
             UpdateResponse updateResponse;
             try {
-                updateResponse = solrManager.getSolrClient().addBeans(collection, reportedVariantSearchModels);
+                updateResponse = solrManager.getSolrClient().addBeans(collection, clinicalVariantSearchModels);
                 if (updateResponse.getStatus() == 0) {
                     solrManager.getSolrClient().commit(collection);
                 }
@@ -126,13 +124,12 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
     }
 
     @Override
-    public void insert(List<Interpretation> interpretations, String collection) throws IOException, ClinicalVariantException {
-
+    public void insert(List<org.opencb.biodata.models.clinical.interpretation.Interpretation> interpretations, String collection)
+            throws IOException, ClinicalVariantException {
     }
 
     @Override
     public void insert(Path interpretationJsonPath, String collection) throws IOException, ClinicalVariantException {
-
     }
 
 
@@ -147,7 +144,7 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
      * @throws ClinicalVariantException   VariantSearchException
      */
     @Override
-    public QueryResult<ReportedVariant> query(Query query, QueryOptions options, String collection)
+    public DataResult<ClinicalVariant> query(Query query, QueryOptions options, String collection)
             throws IOException, ClinicalVariantException {
         int limit = options.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT);
         if (limit > DEFAULT_LIMIT) {
@@ -155,16 +152,16 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
         }
         options.put(QueryOptions.LIMIT, limit);
 
-        List<ReportedVariant> results = new ArrayList<>(limit);
+        List<ClinicalVariant> results = new ArrayList<>(limit);
 
         StopWatch stopWatch = StopWatch.createStarted();
-        ReportedVariantIterator iterator = iterator(query, options, collection);
+        ClinicalVariantIterator iterator = iterator(query, options, collection);
         while (iterator.hasNext()) {
             results.add(iterator.next());
         }
         int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
 
-        return new QueryResult<>("", dbTime, results.size(), results.size(), "Data from Solr", "", results);
+        return new DataResult<>(dbTime, null, results.size(), results, results.size());
     }
 
     /**
@@ -178,7 +175,9 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
      * @throws ClinicalVariantException   VariantSearchException
      */
     @Override
-    public QueryResult<Interpretation> interpretationQuery(Query query, QueryOptions options, String collection)
+    public DataResult<org.opencb.biodata.models.clinical.interpretation.Interpretation> interpretationQuery(Query query,
+                                                                                                            QueryOptions options,
+                                                                                                            String collection)
             throws IOException, ClinicalVariantException {
         int limit = options.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT);
         if (limit > DEFAULT_LIMIT) {
@@ -192,27 +191,27 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
         options.put(QueryOptions.ORDER, QueryOptions.ASCENDING);
 
         StopWatch stopWatch = StopWatch.createStarted();
-        ReportedVariantNativeSolrIterator iterator = nativeIterator(query, options, collection);
+        ClinicalVariantNativeSolrIterator iterator = nativeIterator(query, options, collection);
 
-        List<Interpretation> results = new ArrayList<>(limit);
+        List<org.opencb.biodata.models.clinical.interpretation.Interpretation> results = new ArrayList<>(limit);
         String currentIntId = null;
-        List<ReportedVariantSearchModel> reportedVariantSearchModels = new ArrayList<>();
+        List<ClinicalVariantSearchModel> clinicalVariantSearchModels = new ArrayList<>();
         while (iterator.hasNext()) {
-            ReportedVariantSearchModel reportedVariantSearchModel = iterator.next();
-            if (currentIntId != null && reportedVariantSearchModel.getIntId() != currentIntId) {
-                Interpretation interpretation = interpretaionConverter.toInterpretation(reportedVariantSearchModels);
+            ClinicalVariantSearchModel clinicalVariantSearchModel = iterator.next();
+            if (currentIntId != null && clinicalVariantSearchModel.getIntId() != currentIntId) {
+                Interpretation interpretation = interpretaionConverter.toInterpretation(clinicalVariantSearchModels);
                 results.add(interpretation);
-                reportedVariantSearchModels.clear();
+                clinicalVariantSearchModels.clear();
             }
-            reportedVariantSearchModels.add(reportedVariantSearchModel);
-            currentIntId = reportedVariantSearchModel.getIntId();
+            clinicalVariantSearchModels.add(clinicalVariantSearchModel);
+            currentIntId = clinicalVariantSearchModel.getIntId();
         }
         int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
-        return new QueryResult<>("", dbTime, results.size(), results.size(), "Data from Solr", "", results);
+        return new DataResult<>(dbTime, null, results.size(), results, results.size());
     }
 
     @Override
-    public FacetedQueryResult facet(Query query, QueryOptions queryOptions, String s) throws IOException, ClinicalVariantException {
+    public DataResult<FacetField> facet(Query query, QueryOptions queryOptions, String s) throws IOException, ClinicalVariantException {
         return null;
     }
 
@@ -227,7 +226,7 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
      * @throws IOException            IOException
      * @throws ClinicalVariantException ClinicalVariantException
      */
-    public QueryResult<ReportedVariantSearchModel> nativeQuery(Query query, QueryOptions queryOptions, String collection)
+    public QueryResult<ClinicalVariantSearchModel> nativeQuery(Query query, QueryOptions queryOptions, String collection)
             throws IOException, ClinicalVariantException {
         int limit = queryOptions.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT);
         if (limit > DEFAULT_LIMIT) {
@@ -235,10 +234,10 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
         }
         queryOptions.put(QueryOptions.LIMIT, limit);
 
-        List<ReportedVariantSearchModel> results = new ArrayList<>(limit);
+        List<ClinicalVariantSearchModel> results = new ArrayList<>(limit);
 
         StopWatch stopWatch = StopWatch.createStarted();
-        ReportedVariantNativeSolrIterator iterator = nativeIterator(query, queryOptions, collection);
+        ClinicalVariantNativeSolrIterator iterator = nativeIterator(query, queryOptions, collection);
         while (iterator.hasNext()) {
             results.add(iterator.next());
         }
@@ -259,11 +258,11 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
      * @throws ClinicalVariantException   ClinicalVariantException
      */
     @Override
-    public ReportedVariantIterator iterator(Query query, QueryOptions options, String collection)
+    public ClinicalVariantIterator iterator(Query query, QueryOptions options, String collection)
             throws ClinicalVariantException, IOException {
         try {
             SolrQuery solrQuery = queryParser.parse(query, options);
-            return new ReportedVariantSolrIterator(solrManager.getSolrClient(), collection, solrQuery);
+            return new ClinicalVariantSolrIterator(solrManager.getSolrClient(), collection, solrQuery);
         } catch (SolrServerException e) {
             throw new ClinicalVariantException(e.getMessage(), e);
         }
@@ -280,11 +279,11 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
      * @throws IOException                      IOException
      * @throws ClinicalVariantException   ClinicalVariantException
      */
-    public ReportedVariantNativeSolrIterator nativeIterator(Query query, QueryOptions queryOptions, String collection)
+    public ClinicalVariantNativeSolrIterator nativeIterator(Query query, QueryOptions queryOptions, String collection)
             throws ClinicalVariantException, IOException {
         try {
             SolrQuery solrQuery = queryParser.parse(query, queryOptions);
-            return new ReportedVariantNativeSolrIterator(solrManager.getSolrClient(), collection, solrQuery);
+            return new ClinicalVariantNativeSolrIterator(solrManager.getSolrClient(), collection, solrQuery);
         } catch (SolrServerException e) {
             throw new ClinicalVariantException(e.getMessage(), e);
         }
@@ -292,7 +291,7 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
 
 
     @Override
-    public void addInterpretationComment(long interpretationId, Comment comment, String collection)
+    public void addInterpretationComment(long interpretationId, ClinicalComment comment, String collection)
             throws IOException, ClinicalVariantException {
         Query query = new Query();
         QueryOptions queryOptions = new QueryOptions();
@@ -321,7 +320,16 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
     }
 
     @Override
-    public void addReportedVariantComment(long interpretationId, String variantId, Comment comment, String collection)
+    public void addClinicalVariantComment(long interpretationId, String variantId, ClinicalComment comment, String collection) {
+
+    }
+
+    @Override
+    public void setStorageConfiguration(StorageConfiguration storageConfiguration) {
+
+    }
+
+    public void addReportedVariantComment(long interpretationId, String variantId, ClinicalComment comment, String collection)
             throws IOException, ClinicalVariantException {
 
         SolrQuery solrQuery = new SolrQuery();
@@ -329,7 +337,7 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
         solrQuery.addFilterQuery("(intId:\"" + interpretationId + "\" AND id:\"" + variantId + "\")");
         try {
             QueryResponse solrResponse = solrManager.getSolrClient().query(collection, solrQuery);
-            if (ListUtils.isNotEmpty(solrResponse.getResults())) {
+            if (CollectionUtils.isNotEmpty(solrResponse.getResults())) {
                 for (SolrDocument solrDocument: solrResponse.getResults()) {
                     SolrInputDocument solrInputDocument = new SolrInputDocument();
                     solrInputDocument.addField("id", solrDocument.getFieldValue("id"));

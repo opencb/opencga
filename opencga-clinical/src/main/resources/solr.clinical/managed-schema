@@ -66,7 +66,7 @@
 	<!-- Clinical analysis -->
     <field name="caName" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="caDescription" type="text_en" indexed="true" stored="true" multiValued="false"/>
-    <field name="caDisease" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="caDisorder" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="caFiles" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="caProbandId" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="caFamilyId" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -78,13 +78,13 @@
     <field name="intBasicJson" type="string" indexed="false" stored="true" multiValued="false"/>
 	<field name="intId" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="intClinicalAnalysisId" type="string" indexed="true" stored="true" multiValued="false"/>
-	<field name="intSoftwareName" type="string" indexed="true" stored="true" multiValued="false"/>
-	<field name="intSoftwareVersion" type="string" indexed="true" stored="true" multiValued="false"/>
+	<field name="intMethodName" type="string" indexed="true" stored="true" multiValued="false"/>
+	<field name="intMethodVersion" type="string" indexed="true" stored="true" multiValued="false"/>
 	<field name="intAnalystName" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="intPanelNames" type="string" indexed="true" stored="true" multiValued="true"/>
     <!-- Interpretation intInfo contains:
         description     : DS -- description text
-        analyst         : AN -- author -- email -- company
+        analyst         : AN -- author -- email
         dependencies    : DP -- name1 -- version1
                           DP -- name2 -- version2
         filters         : FT -- conservation=gerp<0.2
@@ -102,29 +102,29 @@
     <field name="studyId" type="string" indexed="true" stored="true" multiValued="false"/>
 	<field name="studyJson" type="string" indexed="false" stored="true" multiValued="false"/>
 
-	<!-- ReportedVariant -->
-    <field name="rvDeNovoQualityScore" type="double" indexed="true" stored="true" multiValued="false"/>
-    <field name="rvComments" type="text_en" indexed="true" stored="true" multiValued="true"/>
-    <field name="rvReportedEventsJson" type="string" indexed="false" stored="true" multiValued="false"/>
-    <field name="rvAttributesJson" type="string" indexed="false" stored="true" multiValued="false"/>
+	<!-- ClinicalVariant -->
+    <field name="cvPrimary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+    <field name="cvClinicalComments" type="text_en" indexed="true" stored="true" multiValued="true"/>
+    <field name="cvClinicalVariantEvidencesJson" type="string" indexed="false" stored="true" multiValued="false"/>
+    <field name="cvAttributesJson" type="string" indexed="false" stored="true" multiValued="false"/>
 
-	<!-- ReportedEvent -->
-    <field name="rePhenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="reConsequenceTypeIds" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="reGeneNames" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="reXrefs" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="rePanelNames" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="reAcmg" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="reClinicalSignificance" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="reDrugResponse" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="reTraitAssociation" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="reFunctionalEffect" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="reTumorigenesis" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="reOtherClassification" type="string" indexed="true" stored="true" multiValued="true"/>
-	<field name="reRolesInCancer" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="rvJustification" type="text_en" indexed="true" stored="true" multiValued="true"/>
-    <field name="rvTier" type="string" indexed="true" stored="true" multiValued="true"/>
-	<dynamicField name="reScore_*" type="double" indexed="true" stored="true" multiValued="false"/>
+	<!-- ClinicalVariantEvidence -->
+    <field name="cvePhenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="cveConsequenceTypeIds" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="cveGeneNames" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="cveXrefs" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="cvePanelNames" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="cveAcmg" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="cveClinicalSignificance" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="cveDrugResponse" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="cveTraitAssociation" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="cveFunctionalEffect" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="cveTumorigenesis" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="cveOtherClassification" type="string" indexed="true" stored="true" multiValued="true"/>
+	<field name="cveRolesInCancer" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="cvJustification" type="text_en" indexed="true" stored="true" multiValued="true"/>
+    <field name="cvTier" type="string" indexed="true" stored="true" multiValued="true"/>
+	<dynamicField name="cveScore_*" type="double" indexed="true" stored="true" multiValued="false"/>
 
     <!-- Variant fields copied from OpenCGA -->
     <field name="variantId" type="string" indexed="false" stored="true" multiValued="false"/>
