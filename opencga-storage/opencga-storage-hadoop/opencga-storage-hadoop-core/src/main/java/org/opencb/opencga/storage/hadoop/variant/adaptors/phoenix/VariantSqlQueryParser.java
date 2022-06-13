@@ -116,12 +116,13 @@ public class VariantSqlQueryParser {
 
     @Deprecated
     public String parse(Query query, QueryOptions options) {
-        ParsedVariantQuery variantQuery = new VariantQueryParser(null, metadataManager).parseQuery(query, options, true);
+        VariantQueryParser parser = new VariantQueryParser(null, metadataManager);
+        ParsedVariantQuery variantQuery = parser.parseQuery(query, options, true);
+        parser.optimize(variantQuery);
         return parse(variantQuery, options);
     }
 
     public String parse(ParsedVariantQuery variantQuery, QueryOptions options) {
-        new VariantQueryParser(null, metadataManager).optimize(variantQuery);
         Query query = variantQuery.getQuery();
 
         StringBuilder sb = new StringBuilder("SELECT ");

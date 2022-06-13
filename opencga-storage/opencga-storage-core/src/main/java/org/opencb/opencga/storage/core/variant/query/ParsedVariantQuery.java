@@ -10,6 +10,9 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 
 import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.ID_INTERSECT;
 
 public class ParsedVariantQuery {
 
@@ -20,7 +23,7 @@ public class ParsedVariantQuery {
 
     private VariantQueryProjection projection;
 
-    private final VariantStudyQuery studyQuery = new VariantStudyQuery();
+    private final VariantStudyQuery studyQuery;
 //    private VariantAnnotationQuery annotationQuery;
 
 
@@ -28,12 +31,23 @@ public class ParsedVariantQuery {
         this.inputQuery = new Query();
         this.inputOptions = new QueryOptions();
         this.query = new Query();
+        studyQuery = new VariantStudyQuery();
     }
 
     public ParsedVariantQuery(Query inputQuery, QueryOptions inputOptions) {
         this.inputQuery = inputQuery;
         this.inputOptions = inputOptions;
         this.query = inputQuery;
+        studyQuery = new VariantStudyQuery();
+    }
+
+    public ParsedVariantQuery(ParsedVariantQuery other) {
+        this.inputQuery = new Query(other.inputQuery);
+        this.inputOptions = new QueryOptions(other.inputOptions);
+        this.query = new Query(other.query);
+        this.projection = other.projection;
+        this.studyQuery = other.studyQuery;
+        this.optimized = other.optimized;
     }
 
     public Query getInputQuery() {
@@ -83,6 +97,22 @@ public class ParsedVariantQuery {
 
     public VariantStudyQuery getStudyQuery() {
         return studyQuery;
+    }
+
+    public List<Variant> getVariantIdIntersect() {
+        return query.getAsStringList(ID_INTERSECT.key()).stream().map(Variant::new).collect(Collectors.toList());
+    }
+
+    public VariantQueryXref getXrefs() {
+        return VariantQueryParser.parseXrefs(query);
+    }
+
+    public List<String> getConsequenceTypes() {
+        return VariantQueryUtils.parseConsequenceTypes(query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()));
+    }
+
+    public List<String> getBiotypes() {
+        return query.getAsStringList(VariantQueryParam.ANNOT_BIOTYPE.key());
     }
 
     public static class VariantStudyQuery {

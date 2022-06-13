@@ -40,9 +40,11 @@ import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.ConcatVariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
@@ -345,7 +347,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             return archiveIterator(variantQuery, options);
         }
 
-        VariantStorageMetadataManager metadataManager = getMetadataManager();
         Query query = variantQuery.getQuery();
         String unknownGenotype = null;
         if (isValidParam(query, UNKNOWN_GENOTYPE)) {
@@ -365,88 +366,143 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 .build();
 
         if (hbaseIterator) {
-            logger.debug("Creating " + VariantHBaseScanIterator.class.getSimpleName() + " iterator");
-            List<Scan> scans = hbaseQueryParser.parseQueryMultiRegion(variantQuery, options);
-            Iterator<ResultScanner> resScans = scans.stream().map(scan -> {
-                try {
-                    return hBaseManager.getScanner(variantTable, scan);
-                } catch (IOException e) {
-                    throw VariantQueryException.internalException(e);
-                }
-            }).iterator();
-
-            VariantHBaseScanIterator iterator = new VariantHBaseScanIterator(
-                    resScans, metadataManager, converterConfiguration, options);
-
-            // Client side skip!
-            int skip = options.getInt(QueryOptions.SKIP, -1);
-            if (skip > 0) {
-                logger.info("Client side skip! skip = {}", skip);
-                iterator.skip(skip);
-            }
-            return iterator;
+            return hbaseIterator(variantQuery, options, converterConfiguration);
         } else {
-            logger.debug("Table name = " + variantTable);
-            logger.info("Query : " + VariantQueryUtils.printQuery(query));
-            String sql = queryParser.parse(variantQuery, options);
-            logger.info(sql);
-            logger.debug("Creating {} iterator", VariantHBaseResultSetIterator.class);
-            java.sql.Connection jdbcConnection = openJdbcConnection(); // Closed by iterator or catch
-            Statement statement = null; // Closed by iterator or catch
-            ResultSet resultSet = null; // Closed by iterator or catch
-            try {
-                statement = jdbcConnection.createStatement();
-                statement.setFetchSize(options.getInt("batchSize", phoenixFetchSize));
-                resultSet = statement.executeQuery(sql);
-
-                if (options.getBoolean("explain", false)) {
-                    logger.info("---- " + "EXPLAIN " + sql);
-//                    phoenixHelper.getPhoenixHelper().explain(getJdbcConnection(), sql, Logger::info);
-                    List<String> planSteps = new LinkedList<>();
-                    resultSet.unwrap(PhoenixResultSet.class).getUnderlyingIterator().explain(planSteps);
-                    for (String planStep : planSteps) {
-                        logger.info(" | " + planStep);
-                    }
-                }
-
-//                VariantPhoenixCursorIterator iterator = new VariantPhoenixCursorIterator(phoenixQuery, getJdbcConnection(), converter);
-                VariantHBaseResultSetIterator iterator = new VariantHBaseResultSetIterator(jdbcConnection, statement,
-                        resultSet, metadataManager, converterConfiguration);
-
-                if (clientSideSkip) {
-                    // Client side skip!
-                    int skip = options.getInt(QueryOptions.SKIP, -1);
-                    if (skip > 0) {
-                        logger.info("Client side skip! skip = {}", skip);
-                        iterator.skip(skip);
-                    }
-                }
-                return iterator;
-            } catch (SQLException e) {
-                if (e.getErrorCode() == SQLExceptionCode.COLUMN_NOT_FOUND.getErrorCode()) {
-                    try {
-                        logger.error(e.getMessage());
-                        List<PhoenixHelper.Column> columns = phoenixHelper
-                                .getColumns(jdbcConnection, variantTable, VariantPhoenixSchema.DEFAULT_TABLE_TYPE);
-                        logger.info("Available columns from table " + variantTable + " :");
-                        for (PhoenixHelper.Column column : columns) {
-                            logger.info(" - " + column.toColumnInfo());
-                        }
-                    } catch (SQLException e1) {
-                        logger.error("Error reading columns for table " + variantTable, e1);
-                    }
-                }
-                closeOrSuppress(jdbcConnection, e);
-                closeOrSuppress(statement, e);
-                closeOrSuppress(resultSet, e);
-                throw VariantQueryException.internalException(e);
-            } catch (Exception e) {
-                closeOrSuppress(jdbcConnection, e);
-                closeOrSuppress(statement, e);
-                closeOrSuppress(resultSet, e);
-                throw e;
+            List<ParsedVariantQuery> queries = splitQuery(variantQuery);
+            if (queries.size() == 1) {
+                return phoenixIterator(queries.get(0), options, converterConfiguration);
+            } else {
+                QueryOptions finalOptions = options;
+                return new ConcatVariantDBIterator(Iterators.transform(queries.iterator(),
+                        newQuery -> phoenixIterator(newQuery, finalOptions, converterConfiguration)));
             }
         }
+    }
+
+    private VariantHBaseResultSetIterator phoenixIterator(ParsedVariantQuery variantQuery, QueryOptions options,
+                                                          HBaseVariantConverterConfiguration converterConfiguration) {
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+
+        logger.debug("Table name = " + variantTable);
+        logger.info("Query : " + VariantQueryUtils.printQuery(variantQuery.getQuery()));
+        String sql = queryParser.parse(variantQuery, options);
+        logger.info(sql);
+        logger.debug("Creating {} iterator", VariantHBaseResultSetIterator.class);
+        java.sql.Connection jdbcConnection = openJdbcConnection(); // Closed by iterator or catch
+        Statement statement = null; // Closed by iterator or catch
+        ResultSet resultSet = null; // Closed by iterator or catch
+        try {
+            statement = jdbcConnection.createStatement();
+            statement.setFetchSize(options.getInt("batchSize", phoenixFetchSize));
+            resultSet = statement.executeQuery(sql);
+
+            if (options.getBoolean("explain", false)) {
+                logger.info("---- " + "EXPLAIN " + sql);
+//                    phoenixHelper.getPhoenixHelper().explain(getJdbcConnection(), sql, Logger::info);
+                List<String> planSteps = new LinkedList<>();
+                resultSet.unwrap(PhoenixResultSet.class).getUnderlyingIterator().explain(planSteps);
+                for (String planStep : planSteps) {
+                    logger.info(" | " + planStep);
+                }
+            }
+
+//                VariantPhoenixCursorIterator iterator = new VariantPhoenixCursorIterator(phoenixQuery, getJdbcConnection(), converter);
+            VariantHBaseResultSetIterator iterator = new VariantHBaseResultSetIterator(jdbcConnection, statement,
+                    resultSet, metadataManager, converterConfiguration);
+
+            if (clientSideSkip) {
+                // Client side skip!
+                int skip = options.getInt(QueryOptions.SKIP, -1);
+                if (skip > 0) {
+                    logger.info("Client side skip! skip = {}", skip);
+                    iterator.skip(skip);
+                }
+            }
+            return iterator;
+        } catch (SQLException e) {
+            if (e.getErrorCode() == SQLExceptionCode.COLUMN_NOT_FOUND.getErrorCode()) {
+                try {
+                    logger.error(e.getMessage());
+                    List<PhoenixHelper.Column> columns = phoenixHelper
+                            .getColumns(jdbcConnection, variantTable, VariantPhoenixSchema.DEFAULT_TABLE_TYPE);
+                    logger.info("Available columns from table " + variantTable + " :");
+                    for (PhoenixHelper.Column column : columns) {
+                        logger.info(" - " + column.toColumnInfo());
+                    }
+                } catch (SQLException e1) {
+                    logger.error("Error reading columns for table " + variantTable, e1);
+                }
+            }
+            closeOrSuppress(jdbcConnection, e);
+            closeOrSuppress(statement, e);
+            closeOrSuppress(resultSet, e);
+            throw VariantQueryException.internalException(e);
+        } catch (Exception e) {
+            closeOrSuppress(jdbcConnection, e);
+            closeOrSuppress(statement, e);
+            closeOrSuppress(resultSet, e);
+            throw e;
+        }
+    }
+
+    private VariantHBaseScanIterator hbaseIterator(ParsedVariantQuery variantQuery, QueryOptions options,
+                                                   HBaseVariantConverterConfiguration converterConfiguration) {
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        logger.debug("Creating " + VariantHBaseScanIterator.class.getSimpleName() + " iterator");
+        List<Scan> scans = hbaseQueryParser.parseQueryMultiRegion(variantQuery, options);
+        Iterator<ResultScanner> resScans = scans.stream().map(scan -> {
+            try {
+                return hBaseManager.getScanner(variantTable, scan);
+            } catch (IOException e) {
+                throw VariantQueryException.internalException(e);
+            }
+        }).iterator();
+
+        VariantHBaseScanIterator iterator = new VariantHBaseScanIterator(
+                resScans, metadataManager, converterConfiguration, options);
+
+        // Client side skip!
+        int skip = options.getInt(QueryOptions.SKIP, -1);
+        if (skip > 0) {
+            logger.info("Client side skip! skip = {}", skip);
+            iterator.skip(skip);
+        }
+        return iterator;
+    }
+
+    private List<ParsedVariantQuery> splitQuery(ParsedVariantQuery variantQuery) {
+        if (isValidParam(variantQuery.getQuery(), ID_INTERSECT)) {
+            VariantQueryParser parser = new VariantQueryParser(null, getMetadataManager());
+            parser.optimize(variantQuery);
+
+            int complexityIndex = 0;
+
+            ParsedVariantQuery.VariantQueryXref xrefs = variantQuery.getXrefs();
+            int cts = variantQuery.getConsequenceTypes().size();
+            int bts = variantQuery.getBiotypes().size();
+            complexityIndex += xrefs.getGenes().size() * (cts == 0 ? 1 : cts) * (bts == 0 ? 1 : bts);
+
+            List<Variant> idIntersect = variantQuery.getVariantIdIntersect();
+            if (complexityIndex > 1000 && idIntersect.size() > 5) {
+                logger.info("Query complexity {} with {} variants. Split", complexityIndex, idIntersect.size());
+
+                // split query
+                ParsedVariantQuery q1 = new ParsedVariantQuery(variantQuery).setOptimized(false);
+                ParsedVariantQuery q2 = new ParsedVariantQuery(variantQuery).setOptimized(false);
+
+                q1.getQuery().put(ID_INTERSECT.key(), idIntersect.subList(0, idIntersect.size() / 2));
+                q2.getQuery().put(ID_INTERSECT.key(), idIntersect.subList(idIntersect.size() / 2, idIntersect.size()));
+
+                parser.optimize(q1);
+                parser.optimize(q2);
+
+                List<ParsedVariantQuery> queries = new LinkedList<>();
+                queries.addAll(splitQuery(q1));
+                queries.addAll(splitQuery(q2));
+                return queries;
+            }
+        }
+        return Collections.singletonList(variantQuery);
     }
 
     private void closeOrSuppress(AutoCloseable autoCloseable, Exception e) {
