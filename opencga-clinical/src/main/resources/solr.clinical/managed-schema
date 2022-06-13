@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema name="example-data-driven-schema" version="1.6">
+    <uniqueKey>id</uniqueKey>
+
+    <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
+    <fieldType name="booleans" class="solr.BoolField" sortMissingLast="true" multiValued="true"/>
+    <fieldType name="double" class="solr.TrieDoubleField" positionIncrementGap="0" docValues="true" precisionStep="0"/>
+    <fieldType name="doubles" class="solr.TrieDoubleField" positionIncrementGap="0" docValues="true" multiValued="true" precisionStep="0"/>
+    <fieldType name="float" class="solr.TrieFloatField" positionIncrementGap="0" docValues="true" precisionStep="0"/>
+    <fieldType name="floats" class="solr.TrieFloatField" positionIncrementGap="0" docValues="true" multiValued="true" precisionStep="0"/>
+    <fieldType name="ignored" class="solr.StrField" indexed="false" stored="false" docValues="false" multiValued="true"/>
+    <fieldType name="int" class="solr.TrieIntField" positionIncrementGap="0" docValues="true" precisionStep="0"/>
+    <fieldType name="ints" class="solr.TrieIntField" positionIncrementGap="0" docValues="true" multiValued="true" precisionStep="0"/>
+    <fieldType name="long" class="solr.TrieLongField" positionIncrementGap="0" docValues="true" precisionStep="0"/>
+    <fieldType name="longs" class="solr.TrieLongField" positionIncrementGap="0" docValues="true" multiValued="true" precisionStep="0"/>
+    <fieldType name="string" class="solr.StrField" sortMissingLast="true" docValues="true"/>
+    <fieldType name="strings" class="solr.StrField" sortMissingLast="true" docValues="true" multiValued="true"/>
+    <fieldType name="tdate" class="solr.TrieDateField" positionIncrementGap="0" docValues="true" precisionStep="6"/>
+    <fieldType name="tdates" class="solr.TrieDateField" positionIncrementGap="0" docValues="true" multiValued="true" precisionStep="6"/>
+    <fieldType name="tdouble" class="solr.TrieDoubleField" positionIncrementGap="0" docValues="true" precisionStep="8"/>
+    <fieldType name="tdoubles" class="solr.TrieDoubleField" positionIncrementGap="0" docValues="true" multiValued="true" precisionStep="8"/>
+    <fieldType name="tfloat" class="solr.TrieFloatField" positionIncrementGap="0" docValues="true" precisionStep="8"/>
+    <fieldType name="tfloats" class="solr.TrieFloatField" positionIncrementGap="0" docValues="true" multiValued="true" precisionStep="8"/>
+    <fieldType name="tint" class="solr.TrieIntField" positionIncrementGap="0" docValues="true" precisionStep="8"/>
+    <fieldType name="tints" class="solr.TrieIntField" positionIncrementGap="0" docValues="true" multiValued="true" precisionStep="8"/>
+    <fieldType name="tlong" class="solr.TrieLongField" positionIncrementGap="0" docValues="true" precisionStep="8"/>
+    <fieldType name="tlongs" class="solr.TrieLongField" positionIncrementGap="0" docValues="true" multiValued="true" precisionStep="8"/>
+    <fieldType name="text_en" class="solr.TextField" positionIncrementGap="100">
+        <analyzer type="index">
+            <tokenizer class="solr.StandardTokenizerFactory"/>
+            <filter class="solr.StopFilterFactory" words="lang/stopwords_en.txt" ignoreCase="true"/>
+            <filter class="solr.LowerCaseFilterFactory"/>
+            <filter class="solr.EnglishPossessiveFilterFactory"/>
+            <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+            <filter class="solr.PorterStemFilterFactory"/>
+        </analyzer>
+        <analyzer type="query">
+            <tokenizer class="solr.StandardTokenizerFactory"/>
+            <filter class="solr.SynonymFilterFactory" expand="true" ignoreCase="true" synonyms="synonyms.txt"/>
+            <filter class="solr.StopFilterFactory" words="lang/stopwords_en.txt" ignoreCase="true"/>
+            <filter class="solr.LowerCaseFilterFactory"/>
+            <filter class="solr.EnglishPossessiveFilterFactory"/>
+            <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+            <filter class="solr.PorterStemFilterFactory"/>
+        </analyzer>
+    </fieldType>
+    <fieldType name="text_general" class="solr.TextField" positionIncrementGap="100" multiValued="true">
+        <analyzer type="index">
+            <tokenizer class="solr.StandardTokenizerFactory"/>
+            <filter class="solr.StopFilterFactory" words="stopwords.txt" ignoreCase="true"/>
+            <filter class="solr.LowerCaseFilterFactory"/>
+        </analyzer>
+        <analyzer type="query">
+            <tokenizer class="solr.StandardTokenizerFactory"/>
+            <filter class="solr.StopFilterFactory" words="stopwords.txt" ignoreCase="true"/>
+            <filter class="solr.SynonymFilterFactory" expand="true" ignoreCase="true" synonyms="synonyms.txt"/>
+            <filter class="solr.LowerCaseFilterFactory"/>
+        </analyzer>
+    </fieldType>
+
+    <field name="id" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="_root_" type="string" docValues="false" indexed="true" stored="false"/>
+    <field name="_text_" type="text_general" multiValued="true" indexed="true" stored="false"/>
+    <field name="_version_" type="long" indexed="false" stored="false"/>
+
+	<!-- Clinical analysis -->
+    <field name="caName" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="caDescription" type="text_en" indexed="true" stored="true" multiValued="false"/>
+    <field name="caDisease" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="caFiles" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="caProbandId" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="caFamilyId" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="caFamilyPhenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="caFamilyMemberIds" type="string" indexed="true" stored="true" multiValued="true"/>
+
+	<!-- Interpretation -->
+	<!-- intBasicJson contain all interpretation fields but the reported variant list -->
+    <field name="intBasicJson" type="string" indexed="false" stored="true" multiValued="false"/>
+	<field name="intId" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="intClinicalAnalysisId" type="string" indexed="true" stored="true" multiValued="false"/>
+	<field name="intSoftwareName" type="string" indexed="true" stored="true" multiValued="false"/>
+	<field name="intSoftwareVersion" type="string" indexed="true" stored="true" multiValued="false"/>
+	<field name="intAnalystName" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="intPanelNames" type="string" indexed="true" stored="true" multiValued="true"/>
+    <!-- Interpretation intInfo contains:
+        description     : DS -- description text
+        analyst         : AN -- author -- email -- company
+        dependencies    : DP -- name1 -- version1
+                          DP -- name2 -- version2
+        filters         : FT -- conservation=gerp<0.2
+                          FT -- ...
+        comments        : CM -- comment 1
+        attributes      : AT -- key=value
+                          AT -- ...
+     -->
+    <field name="intInfo" type="text_en" indexed="true" stored="true" multiValued="true"/>
+	<field name="intCreationDate" type="string" indexed="true" stored="true" multiValued="false"/>
+
+    <!-- Catalog attributes -->
+    <field name="projectId" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="assembly" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="studyId" type="string" indexed="true" stored="true" multiValued="false"/>
+	<field name="studyJson" type="string" indexed="false" stored="true" multiValued="false"/>
+
+	<!-- ReportedVariant -->
+    <field name="rvDeNovoQualityScore" type="double" indexed="true" stored="true" multiValued="false"/>
+    <field name="rvComments" type="text_en" indexed="true" stored="true" multiValued="true"/>
+    <field name="rvReportedEventsJson" type="string" indexed="false" stored="true" multiValued="false"/>
+    <field name="rvAttributesJson" type="string" indexed="false" stored="true" multiValued="false"/>
+
+	<!-- ReportedEvent -->
+    <field name="rePhenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="reConsequenceTypeIds" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="reGeneNames" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="reXrefs" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="rePanelNames" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="reAcmg" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="reClinicalSignificance" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="reDrugResponse" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="reTraitAssociation" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="reFunctionalEffect" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="reTumorigenesis" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="reOtherClassification" type="string" indexed="true" stored="true" multiValued="true"/>
+	<field name="reRolesInCancer" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="rvJustification" type="text_en" indexed="true" stored="true" multiValued="true"/>
+    <field name="rvTier" type="string" indexed="true" stored="true" multiValued="true"/>
+	<dynamicField name="reScore_*" type="double" indexed="true" stored="true" multiValued="false"/>
+
+    <!-- Variant fields copied from OpenCGA -->
+    <field name="variantId" type="string" indexed="false" stored="true" multiValued="false"/>
+    <field name="chromosome" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="start" type="int" indexed="true" stored="true" multiValued="false"/>
+    <field name="end" type="int" indexed="true" stored="true" multiValued="false"/>
+    <field name="xrefs" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="type" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="release" type="int" indexed="true" stored="true" multiValued="false"/>
+    <field name="studies" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="phastCons" type="double" indexed="true" stored="true" multiValued="false"/>
+    <field name="phylop" type="double" indexed="true" stored="true" multiValued="false"/>
+    <field name="gerp" type="double" indexed="true" stored="true" multiValued="false"/>
+    <field name="caddRaw" type="double" indexed="true" stored="true" multiValued="false"/>
+    <field name="caddScaled" type="double" indexed="true" stored="true" multiValued="false"/>
+    <field name="sift" type="double" indexed="true" stored="true" multiValued="false"/>
+    <field name="siftDesc" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="polyphen" type="double" indexed="true" stored="true" multiValued="false"/>
+    <field name="polyphenDesc" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="genes" type="string" indexed="false" stored="true" multiValued="true"/>
+    <field name="biotypes" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="soAcc" type="int" indexed="true" stored="true" multiValued="true"/>
+    <field name="geneToSoAcc" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="traits" type="text_en" indexed="true" stored="true" multiValued="true"/>
+    <field name="other" type="string" indexed="false" stored="true" multiValued="true"/>
+    <dynamicField name="stats_*" type="float" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="popFreq_*" type="float" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="gt_*" type="string" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="dp_*" type="int" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="sampleFormat_*" type="string" indexed="false" stored="true" multiValued="false"/>
+    <dynamicField name="qual_*" type="float" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="filter_*" type="string" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="fileInfo_*" type="string" indexed="false" stored="true" multiValued="false"/>
+
+</schema>
