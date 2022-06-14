@@ -84,16 +84,16 @@
             <!--<type>war</type>-->
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>com.beust</groupId>-->
-<!--            <artifactId>jcommander</artifactId>-->
-<!--            <version>1.82</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>org.glassfish.jersey.containers</groupId>-->
-<!--            <artifactId>jersey-container-servlet-core</artifactId>-->
-<!--            <version>${jersey.version}</version>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>com.beust</groupId>-->
+        <!--            <artifactId>jcommander</artifactId>-->
+        <!--            <version>1.82</version>-->
+        <!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.glassfish.jersey.containers</groupId>-->
+        <!--            <artifactId>jersey-container-servlet-core</artifactId>-->
+        <!--            <version>${jersey.version}</version>-->
+        <!--        </dependency>-->
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-analysis</artifactId>
@@ -147,7 +147,10 @@
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
-                <targetPath>${project.basedir}/target/conf</targetPath>
+                <targetPath>${project.basedir}/target/clients/R</targetPath>
+                <includes>
+                    <include>compileR.sh</include>
+                </includes>
             </resource>
             <resource>
                 <directory>app/cloud/docker/compose</directory>
@@ -319,6 +322,7 @@
                                     <arg value="${project.basedir}/../opencga-client/src/main/python"/>
                                     <arg value="${build.dir}/clients"/>
                                 </exec>
+
                                 <exec executable="sed">
                                     <arg value="-i"/>
                                     <arg value="s/PYOPENCGA_VERSION/${pyopencga.version}/"/>
@@ -328,6 +332,11 @@
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-client/src/main/R"/>
                                     <arg value="${build.dir}/clients"/>
+                                </exec>
+                                <!-- We need to read DESCRIPTION from target folder because we have renamed the version -->
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/../opencga-client/target/classes/DESCRIPTION"/>
+                                    <arg value="${build.dir}/clients/R/"/>
                                 </exec>
                                 <exec executable="cp">
                                     <arg value="-r"/>
@@ -562,6 +571,52 @@
                                         <exec executable="cp">
                                             <arg value="${project.basedir}/../opencga-storage/opencga-storage-hadoop/opencga-storage-hadoop-core/target/opencga-storage-hadoop-core-${opencga.version}-jar-with-dependencies.jar"/>
                                             <arg value="${build.dir}"/>
+                                        </exec>
+                                    </target>
+                                </configuration>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>RClient</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>RClient</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>opencga-client</artifactId>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.8</version>
+                        <executions>
+                            <execution>
+                                <id>R-client-compile</id>
+                                <phase>install</phase>
+                                <configuration>
+                                    <target>
+                                        <echo>Compiling R client</echo>
+                                        <exec executable="${build.dir}/clients/R/build.sh">
+                                            <arg value="${build.dir}/clients/R"/>
+                                        </exec>
+                                        <echo>Copying docker-compose files</echo>
+                                        <echo>Moving R client to ${build.dir}/clients/R/</echo>
+                                        <exec executable="cp">
+                                            <arg value="/tmp/opencgaR_${opencgar.version}.tar.gz"/>
+                                            <arg value="${build.dir}/clients/R/opencgaR_${opencga.version}.tar.gz"/>
                                         </exec>
                                     </target>
                                 </configuration>

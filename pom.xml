@@ -44,7 +44,8 @@
 
     <properties>
         <opencga.version>2.4.0-SNAPSHOT</opencga.version>
-        <pyopencga.version>${opencga.version}</pyopencga.version>
+        <pyopencga.version>2.4.0_dev</pyopencga.version>
+        <opencgar.version>2.4.0</opencgar.version>
         <cellbase.version>5.2.0-SNAPSHOT</cellbase.version>
         <biodata.version>2.4.0-SNAPSHOT</biodata.version>
         <java-common-libs.version>4.4.0-SNAPSHOT</java-common-libs.version>
