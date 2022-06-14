@@ -11,6 +11,7 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     EXPECTED_FILES_NUMBER("expected_files_number", 5000),
     EXPECTED_SAMPLES_NUMBER("expected_samples_number"),
     DBADAPTOR_PHOENIX_FETCH_SIZE("storage.hadoop.phoenix.fetchSize", -1),
+    DBADAPTOR_PHOENIX_QUERY_COMPLEXITY_THRESHOLD("storage.hadoop.phoenix.queryComplexityThreshold", 250),
 
     /////////////////////////
     // MapReduce configuration

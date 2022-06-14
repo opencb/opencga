@@ -167,7 +167,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 .append(VariantStorageOptions.STUDY.key(), STUDY_NAME_4)
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
-        runETL(engine, getResourceUri("variant-test-dense.vcf"), outputUri, params, true, true, true);
+        runETL(engine, getResourceUri("variant-test-dense.vcf.gz"), outputUri, params, true, true, true);
         engine.familyIndex(STUDY_NAME_4, trios, new ObjectMap());
 
 
@@ -612,7 +612,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
         // Query SampleIndex+DBAdaptor
         System.out.println("#Query SampleIndex+DBAdaptor");
-        queryResult = variantStorageEngine.get(new Query(query), new QueryOptions());
+        queryResult = variantStorageEngine.get(new Query(query), new QueryOptions(QueryOptions.COUNT, true).append(QueryOptions.LIMIT, 5000));
         int indexAndDBAdaptor = queryResult.getNumResults();
         long indexAndDBAdaptorMatches = queryResult.getNumMatches();
         assertEquals(indexAndDBAdaptorMatches, indexAndDBAdaptor);

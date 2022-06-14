@@ -786,6 +786,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     List<Region> geneRegions = new ArrayList<>(geneRegionsFinal.values());
                     mergeRegions(geneRegions);
                     query.put(ANNOT_GENE_REGIONS.key(), geneRegions);
+                    Map<String, Region> allGeneRegionMap = new HashMap<>(panelGeneRegionMap);
+                    allGeneRegionMap.putAll(queryGeneRegionMap);
+                    query.put(ANNOT_GENE_REGIONS_MAP.key(), allGeneRegionMap);
 
                     List<String> genes = new ArrayList<>(genesFinal);
                     genes.addAll(geneRegionsFinal.keySet());
