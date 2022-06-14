@@ -506,7 +506,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                                                    boolean skipRebuild, String token)
             throws CatalogException, StorageEngineException {
         return secureOperation("configure", studyStr, new ObjectMap(), token, engine -> {
-            sampleIndexConfiguration.validate();
+            String version = engine.getCellBaseUtils().getCellBaseClient().getClientConfiguration().getVersion();
+            sampleIndexConfiguration.validate(version);
             String studyFqn = getStudyFqn(studyStr, token);
             engine.getMetadataManager().addSampleIndexConfiguration(studyFqn, sampleIndexConfiguration, true);
 
