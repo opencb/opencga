@@ -326,7 +326,8 @@ public final class VariantPhoenixSchema {
 
     public static List<PhoenixHelper.Index> getPopFreqIndices(String variantsTableName) {
         HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
-        return Arrays.asList(getPopFreqIndex(variantsTableName, ParamConstants.POP_FREQ_1000G, "ALL"), getPopFreqIndex(variantsTableName, "EXAC", "ALL"));
+        return Arrays.asList(getPopFreqIndex(variantsTableName, ParamConstants.POP_FREQ_1000G, "ALL"),
+                getPopFreqIndex(variantsTableName, "EXAC", "ALL"));
     }
 
     public static PhoenixHelper.Index getPopFreqIndex(String variantsTableName, String study, String population) {

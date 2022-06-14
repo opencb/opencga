@@ -9,7 +9,7 @@ public class AddMissingColumns implements Runnable {
     private final HadoopVariantStorageEngine engine;
 
     public AddMissingColumns(Object engine) {
-        this.engine = (HadoopVariantStorageEngine) engine;;
+        this.engine = (HadoopVariantStorageEngine) engine;
     }
 
     @Override
