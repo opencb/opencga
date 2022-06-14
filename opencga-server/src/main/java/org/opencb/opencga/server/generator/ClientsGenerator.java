@@ -10,10 +10,12 @@ import org.opencb.commons.api.models.RestApi;
 import org.opencb.commons.api.models.RestCategory;
 import org.opencb.commons.api.models.RestEndpoint;
 import org.opencb.commons.api.models.RestParameter;
+import org.opencb.commons.api.utils.RestApiUtils;
 import org.opencb.commons.api.writers.cli.AutoCompleteWriter;
 import org.opencb.commons.api.writers.cli.ExecutorsCliRestApiWriter;
 import org.opencb.commons.api.writers.cli.OptionsCliRestApiWriter;
 import org.opencb.commons.api.writers.cli.ParserCliRestApiWriter;
+import org.opencb.commons.utils.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.server.rest.*;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
@@ -67,14 +69,14 @@ public class ClientsGenerator {
         classes.add(AdminWSServer.class);
 
         try {
-            RestApi restApi = prepare(new RestApiParser().parse(classes, true));
+            RestApi restApi = prepare(new RestApiParser().parse(classes, true,GitRepositoryState.get().getBuildVersion(), GitRepositoryState.get().getCommitId()));
             config = ConfigurationManager.setUp();
             config.initialize();
 
             libraries(restApi);
 
 
-            RestApi flatRestApi = prepare(new RestApiParser().parse(classes, true));
+            RestApi flatRestApi = prepare(new RestApiParser().parse(classes, true, GitRepositoryState.get().getBuildVersion(), GitRepositoryState.get().getCommitId()));
             cli(flatRestApi);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
@@ -86,7 +88,7 @@ public class ClientsGenerator {
         String restApiFilePath = outDir.getAbsolutePath();
         logger.info("Writing RestApi object temporarily in {}", restApiFilePath);
 
-        ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
+        ObjectMapper mapper = RestApiUtils.generateDefaultObjectMapper();
         mapper.writeValue(outDir, restApi);
 
         generateLibrary("java", restApiFilePath, "opencga-client/src/main/java/org/opencb/opencga/client/rest/clients/");

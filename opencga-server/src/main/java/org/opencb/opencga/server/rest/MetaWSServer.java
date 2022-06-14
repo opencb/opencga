@@ -256,7 +256,7 @@ public class MetaWSServer extends OpenCGAWSServer {
                 classes.add(classMap.get(category));
             }
         }
-        RestApi restApi = new RestApiParser().parse(classes, summary);
+        RestApi restApi = new RestApiParser().parse(classes, summary,GitRepositoryState.get().getBuildVersion(), GitRepositoryState.get().getCommitId());
         return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(restApi.getCategories()), 1));
     }
 

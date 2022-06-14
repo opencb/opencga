@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.opencb.commons.api.RestApiParser;
 import org.opencb.commons.api.models.RestApi;
 import org.opencb.commons.api.models.RestEndpoint;
+import org.opencb.commons.utils.GitRepositoryState;
 import org.opencb.opencga.server.rest.*;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
 import org.opencb.opencga.server.rest.analysis.AlignmentWebService;
@@ -49,7 +50,7 @@ public class RestApiParserTest {
 
     @Test
     public void parse() {
-        RestApi parse = restApiParser.parse(VariantOperationWebService.class, true);
+        RestApi parse = restApiParser.parse(VariantOperationWebService.class, true, GitRepositoryState.get().getBuildVersion(), GitRepositoryState.get().getCommitId());
         List<RestEndpoint> create = parse.getCategories().get(0).getEndpoints().stream()
                 .filter(endpoint -> endpoint.getPath().contains("configure"))
                 .collect(Collectors.toList());
@@ -82,7 +83,7 @@ public class RestApiParserTest {
         classes.add(AdminWSServer.class);
         Files.createDirectories(Paths.get("target/test-data/"));
         Path path = Paths.get("target/test-data/restApi.json");
-        restApiParser.parseToFile(classes, path);
+        restApiParser.parseToFile(classes, path,GitRepositoryState.get().getBuildVersion(), GitRepositoryState.get().getCommitId());
         System.out.println("path.toAbsolutePath().toString() = " + path.toAbsolutePath());
     }
 

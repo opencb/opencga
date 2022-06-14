@@ -2,11 +2,12 @@ package org.opencb.opencga.server.generator;
 
 import junit.framework.TestCase;
 import org.opencb.commons.api.RestApiParser;
+import org.opencb.commons.utils.GitRepositoryState;
 import org.opencb.opencga.server.rest.SampleWSServer;
 
 public class JSONManagerTest extends TestCase {
 
     public void testGetHelp() {
-        new RestApiParser().parse(SampleWSServer.class, true);
+        new RestApiParser().parse(SampleWSServer.class, true, GitRepositoryState.get().getBuildVersion(), GitRepositoryState.get().getCommitId());
     }
 }
