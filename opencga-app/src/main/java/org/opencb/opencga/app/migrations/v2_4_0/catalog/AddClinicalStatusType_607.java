@@ -49,7 +49,9 @@ public class AddClinicalStatusType_607 extends MigrationTool {
             interpretationStatusTypeMap.put(status.getId(), status.getType().name());
         }
 
-        migrateCollection(MongoDBAdaptorFactory.STUDY_COLLECTION, new Document(), Projections.include("internal.configuration.clinical"),
+        migrateCollection(MongoDBAdaptorFactory.STUDY_COLLECTION,
+                new Document("internal.configuration.clinical.status.FAMILY.type", new Document("$exists", false)),
+                Projections.include("internal.configuration.clinical"),
                 (doc, bulk) -> {
                     Document internal = doc.get("internal", Document.class);
                     Document configuration = internal.get("configuration", Document.class);
