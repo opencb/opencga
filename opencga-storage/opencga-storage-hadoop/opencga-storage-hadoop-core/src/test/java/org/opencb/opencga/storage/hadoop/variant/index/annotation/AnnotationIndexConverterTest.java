@@ -6,6 +6,7 @@ import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.PopulationFrequency;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -160,18 +161,18 @@ public class AnnotationIndexConverterTest {
     @Test
     public void testPopFreqAny() {
         assertEquals(POP_FREQ_ANY_001_MASK | INTERGENIC_MASK,
-                b = converter.convert(annot(pf(GNOMAD_GENOMES, "ALL", 0.3))).getSummaryIndex());
+                b = converter.convert(annot(pf(ParamConstants.POP_FREQ_GNOMAD_GENOMES, "ALL", 0.3))).getSummaryIndex());
     }
 
     @Test
     public void testPopFreqNone() {
         assertEquals(INTERGENIC_MASK,
-                b = converter.convert(annot(pf(GNOMAD_GENOMES, "ALL", 0.3), pf(K_GENOMES, "ALL", 0.3))).getSummaryIndex());
+                b = converter.convert(annot(pf(ParamConstants.POP_FREQ_GNOMAD_GENOMES, "ALL", 0.3), pf(ParamConstants.POP_FREQ_1000G, "ALL", 0.3))).getSummaryIndex());
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testDuplicatedPopulations() {
-        List<String> populations = Arrays.asList("1kG_phase3:ALL", "GNOMAD_GENOMES:ALL", "1kG_phase3:ALL");
+        List<String> populations = Arrays.asList("1000G:ALL", "GNOMAD_GENOMES:ALL", "1000G:ALL");
         SampleIndexConfiguration configuration = new SampleIndexConfiguration();
         populations.stream().map(SampleIndexConfiguration.Population::new).forEach(configuration::addPopulation);
         new AnnotationIndexConverter(new SampleIndexSchema(configuration, StudyMetadata.DEFAULT_SAMPLE_INDEX_VERSION));
@@ -182,7 +183,7 @@ public class AnnotationIndexConverterTest {
         assertEquals(getPopFreqBitBuffer(new byte[]{0b11, 0, 0, 0, 0, 0}),
                 converter.convert(annot(pf("STUDY", "POP_1", 0.5))).getPopFreqIndex());
         assertEquals(getPopFreqBitBuffer(new byte[]{0b11, 0, 0, 0, 0, 0}),
-                converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf(K_GENOMES, "ALL", 0.3))).getPopFreqIndex());
+                converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf(ParamConstants.POP_FREQ_1000G, "ALL", 0.3))).getPopFreqIndex());
         assertEquals(getPopFreqBitBuffer(new byte[]{0b11, 0, 0, 0, 0, 0}),
                 converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf("STUDY", "POP_2", 0))).getPopFreqIndex());
 

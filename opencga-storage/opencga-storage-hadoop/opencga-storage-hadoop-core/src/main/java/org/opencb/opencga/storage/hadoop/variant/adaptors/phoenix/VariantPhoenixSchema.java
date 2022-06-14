@@ -24,6 +24,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.PTable;
 import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.schema.types.*;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -35,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_CONSERVATION;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_FUNCTIONAL_SCORE;
@@ -213,99 +215,74 @@ public final class VariantPhoenixSchema {
 
     static {
         HashMap<String, String> mappingPopulationStudies = new HashMap<>(2);
-        mappingPopulationStudies.put("1000GENOMES_PHASE_3", "1KG_PHASE3");
+        // No mapping between 1kg_phase3 (CB4) and 1000G (CB5)
+        mappingPopulationStudies.put("1000GENOMES_PHASE_3", ParamConstants.POP_FREQ_1000G_CB_V4.toUpperCase());
         mappingPopulationStudies.put("ESP_6500", "ESP6500");
         MAPPING_POPULATION_SUDIES = Collections.unmodifiableMap(mappingPopulationStudies);
 
-        HUMAN_POPULATION_FREQUENCIES_COLUMNS = Collections.unmodifiableList(Arrays.asList(
-            getPopulationFrequencyColumn("1kG_phase3", "ALL"),
 
-            getPopulationFrequencyColumn("1kG_phase3", "AFR"),
-            getPopulationFrequencyColumn("1kG_phase3", "AMR"),
-            getPopulationFrequencyColumn("1kG_phase3", "EAS"),
-            getPopulationFrequencyColumn("1kG_phase3", "EUR"),
-            getPopulationFrequencyColumn("1kG_phase3", "SAS"),
+        List<Column> humanPopulationFrequenciesColumns = new ArrayList<>(Arrays.asList(
+                getPopulationFrequencyColumn("ESP6500", "ALL"),
+                getPopulationFrequencyColumn("ESP6500", "EA"),
+                getPopulationFrequencyColumn("ESP6500", "AA"),
 
-            getPopulationFrequencyColumn("1kG_phase3", "ACB"),
-            getPopulationFrequencyColumn("1kG_phase3", "ASW"),
-            getPopulationFrequencyColumn("1kG_phase3", "BEB"),
-            getPopulationFrequencyColumn("1kG_phase3", "CDX"),
-            getPopulationFrequencyColumn("1kG_phase3", "CEU"),
-            getPopulationFrequencyColumn("1kG_phase3", "CHB"),
-            getPopulationFrequencyColumn("1kG_phase3", "CHD"),
-            getPopulationFrequencyColumn("1kG_phase3", "CHS"),
-            getPopulationFrequencyColumn("1kG_phase3", "CLM"),
-            getPopulationFrequencyColumn("1kG_phase3", "ESN"),
-            getPopulationFrequencyColumn("1kG_phase3", "FIN"),
-            getPopulationFrequencyColumn("1kG_phase3", "GBR"),
-            getPopulationFrequencyColumn("1kG_phase3", "GIH"),
-            getPopulationFrequencyColumn("1kG_phase3", "GWD"),
-            getPopulationFrequencyColumn("1kG_phase3", "IBS"),
-            getPopulationFrequencyColumn("1kG_phase3", "ITU"),
-            getPopulationFrequencyColumn("1kG_phase3", "JPT"),
-            getPopulationFrequencyColumn("1kG_phase3", "KHV"),
-            getPopulationFrequencyColumn("1kG_phase3", "LWK"),
-            getPopulationFrequencyColumn("1kG_phase3", "MSL"),
-            getPopulationFrequencyColumn("1kG_phase3", "MXL"),
-            getPopulationFrequencyColumn("1kG_phase3", "PEL"),
-            getPopulationFrequencyColumn("1kG_phase3", "PJL"),
-            getPopulationFrequencyColumn("1kG_phase3", "PUR"),
-            getPopulationFrequencyColumn("1kG_phase3", "STU"),
-            getPopulationFrequencyColumn("1kG_phase3", "TSI"),
-            getPopulationFrequencyColumn("1kG_phase3", "YRI"),
+                getPopulationFrequencyColumn("EXAC", "ALL"),
+                getPopulationFrequencyColumn("EXAC", "AFR"),
+                getPopulationFrequencyColumn("EXAC", "AMR"),
+                getPopulationFrequencyColumn("EXAC", "EAS"),
+                getPopulationFrequencyColumn("EXAC", "FIN"),
+                getPopulationFrequencyColumn("EXAC", "NFE"),
+                getPopulationFrequencyColumn("EXAC", "OTH"),
+                getPopulationFrequencyColumn("EXAC", "SAS"),
 
-            getPopulationFrequencyColumn("ESP6500", "ALL"),
-            getPopulationFrequencyColumn("ESP6500", "EA"),
-            getPopulationFrequencyColumn("ESP6500", "AA"),
+                getPopulationFrequencyColumn("GONL", "ALL"),
 
-            getPopulationFrequencyColumn("EXAC", "ALL"),
-            getPopulationFrequencyColumn("EXAC", "AFR"),
-            getPopulationFrequencyColumn("EXAC", "AMR"),
-            getPopulationFrequencyColumn("EXAC", "EAS"),
-            getPopulationFrequencyColumn("EXAC", "FIN"),
-            getPopulationFrequencyColumn("EXAC", "NFE"),
-            getPopulationFrequencyColumn("EXAC", "OTH"),
-            getPopulationFrequencyColumn("EXAC", "SAS"),
-
-            getPopulationFrequencyColumn("GONL", "ALL"),
-
-            getPopulationFrequencyColumn("UK10K", "ALL"),
-            getPopulationFrequencyColumn("UK10K", "ALSPAC"),
-            getPopulationFrequencyColumn("UK10K", "TWINSUK"),
-            getPopulationFrequencyColumn("UK10K", "TWINSUK_NODUP"),
+                getPopulationFrequencyColumn("UK10K", "ALL"),
+                getPopulationFrequencyColumn("UK10K", "ALSPAC"),
+                getPopulationFrequencyColumn("UK10K", "TWINSUK"),
+                getPopulationFrequencyColumn("UK10K", "TWINSUK_NODUP"),
 //            getPopulationFrequencyColumn("UK10K_ALSPAC", "ALL"),
 //            getPopulationFrequencyColumn("UK10K_TWINSUK", "ALL"),
 
-            getPopulationFrequencyColumn("GNOMAD_GENOMES", "ALL"),
-            getPopulationFrequencyColumn("GNOMAD_GENOMES", "AFR"),
-            getPopulationFrequencyColumn("GNOMAD_GENOMES", "AMR"),
-            getPopulationFrequencyColumn("GNOMAD_GENOMES", "ASJ"),
-            getPopulationFrequencyColumn("GNOMAD_GENOMES", "EAS"),
-            getPopulationFrequencyColumn("GNOMAD_GENOMES", "FIN"),
-            getPopulationFrequencyColumn("GNOMAD_GENOMES", "NFE"),
-            getPopulationFrequencyColumn("GNOMAD_GENOMES", "OTH"),
-            getPopulationFrequencyColumn("GNOMAD_GENOMES", "MALE"),
-            getPopulationFrequencyColumn("GNOMAD_GENOMES", "FEMALE"),
+                getPopulationFrequencyColumn("GNOMAD_GENOMES", "ALL"),
+                getPopulationFrequencyColumn("GNOMAD_GENOMES", "AFR"),
+                getPopulationFrequencyColumn("GNOMAD_GENOMES", "AMR"),
+                getPopulationFrequencyColumn("GNOMAD_GENOMES", "ASJ"),
+                getPopulationFrequencyColumn("GNOMAD_GENOMES", "EAS"),
+                getPopulationFrequencyColumn("GNOMAD_GENOMES", "FIN"),
+                getPopulationFrequencyColumn("GNOMAD_GENOMES", "NFE"),
+                getPopulationFrequencyColumn("GNOMAD_GENOMES", "OTH"),
+                getPopulationFrequencyColumn("GNOMAD_GENOMES", "MALE"),
+                getPopulationFrequencyColumn("GNOMAD_GENOMES", "FEMALE"),
 
-            getPopulationFrequencyColumn("GNOMAD_EXOMES", "ALL"),
-            getPopulationFrequencyColumn("GNOMAD_EXOMES", "AFR"),
-            getPopulationFrequencyColumn("GNOMAD_EXOMES", "AMR"),
-            getPopulationFrequencyColumn("GNOMAD_EXOMES", "ASJ"),
-            getPopulationFrequencyColumn("GNOMAD_EXOMES", "EAS"),
-            getPopulationFrequencyColumn("GNOMAD_EXOMES", "FIN"),
-            getPopulationFrequencyColumn("GNOMAD_EXOMES", "NFE"),
-            getPopulationFrequencyColumn("GNOMAD_EXOMES", "OTH"),
-            getPopulationFrequencyColumn("GNOMAD_EXOMES", "MALE"),
-            getPopulationFrequencyColumn("GNOMAD_EXOMES", "FEMALE")
+                getPopulationFrequencyColumn("GNOMAD_EXOMES", "ALL"),
+                getPopulationFrequencyColumn("GNOMAD_EXOMES", "AFR"),
+                getPopulationFrequencyColumn("GNOMAD_EXOMES", "AMR"),
+                getPopulationFrequencyColumn("GNOMAD_EXOMES", "ASJ"),
+                getPopulationFrequencyColumn("GNOMAD_EXOMES", "EAS"),
+                getPopulationFrequencyColumn("GNOMAD_EXOMES", "FIN"),
+                getPopulationFrequencyColumn("GNOMAD_EXOMES", "NFE"),
+                getPopulationFrequencyColumn("GNOMAD_EXOMES", "OTH"),
+                getPopulationFrequencyColumn("GNOMAD_EXOMES", "MALE"),
+                getPopulationFrequencyColumn("GNOMAD_EXOMES", "FEMALE")
         ));
 
+        Stream.of("ALL", "AFR", "AMR", "EAS", "EUR", "SAS", "ACB", "ASW", "BEB",
+                "CDX", "CEU", "CHB", "CHD", "CHS", "CLM", "ESN", "FIN", "GBR",
+                "GIH", "GWD", "IBS", "ITU", "JPT", "KHV", "LWK", "MSL", "MXL",
+                "PEL", "PJL", "PUR", "STU", "TSI", "YRI").forEach(pop -> {
+            humanPopulationFrequenciesColumns.add(getPopulationFrequencyColumn(ParamConstants.POP_FREQ_1000G_CB_V4, pop));
+            humanPopulationFrequenciesColumns.add(getPopulationFrequencyColumn(ParamConstants.POP_FREQ_1000G_CB_V5, pop));
+        });
+        HUMAN_POPULATION_FREQUENCIES_COLUMNS = Collections.unmodifiableList(humanPopulationFrequenciesColumns);
+
         DEFAULT_HUMAN_POPULATION_FREQUENCIES_COLUMNS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-            getPopulationFrequencyColumn("1kG_phase3", "ALL"),
-            getPopulationFrequencyColumn("1kG_phase3", "AFR"),
-            getPopulationFrequencyColumn("1kG_phase3", "AMR"),
-            getPopulationFrequencyColumn("1kG_phase3", "EAS"),
-            getPopulationFrequencyColumn("1kG_phase3", "EUR"),
-            getPopulationFrequencyColumn("1kG_phase3", "SAS"),
+            getPopulationFrequencyColumn(ParamConstants.POP_FREQ_1000G_CB_V5, "ALL"),
+            getPopulationFrequencyColumn(ParamConstants.POP_FREQ_1000G_CB_V5, "AFR"),
+            getPopulationFrequencyColumn(ParamConstants.POP_FREQ_1000G_CB_V5, "AMR"),
+            getPopulationFrequencyColumn(ParamConstants.POP_FREQ_1000G_CB_V5, "EAS"),
+            getPopulationFrequencyColumn(ParamConstants.POP_FREQ_1000G_CB_V5, "EUR"),
+            getPopulationFrequencyColumn(ParamConstants.POP_FREQ_1000G_CB_V5, "SAS"),
 
             getPopulationFrequencyColumn("GNOMAD_GENOMES", "ALL"),
             getPopulationFrequencyColumn("GNOMAD_GENOMES", "AFR"),
@@ -349,7 +326,8 @@ public final class VariantPhoenixSchema {
 
     public static List<PhoenixHelper.Index> getPopFreqIndices(String variantsTableName) {
         HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
-        return Arrays.asList(getPopFreqIndex(variantsTableName, "1kG_phase3", "ALL"), getPopFreqIndex(variantsTableName, "EXAC", "ALL"));
+        return Arrays.asList(getPopFreqIndex(variantsTableName, ParamConstants.POP_FREQ_1000G, "ALL"),
+                getPopFreqIndex(variantsTableName, "EXAC", "ALL"));
     }
 
     public static PhoenixHelper.Index getPopFreqIndex(String variantsTableName, String study, String population) {

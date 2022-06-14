@@ -16,14 +16,13 @@
 
 package org.opencb.opencga.core.models.variant;
 
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.tools.ToolParams;
-
-import java.util.List;
-import java.util.Map;
 
 public class FamilyQcAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Family QC analysis params. Family ID. Relatedness method, by default 'PLINK/IBD'. Minor "
-            + " allele frequence (MAF) is used to filter variants before computing relatedness, e.g.: 1kg_phase3:CEU>0.35 or cohort:ALL>0.05";
+            + " allele frequence (MAF) is used to filter variants before computing relatedness, e.g.: " + ParamConstants.POP_FREQ_1000G
+            + ":CEU>0.35 or cohort:ALL>0.05";
     private String family;
     private String relatednessMethod;
     private String relatednessMaf;
