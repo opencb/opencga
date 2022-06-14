@@ -194,8 +194,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             cellBaseConfiguration.setUrl(commandOptions.url);
             cellBaseConfiguration.setVersion(commandOptions.version);
-            cellBaseConfiguration.setPreferred(commandOptions.preferred);
             //cellBaseConfiguration.setDatabase(commandOptions.database); // Unsupported param. FIXME 
+            cellBaseConfiguration.setPreferred(commandOptions.preferred);
 
         }
         return openCGAClient.getVariantOperationClient().configureCellbase(cellBaseConfiguration, queryParams);

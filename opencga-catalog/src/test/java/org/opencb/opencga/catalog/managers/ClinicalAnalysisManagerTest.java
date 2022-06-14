@@ -50,7 +50,7 @@ import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.common.FlagValue;
 import org.opencb.opencga.core.models.common.StatusParam;
-import org.opencb.opencga.core.models.common.StatusValue;
+import org.opencb.opencga.core.models.clinical.ClinicalStatusValue;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
@@ -247,6 +247,37 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
+    public void automaticallyLockCaseTest() throws CatalogException {
+        Individual individual = new Individual()
+                .setId("proband")
+                .setSamples(Collections.singletonList(new Sample().setId("sample")));
+        catalogManager.getIndividualManager().create(STUDY, individual, QueryOptions.empty(), sessionIdUser);
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("Clinical")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setProband(individual);
+        OpenCGAResult<ClinicalAnalysis> clinical = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis,
+                INCLUDE_RESULT, sessionIdUser);
+        assertTrue(StringUtils.isEmpty(clinical.first().getStatus().getId()));
+        assertFalse(clinical.first().isLocked());
+
+        clinical = catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
+                new ClinicalAnalysisUpdateParams().setStatus(new StatusParam("CLOSED")), INCLUDE_RESULT, sessionIdUser);
+        assertEquals("CLOSED", clinical.first().getStatus().getId());
+        assertTrue(clinical.first().isLocked());
+
+        clinicalAnalysis = new ClinicalAnalysis()
+                .setId("Clinical2")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setStatus(new ClinicalAnalysisStatus().setId("CLOSED"))
+                .setProband(individual);
+        clinical = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, INCLUDE_RESULT, sessionIdUser);
+        assertEquals("CLOSED", clinical.first().getStatus().getId());
+        assertTrue(clinical.first().isLocked());
+    }
+
+    @Test
     public void createSingleClinicalAnalysisTestWithoutDisorder() throws CatalogException {
         Individual individual = new Individual()
                 .setId("proband")
@@ -260,6 +291,35 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         OpenCGAResult<ClinicalAnalysis> clinical = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis,
                 INCLUDE_RESULT, sessionIdUser);
         assertEquals(1, clinical.getNumResults());
+        assertTrue(StringUtils.isNotEmpty(clinical.first().getDueDate()));
+    }
+
+    @Test
+    public void queryClinicalAnalysisByDate() throws CatalogException {
+        DataResult<ClinicalAnalysis> result = createDummyEnvironment(true, true);
+        assertTrue(StringUtils.isNotEmpty(result.first().getDueDate()));
+
+        Query query = new Query()
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.DUE_DATE.key(),
+                        ">=" + TimeUtils.getTime(TimeUtils.add24HtoDate(TimeUtils.getDate()))
+                );
+        OpenCGAResult<ClinicalAnalysis> search = catalogManager.getClinicalAnalysisManager().search(STUDY, query, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, search.getNumResults());
+        assertEquals(result.first().getId(), search.first().getId());
+
+        String dueDate = TimeUtils.getTime();
+        ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
+                .setDueDate(dueDate);
+        catalogManager.getClinicalAnalysisManager().update(STUDY, result.first().getId(), updateParams, QueryOptions.empty(), sessionIdUser);
+        search = catalogManager.getClinicalAnalysisManager().search(STUDY, query, QueryOptions.empty(), sessionIdUser);
+        assertEquals(0, search.getNumResults());
+
+        query.put(ClinicalAnalysisDBAdaptor.QueryParams.DUE_DATE.key(),
+                "<" + TimeUtils.getTime(TimeUtils.add24HtoDate(TimeUtils.getDate())));
+        search = catalogManager.getClinicalAnalysisManager().search(STUDY, query, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, search.getNumResults());
+        assertEquals(result.first().getId(), search.first().getId());
+        assertEquals(dueDate, search.first().getDueDate());
     }
 
     @Test
@@ -1101,7 +1161,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
 
-        StatusValue status = configuration.getStatus().get(dummyEnvironment.first().getType()).get(0);
+        ClinicalStatusValue status = configuration.getStatus().get(dummyEnvironment.first().getType()).get(0);
 
         ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
                 .setStatus(new StatusParam(status.getId()));
@@ -1269,7 +1329,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         InterpretationStudyConfiguration configuration = study.getInternal().getConfiguration().getClinical().getInterpretation();
 
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, true);
-        StatusValue status = configuration.getStatus().get(dummyEnvironment.first().getType()).get(0);
+        ClinicalStatusValue status = configuration.getStatus().get(dummyEnvironment.first().getType()).get(0);
 
         InterpretationUpdateParams updateParams = new InterpretationUpdateParams()
                 .setStatus(new StatusParam(status.getId()));

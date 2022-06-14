@@ -74,13 +74,11 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-hadoop-core</artifactId>
-            <version>${opencga.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-hadoop-core</artifactId>
-            <version>${opencga.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -94,14 +92,14 @@
 
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}</artifactId>
+            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
             <version>${opencga.version}</version>
             <classifier>shaded</classifier>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}</artifactId>
+            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
             <version>${opencga.version}</version>
             <classifier>tests</classifier>
             <type>test-jar</type>

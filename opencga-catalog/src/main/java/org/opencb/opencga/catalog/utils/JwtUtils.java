@@ -1,16 +1,23 @@
 package org.opencb.opencga.catalog.utils;
 
 
+import io.jsonwebtoken.SignatureAlgorithm;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.crypto.spec.SecretKeySpec;
 import java.util.Base64;
 import java.util.Date;
 
 public class JwtUtils {
 
+    public static void validateJWTKey(String algorithmStr, String key) {
+        SignatureAlgorithm algorithm = SignatureAlgorithm.forName(algorithmStr);
+        SecretKeySpec secretKeySpec = new SecretKeySpec(key.getBytes(), algorithm.getJcaName());
+        algorithm.assertValidSigningKey(secretKeySpec);
+    }
 
     public static Date getExpirationDate(String token) {
         Date res = new Date();

@@ -337,6 +337,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--modification-date", "--md"}, description = "Clinical Analysis Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
         public String modificationDate; 
     
+        @Parameter(names = {"--due-date"}, description = "Clinical Analysis due date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String dueDate; 
+    
         @Parameter(names = {"--quality-control-summary"}, description = "Clinical Analysis quality control summary", required = false, arity = 1)
         public String qualityControlSummary; 
     
@@ -1514,6 +1517,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--modification-date", "--md"}, description = "Clinical Analysis Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
         public String modificationDate; 
+    
+        @Parameter(names = {"--due-date"}, description = "Clinical Analysis due date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String dueDate; 
     
         @Parameter(names = {"--quality-control-summary"}, description = "Clinical Analysis quality control summary", required = false, arity = 1)
         public String qualityControlSummary; 

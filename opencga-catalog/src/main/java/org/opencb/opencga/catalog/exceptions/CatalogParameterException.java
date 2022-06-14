@@ -31,4 +31,8 @@ public class CatalogParameterException extends CatalogException {
     public CatalogParameterException(Throwable cause) {
         super(cause);
     }
+
+    public static CatalogParameterException isNull(String field) {
+        return new CatalogParameterException("Parameter '" + field + "' is missing or null.");
+    }
 }

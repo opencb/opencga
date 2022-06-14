@@ -198,6 +198,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("disorders", commandOptions.disorders);
         queryParams.putIfNotEmpty("variants", commandOptions.variants);
         queryParams.putIfNotEmpty("genes", commandOptions.genes);
+        queryParams.putIfNotEmpty("source", commandOptions.source);
         queryParams.putIfNotEmpty("regions", commandOptions.regions);
         queryParams.putIfNotEmpty("categories", commandOptions.categories);
         queryParams.putIfNotEmpty("tags", commandOptions.tags);
@@ -269,6 +270,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("disorders", commandOptions.disorders);
         queryParams.putIfNotEmpty("variants", commandOptions.variants);
         queryParams.putIfNotEmpty("genes", commandOptions.genes);
+        queryParams.putIfNotEmpty("source", commandOptions.source);
         queryParams.putIfNotEmpty("regions", commandOptions.regions);
         queryParams.putIfNotEmpty("categories", commandOptions.categories);
         queryParams.putIfNotEmpty("tags", commandOptions.tags);

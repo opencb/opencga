@@ -391,6 +391,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("flags", commandOptions.flags);
         queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
         queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
+        queryParams.putIfNotEmpty("dueDate", commandOptions.dueDate);
         queryParams.putIfNotEmpty("qualityControlSummary", commandOptions.qualityControlSummary);
         queryParams.putIfNotEmpty("release", commandOptions.release);
         queryParams.putIfNotEmpty("status", commandOptions.status);
@@ -1026,6 +1027,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("flags", commandOptions.flags);
         queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
         queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
+        queryParams.putIfNotEmpty("dueDate", commandOptions.dueDate);
         queryParams.putIfNotEmpty("qualityControlSummary", commandOptions.qualityControlSummary);
         queryParams.putIfNotEmpty("release", commandOptions.release);
         queryParams.putIfNotEmpty("status", commandOptions.status);

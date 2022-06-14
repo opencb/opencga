@@ -43,7 +43,7 @@ public class DiseasePanelInternalCommandOptions {
                 arity = 1)
         public String outDir;
 
-        @Parameter(names = {"--" + ParamConstants.PANEL_SOURCE}, description = ParamConstants.PANEL_SOURCE_DESCRIPTION, required = true,
+        @Parameter(names = {"--" + ParamConstants.PANEL_SOURCE_PARAM}, description = ParamConstants.PANEL_IMPORT_SOURCE_DESCRIPTION, required = true,
                 arity = 1)
         public String source;
 

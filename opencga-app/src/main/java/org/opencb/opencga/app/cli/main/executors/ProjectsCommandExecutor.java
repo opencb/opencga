@@ -123,8 +123,8 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
             CellBaseConfiguration cellbaseParam = new CellBaseConfiguration();
             cellbaseParam.setUrl(commandOptions.cellbaseUrl);
             cellbaseParam.setVersion(commandOptions.cellbaseVersion);
-            cellbaseParam.setPreferred(commandOptions.cellbasePreferred);
             //cellbaseParam.setDatabase(commandOptions.cellbaseDatabase);  // Unsupported param. FIXME
+            cellbaseParam.setPreferred(commandOptions.cellbasePreferred);
 
             //Set main body params
             projectCreateParams.setId(commandOptions.id);
@@ -254,8 +254,8 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
             CellBaseConfiguration cellbaseParam = new CellBaseConfiguration();
             cellbaseParam.setUrl(commandOptions.cellbaseUrl);
             cellbaseParam.setVersion(commandOptions.cellbaseVersion);
-            cellbaseParam.setPreferred(commandOptions.cellbasePreferred);
             //cellbaseParam.setDatabase(commandOptions.cellbaseDatabase);  // Unsupported param. FIXME
+            cellbaseParam.setPreferred(commandOptions.cellbasePreferred);
 
             //Set main body params
             projectUpdateParams.setName(commandOptions.name);

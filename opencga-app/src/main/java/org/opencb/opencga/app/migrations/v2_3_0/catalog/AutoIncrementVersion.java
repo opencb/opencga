@@ -2,9 +2,12 @@ package org.opencb.opencga.app.migrations.v2_3_0.catalog;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.InsertOneModel;
+import com.mongodb.client.model.UpdateOneModel;
+import com.mongodb.client.model.UpdateOptions;
+import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
@@ -23,7 +26,12 @@ public class AutoIncrementVersion extends MigrationTool {
         logger.info("Copying data from '{}' to '{}' collection", collection, archiveCollection);
         // Replicate all the data in the archive collection
         migrateCollection(collection, archiveCollection, new Document(), new Document(),
-                ((document, bulk) -> bulk.add(new InsertOneModel<>(GenericDocumentComplexConverter.replaceDots(document)))));
+                ((document, bulk) -> {
+                    Document replacedDotsDoc = GenericDocumentComplexConverter.replaceDots(document);
+                    Bson query = Filters.eq("_id", replacedDotsDoc.get("_id"));
+                    Bson update = Updates.setOnInsert(replacedDotsDoc);
+                    bulk.add(new UpdateOneModel<>(query, update, new UpdateOptions().upsert(true)));
+                }));
 
         // Delete all documents that are not lastOfVersion from main collection
         logger.info("Removing outdated data (_lastOfVersion = false) from '{}' collection", collection);
@@ -45,7 +53,7 @@ public class AutoIncrementVersion extends MigrationTool {
         reorganiseData(MongoDBAdaptorFactory.PANEL_COLLECTION, MongoDBAdaptorFactory.PANEL_ARCHIVE_COLLECTION);
 
         // Reduce batch size for interpretations
-        setBatchSize(100);
+        setBatchSize(1);
         reorganiseData(MongoDBAdaptorFactory.INTERPRETATION_COLLECTION, MongoDBAdaptorFactory.INTERPRETATION_ARCHIVE_COLLECTION);
     }
 

@@ -216,7 +216,12 @@
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
                     <artifactId>opencga-storage-hadoop-core</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
                     <version>${opencga.version}</version>
+                    <classifier>shaded</classifier>
                 </dependency>
             </dependencies>
 

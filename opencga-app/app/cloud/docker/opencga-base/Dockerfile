@@ -16,7 +16,7 @@ RUN apt-get update && apt-get -y upgrade && apt-get install -y lsb-release sshpa
     echo "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/4.2 main" | tee /etc/apt/sources.list.d/mongodb-org-4.2.list && \
     apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io mongodb-org-shell && \
     rm -rf /var/lib/apt/lists/* && \
-    adduser --disabled-password opencga
+    adduser --disabled-password --uid 1001 opencga
 
 ## Run Docker images as non root
 USER opencga

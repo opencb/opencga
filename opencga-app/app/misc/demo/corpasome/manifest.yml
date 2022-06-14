@@ -9,7 +9,7 @@
 ##   Daughter: ISDBM322017
 
 configuration:
-  version: 2.2.1
+  version: 2.2.2-SNAPSHOT
   index: false
   projectId: family
 study:

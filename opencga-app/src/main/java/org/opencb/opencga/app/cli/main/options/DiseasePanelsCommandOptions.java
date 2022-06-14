@@ -183,6 +183,9 @@ public class DiseasePanelsCommandOptions {
         @Parameter(names = {"--genes"}, description = "Comma separated list of gene ids", required = false, arity = 1)
         public String genes; 
     
+        @Parameter(names = {"--source"}, description = "Comma separated list of source ids or names.", required = false, arity = 1)
+        public String source; 
+    
         @Parameter(names = {"--regions"}, description = "Comma separated list of regions", required = false, arity = 1)
         public String regions; 
     
@@ -297,6 +300,9 @@ public class DiseasePanelsCommandOptions {
     
         @Parameter(names = {"--genes"}, description = "Comma separated list of gene ids", required = false, arity = 1)
         public String genes; 
+    
+        @Parameter(names = {"--source"}, description = "Comma separated list of source ids or names.", required = false, arity = 1)
+        public String source; 
     
         @Parameter(names = {"--regions"}, description = "Comma separated list of regions", required = false, arity = 1)
         public String regions; 
