@@ -1490,6 +1490,11 @@ public final class VariantQueryUtils {
         if (query == null) {
             return "{}";
         } else {
+            if (isValidParam(query, ANNOT_GENE_REGIONS_MAP)) {
+                query = new Query(query);
+                query.remove(ANNOT_GENE_REGIONS_MAP.key());
+                query.put(ANNOT_GENE_REGIONS.key(), CollectionUtils.size(query.remove(ANNOT_GENE_REGIONS.key())));
+            }
             try {
                 return QUERY_MAPPER.writeValueAsString(query);
             } catch (JsonProcessingException e) {

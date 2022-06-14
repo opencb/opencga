@@ -24,10 +24,6 @@ public abstract class CloseableIterator<T> implements Iterator<T>, AutoCloseable
         return this;
     }
 
-    protected final boolean removeCloseable(AutoCloseable closeable) {
-        return this.closeables.remove(closeable);
-    }
-
     @Override
     public void close() throws Exception {
         List<Exception> exceptions = new LinkedList<>();

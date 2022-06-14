@@ -847,6 +847,10 @@ public class VariantQueryParser {
     }
 
     public void optimize(ParsedVariantQuery variantQuery) {
+        optimize(variantQuery, false);
+    }
+
+    public void optimize(ParsedVariantQuery variantQuery, boolean quiet) {
         if (variantQuery.isOptimized()) {
             return;
         }
@@ -858,7 +862,7 @@ public class VariantQueryParser {
             if (isValidParam(query, ANNOT_GENE_REGIONS) && !query.getString(ANNOT_GENE_REGIONS.key()).equals(SKIP_GENE_REGIONS)) {
                 List<Region> regions = new LinkedList<>(Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key()), true));
                 int removed = removeRegionsNotInVariants(idIntersect, regions);
-                if (removed > 0) {
+                if (removed > 0 && !quiet) {
                     logger.info("Optimizer - Removed {}/{} regions from param '{}'",
                             removed, regions.size() + removed, ANNOT_GENE_REGIONS.key());
                 }
@@ -880,7 +884,7 @@ public class VariantQueryParser {
                             query.getBoolean(SKIP_MISSING_GENES, false));
                 }
                 int removed = removeRegionsNotInVariants(idIntersect, geneRegionMap.values());
-                if (removed > 0) {
+                if (removed > 0 && !quiet) {
                     logger.info("Optimizer - Removed {}/{} genes from param '{}'", removed, geneRegionMap.size() + removed, GENE.key());
                 }
                 query.put(GENE.key(), new ArrayList<>(geneRegionMap.keySet()));
@@ -889,7 +893,7 @@ public class VariantQueryParser {
             if (isValidParam(query, REGION)) {
                 List<Region> regions = new LinkedList<>(Region.parseRegions(query.getString(REGION.key()), true));
                 int removed = removeRegionsNotInVariants(idIntersect, regions);
-                if (removed > 0) {
+                if (removed > 0 && !quiet) {
                     logger.info("Optimizer - Removed {}/{} regions from param '{}'", removed, regions.size() + removed, REGION.key());
                 }
                 query.put(REGION.key(), regions);

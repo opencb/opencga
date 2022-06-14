@@ -115,6 +115,10 @@ public class ParsedVariantQuery {
         return query.getAsStringList(VariantQueryParam.ANNOT_BIOTYPE.key());
     }
 
+    public List<String> getTranscriptFlags() {
+        return query.getAsStringList(VariantQueryParam.ANNOT_TRANSCRIPT_FLAG.key());
+    }
+
     public static class VariantStudyQuery {
         private ParsedQuery<String> studies;
         private ParsedQuery<KeyOpValue<SampleMetadata, List<String>>> genotypes;

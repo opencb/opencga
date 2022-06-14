@@ -40,7 +40,7 @@ import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.iterators.ConcatVariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.MultiVariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
@@ -102,6 +102,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final VariantHBaseQueryParser hbaseQueryParser;
     private final HBaseFileMetadataDBAdaptor variantFileMetadataDBAdaptor;
     private final int phoenixFetchSize;
+    private final int phoenixQueryComplexityThreshold;
     private boolean clientSideSkip;
     private HBaseManager hBaseManager;
 
@@ -137,6 +138,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         phoenixFetchSize = options.getInt(
                 HadoopVariantStorageOptions.DBADAPTOR_PHOENIX_FETCH_SIZE.key(),
                 HadoopVariantStorageOptions.DBADAPTOR_PHOENIX_FETCH_SIZE.defaultValue());
+
+        phoenixQueryComplexityThreshold = options.getInt(
+                HadoopVariantStorageOptions.DBADAPTOR_PHOENIX_QUERY_COMPLEXITY_THRESHOLD.key(),
+                HadoopVariantStorageOptions.DBADAPTOR_PHOENIX_QUERY_COMPLEXITY_THRESHOLD.defaultValue());
 
         phoenixHelper = new PhoenixHelper(this.configuration);
 
@@ -368,20 +373,14 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         if (hbaseIterator) {
             return hbaseIterator(variantQuery, options, converterConfiguration);
         } else {
-            List<ParsedVariantQuery> queries = splitQuery(variantQuery);
-            if (queries.size() == 1) {
-                return phoenixIterator(queries.get(0), options, converterConfiguration);
-            } else {
-                QueryOptions finalOptions = options;
-                return new ConcatVariantDBIterator(Iterators.transform(queries.iterator(),
-                        newQuery -> phoenixIterator(newQuery, finalOptions, converterConfiguration)));
-            }
+            return phoenixIterator(variantQuery, options, converterConfiguration);
         }
     }
 
     private VariantHBaseResultSetIterator phoenixIterator(ParsedVariantQuery variantQuery, QueryOptions options,
                                                           HBaseVariantConverterConfiguration converterConfiguration) {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
+        new VariantQueryParser(null, metadataManager).optimize(variantQuery);
 
         logger.debug("Table name = " + variantTable);
         logger.info("Query : " + VariantQueryUtils.printQuery(variantQuery.getQuery()));
@@ -470,41 +469,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         return iterator;
     }
 
-    private List<ParsedVariantQuery> splitQuery(ParsedVariantQuery variantQuery) {
-        if (isValidParam(variantQuery.getQuery(), ID_INTERSECT)) {
-            VariantQueryParser parser = new VariantQueryParser(null, getMetadataManager());
-            parser.optimize(variantQuery);
-
-            int complexityIndex = 0;
-
-            ParsedVariantQuery.VariantQueryXref xrefs = variantQuery.getXrefs();
-            int cts = variantQuery.getConsequenceTypes().size();
-            int bts = variantQuery.getBiotypes().size();
-            complexityIndex += xrefs.getGenes().size() * (cts == 0 ? 1 : cts) * (bts == 0 ? 1 : bts);
-
-            List<Variant> idIntersect = variantQuery.getVariantIdIntersect();
-            if (complexityIndex > 1000 && idIntersect.size() > 5) {
-                logger.info("Query complexity {} with {} variants. Split", complexityIndex, idIntersect.size());
-
-                // split query
-                ParsedVariantQuery q1 = new ParsedVariantQuery(variantQuery).setOptimized(false);
-                ParsedVariantQuery q2 = new ParsedVariantQuery(variantQuery).setOptimized(false);
-
-                q1.getQuery().put(ID_INTERSECT.key(), idIntersect.subList(0, idIntersect.size() / 2));
-                q2.getQuery().put(ID_INTERSECT.key(), idIntersect.subList(idIntersect.size() / 2, idIntersect.size()));
-
-                parser.optimize(q1);
-                parser.optimize(q2);
-
-                List<ParsedVariantQuery> queries = new LinkedList<>();
-                queries.addAll(splitQuery(q1));
-                queries.addAll(splitQuery(q2));
-                return queries;
-            }
-        }
-        return Collections.singletonList(variantQuery);
-    }
-
     private void closeOrSuppress(AutoCloseable autoCloseable, Exception e) {
         if (autoCloseable != null) {
             try {
@@ -570,6 +534,20 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             return new VariantHadoopArchiveDBIterator(resScan, archiveHelper, options).setRegion(region);
         } catch (IOException e) {
             throw VariantQueryException.internalException(e);
+        }
+    }
+
+    @Override
+    public MultiVariantDBIterator iterator(Iterator<?> variants, Query query, QueryOptions options, int batchSize) {
+        boolean nativeQuery = VariantHBaseQueryParser.isSupportedQuery(query);
+        if (nativeQuery) {
+            // Don't use custom split
+            return VariantDBAdaptor.super.iterator(variants, query, options, batchSize);
+        } else {
+            // Use phoenix custom split for large number of genes.
+            MultiVariantDBIterator.VariantQueryIterator queryIterator =
+                    new VariantQueryIteratorCustomSplit(variants, query, batchSize, options);
+            return new MultiVariantDBIterator(variants, options, this::iterator, queryIterator);
         }
     }
 
@@ -689,4 +667,50 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         }
     }
 
+    private class VariantQueryIteratorCustomSplit extends MultiVariantDBIterator.VariantQueryIterator {
+        private final VariantQueryParser parser;
+        private final ParsedVariantQuery variantQuery;
+        private final int cts;
+        private final int bts;
+        private final int flags;
+
+        VariantQueryIteratorCustomSplit(Iterator<?> variants, Query query, int batchSize, QueryOptions options) {
+            super(variants, query, batchSize);
+            parser = new VariantQueryParser(null, getMetadataManager());
+            variantQuery = parser.parseQuery(query, options);
+            cts = sizeOrOne(variantQuery.getConsequenceTypes());
+            bts = sizeOrOne(variantQuery.getBiotypes());
+            flags = sizeOrOne(variantQuery.getTranscriptFlags());
+        }
+
+        private int sizeOrOne(List<String> list) {
+            int size = list.size();
+            return size == 0 ? 1 : size;
+        }
+
+        @Override
+        protected boolean isTooComplex(List<Object> variants) {
+            if (variants.size() < 50) {
+                // Skip first 50 variants check
+                return false;
+            } else if (variants.size() % 10 != 0) {
+                // Only check one every 10 variants
+                return false;
+            }
+            ParsedVariantQuery variantQuery = new ParsedVariantQuery(this.variantQuery);
+            variantQuery.getQuery().put(ID_INTERSECT.key(), variants);
+            parser.optimize(variantQuery, true);
+
+            int complexityIndex = 0;
+
+            ParsedVariantQuery.VariantQueryXref xrefs = variantQuery.getXrefs();
+            complexityIndex += xrefs.getGenes().size() * cts * bts * flags;
+            if (complexityIndex > phoenixQueryComplexityThreshold) {
+                // It is too complex
+                logger.info("Limit query to {} variants due to complexity index of {}", variants.size(), complexityIndex);
+                return true;
+            }
+            return false;
+        }
+    }
 }
