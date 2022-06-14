@@ -186,6 +186,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
                 if (parameters.getBoolean(LOCKED.key())) {
                     // Propagate locked value to Interpretations
+                    logger.debug("Propagating case lock to all the Interpretations");
                     dbAdaptorFactory.getInterpretationDBAdaptor().propagateLockedFromClinicalAnalysis(clientSession, clinical,
                             parameters.getBoolean(LOCKED.key()));
                 }
