@@ -69,14 +69,16 @@ public class ClientsGenerator {
         classes.add(AdminWSServer.class);
 
         try {
-            RestApi restApi = prepare(new RestApiParser().parse(classes, true,GitRepositoryState.get().getBuildVersion(), GitRepositoryState.get().getCommitId()));
+            RestApi restApi = prepare(new RestApiParser().parse(classes, true,
+                    GitRepositoryState.get().getBuildVersion(), GitRepositoryState.get().getCommitId()));
             config = ConfigurationManager.setUp();
             config.initialize();
 
             libraries(restApi);
 
 
-            RestApi flatRestApi = prepare(new RestApiParser().parse(classes, true, GitRepositoryState.get().getBuildVersion(), GitRepositoryState.get().getCommitId()));
+            RestApi flatRestApi = prepare(new RestApiParser().parse(classes, true,
+                    GitRepositoryState.get().getBuildVersion(), GitRepositoryState.get().getCommitId()));
             cli(flatRestApi);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
