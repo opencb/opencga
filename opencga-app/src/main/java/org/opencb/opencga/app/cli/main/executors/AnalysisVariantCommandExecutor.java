@@ -1,25 +1,18 @@
 package org.opencb.opencga.app.cli.main.executors;
 
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.common.JacksonUtils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.List;
 import java.util.HashMap;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.AnalysisVariantCommandOptions;
 
-import java.util.Map;
-import org.opencb.biodata.models.clinical.ClinicalProperty.ModeOfInheritance;
-import org.opencb.biodata.models.clinical.ClinicalProperty.Penetrance;
 import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
@@ -28,7 +21,6 @@ import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.commons.datastore.core.FacetField;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
@@ -116,8 +108,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             case "cohort-stats-run":
                 queryResponse = runCohortStats();
                 break;
-            case "exomizer-run":
-                queryResponse = runExomizer();
+            case "exomiser-run":
+                queryResponse = runExomiser();
                 break;
             case "export-run":
                 queryResponse = runExport();
@@ -403,11 +395,11 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantClient().runCohortStats(cohortVariantStatsAnalysisParams, queryParams);
     }
 
-    private RestResponse<Job> runExomizer() throws Exception {
+    private RestResponse<Job> runExomiser() throws Exception {
 
-        logger.debug("Executing runExomizer in Analysis - Variant command line");
+        logger.debug("Executing runExomiser in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunExomizerCommandOptions commandOptions = analysisVariantCommandOptions.runExomizerCommandOptions;
+        AnalysisVariantCommandOptions.RunExomiserCommandOptions commandOptions = analysisVariantCommandOptions.runExomiserCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -434,7 +426,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             exomiserWrapperParams.setOutdir(commandOptions.outdir);
 
         }
-        return openCGAClient.getVariantClient().runExomizer(exomiserWrapperParams, queryParams);
+        return openCGAClient.getVariantClient().runExomiser(exomiserWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runExport() throws Exception {

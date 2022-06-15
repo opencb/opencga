@@ -200,11 +200,11 @@ class Variant(_ParentRestClient):
 
         return self._post(category='analysis', resource='run', subcategory='variant/cohort/stats', data=data, **options)
 
-    def run_exomizer(self, data=None, **options):
+    def run_exomiser(self, data=None, **options):
         """
         The Exomiser is a Java program that finds potential disease-causing
             variants from whole-exome or whole-genome sequencing data.
-        PATH: /{apiVersion}/analysis/variant/exomizer/run
+        PATH: /{apiVersion}/analysis/variant/exomiser/run
 
         :param dict data: Exomiser parameters. (REQUIRED)
         :param str study: study.
@@ -216,7 +216,7 @@ class Variant(_ParentRestClient):
         :param str job_tags: Job tags.
         """
 
-        return self._post(category='analysis', resource='run', subcategory='variant/exomizer', data=data, **options)
+        return self._post(category='analysis', resource='run', subcategory='variant/exomiser', data=data, **options)
 
     def run_export(self, data=None, **options):
         """

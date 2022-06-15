@@ -17,7 +17,6 @@
 package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.JCommander;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.*;
 import org.opencb.opencga.app.cli.main.parent.ParentCliOptionsParser;
 
@@ -68,7 +67,7 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         analysisVariantSubCommands.addCommand("cohort-stats-delete", analysisVariantCommandOptions.deleteCohortStatsCommandOptions);
         analysisVariantSubCommands.addCommand("cohort-stats-info", analysisVariantCommandOptions.infoCohortStatsCommandOptions);
         analysisVariantSubCommands.addCommand("cohort-stats-run", analysisVariantCommandOptions.runCohortStatsCommandOptions);
-        analysisVariantSubCommands.addCommand("exomizer-run", analysisVariantCommandOptions.runExomizerCommandOptions);
+        analysisVariantSubCommands.addCommand("exomiser-run", analysisVariantCommandOptions.runExomiserCommandOptions);
         analysisVariantSubCommands.addCommand("export-run", analysisVariantCommandOptions.runExportCommandOptions);
         analysisVariantSubCommands.addCommand("family-genotypes", analysisVariantCommandOptions.genotypesFamilyCommandOptions);
         analysisVariantSubCommands.addCommand("family-qc-run", analysisVariantCommandOptions.runFamilyQcCommandOptions);

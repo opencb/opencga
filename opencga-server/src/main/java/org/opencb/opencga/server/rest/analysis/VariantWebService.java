@@ -579,9 +579,9 @@ public class VariantWebService extends AnalysisWebService {
     }
 
     @POST
-    @Path("/exomizer/run")
+    @Path("/exomiser/run")
     @ApiOperation(value = ExomiserWrapperAnalysis.DESCRIPTION, response = Job.class)
-    public Response exomizerRun(
+    public Response exomiserRun(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,

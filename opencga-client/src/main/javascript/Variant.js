@@ -176,8 +176,8 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.jobTags] - Job tags.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    runExomizer(data, params) {
-        return this._post("analysis", null, "variant/exomizer", null, "run", data, params);
+    runExomiser(data, params) {
+        return this._post("analysis", null, "variant/exomiser", null, "run", data, params);
     }
 
     /** Filter and export variants from the variant storage to a file

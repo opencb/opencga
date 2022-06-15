@@ -47,7 +47,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> variantList = asList( "aggregationstats","annotation-metadata","annotation-query","circos-run","cohort-stats-delete","cohort-stats-info","cohort-stats-run","exomizer-run","export-run","family-genotypes","family-qc-run","file-delete","gatk-run","genome-plot-run","gwas-run","index-run","individual-qc-run","inferred-sex-run","knockout-gene-query","knockout-individual-query","knockout-run","mendelian-error-run","metadata","mutational-signature-query","mutational-signature-run","plink-run","query","relatedness-run","rvtests-run","sample-aggregation-stats","sample-eligibility-run","sample-qc-run","sample-query","sample-run","sample-stats-query","sample-stats-run","stats-export-run","stats-run")
+    private List<Candidate> variantList = asList( "aggregationstats","annotation-metadata","annotation-query","circos-run","cohort-stats-delete","cohort-stats-info","cohort-stats-run","exomiser-run","export-run","family-genotypes","family-qc-run","file-delete","gatk-run","genome-plot-run","gwas-run","index-run","individual-qc-run","inferred-sex-run","knockout-gene-query","knockout-individual-query","knockout-run","mendelian-error-run","metadata","mutational-signature-query","mutational-signature-run","plink-run","query","relatedness-run","rvtests-run","sample-aggregation-stats","sample-eligibility-run","sample-qc-run","sample-query","sample-run","sample-stats-query","sample-stats-run","stats-export-run","stats-run")
             .stream()
             .map(Candidate::new)
             .collect(toList());

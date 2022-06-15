@@ -8,7 +8,6 @@ import com.beust.jcommander.ParametersDelegate;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.List;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
@@ -42,7 +41,7 @@ public class AnalysisVariantCommandOptions {
         public DeleteCohortStatsCommandOptions deleteCohortStatsCommandOptions;
         public InfoCohortStatsCommandOptions infoCohortStatsCommandOptions;
         public RunCohortStatsCommandOptions runCohortStatsCommandOptions;
-        public RunExomizerCommandOptions runExomizerCommandOptions;
+        public RunExomiserCommandOptions runExomiserCommandOptions;
         public RunExportCommandOptions runExportCommandOptions;
         public GenotypesFamilyCommandOptions genotypesFamilyCommandOptions;
         public RunFamilyQcCommandOptions runFamilyQcCommandOptions;
@@ -86,7 +85,7 @@ public class AnalysisVariantCommandOptions {
         this.deleteCohortStatsCommandOptions = new DeleteCohortStatsCommandOptions();
         this.infoCohortStatsCommandOptions = new InfoCohortStatsCommandOptions();
         this.runCohortStatsCommandOptions = new RunCohortStatsCommandOptions();
-        this.runExomizerCommandOptions = new RunExomizerCommandOptions();
+        this.runExomiserCommandOptions = new RunExomiserCommandOptions();
         this.runExportCommandOptions = new RunExportCommandOptions();
         this.genotypesFamilyCommandOptions = new GenotypesFamilyCommandOptions();
         this.runFamilyQcCommandOptions = new RunFamilyQcCommandOptions();
@@ -383,8 +382,8 @@ public class AnalysisVariantCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"exomizer-run"}, commandDescription ="The Exomiser is a Java program that finds potential disease-causing variants from whole-exome or whole-genome sequencing data.")
-    public class RunExomizerCommandOptions {
+    @Parameters(commandNames = {"exomiser-run"}, commandDescription ="The Exomiser is a Java program that finds potential disease-causing variants from whole-exome or whole-genome sequencing data.")
+    public class RunExomiserCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
