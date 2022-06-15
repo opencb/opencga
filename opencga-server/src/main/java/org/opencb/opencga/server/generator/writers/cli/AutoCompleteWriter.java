@@ -109,7 +109,7 @@ public class AutoCompleteWriter extends ParentClientRestApiWriter {
                 String commandName = getCommandName(restCategory, restEndpoint);
                 if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
                     if (config.isAvailableCommand(commandName)) {
-                        sb.append("\"" + commandName + "\",");
+                        sb.append("\"" + reverseCommandName(commandName) + "\",");
                     }
                 }
             }
