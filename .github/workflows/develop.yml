@@ -4,14 +4,14 @@ on:
   push:
     branches:
       - develop
-      - release-2.2.x
+      - release-*
   workflow_dispatch:
 
 jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P storage-hadoop,hdp3.1 -Dopencga.war.name=opencga
+      maven_opts: -P storage-hadoop,hdp3.1,RClient -Dopencga.war.name=opencga
 
   sonar:
     uses: opencb/java-common-libs/.github/workflows/sonar-analysis-workflow.yml@develop
@@ -33,17 +33,11 @@ jobs:
         with:
           fetch-depth: '10'
       - name: Set up JDK 8
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '8'
           cache: 'maven'
-      - name: Cache Maven packages
-        uses: actions/cache@v2
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-maven
       - name: Start MongoDB v${{ matrix.mongodb }}
         uses: supercharge/mongodb-github-action@1.7.0
         with:

@@ -399,9 +399,8 @@ public class ParamConstants {
     public static final String CLINICAL_PRIORITY_PARAM = "priority";
     public static final String CLINICAL_FLAGS_PARAM = "flags";
     public static final String CLINICAL_CREATION_DATE_PARAM = CREATION_DATE_PARAM;
-
-    // ---------------------------------------------
     public static final String CLINICAL_MODIFICATION_DATE_PARAM = MODIFICATION_DATE_PARAM;
+    public static final String CLINICAL_DUE_DATE_PARAM = "dueDate";
     public static final String CLINICAL_QUALITY_CONTROL_SUMMARY_PARAM = "qualityControlSummary";
     public static final String CLINICAL_RELEASE_PARAM = RELEASE_PARAM;
     public static final String CLINICAL_STATUS_PARAM = STATUS_PARAM;
@@ -423,6 +422,8 @@ public class ParamConstants {
     public static final String CLINICAL_FLAGS_DESCRIPTION = "Clinical Analysis flags";
     public static final String CLINICAL_CREATION_DATE_DESCRIPTION = "Clinical Analysis " + CREATION_DATE_DESCRIPTION;
     public static final String CLINICAL_MODIFICATION_DATE_DESCRIPTION = "Clinical Analysis " + MODIFICATION_DATE_DESCRIPTION;
+    public static final String CLINICAL_DUE_DATE_DESCRIPTION = "Clinical Analysis due date. Format: yyyyMMddHHmmss. Examples: >2018, "
+            + "2017-2018, <201805";
     public static final String CLINICAL_QUALITY_CONTROL_SUMMARY_DESCRIPTION = "Clinical Analysis quality control summary";
     public static final String CLINICAL_RELEASE_DESCRIPTION = RELEASE_DESCRIPTION;
     public static final String CLINICAL_STATUS_DESCRIPTION = STATUS_DESCRIPTION;

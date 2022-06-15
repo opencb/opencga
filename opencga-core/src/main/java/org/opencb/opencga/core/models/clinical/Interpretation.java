@@ -185,6 +185,12 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
     }
 
     @Override
+    public Interpretation setStatus(Status status) {
+        super.setStatus(status);
+        return this;
+    }
+
+    @Override
     public Interpretation setLocked(boolean locked) {
         super.setLocked(locked);
         return this;
