@@ -1,11 +1,17 @@
 package org.opencb.opencga.test.utils;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.utils.PrintUtils;
+import org.opencb.opencga.test.cli.options.DatasetCommandOptions;
 import org.opencb.opencga.test.config.Caller;
 import org.opencb.opencga.test.config.Environment;
 import org.opencb.opencga.test.execution.models.DatasetExecutionPlan;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,19 +29,28 @@ public class DatasetTestUtils {
         if (!output.endsWith(File.separator)) {
             separator = File.separator;
         }
+        return output + separator + "envs/" + environment.getId() + "/";
+    }
+
+    public static String getInputDataDirPath(Environment environment) {
+        String output = environment.getData().getPath();
+        String separator = "";
+        if (!output.endsWith(File.separator)) {
+            separator = File.separator;
+        }
         return output + separator;
     }
 
     public static String getInputFastqDirPath(Environment environment) {
-        return getInputEnvironmentDirPath(environment) + "fastq/";
+        return getInputDataDirPath(environment) + "fastq/";
     }
 
     public static String getInputVCFDirPath(Environment environment) {
-        return getInputEnvironmentDirPath(environment) + "vcf/";
+        return getInputDataDirPath(environment) + "vcf/";
     }
 
     public static String getInputBamDirPath(Environment environment) {
-        return getInputEnvironmentDirPath(environment) + "bam/";
+        return getInputDataDirPath(environment) + "bam/";
     }
 
     public static String getInputTemplatesDirPath(Environment environment) {
@@ -43,13 +58,34 @@ public class DatasetTestUtils {
 
     }
 
-    public static String getEnvironmentDirPath(Environment environment) {
+    public static String getOutputDirPath(Environment environment) {
 
-        return getInputEnvironmentDirPath(environment) + environment.getId() + "/";
+        if (StringUtils.isNotEmpty(DatasetCommandOptions.output)) {
+            String output = DatasetCommandOptions.output;
+            String separator = "";
+            if (!output.endsWith(File.separator)) {
+                separator = File.separator;
+            }
+            Path path = Paths.get(output);
+            if (Files.exists(path)) {
+                return output + separator;
+            } else {
+                PrintUtils.printError("The path " + path + " is not present.");
+                System.exit(0);
+            }
+        }
+
+        String output = environment.getDataset().getPath();
+        String separator = "";
+        if (!output.endsWith(File.separator)) {
+            separator = File.separator;
+        }
+        return output + separator + "output/";
     }
 
     public static String getEnvironmentOutputDirPath(Environment environment) {
-        return getEnvironmentDirPath(environment) + "output/";
+
+        return getOutputDirPath(environment) + environment.getId() + "/";
     }
 
     public static String getOutputBamDirPath(Environment environment) {
@@ -64,8 +100,12 @@ public class DatasetTestUtils {
         return getEnvironmentOutputDirPath(environment) + "vcf/";
     }
 
+    public static String getEnvironmentExecutionDirPath(Environment environment) {
+        return DatasetTestUtils.getMetadataDirPath(environment) + "execution/" + environment.getId() + "/";
+    }
+
     public static String getExecutionDirPath(Environment environment) {
-        return DatasetTestUtils.getEnvironmentDirPath(environment) + "execution/";
+        return DatasetTestUtils.getMetadataDirPath(environment) + "execution/";
     }
 
     public static List<String> getSamtoolsCommands(String filename) {
@@ -102,5 +142,9 @@ public class DatasetTestUtils {
             }
         }
         return false;
+    }
+
+    public static String getMetadataDirPath(Environment environment) {
+        return getOutputDirPath(environment) + "metadata/";
     }
 }
