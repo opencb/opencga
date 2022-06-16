@@ -167,7 +167,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 .append(VariantStorageOptions.STUDY.key(), STUDY_NAME_4)
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
-        runETL(engine, getResourceUri("variant-test-dense.vcf"), outputUri, params, true, true, true);
+        runETL(engine, getResourceUri("variant-test-dense.vcf.gz"), outputUri, params, true, true, true);
         engine.familyIndex(STUDY_NAME_4, trios, new ObjectMap());
 
 

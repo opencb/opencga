@@ -10,14 +10,17 @@ import os
 os.chdir(sys.path[0])
 
 class Test_init_script(unittest.TestCase):
+
     def setUp(self):
         if "OPENCGA_CONFIG_DIR" in  os.environ:
             config_dir = os.environ["OPENCGA_CONFIG_DIR"]
         else:
             config_dir = "./conf"
 
-        storage_config = os.path.join(config_dir, "storage-configuration.yml")
-        copyfile(storage_config, "./storage-configuration.yml")
+        storage_config_path = os.path.join(config_dir, "storage-configuration.yml")
+        copyfile(storage_config_path, "./storage-configuration.yml")
+        with open(storage_config_path) as f:
+            self.storage_config_input = yaml.safe_load(f)
 
         client_config = os.path.join(config_dir, "client-configuration.yml")
         copyfile(client_config, "./client-configuration.yml")
@@ -660,7 +663,7 @@ class Test_init_script(unittest.TestCase):
         )
         self.assertEqual(
             storage_config["cellbase"]["url"],
-            "https://ws.opencb.org/cellbase/",
+            self.storage_config_input["cellbase"]["url"],
         )
 
     def test_cellbase_rest_not_set(self):
@@ -744,7 +747,7 @@ class Test_init_script(unittest.TestCase):
         )
         self.assertEqual(
             storage_config["cellbase"]["url"],
-            "https://ws.opencb.org/cellbase/",
+            self.storage_config_input["cellbase"]["url"],
         )
 
 # TODO: Tests for k8s config

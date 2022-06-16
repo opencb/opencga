@@ -778,6 +778,19 @@
                                     <!--<exclude>com.google.common.base.**</exclude>-->
                                     <!--</excludes>-->
                                 </relocation>
+                                <relocation>
+                                    <pattern>org.eclipse.jetty</pattern>
+                                    <shadedPattern>shaded.org.eclipse.jetty</shadedPattern>
+                                    <includes>
+                                        <include>org.eclipse.jetty.server.**</include>
+                                        <include>org.eclipse.jetty.webapp.**</include>
+                                        <include>org.eclipse.jetty.servlet.**</include>
+                                        <include>org.eclipse.jetty.security.**</include>
+                                        <include>org.eclipse.jetty.http.**</include>
+                                        <include>org.eclipse.jetty.io.**</include>
+                                        <include>org.eclipse.jetty.util.**</include>
+                                    </includes>
+                                </relocation>
                             </relocations>
 
                             <artifactSet>
@@ -867,6 +880,20 @@
                                         <include>com.google.common.base.Stopwatch</include>
                                     </includes>
                                 </relocation>
+
+                                <relocation>
+                                    <pattern>org.eclipse.jetty</pattern>
+                                    <shadedPattern>shaded.org.eclipse.jetty</shadedPattern>
+                                    <includes>
+                                        <include>org.eclipse.jetty.server.**</include>
+                                        <include>org.eclipse.jetty.webapp.**</include>
+                                        <include>org.eclipse.jetty.servlet.**</include>
+                                        <include>org.eclipse.jetty.security.**</include>
+                                        <include>org.eclipse.jetty.http.**</include>
+                                        <include>org.eclipse.jetty.io.**</include>
+                                        <include>org.eclipse.jetty.util.**</include>
+                                    </includes>
+                                </relocation>
                             </relocations>
 
                             <artifactSet>
@@ -883,6 +910,13 @@
                                     <include>org.mortbay.jetty:jetty</include>
                                     <include>org.mortbay.jetty:jetty-util</include>
                                     <include>org.mortbay.jetty:jetty-sslengine</include>
+                                    <include>org.eclipse.jetty:jetty-server</include>
+                                    <include>org.eclipse.jetty:jetty-webapp</include>
+                                    <include>org.eclipse.jetty:jetty-servlet</include>
+                                    <include>org.eclipse.jetty:jetty-security</include>
+                                    <include>org.eclipse.jetty:jetty-http</include>
+                                    <include>org.eclipse.jetty:jetty-io</include>
+                                    <include>org.eclipse.jetty:jetty-util</include>
                                     <exclude>log4j:**</exclude>
                                 </includes>
                             </artifactSet>

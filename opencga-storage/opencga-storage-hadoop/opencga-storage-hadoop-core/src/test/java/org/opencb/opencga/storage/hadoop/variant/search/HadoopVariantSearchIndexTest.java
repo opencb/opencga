@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.search;
 
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -16,8 +17,8 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
  */
 public class HadoopVariantSearchIndexTest extends VariantSearchIndexTest implements HadoopVariantStorageTest {
 
-    @Rule
-    public HadoopExternalResource externalResource = new HadoopExternalResource();
+    @ClassRule
+    public static HadoopExternalResource externalResource = new HadoopExternalResource();
 
     private int i = 0;
 
