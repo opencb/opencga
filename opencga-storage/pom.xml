@@ -48,17 +48,17 @@
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-core</artifactId>
-                <version>${opencga.version}</version>
+                <version>${project.parent.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-server</artifactId>
-                <version>${opencga.version}</version>
+                <version>${project.parent.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-benchmark</artifactId>
-                <version>${opencga.version}</version>
+                <version>${project.parent.version}</version>
             </dependency>
 
             <dependency>

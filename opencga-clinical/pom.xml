@@ -30,27 +30,27 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-catalog</artifactId>
-            <version>${opencga.version}</version>
+            <version>${project.parent.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
-            <version>${opencga.version}</version>
+            <version>${project.parent.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-mongodb</artifactId>
-            <version>${opencga.version}</version>
+            <version>${project.parent.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-mongodb</artifactId>
-            <version>${opencga.version}</version>
+            <version>${project.parent.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>

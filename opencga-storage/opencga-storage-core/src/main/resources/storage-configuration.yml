@@ -175,7 +175,7 @@ variant:
         storage.hadoop.bin: "hadoop"
 
         ## If undefined, it will be generated based on the build version.
-        #storage.hadoop.mr.jarWithDependencies: "opencga-storage-hadoop-core-${opencga.version}-jar-with-dependencies.jar"
+        #storage.hadoop.mr.jarWithDependencies: "opencga-storage-hadoop-core-${project.parent.version}-jar-with-dependencies.jar"
 
         # Define the MapReduce job executor.
         storage.hadoop.mr.executor: "system"  # Either "system" or "ssh".
