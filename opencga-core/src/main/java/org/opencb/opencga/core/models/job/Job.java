@@ -117,8 +117,8 @@ public class Job extends PrivateStudyUid {
             description = FieldConstants.JOB_DEPENDS_ON_DESCRIPTION)
     private List<Job> dependsOn;
 
-    @DataField(id = "execution", indexed = true, description = FieldConstants.JOB_EXECUTION_DESCRIPTION)
-    private JobResult execution;
+    @DataField(id = "result", indexed = true, description = FieldConstants.JOB_RESULT_DESCRIPTION)
+    private JobResult result;
 
     @DataField(id = "stdout", indexed = true,
             description = FieldConstants.JOB_STDOUT_DESCRIPTION)
@@ -154,7 +154,7 @@ public class Job extends PrivateStudyUid {
 
     public Job(String id, String uuid, String description, String executionId, ToolInfo tool, String userId, String commandLine,
                Map<String, Object> params, String creationDate, String modificationDate, Enums.Priority priority, JobInternal internal,
-               File outDir, List<File> input, List<File> output, List<Job> dependsOn, List<String> tags, JobResult execution,
+               File outDir, List<File> input, List<File> output, List<Job> dependsOn, List<String> tags, JobResult result,
                boolean visited, File stdout, File stderr, int release, JobStudyParam study, Map<String, Object> attributes) {
         this.id = id;
         this.uuid = uuid;
@@ -173,7 +173,7 @@ public class Job extends PrivateStudyUid {
         this.output = output;
         this.dependsOn = dependsOn;
         this.tags = tags;
-        this.execution = execution;
+        this.result = result;
         this.visited = visited;
         this.stdout = stdout;
         this.stderr = stderr;
@@ -202,7 +202,7 @@ public class Job extends PrivateStudyUid {
         sb.append(", output=").append(output);
         sb.append(", tags=").append(tags);
         sb.append(", dependsOn=").append(dependsOn);
-        sb.append(", execution=").append(execution);
+        sb.append(", result=").append(result);
         sb.append(", stdout=").append(stdout);
         sb.append(", stderr=").append(stderr);
         sb.append(", visited=").append(visited);
@@ -390,12 +390,12 @@ public class Job extends PrivateStudyUid {
         return this;
     }
 
-    public JobResult getExecution() {
-        return execution;
+    public JobResult getResult() {
+        return result;
     }
 
-    public Job setExecution(JobResult execution) {
-        this.execution = execution;
+    public Job setResult(JobResult result) {
+        this.result = result;
         return this;
     }
 

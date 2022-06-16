@@ -349,7 +349,7 @@ public class JobDaemon extends MonitorParentDaemon {
                         result.getExecutor().getParams().put(ParamConstants.TOKEN, REDACTED_TOKEN);
                     }
                     // Update the result of the job
-                    PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setExecution(result);
+                    PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setResult(result);
                     try {
                         jobManager.update(job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);
                     } catch (CatalogException e) {
@@ -1005,7 +1005,7 @@ public class JobDaemon extends MonitorParentDaemon {
         if (analysisResultPath != null) {
             execution = readExecutionResult(analysisResultPath);
             if (execution != null) {
-                PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setExecution(execution);
+                PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setResult(execution);
                 try {
                     jobManager.update(job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);
                 } catch (CatalogException e) {

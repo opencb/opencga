@@ -1469,7 +1469,7 @@ public class JobManager extends ResourceManager<Job> {
         StopWatch stopWatch = StopWatch.createStarted();
         QueryOptions queryOptions = new QueryOptions()
                 .append(QueryOptions.INCLUDE, Arrays.asList(JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.TOOL.key(),
-                        JobDBAdaptor.QueryParams.INTERNAL.key(), JobDBAdaptor.QueryParams.EXECUTION.key(),
+                        JobDBAdaptor.QueryParams.INTERNAL.key(), JobDBAdaptor.QueryParams.RESULT.key(),
                         JobDBAdaptor.QueryParams.DEPENDS_ON.key(), JobDBAdaptor.QueryParams.CREATION_DATE.key(),
                         JobDBAdaptor.QueryParams.PRIORITY.key(), JobDBAdaptor.QueryParams.STUDY.key()))
                 .append(QueryOptions.COUNT, false)
@@ -1494,9 +1494,9 @@ public class JobManager extends ResourceManager<Job> {
             running.addAll(results);
         }
         running.sort(Comparator.comparing(
-                j -> j.getExecution() == null || j.getExecution().getStart() == null
+                j -> j.getResult() == null || j.getResult().getStart() == null
                         ? new Date()
-                        : j.getExecution().getStart()));
+                        : j.getResult().getStart()));
         if (running.size() > jobsLimit) {
             running = running.subList(0, jobsLimit);
         }
@@ -1566,9 +1566,9 @@ public class JobManager extends ResourceManager<Job> {
             Collections.reverse(results); // Reverse elements
             finishedJobs.addAll(results);
         }
-        finishedJobs.sort(Comparator.comparing((Job j) -> j.getExecution() == null || j.getExecution().getStart() == null
+        finishedJobs.sort(Comparator.comparing((Job j) -> j.getResult() == null || j.getResult().getStart() == null
                 ? new Date()
-                : j.getExecution().getStart()).reversed());
+                : j.getResult().getStart()).reversed());
         if (finishedJobs.size() > jobsLimit) {
             finishedJobs = finishedJobs.subList(0, jobsLimit);
         }

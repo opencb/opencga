@@ -154,9 +154,9 @@ public interface JobDBAdaptor extends CoreDBAdaptor<Job> {
         TAGS("tags", TEXT_ARRAY, ""),
 
         EXECUTION_ID("executionId", TEXT, ""),
-        EXECUTION("execution", OBJECT, ""),
-        EXECUTION_START("execution.start", DATE, ""),
-        EXECUTION_END("execution.end", DATE, ""),
+        RESULT("result", OBJECT, ""),
+        RESULT_START("result.start", DATE, ""),
+        RESULT_END("result.end", DATE, ""),
 
         STDOUT("stdout", OBJECT, ""),
         STDERR("stderr", OBJECT, ""),

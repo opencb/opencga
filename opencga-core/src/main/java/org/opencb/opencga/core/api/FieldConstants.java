@@ -287,7 +287,7 @@ public class FieldConstants {
     public static final String JOB_OUTPUT_DESCRIPTION = "List of output files.";
     public static final String JOB_TAGS_DESCRIPTION = "List of tags for the job.";
     public static final String JOB_DEPENDS_ON_DESCRIPTION = "List of jobs the current job depends on.";
-    public static final String JOB_EXECUTION_DESCRIPTION = "Result of the execution.";
+    public static final String JOB_RESULT_DESCRIPTION = "Result of the job execution.";
 
     //ExecutorInfo
     public static final String EXECUTION_INFO_CLASS_DESCRIPTION = "ExecutorInfo class.";

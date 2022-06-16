@@ -89,7 +89,7 @@ public class JobCreateParams {
                 job.getInternal() != null ? new JobInternal(job.getInternal().getStatus()) : null, TinyFile.of(job.getOutDir()),
                 job.getInput() != null ? job.getInput().stream().map(TinyFile::of).collect(Collectors.toList()) : Collections.emptyList(),
                 job.getOutput() != null ? job.getOutput().stream().map(TinyFile::of).collect(Collectors.toList()) : Collections.emptyList(),
-                job.getTags(), job.getExecution(), TinyFile.of(job.getStdout()), TinyFile.of(job.getStderr()), job.getAttributes());
+                job.getTags(), job.getResult(), TinyFile.of(job.getStdout()), TinyFile.of(job.getStderr()), job.getAttributes());
     }
 
     @Override

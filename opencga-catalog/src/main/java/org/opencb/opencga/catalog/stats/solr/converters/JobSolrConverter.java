@@ -78,10 +78,10 @@ public class JobSolrConverter implements ComplexTypeConverter<Job, JobSolrModel>
         jobSolrModel.setPriority(job.getPriority() != null ? job.getPriority().name() : null);
         jobSolrModel.setTags(job.getTags());
 
-        if (job.getExecution() != null && job.getExecution().getExecutor() != null) {
-            jobSolrModel.setExecutorId(job.getExecution().getExecutor().getId());
-            jobSolrModel.setExecutorFramework(job.getExecution().getExecutor().getFramework() != null
-                    ? job.getExecution().getExecutor().getFramework().name() : null);
+        if (job.getResult() != null && job.getResult().getExecutor() != null) {
+            jobSolrModel.setExecutorId(job.getResult().getExecutor().getId());
+            jobSolrModel.setExecutorFramework(job.getResult().getExecutor().getFramework() != null
+                    ? job.getResult().getExecutor().getFramework().name() : null);
         }
 
         // Extract the permissions

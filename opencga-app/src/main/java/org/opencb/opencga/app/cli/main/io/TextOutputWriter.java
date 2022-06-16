@@ -436,21 +436,21 @@ public class TextOutputWriter extends AbstractOutputWriter {
         STATUS(new Table.TableColumnSchema<>("Status", job -> job.getInternal().getStatus().getId())),
         STEP(new Table.TableColumnSchema<>("Step", job -> {
             if (job.getInternal().getStatus().getId().equals(RUNNING)) {
-                String currentStep = job.getExecution().getStatus().getStep();
+                String currentStep = job.getResult().getStatus().getStep();
                 int currentStepPosition = 0;
-                for (int i = 0; i < job.getExecution().getSteps().size(); i++) {
-                    if (job.getExecution().getSteps().get(i).getId().equals(currentStep)) {
+                for (int i = 0; i < job.getResult().getSteps().size(); i++) {
+                    if (job.getResult().getSteps().get(i).getId().equals(currentStep)) {
                         currentStepPosition = i + 1;
                         break;
                     }
                 }
-                return job.getExecution().getStatus().getStep() + " " + currentStepPosition + "/" + job.getExecution().getSteps().size();
+                return job.getResult().getStatus().getStep() + " " + currentStepPosition + "/" + job.getResult().getSteps().size();
             } else {
                 return null;
             }
         })),
         EVENTS(new Table.TableColumnSchema<>("Events", j -> {
-            Map<Event.Type, Long> map = j.getExecution().getEvents().stream()
+            Map<Event.Type, Long> map = j.getResult().getEvents().stream()
                     .collect(Collectors.groupingBy(Event::getType, Collectors.counting()));
             if (map.isEmpty()) {
                 return null;
@@ -487,15 +487,15 @@ public class TextOutputWriter extends AbstractOutputWriter {
         }
 
         private static Date getStart(Job job) {
-            return job.getExecution() == null ? null : job.getExecution().getStart();
+            return job.getResult() == null ? null : job.getResult().getStart();
         }
 
         private static Date getEnd(Job job) {
-            if (job.getExecution() == null) {
+            if (job.getResult() == null) {
                 return null;
             } else {
-                if (job.getExecution().getEnd() != null) {
-                    return job.getExecution().getEnd();
+                if (job.getResult().getEnd() != null) {
+                    return job.getResult().getEnd();
                 } else {
                     if (job.getInternal() != null && job.getInternal().getStatus() != null) {
                         if (Enums.ExecutionStatus.ERROR.equals(job.getInternal().getStatus().getId())

@@ -86,7 +86,7 @@ public class JobIndexTask extends OpenCgaAnalysisTool {
                         JobDBAdaptor.QueryParams.STUDY_UID.key(), JobDBAdaptor.QueryParams.CREATION_DATE.key(),
                         JobDBAdaptor.QueryParams.RELEASE.key(), JobDBAdaptor.QueryParams.INTERNAL_STATUS.key(), JobDBAdaptor.QueryParams.TOOL.key(),
                         JobDBAdaptor.QueryParams.USER_ID.key(), JobDBAdaptor.QueryParams.PRIORITY.key(),
-                        JobDBAdaptor.QueryParams.TAGS.key(), JobDBAdaptor.QueryParams.EXECUTION.key()))
+                        JobDBAdaptor.QueryParams.TAGS.key(), JobDBAdaptor.QueryParams.RESULT.key()))
                 .append(DBAdaptor.INCLUDE_ACLS, true);
 
         catalogSolrManager.insertCatalogCollection(catalogManager.getJobManager().iterator(study.getFqn(), query, jobQueryOptions, token),
