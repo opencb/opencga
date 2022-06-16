@@ -20,6 +20,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.commons.utils.PrintUtils;
+import org.opencb.opencga.test.cli.options.DatasetCommandOptions;
 import org.opencb.opencga.test.config.Configuration;
 import org.opencb.opencga.test.config.Environment;
 import org.opencb.opencga.test.config.Mutation;
@@ -73,6 +74,9 @@ public class LocalDatasetExecutor extends DatasetExecutor {
 
         if (!configuration.getMutator().isSkip()) {
             mutate();
+        } else {
+            PrintUtils.println("Writing mutations SKIPPED ", PrintUtils.Color.CYAN);
+
         }
     }
 
@@ -94,14 +98,16 @@ public class LocalDatasetExecutor extends DatasetExecutor {
                                 if (files[i].equals(filename)) {
                                     PrintUtils.println("Variants found for file: ", PrintUtils.Color.CYAN, files[i], PrintUtils.Color.WHITE);
                                     setVariantsInFile(mutation.getVariants(), new File(vcfDir.getAbsolutePath() + File.separator + filename));
-                                } /*else {
-                                PrintUtils.println("No variants found for file: ", PrintUtils.Color.CYAN, files[i], PrintUtils.Color.WHITE);
-                            }*/
+                                }
                             }
                         }
                     }
                 }
             }
+        } else {
+            PrintUtils.println("Writing mutations: ", PrintUtils.Color.CYAN,
+                    configuration.getMutator().getMutations().size() + " mutations found.", PrintUtils.Color.WHITE);
+
         }
     }
 
@@ -208,11 +214,18 @@ public class LocalDatasetExecutor extends DatasetExecutor {
     }
 
     private void createOutputDirs(Environment env) {
-        createDir(DatasetTestUtils.getEnvironmentDirPath(env));
+        createDir(DatasetTestUtils.getOutputDirPath(env));
         createDir(DatasetTestUtils.getEnvironmentOutputDirPath(env));
+        createDir(DatasetTestUtils.getMetadataDirPath(env));
         createDir(DatasetTestUtils.getVCFOutputDirPath(env));
         createDir(DatasetTestUtils.getExecutionDirPath(env));
+        createDir(DatasetTestUtils.getEnvironmentExecutionDirPath(env));
         createDir(DatasetTestUtils.getOutputBamDirPath(env));
+        copyExecutionMetadata(env);
+        copyTemplatesDir(env);
+    }
+
+    private void copyTemplatesDir(Environment env) {
         File templatesDir = Paths.get(DatasetTestUtils.getInputTemplatesDirPath(env)).toFile();
         if (templatesDir.exists()) {
             try {
@@ -231,6 +244,24 @@ public class LocalDatasetExecutor extends DatasetExecutor {
         }
     }
 
+    private void copyExecutionMetadata(Environment env) {
+        File metadataDir = Paths.get(DatasetTestUtils.getMetadataDirPath(env)).toFile();
+        File configFile = new File(DatasetCommandOptions.configFile);
+        if (metadataDir.exists()) {
+            try {
+                File metaDataConfigFile = new File(DatasetTestUtils.getMetadataDirPath(env) + "configuration.yml");
+                FileUtils.copyFile(configFile, metaDataConfigFile);
+            } catch (IOException e) {
+                PrintUtils.printError("Error copying " + configFile.getAbsolutePath());
+                System.exit(0);
+            }
+
+        } else {
+            PrintUtils.printError("Directory " + metadataDir.getAbsolutePath() + " not exists.");
+            System.exit(0);
+        }
+    }
+
     private void createDir(String dir) {
         if (!new File(dir).exists()) {
             try {
@@ -243,7 +274,7 @@ public class LocalDatasetExecutor extends DatasetExecutor {
 
     private void executeFileScript(Environment env, Map<String, List<String>> result, String filename) {
         try {
-            Path path = Paths.get(DatasetTestUtils.getExecutionDirPath(env) + filename + ".sh");
+            Path path = Paths.get(DatasetTestUtils.getEnvironmentExecutionDirPath(env) + filename + ".sh");
             if (path.toFile().exists()) {
                 path.toFile().delete();
             }

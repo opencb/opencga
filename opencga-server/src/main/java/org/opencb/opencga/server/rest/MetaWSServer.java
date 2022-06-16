@@ -19,6 +19,7 @@ package org.opencb.opencga.server.rest;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.Event;
+import org.opencb.commons.utils.DataModelsUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -96,6 +97,13 @@ public class MetaWSServer extends OpenCGAWSServer {
     public Response ping() {
         OpenCGAResult<String> queryResult = new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList("pong"), 1);
         return createOkResponse(queryResult);
+    }
+
+    @GET
+    @Path("/model")
+    @ApiOperation(httpMethod = "GET", value = "Opencga model webservices.", response = String.class)
+    public Response model(@QueryParam("model") String modelStr) {
+        return run(() -> new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(DataModelsUtils.dataModelToJsonString(Class.forName(modelStr), false)), 1));
     }
 
     @GET

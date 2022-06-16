@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -15,6 +16,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.*;
+import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
@@ -143,6 +145,27 @@ public class InterpretationManagerTest extends GenericTest {
                 sessionIdUser);
         ca = catalogManager.getClinicalAnalysisManager().get(STUDY, ca.getId(), QueryOptions.empty(), sessionIdUser).first();
         assertNull(ca.getInterpretation());
+    }
+
+    @Test
+    public void automaticallyLockInterpretationTest() throws CatalogException {
+        ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
+        Interpretation interpretation = catalogManager.getInterpretationManager().create(STUDY, ca.getId(),
+                new Interpretation(),  ParamUtils.SaveInterpretationAs.PRIMARY, INCLUDE_RESULT, sessionIdUser).first();
+        assertTrue(StringUtils.isEmpty(interpretation.getStatus().getId()));
+        assertFalse(interpretation.isLocked());
+
+        interpretation = catalogManager.getInterpretationManager().update(STUDY, ca.getId(), interpretation.getId(),
+                new InterpretationUpdateParams().setStatus(new StatusParam("READY")), null, INCLUDE_RESULT, sessionIdUser).first();
+        assertEquals("READY", interpretation.getStatus().getId());
+        assertTrue(interpretation.isLocked());
+
+        interpretation = catalogManager.getInterpretationManager().create(STUDY, ca.getId(),
+                new Interpretation()
+                        .setStatus(new Status("REJECTED", "", "", "")),
+                ParamUtils.SaveInterpretationAs.PRIMARY, INCLUDE_RESULT, sessionIdUser).first();
+        assertEquals("REJECTED", interpretation.getStatus().getId());
+        assertTrue(interpretation.isLocked());
     }
 
     @Test

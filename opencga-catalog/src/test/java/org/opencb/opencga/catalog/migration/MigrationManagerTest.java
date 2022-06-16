@@ -155,16 +155,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
         for (int i = 0; i < pendingMigrations.size(); i++) {
             Class<? extends MigrationTool> pendingMigration = pendingMigrations.get(i);
             Migration annotation = pendingMigration.getAnnotation(Migration.class);
-            switch (i) {
-                case 0:
-                    assertEquals("test2-2", annotation.id());
-                    break;
-                case 1:
-                    assertEquals("test2-1", annotation.id());
-                    break;
-                default:
-                    fail();
-            }
+            assertTrue(Arrays.asList("test2-1", "test2-2").contains(annotation.id()));
         }
 
         pendingMigrations = migrationManager.getPendingMigrations("0.2.1", token);
@@ -174,10 +165,8 @@ public class MigrationManagerTest extends AbstractManagerTest {
             Migration annotation = pendingMigration.getAnnotation(Migration.class);
             switch (i) {
                 case 0:
-                    assertEquals("test2-2", annotation.id());
-                    break;
                 case 1:
-                    assertEquals("test2-1", annotation.id());
+                    assertTrue(Arrays.asList("test2-1", "test2-2").contains(annotation.id()));
                     break;
                 case 2:
                     assertEquals("test3-1", annotation.id());

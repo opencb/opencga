@@ -18,7 +18,9 @@ package org.opencb.opencga.test.manager;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.utils.PrintUtils;
+import org.opencb.opencga.test.cli.options.DatasetCommandOptions;
 import org.opencb.opencga.test.config.Caller;
 import org.opencb.opencga.test.config.Configuration;
 import org.opencb.opencga.test.config.Environment;
@@ -108,7 +110,7 @@ public class DatasetCommandLineGenerator {
                     System.exit(0);
                 }
             } else {
-                List<String> filenames = new ArrayList<>();
+                List<String> filenames;
                 if (environment.getAligner().isSkip()) {
                     //If aligner are disabled input bam folder must exist
                     File bamDir = Paths.get(DatasetTestUtils.getInputBamDirPath(environment)).toFile();
@@ -162,7 +164,8 @@ public class DatasetCommandLineGenerator {
                     datasetExecutionFile.setInputFilename(filename);
                     datasetExecutionFile.setCommands(commandLines);
                     datasetExecutionFile.setOutputFilenames(outputFilenames);
-                    if (resume) {
+                    //if user sets DatasetCommandOptions.output run command is the same of resume option (Files should not be overwritten)
+                    if (resume || StringUtils.isNotEmpty(DatasetCommandOptions.output)) {
                         if (!isExecutedFile(Paths.get(DatasetTestUtils.getVCFOutputDirPath(environment)).toFile(), outputFilenames)) {
                             commands.add(datasetExecutionFile);
                         }
@@ -246,6 +249,7 @@ public class DatasetCommandLineGenerator {
         command = command.replace("${INDEX}", environment.getReference().getIndex());
         command = command.replace("${OUTPUT}", DatasetTestUtils.getOutputBamDirPath(environment) + "${FASTQNAME}.sam");
         command = command.replace("${FASTQNAME}", filename);
+        command = command.replace("${REFERENCE.PATH}", environment.getReference().getPath());
         return command;
     }
 }

@@ -20,9 +20,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class OpenCGAResult<T> extends DataResult<T> {
@@ -154,18 +152,22 @@ public class OpenCGAResult<T> extends DataResult<T> {
         return this;
     }
 
-    public OpenCGAResult<T> addEvent(Event event) {
-        if (events == null) {
-            events = new ArrayList<>();
-        } else {
-            try {
-                events.add(event);
-            } catch (UnsupportedOperationException e) {
-                events = new ArrayList<>(events);
-                events.add(event);
-            }
+    public OpenCGAResult<T> addEvents(List<Event> events) {
+        if (this.events == null) {
+            this.events = new LinkedList<>();
         }
+        try {
+            this.events.addAll(events);
+        } catch (UnsupportedOperationException e) {
+            this.events = new LinkedList<>(this.events);
+            this.events.addAll(events);
+        }
+
         return this;
+    }
+
+    public OpenCGAResult<T> addEvent(Event event) {
+        return addEvents(Collections.singletonList(event));
     }
 
     public int getNumResults() {

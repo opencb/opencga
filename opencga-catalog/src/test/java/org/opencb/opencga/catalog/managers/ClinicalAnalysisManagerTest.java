@@ -50,7 +50,7 @@ import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.common.FlagValue;
 import org.opencb.opencga.core.models.common.StatusParam;
-import org.opencb.opencga.core.models.common.StatusValue;
+import org.opencb.opencga.core.models.clinical.ClinicalStatusValue;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
@@ -244,6 +244,37 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals("user", ca.getQualityControl().getComments().get(0).getAuthor());
         assertNotNull(ca.getQualityControl().getComments().get(0).getDate());
         assertNotEquals(date, ca.getQualityControl().getComments().get(0).getDate());
+    }
+
+    @Test
+    public void automaticallyLockCaseTest() throws CatalogException {
+        Individual individual = new Individual()
+                .setId("proband")
+                .setSamples(Collections.singletonList(new Sample().setId("sample")));
+        catalogManager.getIndividualManager().create(STUDY, individual, QueryOptions.empty(), sessionIdUser);
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("Clinical")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setProband(individual);
+        OpenCGAResult<ClinicalAnalysis> clinical = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis,
+                INCLUDE_RESULT, sessionIdUser);
+        assertTrue(StringUtils.isEmpty(clinical.first().getStatus().getId()));
+        assertFalse(clinical.first().isLocked());
+
+        clinical = catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
+                new ClinicalAnalysisUpdateParams().setStatus(new StatusParam("CLOSED")), INCLUDE_RESULT, sessionIdUser);
+        assertEquals("CLOSED", clinical.first().getStatus().getId());
+        assertTrue(clinical.first().isLocked());
+
+        clinicalAnalysis = new ClinicalAnalysis()
+                .setId("Clinical2")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setStatus(new ClinicalAnalysisStatus().setId("CLOSED"))
+                .setProband(individual);
+        clinical = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, INCLUDE_RESULT, sessionIdUser);
+        assertEquals("CLOSED", clinical.first().getStatus().getId());
+        assertTrue(clinical.first().isLocked());
     }
 
     @Test
@@ -1130,7 +1161,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
 
-        StatusValue status = configuration.getStatus().get(dummyEnvironment.first().getType()).get(0);
+        ClinicalStatusValue status = configuration.getStatus().get(dummyEnvironment.first().getType()).get(0);
 
         ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
                 .setStatus(new StatusParam(status.getId()));
@@ -1298,7 +1329,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         InterpretationStudyConfiguration configuration = study.getInternal().getConfiguration().getClinical().getInterpretation();
 
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, true);
-        StatusValue status = configuration.getStatus().get(dummyEnvironment.first().getType()).get(0);
+        ClinicalStatusValue status = configuration.getStatus().get(dummyEnvironment.first().getType()).get(0);
 
         InterpretationUpdateParams updateParams = new InterpretationUpdateParams()
                 .setStatus(new StatusParam(status.getId()));
