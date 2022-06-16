@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 
 public class Catalet {
 
-    public static final Pattern FETCH_PATTERN = Pattern.compile("^FETCH_FIELD\\((\\w+),[\\s]*(.+),[\\s]*(.+),[\\s]*(.+)\\)$");
+    public static final Pattern FETCH_PATTERN = Pattern.compile("^FETCH_FIELD\\((\\w+),\\s*(\\S+),\\s*(\\S+),\\s*(\\S+)\\)$");
     public static final Set<Enums.Resource> RESOURCE_SET;
 
     private final CatalogManager catalogManager;
