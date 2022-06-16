@@ -27,7 +27,6 @@
     </parent>
 
     <artifactId>opencga-catalog</artifactId>
-    <version>${opencga.version}</version>
     <packaging>jar</packaging>
 
     <dependencies>

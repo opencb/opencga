@@ -29,7 +29,6 @@
 
     <artifactId>opencga-storage-hadoop-core</artifactId>
     <packaging>jar</packaging>
-    <version>${opencga.version}</version>
 
     <dependencies>
         <dependency>

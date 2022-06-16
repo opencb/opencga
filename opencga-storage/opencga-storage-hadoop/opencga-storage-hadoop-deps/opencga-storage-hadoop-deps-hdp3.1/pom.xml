@@ -28,7 +28,6 @@
 
     <!--<groupId>org.opencb.opencga</groupId>-->
     <artifactId>opencga-storage-hadoop-deps-hdp3.1</artifactId>
-    <version>${parent.version}</version>
     <packaging>jar</packaging>
 
     <properties>

@@ -30,7 +30,6 @@
     </parent>
 
     <artifactId>opencga-storage-core</artifactId>
-    <version>${opencga.version}</version>
     <packaging>jar</packaging>
 
     <dependencies>

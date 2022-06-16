@@ -27,7 +27,6 @@
     </parent>
 
     <artifactId>opencga-storage-mongodb</artifactId>
-    <version>${opencga.version}</version>
     <packaging>jar</packaging>
 
     <dependencies>

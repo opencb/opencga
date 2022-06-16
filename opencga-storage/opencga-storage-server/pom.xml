@@ -27,7 +27,6 @@
     </parent>
 
     <artifactId>opencga-storage-server</artifactId>
-    <version>${opencga.version}</version>
     <packaging>jar</packaging>
 
     <dependencies>

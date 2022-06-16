@@ -27,7 +27,6 @@
     </parent>
 
     <artifactId>opencga-server</artifactId>
-    <version>${opencga.version}</version>
     <packaging>war</packaging>
 
     <dependencies>
