@@ -714,7 +714,7 @@
                 <OPENCGA.MAIL.PASSWORD></OPENCGA.MAIL.PASSWORD>
 
                 <!-- cellbase -->
-                <OPENCGA.CELLBASE.REST.HOST>https://ws.opencb.org/cellbase/</OPENCGA.CELLBASE.REST.HOST>
+                <OPENCGA.CELLBASE.REST.HOST>https://ws.opencb.org/cellbase-4.8.2/</OPENCGA.CELLBASE.REST.HOST>
                 <OPENCGA.CELLBASE.VERSION>v4</OPENCGA.CELLBASE.VERSION>
             </properties>
         </profile>
