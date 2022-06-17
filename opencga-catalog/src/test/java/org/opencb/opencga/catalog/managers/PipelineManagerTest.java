@@ -39,7 +39,7 @@ public class PipelineManagerTest extends AbstractManagerTest {
         catalogManager.getPipelineManager().create(studyFqn, pipeline, QueryOptions.empty(), token);
 
         LinkedHashMap<String, Pipeline.PipelineJob> jobMap = new LinkedHashMap<>();
-        jobMap.put("a", new Pipeline.PipelineJob("files-delete", null, "a", "${PIPELINE.description}", null, null, null));
+        jobMap.put("a", new Pipeline.PipelineJob("files-delete", null, "a", "${PIPELINE.description}", null, null, null, null));
         PipelineUpdateParams updateParams = new PipelineUpdateParams()
                 .setDescription("hello")
                 .setJobs(jobMap);

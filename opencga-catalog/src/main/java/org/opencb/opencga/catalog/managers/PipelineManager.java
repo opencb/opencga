@@ -44,7 +44,7 @@ public class PipelineManager extends ResourceManager<Pipeline> {
     private final UserManager userManager;
     private final StudyManager studyManager;
 
-    public static final Pattern PIPELINE_VARIABLE_PATTERN = Pattern.compile("(\\$\\{PIPELINE.([^$]+)\\})");
+    public static final Pattern PIPELINE_VARIABLE_PATTERN = Pattern.compile("(PIPELINE\\(([^\\)]+)\\))");
 
 //    private static Set<String> toolsCache;
 

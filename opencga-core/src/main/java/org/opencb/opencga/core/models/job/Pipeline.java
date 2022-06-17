@@ -231,6 +231,7 @@ public class Pipeline extends PrivateStudyUid {
         private String name;
         private String description;
         private Map<String, Object> params;
+        private PipelineJobCondition condition;
         private List<String> tags;
         private List<String> dependsOn;
 
@@ -238,13 +239,14 @@ public class Pipeline extends PrivateStudyUid {
         }
 
         public PipelineJob(String toolId, PipelineJobExecutable executable, String name, String description, Map<String, Object> params,
-                           List<String> tags, List<String> dependsOn) {
+                           List<String> tags, PipelineJobCondition condition, List<String> dependsOn) {
             this.toolId = toolId;
             this.executable = executable;
             this.name = name;
             this.description = description;
             this.params = params;
             this.tags = tags;
+            this.condition = condition;
             this.dependsOn = dependsOn;
         }
 
@@ -256,6 +258,7 @@ public class Pipeline extends PrivateStudyUid {
             sb.append(", name='").append(name).append('\'');
             sb.append(", description='").append(description).append('\'');
             sb.append(", params=").append(params);
+            sb.append(", condition=").append(condition);
             sb.append(", tags=").append(tags);
             sb.append(", dependsOn=").append(dependsOn);
             sb.append('}');
@@ -316,6 +319,15 @@ public class Pipeline extends PrivateStudyUid {
             return this;
         }
 
+        public PipelineJobCondition getCondition() {
+            return condition;
+        }
+
+        public PipelineJob setCondition(PipelineJobCondition condition) {
+            this.condition = condition;
+            return this;
+        }
+
         public List<String> getDependsOn() {
             return dependsOn;
         }
@@ -324,6 +336,63 @@ public class Pipeline extends PrivateStudyUid {
             this.dependsOn = dependsOn;
             return this;
         }
+    }
+
+    public static class PipelineJobCondition {
+        private Comparator comparator;
+        private String message;
+        private List<String> conditions;
+
+        public PipelineJobCondition() {
+        }
+
+        public PipelineJobCondition(Comparator comparator, String message, List<String> conditions) {
+            this.comparator = comparator;
+            this.message = message;
+            this.conditions = conditions;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("PipelineJobCondition{");
+            sb.append("comparator=").append(comparator);
+            sb.append(", message='").append(message).append('\'');
+            sb.append(", conditions=").append(conditions);
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public Comparator getComparator() {
+            return comparator;
+        }
+
+        public PipelineJobCondition setComparator(Comparator comparator) {
+            this.comparator = comparator;
+            return this;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public PipelineJobCondition setMessage(String message) {
+            this.message = message;
+            return this;
+        }
+
+        public List<String> getConditions() {
+            return conditions;
+        }
+
+        public PipelineJobCondition setConditions(List<String> conditions) {
+            this.conditions = conditions;
+            return this;
+        }
+    }
+
+    public enum Comparator {
+        AND,
+        OR
     }
 
     public static class PipelineJobExecutable {

@@ -29,7 +29,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.ExecutionManager;
 import org.opencb.opencga.catalog.managers.FileManager;
-import org.opencb.opencga.catalog.managers.PipelineManager;
+import org.opencb.opencga.catalog.utils.Catalet;
+import org.opencb.opencga.catalog.utils.CheckUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -49,6 +50,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -79,8 +81,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     private static final Enums.ExecutionStatus PROCESSED_STATUS = new Enums.ExecutionStatus(Enums.ExecutionStatus.PROCESSED,
             "Execution has been processed and all jobs created");
 
-    public static final Pattern PIPELINE_VARIABLE_PATTERN = PipelineManager.PIPELINE_VARIABLE_PATTERN;
-    public static final Pattern EXECUTION_VARIABLE_PATTERN = Pattern.compile("(\\$\\{EXECUTION.([^$]+)\\})");
+    public static final Pattern EXECUTION_VARIABLE_PATTERN = Pattern.compile("(EXECUTION\\(([^\\)]+)\\))");
+//    public static final Pattern CATALET_VARIABLE_PATTERN = Pattern.compile("(FETCH_FIELD\\((.+)\\))");
+    public static final Pattern CATALET_VARIABLE_PATTERN = Pattern.compile("(FETCH_FIELD\\(([^\\)]+)\\))");
 
     public ExecutionDaemon(int interval, String token, CatalogManager catalogManager) throws CatalogDBException {
         super(interval, token, catalogManager);
@@ -430,6 +433,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                     for (String jobDependsOn : pipelineJob.getDependsOn()) {
                         if (!finishedJobs.contains(jobDependsOn)) {
                             createJob = false;
+                            break;
                         }
                     }
                     if (!createJob) {
@@ -445,6 +449,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 } catch (ToolException e) {
                     return abortExecution(execution, e.getMessage());
                 }
+
                 // Add execution outdir
                 jobParams.put(JobDaemon.OUTDIR_PARAM, execution.getOutDir().getPath() + pipelineJobId);
                 Job job = createJobInstance(execution.getId(), pipelineJobId, pipelineJob.getDescription(), execution.getPriority(),
@@ -454,6 +459,25 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 } catch (CatalogException e) {
                     return abortExecution(execution, e.getMessage());
                 }
+
+                // Automatically fill in job params values fetching data from catalog (FETCH_FIELD)
+                try {
+                    fetchFromCatalogData(execution.getStudy().getId(), job.getParams(), execution.getUserId());
+                } catch (CatalogException e) {
+                    logger.error(e.getMessage(), e);
+                    return abortExecution(execution, e.getMessage());
+                }
+
+                // Check condition
+                try {
+                    if (pipelineJob.getCondition() != null && !satisfiesJobCondition(execution, job, pipelineJob.getCondition())) {
+                        // TODO: Abort job execution. This job will not be launched and it should be notified somehow
+                    }
+                } catch (CatalogException e) {
+                    logger.error(e.getMessage(), e);
+                    return abortExecution(execution, e.getMessage());
+                }
+
                 jobList.add(job);
             }
 
@@ -481,6 +505,49 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
 
         return 0;
+    }
+
+    private void fetchFromCatalogData(String studyId, Map<String, Object> params, String userId) throws CatalogException {
+        Catalet catalet = null;
+
+        for (Map.Entry<String, Object> entry : params.entrySet()) {
+            if (entry.getValue() instanceof String) {
+                Matcher matcher = CATALET_VARIABLE_PATTERN.matcher(String.valueOf(entry.getValue()));
+                if (matcher.find()) {
+                    if (catalet == null) {
+                        String userToken = catalogManager.getUserManager().getNonExpiringToken(userId, token);
+                        catalet = new Catalet(catalogManager, studyId, userToken);
+                    }
+
+                    // Fetch data from catalog
+                    Object fetch = catalet.fetch(matcher.group(1));
+
+                    // Set new content
+                    entry.setValue(fetch);
+                }
+            }
+        }
+    }
+
+    private boolean satisfiesJobCondition(Execution execution, Job job, Pipeline.PipelineJobCondition jobCondition)
+            throws CatalogException {
+        if (CollectionUtils.isEmpty(jobCondition.getConditions())) {
+            return true;
+        }
+
+        // By default, comparator is going to be an AND if undefined
+        Pipeline.Comparator comparator = jobCondition.getComparator() != null ? jobCondition.getComparator() : Pipeline.Comparator.AND;
+
+        boolean satisfies = comparator == Pipeline.Comparator.AND; // true if AND, false if OR
+        for (String condition : jobCondition.getConditions()) {
+            boolean check = CheckUtils.check(condition);
+            if (comparator == Pipeline.Comparator.AND) {
+                satisfies = satisfies && check;
+            } else {
+                satisfies = satisfies || check;
+            }
+        }
+        return satisfies;
     }
 
     private Job fillDynamicJobValues(Execution execution, Job job) throws CatalogException {

@@ -5,22 +5,39 @@ config:
   timeout: 3600
 jobs:
   alignment-stats:
-    description: ${PIPELINE.description}
+    description: PIPELINE(description)
     #    output:
     #      - id: BAM
     #        value: $OUTDIR/alignment.bam
     params:
-      file: ${EXECUTION.params.bamFile}
+      file: EXECUTION(params.bamFile)
+      DESCRIPTION: FETCH_FIELD(file, path, EXECUTION(params.bamFile), bioformat)
+    condition:
+      comparator: OR
+      message: "This is my message"
+      conditions:
+        - COMPARE_STRING(EXECUTION(jobs.alignment-stats.params.DESCRIPTION), hello-world, !=))
+#        - COMPARE_STRING(JOB(params.DESCRIPTION), hello-world, !=))
+        - EXISTS(EXECUTION(jobs.alignment-stats.params.DESCRIPTION))
   alignment-flagstats:
     params:
       #      file2: $JOB.alignment-stats.OUTPUT.BAM
       #      file3: FILE:BAM
-      file4: ${EXECUTION/alignment-stats/mememe/a/a/a/a/alignment.bam}
-      file: ${EXECUTION.params.bamFile}
+      file4: EXECUTION(/alignment-stats/mememe/a/a/a/a/alignment.bam)
+      file: EXECUTION(params.bamFile)
+    dependsOn:
+      alignment-stats
+    condition:
+      comparator: OR
+      message: "This is my message"
+      conditions:
+         - COMPARE_STRING(EXECUTION(jobs.alignment-stats.params.DESCRIPTION), hello-world, !=))
+#        - COMPARE_STRING(JOB(params.DESCRIPTION), hello-world, !=))
+        - EXISTS(EXECUTION(jobs.alignment-stats.params.DESCRIPTION))
   alignment-fastqcmetrics:
     params:
-      file: ${EXECUTION.params.bamFile}
+      file: EXECUTION(params.bamFile)
   alignment-hsmetrics:
-    description: "alignment-stats uuid: ${EXECUTION.jobs[tool.id=alignment-stats].uuid}"
+    description: "alignment-stats uuid: EXECUTION(jobs[tool.id=alignment-stats].uuid)"
     dependsOn:
       - "alignment-stats"
