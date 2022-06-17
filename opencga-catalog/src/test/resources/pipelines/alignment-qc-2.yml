@@ -12,10 +12,10 @@ jobs:
     params:
       file: EXECUTION(params.bamFile)
       DESCRIPTION: FETCH_FIELD(file, path, EXECUTION(params.bamFile), bioformat)
-    condition:
+    when:
       comparator: OR
       message: "This is my message"
-      conditions:
+      checks:
         - COMPARE_STRING(EXECUTION(jobs.alignment-stats.params.DESCRIPTION), hello-world, !=))
 #        - COMPARE_STRING(JOB(params.DESCRIPTION), hello-world, !=))
         - EXISTS(EXECUTION(jobs.alignment-stats.params.DESCRIPTION))
@@ -25,15 +25,6 @@ jobs:
       #      file3: FILE:BAM
       file4: EXECUTION(/alignment-stats/mememe/a/a/a/a/alignment.bam)
       file: EXECUTION(params.bamFile)
-    dependsOn:
-      alignment-stats
-    condition:
-      comparator: OR
-      message: "This is my message"
-      conditions:
-         - COMPARE_STRING(EXECUTION(jobs.alignment-stats.params.DESCRIPTION), hello-world, !=))
-#        - COMPARE_STRING(JOB(params.DESCRIPTION), hello-world, !=))
-        - EXISTS(EXECUTION(jobs.alignment-stats.params.DESCRIPTION))
   alignment-fastqcmetrics:
     params:
       file: EXECUTION(params.bamFile)

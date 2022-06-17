@@ -231,7 +231,7 @@ public class Pipeline extends PrivateStudyUid {
         private String name;
         private String description;
         private Map<String, Object> params;
-        private PipelineJobCondition condition;
+        private PipelineJobCondition when;
         private List<String> tags;
         private List<String> dependsOn;
 
@@ -239,14 +239,14 @@ public class Pipeline extends PrivateStudyUid {
         }
 
         public PipelineJob(String toolId, PipelineJobExecutable executable, String name, String description, Map<String, Object> params,
-                           List<String> tags, PipelineJobCondition condition, List<String> dependsOn) {
+                           List<String> tags, PipelineJobCondition when, List<String> dependsOn) {
             this.toolId = toolId;
             this.executable = executable;
             this.name = name;
             this.description = description;
             this.params = params;
             this.tags = tags;
-            this.condition = condition;
+            this.when = when;
             this.dependsOn = dependsOn;
         }
 
@@ -258,7 +258,7 @@ public class Pipeline extends PrivateStudyUid {
             sb.append(", name='").append(name).append('\'');
             sb.append(", description='").append(description).append('\'');
             sb.append(", params=").append(params);
-            sb.append(", condition=").append(condition);
+            sb.append(", when=").append(when);
             sb.append(", tags=").append(tags);
             sb.append(", dependsOn=").append(dependsOn);
             sb.append('}');
@@ -319,12 +319,12 @@ public class Pipeline extends PrivateStudyUid {
             return this;
         }
 
-        public PipelineJobCondition getCondition() {
-            return condition;
+        public PipelineJobCondition getWhen() {
+            return when;
         }
 
-        public PipelineJob setCondition(PipelineJobCondition condition) {
-            this.condition = condition;
+        public PipelineJob setWhen(PipelineJobCondition when) {
+            this.when = when;
             return this;
         }
 
@@ -341,15 +341,15 @@ public class Pipeline extends PrivateStudyUid {
     public static class PipelineJobCondition {
         private Comparator comparator;
         private String message;
-        private List<String> conditions;
+        private List<String> checks;
 
         public PipelineJobCondition() {
         }
 
-        public PipelineJobCondition(Comparator comparator, String message, List<String> conditions) {
+        public PipelineJobCondition(Comparator comparator, String message, List<String> checks) {
             this.comparator = comparator;
             this.message = message;
-            this.conditions = conditions;
+            this.checks = checks;
         }
 
         @Override
@@ -357,7 +357,7 @@ public class Pipeline extends PrivateStudyUid {
             final StringBuilder sb = new StringBuilder("PipelineJobCondition{");
             sb.append("comparator=").append(comparator);
             sb.append(", message='").append(message).append('\'');
-            sb.append(", conditions=").append(conditions);
+            sb.append(", checks=").append(checks);
             sb.append('}');
             return sb.toString();
         }
@@ -380,12 +380,12 @@ public class Pipeline extends PrivateStudyUid {
             return this;
         }
 
-        public List<String> getConditions() {
-            return conditions;
+        public List<String> getChecks() {
+            return checks;
         }
 
-        public PipelineJobCondition setConditions(List<String> conditions) {
-            this.conditions = conditions;
+        public PipelineJobCondition setChecks(List<String> checks) {
+            this.checks = checks;
             return this;
         }
     }

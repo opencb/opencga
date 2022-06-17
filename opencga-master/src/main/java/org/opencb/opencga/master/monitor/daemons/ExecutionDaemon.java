@@ -470,7 +470,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
                 // Check condition
                 try {
-                    if (pipelineJob.getCondition() != null && !satisfiesJobCondition(execution, job, pipelineJob.getCondition())) {
+                    if (pipelineJob.getWhen() != null && !satisfiesJobCondition(execution, job, pipelineJob.getWhen())) {
                         // TODO: Abort job execution. This job will not be launched and it should be notified somehow
                     }
                 } catch (CatalogException e) {
@@ -531,7 +531,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
     private boolean satisfiesJobCondition(Execution execution, Job job, Pipeline.PipelineJobCondition jobCondition)
             throws CatalogException {
-        if (CollectionUtils.isEmpty(jobCondition.getConditions())) {
+        if (CollectionUtils.isEmpty(jobCondition.getChecks())) {
             return true;
         }
 
@@ -539,7 +539,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         Pipeline.Comparator comparator = jobCondition.getComparator() != null ? jobCondition.getComparator() : Pipeline.Comparator.AND;
 
         boolean satisfies = comparator == Pipeline.Comparator.AND; // true if AND, false if OR
-        for (String condition : jobCondition.getConditions()) {
+        for (String condition : jobCondition.getChecks()) {
             boolean check = CheckUtils.check(condition);
             if (comparator == Pipeline.Comparator.AND) {
                 satisfies = satisfies && check;
