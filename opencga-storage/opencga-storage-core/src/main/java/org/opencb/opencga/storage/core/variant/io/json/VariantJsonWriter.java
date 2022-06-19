@@ -26,14 +26,12 @@ import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantSourceEntryJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,6 +122,7 @@ public class VariantJsonWriter implements VariantWriter {
         jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
+        jsonObjectMapper.addMixIn(ConsequenceType.class, ConsequenceTypeMixin.class);
 
         try {
             variantsGenerator = factory.createGenerator(variantsStream);
