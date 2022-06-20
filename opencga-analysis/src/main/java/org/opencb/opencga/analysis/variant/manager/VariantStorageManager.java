@@ -579,7 +579,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     }
                 }
             }
-            catalogManager.getProjectManager().setInternalCellbaseConfiguration(project, cellbaseConfiguration, token);
+            catalogManager.getProjectManager().setCellbaseConfiguration(project, cellbaseConfiguration, token);
             result.setTime((int) stopwatch.getTime(TimeUnit.MILLISECONDS));
             return result;
         });
