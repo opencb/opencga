@@ -78,6 +78,9 @@ class JavaClientGenerator(RestClientGenerator):
     def get_class_definition(self, category):
         self.java_types = set()
 
+        if self.get_category_name(category) not in self.categories:
+            raise Exception('Unsupported category \'' + self.get_category_name(category) + '\'')
+
         text = []
         text.append('')
         text.append('')

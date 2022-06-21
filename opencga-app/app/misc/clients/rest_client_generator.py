@@ -39,6 +39,7 @@ class RestClientGenerator(ABC):
             'Projects': 'Project',
             'Studies': 'Study',
             'Files': 'File',
+            'Executions': 'Execution',
             'Jobs': 'Job',
             'Samples': 'Sample',
             'Individuals': 'Individual',
@@ -97,6 +98,15 @@ class RestClientGenerator(ABC):
 
     def get_path_params(self, endpoint):
         return re.findall(r'{(.*?)}', self.get_endpoint_path(endpoint))
+
+    def avoid_path_params(self, endpoint):
+        params = self.get_endpoint_path(endpoint).split('/')
+        path_params = re.findall(r'({.*?})', self.get_endpoint_path(endpoint))
+        not_path_params = []
+        for param in params:
+            if param not in path_params:
+                not_path_params.append(param)
+        return not_path_params
 
     def get_mandatory_query_params(self, endpoint):
         path_params = self.get_path_params(endpoint)
@@ -206,7 +216,9 @@ class RestClientGenerator(ABC):
                 method_name = '_'.join(
                     [items[4], items[0], items[1], items[2], items[3]])  # configure-variant-secondary-sample-index
         if not method_name:
-            raise NotImplementedError('Case not implemented for PATH: "{}"'.format(self.get_endpoint_path(endpoint)))
+            params = self.avoid_path_params(endpoint)
+            method_name = '_'.join(([params[-1]] + params[:-1]))
+            # raise NotImplementedError('Case not implemented for PATH: "{}"'.format(self.get_endpoint_path(endpoint)))
         return re.sub(r'(?<!^)(?=[A-Z])', '_', method_name).lower()
 
     @abstractmethod

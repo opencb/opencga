@@ -10,26 +10,6 @@ class RClientGenerator(RestClientGenerator):
     def __init__(self, server_url, output_dir):
         super().__init__(server_url, output_dir)
 
-        self.categories = {
-            'Users': 'User',
-            'Projects': 'Project',
-            'Studies': 'Study',
-            'Files': 'File',
-            'Jobs': 'Job',
-            'Samples': 'Sample',
-            'Individuals': 'Individual',
-            'Families': 'Family',
-            'Cohorts': 'Cohort',
-            'Disease Panels': 'Panel',
-            'Analysis - Alignment': 'Alignment',
-            'Analysis - Variant': 'Variant',
-            'Analysis - Clinical': 'Clinical',
-            'Operations - Variant Storage': 'Operation',
-            'Meta': 'Meta',
-            'GA4GH': 'GA4GH',
-            'Admin': 'Admin'
-        }
-
         # We need to remove the AllGenerics file if it already exists before appending to it
         allgenerics_file = os.path.join(self.output_dir, get_file_name_allgenerics())
         if os.path.exists(allgenerics_file):
