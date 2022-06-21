@@ -72,11 +72,11 @@ public class ProjectManager extends AbstractManager {
             ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(),
             ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(),
             ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(),
-            ProjectDBAdaptor.QueryParams.CELLBASE.key(),
             ProjectDBAdaptor.QueryParams.ATTRIBUTES.key()
     ));
-    private static final Set<String> PROTECTED_UPDATABLE_FIELDS = new HashSet<>(Collections.singletonList(
-            ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_VARIANT.key()
+    private static final Set<String> PROTECTED_UPDATABLE_FIELDS = new HashSet<>(Arrays.asList(
+            ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_VARIANT.key(),
+            ProjectDBAdaptor.QueryParams.CELLBASE.key()
     ));
 
     ProjectManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
