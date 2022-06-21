@@ -309,7 +309,7 @@ public class ProjectManager extends AbstractManager {
                 ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         project.setModificationDate(TimeUtils.getTime());
         project.setCellbase(ParamUtils.defaultObject(project.getCellbase(),
-                new CellBaseConfiguration("https://ws.zettagenomics.com/cellbase", "v4")));
+                new CellBaseConfiguration("https://ws.zettagenomics.com/cellbase", "v5")));
         project.setCurrentRelease(1);
         project.setInternal(ProjectInternal.init());
         project.setAttributes(ParamUtils.defaultObject(project.getAttributes(), HashMap::new));
