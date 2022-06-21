@@ -99,12 +99,6 @@ public class MetaWSServer extends OpenCGAWSServer {
         return createOkResponse(queryResult);
     }
 
-    @GET
-    @Path("/model")
-    @ApiOperation(httpMethod = "GET", value = "Opencga model webservices.", response = String.class)
-    public Response model(@QueryParam("model") String modelStr) {
-        return run(() -> new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(DataModelsUtils.dataModelToJsonString(Class.forName(modelStr), false)), 1));
-    }
 
     @GET
     @Path("/fail")
@@ -227,6 +221,13 @@ public class MetaWSServer extends OpenCGAWSServer {
 
         healthCheckResults.putAll(newHealthCheckResults);
         lastAccess.set(LocalTime.now());
+    }
+
+    @GET
+    @Path("/model")
+    @ApiOperation(value = "Opencga model webservices.", response = String.class)
+    public Response model(@QueryParam("model") String modelStr) {
+        return run(() -> new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(DataModelsUtils.dataModelToJsonString(Class.forName(modelStr), false)), 1));
     }
 
     @GET

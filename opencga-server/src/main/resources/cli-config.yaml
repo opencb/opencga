@@ -188,6 +188,7 @@ apiConfig:
       key: VariantOperation
       operations: True
     - name: meta
+      commandName: meta
       ignore: False
       key: Meta
     - name: ga4gh

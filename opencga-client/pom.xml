@@ -27,7 +27,6 @@
     </parent>
 
     <artifactId>opencga-client</artifactId>
-    <version>${opencga.version}</version>
     <packaging>jar</packaging>
 
     <dependencies>
@@ -69,13 +68,13 @@
             <artifactId>opencga-catalog</artifactId>
             <scope>test</scope>
             <type>test-jar</type>
-            <version>${opencga.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-server</artifactId>
             <scope>test</scope>
-            <version>${opencga.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
