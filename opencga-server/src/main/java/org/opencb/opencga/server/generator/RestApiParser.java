@@ -217,7 +217,10 @@ public class RestApiParser {
                     restParameters.add(restParameter);
                 }
             }
-
+            if (clazz.getName().contains("Meta")) {
+                System.out.println("Adding Meta method :::::::::::::: " + method.getName());
+                System.out.println(restEndpoint);
+            }
             // 5. Save all REST Parameters found: ApiImplicitParams and ApiParam
             restEndpoint.setParameters(restParameters);
             restEndpoints.add(restEndpoint);
@@ -233,7 +236,7 @@ public class RestApiParser {
         if (param.isComplex()
                 && !param.isList()
                 && !param.getType().equals("enum")
-                /*&& !param.getTypeClass().contains("$")*/) {
+            /*&& !param.getTypeClass().contains("$")*/) {
             // FIXME: Why discarding params with "$" ?  Why discarding inner classes?
             String classAndPackageName = StringUtils.removeEnd(param.getTypeClass(), ";");
             Class<?> cls;

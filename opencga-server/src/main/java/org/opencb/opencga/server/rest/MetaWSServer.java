@@ -99,6 +99,7 @@ public class MetaWSServer extends OpenCGAWSServer {
         return createOkResponse(queryResult);
     }
 
+
     @GET
     @Path("/fail")
     @ApiOperation(httpMethod = "GET", value = "Ping Opencga webservices.", response = Map.class)
@@ -226,6 +227,7 @@ public class MetaWSServer extends OpenCGAWSServer {
     @Path("/model")
     @ApiOperation(value = "Opencga model webservices.", response = String.class)
     public Response model(@QueryParam("model") String modelStr) {
+
         return run(() -> new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(DataModelsUtils.dataModelToJsonString(modelStr, false)), 1));
 
     }
