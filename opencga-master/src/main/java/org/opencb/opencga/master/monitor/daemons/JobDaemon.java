@@ -17,7 +17,6 @@
 package org.opencb.opencga.master.monitor.daemons;
 
 import com.google.common.base.CaseFormat;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
@@ -70,7 +69,10 @@ import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -644,16 +646,13 @@ public class JobDaemon extends PipelineParentDaemon {
             return abortJob(job, "Internal error. Could not obtain token for user '" + job.getUserId() + "'");
         }
 
-        if (CollectionUtils.isNotEmpty(job.getDependsOn())) {
-            // The job(s) it depended on finished successfully. Check if the input files are correct.
-            try {
-                List<File> inputFiles = catalogManager.getJobManager().getJobInputFilesFromParams(job.getStudy().getId(), job, token);
-                updateParams.setInput(inputFiles);
-            } catch (CatalogException e) {
-                return abortJob(job, e);
-            }
+        // Check if the input file params are correct.
+        try {
+            List<File> inputFiles = catalogManager.getJobManager().getJobInputFilesFromParams(job.getStudy().getId(), job, token);
+            updateParams.setInput(inputFiles);
+        } catch (CatalogException e) {
+            return abortJob(job, e);
         }
-
 
         Map<String, Object> params = job.getParams();
         String outDirPathParam = (String) params.get(OUTDIR_PARAM);

@@ -189,7 +189,7 @@ public class ExecutionManager extends ResourceManager<Execution> {
                 Job job = jobCreateParam.toJob();
                 job.setUserId(user);
                 try {
-                    catalogManager.getJobManager().autoCompleteNewJob(study, job, token);
+                    catalogManager.getJobManager().autoCompleteNewJob(study, job);
                 } catch (CatalogException e) {
                     throw new CatalogParameterException("Job: " + e.getMessage(), e);
                 }

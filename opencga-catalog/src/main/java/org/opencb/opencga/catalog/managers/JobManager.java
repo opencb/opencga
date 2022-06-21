@@ -337,7 +337,7 @@ public class JobManager extends ResourceManager<Job> {
         }
     }
 
-    void autoCompleteNewJob(Study study, Job job, String token) throws CatalogException {
+    void autoCompleteNewJob(Study study, Job job) throws CatalogException {
         ParamUtils.checkObj(job, "Job");
 
         // Auto generate id
@@ -358,36 +358,6 @@ public class JobManager extends ResourceManager<Job> {
         // Set default internal
         job.setInternal(ParamUtils.defaultObject(job.getInternal(), JobInternal.init()));
         job.getInternal().setWebhook(new JobInternalWebhook(study.getNotification().getWebhook(), new HashMap<>()));
-
-//        if (!ignoreDependsOnInputFilesCheck) {
-        if (Enums.ExecutionStatus.PENDING.equals(job.getInternal().getStatus().getId())) {
-            // If the job we are going to submit is in PENDING status (default), we need to validate the params and dependencies
-            if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
-                boolean uuidProvided = job.getDependsOn().stream().map(Job::getId).anyMatch(UuidUtils::isOpenCgaUuid);
-
-                try {
-                    // If uuid is provided, we will remove the study uid from the query so it can be searched across any study
-                    InternalGetDataResult<Job> dependsOnResult;
-                    if (uuidProvided) {
-                        dependsOnResult = internalGet(0, job.getDependsOn().stream().map(Job::getId).collect(Collectors.toList()), null,
-                                INCLUDE_JOB_IDS, job.getUserId(), false);
-                    } else {
-                        dependsOnResult = internalGet(study.getUid(),
-                                job.getDependsOn().stream().map(Job::getId).collect(Collectors.toList()), null, INCLUDE_JOB_IDS,
-                                job.getUserId(), false);
-                    }
-                    job.setDependsOn(dependsOnResult.getResults());
-                } catch (CatalogException e) {
-                    throw new CatalogException("Unable to find the jobs this job depends on. " + e.getMessage(), e);
-                }
-
-                job.setInput(Collections.emptyList());
-            } else {
-                // We only check input files if the job does not depend on other job that might be creating the necessary file.
-                List<File> inputFiles = getJobInputFilesFromParams(study.getFqn(), job, token);
-                job.setInput(inputFiles);
-            }
-        }
 
         // Check params
         ParamUtils.checkObj(job.getParams(), "params");
@@ -490,7 +460,7 @@ public class JobManager extends ResourceManager<Job> {
             authorizationManager.checkIsInstallationAdministrator(userId);
             String executionId = jobs.get(0).getExecutionId();
             for (Job job : jobs) {
-                autoCompleteNewJob(study, job, token);
+                autoCompleteNewJob(study, job);
                 if (!executionId.equals(job.getExecutionId())) {
                     throw new CatalogException("All jobs submitted must belong to the same executionId");
                 }
