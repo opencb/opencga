@@ -158,7 +158,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             throw new CatalogDBException("Sample { id: '" + sample.getId() + "'} already exists.");
         }
 
-        long sampleUid = getNewUid();
+        long sampleUid = getNewUid(clientSession);
         sample.setUid(sampleUid);
         sample.setStudyUid(studyUid);
         sample.setVersion(1);

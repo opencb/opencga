@@ -173,7 +173,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             }
         }
 
-        long familyUid = getNewUid();
+        long familyUid = getNewUid(clientSession);
 
         family.setUid(familyUid);
         family.setStudyUid(studyUid);

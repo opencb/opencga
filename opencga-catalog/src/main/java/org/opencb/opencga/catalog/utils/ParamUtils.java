@@ -379,7 +379,7 @@ public class ParamUtils {
                         List<String> newValues = new ArrayList(values.size());
                         // Loop over all the String elements to see if needs any value replacing
                         for (Object value : values) {
-                            String newValue = getStringPropertyValue(sourceMap, String.valueOf(value), pattern);
+                            String newValue = resolveDynamicPropertyValue(sourceMap, String.valueOf(value), pattern);
                             newValues.add(newValue);
                         }
                         entry.setValue(newValues);
@@ -389,13 +389,13 @@ public class ParamUtils {
             if (entry.getValue() instanceof String) {
                 // Process String
                 String originalValue = String.valueOf(entry.getValue());
-                String newValue = getStringPropertyValue(sourceMap, originalValue, pattern);
+                String newValue = resolveDynamicPropertyValue(sourceMap, originalValue, pattern);
                 entry.setValue(newValue);
             }
         }
     }
 
-    private static String getStringPropertyValue(ObjectMap fullMap, String originalValue, Pattern pattern) {
+    public static String resolveDynamicPropertyValue(ObjectMap fullMap, String originalValue, Pattern pattern) {
         String newValue = originalValue;
         Matcher matcher = pattern.matcher(originalValue);
         while (matcher.find()) {

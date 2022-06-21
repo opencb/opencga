@@ -113,7 +113,7 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
             }
         }
 
-        long executionUid = getNewUid();
+        long executionUid = getNewUid(clientSession);
         execution.setUid(executionUid);
         execution.setStudyUid(studyUid);
         if (StringUtils.isEmpty(execution.getUuid())) {

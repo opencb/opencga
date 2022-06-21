@@ -283,8 +283,8 @@ public class JobManager extends ResourceManager<Job> {
             job.setOutDir(job.getOutDir() != null && StringUtils.isNotEmpty(job.getOutDir().getPath()) ? job.getOutDir() : null);
             job.setStudy(new JobStudyParam(study.getFqn()));
 
-            if (!Arrays.asList(Enums.ExecutionStatus.ABORTED, Enums.ExecutionStatus.DONE, Enums.ExecutionStatus.UNREGISTERED,
-                    Enums.ExecutionStatus.ERROR).contains(job.getInternal().getStatus().getId())) {
+            if (!Arrays.asList(Enums.ExecutionStatus.ABORTED, Enums.ExecutionStatus.DONE, Enums.ExecutionStatus.ERROR)
+                    .contains(job.getInternal().getStatus().getId())) {
                 throw new CatalogException("Cannot create a job in a status different from one of the final ones.");
             }
 
@@ -338,10 +338,6 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     void autoCompleteNewJob(Study study, Job job, String token) throws CatalogException {
-        autoCompleteNewJob(study, job, token, false);
-    }
-
-    private void autoCompleteNewJob(Study study, Job job, String token, boolean ignoreDependsOnInputFilesCheck) throws CatalogException {
         ParamUtils.checkObj(job, "Job");
 
         // Auto generate id
@@ -360,10 +356,12 @@ public class JobManager extends ResourceManager<Job> {
         job.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
 
         // Set default internal
-        job.setInternal(JobInternal.init());
+        job.setInternal(ParamUtils.defaultObject(job.getInternal(), JobInternal.init()));
         job.getInternal().setWebhook(new JobInternalWebhook(study.getNotification().getWebhook(), new HashMap<>()));
 
-        if (!ignoreDependsOnInputFilesCheck) {
+//        if (!ignoreDependsOnInputFilesCheck) {
+        if (Enums.ExecutionStatus.PENDING.equals(job.getInternal().getStatus().getId())) {
+            // If the job we are going to submit is in PENDING status (default), we need to validate the params and dependencies
             if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
                 boolean uuidProvided = job.getDependsOn().stream().map(Job::getId).anyMatch(UuidUtils::isOpenCgaUuid);
 

@@ -70,10 +70,7 @@ import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -128,7 +125,7 @@ import static org.opencb.opencga.core.api.ParamConstants.STUDY_PARAM;
 /**
  * Created by imedina on 16/06/16.
  */
-public class JobDaemon extends MonitorParentDaemon {
+public class JobDaemon extends PipelineParentDaemon {
 
     public static final String OUTDIR_PARAM = ParamConstants.JOB_OUTDIR_PARAM;
     public static final int EXECUTION_RESULT_FILE_EXPIRATION_MINUTES = 10;
@@ -142,6 +139,9 @@ public class JobDaemon extends MonitorParentDaemon {
     private Path defaultJobDir;
 
     private static final Map<String, String> TOOL_CLI_MAP;
+    private static final Set<String> ON_GOING_STATUSES;
+    private static final Set<String> ERROR_FINAL_STATUSES;
+    private static final Set<String> SUCCESS_FINAL_STATUSES;
 
     // Maximum number of jobs of each type (Pending, queued, running) that will be handled on each iteration.
     // Example: If there are 100 pending jobs, 15 queued, 70 running.
@@ -150,6 +150,7 @@ public class JobDaemon extends MonitorParentDaemon {
     // On second iteration, it will queue the remaining 50 pending jobs, and so on...
     private static final int NUM_JOBS_HANDLED = 50;
 
+    private final Query blockedJobsQuery;
     private final Query pendingJobsQuery;
     private final Query queuedJobsQuery;
     private final Query runningJobsQuery;
@@ -158,6 +159,20 @@ public class JobDaemon extends MonitorParentDaemon {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     static {
+        ON_GOING_STATUSES = new HashSet<>();
+        ON_GOING_STATUSES.add(Enums.ExecutionStatus.PENDING);
+        ON_GOING_STATUSES.add(Enums.ExecutionStatus.QUEUED);
+        ON_GOING_STATUSES.add(Enums.ExecutionStatus.RUNNING);
+
+        ERROR_FINAL_STATUSES = new HashSet<>();
+        ERROR_FINAL_STATUSES.add(Enums.ExecutionStatus.ABORTED);
+        ERROR_FINAL_STATUSES.add(Enums.ExecutionStatus.ERROR);
+        ERROR_FINAL_STATUSES.add(Enums.ExecutionStatus.UNKNOWN);
+
+        SUCCESS_FINAL_STATUSES = new HashSet<>();
+        SUCCESS_FINAL_STATUSES.add(Enums.ExecutionStatus.DONE);
+        SUCCESS_FINAL_STATUSES.add(Enums.ExecutionStatus.READY);
+
         TOOL_CLI_MAP = new HashMap<String, String>() {{
             put(FileUnlinkTask.ID, "files unlink");
             put(FileDeleteTask.ID, "files delete");
@@ -247,6 +262,7 @@ public class JobDaemon extends MonitorParentDaemon {
 
         this.defaultJobDir = Paths.get(catalogManager.getConfiguration().getJobDir());
 
+        blockedJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.BLOCKED);
         pendingJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.PENDING);
         queuedJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.QUEUED);
         runningJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.RUNNING);
@@ -292,18 +308,25 @@ public class JobDaemon extends MonitorParentDaemon {
     }
 
     protected void checkJobs() {
+        long blockedJobs = -1;
         long pendingJobs = -1;
         long queuedJobs = -1;
         long runningJobs = -1;
         try {
+            blockedJobs = jobManager.count(blockedJobsQuery, token).getNumMatches();
             pendingJobs = jobManager.count(pendingJobsQuery, token).getNumMatches();
             queuedJobs = jobManager.count(queuedJobsQuery, token).getNumMatches();
             runningJobs = jobManager.count(runningJobsQuery, token).getNumMatches();
         } catch (CatalogException e) {
             logger.error("{}", e.getMessage(), e);
         }
-        logger.info("----- JOB DAEMON  ----- pending={}, queued={}, running={}", pendingJobs, queuedJobs, runningJobs);
+        logger.info("----- JOB DAEMON  ----- blocked={}, pending={}, queued={}, running={}", blockedJobs, pendingJobs, queuedJobs,
+                runningJobs);
 
+         /*
+            BLOCKED JOBS
+             */
+        checkBlockedJobs();
             /*
             PENDING JOBS
              */
@@ -427,6 +450,116 @@ public class JobDaemon extends MonitorParentDaemon {
                 logger.info("Unexpected status '{}' for job '{}'", status.getId(), job.getId());
                 return 0;
         }
+    }
+
+    protected void checkBlockedJobs() {
+        int handledBlockedJobs = 0;
+        try (DBIterator<Job> iterator = jobManager.iterator(blockedJobsQuery, queryOptions, token)) {
+            while (handledBlockedJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
+                try {
+                    Job job = iterator.next();
+                    handledBlockedJobs += checkBlockedJob(job);
+                } catch (Exception e) {
+                    logger.error("{}", e.getMessage(), e);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("{}", e.getMessage(), e);
+        }
+    }
+
+    private int checkBlockedJob(Job job) {
+        if (StringUtils.isEmpty(job.getStudy().getId())) {
+            return abortJob(job, "Missing mandatory 'studyUuid' field");
+        }
+        if (StringUtils.isEmpty(job.getTool().getId())) {
+            return abortJob(job, "Tool id '" + job.getTool().getId() + "' not found.");
+        }
+
+        if (!canBeQueued(job)) {
+            return 0;
+        }
+
+        for (Job tmpJob : job.getDependsOn()) {
+            if (ON_GOING_STATUSES.contains(tmpJob.getInternal().getStatus().getId())) {
+                return 0;
+            }
+            if (ERROR_FINAL_STATUSES.contains(tmpJob.getInternal().getStatus().getId())) {
+                return abortJob(job, tmpJob.getId() + " finished with status '" + tmpJob.getInternal().getStatus().getId() + "'");
+            }
+        }
+
+        String userToken;
+        try {
+            userToken = catalogManager.getUserManager().getNonExpiringToken(job.getUserId(), token);
+        } catch (CatalogException e) {
+            logger.error("Internal error: Could not fetch token for user '{}'", job.getUserId(), e);
+            return abortJob(job, "Internal error: Could not fetch token for user '" + job.getUserId() + "'");
+        }
+
+        org.opencb.opencga.core.models.job.Execution execution;
+        try {
+            execution = getParentExecution(job, userToken);
+        } catch (CatalogException e) {
+            logger.error("Could not fetch execution for job '{}'", job.getId(), e);
+            return abortJob(job, "Could not fetch execution for job '" + job.getId() + "'");
+        }
+
+        try {
+            job = fillDynamicJobInformation(execution, job, userToken);
+        } catch (CatalogException e) {
+            logger.error(e.getMessage(), e);
+            return abortJob(job, "Could not fetch dynamic information successfully. " + e.getMessage());
+        }
+
+        // Find corresponding pipelineJob for job
+        Pipeline.PipelineJob pipelineJob = null;
+        for (Map.Entry<String, Pipeline.PipelineJob> entry : execution.getPipeline().getJobs().entrySet()) {
+            String toolId = getPipelineJobId(entry.getKey(), entry.getValue());
+            if (toolId.equals(job.getTool().getId())) {
+                if (pipelineJob != null) {
+                    return abortJob(job, "More than one job found with the same toolId '" + toolId + "'");
+                }
+                pipelineJob = entry.getValue();
+            }
+        }
+        if (pipelineJob == null) {
+            return abortJob(job, "Could not find the corresponding pipeline job definition for the job from pipeline '"
+                    + execution.getPipeline().getId() + "'");
+        }
+
+        // Check if the conditions match
+        try {
+            if (!checkJobCondition(execution, pipelineJob)) {
+                return abortJob(job, "Pipeline job check(s) not satisfied");
+            }
+        } catch (CatalogException e) {
+            logger.error("Could not run PipelineJob validations: {}", e.getMessage(), e);
+            return abortJob(job, "Could not run PipelineJob validations. " + e.getMessage());
+        }
+
+        // If job gets this far, everything is OK and it should be changed to PENDING status
+        PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams();
+        updateParams.setParams(job.getParams());
+        updateParams.setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.PENDING)));
+
+        logger.info("Updating job {} from {} to {}", job.getId(), Enums.ExecutionStatus.BLOCKED, Enums.ExecutionStatus.PENDING);
+        try {
+            jobManager.update(job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);
+        } catch (CatalogException e) {
+            logger.error("Could not update job {}. {}", job.getId(), e.getMessage(), e);
+            return 0;
+        }
+
+        job.getInternal().setStatus(updateParams.getInternal().getStatus());
+        notifyStatusChange(job);
+
+        return 1;
+    }
+
+    private org.opencb.opencga.core.models.job.Execution getParentExecution(Job job, String userToken) throws CatalogException {
+        return catalogManager.getExecutionManager().get(job.getStudy().getId(), job.getExecutionId(), QueryOptions.empty(), userToken)
+                .first();
     }
 
     protected void checkPendingJobs() {

@@ -168,7 +168,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             throw CatalogDBException.idNotFound("Individual", individual.getMother().getId());
         }
 
-        long individualUid = getNewUid();
+        long individualUid = getNewUid(clientSession);
 
         individual.setUid(individualUid);
         individual.setStudyUid(studyId);

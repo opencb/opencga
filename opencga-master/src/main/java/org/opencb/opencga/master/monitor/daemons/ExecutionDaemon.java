@@ -16,10 +16,8 @@
 
 package org.opencb.opencga.master.monitor.daemons;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.DBIterator;
@@ -29,10 +27,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.ExecutionManager;
 import org.opencb.opencga.catalog.managers.FileManager;
-import org.opencb.opencga.catalog.utils.Catalet;
-import org.opencb.opencga.catalog.utils.CheckUtils;
-import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -50,14 +44,12 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
  * Created by imedina on 16/06/16.
  */
-public class ExecutionDaemon extends MonitorParentDaemon {
+public class ExecutionDaemon extends PipelineParentDaemon {
 
     private final ExecutionManager executionManager;
 
@@ -76,14 +68,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-    private static final Enums.ExecutionStatus PENDING_STATUS = new Enums.ExecutionStatus(Enums.ExecutionStatus.PENDING,
-            "Execution has been partially processed and a few jobs launched.");
     private static final Enums.ExecutionStatus PROCESSED_STATUS = new Enums.ExecutionStatus(Enums.ExecutionStatus.PROCESSED,
-            "Execution has been processed and all jobs created");
-
-    public static final Pattern EXECUTION_VARIABLE_PATTERN = Pattern.compile("(EXECUTION\\(([^\\)]+)\\))");
-//    public static final Pattern CATALET_VARIABLE_PATTERN = Pattern.compile("(FETCH_FIELD\\((.+)\\))");
-    public static final Pattern CATALET_VARIABLE_PATTERN = Pattern.compile("(FETCH_FIELD\\(([^\\)]+)\\))");
+            "Execution has been processed and all jobs created and ready for execution");
 
     public ExecutionDaemon(int interval, String token, CatalogManager catalogManager) throws CatalogDBException {
         super(interval, token, catalogManager);
@@ -264,6 +250,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         for (Job job : execution.getJobs()) {
             String status = job.getInternal().getStatus().getId();
             switch (status) {
+                case Enums.ExecutionStatus.BLOCKED:
                 case Enums.ExecutionStatus.PENDING:
                     pendingJobs++;
                     break;
@@ -337,6 +324,14 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         PrivateExecutionUpdateParams updateParams = new PrivateExecutionUpdateParams();
         String toolId = execution.getInternal().getToolId();
 
+        String userToken;
+        try {
+            userToken = catalogManager.getUserManager().getNonExpiringToken(execution.getUserId(), token);
+        } catch (CatalogException e) {
+            logger.error(e.getMessage(), e);
+            return abortExecution(execution, "Internal error. Could not obtain token for user '" + execution.getUserId() + "'");
+        }
+
         if (CollectionUtils.isEmpty(execution.getJobs())) {
             if (StringUtils.isEmpty(toolId)) {
                 return abortExecution(execution, "Missing mandatory 'internal.toolId' field");
@@ -359,15 +354,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 }
             }
 
-            String userToken;
-            try {
-                userToken = catalogManager.getUserManager().getNonExpiringToken(execution.getUserId(), token);
-            } catch (CatalogException e) {
-                logger.error(e.getMessage(), e);
-                return abortExecution(execution, "Internal error. Could not obtain token for user '" + execution.getUserId() + "'");
-            }
-
-            // Ensure user has its own executions folder
+            // Ensure user has its own execution folder
             try {
                 File userFolder = catalogManager.getFileManager().createUserExecutionsFolder(studyId, FileManager.INCLUDE_FILE_URI_PATH,
                         userToken).first();
@@ -396,51 +383,14 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
             updateParams.setInternal(new ExecutionInternal(PROCESSED_STATUS));
         } else {
-            // Pipeline
-
-            // Get information regarding processed jobs (if any)
-            Set<String> allJobs = new HashSet<>();
-            Set<String> finishedJobs = new HashSet<>();
-            for (Job job : execution.getJobs()) {
-                String pipelineJobId = job.getTool().getId();
-                switch (job.getInternal().getStatus().getId()) {
-                    case Enums.ExecutionStatus.ERROR:
-                    case Enums.ExecutionStatus.ABORTED:
-                        return failExecution(execution, "Job '" + pipelineJobId + "' failed with description: "
-                                + job.getInternal().getStatus().getDescription());
-                    case Enums.ExecutionStatus.DONE:
-                        finishedJobs.add(pipelineJobId);
-                        allJobs.add(pipelineJobId);
-                        break;
-                    default:
-                        allJobs.add(pipelineJobId);
-                        break;
-                }
-            }
-
-            int skippedJobs = 0;
+            // We need to process the pipeline
+            Map<String, Job> processedJobs = new HashMap<>();
             for (Map.Entry<String, Pipeline.PipelineJob> jobEntry : execution.getPipeline().getJobs().entrySet()) {
                 String pipelineJobId = getPipelineJobId(jobEntry.getKey(), jobEntry.getValue());
-                if (allJobs.contains(pipelineJobId)) {
-                    // Skip job. This job was already processed and it is already registered
-                    continue;
+                if (processedJobs.containsKey(pipelineJobId)) {
+                    return abortExecution(execution, "Found duplicated pipeline job id: '" + pipelineJobId + "'");
                 }
-
                 Pipeline.PipelineJob pipelineJob = jobEntry.getValue();
-                List<String> dependsOn = new ArrayList<>();
-                if (CollectionUtils.isNotEmpty(pipelineJob.getDependsOn())) {
-                    boolean createJob = true;
-                    for (String jobDependsOn : pipelineJob.getDependsOn()) {
-                        if (!finishedJobs.contains(jobDependsOn)) {
-                            createJob = false;
-                            break;
-                        }
-                    }
-                    if (!createJob) {
-                        skippedJobs++;
-                        continue;
-                    }
-                }
 
                 Map<String, Object> jobParams;
                 try {
@@ -453,39 +403,56 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 // Add execution outdir
                 jobParams.put(JobDaemon.OUTDIR_PARAM, execution.getOutDir().getPath() + pipelineJobId);
                 Job job = createJobInstance(execution.getId(), pipelineJobId, pipelineJob.getDescription(), execution.getPriority(),
-                        jobParams, execution.getTags(), dependsOn, execution.getUserId());
+                        jobParams, execution.getTags(), pipelineJob.getDependsOn(), execution.getUserId());
                 try {
-                    job = fillDynamicJobValues(execution, job);
-                } catch (CatalogException e) {
-                    return abortExecution(execution, e.getMessage());
-                }
-
-                // Automatically fill in job params values fetching data from catalog (FETCH_FIELD)
-                try {
-                    fetchFromCatalogData(execution.getStudy().getId(), job.getParams(), execution.getUserId());
+                    job = fillDynamicJobInformation(execution, job, userToken);
                 } catch (CatalogException e) {
                     logger.error(e.getMessage(), e);
                     return abortExecution(execution, e.getMessage());
                 }
+                processedJobs.put(pipelineJobId, job);
 
-                // Check condition
-                try {
-                    if (pipelineJob.getWhen() != null && !satisfiesJobCondition(execution, job, pipelineJob.getWhen())) {
-                        // TODO: Abort job execution. This job will not be launched and it should be notified somehow
+                if (CollectionUtils.isNotEmpty(pipelineJob.getDependsOn())) {
+                    // Validate dependsOn job ids and set dependency list
+                    List<Job> dependsOn = new ArrayList<>(pipelineJob.getDependsOn().size());
+                    for (String jobId : pipelineJob.getDependsOn()) {
+                        if (!processedJobs.containsKey(jobId)) {
+                            return abortExecution(execution, "Job '" + pipelineJobId + "' depends on job '" + jobId + "' that does not"
+                                    + " exist");
+                        } else {
+                            dependsOn.add(processedJobs.get(jobId));
+                        }
                     }
-                } catch (CatalogException e) {
-                    logger.error(e.getMessage(), e);
-                    return abortExecution(execution, e.getMessage());
+
+                    // Set job to blocked
+                    job.setDependsOn(dependsOn);
+                    job.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.BLOCKED,
+                            "Waiting for dependencies to finish."));
+                } else if (pipelineJob.getWhen() != null && CollectionUtils.isNotEmpty(pipelineJob.getWhen().getChecks())) {
+                    // Set job to blocked. This is blocked because cases where we have checks such as the one below would fail.
+                    // checks:
+                    //        - COMPARE_STRING(EXECUTION(jobs.alignment-stats.params.DESCRIPTION), hello-world, !=)
+                    // We need first to register all jobs to be able to retrieve the dynamic value from the Execution :
+                    //        EXECUTION(jobs.alignment-stats.params.DESCRIPTION)
+                    job.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.BLOCKED,
+                            "Conditions will be checked shortly."));
+                } else {
+                    // Check if the conditions match
+                    try {
+                        if (!checkJobCondition(execution, pipelineJob)) {
+                            job.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED,
+                                    "Pipeline job check(s) not satisfied"));
+                        }
+                    } catch (CatalogException e) {
+                        logger.error("Could not run PipelineJob validations: {}", e.getMessage(), e);
+                        return abortExecution(execution, "Could not run PipelineJob validations. " + e.getMessage());
+                    }
                 }
 
                 jobList.add(job);
             }
 
-            if (skippedJobs == 0) {
-                updateParams.setInternal(new ExecutionInternal(PROCESSED_STATUS));
-            } else {
-                updateParams.setInternal(new ExecutionInternal(PENDING_STATUS));
-            }
+            updateParams.setInternal(new ExecutionInternal(PROCESSED_STATUS));
         }
 
         if (!jobList.isEmpty()) {
@@ -507,81 +474,11 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         return 0;
     }
 
-    private void fetchFromCatalogData(String studyId, Map<String, Object> params, String userId) throws CatalogException {
-        Catalet catalet = null;
-
-        for (Map.Entry<String, Object> entry : params.entrySet()) {
-            if (entry.getValue() instanceof String) {
-                Matcher matcher = CATALET_VARIABLE_PATTERN.matcher(String.valueOf(entry.getValue()));
-                if (matcher.find()) {
-                    if (catalet == null) {
-                        String userToken = catalogManager.getUserManager().getNonExpiringToken(userId, token);
-                        catalet = new Catalet(catalogManager, studyId, userToken);
-                    }
-
-                    // Fetch data from catalog
-                    Object fetch = catalet.fetch(matcher.group(1));
-
-                    // Set new content
-                    entry.setValue(fetch);
-                }
-            }
-        }
-    }
-
-    private boolean satisfiesJobCondition(Execution execution, Job job, Pipeline.PipelineJobCondition jobCondition)
-            throws CatalogException {
-        if (CollectionUtils.isEmpty(jobCondition.getChecks())) {
-            return true;
-        }
-
-        // By default, comparator is going to be an AND if undefined
-        Pipeline.Comparator comparator = jobCondition.getComparator() != null ? jobCondition.getComparator() : Pipeline.Comparator.AND;
-
-        boolean satisfies = comparator == Pipeline.Comparator.AND; // true if AND, false if OR
-        for (String condition : jobCondition.getChecks()) {
-            boolean check = CheckUtils.check(condition);
-            if (comparator == Pipeline.Comparator.AND) {
-                satisfies = satisfies && check;
-            } else {
-                satisfies = satisfies || check;
-            }
-        }
-        return satisfies;
-    }
-
-    private Job fillDynamicJobValues(Execution execution, Job job) throws CatalogException {
-        try {
-            String jobJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(job);
-            ObjectMap jobMap = JacksonUtils.getDefaultObjectMapper().readValue(jobJsonString, ObjectMap.class);
-
-            String executionJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(execution);
-            ObjectMap executionMap = JacksonUtils.getDefaultObjectMapper().readValue(executionJsonString, ObjectMap.class);
-
-            ParamUtils.processDynamicVariables(executionMap, jobMap, EXECUTION_VARIABLE_PATTERN);
-
-            jobJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(jobMap);
-            return JacksonUtils.getDefaultObjectMapper().readValue(jobJsonString, Job.class);
-        } catch (JsonProcessingException e) {
-            throw new CatalogException("Could not process dynamic variables from JSON properly", e);
-        }
-    }
-
-    private String getPipelineJobId(String key, Pipeline.PipelineJob pipelineJob) {
-        if (StringUtils.isNotEmpty(pipelineJob.getToolId())) {
-            return pipelineJob.getToolId();
-        }
-        if (pipelineJob.getExecutable() != null && StringUtils.isNotEmpty(pipelineJob.getExecutable().getId())) {
-            return pipelineJob.getExecutable().getId();
-        }
-        return key;
-    }
-
     private Job createJobInstance(String executionId, String toolId, String description, Enums.Priority priority,
                                   Map<String, Object> params, List<String> tags, List<String> dependsOn, String userId) {
         return new Job("", "", description, executionId, StringUtils.isNotEmpty(toolId) ? new ToolInfo().setId(toolId) : null, userId, null,
-                params, null, null, priority, null, null, null, null,
-                CollectionUtils.isNotEmpty(dependsOn)
+                params, null, null, priority, JobInternal.init().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.PENDING)), null,
+                null, null, CollectionUtils.isNotEmpty(dependsOn)
                         ? dependsOn.stream().map(dpo -> new Job().setId(dpo)).collect(Collectors.toList())
                         : null,
                 tags, null, false, null, null, 0, null, null);

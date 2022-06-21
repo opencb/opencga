@@ -16,9 +16,9 @@ jobs:
       comparator: OR
       message: "This is my message"
       checks:
-        - COMPARE_STRING(EXECUTION(jobs.alignment-stats.params.DESCRIPTION), hello-world, !=))
+        - COMPARE_STRING(EXECUTION(jobs[tool.id=alignment-stats].params.DESCRIPTION), hello-world, !=)
 #        - COMPARE_STRING(JOB(params.DESCRIPTION), hello-world, !=))
-        - EXISTS(EXECUTION(jobs.alignment-stats.params.DESCRIPTION))
+        - EXISTS(EXECUTION(jobs[tool.id=alignment-stats].params.DESCRIPTION), true)
   alignment-flagstats:
     params:
       #      file2: $JOB.alignment-stats.OUTPUT.BAM

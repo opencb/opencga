@@ -221,7 +221,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     + interpretation.getId() + "'} already exists.");
         }
 
-        long interpretationUid = getNewUid();
+        long interpretationUid = getNewUid(clientSession);
         interpretation.setUid(interpretationUid);
         interpretation.setStudyUid(studyId);
         if (StringUtils.isEmpty(interpretation.getUuid())) {

@@ -201,8 +201,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
             job = result.first();
             status = job.getInternal().getStatus().getId();
         } while (status.equals(Enums.ExecutionStatus.PENDING) || status.equals(Enums.ExecutionStatus.RUNNING)
-                || status.equals(Enums.ExecutionStatus.QUEUED) || status.equals(Enums.ExecutionStatus.READY)
-                || status.equals(Enums.ExecutionStatus.REGISTERING));
+                || status.equals(Enums.ExecutionStatus.QUEUED) || status.equals(Enums.ExecutionStatus.READY));
 
         addEvent(Event.Type.INFO, "Submitted job " + job.getId() + " to compute flag stats (" + job.getTool().getId() + "), execution"
                 + " status: " + job.getInternal().getStatus());

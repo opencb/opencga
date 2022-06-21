@@ -517,25 +517,62 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         executionResult = catalogManager.getExecutionManager().get(studyFqn, executionResult.first().getId(), QueryOptions.empty(), token);
         assertEquals(1, executionResult.getNumResults());
-        assertEquals(Enums.ExecutionStatus.PENDING, executionResult.first().getInternal().getStatus().getId());
-        assertEquals(3, executionResult.first().getJobs().size());
-        for (Job job : executionResult.first().getJobs()) {
-            assertEquals(Enums.ExecutionStatus.PENDING, job.getInternal().getStatus().getId());
+        assertEquals(Enums.ExecutionStatus.PROCESSED, executionResult.first().getInternal().getStatus().getId());
+        assertEquals(4, executionResult.first().getJobs().size());
+        for (int i = 0; i < executionResult.first().getJobs().size(); i++) {
+            Job job = executionResult.first().getJobs().get(i);
+            if (i == 1 | i == 2) {
+                assertEquals(Enums.ExecutionStatus.PENDING, job.getInternal().getStatus().getId());
+            } else if (i == 0) {
+                assertEquals(Enums.ExecutionStatus.BLOCKED, job.getInternal().getStatus().getId());
+                assertTrue(job.getInternal().getStatus().getDescription().contains("checked shortly"));
+            } else {
+                assertEquals(Enums.ExecutionStatus.BLOCKED, job.getInternal().getStatus().getId());
+                assertTrue(job.getInternal().getStatus().getDescription().contains("dependencies to finish"));
+            }
+        }
+
+        jobDaemon.checkBlockedJobs();
+        executionResult = catalogManager.getExecutionManager().get(studyFqn, executionResult.first().getId(), QueryOptions.empty(), token);
+        assertEquals(1, executionResult.getNumResults());
+        assertEquals(Enums.ExecutionStatus.PROCESSED, executionResult.first().getInternal().getStatus().getId());
+        assertEquals(4, executionResult.first().getJobs().size());
+        for (int i = 0; i < executionResult.first().getJobs().size(); i++) {
+            Job job = executionResult.first().getJobs().get(i);
+            if (i < 3) {
+                assertEquals(Enums.ExecutionStatus.PENDING, job.getInternal().getStatus().getId());
+            } else {
+                assertEquals(Enums.ExecutionStatus.BLOCKED, job.getInternal().getStatus().getId());
+                assertTrue(job.getInternal().getStatus().getDescription().contains("dependencies to finish"));
+            }
         }
 
         // Update job status to DONE
         Job job = executionResult.first().getJobs().get(0);
         catalogManager.getJobManager().privateUpdate(studyFqn, job.getId(),
                 new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE)), adminToken);
-
-        executionDaemon.checkPendingExecutions();
+        jobDaemon.checkBlockedJobs();
         executionResult = catalogManager.getExecutionManager().get(studyFqn, executionResult.first().getId(), QueryOptions.empty(), token);
         assertEquals(1, executionResult.getNumResults());
         assertEquals(Enums.ExecutionStatus.PROCESSED, executionResult.first().getInternal().getStatus().getId());
         assertEquals(4, executionResult.first().getJobs().size());
-        Job stats = executionResult.first().getJobs().get(0);
-        job = executionResult.first().getJobs().get(3);
-        assertEquals("alignment-stats uuid: " + stats.getUuid(), job.getDescription());
+        for (int i = 0; i < executionResult.first().getJobs().size(); i++) {
+            Job tmpjob = executionResult.first().getJobs().get(i);
+            if (i == 0) {
+                assertEquals(Enums.ExecutionStatus.DONE, tmpjob.getInternal().getStatus().getId());
+            } else {
+                assertEquals(Enums.ExecutionStatus.PENDING, tmpjob.getInternal().getStatus().getId());
+            }
+        }
+
+//        executionDaemon.checkPendingExecutions();
+//        executionResult = catalogManager.getExecutionManager().get(studyFqn, executionResult.first().getId(), QueryOptions.empty(), token);
+//        assertEquals(1, executionResult.getNumResults());
+//        assertEquals(Enums.ExecutionStatus.PROCESSED, executionResult.first().getInternal().getStatus().getId());
+//        assertEquals(4, executionResult.first().getJobs().size());
+//        Job stats = executionResult.first().getJobs().get(0);
+//        job = executionResult.first().getJobs().get(3);
+//        assertEquals("alignment-stats uuid: " + stats.getUuid(), job.getDescription());
     }
 
     @Test

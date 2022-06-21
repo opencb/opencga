@@ -256,9 +256,13 @@ public final class Enums {
          */
         public static final String PENDING = "PENDING";
         /**
-         * PROCESSED status means that the execution has been processed and all jobs created in PENDING status.
+         * PROCESSED status means that the execution has been processed and all jobs completely processed.
          */
         public static final String PROCESSED = "PROCESSED";
+        /**
+         * BLOCKED status means that the job depends on other job, so it is blocked until that one finishes.
+         */
+        public static final String BLOCKED = "BLOCKED";
         /**
          * QUEUED status means that the job is waiting on the queue to have an available slot for execution.
          */
@@ -283,18 +287,9 @@ public final class Enums {
          * ABORTED status means that the job was aborted and could not be executed.
          */
         public static final String ABORTED = "ABORTED";
-        /**
-         * REGISTERING status means that the job status could not be obtained.
-         */
-        public static final String REGISTERING = "REGISTERING";
-        /**
-         * UNREGISTERED status means that the job status could not be obtained.
-         */
-        public static final String UNREGISTERED = "UNREGISTERED";
 
-
-        public static final List<String> STATUS_LIST = Arrays.asList(PENDING, PROCESSED, QUEUED, RUNNING, DONE, ERROR, UNKNOWN, REGISTERING,
-                UNREGISTERED, ABORTED, DELETED);
+        public static final List<String> STATUS_LIST = Arrays.asList(BLOCKED, PENDING, PROCESSED, QUEUED, RUNNING, DONE, ERROR, UNKNOWN,
+                ABORTED, DELETED);
 
         public ExecutionStatus(String status, String message) {
             if (isValid(status)) {

@@ -30,7 +30,7 @@ public class PrivateJobUpdateParams extends JobUpdateParams {
 
     private String commandLine;
 
-    private Map<String, String> params;
+    private Map<String, Object> params;
     private ToolInfo tool;
     private JobInternal internal;
 
@@ -85,11 +85,11 @@ public class PrivateJobUpdateParams extends JobUpdateParams {
         return this;
     }
 
-    public Map<String, String> getParams() {
+    public Map<String, Object> getParams() {
         return params;
     }
 
-    public PrivateJobUpdateParams setParams(Map<String, String> params) {
+    public PrivateJobUpdateParams setParams(Map<String, Object> params) {
         this.params = params;
         return this;
     }

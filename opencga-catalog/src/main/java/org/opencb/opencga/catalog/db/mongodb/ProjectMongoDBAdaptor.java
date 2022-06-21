@@ -125,7 +125,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             throw new CatalogDBException("Project {id:\"" + project.getId() + "\"} already exists for this user");
         }
 
-        long projectUid = getNewUid();
+        long projectUid = getNewUid(clientSession);
         project.setUid(projectUid);
         project.setFqn(userId + "@" + project.getId());
         if (StringUtils.isEmpty(project.getUuid())) {

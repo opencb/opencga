@@ -93,7 +93,7 @@ public class PipelineMongoDBAdaptor extends MongoDBAdaptor implements PipelineDB
             throw new CatalogDBException("Pipeline { id: '" + pipeline.getId() + "'} already exists.");
         }
 
-        long pipelineUid = getNewUid();
+        long pipelineUid = getNewUid(clientSession);
         pipeline.setUid(pipelineUid);
         pipeline.setStudyUid(studyId);
         if (StringUtils.isEmpty(pipeline.getUuid())) {
