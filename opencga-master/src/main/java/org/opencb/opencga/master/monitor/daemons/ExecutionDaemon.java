@@ -332,47 +332,48 @@ public class ExecutionDaemon extends PipelineParentDaemon {
             return abortExecution(execution, "Internal error. Could not obtain token for user '" + execution.getUserId() + "'");
         }
 
-        if (CollectionUtils.isEmpty(execution.getJobs())) {
-            if (StringUtils.isEmpty(toolId)) {
-                return abortExecution(execution, "Missing mandatory 'internal.toolId' field");
-            }
+//        if (CollectionUtils.isEmpty(execution.getJobs())) {
+        if (StringUtils.isEmpty(toolId)) {
+            return abortExecution(execution, "Missing mandatory 'internal.toolId' field");
+        }
 
-            // Check if resourceId might be a pipeline
+        // Check if resourceId might be a pipeline
+        try {
+            OpenCGAResult<Pipeline> pipelineOpenCGAResult = catalogManager.getPipelineManager()
+                    .get(studyId, toolId, QueryOptions.empty(), token);
+            Pipeline pipeline = pipelineOpenCGAResult.first();
+            execution.setPipeline(pipeline);
+
+            updateParams.setPipeline(pipeline);
+        } catch (CatalogException e1) {
+            // Check if resourceId is an existing toolId
             try {
-                OpenCGAResult<Pipeline> pipelineOpenCGAResult = catalogManager.getPipelineManager()
-                        .get(studyId, toolId, QueryOptions.empty(), token);
-                Pipeline pipeline = pipelineOpenCGAResult.first();
-                execution.setPipeline(pipeline);
-
-                updateParams.setPipeline(pipeline);
-            } catch (CatalogException e1) {
-                // Check if resourceId is an existing toolId
-                try {
-                    new ToolFactory().getToolClass(toolId);
-                } catch (ToolException e2) {
-                    return abortExecution(execution, "'" + toolId + "' seems not to be a valid pipeline or toolId");
-                }
-            }
-
-            // Ensure user has its own execution folder
-            try {
-                File userFolder = catalogManager.getFileManager().createUserExecutionsFolder(studyId, FileManager.INCLUDE_FILE_URI_PATH,
-                        userToken).first();
-                // Create a folder specific for this execution
-                String executionFolder = userFolder.getPath() + TimeUtils.getDay() + "/" + execution.getId();
-                logger.debug("Will create folder '{}' for execution '{}'", executionFolder, execution.getId());
-                File execFolder = catalogManager.getFileManager().createFolder(studyId, executionFolder, true,
-                        execution.getDescription(), execution.getId(), QueryOptions.empty(), token).first();
-
-                execution.setOutDir(execFolder);
-                updateParams.setOutDir(execFolder);
-            } catch (CatalogException e) {
-                return abortExecution(execution, "Could not create directory for user");
+                new ToolFactory().getToolClass(toolId);
+            } catch (ToolException e2) {
+                return abortExecution(execution, "'" + toolId + "' seems not to be a valid pipeline or toolId");
             }
         }
 
+        // Ensure user has its own execution folder
+        try {
+            File userFolder = catalogManager.getFileManager().createUserExecutionsFolder(studyId, FileManager.INCLUDE_FILE_URI_PATH,
+                    userToken).first();
+            // Create a folder specific for this execution
+            String executionFolder = userFolder.getPath() + TimeUtils.getDay() + "/" + execution.getId();
+            logger.debug("Will create folder '{}' for execution '{}'", executionFolder, execution.getId());
+            File execFolder = catalogManager.getFileManager().createFolder(studyId, executionFolder, true,
+                    execution.getDescription(), execution.getId(), QueryOptions.empty(), token).first();
+
+            execution.setOutDir(execFolder);
+            updateParams.setOutDir(execFolder);
+        } catch (CatalogException e) {
+            return abortExecution(execution, "Could not create directory for user");
+        }
+//        }
+
         List<Job> jobList = new LinkedList<>();
-        if (CollectionUtils.isEmpty(execution.getJobs()) && execution.getPipeline() == null) {
+//        if (CollectionUtils.isEmpty(execution.getJobs()) && execution.getPipeline() == null) {
+        if (execution.getPipeline() == null) {
             // Tool
             Map<String, Object> params = new HashMap<>(execution.getParams());
             // Add outdir param
@@ -479,8 +480,8 @@ public class ExecutionDaemon extends PipelineParentDaemon {
         return new Job("", "", description, executionId, StringUtils.isNotEmpty(toolId) ? new ToolInfo().setId(toolId) : null, userId, null,
                 params, null, null, priority, JobInternal.init().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.PENDING)), null,
                 null, null, CollectionUtils.isNotEmpty(dependsOn)
-                        ? dependsOn.stream().map(dpo -> new Job().setId(dpo)).collect(Collectors.toList())
-                        : null,
+                ? dependsOn.stream().map(dpo -> new Job().setId(dpo)).collect(Collectors.toList())
+                : null,
                 tags, null, false, null, null, 0, null, null);
     }
 

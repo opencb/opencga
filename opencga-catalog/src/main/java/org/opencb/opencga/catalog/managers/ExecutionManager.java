@@ -396,7 +396,6 @@ public class ExecutionManager extends ResourceManager<Execution> {
 
         if (CollectionUtils.isNotEmpty(dependsOn)) {
             boolean uuidProvided = dependsOn.stream().anyMatch(UuidUtils::isOpenCgaUuid);
-
             try {
                 // If uuid is provided, we will remove the study uid from the query so it can be searched across any study
                 InternalGetDataResult<Execution> dependsOnResult;

@@ -64,6 +64,20 @@ public class ExecutionWSServer extends OpenCGAWSServer {
         return run(() -> executionManager.register(studyStr, execution, queryOptions, token));
     }
 
+    @POST
+    @Path("/pipeline/{pipelineId}/run")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Execute a pipeline", response = Execution.class)
+    public Response pipelineRun(
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = "Pipeline id") @QueryParam("pipelineId") String pipelineId,
+            @ApiParam(value = ParamConstants.EXECUTION_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.EXECUTION_DEPENDS_ON_DESCRIPTION) @QueryParam(EXECUTION_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.EXECUTION_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.EXECUTION_TAGS_DESCRIPTION) @QueryParam(ParamConstants.EXECUTION_TAGS) String jobTags,
+            @ApiParam(value = "Execution params", required = true) Map<String, Object> params) {
+        return submitExecution(pipelineId, null, study, params, jobName, jobDescription, dependsOn, jobTags);
+    }
 
     @POST
     @Path("/retry")
