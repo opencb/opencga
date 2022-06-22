@@ -579,7 +579,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     }
                 }
             }
-            catalogManager.getProjectManager().setInternalCellbaseConfiguration(project, cellbaseConfiguration, token);
+            catalogManager.getProjectManager().setCellbaseConfiguration(project, cellbaseConfiguration, token);
             result.setTime((int) stopwatch.getTime(TimeUnit.MILLISECONDS));
             return result;
         });
@@ -988,7 +988,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     private void setCellbaseConfiguration(VariantStorageEngine engine, String project, String token)
             throws CatalogException {
         CellBaseConfiguration cellbase = catalogManager.getProjectManager()
-                .get(project, new QueryOptions(INCLUDE, ProjectDBAdaptor.QueryParams.INTERNAL.key()), token)
+                .get(project, new QueryOptions(INCLUDE, ProjectDBAdaptor.QueryParams.CELLBASE.key()), token)
                 .first().getCellbase();
         if (cellbase != null) {
             engine.getConfiguration().setCellbase(cellbase);

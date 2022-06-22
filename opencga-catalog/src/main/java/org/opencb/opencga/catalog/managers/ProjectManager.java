@@ -76,7 +76,7 @@ public class ProjectManager extends AbstractManager {
     ));
     private static final Set<String> PROTECTED_UPDATABLE_FIELDS = new HashSet<>(Arrays.asList(
             ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_VARIANT.key(),
-            ProjectDBAdaptor.QueryParams.INTERNAL_CELLBASE.key()
+            ProjectDBAdaptor.QueryParams.CELLBASE.key()
     ));
 
     ProjectManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
@@ -308,6 +308,8 @@ public class ProjectManager extends AbstractManager {
         project.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(project.getModificationDate(),
                 ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         project.setModificationDate(TimeUtils.getTime());
+        project.setCellbase(ParamUtils.defaultObject(project.getCellbase(),
+                new CellBaseConfiguration("https://ws.zettagenomics.com/cellbase", "v5")));
         project.setCurrentRelease(1);
         project.setInternal(ProjectInternal.init());
         project.setAttributes(ParamUtils.defaultObject(project.getAttributes(), HashMap::new));
@@ -550,10 +552,10 @@ public class ProjectManager extends AbstractManager {
                 new ObjectMap(ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_VARIANT.key(), dataStore), new QueryOptions(), true, token);
     }
 
-    public OpenCGAResult<Project> setInternalCellbaseConfiguration(String projectStr, CellBaseConfiguration configuration, String token)
+    public OpenCGAResult<Project> setCellbaseConfiguration(String projectStr, CellBaseConfiguration configuration, String token)
             throws CatalogException {
         return update(projectStr,
-                new ObjectMap(ProjectDBAdaptor.QueryParams.INTERNAL_CELLBASE.key(), configuration), new QueryOptions(), true, token);
+                new ObjectMap(ProjectDBAdaptor.QueryParams.CELLBASE.key(), configuration), new QueryOptions(), true, token);
     }
 
     public Map<String, Object> facet(String projectStr, String fileFields, String sampleFields, String individualFields,
