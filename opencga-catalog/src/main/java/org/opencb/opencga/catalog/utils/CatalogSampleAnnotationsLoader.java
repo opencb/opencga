@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.file.File;
@@ -139,7 +140,7 @@ public class CatalogSampleAnnotationsLoader {
                                 .setDescription("Sample loaded from the pedigree File = {path: " + pedFile.getPath() + ", name: \""
                                         + pedFile.getName() + "\" }")
                                 .setAnnotationSets(Collections.singletonList(annotationSet)),
-                        QueryOptions.empty(), sessionId);
+                        new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId);
                 sample = sampleDataResult.getResults().get(0);
             }
             sampleMap.put(individual.getId(), sample);

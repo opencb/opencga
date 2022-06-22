@@ -27,14 +27,13 @@
     </parent>
 
     <artifactId>opencga-storage-server</artifactId>
-    <version>${opencga.version}</version>
     <packaging>jar</packaging>
 
     <dependencies>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
-            <version>${opencga.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
 
         <dependency>

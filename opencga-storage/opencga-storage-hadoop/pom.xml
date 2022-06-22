@@ -21,7 +21,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <opencga-storage-hadoop-deps.version>${opencga.version}</opencga-storage-hadoop-deps.version>
+        <opencga-storage-hadoop-deps.version>${project.parent.version}</opencga-storage-hadoop-deps.version>
         <module-opencga-storage-hadoop-deps>false</module-opencga-storage-hadoop-deps>
     </properties>
 
@@ -33,7 +33,6 @@
     </parent>
 
     <artifactId>opencga-storage-hadoop</artifactId>
-    <version>2.4.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>

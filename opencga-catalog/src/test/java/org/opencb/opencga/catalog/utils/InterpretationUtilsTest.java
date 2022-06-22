@@ -48,7 +48,7 @@ public class InterpretationUtilsTest {
             assertEquals(1, (int) interpretationStats.getPrimaryFindings().getTierCount().get(tierName));
         }
         for (ClinicalVariant.Status value : ClinicalVariant.Status.values()) {
-            if (value == ClinicalVariant.Status.NOT_REVIEWED) {
+            if (value == ClinicalVariant.Status.NOT_REVIEWED || value == ClinicalVariant.Status.ARTIFACT) {
                 assertEquals(0, (int) interpretationStats.getPrimaryFindings().getStatusCount().get(value));
             } else {
                 assertEquals(1, (int) interpretationStats.getPrimaryFindings().getStatusCount().get(value));
@@ -72,6 +72,8 @@ public class InterpretationUtilsTest {
         for (ClinicalVariant.Status value : ClinicalVariant.Status.values()) {
             if (value == ClinicalVariant.Status.REPORTED) {
                 assertEquals(2, (int) interpretationStats.getSecondaryFindings().getStatusCount().get(value));
+            } else if (value == ClinicalVariant.Status.ARTIFACT) {
+                assertEquals(0, (int) interpretationStats.getSecondaryFindings().getStatusCount().get(value));
             } else {
                 assertEquals(1, (int) interpretationStats.getSecondaryFindings().getStatusCount().get(value));
             }

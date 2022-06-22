@@ -43,12 +43,11 @@
     </modules>
 
     <properties>
-        <opencga.version>2.4.0-SNAPSHOT</opencga.version>
         <pyopencga.version>2.4.0_dev</pyopencga.version>
         <opencgar.version>2.4.0</opencgar.version>
         <cellbase.version>5.2.0-SNAPSHOT</cellbase.version>
         <biodata.version>2.4.0-SNAPSHOT</biodata.version>
-        <java-common-libs.version>4.4.0-SNAPSHOT</java-common-libs.version>
+        <java-common-libs.version>4.5.0-SNAPSHOT</java-common-libs.version>
         <iva.version>2.2.0-dev</iva.version>
         <oskar.version>0.2.0</oskar.version>
 
@@ -68,9 +67,12 @@
         <opencga.war.name>opencga</opencga.war.name>
         <opencga.env.file>opencga-env.sh</opencga.env.file>
         <opencga-storage-hadoop-deps.id-default>hdp3.1</opencga-storage-hadoop-deps.id-default>
-        <opencga-storage-hadoop-deps.artifactId-default>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}</opencga-storage-hadoop-deps.artifactId-default>
+        <opencga-storage-hadoop-deps.artifactId-default>
+            opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}
+        </opencga-storage-hadoop-deps.artifactId-default>
         <opencga-storage-hadoop-deps.id>${opencga-storage-hadoop-deps.id-default}</opencga-storage-hadoop-deps.id>
-        <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}</opencga-storage-hadoop-deps.artifactId>
+        <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}
+        </opencga-storage-hadoop-deps.artifactId>
 
         <sonar.organization>opencb</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -148,37 +150,37 @@
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-core</artifactId>
-                <version>${opencga.version}</version>
+                <version>${project.parent.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-catalog</artifactId>
-                <version>${opencga.version}</version>
+                <version>${project.parent.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-analysis</artifactId>
-                <version>${opencga.version}</version>
+                <version>${project.parent.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-app</artifactId>
-                <version>${opencga.version}</version>
+                <version>${project.parent.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-core</artifactId>
-                <version>${opencga.version}</version>
+                <version>${project.parent.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-client</artifactId>
-                <version>${opencga.version}</version>
+                <version>${project.parent.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-hadoop-core</artifactId>
-                <version>${opencga.version}</version>
+                <version>${project.parent.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.opencb.opencga</groupId>
@@ -189,7 +191,7 @@
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-hadoop-core</artifactId>
-                <version>${opencga.version}</version>
+                <version>${project.parent.version}</version>
                 <type>test-jar</type>
                 <scope>test</scope>
                 <exclusions>
@@ -647,7 +649,7 @@
                 </property>
             </activation>
             <properties>
-                <opencga.war.name>opencga-${opencga.version}</opencga.war.name>
+                <opencga.war.name>opencga-${project.parent.version}</opencga.war.name>
 
                 <!-- General -->
                 <OPENCGA.INSTALLATION.DIR>/opt/opencga</OPENCGA.INSTALLATION.DIR>
@@ -686,14 +688,14 @@
                 <OPENCGA.STORAGE.VARIANT.DB.USER></OPENCGA.STORAGE.VARIANT.DB.USER>
                 <OPENCGA.STORAGE.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.VARIANT.DB.PASSWORD>
                 <OPENCGA.STORAGE.SEARCH.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.SEARCH.HOST>
-                <OPENCGA.STORAGE.SEARCH.CONFIG_SET>opencga-variant-configset-${opencga.version}
+                <OPENCGA.STORAGE.SEARCH.CONFIG_SET>opencga-variant-configset-${project.parent.version}
                 </OPENCGA.STORAGE.SEARCH.CONFIG_SET>
                 <OPENCGA.STORAGE.SEARCH.TIMEOUT>30000</OPENCGA.STORAGE.SEARCH.TIMEOUT>
                 <OPENCGA.STORAGE.CLINICAL.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.CLINICAL.HOST>
                 <OPENCGA.STORAGE.CLINICAL.MANAGER>""</OPENCGA.STORAGE.CLINICAL.MANAGER>
                 <OPENCGA.STORAGE.CLINICAL.TIMEOUT>30000</OPENCGA.STORAGE.CLINICAL.TIMEOUT>
                 <OPENCGA.STORAGE.RGA.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.RGA.HOST>
-                <OPENCGA.STORAGE.RGA.CONFIG_SET>opencga-rga-configset-${opencga.version}
+                <OPENCGA.STORAGE.RGA.CONFIG_SET>opencga-rga-configset-${project.parent.version}
                 </OPENCGA.STORAGE.RGA.CONFIG_SET>
                 <OPENCGA.STORAGE.RGA.TIMEOUT>30000</OPENCGA.STORAGE.RGA.TIMEOUT>
 
@@ -719,7 +721,7 @@
                 <OPENCGA.MAIL.PASSWORD></OPENCGA.MAIL.PASSWORD>
 
                 <!-- cellbase -->
-                <OPENCGA.CELLBASE.REST.HOST>https://ws.opencb.org/cellbase/</OPENCGA.CELLBASE.REST.HOST>
+                <OPENCGA.CELLBASE.REST.HOST>https://ws.opencb.org/cellbase-4.8.2/</OPENCGA.CELLBASE.REST.HOST>
                 <OPENCGA.CELLBASE.VERSION>v4</OPENCGA.CELLBASE.VERSION>
             </properties>
         </profile>
@@ -806,21 +808,24 @@
             <id>hdp3.1</id>
             <properties>
                 <opencga-storage-hadoop-deps.id>hdp3.1</opencga-storage-hadoop-deps.id>
-                <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}</opencga-storage-hadoop-deps.artifactId>
+                <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}
+                </opencga-storage-hadoop-deps.artifactId>
             </properties>
         </profile>
         <profile>
             <id>emr6.1</id>
             <properties>
                 <opencga-storage-hadoop-deps.id>emr6.1</opencga-storage-hadoop-deps.id>
-                <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}</opencga-storage-hadoop-deps.artifactId>
+                <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}
+                </opencga-storage-hadoop-deps.artifactId>
             </properties>
         </profile>
         <profile>
             <id>hdp2.6</id>
             <properties>
                 <opencga-storage-hadoop-deps.id>hdp2.6</opencga-storage-hadoop-deps.id>
-                <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}</opencga-storage-hadoop-deps.artifactId>
+                <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}
+                </opencga-storage-hadoop-deps.artifactId>
             </properties>
         </profile>
     </profiles>

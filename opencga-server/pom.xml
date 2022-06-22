@@ -27,7 +27,6 @@
     </parent>
 
     <artifactId>opencga-server</artifactId>
-    <version>${opencga.version}</version>
     <packaging>war</packaging>
 
     <dependencies>
@@ -94,7 +93,7 @@
             <artifactId>opencga-catalog</artifactId>
             <scope>test</scope>
             <type>test-jar</type>
-            <version>${opencga.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.protobuf</groupId>
@@ -252,7 +251,7 @@
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
                     <artifactId>opencga-storage-mongodb</artifactId>
-                    <version>${opencga.version}</version>
+                    <version>${project.parent.version}</version>
                 </dependency>
             </dependencies>
             <properties>
@@ -270,12 +269,12 @@
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
                     <artifactId>opencga-storage-hadoop-core</artifactId>
-                    <version>${opencga.version}</version>
+                    <version>${project.parent.version}</version>
                 </dependency>
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
                     <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
-                    <version>${opencga.version}</version>
+                    <version>${project.parent.version}</version>
                     <classifier>shaded</classifier>
                 </dependency>
             </dependencies>

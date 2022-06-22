@@ -18,13 +18,14 @@ package org.opencb.opencga.server.rest;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.cellbase.core.common.GitRepositoryState;
 import org.opencb.commons.annotations.Api;
 import org.opencb.commons.annotations.ApiOperation;
 import org.opencb.commons.annotations.ApiParam;
 import org.opencb.commons.api.RestApiParser;
 import org.opencb.commons.api.models.RestApi;
 import org.opencb.commons.datastore.core.Event;
-import org.opencb.commons.utils.GitRepositoryState;
+import org.opencb.commons.utils.DataModelsUtils;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
@@ -97,6 +98,7 @@ public class MetaWSServer extends OpenCGAWSServer {
         OpenCGAResult<String> queryResult = new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList("pong"), 1);
         return createOkResponse(queryResult);
     }
+
 
     @GET
     @Path("/fail")
@@ -222,6 +224,13 @@ public class MetaWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/model")
+    @ApiOperation(value = "Opencga model webservices.", response = String.class)
+    public Response model(@QueryParam("model") String modelStr) {
+        return run(() -> new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(DataModelsUtils.dataModelToJsonString(Class.forName(modelStr), false)), 1));
+    }
+
+    @GET
     @Path("/api")
     @ApiOperation(value = "API", response = List.class)
     public Response api(@ApiParam(value = "List of categories to get API from") @QueryParam("category") String categoryStr, @QueryParam("summary") boolean summary) {
@@ -256,7 +265,7 @@ public class MetaWSServer extends OpenCGAWSServer {
                 classes.add(classMap.get(category));
             }
         }
-        RestApi restApi = new RestApiParser().parse(classes, summary,GitRepositoryState.get().getBuildVersion(), GitRepositoryState.get().getCommitId());
+        RestApi restApi = new RestApiParser().parse(classes, summary, GitRepositoryState.get().getBuildVersion(), GitRepositoryState.get().getCommitId());
         return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(restApi.getCategories()), 1));
     }
 
