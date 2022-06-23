@@ -96,6 +96,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdapt
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDeleteHBaseColumnTask;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexBuilder;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
+import org.opencb.opencga.storage.hadoop.variant.prune.HadoopVariantPruneManager;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreRemover;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchDataWriter;
@@ -947,6 +948,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         int studyId = getMetadataManager().getStudyId(studyName);
         removeFiles(studyName, getMetadataManager().getIndexedFiles(studyId).stream().map(Object::toString).collect(Collectors.toList()),
                 outdir);
+    }
+
+    @Override
+    public void variantsPrune(boolean dryMode, boolean resume, URI outdir) throws StorageEngineException {
+        new HadoopVariantPruneManager(this).prune(dryMode, resume, outdir);
     }
 
     @Override

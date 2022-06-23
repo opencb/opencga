@@ -976,6 +976,17 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     public abstract void removeStudy(String study, URI outdir) throws StorageEngineException;
 
+    /**
+     * Removes samples from the Variant Storage.
+     *
+     * @param dryMode Dry mode. Do not execute deletes
+     * @param outdir Output directory
+     * @throws StorageEngineException If the samples can not be removed or there was some problem deleting it.
+     */
+    public void variantsPrune(boolean dryMode, boolean resume, URI outdir) throws StorageEngineException {
+        throw new UnsupportedOperationException("Unsupported variant prune operation at storage engine " + getStorageEngineId());
+    }
+
     public abstract void loadVariantScore(URI scoreFile, String study, String scoreName, String cohort1, String cohort2,
                                           VariantScoreFormatDescriptor descriptor, ObjectMap options)
     throws StorageEngineException;

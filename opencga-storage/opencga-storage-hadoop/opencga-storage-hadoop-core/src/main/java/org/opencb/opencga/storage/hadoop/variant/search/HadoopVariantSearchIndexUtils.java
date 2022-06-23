@@ -4,14 +4,20 @@ import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.phoenix.schema.types.PBoolean;
+import org.apache.phoenix.schema.types.PIntegerArray;
 import org.apache.phoenix.schema.types.PhoenixArray;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn;
 
@@ -26,12 +32,11 @@ public class HadoopVariantSearchIndexUtils {
      * Marks the row as Not Sync Status. This method should be called when loading annotations or statistics, and when removing a study.
      *
      * @param put Mutation to add new Variant information.
-     * @param columnFamily Main column family.
      * @return The same put operation with the {@link VariantColumn#INDEX_NOT_SYNC} column.
      */
-    public static Put addNotSyncStatus(Put put, byte[] columnFamily) {
+    public static Put addNotSyncStatus(Put put) {
         if (put != null) {
-            put.addColumn(columnFamily, VariantColumn.INDEX_NOT_SYNC.bytes(), System.currentTimeMillis(),
+            put.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantColumn.INDEX_NOT_SYNC.bytes(), System.currentTimeMillis(),
                     PBoolean.TRUE_BYTES);
         }
         return put;
@@ -41,12 +46,11 @@ public class HadoopVariantSearchIndexUtils {
      * Marks the row as Unknown Sync Status. This method should be called when loading or removing files.
      *
      * @param put Mutation to add new Variant information.
-     * @param columnFamily Main column family.
      * @return The same put operation with the {@link VariantColumn#INDEX_UNKNOWN} column.
      */
-    public static Put addUnknownSyncStatus(Put put, byte[] columnFamily) {
+    public static Put addUnknownSyncStatus(Put put) {
         if (put != null) {
-            put.addColumn(columnFamily, VariantColumn.INDEX_UNKNOWN.bytes(), System.currentTimeMillis(),
+            put.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantColumn.INDEX_UNKNOWN.bytes(), System.currentTimeMillis(),
                     PBoolean.TRUE_BYTES);
         }
         return put;

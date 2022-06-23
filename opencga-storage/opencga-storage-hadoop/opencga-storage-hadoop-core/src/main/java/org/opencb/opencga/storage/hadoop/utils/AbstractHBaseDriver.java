@@ -294,6 +294,59 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         fileSystem.cancelDeleteOnExit(outdir);
     }
 
+    public class MapReduceOutputFile {
+        public static final String OUTPUT_PARAM = "output";
+
+        private final Supplier<String> nameGenerator;
+        private final String tempFilePrefix;
+        protected Path localOutput;
+        protected Path outdir;
+
+        public MapReduceOutputFile(Supplier<String> nameGenerator, String tempFilePrefix) throws IOException {
+            this.nameGenerator = nameGenerator;
+            this.tempFilePrefix = tempFilePrefix;
+            getOutputPath();
+        }
+
+        protected void getOutputPath() throws IOException {
+            String outdirStr = getParam(OUTPUT_PARAM);
+            if (StringUtils.isNotEmpty(outdirStr)) {
+                outdir = new Path(outdirStr);
+
+                if (isLocal(outdir)) {
+                    localOutput = AbstractHBaseDriver.this.getLocalOutput(outdir, nameGenerator);
+                    outdir = getTempOutdir(tempFilePrefix, localOutput.getName());
+                    outdir.getFileSystem(getConf()).deleteOnExit(outdir);
+                }
+                if (localOutput != null) {
+                    LOGGER.info(" * Outdir file: " + localOutput.toUri());
+                    LOGGER.info(" * Temporary outdir file: " + outdir.toUri());
+                } else {
+                    LOGGER.info(" * Outdir file: " + outdir.toUri());
+                }
+            }
+        }
+
+        public void postExecute(boolean succeed) throws IOException {
+            if (succeed) {
+                if (localOutput != null) {
+                    concatMrOutputToLocal(outdir, localOutput);
+                }
+            }
+            if (localOutput != null) {
+                deleteTemporaryFile(outdir);
+            }
+        }
+
+        public Path getLocalOutput() {
+            return localOutput;
+        }
+
+        public Path getOutdir() {
+            return outdir;
+        }
+    }
+
     /**
      * Concatenate all generated files from a MapReduce job into one single local file.
      *
