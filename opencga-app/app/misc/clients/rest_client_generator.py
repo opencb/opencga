@@ -8,11 +8,12 @@ from datetime import datetime
 
 class RestClientGenerator(ABC):
 
-    def __init__(self, rest_api_file, output_dir):
+    def __init__(self, app, rest_api_file, output_dir):
         f = open(rest_api_file, 'r')
         rest_api = json.load(f)
         f.close()
 
+        self.app = app
         self.rest_api = rest_api
         self.output_dir = output_dir
         self.version = rest_api['version'] + ' [' + rest_api['commit'] + ']'
@@ -24,17 +25,13 @@ class RestClientGenerator(ABC):
         self.id2 = None
 
         self.endpoints = {
+            # OpenCGA
             'users/{user}/filters/{filterId}/update': {'method_name': 'update_filter'},
             'ga4gh/reads/{study}/{file}': {'method_name': 'fetch_reads'},
-            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/merge': {
-                'method_name': 'merge_interpretation'},
-            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/update': {
-                'method_name': 'update_interpretation'},
-            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/delete': {
-                'method_name': 'delete_interpretation'},
             'panels/import': {'method_name': 'import_panels'}
         }
         self.categories = {
+            # OpenCGA
             'Users': 'User',
             'Projects': 'Project',
             'Studies': 'Study',
@@ -47,11 +44,27 @@ class RestClientGenerator(ABC):
             'Disease Panels': 'DiseasePanel',
             'Analysis - Alignment': 'Alignment',
             'Analysis - Variant': 'Variant',
-            'Analysis - Clinical': 'ClinicalAnalysis',
+            'Analysis - Clinical': 'Clinical',
             'Operations - Variant Storage': 'VariantOperation',
-            'Meta': 'Meta',
             'GA4GH': 'GA4GH',
-            'Admin': 'Admin'
+            'Admin': 'Admin',
+
+            # CellBase
+            'Chromosome': 'Chromosome',
+            'Clinical': 'Clinical',
+            'Gene': 'Gene',
+            'Ontology': 'Ontology',
+            'Protein': 'Protein',
+            'Region': 'Region',
+            'Regulation': 'Regulation',
+            'Species': 'Species',
+            'TFBS': 'Tf',
+            'Transcript': 'Transcript',
+            'Variant': 'Variant',
+            'Xref': 'Id',
+
+            # Both
+            'Meta': 'Meta'
         }
 
     @staticmethod
@@ -73,11 +86,11 @@ class RestClientGenerator(ABC):
 
     @staticmethod
     def get_category_path(category):
-        return category['path'].replace('/{apiVersion}/', '')
+        return category['path'].replace('/{apiVersion}/', '').replace('{species}/', '')
 
     @staticmethod
     def get_endpoint_path(endpoint):
-        return endpoint['path'].replace('/{apiVersion}/', '')
+        return endpoint['path'].replace('/{apiVersion}/', '').replace('{species}/', '')
 
     @staticmethod
     def get_endpoint_description(endpoint):
@@ -172,7 +185,8 @@ class RestClientGenerator(ABC):
         subpath = self.get_endpoint_path(endpoint).replace(self.get_category_path(category) + '/', '')
         items = subpath.split('/')
         if len(items) == 1:
-            method_name = items[0]
+            # e.g. /{apiVersion}/meta/about or /{apiVersion}/meta/{category}
+            method_name = items[0].replace('{', '').replace('}', '')
         elif len(items) == 2:
             # e.g. /{apiVersion}/ga4gh/reads/search
             if not self.any_arg(items):
@@ -256,21 +270,24 @@ class RestClientGenerator(ABC):
                 fhand.write('\n'.join(text))
 
     def parse_resources(self, category, endpoint):
-        if endpoint['path'] == '/{apiVersion}/ga4gh/reads/{study}/{file}':
+        if endpoint['path'] == '/{apiVersion}/ga4gh/reads/{study}/{file}':  # OpenCGA
             self.category = 'ga4gh/reads'
             self.id1 = 'study'
             self.id2 = 'file'
             self.subcategory = ''
             self.action = ''
+        elif endpoint['path'] == '/{apiVersion}/meta/{category}':  # CellBase
+            self.category = 'meta'
+            self.id = 'category'
+            self.action = ''
         else:
-            subpath = endpoint['path'].replace('/{apiVersion}/', '')
+            subpath = endpoint['path'].replace('/{apiVersion}/', '').replace('{species}/', '')
             resources = re.findall(
                 '([a-zA-Z0-9\/]+)(\/\{[a-zA-Z0-9]+\})?(\/[a-zA-Z0-9]+)?(\/\{[a-zA-Z0-9]+\})?(\/[a-zA-Z0-9\/]+)',
                 subpath)
             if resources:
                 [self.category, self.id1, self.subcategory, self.id2, self.action] = resources if type(
                     resources[0]) != tuple else list(resources[0])
-
             if self.id1.startswith("/"):
                 self.id1 = self.id1[2:-1]
             if self.id2.startswith("/"):
