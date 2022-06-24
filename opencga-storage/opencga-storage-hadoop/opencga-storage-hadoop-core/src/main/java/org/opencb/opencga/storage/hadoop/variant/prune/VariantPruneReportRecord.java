@@ -6,7 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-class VariantPruneReportRecord {
+public class VariantPruneReportRecord {
     private final Variant variant;
     private final Type type;
     private final List<Integer> studies;

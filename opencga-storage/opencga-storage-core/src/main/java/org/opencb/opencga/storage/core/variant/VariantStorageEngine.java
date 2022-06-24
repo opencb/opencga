@@ -980,6 +980,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * Removes samples from the Variant Storage.
      *
      * @param dryMode Dry mode. Do not execute deletes
+     * @param resume Resume previously failed execution
      * @param outdir Output directory
      * @throws StorageEngineException If the samples can not be removed or there was some problem deleting it.
      */

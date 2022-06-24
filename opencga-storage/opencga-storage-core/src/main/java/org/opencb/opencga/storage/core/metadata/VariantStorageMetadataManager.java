@@ -1885,6 +1885,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
      * @param type               Operation type as {@link TaskMetadata.Type}
      * @param allowConcurrent    Predicate to test if the new operation can be executed at the same time as a non ready operation.
      *                           If not, throws {@link StorageEngineException#otherOperationInProgressException}
+     * @throws StorageEngineException if the operation can't be executed
      */
     public void checkTaskCanRun(int studyId, String jobOperationName, List<Integer> fileIds, boolean resume,
                                                         TaskMetadata.Type type, Predicate<TaskMetadata> allowConcurrent)

@@ -19,11 +19,6 @@ public class VariantPruneOperationTool extends OperationTool {
     protected void run() throws Exception {
 
         step(() -> {
-
-            // TODO: Remove this line. Test purposes only
-            logger.warn("Enforce dry mode!");
-            params.setDryRun(true);
-
             getVariantStorageManager().variantPrune(params.getProject(), getOutDir().toUri(), params, getToken());
         });
 

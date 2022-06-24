@@ -29,7 +29,7 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-public class HadoopVariantPruneManagerTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
+public class VariantPruneManagerTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     public static final String STUDY_NAME_3 = "study_3";
     public static final String STUDY_NAME_4 = "study_4";

@@ -14,6 +14,7 @@ import org.apache.hadoop.io.compress.GzipCodec;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.ReflectionUtils;
+import org.apache.hadoop.util.Tool;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
@@ -34,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -42,11 +44,11 @@ import static org.opencb.opencga.storage.hadoop.variant.GenomeHelper.COLUMN_FAMI
 
 public class VariantPruneDriver extends AbstractVariantsTableDriver {
 
-    private Logger logger = LoggerFactory.getLogger(HadoopVariantPruneManager.class);
-    public static final String ATTRIBUTE_DELETION_TYPE = "d_type";
-    public static final byte[] ATTRIBUTE_DELETION_TYPE_FULL = Bytes.toBytes("FULL");
-    public static final byte[] ATTRIBUTE_DELETION_TYPE_PARTIAL = Bytes.toBytes("PARTIAL");
+    private Logger logger = LoggerFactory.getLogger(VariantPruneManager.class);
     public static final String ATTRIBUTE_DELETION_STUDIES = "d_studies";
+    public static final String ATTRIBUTE_DELETION_TYPE = "d_type";
+    public static final byte[] ATTRIBUTE_DELETION_TYPE_FULL = Bytes.toBytes(VariantPruneReportRecord.Type.FULL.toString());
+    public static final byte[] ATTRIBUTE_DELETION_TYPE_PARTIAL = Bytes.toBytes(VariantPruneReportRecord.Type.PARTIAL.toString());
     private final VariantPruneDriverParams params = new VariantPruneDriverParams();
     private MapReduceOutputFile output;
 
@@ -122,12 +124,7 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
         }
 
         VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
-
-        if (!params.isDryRun()) {
-            // TODO: Remove this line. Test purposes only
-            logger.warn("Not dry mode! Enforce dry-mode");
-            params.setDryRun(true);
-        }
+        logger.info("Scan = " + scan);
 
         FileOutputFormat.setCompressOutput(job, false);
         FileOutputFormat.setOutputPath(job, output.getOutdir());
@@ -147,6 +144,7 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
 
         VariantTableHelper.setVariantsTable(job.getConfiguration(), variantTable);
         job.getConfiguration().set(VariantPruneMapper.PENDING_TABLE, getTableNameGenerator().getPendingSecondaryIndexPruneTableName());
+        job.getConfiguration().set(VariantPruneMapper.PENDING_ANNOTATION_TABLE, getTableNameGenerator().getPendingAnnotationTableName());
         VariantPruneMapper.setColumnsPerStudy(job.getConfiguration(), columnsPerStudy);
         return job;
     }
@@ -160,10 +158,12 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
     public static class VariantPruneMapper extends TableMapper<ImmutableBytesWritable, Mutation> {
 
         public static final String PENDING_TABLE = "VariantPruneMapper.pending_table";
+        public static final String PENDING_ANNOTATION_TABLE = "VariantPruneMapper.pending_annotations_table";
         public static final String COLUMNS_PER_STUDY = "VariantPruneMapper.columnsPerStudy";
 
         private ImmutableBytesWritable variantsTable;
         private ImmutableBytesWritable pendingDeletionVariantsTable;
+        private ImmutableBytesWritable pendingAnnotationVariantsTable;
         private Map<Integer, List<byte[]>> columnsPerStudy;
 
 
@@ -175,6 +175,7 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
             Configuration conf = context.getConfiguration();
             variantsTable = new ImmutableBytesWritable(Bytes.toBytes(VariantTableHelper.getVariantsTable(conf)));
             pendingDeletionVariantsTable = new ImmutableBytesWritable(Bytes.toBytes(conf.get(PENDING_TABLE)));
+            pendingAnnotationVariantsTable = new ImmutableBytesWritable(Bytes.toBytes(conf.get(PENDING_ANNOTATION_TABLE)));
 
             this.columnsPerStudy = getColumnsPerStudy(conf);
         }
@@ -209,10 +210,8 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
             List<Integer> emptyStudies = new ArrayList<>();
             List<Integer> studies = new ArrayList<>();
 
-            variantRow.walker()
-                    .onStudy(studyId -> {
-                        studies.add(studyId);
-                    })
+            Variant variant = variantRow.walker()
+                    .onStudy(studies::add)
                     .onCohortStats(c -> {
                         VariantStats variantStats = c.toJava();
                         if (variantStats.getFileCount() == 0) {
@@ -230,6 +229,9 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
 
                 context.write(pendingDeletionVariantsTable,
                         new Put(value.getRow()).addColumn(COLUMN_FAMILY_BYTES, COLUMN, VALUE));
+                context.write(pendingAnnotationVariantsTable,
+                        new Delete(value.getRow()));
+
                 Delete delete = new Delete(value.getRow());
                 delete.addFamily(COLUMN_FAMILY_BYTES);
                 delete.setAttribute(ATTRIBUTE_DELETION_TYPE, ATTRIBUTE_DELETION_TYPE_FULL);
@@ -250,6 +252,11 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
                         delete.addColumns(COLUMN_FAMILY_BYTES, columnToDelete);
                     }
                 }
+                if (delete.isEmpty()) {
+                    // Impossible statement (unless a bug).
+                    // This block is here to prevent accidental "full row" deletes.
+                    throw new IllegalStateException("Unexpected empty delete at partial variant prune in variant " + variant);
+                }
                 delete.setAttribute(ATTRIBUTE_DELETION_TYPE, ATTRIBUTE_DELETION_TYPE_PARTIAL);
                 delete.setAttribute(ATTRIBUTE_DELETION_STUDIES,
                         Bytes.toBytes(emptyStudies.stream().map(Object::toString).collect(Collectors.joining(","))));
@@ -266,8 +273,8 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
 
     public static class VariantPruneReportAndWriteOutputFormat extends OutputFormat<ImmutableBytesWritable, Mutation> {
 
-        MultiTableOutputFormat hbaseOutputFormat;
-        VariantPruneReportOutputFormat reportOutputFormat;
+        private MultiTableOutputFormat hbaseOutputFormat;
+        private VariantPruneReportOutputFormat reportOutputFormat;
 
         public VariantPruneReportAndWriteOutputFormat() {
             hbaseOutputFormat = new MultiTableOutputFormat();
@@ -314,15 +321,17 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
             private static final byte[] NEWLINE = "\n".getBytes(StandardCharsets.UTF_8);
             private static final byte[] SEPARATOR = "\t".getBytes(StandardCharsets.UTF_8);
 
-            protected DataOutputStream out;
+            protected final DataOutputStream out;
+            protected final ImmutableBytesWritable variantsTable;
 
-            public ReportRecordWriter(DataOutputStream out) {
+            public ReportRecordWriter(DataOutputStream out, ImmutableBytesWritable variantsTable) {
                 this.out = out;
+                this.variantsTable = variantsTable;
             }
 
             public synchronized void write(ImmutableBytesWritable key, Mutation mutation)
                     throws IOException {
-                if (mutation instanceof Delete) {
+                if (mutation instanceof Delete && key.equals(variantsTable)) {
                     Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(mutation.getRow());
                     out.write(variant.toString().getBytes(StandardCharsets.UTF_8));
                     out.write(SEPARATOR);
@@ -341,6 +350,7 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
         public RecordWriter<ImmutableBytesWritable, Mutation> getRecordWriter(TaskAttemptContext job)
                 throws IOException, InterruptedException {
             Configuration conf = job.getConfiguration();
+            ImmutableBytesWritable variantsTable = new ImmutableBytesWritable(Bytes.toBytes(VariantTableHelper.getVariantsTable(conf)));
             boolean isCompressed = getCompressOutput(job);
             CompressionCodec codec = null;
             String extension = "";
@@ -356,8 +366,13 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
             if (isCompressed) {
                 fileOut = new DataOutputStream(codec.createOutputStream(fileOut));
             }
-            return new ReportRecordWriter(fileOut);
+            return new ReportRecordWriter(fileOut, variantsTable);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static void main(String[] args) {
+        main(args, (Class<? extends Tool>) MethodHandles.lookup().lookupClass());
     }
 
 }
