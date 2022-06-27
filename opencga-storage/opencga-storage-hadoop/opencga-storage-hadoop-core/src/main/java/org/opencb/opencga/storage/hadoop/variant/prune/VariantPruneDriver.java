@@ -15,7 +15,6 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.util.Tool;
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -40,6 +39,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
 import static org.opencb.opencga.storage.hadoop.variant.GenomeHelper.COLUMN_FAMILY_BYTES;
 
 public class VariantPruneDriver extends AbstractVariantsTableDriver {
@@ -103,7 +103,7 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         for (Map.Entry<String, Integer> entry : metadataManager.getStudies().entrySet()) {
             Integer studyId = entry.getValue();
-            Integer cohortId = metadataManager.getCohortId(studyId, StudyEntry.DEFAULT_COHORT);
+            Integer cohortId = metadataManager.getCohortId(studyId, DEFAULT_COHORT);
 
             scan.addColumn(COLUMN_FAMILY_BYTES, VariantPhoenixSchema.getStudyColumn(studyId).bytes());
             scan.addColumn(COLUMN_FAMILY_BYTES, VariantPhoenixSchema.getStatsColumn(studyId, cohortId).bytes());
@@ -209,16 +209,22 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
 
             List<Integer> emptyStudies = new ArrayList<>();
             List<Integer> studies = new ArrayList<>();
+            List<Integer> studiesWithStats = new ArrayList<>();
 
             Variant variant = variantRow.walker()
                     .onStudy(studies::add)
                     .onCohortStats(c -> {
+                        studiesWithStats.add(c.getStudyId());
                         VariantStats variantStats = c.toJava();
                         if (variantStats.getFileCount() == 0) {
                             emptyStudies.add(c.getStudyId());
                         }
                     })
                     .walk();
+
+            if (studies.size() != studiesWithStats.size() || !studies.containsAll(studiesWithStats)) {
+                throw new IllegalStateException("Variant stats for cohort " + DEFAULT_COHORT + " not found in variant " + variant);
+            }
 
             context.getCounter(COUNTER_GROUP_NAME, "variants").increment(1);
 
