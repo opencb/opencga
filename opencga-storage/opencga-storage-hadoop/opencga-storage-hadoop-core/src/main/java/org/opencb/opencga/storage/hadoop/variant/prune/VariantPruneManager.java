@@ -123,7 +123,7 @@ public class VariantPruneManager {
                                 Collectors.counting()));
             }
 
-            long totalCount = countByType.values().stream().mapToLong(l -> l).count();
+            long totalCount = countByType.values().stream().mapToLong(l -> l).sum();
             if (dryMode) {
                 logger.info("Found {} variants to prune, {}", totalCount, countByType);
                 checkReportedVariants(report, totalCount);
@@ -163,10 +163,11 @@ public class VariantPruneManager {
                     i -> {
                         List<VariantPruneReportRecord> records = new ArrayList<>(i);
                         int skippedVariants = 0;
-                        while (it.hasNext()) {
+                        while (it.hasNext() && records.size() < i) {
+                            VariantPruneReportRecord next = it.next();
                             if (skippedVariants == variantsToSkip) {
                                 skippedVariants = 0;
-                                records.add(it.next());
+                                records.add(next);
                             } else {
                                 skippedVariants++;
                             }
@@ -222,7 +223,7 @@ public class VariantPruneManager {
                         return batch;
                     },
                     null,
-                    ParallelTaskRunner.Config.builder().setBatchSize(batchSize).setNumTasks(8).build()
+                    ParallelTaskRunner.Config.builder().setBatchSize(batchSize).setCapacity(2).setNumTasks(4).build()
             );
             try {
                 ptr.run();

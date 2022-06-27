@@ -4,7 +4,7 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 public class VariantPruneParams extends ToolParams {
 
-    public static final String DESCRIPTION = "";
+    public static final String DESCRIPTION = "Variant prune params. Use dry-run to just generate a report with the orphan variants.";
     private String project;
     private boolean dryRun;
     private boolean resume;
