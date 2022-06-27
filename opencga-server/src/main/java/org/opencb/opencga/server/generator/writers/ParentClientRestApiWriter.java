@@ -28,7 +28,9 @@ import org.opencb.opencga.server.generator.utils.CommandLineUtils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public abstract class ParentClientRestApiWriter {
@@ -174,14 +176,12 @@ public abstract class ParentClientRestApiWriter {
     }
     
     protected static String getMethodName(RestCategory restCategory, RestEndpoint restEndpoint) {
-
-        String methodName = "";
         String subpath = restEndpoint.getPath().replace(restCategory.getPath() + "/", "");
         return getMethodName(subpath);
     }
 
     protected static String getMethodName(String subpath) {
-        String methodName = "";
+        String methodName = null;
         // String subpath = restEndpoint.getPath().replace(restCategory.getPath() + "/", "");
         String[] items = subpath.split("/");
         if (items.length == 1) {
@@ -215,6 +215,19 @@ public abstract class ParentClientRestApiWriter {
             } else if (!subpath.contains("{") && !subpath.contains("}")) {
                 methodName = items[4] + "_" + items[0] + "_" + items[1] + "_" + items[2] + "_" + items[3];
             }
+        }
+
+        if (methodName == null) {
+            // Get all items that are not path params
+            List<String> itemList = new ArrayList<>();
+            for (String item : items) {
+                if (!item.startsWith("{")) {
+                    itemList.add(item);
+                }
+            }
+
+            methodName = itemList.get(itemList.size() - 1) + "_";
+            methodName += StringUtils.join(itemList.subList(0, itemList.size() - 1), "_");
         }
 
         return methodName;

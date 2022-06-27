@@ -105,6 +105,10 @@ public class OpenCGAClient {
         return getClient(JobClient.class, () -> new JobClient(token, clientConfiguration));
     }
 
+    public ExecutionClient getExecutionClient() {
+        return getClient(ExecutionClient.class, () -> new ExecutionClient(token, clientConfiguration));
+    }
+
     public IndividualClient getIndividualClient() {
         return getClient(IndividualClient.class, () -> new IndividualClient(token, clientConfiguration));
     }

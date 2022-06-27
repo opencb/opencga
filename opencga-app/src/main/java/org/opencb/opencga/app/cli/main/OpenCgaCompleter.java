@@ -37,12 +37,12 @@ import static java.util.stream.Collectors.toList;
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
 *    Command line version: 2.4.0-SNAPSHOT
-*    Command line commit: f2d170e62d5c9f4612237a01edc72bb784fa4042
+*    Command line commit: 08711223b85f9226bf51c171c2f52e1872006b1a
 */
 
 public abstract class OpenCgaCompleter implements Completer {
 
-    protected List<Candidate> commands = asList("login","logout","help","use","variant","projects","panels","clinical","jobs","individuals","families","users","samples","alignments","meta","studies","files","operations","cohorts")
+    protected List<Candidate> commands = asList("login","logout","help","use","variant","projects","panels","clinical","jobs","individuals","families","users","samples","alignments","executions","meta","studies","files","operations","cohorts")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -97,6 +97,11 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
+    private List<Candidate> executionsList = asList( "update-acl","create","distinct","aggregationStats-jobs","distinct-jobs","search-jobs","info-jobs","update-jobs","head-jobs-log","tail-jobs-log","run-pipeline","retry","search","top","acl","delete","info","update")
+            .stream()
+            .map(Candidate::new)
+            .collect(toList());
+
     private List<Candidate> metaList = asList( "about","api","fail","model","ping","status")
             .stream()
             .map(Candidate::new)
@@ -140,6 +145,7 @@ public abstract class OpenCgaCompleter implements Completer {
         mapCandidates.put( "users", usersList);
         mapCandidates.put( "samples", samplesList);
         mapCandidates.put( "alignments", alignmentsList);
+        mapCandidates.put( "executions", executionsList);
         mapCandidates.put( "meta", metaList);
         mapCandidates.put( "studies", studiesList);
         mapCandidates.put( "files", filesList);

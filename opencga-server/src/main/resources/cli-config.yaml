@@ -88,6 +88,9 @@ apiConfig:
               ignore: True
             - name: tagsAction
               ignore: True
+    - name: executions
+      ignore: False
+      key: Execution
     - name: jobs
       ignore: False
       key: Job

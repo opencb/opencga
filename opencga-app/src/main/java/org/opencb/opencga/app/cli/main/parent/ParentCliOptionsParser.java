@@ -103,7 +103,7 @@ public class ParentCliOptionsParser extends CliOptionsParser {
         Set<String> operationsCommands = new HashSet<>(Collections.singletonList("operations"));
         Map<String, String> opencgaCommands = getOpencgaCommands();
 
-        String[] catalog = {"users", "projects", "studies", "files", "jobs", "individuals", "families", "panels", "samples", "cohorts", "meta"};
+        String[] catalog = {"users", "projects", "studies", "files", "executions", "jobs", "individuals", "families", "panels", "samples", "cohorts", "meta"};
         PrintUtils.println(PrintUtils.format("Catalog commands:", PrintUtils.Color.GREEN));
         for (int i = 0; i < catalog.length; i++) {
             for (String command : jCommander.getCommands().keySet()) {

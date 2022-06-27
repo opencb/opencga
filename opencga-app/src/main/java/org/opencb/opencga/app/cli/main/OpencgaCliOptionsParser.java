@@ -17,7 +17,6 @@
 package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.JCommander;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.*;
 import org.opencb.opencga.app.cli.main.parent.ParentCliOptionsParser;
 
@@ -31,7 +30,7 @@ import org.opencb.opencga.app.cli.main.parent.ParentCliOptionsParser;
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
 *    Command line version: 2.4.0-SNAPSHOT
-*    Command line commit: f2d170e62d5c9f4612237a01edc72bb784fa4042
+*    Command line commit: 08711223b85f9226bf51c171c2f52e1872006b1a
 */
 
 public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
@@ -46,6 +45,7 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
     private final UsersCommandOptions usersCommandOptions;
     private final SamplesCommandOptions samplesCommandOptions;
     private final AnalysisAlignmentCommandOptions analysisAlignmentCommandOptions;
+    private final ExecutionsCommandOptions executionsCommandOptions;
     private final MetaCommandOptions metaCommandOptions;
     private final StudiesCommandOptions studiesCommandOptions;
     private final FilesCommandOptions filesCommandOptions;
@@ -255,6 +255,28 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         analysisAlignmentSubCommands.addCommand("query", analysisAlignmentCommandOptions.queryCommandOptions);
         analysisAlignmentSubCommands.addCommand("samtools-run", analysisAlignmentCommandOptions.runSamtoolsCommandOptions);
 
+        executionsCommandOptions = new ExecutionsCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("executions", executionsCommandOptions);
+        JCommander executionsSubCommands = jCommander.getCommands().get("executions");
+        executionsSubCommands.addCommand("acl-update", executionsCommandOptions.updateAclCommandOptions);
+        executionsSubCommands.addCommand("create", executionsCommandOptions.createCommandOptions);
+        executionsSubCommands.addCommand("distinct", executionsCommandOptions.distinctCommandOptions);
+        executionsSubCommands.addCommand("jobs-aggregation-stats", executionsCommandOptions.aggregationStatsJobsCommandOptions);
+        executionsSubCommands.addCommand("jobs-distinct", executionsCommandOptions.distinctJobsCommandOptions);
+        executionsSubCommands.addCommand("jobs-search", executionsCommandOptions.searchJobsCommandOptions);
+        executionsSubCommands.addCommand("jobs-info", executionsCommandOptions.infoJobsCommandOptions);
+        executionsSubCommands.addCommand("jobs-update", executionsCommandOptions.updateJobsCommandOptions);
+        executionsSubCommands.addCommand("jobs-log-head", executionsCommandOptions.headJobsLogCommandOptions);
+        executionsSubCommands.addCommand("jobs-log-tail", executionsCommandOptions.tailJobsLogCommandOptions);
+        executionsSubCommands.addCommand("pipeline-run", executionsCommandOptions.runPipelineCommandOptions);
+        executionsSubCommands.addCommand("retry", executionsCommandOptions.retryCommandOptions);
+        executionsSubCommands.addCommand("search", executionsCommandOptions.searchCommandOptions);
+        executionsSubCommands.addCommand("top", executionsCommandOptions.topCommandOptions);
+        executionsSubCommands.addCommand("acl", executionsCommandOptions.aclCommandOptions);
+        executionsSubCommands.addCommand("delete", executionsCommandOptions.deleteCommandOptions);
+        executionsSubCommands.addCommand("info", executionsCommandOptions.infoCommandOptions);
+        executionsSubCommands.addCommand("update", executionsCommandOptions.updateCommandOptions);
+
         metaCommandOptions = new MetaCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("meta", metaCommandOptions);
         JCommander metaSubCommands = jCommander.getCommands().get("meta");
@@ -416,6 +438,11 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
     
     public AnalysisAlignmentCommandOptions getAnalysisAlignmentCommandOptions() {
         return analysisAlignmentCommandOptions;
+    }
+    
+    
+    public ExecutionsCommandOptions getExecutionsCommandOptions() {
+        return executionsCommandOptions;
     }
     
     
