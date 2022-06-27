@@ -150,6 +150,11 @@ public class HBaseVariantTableNameGenerator {
         return validSuffix(tableName, PENDING_SECONDARY_INDEX_PRUNE_SUFIX);
     }
 
+    public static String getDBNameFromPendingSecondaryIndexPruneTableName(String tableName) {
+        checkValidPendingSecondaryIndexPruneTableName(tableName);
+        return tableName.substring(0, tableName.length() - PENDING_SECONDARY_INDEX_PRUNE_SUFIX.length());
+    }
+
     public static String getDBNameFromMetaTableName(String metaTableName) {
         checkValidMetaTableName(metaTableName);
         return metaTableName.substring(0, metaTableName.length() - META_SUFIX.length());
