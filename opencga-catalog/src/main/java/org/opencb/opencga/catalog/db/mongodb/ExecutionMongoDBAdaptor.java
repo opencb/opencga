@@ -226,7 +226,8 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
     @Override
     public OpenCGAResult<Execution> groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
-        return null;
+        Bson bsonQuery = parseQuery(query, options, user);
+        return groupBy(executionCollection, bsonQuery, fields, ExecutionDBAdaptor.QueryParams.ID.key(), fixOptions(options));
     }
 
     @Override
