@@ -181,7 +181,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         if (StringUtils.isEmpty(family.getUuid())) {
             family.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FAMILY));
         }
-        calculateRoles(clientSession, studyUid, family);
+        Map<String, Map<String, Family.FamiliarRelationship>> roles = calculateRoles(clientSession, studyUid, family);
+        family.setRoles(roles);
 
         Document familyDocument = familyConverter.convertToStorageType(family, variableSetList);
 
@@ -356,8 +357,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         Bson bsonQuery = parseQuery(tmpQuery);
         return versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
             DataResult result = updateAnnotationSets(clientSession, family.getUid(), parameters, variableSetList, queryOptions, true);
-            UpdateDocument updateDocument = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery);
-
             List<String> familyMemberIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
             boolean updateRoles = queryOptions.getBoolean(ParamConstants.FAMILY_UPDATE_ROLES_PARAM);
             if (CollectionUtils.isNotEmpty(parameters.getAsList(QueryParams.MEMBERS.key()))) {
@@ -399,10 +398,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     OpenCGAResult<Individual> memberResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(clientSession,
                             individualQuery, relationshipOptions);
                     family.setMembers(memberResult.getResults());
-                    calculateRoles(clientSession, family.getStudyUid(), family);
-                    updateDocument.getSet().put(QueryParams.ROLES.key(), family.getRoles());
+                    Map<String, Map<String, Family.FamiliarRelationship>> roles = calculateRoles(clientSession, family.getStudyUid(),
+                            family);
+                    parameters.put(QueryParams.ROLES.key(), roles);
                 } else {
-                    updateDocument.getSet().put(QueryParams.ROLES.key(), Collections.emptyMap());
+                    parameters.put(QueryParams.ROLES.key(), Collections.emptyMap());
                 }
             }
 
@@ -1009,12 +1009,12 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         });
     }
 
-    private void calculateRoles(ClientSession clientSession, long studyUid, Family family)
+    Map<String, Map<String, Family.FamiliarRelationship>> calculateRoles(ClientSession clientSession, long studyUid, Family family)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (family.getMembers() == null || family.getMembers().size() <= 1) {
             family.setRoles(Collections.emptyMap());
             // Nothing to calculate
-            return;
+            return Collections.emptyMap();
         }
 
         Set<String> individualIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toSet());
@@ -1032,7 +1032,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             roles.put(member.getId(), memberRelation);
         }
 
-        family.setRoles(roles);
+        return roles;
     }
 
     /**
