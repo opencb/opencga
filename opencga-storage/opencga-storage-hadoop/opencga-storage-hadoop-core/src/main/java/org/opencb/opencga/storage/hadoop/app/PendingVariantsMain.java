@@ -13,6 +13,7 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.annotation.pending.AnnotationPendingVariantsManager;
 import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsManager;
+import org.opencb.opencga.storage.hadoop.variant.prune.SecondaryIndexPrunePendingVariantsManager;
 import org.opencb.opencga.storage.hadoop.variant.search.SecondaryIndexPendingVariantsManager;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
@@ -57,7 +58,8 @@ public class PendingVariantsMain extends AbstractMain {
                         .stream()
                         .map(TableName::getNameAsString)
                         .filter(t -> HBaseVariantTableNameGenerator.isValidPendingSecondaryIndexTableName(t)
-                                || HBaseVariantTableNameGenerator.isValidPendingAnnotationTableName(t))
+                                || HBaseVariantTableNameGenerator.isValidPendingAnnotationTableName(t)
+                                || HBaseVariantTableNameGenerator.isValidPendingSecondaryIndexPruneTableName(t))
                 );
                 break;
             }
@@ -116,6 +118,12 @@ public class PendingVariantsMain extends AbstractMain {
             HBaseVariantTableNameGenerator tableNameGenerator = new HBaseVariantTableNameGenerator(dbName, hBaseManager.getConf());
             System.err.println("Detect SecondaryIndexPendingVariants table");
             return new SecondaryIndexPendingVariantsManager(
+                    new VariantHadoopDBAdaptor(hBaseManager, hBaseManager.getConf(), tableNameGenerator, new ObjectMap()));
+        } else if (HBaseVariantTableNameGenerator.isValidPendingSecondaryIndexPruneTableName(table)) {
+            String dbName = HBaseVariantTableNameGenerator.getDBNameFromPendingSecondaryIndexPruneTableName(table);
+            HBaseVariantTableNameGenerator tableNameGenerator = new HBaseVariantTableNameGenerator(dbName, hBaseManager.getConf());
+            System.err.println("Detect SecondaryIndexPendingPruneVariants table");
+            return new SecondaryIndexPrunePendingVariantsManager(
                     new VariantHadoopDBAdaptor(hBaseManager, hBaseManager.getConf(), tableNameGenerator, new ObjectMap()));
         } else {
             throw new IllegalArgumentIOException("Table '" + table + "' is not a pendig vairants table");

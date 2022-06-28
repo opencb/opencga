@@ -430,6 +430,18 @@ public class VariantOperationWebService extends OpenCGAWSServer {
         return submitOperationToProject(JulieTool.ID, project, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
+    @POST
+    @Path("/variant/prune")
+    @ApiOperation(value = VariantPruneOperationTool.DESCRIPTION, response = Job.class)
+    public Response variantPrune(
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = VariantPruneParams.DESCRIPTION) VariantPruneParams params) {
+        return submitOperationToProject(VariantPruneOperationTool.ID, params.getProject(), params, jobName, jobDescription, dependsOn, jobTags);
+    }
+
     public Response submitOperation(String toolId, String study, ToolParams params,
                                     String jobName, String jobDescription, String jobDependsOn, String jobTags) {
         return submitOperation(toolId, null, study, params, jobName, jobDescription, jobDependsOn, jobTags);

@@ -31,7 +31,7 @@ public class VariantsTableDeleteColumnTask extends DeleteHBaseColumnDriver.Delet
             return mutations;
         } else {
             Put put = new Put(result.getRow());
-            HadoopVariantSearchIndexUtils.addNotSyncStatus(put, GenomeHelper.COLUMN_FAMILY_BYTES);
+            HadoopVariantSearchIndexUtils.addNotSyncStatus(put);
 
             List<Mutation> mutationsWithPut = new ArrayList<>(mutations.size() + 1);
             mutationsWithPut.addAll(mutations);
