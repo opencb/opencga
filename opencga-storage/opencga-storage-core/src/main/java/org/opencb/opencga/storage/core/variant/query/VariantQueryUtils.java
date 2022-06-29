@@ -1493,7 +1493,10 @@ public final class VariantQueryUtils {
             if (isValidParam(query, ANNOT_GENE_REGIONS_MAP)) {
                 query = new Query(query);
                 query.remove(ANNOT_GENE_REGIONS_MAP.key());
-                query.put(ANNOT_GENE_REGIONS.key(), CollectionUtils.size(query.remove(ANNOT_GENE_REGIONS.key())));
+                Object geneRegions = query.get(ANNOT_GENE_REGIONS.key());
+                if (geneRegions instanceof Collection) {
+                    query.put(ANNOT_GENE_REGIONS.key(), "numGeneRegions : " + ((Collection<?>) geneRegions).size());
+                }
             }
             try {
                 return QUERY_MAPPER.writeValueAsString(query);

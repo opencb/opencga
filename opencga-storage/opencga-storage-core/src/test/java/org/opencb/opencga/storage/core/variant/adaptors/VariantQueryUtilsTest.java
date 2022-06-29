@@ -475,4 +475,12 @@ public class VariantQueryUtilsTest extends GenericTest {
                 new HashSet<>(buildClinicalCombinations(va)));
     }
 
+    @Test
+    public void testPrintQuery() {
+        System.out.println(printQuery(new Query()));
+        System.out.println(printQuery(new Query(ANNOT_GENE_REGIONS_MAP.key(), "map")
+                .append(ANNOT_GENE_REGIONS.key(), SKIP_GENE_REGIONS)));
+        System.out.println(printQuery(new Query(ANNOT_GENE_REGIONS_MAP.key(), "map")
+                .append(ANNOT_GENE_REGIONS.key(), Arrays.asList("r1", "r2", "r3", "r3"))));
+    }
 }
