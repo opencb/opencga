@@ -406,6 +406,9 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
         String[] acceptedObjectParams = {QueryParams.PIPELINE.key(), QueryParams.STUDY.key(), QueryParams.INTERNAL_STATUS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
+        String[] acceptedDateParams = {QueryParams.INTERNAL_START.key(), QueryParams.INTERNAL_END.key()};
+        filterDateParams(parameters, document.getSet(), acceptedDateParams);
+
         if (document.getSet().containsKey(QueryParams.STUDY.key())) {
             List<String> studyFqns = new LinkedList<>();
             studyFqns.add(parameters.getString(QueryParams.STUDY_ID.key()));
@@ -525,15 +528,13 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
             qOptions = new QueryOptions();
         }
         qOptions = fixOptions(qOptions);
+        qOptions = removeInnerProjections(qOptions, QueryParams.JOBS.key());
 
         Bson bson = parseQuery(query, options, user);
 
         logger.debug("Execution get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        if (!query.getBoolean(ParamConstants.DELETED_PARAM)) {
-            return executionCollection.iterator(bson, qOptions);
-        } else {
-            return deletedExecutionCollection.iterator(bson, qOptions);
-        }
+        MongoDBCollection collection = getQueryCollection(query, executionCollection, null, deletedExecutionCollection);
+        return collection.iterator(bson, qOptions);
     }
 
     private QueryOptions fixOptions(QueryOptions queryOptions) {
@@ -643,6 +644,8 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
                         addAutoOrQuery(QueryParams.INTERNAL_STATUS_ID.key(), queryParam.key(), queryCopy,
                                 QueryParams.INTERNAL_STATUS_ID.type(), andBsonList);
                         break;
+                    case INTERNAL_START:
+                    case INTERNAL_END:
                     case ID:
                     case UUID:
                     case USER_ID:

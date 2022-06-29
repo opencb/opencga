@@ -296,6 +296,10 @@ public class FieldConstants {
             + "MONGODB,  HBASE, STORAGE.";
     public static final String EXECUTION_INFO_FRAMEWORK_DESCRIPTION = "Executor info framework can have the values LOCAL, MAP_REDUCE, SPARK.";
 
+
+    public static final String EXECUTION_INTERNAL_START = "Date the first job started the execution.";
+    public static final String EXECUTION_INTERNAL_END = "Date the last job finished the execution.";
+
     //ExecutionResult
     public static final String EXECUTION_RESULT_EXECUTION_INFO = "Object describes execution information.";
     public static final String EXECUTION_RESULT_START = "Date the execution started.";

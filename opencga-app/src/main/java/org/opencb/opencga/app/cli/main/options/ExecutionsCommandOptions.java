@@ -1,16 +1,11 @@
 package org.opencb.opencga.app.cli.main.options;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.Parameters;
-import com.beust.jcommander.DynamicParameter;
-import com.beust.jcommander.ParametersDelegate;
+import com.beust.jcommander.*;
+import org.opencb.opencga.app.cli.main.parent.ParentExecutionsCommandOptions;
 
 import java.util.HashMap;
-import java.util.Map;
-import java.util.List;
 
-import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
+import static org.opencb.opencga.app.cli.GeneralCliOptions.CommonCommandOptions;
 
 
 /*
@@ -30,7 +25,7 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
  *    PATH: /{apiVersion}/executions
  */
 @Parameters(commandNames = {"executions"}, commandDescription = "Executions commands")
-public class ExecutionsCommandOptions {
+public class ExecutionsCommandOptions extends ParentExecutionsCommandOptions {
 
         public JCommander jCommander;
         public CommonCommandOptions commonCommandOptions;
@@ -56,7 +51,7 @@ public class ExecutionsCommandOptions {
 
 
     public ExecutionsCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
-    
+        super(commonCommandOptions, jCommander);
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
         this.updateAclCommandOptions = new UpdateAclCommandOptions();
@@ -685,32 +680,6 @@ public class ExecutionsCommandOptions {
     
         @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, arity = 1)
         public Boolean deleted; 
-    
-    }
-
-    @Parameters(commandNames = {"top"}, commandDescription ="Provide a summary of the running executions")
-    public class TopCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--limit"}, description = "Maximum number of executions to be returned", required = false, arity = 1)
-        public Integer limit; 
-    
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
-        public String study; 
-    
-        @Parameter(names = {"--internal-status"}, description = "Filter by internal status", required = false, arity = 1)
-        public String internalStatus; 
-    
-        @Parameter(names = {"--priority"}, description = "Priority of the execution", required = false, arity = 1)
-        public String priority; 
-    
-        @Parameter(names = {"--user-id"}, description = "User that created the execution", required = false, arity = 1)
-        public String userId; 
-    
-        @Parameter(names = {"--internal-tool-id"}, description = "Tool ID executed by the execution", required = false, arity = 1)
-        public String internalToolId; 
     
     }
 

@@ -156,6 +156,7 @@ public class JobsTopManager {
         jobTable.print(Enums.ExecutionStatus.RUNNING + ": " + top.getStats().getRunning() + ", ");
         jobTable.print(Enums.ExecutionStatus.QUEUED + ": " + top.getStats().getQueued() + ", ");
         jobTable.print(Enums.ExecutionStatus.PENDING + ": " + top.getStats().getPending() + ", ");
+        jobTable.print(Enums.ExecutionStatus.BLOCKED + ": " + top.getStats().getBlocked() + ", ");
         jobTable.print(Enums.ExecutionStatus.DONE + ": " + top.getStats().getDone() + ", ");
         jobTable.print(Enums.ExecutionStatus.ERROR + ": " + top.getStats().getError() + ", ");
         jobTable.print(Enums.ExecutionStatus.ABORTED + ": " + top.getStats().getAborted());

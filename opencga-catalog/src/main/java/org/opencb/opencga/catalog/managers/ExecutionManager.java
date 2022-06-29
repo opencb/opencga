@@ -340,7 +340,7 @@ public class ExecutionManager extends ResourceManager<Execution> {
             } else {
                 execution.setInternal(new ExecutionInternal(resourceId, TimeUtils.getTime(), TimeUtils.getTime(),
                         new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED),
-                        new JobInternalWebhook(null, new HashMap<>()), Collections.emptyList()));
+                        new JobInternalWebhook(null, new HashMap<>()), Collections.emptyList(), null, null));
             }
             execution.getInternal().getStatus().setDescription(e.toString());
             executionDBAdaptor.insert(study.getUid(), execution, new QueryOptions());
@@ -633,8 +633,11 @@ public class ExecutionManager extends ResourceManager<Execution> {
         QueryOptions queryOptions = new QueryOptions()
                 .append(QueryOptions.INCLUDE, Arrays.asList(ExecutionDBAdaptor.QueryParams.ID.key(),
                         ExecutionDBAdaptor.QueryParams.INTERNAL.key(), ExecutionDBAdaptor.QueryParams.DEPENDS_ON.key(),
-                        ExecutionDBAdaptor.QueryParams.CREATION_DATE.key(), ExecutionDBAdaptor.QueryParams.PRIORITY.key(),
-                        ExecutionDBAdaptor.QueryParams.STUDY.key()))
+                        ExecutionDBAdaptor.QueryParams.JOBS.key() + "." + JobDBAdaptor.QueryParams.ID.key(),
+                        ExecutionDBAdaptor.QueryParams.JOBS.key() + "." + JobDBAdaptor.QueryParams.RESULT.key(),
+                        ExecutionDBAdaptor.QueryParams.JOBS.key() + "." + JobDBAdaptor.QueryParams.INTERNAL.key(),
+                        ExecutionDBAdaptor.QueryParams.CREATION_DATE.key(),
+                        ExecutionDBAdaptor.QueryParams.PRIORITY.key(), ExecutionDBAdaptor.QueryParams.STUDY.key()))
                 .append(QueryOptions.COUNT, false)
                 .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
 
@@ -651,14 +654,14 @@ public class ExecutionManager extends ResourceManager<Execution> {
                             .append(ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.RUNNING),
                     new QueryOptions(queryOptions)
                             .append(QueryOptions.LIMIT, executionsLimit)
-                            .append(QueryOptions.SORT, "execution.start"),
+                            .append(QueryOptions.SORT, ExecutionDBAdaptor.QueryParams.INTERNAL_START.key()),
                     userId).getResults();
             running.addAll(results);
         }
-//        running.sort(Comparator.comparing(
-//                j -> j.getExecution() == null || j.getExecution().getStart() == null
-//                        ? new Date()
-//                        : j.getExecution().getStart()));
+        running.sort(Comparator.comparing(
+                j -> j.getInternal() == null || j.getInternal().getStart() == null
+                        ? new Date()
+                        : j.getInternal().getStart()));
         if (running.size() > executionsLimit) {
             running = running.subList(0, executionsLimit);
         }
@@ -722,15 +725,15 @@ public class ExecutionManager extends ResourceManager<Execution> {
                                     + Enums.ExecutionStatus.ABORTED),
                     new QueryOptions(queryOptions)
                             .append(QueryOptions.LIMIT, executionsLimit)
-                            .append(QueryOptions.SORT, "execution.end")
+                            .append(QueryOptions.SORT, ExecutionDBAdaptor.QueryParams.INTERNAL_END.key())
                             .append(QueryOptions.ORDER, QueryOptions.DESCENDING), // Get last n elements,
                     userId).getResults();
             Collections.reverse(results); // Reverse elements
             finishedExecutions.addAll(results);
         }
-//        finishedExecutions.sort(Comparator.comparing((Execution j) -> j.getExecution() == null || j.getExecution().getStart() == null
-//                ? new Date()
-//                : j.getExecution().getStart()).reversed());
+        finishedExecutions.sort(Comparator.comparing((Execution j) -> j.getInternal() == null || j.getInternal().getStart() == null
+                ? new Date()
+                : j.getInternal().getStart()).reversed());
         if (finishedExecutions.size() > executionsLimit) {
             finishedExecutions = finishedExecutions.subList(0, executionsLimit);
         }
@@ -741,7 +744,7 @@ public class ExecutionManager extends ResourceManager<Execution> {
         allExecutions.addAll(pending);
         allExecutions.addAll(finishedExecutions);
 
-        JobTopStats stats = new JobTopStats();
+        ExecutionTopStats stats = new ExecutionTopStats();
         for (Study study : studies) {
             OpenCGAResult result = executionDBAdaptor.groupBy(new Query(baseQuery)
                             .append(ExecutionDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid()),
@@ -752,6 +755,9 @@ public class ExecutionManager extends ResourceManager<Execution> {
                 String status = ((Map) ((Map) o).get("_id")).get(ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key()).toString();
                 int count = ((Number) ((Map) o).get("count")).intValue();
                 switch (status) {
+                    case Enums.ExecutionStatus.PROCESSED:
+                        stats.setProcessed(stats.getProcessed() + count);
+                        break;
                     case Enums.ExecutionStatus.RUNNING:
                         stats.setRunning(stats.getRunning() + count);
                         break;

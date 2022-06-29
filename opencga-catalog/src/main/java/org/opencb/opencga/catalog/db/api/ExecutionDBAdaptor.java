@@ -78,6 +78,8 @@ public interface ExecutionDBAdaptor extends CoreDBAdaptor<Execution> {
         PRIORITY("priority", TEXT, ""),
 
         INTERNAL("internal", OBJECT, ""),
+        INTERNAL_START("internal.start", DATE, ""),
+        INTERNAL_END("internal.end", DATE, ""),
         INTERNAL_STATUS("internal.status", OBJECT, ""),
         INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),

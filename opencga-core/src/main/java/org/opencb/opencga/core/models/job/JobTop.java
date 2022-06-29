@@ -21,13 +21,13 @@ import java.util.List;
 
 public class JobTop {
     private Date date;
-    private JobTopStats stats;
+    private ExecutionTopStats stats;
     private List<Job> jobs;
     
     public JobTop() {
     }
 
-    public JobTop(Date date, JobTopStats stats, List<Job> jobs) {
+    public JobTop(Date date, ExecutionTopStats stats, List<Job> jobs) {
         this.date = date;
         this.stats = stats;
         this.jobs = jobs;
@@ -52,11 +52,11 @@ public class JobTop {
         return this;
     }
 
-    public JobTopStats getStats() {
+    public ExecutionTopStats getStats() {
         return stats;
     }
 
-    public JobTop setStats(JobTopStats stats) {
+    public JobTop setStats(ExecutionTopStats stats) {
         this.stats = stats;
         return this;
     }

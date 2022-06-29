@@ -30,6 +30,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileTree;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.job.Execution;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -150,6 +151,9 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 break;
             case "Job":
                 printJob(queryResponse.getResponses());
+                break;
+            case "Execution":
+                printExecution(queryResponse.getResponses());
                 break;
             case "VariableSet":
                 printVariableSet(queryResponse.getResponses());
@@ -359,6 +363,20 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 .printTable(unwind(queryResultList));
     }
 
+    private void printExecution(List<DataResult<Execution>> queryResultList) {
+        List<ExecutionColumns> jobColumns = Arrays.asList(
+                ExecutionColumns.ID,
+                ExecutionColumns.JOBS,
+                ExecutionColumns.SUBMISSION,
+                ExecutionColumns.STATUS,
+                ExecutionColumns.START,
+                ExecutionColumns.RUNNING_TIME
+        );
+        new Table<Execution>(tableType)
+                .addColumns(jobColumns.stream().map(ExecutionColumns::getColumnSchema).collect(Collectors.toList()))
+                .printTable(unwind(queryResultList));
+    }
+
     private void printVariableSet(List<DataResult<VariableSet>> queryResultList) {
         new Table<VariableSet>(tableType)
                 .addColumn("ID", VariableSet::getId)
@@ -428,6 +446,105 @@ public class TextOutputWriter extends AbstractOutputWriter {
 
     private String getId(Annotable annotable, String defaultStr) {
         return annotable != null ? StringUtils.defaultIfEmpty(annotable.getId(), defaultStr) : defaultStr;
+    }
+
+    public enum ExecutionColumns implements TableSchema<Execution> {
+        ID(new Table.TableColumnSchema<>("ID", Execution::getId, 60)),
+        STATUS(new Table.TableColumnSchema<>("Status", execution -> execution.getInternal().getStatus().getId())),
+        JOBS(new Table.TableColumnSchema<>("Jobs", ExecutionColumns::getJobSummary, 60)),
+        STUDY(new Table.TableColumnSchema<>("Study", execution -> {
+            String id = execution.getStudy().getId();
+            if (id.contains(":")) {
+                return id.split(":")[1];
+            } else {
+                return id;
+            }
+        }, 25)),
+        SUBMISSION(new Table.TableColumnSchema<>("Submission date", execution -> execution.getCreationDate() != null
+                ? SIMPLE_DATE_FORMAT.format(TimeUtils.toDate(execution.getCreationDate())) : "")),
+        PRIORITY(new Table.TableColumnSchema<>("Priority", execution -> execution.getPriority() != null
+                ? execution.getPriority().name() : "")),
+        RUNNING_TIME(new Table.TableColumnSchema<>("Running time", ExecutionColumns::getDurationString)),
+        START(new Table.TableColumnSchema<>("Start", execution -> execution.getInternal().getStart() != null
+                ? SIMPLE_DATE_FORMAT.format(execution.getInternal().getStart()) : "")),
+        END(new Table.TableColumnSchema<>("End", execution -> execution.getInternal().getEnd() != null
+                ? SIMPLE_DATE_FORMAT.format(execution.getInternal().getEnd()) : ""));
+//        INPUT(new Table.TableColumnSchema<>("Input", j -> j.getInput().stream().map(File::getName).collect(Collectors.joining(",")), 45)),
+//
+//        OUTPUT(new Table.TableColumnSchema<>("Output", j -> j.getOutput().stream().map(File::getName).collect(Collectors.joining(",")), 45)),
+//        OUTPUT_DIRECTORY(new Table.TableColumnSchema<>("Output directory", j -> j.getOutDir().getPath(), 45));
+
+        private final Table.TableColumnSchema<Execution> columnSchema;
+
+        ExecutionColumns(Table.TableColumnSchema<Execution> columnSchema) {
+            this.columnSchema = columnSchema;
+        }
+
+        private static String getDurationString(Execution execution) {
+            long durationInMillis = getDurationInMillis(execution.getInternal().getStart(), execution.getInternal().getEnd());
+            if (durationInMillis > 0) {
+                return TimeUtils.durationToStringSimple(durationInMillis);
+            } else {
+                return "";
+            }
+        }
+
+        private static long getDurationInMillis(Date start, Date end) {
+            long durationInMillis = -1;
+            if (start != null) {
+                if (end == null) {
+                    durationInMillis = Instant.now().toEpochMilli() - start.getTime();
+                } else {
+                    durationInMillis = end.getTime() - start.getTime();
+                }
+            }
+            return durationInMillis;
+        }
+
+        private static String getJobSummary(Execution execution) {
+            List<String> statuses = Arrays.asList(Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED,
+                    Enums.ExecutionStatus.RUNNING, Enums.ExecutionStatus.DONE, Enums.ExecutionStatus.ABORTED, Enums.ExecutionStatus.ERROR,
+                    Enums.ExecutionStatus.UNKNOWN);
+            Map<String, Integer> statusCount = new HashMap<>();
+            for (String status : statuses) {
+                statusCount.put(status, 0);
+            }
+
+            for (Job job : execution.getJobs()) {
+                if (job.getInternal() != null && job.getInternal().getStatus() != null) {
+                    switch (job.getInternal().getStatus().getId()) {
+                        case Enums.ExecutionStatus.PENDING:
+                        case Enums.ExecutionStatus.QUEUED:
+                        case Enums.ExecutionStatus.RUNNING:
+                        case Enums.ExecutionStatus.DONE:
+                        case Enums.ExecutionStatus.ABORTED:
+                        case Enums.ExecutionStatus.ERROR:
+                            int count = statusCount.get(job.getInternal().getStatus().getId()) + 1;
+                            statusCount.put(job.getInternal().getStatus().getId(), count);
+                            break;
+                        default:
+                            count = statusCount.get(Enums.ExecutionStatus.UNKNOWN) + 1;
+                            statusCount.put(Enums.ExecutionStatus.UNKNOWN, count);
+                            break;
+                    }
+                }
+            }
+
+            List<String> values = new ArrayList<>(statuses.size());
+            for (String status : statuses) {
+                if (statusCount.get(status) > 0) {
+                    // Only show those with count > 0
+                    values.add(status + ": " + statusCount.get(status));
+                }
+            }
+
+            return StringUtils.join(values, ", ");
+        }
+
+        @Override
+        public Table.TableColumnSchema<Execution> getColumnSchema() {
+            return columnSchema;
+        }
     }
 
     public enum JobColumns implements TableSchema<Job> {

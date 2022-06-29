@@ -53,7 +53,7 @@ public class ExecutionManagerTest extends AbstractManagerTest {
                 .setId("my_execution")
                 .setParams(params)
                 .setJobs(Collections.singletonList(jobCreateParams))
-                .setInternal(new ExecutionInternal("tool", null, null, new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE), null, null));
+                .setInternal(new ExecutionInternal("tool", null, null, new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE), null, null, null, null));
         catalogManager.getExecutionManager().register(studyFqn, executionCreateParams, QueryOptions.empty(), token);
     }
 

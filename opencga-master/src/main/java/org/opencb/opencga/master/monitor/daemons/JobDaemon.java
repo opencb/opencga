@@ -141,7 +141,7 @@ public class JobDaemon extends PipelineParentDaemon {
     private Path defaultJobDir;
 
     private static final Map<String, String> TOOL_CLI_MAP;
-    private static final Set<String> ON_GOING_STATUSES;
+    static final Set<String> ON_GOING_STATUSES;
     private static final Set<String> ERROR_FINAL_STATUSES;
     private static final Set<String> SUCCESS_FINAL_STATUSES;
 

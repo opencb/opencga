@@ -282,6 +282,22 @@ public class MongoDBUtils {
         }
     }
 
+    static void filterDateParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedParams)
+            throws CatalogDBException {
+        for (String s : acceptedParams) {
+            if (parameters.containsKey(s)) {
+                Object o = parameters.get(s);
+                if (o instanceof Date) {
+                    filteredParams.put(s, o);
+                } else if (o instanceof Long) {
+                    filteredParams.put(s, new Date((long) o));
+                } else {
+                    throw new CatalogDBException("Invalid parameter { " + s + ": Expected date value");
+                }
+            }
+        }
+    }
+
     static void filterStringParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedParams) {
         for (String s : acceptedParams) {
             if (parameters.containsKey(s)) {

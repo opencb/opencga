@@ -194,8 +194,56 @@ public class ExecutionDaemon extends PipelineParentDaemon {
         }
 
         String status = getCurrentExecutionStatus(execution);
+        boolean changed = false;
+        PrivateExecutionUpdateParams updateParams = new PrivateExecutionUpdateParams()
+                .setInternal(new ExecutionInternal());
+
         if (!status.equals(execution.getInternal().getStatus().getId())) {
-            setStatus(execution, new Enums.ExecutionStatus(status));
+            updateParams.getInternal().setStatus(new Enums.ExecutionStatus(status));
+            changed = true;
+        }
+
+        // Check execution start
+        if (execution.getInternal().getStart() == null) {
+            Date start = null;
+            for (Job job : execution.getJobs()) {
+                if (job.getResult() != null && job.getResult().getStart() != null) {
+                    if (start == null) {
+                        start = job.getResult().getStart();
+                    } else {
+                        start = start.before(job.getResult().getStart()) ? start : job.getResult().getStart();
+                    }
+                }
+            }
+            if (start != null) {
+                changed = true;
+                updateParams.getInternal().setStart(start);
+            }
+        }
+
+        // Check execution end
+        boolean updateEnd = true;
+        Date end = null;
+        for (Job job : execution.getJobs()) {
+            // All jobs should have been executed before writing the execution end to the execution
+            if (job.getResult() == null || job.getResult().getEnd() == null
+                    || JobDaemon.ON_GOING_STATUSES.contains(job.getInternal().getStatus().getId())) {
+                updateEnd = false;
+                break;
+            }
+            if (end == null) {
+                end = job.getResult().getEnd();
+            } else {
+                end = end.after(job.getResult().getEnd()) ? end : job.getResult().getEnd();
+            }
+        }
+        if (updateEnd) {
+            changed = true;
+            updateParams.getInternal().setEnd(end);
+        }
+
+        if (changed) {
+            secureUpdateExecution(execution, updateParams);
             return 1;
         } else {
             return 0;
@@ -274,9 +322,6 @@ public class ExecutionDaemon extends PipelineParentDaemon {
             }
         }
 
-        if (errorJobs > 0 || abortedJobs > 0) {
-            return Enums.ExecutionStatus.ERROR;
-        }
         if (runningJobs > 0) {
             return Enums.ExecutionStatus.RUNNING;
         }
@@ -285,6 +330,9 @@ public class ExecutionDaemon extends PipelineParentDaemon {
         }
         if (pendingJobs > 0) {
             return Enums.ExecutionStatus.PROCESSED;
+        }
+        if (errorJobs > 0 || abortedJobs > 0) {
+            return Enums.ExecutionStatus.ERROR;
         }
         return Enums.ExecutionStatus.DONE;
     }
@@ -632,25 +680,29 @@ public class ExecutionDaemon extends PipelineParentDaemon {
         return setStatus(execution, new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, description));
     }
 
-    private int setStatus(Execution execution, Enums.ExecutionStatus status) {
-        PrivateExecutionUpdateParams updateParams = new PrivateExecutionUpdateParams();
-        updateParams.setInternal(new ExecutionInternal().setStatus(status));
-
+    private int secureUpdateExecution(Execution execution, PrivateExecutionUpdateParams updateParams) {
         try {
             updateExecution(execution, updateParams);
         } catch (CatalogException e) {
-            logger.error("Unexpected error. Cannot update execution '{}' to status '{}'. {}", execution.getId(), status.getId(),
-                    e.getMessage(), e);
+            logger.error("Unexpected error. Cannot update execution '{}' to status '{}'. {}", execution.getId(),
+                    updateParams.getInternal().getStatus().getId(), e.getMessage(), e);
             return 0;
         }
 
         return 1;
     }
 
+    private int setStatus(Execution execution, Enums.ExecutionStatus status) {
+        PrivateExecutionUpdateParams updateParams = new PrivateExecutionUpdateParams();
+        updateParams.setInternal(new ExecutionInternal().setStatus(status));
+        return secureUpdateExecution(execution, updateParams);
+    }
+
     private void updateExecution(Execution execution, PrivateExecutionUpdateParams updateParams) throws CatalogException {
         executionManager.privateUpdate(execution.getStudy().getId(), execution.getId(), updateParams, token);
 
-        if (!execution.getInternal().getStatus().getId().equals(updateParams.getInternal().getStatus().getId())) {
+        if (updateParams.getInternal().getStatus() != null && StringUtils.isNotEmpty(updateParams.getInternal().getStatus().getId())
+                && !execution.getInternal().getStatus().getId().equals(updateParams.getInternal().getStatus().getId())) {
             execution.getInternal().setStatus(updateParams.getInternal().getStatus());
             notifyStatusChange(execution);
         }

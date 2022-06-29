@@ -897,7 +897,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals(1, top.getNumMatches());
         assertEquals(limit, top.first().getJobs().size());
         assertEquals(studies.size(), top.first().getJobs().stream().map(job -> job.getStudy().getId()).collect(Collectors.toSet()).size());
-        assertEquals(new JobTopStats(33, 0, 0, 33, 0, 33), top.first().getStats());
+        assertEquals(new ExecutionTopStats(0, 0, 33, 0, 0, 33, 0, 33), top.first().getStats());
     }
 
     @Test

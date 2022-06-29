@@ -5,13 +5,13 @@ import java.util.List;
 
 public class ExecutionTop {
     private Date date;
-    private JobTopStats stats;
+    private ExecutionTopStats stats;
     private List<Execution> executions;
 
     public ExecutionTop() {
     }
 
-    public ExecutionTop(Date date, JobTopStats stats, List<Execution> executions) {
+    public ExecutionTop(Date date, ExecutionTopStats stats, List<Execution> executions) {
         this.date = date;
         this.stats = stats;
         this.executions = executions;
@@ -36,11 +36,11 @@ public class ExecutionTop {
         return this;
     }
 
-    public JobTopStats getStats() {
+    public ExecutionTopStats getStats() {
         return stats;
     }
 
-    public ExecutionTop setStats(JobTopStats stats) {
+    public ExecutionTop setStats(ExecutionTopStats stats) {
         this.stats = stats;
         return this;
     }

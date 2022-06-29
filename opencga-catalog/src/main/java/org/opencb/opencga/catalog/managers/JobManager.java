@@ -1547,7 +1547,7 @@ public class JobManager extends ResourceManager<Job> {
         allJobs.addAll(pending);
         allJobs.addAll(finishedJobs);
 
-        JobTopStats stats = new JobTopStats();
+        ExecutionTopStats stats = new ExecutionTopStats();
         for (Study study : studies) {
             OpenCGAResult result = jobDBAdaptor.groupBy(new Query(baseQuery)
                             .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid()),
@@ -1558,6 +1558,9 @@ public class JobManager extends ResourceManager<Job> {
                 String status = ((Map) ((Map) o).get("_id")).get(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key()).toString();
                 int count = ((Number) ((Map) o).get("count")).intValue();
                 switch (status) {
+                    case Enums.ExecutionStatus.BLOCKED:
+                        stats.setBlocked(stats.getBlocked() + count);
+                        break;
                     case Enums.ExecutionStatus.RUNNING:
                         stats.setRunning(stats.getRunning() + count);
                         break;

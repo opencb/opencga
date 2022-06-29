@@ -5,6 +5,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.OpencgaMain;
 import org.opencb.opencga.app.cli.main.options.ExecutionsCommandOptions;
+import org.opencb.opencga.app.cli.main.parent.ParentExecutionsCommandExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.common.EntryParam;
@@ -34,12 +35,12 @@ import java.util.HashMap;
  *    OpenCGA version: 2.4.0-SNAPSHOT
  *    PATH: /{apiVersion}/executions
  */
-public class ExecutionsCommandExecutor extends OpencgaCommandExecutor {
+public class ExecutionsCommandExecutor extends ParentExecutionsCommandExecutor {
 
     private ExecutionsCommandOptions executionsCommandOptions;
 
     public ExecutionsCommandExecutor(ExecutionsCommandOptions executionsCommandOptions) throws CatalogAuthenticationException {
-        super(executionsCommandOptions.commonCommandOptions);
+        super(executionsCommandOptions.commonCommandOptions, executionsCommandOptions);
         this.executionsCommandOptions = executionsCommandOptions;
     }
 
@@ -528,24 +529,9 @@ public class ExecutionsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getExecutionClient().search(queryParams);
     }
 
-    private RestResponse<ExecutionTop> top() throws Exception {
-
-        logger.debug("Executing top in Executions command line");
-
-        ExecutionsCommandOptions.TopCommandOptions commandOptions = executionsCommandOptions.topCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotNull("limit", commandOptions.limit);
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotEmpty("userId", commandOptions.userId);
-        queryParams.putIfNotEmpty("internalToolId", commandOptions.internalToolId);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-        return openCGAClient.getExecutionClient().top(queryParams);
+    protected RestResponse<ExecutionTop> top() throws Exception {
+        logger.debug("Executing top in Jobs command line");
+        return super.top();
     }
 
     private RestResponse<ObjectMap> acl() throws Exception {
