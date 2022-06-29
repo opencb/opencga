@@ -55,6 +55,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     public static final int NUM_VARIANTS = 9792;
     @Deprecated public static final int STUDY_ID = 1;
     public static final String STUDY_NAME = "1000g";
+    public static final String STUDY_NAME_1 = STUDY_NAME;
     public static final String STUDY_NAME_2 = "study_2";
     public static final String DB_NAME = "opencga_variants_test";
     @Deprecated public static final int FILE_ID = 1;

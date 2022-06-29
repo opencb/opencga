@@ -55,6 +55,7 @@ public final class VariantPhoenixSchema {
     public static final String ANNOTATION_PREFIX = "A_";
     public static final String POPULATION_FREQUENCY_PREFIX = ANNOTATION_PREFIX + "PF_";
     public static final String FUNCTIONAL_SCORE_PREFIX = ANNOTATION_PREFIX + "FS_";
+
     public static final String SAMPLE_DATA_SUFIX = "_S";
     public static final byte[] SAMPLE_DATA_SUFIX_BYTES = Bytes.toBytes(SAMPLE_DATA_SUFIX);
     public static final String FILE_SUFIX = "_F";
@@ -312,7 +313,7 @@ public final class VariantPhoenixSchema {
     private VariantPhoenixSchema() {
     }
 
-    public static List<Column> getStudyColumns(Integer studyId) {
+    public static List<Column> getStudyColumns(int studyId) {
         return Arrays.asList(getStudyColumn(studyId), getFillMissingColumn(studyId));
     }
 
@@ -432,6 +433,14 @@ public final class VariantPhoenixSchema {
         }
     }
 
+    public static List<Column> getStatsColumns(int studyId, List<Integer> cohortIds) {
+        List<Column> columns = new ArrayList<>(cohortIds.size() * 5);
+        for (Integer cohortId : cohortIds) {
+            columns.addAll(getStatsColumns(studyId, cohortId));
+        }
+        return columns;
+    }
+
     public static List<Column> getStatsColumns(int studyId, int cohortId) {
         return Arrays.asList(
                 getStatsColumn(studyId, cohortId),
@@ -483,7 +492,7 @@ public final class VariantPhoenixSchema {
     }
 
     public static Integer extractSampleId(String columnKey, boolean failOnMissing) {
-        if (columnKey.endsWith(SAMPLE_DATA_SUFIX)) {
+        if (isSampleDataColumn(columnKey)) {
             return extractId(columnKey, failOnMissing, "sample");
         } else if (failOnMissing) {
             throw new IllegalArgumentException("Not a sample column: " + columnKey);
@@ -497,7 +506,7 @@ public final class VariantPhoenixSchema {
     }
 
     public static Integer extractFileIdFromSampleColumn(String columnKey, boolean failOnMissing) {
-        if (columnKey.endsWith(SAMPLE_DATA_SUFIX) && StringUtils.countMatches(columnKey, COLUMN_KEY_SEPARATOR) == 3) {
+        if (isSampleDataColumn(columnKey) && StringUtils.countMatches(columnKey, COLUMN_KEY_SEPARATOR) == 3) {
             return extractId(columnKey, failOnMissing, "sample", columnKey.indexOf(COLUMN_KEY_SEPARATOR) + 1);
         } else if (failOnMissing) {
             throw new IllegalArgumentException("Not a sample column: " + columnKey);
@@ -506,12 +515,20 @@ public final class VariantPhoenixSchema {
         }
     }
 
+    public static boolean isSampleDataColumn(String columnKey) {
+        return columnKey.endsWith(SAMPLE_DATA_SUFIX);
+    }
+
+    public static boolean isFileColumn(String columnKey) {
+        return columnKey.endsWith(FILE_SUFIX);
+    }
+
     public static int extractFileId(String columnKey) {
         return extractFileId(columnKey, true);
     }
 
     public static Integer extractFileId(String columnKey, boolean failOnMissing) {
-        if (columnKey.endsWith(FILE_SUFIX)) {
+        if (isFileColumn(columnKey)) {
             return extractId(columnKey, failOnMissing, "file");
         } else if (failOnMissing) {
             throw new IllegalArgumentException("Not a file column: " + columnKey);

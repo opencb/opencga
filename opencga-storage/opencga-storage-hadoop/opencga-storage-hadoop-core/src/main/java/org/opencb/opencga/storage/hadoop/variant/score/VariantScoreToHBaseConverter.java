@@ -26,7 +26,7 @@ public class VariantScoreToHBaseConverter extends AbstractPhoenixConverter imple
     public Put convert(Pair<Variant, VariantScore> pair) {
         Put put = new Put(VariantPhoenixKeyFactory.generateVariantRowKey(pair.getKey()));
         add(put, column, Arrays.asList(pair.getValue().getScore(), pair.getValue().getPValue()));
-        HadoopVariantSearchIndexUtils.addNotSyncStatus(put, columnFamily);
+        HadoopVariantSearchIndexUtils.addNotSyncStatus(put);
         return put;
     }
 }

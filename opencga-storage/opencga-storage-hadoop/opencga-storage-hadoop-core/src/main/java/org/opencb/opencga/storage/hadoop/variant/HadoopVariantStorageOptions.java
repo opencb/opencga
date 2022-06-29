@@ -69,6 +69,9 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     VARIANT_TABLE_LOAD_REFERENCE("storage.hadoop.variant.table.load.reference", false),
     PENDING_SECONDARY_INDEX_TABLE_COMPRESSION("storage.hadoop.pendingSecondaryIndex.table.compression",
             Compression.Algorithm.SNAPPY.getName()),
+    PENDING_SECONDARY_INDEX_PRUNE_TABLE_COMPRESSION("storage.hadoop.pendingSecondaryIndexPrune.table.compression",
+            Compression.Algorithm.SNAPPY.getName()),
+
 
     /////////////////////////
     // Archive table configuration
