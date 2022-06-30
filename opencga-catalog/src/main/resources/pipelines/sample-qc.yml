@@ -1,0 +1,40 @@
+id: "sample-qc"
+description: "Run quality control (QC) for a given sample. It includes variant stats, and if the sample is somatic, mutational signature and genome plot are calculated."
+config:
+  retry: 2
+  timeout: 3600
+jobs:
+  sample-variant-stats:
+    description: "Compute sample variant stats for the selected list of samples."
+    params:
+      indexId: EXECUTION(params.variantStatsId)
+      indexDescription: EXECUTION(params.variantStatsDescription)
+      variantQuery: EXECUTION(params.variantStatsQuery)
+      index: true
+      indexOverwrite: true
+  mutational-signature:
+    description: "Run mutational signature analysis for a given sample."
+    params:
+      id: EXECUTION(params.signatureId)
+      description: EXECUTION(params.signatureDescription)
+      query: EXECUTION(params.signatureQuery)
+      release: EXECUTION(params.signatureRelease)
+      fitting: true
+      somatic: FETCH_FIELD(sample, id, EXECUTION(params.sample), somatic)
+    when:
+      message: "Skipping mutational signature analysis since sample EXECUTION(params.sample) is not somatic"
+      checks:
+        - COMPARE_BOOLEAN(EXECUTION(jobs[tool.id=mutational-signature].params.somatic), true, =)
+  genome-plot:
+    description: "Generate a genome plot for a given sample."
+    params:
+      id: EXECUTION(params.genomePlotId)
+      description: EXECUTION(params.genomePlotDescription)
+      configFile: EXECUTION(params.genomePlotConfigFile)
+      somatic: FETCH_FIELD(sample, id, EXECUTION(params.sample), somatic)
+      configFileId: FETCH_FIELD(file, path, EXECUTION(params.configFile), id)
+    when:
+      message: "Skipping genome plot analysis since sample EXECUTION(params.sample) is not somatic"
+      checks:
+        - COMPARE_BOOLEAN(EXECUTION(jobs[tool.id=genome-plot].params.somatic), true, =)
+        - EXISTS(EXECUTION(jobs[tool.id=genome-plot].params.configFileId), true)
