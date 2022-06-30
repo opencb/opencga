@@ -15,8 +15,8 @@ services:
     container_name: solr-opencga
     #    ports:
     #      - "8983:8983"
-    volumes:
-      - ~/opencga-docker-data/solr:/var/solr/data
+#    volumes:
+#      - ~/opencga-docker-data/solr:/var/solr/data
 
   init:
     image: opencb/opencga-base:${project.parent.version}
@@ -27,6 +27,7 @@ services:
       - ./init/init.sh:/opt/opencga/bin/init.sh
       - ./conf/:/opt/opencga/conf/
       - ./init/mongodb-replica-set-init.js:/opt/mongodb/mongodb-replica-set-init.js
+      - ~/opencga-docker-data/sessions/:/opt/opencga/sessions/
     command: [ "/opt/opencga/bin/init.sh" ]
 
   rest:
@@ -39,6 +40,7 @@ services:
     volumes:
       - ./init/rest.sh:/opt/opencga/bin/rest.sh
       - ./conf/:/opt/opencga/conf/
+      - ~/opencga-docker-data/sessions/:/opt/opencga/sessions/
     command: [ "/opt/opencga/bin/rest.sh" ]
 
   daemon:
@@ -50,6 +52,7 @@ services:
       - ./init/daemon.sh:/opt/opencga/bin/daemon.sh
       - ./conf/:/opt/opencga/conf/
       - ./data/:/opt/opencga/data/
+      - ~/opencga-docker-data/sessions/:/opt/opencga/sessions/
     command: [ "/opt/opencga/bin/daemon.sh" ]
 
 #  hbase:

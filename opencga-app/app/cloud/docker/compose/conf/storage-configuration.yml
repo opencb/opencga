@@ -4,7 +4,7 @@
 ## This can be set up using maven profiles in your .m2/settings.xml
 cellbase:
   ## URL host to annotate variants, for example: http://ws.opencb.org/cellbase/
-  url: "https://ws.opencb.org/cellbase/"
+  url: "https://ws.opencb.org/cellbase-4.8.2/"
   version: "v4"
 
 ## Storage Query Server configuration. When CLI is launched in 'server' mode a RESTful web server
