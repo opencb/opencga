@@ -636,6 +636,10 @@ public class ExecutionManager extends ResourceManager<Execution> {
                         ExecutionDBAdaptor.QueryParams.JOBS.key() + "." + JobDBAdaptor.QueryParams.ID.key(),
                         ExecutionDBAdaptor.QueryParams.JOBS.key() + "." + JobDBAdaptor.QueryParams.RESULT.key(),
                         ExecutionDBAdaptor.QueryParams.JOBS.key() + "." + JobDBAdaptor.QueryParams.INTERNAL.key(),
+                        ExecutionDBAdaptor.QueryParams.JOBS.key() + "." + JobDBAdaptor.QueryParams.CREATION_DATE.key(),
+                        ExecutionDBAdaptor.QueryParams.JOBS.key() + "." + JobDBAdaptor.QueryParams.PRIORITY.key(),
+                        ExecutionDBAdaptor.QueryParams.JOBS.key() + "." + JobDBAdaptor.QueryParams.DEPENDS_ON.key(),
+                        ExecutionDBAdaptor.QueryParams.JOBS.key() + "." + JobDBAdaptor.QueryParams.STUDY.key(),
                         ExecutionDBAdaptor.QueryParams.CREATION_DATE.key(),
                         ExecutionDBAdaptor.QueryParams.PRIORITY.key(), ExecutionDBAdaptor.QueryParams.STUDY.key()))
                 .append(QueryOptions.COUNT, false)

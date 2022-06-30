@@ -1,6 +1,7 @@
 package org.opencb.opencga.app.cli.main.utils;
 
 import com.google.common.base.Stopwatch;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -14,6 +15,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Execution;
 import org.opencb.opencga.core.models.job.ExecutionInternal;
 import org.opencb.opencga.core.models.job.ExecutionTop;
+import org.opencb.opencga.core.models.job.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,7 +88,7 @@ public class ExecutionsTopManager {
 
     private static List<TextOutputWriter.ExecutionColumns> parseColumns(String columnsStr) {
         if (StringUtils.isBlank(columnsStr) || columnsStr.equalsIgnoreCase("default")) {
-            return Arrays.asList(ID, JOBS, STATUS, STUDY, SUBMISSION, PRIORITY, RUNNING_TIME, START, END);
+            return Arrays.asList(ID, DEPENDENCIES, STATUS, STUDY, SUBMISSION, PRIORITY, RUNNING_TIME);
         } else {
             List<TextOutputWriter.ExecutionColumns> columns = new LinkedList<>();
             for (String c : columnsStr.split(",")) {
@@ -152,6 +154,27 @@ public class ExecutionsTopManager {
         System.out.print(buffer);
     }
 
+    private Execution convertJob(Job job) {
+        Execution execution = new Execution()
+                .setId(job.getTool() != null ? job.getId() + " (" + job.getTool().getId() + ")" : job.getId())
+                .setInternal(new ExecutionInternal(job.getInternal().getStatus()))
+                .setStudy(job.getStudy())
+                .setPriority(job.getPriority())
+                .setCreationDate(job.getCreationDate());
+        if (job.getResult() != null) {
+            execution.getInternal().setStart(job.getResult().getStart());
+            execution.getInternal().setEnd(job.getResult().getEnd());
+        }
+        if (CollectionUtils.isNotEmpty(job.getDependsOn())) {
+            List<Execution> dependsOn = new ArrayList<>(job.getDependsOn().size());
+            for (Job tmpJob : job.getDependsOn()) {
+                dependsOn.add(convertJob(tmpJob));
+            }
+            execution.setDependsOn(dependsOn);
+        }
+        return execution;
+    }
+
     private List<Execution> processExecutions(List<Execution> executions) {
         List<Execution> executionList = new LinkedList<>();
         executions.sort(Comparator.comparing(j -> j.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.RUNNING) ? 0 : 1));
@@ -160,29 +183,37 @@ public class ExecutionsTopManager {
         int executionDependsMax = 5;
         for (Execution execution : executions) {
             executionList.add(execution);
-            if (execution.getDependsOn() != null && !execution.getDependsOn().isEmpty()) {
-                List<Execution> dependsOn = execution.getDependsOn();
-                dependsOn.removeIf(Objects::isNull);
-                if (dependsOn.size() > executionDependsMax) {
-                    int size = dependsOn.size();
-                    TreeMap<String, Integer> byType = dependsOn
+            if (CollectionUtils.isNotEmpty(execution.getJobs())) {
+                List<Job> jobs = execution.getJobs();
+                // executionJobs are actually a list of jobs. We fill in the execution fields that are processed by the table with
+                // the corresponding job fields
+                List<Execution> executionJobs;
+                jobs.removeIf(Objects::isNull);
+                if (jobs.size() > executionDependsMax) {
+                    int size = jobs.size();
+                    TreeMap<String, Integer> byType = jobs
                             .stream()
                             .collect(Collectors.groupingBy(
                                     j -> j.getInternal().getStatus().getId(),
                                     TreeMap::new,
                                     Collectors.summingInt(j -> 1)));
                     int maxStatus = byType.keySet().stream().mapToInt(String::length).max().orElse(0);
-                    dependsOn = new ArrayList<>(byType.size());
+                    executionJobs = new ArrayList<>(byType.size());
                     for (Map.Entry<String, Integer> entry : byType.entrySet()) {
-                        dependsOn.add(new Execution()
+                        executionJobs.add(new Execution()
                                 .setId(StringUtils.rightPad(entry.getKey(), maxStatus) + " : " + entry.getValue() + "/" + size)
                                 .setInternal(new ExecutionInternal(new Enums.ExecutionStatus(entry.getKey()))));
                     }
+                } else {
+                    executionJobs = new ArrayList<>(jobs.size());
+                    for (Job job : jobs) {
+                        executionJobs.add(convertJob(job));
+                    }
                 }
                 if (!plain) {
-                    for (int i = 0; i < dependsOn.size(); i++) {
-                        Execution auxExecution = dependsOn.get(i);
-                        if (i + 1 < dependsOn.size()) {
+                    for (int i = 0; i < executionJobs.size(); i++) {
+                        Execution auxExecution = executionJobs.get(i);
+                        if (i + 1 < executionJobs.size()) {
                             auxExecution.setId("├── " + auxExecution.getId());
                         } else {
                             auxExecution.setId("└── " + auxExecution.getId());

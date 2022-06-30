@@ -31,6 +31,7 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileTree;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Execution;
+import org.opencb.opencga.core.models.job.ExecutionTopStats;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -366,7 +367,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
     private void printExecution(List<DataResult<Execution>> queryResultList) {
         List<ExecutionColumns> jobColumns = Arrays.asList(
                 ExecutionColumns.ID,
-                ExecutionColumns.JOBS,
+                ExecutionColumns.DEPENDENCIES,
                 ExecutionColumns.SUBMISSION,
                 ExecutionColumns.STATUS,
                 ExecutionColumns.START,
@@ -451,7 +452,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
     public enum ExecutionColumns implements TableSchema<Execution> {
         ID(new Table.TableColumnSchema<>("ID", Execution::getId, 60)),
         STATUS(new Table.TableColumnSchema<>("Status", execution -> execution.getInternal().getStatus().getId())),
-        JOBS(new Table.TableColumnSchema<>("Jobs", ExecutionColumns::getJobSummary, 60)),
+        DEPENDENCIES(new Table.TableColumnSchema<>("Dependencies", ExecutionColumns::getDependencies, 60)),
         STUDY(new Table.TableColumnSchema<>("Study", execution -> {
             String id = execution.getStudy().getId();
             if (id.contains(":")) {
@@ -483,7 +484,8 @@ public class TextOutputWriter extends AbstractOutputWriter {
         private static String getDurationString(Execution execution) {
             long durationInMillis = getDurationInMillis(execution.getInternal().getStart(), execution.getInternal().getEnd());
             if (durationInMillis > 0) {
-                return TimeUtils.durationToStringSimple(durationInMillis);
+                return SIMPLE_DATE_FORMAT.format(execution.getInternal().getStart()) + " ("
+                        + TimeUtils.durationToStringSimple(durationInMillis) + ")";
             } else {
                 return "";
             }
@@ -499,6 +501,47 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 }
             }
             return durationInMillis;
+        }
+
+        private static String getDependencies(Execution execution) {
+            if (CollectionUtils.isEmpty(execution.getDependsOn())) {
+                return "-";
+            }
+
+            ExecutionTopStats stats = new ExecutionTopStats();
+            for (Execution tmpExecution : execution.getDependsOn()) {
+                switch (tmpExecution.getInternal().getStatus().getId()) {
+                    case Enums.ExecutionStatus.PROCESSED:
+                    case Enums.ExecutionStatus.PENDING:
+                    case Enums.ExecutionStatus.QUEUED:
+                        stats.setPending(stats.getPending() + 1);
+                        break;
+                    case Enums.ExecutionStatus.RUNNING:
+                        stats.setRunning(stats.getRunning() + 1);
+                        break;
+                    case Enums.ExecutionStatus.DONE:
+                        stats.setDone(stats.getDone() + 1);
+                        break;
+                    case Enums.ExecutionStatus.ABORTED:
+                    case Enums.ExecutionStatus.ERROR:
+                    default:
+                        stats.setError(stats.getError() + 1);
+                        break;
+                }
+            }
+
+            List<String> values = new ArrayList<>(4);
+            addToList(Enums.ExecutionStatus.PENDING, stats.getPending(), values);
+            addToList(Enums.ExecutionStatus.RUNNING, stats.getRunning(), values);
+            addToList(Enums.ExecutionStatus.DONE, stats.getDone(), values);
+            addToList(Enums.ExecutionStatus.ERROR, stats.getError(), values);
+            return StringUtils.join(values, ", ");
+        }
+
+        private static void addToList(String key, int count, List<String> list) {
+            if (count > 0) {
+                list.add(key + ": " + count);
+            }
         }
 
         private static String getJobSummary(Execution execution) {
