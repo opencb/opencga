@@ -17,6 +17,8 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -56,6 +58,7 @@ import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.individual.IndividualAclEntry;
 import org.opencb.opencga.core.models.job.ExecutionAclEntry;
+import org.opencb.opencga.core.models.job.PipelineCreateParams;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.*;
@@ -374,6 +377,9 @@ public class StudyManager extends AbstractManager {
             // Read and process installation variable sets
             createDefaultVariableSets(study, token);
 
+            // Read and process installation pipelines
+            createDefaultPipelines(study.getFqn(), token);
+
             auditManager.auditCreate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -415,6 +421,23 @@ public class StudyManager extends AbstractManager {
                 } else {
                     createVariableSet(study, vs, token);
                 }
+            }
+        }
+    }
+
+    private void createDefaultPipelines(String study, String token) throws CatalogException {
+        Set<String> pipelines = new Reflections(new ResourcesScanner(), "pipelines/").getResources(Pattern.compile(".*\\.yml"));
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        for (String pipelineFile : pipelines) {
+            PipelineCreateParams p;
+            try {
+                p = objectMapper.readValue(getClass().getClassLoader().getResourceAsStream(pipelineFile), PipelineCreateParams.class);
+            } catch (IOException e) {
+                logger.error("Could not parse pipeline '{}'", pipelineFile, e);
+                continue;
+            }
+            if (p != null) {
+                catalogManager.getPipelineManager().create(study, p, QueryOptions.empty(), token);
             }
         }
     }

@@ -1,6 +1,6 @@
 id: "alignment-qc"
 description: "Alignment quality control (QC) parameters. It computes: stats, flag stats, fastqc and hybrid-selection metrics. The BAM file is mandatory ever but the BED file and the dictionary files are only mandatory for computing hybrid-selection (HS) metrics. In order to skip some metrics, use the following keywords (separated by commas): stats, flagstats, fastqc and hsmetrics"
-options:
+config:
   retry: 2
   timeout: 3600
 jobs:
