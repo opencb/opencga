@@ -385,6 +385,7 @@
                                     <arg value="-i"/>
                                     <arg value="s/REPLACEME_OPENCGA_VERSION/${project.parent.version}/"/>
                                     <arg value="${build.dir}/misc/demo/main.yml"/>
+                                    <arg value="${build.dir}/misc/demo/corpasome/manifest.yml"/>
                                     <arg value="${build.dir}/cloud/docker/opencga-demo/README.md"/>
                                     <arg value="${build.dir}/cloud/kubernetes/charts/opencga/Chart.yaml"/>
                                     <arg value="${build.dir}/cloud/azure/arm-kubernetes/solr/solr-setup.sh"/>
