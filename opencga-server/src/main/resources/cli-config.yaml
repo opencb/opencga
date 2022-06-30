@@ -91,6 +91,12 @@ apiConfig:
     - name: executions
       ignore: False
       key: Execution
+      executorExtended: True
+      optionExtended: True
+      commands:
+        - name: top
+          executorExtended: True
+          optionExtended: True
     - name: jobs
       ignore: False
       key: Job
