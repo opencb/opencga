@@ -22,6 +22,7 @@ import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
@@ -54,10 +55,7 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
 
@@ -150,15 +148,20 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         // Analyst
         ClinicalAnalyst analyst = clinicalInterpretationManager.getAnalyst(token);
 
-        List<ClinicalVariant> primaryFindings = null;
+        List<ClinicalVariant> primaryFindings;
         try {
             primaryFindings = getPrimaryFindings();
+            for (ClinicalVariant primaryFinding : primaryFindings) {
+                for (ClinicalVariantEvidence evidence : primaryFinding.getEvidences()) {
+                    evidence.setInterpretationMethodName(method.getName());
+                }
+            }
         } catch (InterpretationAnalysisException | IOException e) {
             throw new ToolException("Error retrieving primary findings", e);
         }
 
         org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation = new Interpretation()
-                .setId(getId() + "." + TimeUtils.getTimeMillis())
+                //.setId(getId() + "." + TimeUtils.getTimeMillis())
                 .setPrimaryFindings(primaryFindings)
                 .setSecondaryFindings(new ArrayList<>())
                 .setAnalyst(analyst)
@@ -184,7 +187,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
     }
 
     private List<ClinicalVariant> getPrimaryFindings() throws InterpretationAnalysisException, IOException {
-        List<ClinicalVariant> primaryFindings = new ArrayList<>();
+        Map<String, ClinicalVariant> cvMap = new HashMap<>();
 
         VariantNormalizer normalizer = new VariantNormalizer();
         CellBaseClient cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
@@ -196,12 +199,14 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                 // Read variants from VCF file
                 VariantStudyMetadata variantStudyMetadata = new VariantFileMetadata(filename, "").toVariantStudyMetadata(studyId);
                 VariantReader reader = new VariantVcfHtsjdkReader(file.toPath(), variantStudyMetadata, normalizer);
-                reader.open();
-                reader.pre();
                 List<Variant> variants = new ArrayList<>();
                 Iterator<Variant> iterator = reader.iterator();
                 while (iterator.hasNext()) {
-                    variants.add(iterator.next());
+                    Variant variant = iterator.next();
+                    if (StringUtils.isEmpty(variant.getId())) {
+                        variant.setId(variant.toStringSimple());
+                    }
+                    variants.add(variant);
                 }
                 if (CollectionUtils.isNotEmpty(variants)) {
                     // Annotate variants
@@ -217,7 +222,13 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                         ClinicalVariantCreator clinicalVariantCreator = getClinicalVariantCreator(filename);
                         List<ClinicalVariant> clinicalVariants = clinicalVariantCreator.create(annotatedVariants);
                         if (CollectionUtils.isNotEmpty(clinicalVariants)) {
-                            primaryFindings.addAll(clinicalVariants);
+                            for (ClinicalVariant clinicalVariant : clinicalVariants) {
+                                if (!cvMap.containsKey(clinicalVariant.getId())) {
+                                    cvMap.put(clinicalVariant.getId(), clinicalVariant);
+                                } else {
+                                    cvMap.get(clinicalVariant.getId()).getEvidences().addAll(clinicalVariant.getEvidences());
+                                }
+                            }
                         }
                     }
                 }
@@ -226,7 +237,8 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                 reader.close();
             }
         }
-        return primaryFindings;
+
+        return new ArrayList<>(cvMap.values());
     }
 
     private ClinicalVariantCreator getClinicalVariantCreator(String filename) {
@@ -247,7 +259,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
 
         return new DefaultClinicalVariantCreator(null, null, null,
                 Collections.singletonList(moi), ClinicalProperty.Penetrance.COMPLETE, new ArrayList<>(),
-                new ArrayList<>(ModeOfInheritance.proteinCoding), new ArrayList<>(ModeOfInheritance.lof), false);
+                new ArrayList<>(ModeOfInheritance.proteinCoding), new ArrayList<>(ModeOfInheritance.extendedLof), true);
     }
 
     public String getStudyId() {
