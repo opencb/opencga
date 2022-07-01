@@ -354,12 +354,12 @@ public class SolrQueryParserTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        // (* -popFreq__1kG_phase3__YRI:*) OR popFreq_1kG_phase3__YRI:[0.01 TO *]
-        query.put(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1kG_phase3:YRI<<0.01");
+        // (* -popFreq__1000G__YRI:*) OR popFreq_1000G__YRI:[0.01 TO *]
+        query.put(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1000G:YRI<<0.01");
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=(popFreq__1kG_phase3__YRI:[0+TO+0.01}+OR+(*+-popFreq__1kG_phase3__YRI:*))", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=(popFreq__1000G__YRI:[0+TO+0.01}+OR+(*+-popFreq__1000G__YRI:*))", solrQuery.toString());
     }
 
     @Test
@@ -429,11 +429,11 @@ public class SolrQueryParserTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1kG_phase3:GWD!=0.061946902");
+        query.put(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1000G:GWD!=0.061946902");
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=-popFreq__1kG_phase3__GWD:0.061946902", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=-popFreq__1000G__GWD:0.061946902", solrQuery.toString());
     }
 
     @Test
@@ -441,11 +441,11 @@ public class SolrQueryParserTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1kG_phase3:GWD==0.061946902");
+        query.put(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1000G:GWD==0.061946902");
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=popFreq__1kG_phase3__GWD:0.061946902", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=popFreq__1000G__GWD:0.061946902", solrQuery.toString());
     }
 
     @Test
@@ -793,73 +793,73 @@ public class SolrQueryParserTest {
     @Test
     public void parseFacetRangePopFreqAlt() {
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put(QueryOptions.FACET, ANNOT_POPULATION_ALTERNATE_FREQUENCY.key() + "[1kG_phase3:CEU:0..1]:0.2");
+        queryOptions.put(QueryOptions.FACET, ANNOT_POPULATION_ALTERNATE_FREQUENCY.key() + "[1000G:CEU:0..1]:0.2");
 
         Query query = new Query();
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals("json.facet={\"popFreq__1kG_phase3__CEU___0___1___0.2___0\":{\"field\":\"popFreq__1kG_phase3__CEU\",\"start\":0,\"end\":1,\"type\":\"range\",\"gap\":0.2}}&rows=0&start=0&q=*:*", solrQuery.toString());
+        assertEquals("json.facet={\"popFreq__1000G__CEU___0___1___0.2___0\":{\"field\":\"popFreq__1000G__CEU\",\"start\":0,\"end\":1,\"type\":\"range\",\"gap\":0.2}}&rows=0&start=0&q=*:*", solrQuery.toString());
     }
 
     @Test
     public void parseFacetAvgPopFreqAlt() {
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put(QueryOptions.FACET, "avg(" + ANNOT_POPULATION_ALTERNATE_FREQUENCY.key() + "[1kG_phase3:CEU])");
+        queryOptions.put(QueryOptions.FACET, "avg(" + ANNOT_POPULATION_ALTERNATE_FREQUENCY.key() + "[1000G:CEU])");
 
         Query query = new Query();
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals("json.facet={\"popFreq__1kG_phase3__CEU___avg___0\":\"avg(popFreq__1kG_phase3__CEU)\"}&rows=0&start=0&q=*:*", solrQuery.toString());
+        assertEquals("json.facet={\"popFreq__1000G__CEU___avg___0\":\"avg(popFreq__1000G__CEU)\"}&rows=0&start=0&q=*:*", solrQuery.toString());
     }
 
     @Test
     public void parseFacetPercentilePopFreqAlt() {
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put(QueryOptions.FACET, "percentile(" + ANNOT_POPULATION_ALTERNATE_FREQUENCY.key() + "[1kG_phase3:CEU])");
+        queryOptions.put(QueryOptions.FACET, "percentile(" + ANNOT_POPULATION_ALTERNATE_FREQUENCY.key() + "[1000G:CEU])");
 
         Query query = new Query();
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals("json.facet={\"popFreq__1kG_phase3__CEU___percentile___0\":\"percentile(popFreq__1kG_phase3__CEU,1,10,25,50,75,90,99)\"}&rows=0&start=0&q=*:*", solrQuery.toString());
+        assertEquals("json.facet={\"popFreq__1000G__CEU___percentile___0\":\"percentile(popFreq__1000G__CEU,1,10,25,50,75,90,99)\"}&rows=0&start=0&q=*:*", solrQuery.toString());
     }
 
     @Test
     public void parseFacetRangeCohortStatsFreqAlt() {
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put(QueryOptions.FACET, STATS_ALT.key() + "[1kG_phase3:CEU:0..1]:0.2");
+        queryOptions.put(QueryOptions.FACET, STATS_ALT.key() + "[1000G:CEU:0..1]:0.2");
 
         Query query = new Query();
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals("json.facet={\"altStats__1kG_phase3__CEU___0___1___0.2___0\":{\"field\":\"altStats__1kG_phase3__CEU\",\"start\":0,\"end\":1,\"type\":\"range\",\"gap\":0.2}}&rows=0&start=0&q=*:*", solrQuery.toString());
+        assertEquals("json.facet={\"altStats__1000G__CEU___0___1___0.2___0\":{\"field\":\"altStats__1000G__CEU\",\"start\":0,\"end\":1,\"type\":\"range\",\"gap\":0.2}}&rows=0&start=0&q=*:*", solrQuery.toString());
     }
 
     @Test
     public void parseFacetRangeScore() {
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put(QueryOptions.FACET, SCORE.key() + "[1kG_phase3:score2:0..1]:0.2");
+        queryOptions.put(QueryOptions.FACET, SCORE.key() + "[1000G:score2:0..1]:0.2");
 
         Query query = new Query();
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals("json.facet={\"score__1kG_phase3__score2___0___1___0.2___0\":{\"field\":\"score__1kG_phase3__score2\",\"start\":0,\"end\":1,\"type\":\"range\",\"gap\":0.2}}&rows=0&start=0&q=*:*", solrQuery.toString());
+        assertEquals("json.facet={\"score__1000G__score2___0___1___0.2___0\":{\"field\":\"score__1000G__score2\",\"start\":0,\"end\":1,\"type\":\"range\",\"gap\":0.2}}&rows=0&start=0&q=*:*", solrQuery.toString());
     }
 
     @Test
     public void parseFacetAvgScore() {
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put(QueryOptions.FACET, "avg(" + SCORE.key() + "[1kG_phase3:score2])");
+        queryOptions.put(QueryOptions.FACET, "avg(" + SCORE.key() + "[1000G:score2])");
 
         Query query = new Query();
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals("json.facet={\"score__1kG_phase3__score2___avg___0\":\"avg(score__1kG_phase3__score2)\"}&rows=0&start=0&q=*:*", solrQuery.toString());
+        assertEquals("json.facet={\"score__1000G__score2___avg___0\":\"avg(score__1000G__score2)\"}&rows=0&start=0&q=*:*", solrQuery.toString());
     }
 
     @Test

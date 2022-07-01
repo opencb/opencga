@@ -79,6 +79,7 @@ public final class VariantQueryUtils {
     public static final QueryParam ANNOT_EXPRESSION_GENES = QueryParam.create("annot_expression_genes", "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam ANNOT_GO_GENES = QueryParam.create("annot_go_genes", "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam ANNOT_GENE_REGIONS = QueryParam.create("annot_gene_regions", "", QueryParam.Type.TEXT_ARRAY);
+    public static final QueryParam ANNOT_GENE_REGIONS_MAP = QueryParam.create("annot_gene_regions_map", "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam VARIANTS_TO_INDEX = QueryParam.create("variantsToIndex",
             "Select variants that need to be updated in the SearchEngine", QueryParam.Type.BOOLEAN);
     public static final QueryParam SAMPLE_MENDELIAN_ERROR = QueryParam.create("sampleMendelianError",
@@ -1439,11 +1440,13 @@ public final class VariantQueryUtils {
         List<String> genes = variantQueryXref.getGenes();
         if (!genes.isEmpty()) {
 
-            List<Region> regions = cellBaseUtils.getGeneRegion(genes, query.getBoolean(SKIP_MISSING_GENES, false));
+            Map<String, Region> geneRegionMap = cellBaseUtils.getGeneRegionMap(genes, query.getBoolean(SKIP_MISSING_GENES, false));
+            List<Region> regions = new ArrayList<>(geneRegionMap.values());
 
             regions = mergeRegions(regions);
 
             query.put(ANNOT_GENE_REGIONS.key(), regions);
+            query.put(ANNOT_GENE_REGIONS_MAP.key(), geneRegionMap);
         }
     }
 
@@ -1487,6 +1490,14 @@ public final class VariantQueryUtils {
         if (query == null) {
             return "{}";
         } else {
+            if (isValidParam(query, ANNOT_GENE_REGIONS_MAP)) {
+                query = new Query(query);
+                query.remove(ANNOT_GENE_REGIONS_MAP.key());
+                Object geneRegions = query.get(ANNOT_GENE_REGIONS.key());
+                if (geneRegions instanceof Collection) {
+                    query.put(ANNOT_GENE_REGIONS.key(), "numGeneRegions : " + ((Collection<?>) geneRegions).size());
+                }
+            }
             try {
                 return QUERY_MAPPER.writeValueAsString(query);
             } catch (JsonProcessingException e) {

@@ -404,6 +404,9 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         options.put(HadoopVariantStorageOptions.PENDING_SECONDARY_INDEX_TABLE_COMPRESSION.key(), supportedAlgorithms.contains(Compression.Algorithm.SNAPPY)
                 ? Compression.Algorithm.SNAPPY.getName()
                 : Compression.Algorithm.NONE.getName());
+        options.put(HadoopVariantStorageOptions.PENDING_SECONDARY_INDEX_PRUNE_TABLE_COMPRESSION.key(), supportedAlgorithms.contains(Compression.Algorithm.SNAPPY)
+                ? Compression.Algorithm.SNAPPY.getName()
+                : Compression.Algorithm.NONE.getName());
 
         FileSystem fs = FileSystem.get(HadoopVariantStorageTest.configuration.get());
         String intermediateDirectory = fs.getHomeDirectory().toUri().resolve("opencga_test/").toString();

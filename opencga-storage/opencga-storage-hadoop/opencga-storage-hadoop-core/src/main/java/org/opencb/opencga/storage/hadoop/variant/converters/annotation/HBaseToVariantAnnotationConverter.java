@@ -30,10 +30,7 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PInteger;
 import org.apache.phoenix.schema.types.PhoenixArray;
-import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
-import org.opencb.biodata.models.variant.avro.EthnicCategory;
-import org.opencb.biodata.models.variant.avro.EvidenceEntry;
-import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.commons.Converter;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
@@ -41,6 +38,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.ConsequenceTypeMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
@@ -90,6 +88,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
         this.ts = ts;
         objectMapper = new ObjectMapper();
         objectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
+        objectMapper.addMixIn(ConsequenceType.class, ConsequenceTypeMixin.class);
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 

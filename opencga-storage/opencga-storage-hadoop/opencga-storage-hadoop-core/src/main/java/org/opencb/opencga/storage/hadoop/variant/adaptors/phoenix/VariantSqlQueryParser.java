@@ -116,7 +116,8 @@ public class VariantSqlQueryParser {
 
     @Deprecated
     public String parse(Query query, QueryOptions options) {
-        ParsedVariantQuery variantQuery = new VariantQueryParser(null, metadataManager).parseQuery(query, options, true);
+        VariantQueryParser parser = new VariantQueryParser(null, metadataManager);
+        ParsedVariantQuery variantQuery = parser.parseQuery(query, options, true);
         return parse(variantQuery, options);
     }
 
@@ -381,9 +382,11 @@ public class VariantSqlQueryParser {
      */
     protected List<String> getRegionFilters(Query query, List<String> otherFilters) {
         List<String> regionFilters = new LinkedList<>();
-
+        int regionCount = 0;
+        int geneRegionCount = 0;
         if (isValidParam(query, REGION)) {
             List<Region> regions = Region.parseRegions(query.getString(REGION.key()), true);
+            regionCount = regions.size();
             for (Region region : regions) {
                 regionFilters.add(getRegionFilter(region));
             }
@@ -416,6 +419,7 @@ public class VariantSqlQueryParser {
                     skipGeneRegions = true;
                 } else {
                     for (Region region : Region.parseRegions(geneRegions, true)) {
+                        geneRegionCount++;
                         geneRegionFilters.add(getRegionFilter(region));
                     }
                 }
@@ -489,7 +493,8 @@ public class VariantSqlQueryParser {
                 logger.info("ID_INTERSECT with {} variants", idIntersect.size());
                 regionFilters.add(idIntersectFilter);
             } else {
-                logger.info("ID_INTERSECT with {} variants, and {} other region filters", idIntersect.size(), regionFilters.size());
+                logger.info("ID_INTERSECT with {} variants, {} region and {} gene_region filters", idIntersect.size(),
+                        regionCount, geneRegionCount);
                 String allRegionFilters = appendFilters(regionFilters, QueryOperation.OR);
                 String allRegionFiltersAndIdIntersect = appendFilters(
                         Arrays.asList(idIntersectFilter, allRegionFilters), QueryOperation.AND);

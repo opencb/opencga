@@ -267,9 +267,10 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
                 attributes.put(versionsKey, versions);
             }
         } else {
-            if (versions.contains(version)) {
+            int idx = versions.indexOf(version);
+            if (idx >= 0) {
                 versions = new ArrayList<>(versions);
-                versions.remove(version);
+                versions.remove(idx);
                 versions.sort(Integer::compareTo);
                 attributes.put(versionsKey, versions);
             }

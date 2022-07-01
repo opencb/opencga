@@ -81,7 +81,7 @@ public class VariantAnnotationHadoopDBWriter extends HBaseDataWriter<Put> {
             cleanPendingVariants();
         }
         for (Put put : puts) {
-            HadoopVariantSearchIndexUtils.addNotSyncStatus(put, columnFamily);
+            HadoopVariantSearchIndexUtils.addNotSyncStatus(put);
             loadedVariants.add(put.getRow());
         }
 

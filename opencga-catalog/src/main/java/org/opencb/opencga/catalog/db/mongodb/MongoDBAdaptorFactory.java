@@ -411,6 +411,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         collections.put(AUDIT_COLLECTION, auditCollection);
 
         fileDBAdaptor = new FileMongoDBAdaptor(fileCollection, deletedFileCollection, catalogConfiguration, this);
+        familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, familyArchivedCollection, deletedFamilyCollection,
+                catalogConfiguration, this);
         individualDBAdaptor = new IndividualMongoDBAdaptor(individualCollection, individualArchivedCollection, deletedIndividualCollection,
                 catalogConfiguration, this);
         jobDBAdaptor = new JobMongoDBAdaptor(jobCollection, deletedJobCollection, catalogConfiguration, this);
@@ -422,8 +424,6 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         cohortDBAdaptor = new CohortMongoDBAdaptor(cohortCollection, deletedCohortCollection, catalogConfiguration, this);
         panelDBAdaptor = new PanelMongoDBAdaptor(panelCollection, panelArchivedCollection, deletedPanelCollection, catalogConfiguration,
                 this);
-        familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, familyArchivedCollection, deletedFamilyCollection,
-                catalogConfiguration, this);
         clinicalDBAdaptor = new ClinicalAnalysisMongoDBAdaptor(clinicalCollection, deletedClinicalCollection, catalogConfiguration, this);
         interpretationDBAdaptor = new InterpretationMongoDBAdaptor(interpretationCollection, interpretationArchivedCollection,
                 deletedInterpretationCollection, catalogConfiguration, this);
