@@ -31,7 +31,7 @@ import org.opencb.opencga.app.cli.main.parent.ParentCliOptionsParser;
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
 *    Command line version: 2.4.0-SNAPSHOT
-*    Command line commit: 99a81db83f0432984093e9b3480e254da765654d
+*    Command line commit: b459a980d360d0d0d12e0f6d799f6e30b9b41d82
 */
 
 public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
@@ -68,6 +68,7 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         analysisVariantSubCommands.addCommand("cohort-stats-delete", analysisVariantCommandOptions.deleteCohortStatsCommandOptions);
         analysisVariantSubCommands.addCommand("cohort-stats-info", analysisVariantCommandOptions.infoCohortStatsCommandOptions);
         analysisVariantSubCommands.addCommand("cohort-stats-run", analysisVariantCommandOptions.runCohortStatsCommandOptions);
+        analysisVariantSubCommands.addCommand("exomiser-run", analysisVariantCommandOptions.runExomiserCommandOptions);
         analysisVariantSubCommands.addCommand("export-run", analysisVariantCommandOptions.runExportCommandOptions);
         analysisVariantSubCommands.addCommand("family-genotypes", analysisVariantCommandOptions.genotypesFamilyCommandOptions);
         analysisVariantSubCommands.addCommand("family-qc-run", analysisVariantCommandOptions.runFamilyQcCommandOptions);
@@ -134,6 +135,7 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         analysisClinicalSubCommands.addCommand("interpretation-search", analysisClinicalCommandOptions.searchInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-info", analysisClinicalCommandOptions.infoInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpreter-cancer-tiering-run", analysisClinicalCommandOptions.runInterpreterCancerTieringCommandOptions);
+        analysisClinicalSubCommands.addCommand("interpreter-exomiser-run", analysisClinicalCommandOptions.runInterpreterExomiserCommandOptions);
         analysisClinicalSubCommands.addCommand("interpreter-team-run", analysisClinicalCommandOptions.runInterpreterTeamCommandOptions);
         analysisClinicalSubCommands.addCommand("interpreter-tiering-run", analysisClinicalCommandOptions.runInterpreterTieringCommandOptions);
         analysisClinicalSubCommands.addCommand("interpreter-zetta-run", analysisClinicalCommandOptions.runInterpreterZettaCommandOptions);

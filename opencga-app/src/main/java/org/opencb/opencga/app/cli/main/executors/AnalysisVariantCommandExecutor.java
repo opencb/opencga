@@ -32,6 +32,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
+import org.opencb.opencga.core.models.clinical.ExomiserWrapperParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
 import org.opencb.opencga.core.models.variant.AnnotationVariantQueryParams;
@@ -114,6 +115,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "cohort-stats-run":
                 queryResponse = runCohortStats();
+                break;
+            case "exomiser-run":
+                queryResponse = runExomiser();
                 break;
             case "export-run":
                 queryResponse = runExport();
@@ -397,6 +401,40 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             }
         }
         return openCGAClient.getVariantClient().runCohortStats(cohortVariantStatsAnalysisParams, queryParams);
+    }
+
+    private RestResponse<Job> runExomiser() throws Exception {
+
+        logger.debug("Executing runExomiser in Analysis - Variant command line");
+
+        AnalysisVariantCommandOptions.RunExomiserCommandOptions commandOptions = analysisVariantCommandOptions.runExomiserCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        ExomiserWrapperParams exomiserWrapperParams = new ExomiserWrapperParams();
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(exomiserWrapperParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            exomiserWrapperParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ExomiserWrapperParams.class);
+        } else {
+            exomiserWrapperParams.setSample(commandOptions.sample);
+            exomiserWrapperParams.setOutdir(commandOptions.outdir);
+
+        }
+        return openCGAClient.getVariantClient().runExomiser(exomiserWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runExport() throws Exception {

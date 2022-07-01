@@ -44,6 +44,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalystParam;
 import org.opencb.opencga.core.models.clinical.ClinicalReport;
 import org.opencb.opencga.core.models.clinical.DisorderReferenceParam;
+import org.opencb.opencga.core.models.clinical.ExomiserInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.FamilyParam;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.clinical.InterpretationCreateParams;
@@ -120,6 +121,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "interpreter-cancer-tiering-run":
                 queryResponse = runInterpreterCancerTiering();
+                break;
+            case "interpreter-exomiser-run":
+                queryResponse = runInterpreterExomiser();
                 break;
             case "interpreter-team-run":
                 queryResponse = runInterpreterTeam();
@@ -519,6 +523,39 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             }
         }
         return openCGAClient.getClinicalAnalysisClient().runInterpreterCancerTiering(cancerTieringInterpretationAnalysisParams, queryParams);
+    }
+
+    private RestResponse<Job> runInterpreterExomiser() throws Exception {
+
+        logger.debug("Executing runInterpreterExomiser in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.RunInterpreterExomiserCommandOptions commandOptions = analysisClinicalCommandOptions.runInterpreterExomiserCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        ExomiserInterpretationAnalysisParams exomiserInterpretationAnalysisParams = new ExomiserInterpretationAnalysisParams();
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(exomiserInterpretationAnalysisParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            exomiserInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ExomiserInterpretationAnalysisParams.class);
+        } else {
+            exomiserInterpretationAnalysisParams.setClinicalAnalysis(commandOptions.clinicalAnalysis);
+
+        }
+        return openCGAClient.getClinicalAnalysisClient().runInterpreterExomiser(exomiserInterpretationAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runInterpreterTeam() throws Exception {
