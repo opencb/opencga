@@ -405,6 +405,9 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
 
         String[] acceptedObjectParams = {QueryParams.PIPELINE.key(), QueryParams.STUDY.key(), QueryParams.INTERNAL_STATUS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
+        if (parameters.get(QueryParams.PIPELINE.key()) != null) {
+            document.getSet().put(QueryParams.IS_PIPELINE.key(), true);
+        }
 
         String[] acceptedDateParams = {QueryParams.INTERNAL_START.key(), QueryParams.INTERNAL_END.key()};
         filterDateParams(parameters, document.getSet(), acceptedDateParams);
