@@ -24,6 +24,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.exceptions.ToolException;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -342,7 +343,7 @@ public class ParamUtils {
         }
     }
 
-    public static void processDynamicVariables(ObjectMap fullMap, Pattern pattern) {
+    public static void processDynamicVariables(ObjectMap fullMap, Pattern pattern) throws ToolException {
         processDynamicVariables(fullMap, fullMap, pattern);
     }
 
@@ -359,8 +360,9 @@ public class ParamUtils {
      * @param sourceMap Map from which variables will be extracted.
      * @param targetMap Map that needs to be filled with the expected variables.
      * @param pattern   Pattern used to filter the dynamic variables.
+     * @throws ToolException if no value could be found for a dynamic variable.
      */
-    public static void processDynamicVariables(ObjectMap sourceMap, Map<String, Object> targetMap, Pattern pattern) {
+    public static void processDynamicVariables(ObjectMap sourceMap, Map<String, Object> targetMap, Pattern pattern) throws ToolException {
         // Loop over all the entries
         for (Map.Entry<String, Object> entry : targetMap.entrySet()) {
             if (entry.getValue() instanceof Map) {
@@ -395,7 +397,7 @@ public class ParamUtils {
         }
     }
 
-    public static String resolveDynamicPropertyValue(ObjectMap fullMap, String originalValue, Pattern pattern) {
+    public static String resolveDynamicPropertyValue(ObjectMap fullMap, String originalValue, Pattern pattern) throws ToolException {
         String newValue = originalValue;
         Matcher matcher = pattern.matcher(originalValue);
         while (matcher.find()) {
@@ -404,7 +406,10 @@ public class ParamUtils {
             if (objectValue != null) {
                 // Only replace if it is not null, otherwise we will keep the property
                 String value = String.valueOf(objectValue);
+                value = resolveDynamicPropertyValue(fullMap, value, pattern);
                 newValue = newValue.replace(matcher.group(1), value);
+            } else {
+                throw new ToolException("Could not find a value for dynamic expression '" + matcher.group(1) + "'");
             }
         }
         return newValue;

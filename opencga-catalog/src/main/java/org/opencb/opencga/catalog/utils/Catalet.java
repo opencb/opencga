@@ -61,7 +61,7 @@ public class Catalet {
             String expectedField  = matcher.group(4);
             return fetch(resource, queryKey, queryValue, expectedField);
         } else {
-            throw new CatalogParameterException("Unexpected string. Pattern should be of the form "
+            throw new CatalogParameterException("Unexpected string '" + fetchString + "'. Pattern should be of the form "
                     + "\"FETCH_FIELD(resource, queryKey, queryValue, expectedField)\"");
         }
     }

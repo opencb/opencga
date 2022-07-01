@@ -514,6 +514,8 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         assertNotNull(executionResult.first().getOutDir());
 
         executionDaemon.checkPendingExecutions();
+        jobDaemon.checkBlockedJobs();
+        jobDaemon.checkPendingJobs();
 
         executionResult = catalogManager.getExecutionManager().get(studyFqn, executionResult.first().getId(), QueryOptions.empty(), token);
         assertEquals(1, executionResult.getNumResults());

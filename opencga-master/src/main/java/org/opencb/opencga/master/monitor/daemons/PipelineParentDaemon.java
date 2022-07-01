@@ -11,18 +11,27 @@ import org.opencb.opencga.catalog.utils.Catalet;
 import org.opencb.opencga.catalog.utils.CheckUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.job.Execution;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.Pipeline;
+import org.opencb.opencga.core.tools.OpenCgaTool;
+import org.opencb.opencga.core.tools.ToolFactory;
+import org.opencb.opencga.core.tools.annotations.ToolParams;
 
+import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public abstract class PipelineParentDaemon extends MonitorParentDaemon {
 
     public static final Pattern EXECUTION_VARIABLE_PATTERN = Pattern.compile("(EXECUTION\\(([^)]+)\\))");
-    public static final Pattern CATALET_VARIABLE_PATTERN = Pattern.compile("(FETCH_FIELD\\(([^)]+)\\))");
+    public static final Pattern CATALET_VARIABLE_PATTERN =
+            Pattern.compile("(FETCH_FIELD\\([\\w]+,[\\s]*[^\\s,]+,[\\s]*[^(),]+,[\\s]*[^\\s,()]+\\))");
 
     public PipelineParentDaemon(int interval, String token, CatalogManager catalogManager) throws CatalogDBException {
         super(interval, token, catalogManager);
@@ -46,6 +55,21 @@ public abstract class PipelineParentDaemon extends MonitorParentDaemon {
         fetchFromCatalogData(execution.getStudy().getId(), jobResult.getParams(), userToken);
 
         return jobResult;
+    }
+
+    protected Execution fillDynamicExecutionParams(Execution execution) throws CatalogException {
+        // Replace any EXECUTION(params) for the values
+        try {
+            String executionJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(execution);
+            ObjectMap executionMap = JacksonUtils.getDefaultObjectMapper().readValue(executionJsonString, ObjectMap.class);
+
+            ParamUtils.processDynamicVariables(executionMap, EXECUTION_VARIABLE_PATTERN);
+
+            executionJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(executionMap);
+            return JacksonUtils.getDefaultObjectMapper().readValue(executionJsonString, Execution.class);
+        } catch (JsonProcessingException | ToolException e) {
+            throw new CatalogException("Could not process dynamic execution variables from JSON properly", e);
+        }
     }
 
     protected boolean checkJobCondition(Execution execution, Pipeline.PipelineJob pipelineJob) throws CatalogException {
@@ -73,13 +97,44 @@ public abstract class PipelineParentDaemon extends MonitorParentDaemon {
         return true;
     }
 
+
+    protected Map<String, Object> filterJobParams(Map<String, Object> params, String toolId) throws ToolException {
+        // Extract all the allowed params for the job
+        Class<? extends OpenCgaTool> toolClass = new ToolFactory().getToolClass(toolId);
+        Set<String> jobAllowedParams = new HashSet<>();
+        jobAllowedParams.add("study");
+        for (Field declaredField : toolClass.getDeclaredFields()) {
+            if (declaredField.getDeclaredAnnotations().length > 0) {
+                if (declaredField.getDeclaredAnnotations()[0].annotationType().getName().equals(ToolParams.class.getName())) {
+                    for (Field field : declaredField.getType().getDeclaredFields()) {
+                        jobAllowedParams.add(field.getName());
+                    }
+                }
+            }
+        }
+
+        if (jobAllowedParams.size() == 1) {
+            throw new ToolException("Could not find a ToolParams annotation for the tool '" + toolId + "'");
+        }
+
+        // Remove all params that are not in the allowed params list
+        Map<String, Object> finalParams = new HashMap<>();
+        for (Map.Entry<String, Object> entry : params.entrySet()) {
+            if (jobAllowedParams.contains(entry.getKey())) {
+                finalParams.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        return finalParams;
+    }
+
     private String resolveDynamicValue(String value, Execution execution) throws CatalogException {
         if (EXECUTION_VARIABLE_PATTERN.matcher(value).find()) {
             try {
                 String executionJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(execution);
                 ObjectMap executionMap = JacksonUtils.getDefaultObjectMapper().readValue(executionJsonString, ObjectMap.class);
                 return ParamUtils.resolveDynamicPropertyValue(executionMap, value, EXECUTION_VARIABLE_PATTERN);
-            } catch (JsonProcessingException e) {
+            } catch (JsonProcessingException | ToolException e) {
                 throw new CatalogException("Could not process dynamic variables from JSON properly", e);
             }
         } else {
@@ -99,7 +154,7 @@ public abstract class PipelineParentDaemon extends MonitorParentDaemon {
 
             jobJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(jobMap);
             return JacksonUtils.getDefaultObjectMapper().readValue(jobJsonString, Job.class);
-        } catch (JsonProcessingException e) {
+        } catch (JsonProcessingException | ToolException e) {
             throw new CatalogException("Could not process dynamic variables from JSON properly", e);
         }
     }
@@ -109,8 +164,9 @@ public abstract class PipelineParentDaemon extends MonitorParentDaemon {
 
         for (Map.Entry<String, Object> entry : params.entrySet()) {
             if (entry.getValue() instanceof String) {
-                Matcher matcher = CATALET_VARIABLE_PATTERN.matcher(String.valueOf(entry.getValue()));
-                if (matcher.find()) {
+                String value = String.valueOf(entry.getValue());
+                Matcher matcher = CATALET_VARIABLE_PATTERN.matcher(value);
+                while (matcher.find()) {
                     if (catalet == null) {
                         catalet = new Catalet(catalogManager, studyId, userToken);
                     }
@@ -118,9 +174,13 @@ public abstract class PipelineParentDaemon extends MonitorParentDaemon {
                     // Fetch data from catalog
                     Object fetch = catalet.fetch(matcher.group(1));
 
-                    // Set new content
-                    entry.setValue(fetch);
+                    // Replace value
+                    value = value.replace(matcher.group(1), String.valueOf(fetch));
+
+                    matcher = CATALET_VARIABLE_PATTERN.matcher(value);
                 }
+
+                entry.setValue(value);
             }
         }
     }

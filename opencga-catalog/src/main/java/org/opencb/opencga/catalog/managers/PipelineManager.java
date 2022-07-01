@@ -20,6 +20,7 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Pipeline;
@@ -148,7 +149,7 @@ public class PipelineManager extends ResourceManager<Pipeline> {
                 ParamUtils.processDynamicVariables(pipelineMap, PIPELINE_VARIABLE_PATTERN);
                 pipelineJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(pipelineMap);
                 pipelineCreate = JacksonUtils.getDefaultObjectMapper().readValue(pipelineJsonString, PipelineCreateParams.class);
-            } catch (JsonProcessingException e) {
+            } catch (JsonProcessingException | ToolException e) {
                 throw new CatalogException("Could not process JSON properly", e);
             }
 
@@ -224,7 +225,7 @@ public class PipelineManager extends ResourceManager<Pipeline> {
                 ParamUtils.processDynamicVariables(pipelineMap, PIPELINE_VARIABLE_PATTERN);
                 pipelineJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(pipelineMap);
                 pipeline = JacksonUtils.getDefaultObjectMapper().readValue(pipelineJsonString, Pipeline.class);
-            } catch (JsonProcessingException e) {
+            } catch (JsonProcessingException | ToolException e) {
                 throw new CatalogException("Could not process JSON properly", e);
             }
 

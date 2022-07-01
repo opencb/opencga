@@ -33,11 +33,8 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.tools.OpenCgaTool;
 import org.opencb.opencga.core.tools.ToolFactory;
-import org.opencb.opencga.core.tools.annotations.ToolParams;
 
-import java.lang.reflect.Field;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
@@ -380,7 +377,6 @@ public class ExecutionDaemon extends PipelineParentDaemon {
             return abortExecution(execution, "Internal error. Could not obtain token for user '" + execution.getUserId() + "'");
         }
 
-//        if (CollectionUtils.isEmpty(execution.getJobs())) {
         if (StringUtils.isEmpty(toolId)) {
             return abortExecution(execution, "Missing mandatory 'internal.toolId' field");
         }
@@ -443,8 +439,7 @@ public class ExecutionDaemon extends PipelineParentDaemon {
 
                 Map<String, Object> jobParams;
                 try {
-                    jobParams = getJobParams(execution.getParams(), pipelineJob.getParams(), execution.getPipeline().getParams(),
-                            pipelineJobId);
+                    jobParams = getJobParams(execution.getParams(), pipelineJob.getParams(), execution.getPipeline().getParams());
                 } catch (ToolException e) {
                     return abortExecution(execution, e.getMessage());
                 }
@@ -453,12 +448,13 @@ public class ExecutionDaemon extends PipelineParentDaemon {
                 jobParams.put(JobDaemon.OUTDIR_PARAM, execution.getOutDir().getPath() + pipelineJobId);
                 Job job = createJobInstance(execution.getId(), pipelineJobId, pipelineJob.getDescription(), execution.getPriority(),
                         jobParams, execution.getTags(), pipelineJob.getDependsOn(), execution.getUserId());
-                try {
-                    job = fillDynamicJobInformation(execution, job, userToken);
-                } catch (CatalogException e) {
-                    logger.error(e.getMessage(), e);
-                    return abortExecution(execution, e.getMessage());
-                }
+                job.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.BLOCKED));
+//                try {
+//                    job = fillDynamicJobInformation(execution, job, userToken);
+//                } catch (CatalogException e) {
+//                    logger.error(e.getMessage(), e);
+//                    return abortExecution(execution, e.getMessage());
+//                }
                 processedJobs.put(pipelineJobId, job);
 
                 if (CollectionUtils.isNotEmpty(pipelineJob.getDependsOn())) {
@@ -485,17 +481,17 @@ public class ExecutionDaemon extends PipelineParentDaemon {
                     //        EXECUTION(jobs.alignment-stats.params.DESCRIPTION)
                     job.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.BLOCKED,
                             "Conditions will be checked shortly."));
-                } else {
-                    // Check if the conditions match
-                    try {
-                        if (!checkJobCondition(execution, pipelineJob)) {
-                            job.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED,
-                                    "Pipeline job check(s) not satisfied"));
-                        }
-                    } catch (CatalogException e) {
-                        logger.error("Could not run PipelineJob validations: {}", e.getMessage(), e);
-                        return abortExecution(execution, "Could not run PipelineJob validations. " + e.getMessage());
-                    }
+//                } else {
+//                    // Check if the conditions match
+//                    try {
+//                        if (!checkJobCondition(execution, pipelineJob)) {
+//                            job.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED,
+//                                    "Pipeline job check(s) not satisfied"));
+//                        }
+//                    } catch (CatalogException e) {
+//                        logger.error("Could not run PipelineJob validations: {}", e.getMessage(), e);
+//                        return abortExecution(execution, "Could not run PipelineJob validations. " + e.getMessage());
+//                    }
                 }
 
                 jobList.add(job);
@@ -505,6 +501,15 @@ public class ExecutionDaemon extends PipelineParentDaemon {
         }
 
         if (!jobList.isEmpty()) {
+            execution.setJobs(jobList);
+            // Before submitting anything, we will try to resolve all EXECUTION() dynamic variables
+            try {
+                execution = fillDynamicExecutionParams(execution);
+                jobList = execution.getJobs();
+            } catch (CatalogException e) {
+                return abortExecution(execution, e.getMessage());
+            }
+
             try {
                 catalogManager.getJobManager().submit(execution.getStudy().getId(), jobList, token);
             } catch (CatalogException e) {
@@ -534,7 +539,7 @@ public class ExecutionDaemon extends PipelineParentDaemon {
     }
 
     private Map<String, Object> getJobParams(Map<String, Object> userParams, Map<String, Object> jobParams,
-                                             Map<String, Object> pipelineParams, String toolId) throws ToolException {
+                                             Map<String, Object> pipelineParams) throws ToolException {
         // User params
         Map<String, Object> params = userParams != null ? new HashMap<>(userParams) : new HashMap<>();
         if (jobParams != null) {
@@ -545,35 +550,9 @@ public class ExecutionDaemon extends PipelineParentDaemon {
             // Merge with pipeline params
             pipelineParams.forEach(params::putIfAbsent);
         }
-        replaceCodedParamsValues(params);
+//        replaceCodedParamsValues(params);
 
-        // Extract all the allowed params for the job
-        Class<? extends OpenCgaTool> toolClass = new ToolFactory().getToolClass(toolId);
-        Set<String> jobAllowedParams = new HashSet<>();
-        jobAllowedParams.add("study");
-        for (Field declaredField : toolClass.getDeclaredFields()) {
-            if (declaredField.getDeclaredAnnotations().length > 0) {
-                if (declaredField.getDeclaredAnnotations()[0].annotationType().getName().equals(ToolParams.class.getName())) {
-                    for (Field field : declaredField.getType().getDeclaredFields()) {
-                        jobAllowedParams.add(field.getName());
-                    }
-                }
-            }
-        }
-
-        if (jobAllowedParams.size() == 1) {
-            throw new ToolException("Could not find a ToolParams annotation for the tool '" + toolId + "'");
-        }
-
-        // Remove all params that are not in the allowed params list
-        Map<String, Object> finalParams = new HashMap<>();
-        for (Map.Entry<String, Object> entry : params.entrySet()) {
-            if (jobAllowedParams.contains(entry.getKey())) {
-                finalParams.put(entry.getKey(), entry.getValue());
-            }
-        }
-
-        return finalParams;
+        return params;
     }
 
     /**

@@ -17,6 +17,7 @@
 package org.opencb.opencga.master.monitor.daemons;
 
 import com.google.common.base.CaseFormat;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
@@ -85,6 +86,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Execution;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.*;
@@ -482,12 +484,14 @@ public class JobDaemon extends PipelineParentDaemon {
             return 0;
         }
 
-        for (Job tmpJob : job.getDependsOn()) {
-            if (ON_GOING_STATUSES.contains(tmpJob.getInternal().getStatus().getId())) {
-                return 0;
-            }
-            if (ERROR_FINAL_STATUSES.contains(tmpJob.getInternal().getStatus().getId())) {
-                return abortJob(job, tmpJob.getId() + " finished with status '" + tmpJob.getInternal().getStatus().getId() + "'");
+        if (CollectionUtils.isNotEmpty(job.getDependsOn())) {
+            for (Job tmpJob : job.getDependsOn()) {
+                if (ON_GOING_STATUSES.contains(tmpJob.getInternal().getStatus().getId())) {
+                    return 0;
+                }
+                if (ERROR_FINAL_STATUSES.contains(tmpJob.getInternal().getStatus().getId())) {
+                    return abortJob(job, tmpJob.getId() + " finished with status '" + tmpJob.getInternal().getStatus().getId() + "'");
+                }
             }
         }
 
@@ -655,6 +659,12 @@ public class JobDaemon extends PipelineParentDaemon {
         }
 
         Map<String, Object> params = job.getParams();
+        try {
+            filterJobParams(params, job.getTool().getId());
+        } catch (ToolException e) {
+            return abortJob(job, e.getMessage());
+        }
+
         String outDirPathParam = (String) params.get(OUTDIR_PARAM);
         if (!StringUtils.isEmpty(outDirPathParam)) {
             try {

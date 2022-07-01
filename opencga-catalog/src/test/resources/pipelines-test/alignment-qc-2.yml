@@ -6,12 +6,10 @@ config:
 jobs:
   alignment-stats:
     description: PIPELINE(description)
-    #    output:
-    #      - id: BAM
-    #        value: $OUTDIR/alignment.bam
     params:
       file: EXECUTION(params.bamFile)
       DESCRIPTION: FETCH_FIELD(file, path, EXECUTION(params.bamFile), bioformat)
+      other: FETCH_FIELD(file, bioformat, EXECUTION(jobs[tool.id=alignment-stats].params.DESCRIPTION), name)
     when:
       comparator: OR
       message: "This is my message"
@@ -23,7 +21,6 @@ jobs:
     params:
       #      file2: $JOB.alignment-stats.OUTPUT.BAM
       #      file3: FILE:BAM
-      file4: EXECUTION(/alignment-stats/mememe/a/a/a/a/alignment.bam)
       file: EXECUTION(params.bamFile)
   alignment-fastqcmetrics:
     params:
