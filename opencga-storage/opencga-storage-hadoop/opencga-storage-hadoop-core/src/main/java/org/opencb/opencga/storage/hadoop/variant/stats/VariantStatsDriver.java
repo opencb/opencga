@@ -1,8 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.stats;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
@@ -53,13 +51,13 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
 
     private Collection<Integer> cohorts;
     private static Logger logger = LoggerFactory.getLogger(VariantStatsDriver.class);
-    private Path outdir;
-    private Path localOutput;
+
     private Aggregation aggregation;
     private boolean overwrite;
     private boolean statsMultiAllelic;
     private String statsDefaultGenotype;
     private boolean excludeFiles;
+    private MapReduceOutputFile output;
 
     public VariantStatsDriver() {
     }
@@ -103,24 +101,9 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
         logger.info(" * " + VariantStorageOptions.STATS_DEFAULT_GENOTYPE.key() + ": " + statsDefaultGenotype);
 
 
-        String outdirStr = getParam(OUTPUT);
-        if (StringUtils.isNotEmpty(outdirStr)) {
-            outdir = new Path(outdirStr);
-
-            if (isLocal(outdir)) {
-                localOutput = getLocalOutput(outdir, () -> "variant_stats."
-                        + (cohorts.size() < 10 ? "." + String.join("_", cohortNames) : "")
-                        + TimeUtils.getTime() + ".json");
-                outdir = getTempOutdir("opencga_sample_variant_stats", localOutput.getName());
-                outdir.getFileSystem(getConf()).deleteOnExit(outdir);
-            }
-            if (localOutput != null) {
-                logger.info(" * Outdir file: " + localOutput.toUri());
-                logger.info(" * Temporary outdir file: " + outdir.toUri());
-            } else {
-                logger.info(" * Outdir file: " + outdir.toUri());
-            }
-        }
+        output = new MapReduceOutputFile(() -> "variant_stats."
+                + (cohorts.size() < 10 ? "." + String.join("_", cohortNames) : "")
+                + TimeUtils.getTime() + ".json", "opencga_sample_variant_stats");
     }
 
     @Override
@@ -146,7 +129,7 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
             query.put(VariantQueryParam.INCLUDE_FILE.key(), VariantQueryUtils.NONE);
         }
 
-        if (outdir != null) {
+        if (output.getOutdir() != null) {
             // Do not index stats.
             // Allow any input query.
             // Write stats to file.
@@ -165,7 +148,7 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
 
             job.setOutputFormatClass(TextOutputFormat.class);
             TextOutputFormat.setCompressOutput(job, false);
-            TextOutputFormat.setOutputPath(job, outdir);
+            TextOutputFormat.setOutputPath(job, output.getOutdir());
 
         } else if (AggregationUtils.isAggregated(aggregation)) {
             // For aggregated variants use plain VariantStatsMapper
@@ -228,14 +211,7 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
     @Override
     protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
         super.postExecution(succeed);
-        if (succeed) {
-            if (localOutput != null) {
-                concatMrOutputToLocal(outdir, localOutput);
-            }
-        }
-        if (localOutput != null) {
-            deleteTemporaryFile(outdir);
-        }
+        output.postExecute(succeed);
     }
 
     @Override

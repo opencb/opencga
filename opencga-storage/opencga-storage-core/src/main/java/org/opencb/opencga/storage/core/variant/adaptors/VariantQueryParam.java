@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.core.api.ParamConstants;
 
 import java.util.*;
 
@@ -256,17 +257,20 @@ public final class VariantQueryParam implements QueryParam {
             = new VariantQueryParam("conservation", TEXT_ARRAY, ANNOT_CONSERVATION_DESCR);
 
     public static final String ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR
-            = "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01";
+            = "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. "
+            + ParamConstants.POP_FREQ_1000G + ":ALL<0.01";
     public static final VariantQueryParam ANNOT_POPULATION_ALTERNATE_FREQUENCY
             = new VariantQueryParam("populationFrequencyAlt", TEXT_ARRAY, ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR);
 
     public static final String ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR
-            = "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01";
+            = "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. "
+            + ParamConstants.POP_FREQ_1000G + ":ALL<0.01";
     public static final VariantQueryParam ANNOT_POPULATION_REFERENCE_FREQUENCY
             = new VariantQueryParam("populationFrequencyRef", TEXT_ARRAY, ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR);
 
     public static final String ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR
-            = "Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01";
+            = "Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. "
+            + ParamConstants.POP_FREQ_1000G + ":ALL<0.01";
     public static final VariantQueryParam ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY
             = new VariantQueryParam("populationFrequencyMaf", TEXT_ARRAY, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR);
 

@@ -20,8 +20,10 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SequenceWriter;
+import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.ConsequenceTypeMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
 
 import java.io.*;
@@ -76,6 +78,7 @@ public class VariantAnnotationJsonDataWriter implements DataWriter<VariantAnnota
         factory.setRootValueSeparator("\n");
         ObjectMapper jsonObjectMapper = new ObjectMapper(factory);
         jsonObjectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
+        jsonObjectMapper.addMixIn(ConsequenceType.class, ConsequenceTypeMixin.class);
         jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         try {
             sequenceWriter = jsonObjectMapper.writerFor(VariantAnnotation.class).writeValues(writer);

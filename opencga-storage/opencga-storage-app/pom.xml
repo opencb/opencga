@@ -27,7 +27,6 @@
     </parent>
 
     <artifactId>opencga-storage-app</artifactId>
-    <version>${opencga.version}</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -196,7 +195,7 @@
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
                     <artifactId>opencga-storage-mongodb</artifactId>
-                    <version>${opencga.version}</version>
+                    <version>${project.parent.version}</version>
                 </dependency>
             </dependencies>
             <properties>
@@ -220,7 +219,7 @@
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
                     <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
-                    <version>${opencga.version}</version>
+                    <version>${project.parent.version}</version>
                     <classifier>shaded</classifier>
                 </dependency>
             </dependencies>

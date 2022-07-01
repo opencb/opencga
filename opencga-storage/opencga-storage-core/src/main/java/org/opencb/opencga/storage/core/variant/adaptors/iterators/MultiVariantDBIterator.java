@@ -49,6 +49,7 @@ public class MultiVariantDBIterator extends VariantDBIterator {
     private final int skip;
     // Skip elements first time that hasNext or next is called.
     private boolean pendingSkip;
+    private long iteratorOpenTime = 0;
     // Count of returned results.
     private int numResults;
     private Logger logger = LoggerFactory.getLogger(MultiVariantDBIterator.class);
@@ -69,12 +70,27 @@ public class MultiVariantDBIterator extends VariantDBIterator {
     public MultiVariantDBIterator(Iterator<?> variantsIterator, int batchSize,
                                   Query query, QueryOptions options,
                                   BiFunction<Query, QueryOptions, VariantDBIterator> iteratorFactory) {
+        this(variantsIterator, options, iteratorFactory, new VariantQueryIterator(variantsIterator, query, batchSize));
+    }
+
+    /**
+     * Creates a multi iterator given a iterator of variants. It will apply the query (if any) to all the variants in the iterator.
+     * The iterator will group the variants in batches to split the query.
+     *
+     * @param variantsIterator  Iterator with all the variants to filter.
+     * @param options           Query options to be used with the iterator factory
+     * @param iteratorFactory   Iterator factory. See {@link VariantDBAdaptor#iterator()}
+     * @param queryIterator     VariantQueryIterator
+     */
+    public MultiVariantDBIterator(Iterator<?> variantsIterator, QueryOptions options,
+                                  BiFunction<Query, QueryOptions, VariantDBIterator> iteratorFactory,
+                                  VariantQueryIterator queryIterator) {
         this.variantsIterator = variantsIterator;
-        this.queryIterator = new VariantQueryIterator(this.variantsIterator, query, batchSize);
+        this.queryIterator = queryIterator;
         this.options = options == null ? new QueryOptions() : new QueryOptions(options);
         this.iteratorFactory = Objects.requireNonNull(iteratorFactory);
         variantDBIterator = emptyIterator();
-        addCloseable(queryIterator);
+        addCloseable(this.queryIterator);
 
         int limit = this.options.getInt(QueryOptions.LIMIT, -1);
         skip = Math.max(0, this.options.getInt(QueryOptions.SKIP, 0));
@@ -132,6 +148,7 @@ public class MultiVariantDBIterator extends VariantDBIterator {
                 limit = Integer.MAX_VALUE;
                 options = this.options;
             }
+            iteratorOpenTime = System.currentTimeMillis();
             query = fetch(() -> queryIterator.next(numResults, limit));
 
             variantDBIterator = fetch(() -> iteratorFactory.apply(query, options));
@@ -150,6 +167,14 @@ public class MultiVariantDBIterator extends VariantDBIterator {
         } catch (Exception e) {
             throw Throwables.propagate(e);
         } finally {
+            if (iteratorOpenTime > 0) {
+                logger.info("Close iterator after finding {} elements in {}s (wall time : {}s)",
+                        variantDBIterator.getCount(),
+                        TimeUnit.NANOSECONDS.toMillis(variantDBIterator.timeConverting + variantDBIterator.timeConverting) / 1000.0,
+                        (System.currentTimeMillis() - iteratorOpenTime) / 1000.0
+                );
+                iteratorOpenTime = 0;
+            }
             variantDBIterator = emptyIterator();
         }
     }
@@ -225,7 +250,7 @@ public class MultiVariantDBIterator extends VariantDBIterator {
         return queryIterator.totalBatchSizeCount - unusedVariantsFromLastBatch;
     }
 
-    private static class VariantQueryIterator implements Iterator<Query>, AutoCloseable {
+    public static class VariantQueryIterator implements Iterator<Query>, AutoCloseable {
         private static final int MAX_BATCH_SIZE = 5000;
         private static final int MIN_BATCH_SIZE = 100;
 
@@ -233,7 +258,7 @@ public class MultiVariantDBIterator extends VariantDBIterator {
 //        private static final int OLD_MATCH_PROBABILITY_WEIGHT = 1;
 
         private final Iterator<?> variantsIterator;
-        private final Query query;
+        protected final Query query;
         private final int batchSize;
         // Probability that an element from the variants iterator matches with the second iterator
         private float matchProbability = 0.50f;
@@ -245,7 +270,7 @@ public class MultiVariantDBIterator extends VariantDBIterator {
         //        private boolean firstBatch = true;
         private Logger logger = LoggerFactory.getLogger(VariantQueryIterator.class);
 
-        VariantQueryIterator(Iterator<?> variantsIterator, Query query, int batchSize) {
+        public VariantQueryIterator(Iterator<?> variantsIterator, Query query, int batchSize) {
             this.variantsIterator = Objects.requireNonNull(variantsIterator);
             this.query = query;
             this.batchSize = batchSize;
@@ -315,13 +340,17 @@ public class MultiVariantDBIterator extends VariantDBIterator {
             do {
                 // Always execute "next" over variantsIterator, to fail if empty
                 variants.add(variantsIterator.next());
-            } while (variantsIterator.hasNext() && variants.size() < batchSize);
+            } while (variantsIterator.hasNext() && variants.size() < batchSize && !isTooComplex(variants));
             newQuery.append(VariantQueryUtils.ID_INTERSECT.key(), variants);
             lastBatch = variants;
             totalBatchSizeCount += variants.size();
             lastBatchSize = variants.size();
             logger.info("Get next query: " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0 + "s");
             return newQuery;
+        }
+
+        protected boolean isTooComplex(List<Object> variants) {
+            return false;
         }
 
         @Override

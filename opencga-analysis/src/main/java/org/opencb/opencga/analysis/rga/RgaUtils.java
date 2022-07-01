@@ -8,6 +8,7 @@ import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.analysis.rga.exceptions.RgaException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
 import org.opencb.opencga.storage.core.variant.query.KeyOpValue;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -34,8 +35,8 @@ class RgaUtils {
     private static final List<Float> POP_FREQS;
     private static final List<String> POP_FREQ_STUDIES;
 
-    public static final String THOUSAND_GENOMES_STUDY = "1kG_phase3";
-    public static final String GNOMAD_GENOMES_STUDY = "GNOMAD_GENOMES";
+    public static final String THOUSAND_GENOMES_STUDY = ParamConstants.POP_FREQ_1000G;
+    public static final String GNOMAD_GENOMES_STUDY = ParamConstants.POP_FREQ_GNOMAD_GENOMES;
 
     public static final String PASS = "PASS";
     public static final String NOT_PASS = "NOT_PASS";
@@ -182,7 +183,7 @@ class RgaUtils {
     /** Calculate the list of population frequency values to look for in the db.
      * At the moment, RGA only calculates ALL population frequencies so this method will remove the :ALL from the key if present.
      *
-     * @param filters A list containing {study[:popFreq]}[<|>|<=|>=]{number}. e.g. 1kG_phase3<0.01";
+     * @param filters A list containing {study[:popFreq]}[<|>|<=|>=]{number}. e.g. 1000G<0.01";
      * @return the list of population frequency values to look for in the db with their corresponding population key.
      * @throws RgaException RgaException.
      */

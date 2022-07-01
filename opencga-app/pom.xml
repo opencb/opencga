@@ -27,7 +27,6 @@
     </parent>
 
     <artifactId>opencga-app</artifactId>
-    <version>${opencga.version}</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -35,7 +34,7 @@
         <app.dir>${project.basedir}/app</app.dir>
         <sonar.skip>true</sonar.skip>
         <dep.jline.version>3.12.1</dep.jline.version>
-        <opencga.client.dir>opencga-client-${opencga.version}</opencga.client.dir>
+        <opencga.client.dir>opencga-client-${project.parent.version}</opencga.client.dir>
     </properties>
 
     <dependencies>
@@ -50,7 +49,7 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-master</artifactId>
-            <version>${opencga.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -65,7 +64,7 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-mongodb</artifactId>
-            <version>${opencga.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -74,13 +73,13 @@
         <!--        <dependency>-->
         <!--            <groupId>org.opencb.opencga</groupId>-->
         <!--            <artifactId>opencga-test</artifactId>-->
-        <!--            <version>${opencga.version}</version>-->
+        <!--            <version>${project.parent.version}</version>-->
         <!--            <type>pom</type>-->
         <!--        </dependency>-->
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-server</artifactId>
-            <version>${opencga.version}</version>
+            <version>${project.parent.version}</version>
             <!--<type>war</type>-->
         </dependency>
 
@@ -97,21 +96,21 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-analysis</artifactId>
-            <version>${opencga.version}</version>
+            <version>${project.parent.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
-            <version>${opencga.version}</version>
+            <version>${project.parent.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-catalog</artifactId>
-            <version>${opencga.version}</version>
+            <version>${project.parent.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -254,7 +253,7 @@
                                     <arg value="${build.dir}/conf"/>
                                     <arg value="${build.dir}/test"/>
                                     <!--
-                                    <arg value="${build.dir}/misc/solr/${solr.configset.name}-${opencga.version}"/>
+                                    <arg value="${build.dir}/misc/solr/${solr.configset.name}-${project.parent.version}"/>
                                     -->
                                 </exec>
 
@@ -357,7 +356,7 @@
 
                                 <exec executable="${project.basedir}/app/misc/solr/prepare_configsets.sh">
                                     <arg value="${project.basedir}/.."/>
-                                    <arg value="${opencga.version}"/>
+                                    <arg value="${project.parent.version}"/>
                                 </exec>
 
                                 <echo>Copying war file</echo>
@@ -384,8 +383,9 @@
                                 </exec>
                                 <exec executable="sed">
                                     <arg value="-i"/>
-                                    <arg value="s/REPLACEME_OPENCGA_VERSION/${opencga.version}/"/>
+                                    <arg value="s/REPLACEME_OPENCGA_VERSION/${project.parent.version}/"/>
                                     <arg value="${build.dir}/misc/demo/main.yml"/>
+                                    <arg value="${build.dir}/misc/demo/corpasome/manifest.yml"/>
                                     <arg value="${build.dir}/cloud/docker/opencga-demo/README.md"/>
                                     <arg value="${build.dir}/cloud/kubernetes/charts/opencga/Chart.yaml"/>
                                     <arg value="${build.dir}/cloud/azure/arm-kubernetes/solr/solr-setup.sh"/>
@@ -409,10 +409,10 @@
                             <target>
                                 <echo>Preparing 'opencga-client' folder</echo>
                                 <exec executable="mkdir">
-                                    <arg value="${build.dir}/opencga-client-${opencga.version}"/>
-                                    <arg value="${build.dir}/opencga-client-${opencga.version}/bin"/>
-                                    <arg value="${build.dir}/opencga-client-${opencga.version}/conf"/>
-                                    <arg value="${build.dir}/opencga-client-${opencga.version}/completion"/>
+                                    <arg value="${build.dir}/opencga-client-${project.parent.version}"/>
+                                    <arg value="${build.dir}/opencga-client-${project.parent.version}/bin"/>
+                                    <arg value="${build.dir}/opencga-client-${project.parent.version}/conf"/>
+                                    <arg value="${build.dir}/opencga-client-${project.parent.version}/completion"/>
                                 </exec>
 
                                 <echo>Copying files to 'opencga-client' folder</echo>
@@ -484,7 +484,7 @@
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
                     <artifactId>opencga-storage-benchmark</artifactId>
-                    <version>${opencga.version}</version>
+                    <version>${project.parent.version}</version>
                     <scope>provided</scope>
                 </dependency>
             </dependencies>
@@ -530,7 +530,7 @@
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
                     <artifactId>opencga-storage-mongodb</artifactId>
-                    <version>${opencga.version}</version>
+                    <version>${project.parent.version}</version>
                 </dependency>
             </dependencies>
             <properties>
@@ -552,7 +552,7 @@
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
                     <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
-                    <version>${opencga.version}</version>
+                    <version>${project.parent.version}</version>
                     <classifier>shaded</classifier>
                 </dependency>
             </dependencies>
@@ -569,7 +569,7 @@
                                     <target>
                                         <echo>Copying hadoop jar with dependencies to ${build.dir}</echo>
                                         <exec executable="cp">
-                                            <arg value="${project.basedir}/../opencga-storage/opencga-storage-hadoop/opencga-storage-hadoop-core/target/opencga-storage-hadoop-core-${opencga.version}-jar-with-dependencies.jar"/>
+                                            <arg value="${project.basedir}/../opencga-storage/opencga-storage-hadoop/opencga-storage-hadoop-core/target/opencga-storage-hadoop-core-${project.parent.version}-jar-with-dependencies.jar"/>
                                             <arg value="${build.dir}"/>
                                         </exec>
                                     </target>
@@ -616,7 +616,7 @@
                                         <echo>Moving R client to ${build.dir}/clients/R/</echo>
                                         <exec executable="cp">
                                             <arg value="/tmp/opencgaR_${opencgar.version}.tar.gz"/>
-                                            <arg value="${build.dir}/clients/R/opencgaR_${opencga.version}.tar.gz"/>
+                                            <arg value="${build.dir}/clients/R/opencgaR_${project.parent.version}.tar.gz"/>
                                         </exec>
                                     </target>
                                 </configuration>

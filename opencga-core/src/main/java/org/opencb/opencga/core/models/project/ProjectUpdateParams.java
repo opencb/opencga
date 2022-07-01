@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.core.models.project;
 
-import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
-
 import java.util.Map;
 
 public class ProjectUpdateParams {
@@ -27,20 +25,18 @@ public class ProjectUpdateParams {
     private String modificationDate;
     private ProjectOrganism organism;
 
-    private CellBaseConfiguration cellbase;
     private Map<String, Object> attributes;
 
     public ProjectUpdateParams() {
     }
 
-    public ProjectUpdateParams(String name, String description, String creationDate, String modificationDate,
-                               ProjectOrganism organism, CellBaseConfiguration cellbase, Map<String, Object> attributes) {
+    public ProjectUpdateParams(String name, String description, String creationDate, String modificationDate, ProjectOrganism organism,
+                               Map<String, Object> attributes) {
         this.name = name;
         this.description = description;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.organism = organism;
-        this.cellbase = cellbase;
         this.attributes = attributes;
     }
 
@@ -52,7 +48,6 @@ public class ProjectUpdateParams {
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", organism=").append(organism);
-        sb.append(", cellbase=").append(cellbase);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -112,12 +107,4 @@ public class ProjectUpdateParams {
         return this;
     }
 
-    public CellBaseConfiguration getCellbase() {
-        return cellbase;
-    }
-
-    public ProjectUpdateParams setCellbase(CellBaseConfiguration cellbase) {
-        this.cellbase = cellbase;
-        return this;
-    }
 }

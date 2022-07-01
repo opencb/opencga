@@ -19,6 +19,7 @@ public class HBaseVariantTableNameGenerator {
     private static final String SAMPLE_SUFIX = "_variant_sample_index_";
     private static final String PENDING_ANNOTATION_SUFIX = "_pending_annotation";
     private static final String PENDING_SECONDARY_INDEX_SUFIX = "_pending_secondary_index";
+    private static final String PENDING_SECONDARY_INDEX_PRUNE_SUFIX = "_pending_secondary_index_prune";
     private static final int MINIMUM_DB_NAME_SIZE = 1;
 
     private final String namespace;
@@ -27,6 +28,7 @@ public class HBaseVariantTableNameGenerator {
     private final String metaTableName;
     private final String pendingAnnotationTableName;
     private final String pendingSecondaryIndexTableName;
+    private final String pendingSecondaryIndexPruneTableName;
 
 
     public HBaseVariantTableNameGenerator(String dbName, ObjectMap options) {
@@ -47,6 +49,7 @@ public class HBaseVariantTableNameGenerator {
         metaTableName = getMetaTableName(namespace, this.dbName);
         pendingAnnotationTableName = getPendingAnnotationTableName(namespace, this.dbName);
         pendingSecondaryIndexTableName = getPendingSecondaryIndexTableName(namespace, this.dbName);
+        pendingSecondaryIndexPruneTableName = getPendingSecondaryIndexPruneTableName(namespace, this.dbName);
     }
 
     public String getVariantTableName() {
@@ -67,6 +70,10 @@ public class HBaseVariantTableNameGenerator {
 
     public String getPendingSecondaryIndexTableName() {
         return pendingSecondaryIndexTableName;
+    }
+
+    public String getPendingSecondaryIndexPruneTableName() {
+        return pendingSecondaryIndexPruneTableName;
     }
 
     public String getMetaTableName() {
@@ -131,6 +138,21 @@ public class HBaseVariantTableNameGenerator {
 
     public static boolean isValidPendingSecondaryIndexTableName(String pendingSecondaryIndexTableName) {
         return validSuffix(pendingSecondaryIndexTableName, PENDING_SECONDARY_INDEX_SUFIX);
+    }
+
+    public static void checkValidPendingSecondaryIndexPruneTableName(String tableName) {
+        if (!isValidPendingSecondaryIndexPruneTableName(tableName)) {
+            throw new IllegalArgumentException("Invalid pending prune table name : " + tableName);
+        }
+    }
+
+    public static boolean isValidPendingSecondaryIndexPruneTableName(String tableName) {
+        return validSuffix(tableName, PENDING_SECONDARY_INDEX_PRUNE_SUFIX);
+    }
+
+    public static String getDBNameFromPendingSecondaryIndexPruneTableName(String tableName) {
+        checkValidPendingSecondaryIndexPruneTableName(tableName);
+        return tableName.substring(0, tableName.length() - PENDING_SECONDARY_INDEX_PRUNE_SUFIX.length());
     }
 
     public static String getDBNameFromMetaTableName(String metaTableName) {
@@ -235,6 +257,10 @@ public class HBaseVariantTableNameGenerator {
 
     public static String getPendingSecondaryIndexTableName(String namespace, String dbName) {
         return buildTableName(namespace, dbName, PENDING_SECONDARY_INDEX_SUFIX);
+    }
+
+    public static String getPendingSecondaryIndexPruneTableName(String namespace, String dbName) {
+        return buildTableName(namespace, dbName, PENDING_SECONDARY_INDEX_PRUNE_SUFIX);
     }
 
     public static String getMetaTableName(String namespace, String dbName) {

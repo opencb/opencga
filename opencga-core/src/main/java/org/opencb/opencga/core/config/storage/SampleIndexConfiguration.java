@@ -4,6 +4,7 @@ import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
+import org.opencb.opencga.core.api.ParamConstants;
 
 import java.beans.ConstructorProperties;
 import java.util.*;
@@ -32,8 +33,8 @@ public class SampleIndexConfiguration {
                 .addFileIndexField(new IndexFieldConfiguration(
                         IndexFieldConfiguration.Source.SAMPLE, VCFConstants.DEPTH_KEY, DP_THRESHOLDS).setNullable(false));
         sampleIndexConfiguration.getAnnotationIndexConfiguration().getPopulationFrequency()
-                .addPopulation(new Population("1kG_phase3", "ALL"))
-                .addPopulation(new Population("GNOMAD_GENOMES", "ALL"))
+                .addPopulation(new Population(ParamConstants.POP_FREQ_1000G_CB_V4, "ALL"))
+                .addPopulation(new Population(ParamConstants.POP_FREQ_GNOMAD_GENOMES, "ALL"))
                 .setThresholds(backwardCompatibleThresholds);
 
         sampleIndexConfiguration.getFileIndexConfiguration().setFilePositionBits(4);
@@ -156,9 +157,15 @@ public class SampleIndexConfiguration {
     }
 
     public static SampleIndexConfiguration defaultConfiguration() {
+        return defaultConfiguration(false);
+    }
+
+    public static SampleIndexConfiguration defaultConfiguration(boolean cellbaseV4) {
         SampleIndexConfiguration sampleIndexConfiguration = new SampleIndexConfiguration()
-                .addPopulation(new Population("1kG_phase3", "ALL"))
-                .addPopulation(new Population("GNOMAD_GENOMES", "ALL"))
+                .addPopulation(new Population(cellbaseV4
+                        ? ParamConstants.POP_FREQ_1000G_CB_V4
+                        : ParamConstants.POP_FREQ_1000G_CB_V5, "ALL"))
+                .addPopulation(new Population(ParamConstants.POP_FREQ_GNOMAD_GENOMES, "ALL"))
                 .addFileIndexField(new IndexFieldConfiguration(
                         IndexFieldConfiguration.Source.FILE,
                         StudyEntry.FILTER,
@@ -306,7 +313,11 @@ public class SampleIndexConfiguration {
     }
 
     public void validate() {
-        addMissingValues(defaultConfiguration());
+        validate(null);
+    }
+
+    public void validate(String cellbaseVersion) {
+        addMissingValues(defaultConfiguration("v4".equalsIgnoreCase(cellbaseVersion)));
 
         for (IndexFieldConfiguration customField : fileIndexConfiguration.getCustomFields()) {
             customField.validate();

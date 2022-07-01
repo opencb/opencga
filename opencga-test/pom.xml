@@ -29,7 +29,6 @@
     </parent>
 
     <artifactId>opencga-test</artifactId>
-    <version>${opencga.version}</version>
     <packaging>jar</packaging>
 
     <dependencies>

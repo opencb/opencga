@@ -24,7 +24,7 @@ public class SampleIndexSchemaFactory {
     }
 
     public SampleIndexSchema getSchema(int studyId, int sampleId, boolean requireAnnotation) {
-        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyId);
+        StudyMetadata studyMetadata = getStudyMetadata(studyId);
         Collection<Integer> versions = getSampleIndexConfigurationVersions(studyId, sampleId, true, false);
         removeStagingVersions(studyMetadata, versions);
         if (versions.isEmpty() && !requireAnnotation) {
@@ -48,7 +48,7 @@ public class SampleIndexSchemaFactory {
         if (samples.isEmpty()) {
             throw new IllegalArgumentException("Missing samples");
         }
-        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyId);
+        StudyMetadata studyMetadata = getStudyMetadata(studyId);
         int version = getSampleIndexConfigurationVersion(studyId, samples, requireAnnotation, requireFamilyIndex, studyMetadata);
         SampleIndexConfiguration sampleIndexConfiguration = studyMetadata.getSampleIndexConfiguration(version).getConfiguration();
 
@@ -96,7 +96,7 @@ public class SampleIndexSchemaFactory {
 
     public int getSampleIndexConfigurationVersion(int studyId, Collection<?> samples, boolean requireAnnotation) {
         return getSampleIndexConfigurationVersion(
-                studyId, samples, requireAnnotation, false, metadataManager.getStudyMetadata(studyId));
+                studyId, samples, requireAnnotation, false, getStudyMetadata(studyId));
     }
 
     private int getSampleIndexConfigurationVersion(int studyId, Collection<?> samples, boolean requireAnnotation,
@@ -154,7 +154,11 @@ public class SampleIndexSchemaFactory {
     }
 
     public StudyMetadata.SampleIndexConfigurationVersioned getSampleIndexConfigurationLatest(int studyId, boolean includeStagingSchemas) {
-        return metadataManager.getStudyMetadata(studyId).getSampleIndexConfigurationLatest(includeStagingSchemas);
+        return getStudyMetadata(studyId).getSampleIndexConfigurationLatest(includeStagingSchemas);
+    }
+
+    private StudyMetadata getStudyMetadata(int studyId) {
+        return metadataManager.getStudyMetadata(studyId);
     }
 
 }

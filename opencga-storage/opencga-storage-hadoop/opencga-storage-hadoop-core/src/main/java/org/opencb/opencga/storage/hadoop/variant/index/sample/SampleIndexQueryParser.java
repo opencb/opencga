@@ -573,10 +573,10 @@ public class SampleIndexQueryParser {
                 LocusQuery query = iterator.next();
                 Region prevRegion = prevQuery.getChunkRegion();
                 Region region = query.getChunkRegion();
-                // Merge if the distance between groups is less than 1 batch size
+                // Merge if the distance between groups is less than 2 batches size
                 // TODO: This rule could be changed to reduce the number of small queries, even if more data is fetched.
                 if (region.getChromosome().equals(prevRegion.getChromosome())
-                        && (region.getStart() - prevRegion.getEnd()) < SampleIndexSchema.BATCH_SIZE) {
+                        && (region.getStart() - prevRegion.getEnd()) <= SampleIndexSchema.BATCH_SIZE * 2) {
                     // Merge groups
                     prevQuery.merge(query);
                     iterator.remove();

@@ -85,7 +85,7 @@ For changing particular settings during buildings you can create a profile in _~
                         <activeByDefault>true</activeByDefault>
                     </activation>
                     <properties>
-                        <opencga.war.name>opencga-${opencga.version}</opencga.war.name>
+                        <opencga.war.name>opencga-${project.version}</opencga.war.name>
 
                         <!-- General -->
                         <OPENCGA.INSTALLATION.DIR>/opt/opencga</OPENCGA.INSTALLATION.DIR>
