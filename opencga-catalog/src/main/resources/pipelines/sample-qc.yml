@@ -3,6 +3,17 @@ description: "Run quality control (QC) for a given sample. It includes variant s
 config:
   retry: 2
   timeout: 3600
+params:
+  variantStatsDescription: ""
+  variantStatsQuery: {}
+  signatureId: ""
+  signatureDescription: ""
+  signatureQuery: {}
+  signatureRelease: ""
+  genomePlotId: ""
+  genomePlotDescription: ""
+  genomePlotConfigFile: ""
+  configFile: ""
 jobs:
   sample-variant-stats:
     description: "Compute sample variant stats for the selected list of samples."
@@ -32,7 +43,7 @@ jobs:
       description: EXECUTION(params.genomePlotDescription)
       configFile: EXECUTION(params.genomePlotConfigFile)
       somatic: FETCH_FIELD(sample, id, EXECUTION(params.sample), somatic)
-      configFileId: FETCH_FIELD(file, path, EXECUTION(params.configFile), id)
+      configFileId: FETCH_FIELD(file, path, EXECUTION(jobs[tool.id=genome-plot].params.configFile), id)
     when:
       message: "Skipping genome plot analysis since sample EXECUTION(params.sample) is not somatic"
       checks:

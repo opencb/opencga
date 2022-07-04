@@ -2,17 +2,21 @@ package org.opencb.opencga.core.models.job;
 
 import org.opencb.opencga.core.models.file.File;
 
+import java.util.Map;
+
 public class ExecutionUpdateParams {
 
     protected Pipeline pipeline;
+    protected Map<String, Object> params;
     protected Boolean visited;
     protected File outDir;
 
     public ExecutionUpdateParams() {
     }
 
-    public ExecutionUpdateParams(Pipeline pipeline, Boolean visited, File outDir) {
+    public ExecutionUpdateParams(Pipeline pipeline, Map<String, Object> params, Boolean visited, File outDir) {
         this.pipeline = pipeline;
+        this.params = params;
         this.visited = visited;
         this.outDir = outDir;
     }
@@ -21,6 +25,7 @@ public class ExecutionUpdateParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ExecutionUpdateParams{");
         sb.append("pipeline=").append(pipeline);
+        sb.append(", params=").append(params);
         sb.append(", visited=").append(visited);
         sb.append(", outDir=").append(outDir);
         sb.append('}');
@@ -33,6 +38,15 @@ public class ExecutionUpdateParams {
 
     public ExecutionUpdateParams setPipeline(Pipeline pipeline) {
         this.pipeline = pipeline;
+        return this;
+    }
+
+    public Map<String, Object> getParams() {
+        return params;
+    }
+
+    public ExecutionUpdateParams setParams(Map<String, Object> params) {
+        this.params = params;
         return this;
     }
 

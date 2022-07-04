@@ -387,8 +387,12 @@ public class ExecutionDaemon extends PipelineParentDaemon {
                     .get(studyId, toolId, QueryOptions.empty(), token);
             Pipeline pipeline = pipelineOpenCGAResult.first();
             execution.setPipeline(pipeline);
-
             updateParams.setPipeline(pipeline);
+
+            // Add default params defined in the pipeline
+            Map<String, Object> params = overrideParams(execution.getParams(), pipeline.getParams());
+            execution.setParams(params);
+            updateParams.setParams(params);
         } catch (CatalogException e1) {
             // Check if resourceId is an existing toolId
             try {
@@ -436,13 +440,8 @@ public class ExecutionDaemon extends PipelineParentDaemon {
                     return abortExecution(execution, "Found duplicated pipeline job id: '" + pipelineJobId + "'");
                 }
                 Pipeline.PipelineJob pipelineJob = jobEntry.getValue();
-
-                Map<String, Object> jobParams;
-                try {
-                    jobParams = getJobParams(execution.getParams(), pipelineJob.getParams(), execution.getPipeline().getParams());
-                } catch (ToolException e) {
-                    return abortExecution(execution, e.getMessage());
-                }
+                Map<String, Object> jobParams = overrideParams(execution.getParams(), pipelineJob.getParams());
+//                    jobParams = getJobParams(execution.getParams(), pipelineJob.getParams(), execution.getPipeline().getParams());
 
                 // Add execution outdir
                 jobParams.put(JobDaemon.OUTDIR_PARAM, execution.getOutDir().getPath() + pipelineJobId);
@@ -536,6 +535,16 @@ public class ExecutionDaemon extends PipelineParentDaemon {
                 ? dependsOn.stream().map(dpo -> new Job().setId(dpo)).collect(Collectors.toList())
                 : null,
                 tags, null, false, null, null, 0, null, null);
+    }
+
+    private Map<String, Object> overrideParams(Map<String, Object> primaryParams, Map<String, Object> secondaryParams) {
+        // Primary params
+        Map<String, Object> params = primaryParams != null ? new HashMap<>(primaryParams) : new HashMap<>();
+        if (secondaryParams != null) {
+            // Merge with job params
+            secondaryParams.forEach(params::putIfAbsent);
+        }
+        return params;
     }
 
     private Map<String, Object> getJobParams(Map<String, Object> userParams, Map<String, Object> jobParams,

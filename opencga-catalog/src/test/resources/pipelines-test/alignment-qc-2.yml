@@ -3,6 +3,9 @@ description: "Alignment quality control (QC) parameters. It computes: stats, fla
 config:
   retry: 2
   timeout: 3600
+params:
+  variantStatsDescription: ""
+  variantStatsQuery: {}
 jobs:
   alignment-stats:
     description: PIPELINE(description)

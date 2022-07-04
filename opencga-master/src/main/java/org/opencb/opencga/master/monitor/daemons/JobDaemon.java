@@ -534,6 +534,16 @@ public class JobDaemon extends PipelineParentDaemon {
                     + execution.getPipeline().getId() + "'");
         }
 
+        // Update execution job params after filling it with dynamic information so it can be successfully checked. If we don't do this
+        // step, execution.jobs.params will still contain things such as EXECUTION(blabla). Conditions are checked considering the full
+        // execution instance.
+        for (Job executionJob : execution.getJobs()) {
+            if (job.getUid() == executionJob.getUid()) {
+                executionJob.setParams(job.getParams());
+                break;
+            }
+        }
+
         // Check if the conditions match
         try {
             if (!checkJobCondition(execution, pipelineJob)) {

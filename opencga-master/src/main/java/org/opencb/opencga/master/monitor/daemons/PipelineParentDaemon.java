@@ -68,7 +68,7 @@ public abstract class PipelineParentDaemon extends MonitorParentDaemon {
             executionJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(executionMap);
             return JacksonUtils.getDefaultObjectMapper().readValue(executionJsonString, Execution.class);
         } catch (JsonProcessingException | ToolException e) {
-            throw new CatalogException("Could not process dynamic execution variables from JSON properly", e);
+            throw new CatalogException("Could not process dynamic execution variables from JSON properly: " + e.getMessage(), e);
         }
     }
 
@@ -135,7 +135,7 @@ public abstract class PipelineParentDaemon extends MonitorParentDaemon {
                 ObjectMap executionMap = JacksonUtils.getDefaultObjectMapper().readValue(executionJsonString, ObjectMap.class);
                 return ParamUtils.resolveDynamicPropertyValue(executionMap, value, EXECUTION_VARIABLE_PATTERN);
             } catch (JsonProcessingException | ToolException e) {
-                throw new CatalogException("Could not process dynamic variables from JSON properly", e);
+                throw new CatalogException("Could not process dynamic variables from JSON properly: " + e.getMessage(), e);
             }
         } else {
             return value;
@@ -155,7 +155,7 @@ public abstract class PipelineParentDaemon extends MonitorParentDaemon {
             jobJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(jobMap);
             return JacksonUtils.getDefaultObjectMapper().readValue(jobJsonString, Job.class);
         } catch (JsonProcessingException | ToolException e) {
-            throw new CatalogException("Could not process dynamic variables from JSON properly", e);
+            throw new CatalogException("Could not process dynamic variables from JSON properly: " + e.getMessage(), e);
         }
     }
 
