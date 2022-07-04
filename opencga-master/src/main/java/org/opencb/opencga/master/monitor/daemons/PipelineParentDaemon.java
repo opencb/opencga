@@ -2,6 +2,7 @@ package org.opencb.opencga.master.monitor.daemons;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -117,10 +118,10 @@ public abstract class PipelineParentDaemon extends MonitorParentDaemon {
             throw new ToolException("Could not find a ToolParams annotation for the tool '" + toolId + "'");
         }
 
-        // Remove all params that are not in the allowed params list
         Map<String, Object> finalParams = new HashMap<>();
         for (Map.Entry<String, Object> entry : params.entrySet()) {
-            if (jobAllowedParams.contains(entry.getKey())) {
+            // Remove all params that are not in the allowed params list that are not empty
+            if (jobAllowedParams.contains(entry.getKey()) && ObjectUtils.isNotEmpty(entry.getValue())) {
                 finalParams.put(entry.getKey(), entry.getValue());
             }
         }

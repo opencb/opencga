@@ -60,7 +60,6 @@ import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
-import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.analysis.wrappers.bwa.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
@@ -214,7 +213,7 @@ public class JobDaemon extends PipelineParentDaemon {
             put(VariantExportTool.ID, "variant export-run");
             put(VariantStatsAnalysis.ID, "variant stats-run");
             put("variant-stats-export", "variant stats-export-run");
-            put(SampleVariantStatsAnalysis.ID, "variant sample-stats-run");
+//            put(SampleVariantStatsAnalysis.ID, "variant sample-stats-run");
             put(CohortVariantStatsAnalysis.ID, "variant cohort-stats-run");
             put(GwasAnalysis.ID, "variant gwas-run");
             put(PlinkWrapperAnalysis.ID, "variant " + PlinkWrapperAnalysis.ID + "-run");
@@ -668,9 +667,11 @@ public class JobDaemon extends PipelineParentDaemon {
             return abortJob(job, e);
         }
 
-        Map<String, Object> params = job.getParams();
+        Map<String, Object> params;
         try {
-            filterJobParams(params, job.getTool().getId());
+            params = filterJobParams(job.getParams(), job.getTool().getId());
+            job.setParams(params);
+            updateParams.setParams(params);
         } catch (ToolException e) {
             return abortJob(job, e.getMessage());
         }
