@@ -47,14 +47,14 @@ class JavaClientGenerator(RestClientGenerator):
         headers.append('* limitations under the License.')
         headers.append('*/')
         headers.append('')
-        headers.append('package org.opencb.opencga.client.rest.clients;')
+        headers.append('package org.opencb.' + self.app + '.client.rest.clients;')
         headers.append('')
 
         imports = set()
-        imports.add('org.opencb.opencga.client.exceptions.ClientException;')
-        imports.add('org.opencb.opencga.client.config.ClientConfiguration;')
-        imports.add('org.opencb.opencga.client.rest.AbstractParentClient;')
-        imports.add('org.opencb.opencga.core.response.RestResponse;')
+        imports.add('org.opencb.' + self.app + '.client.exceptions.ClientException;')
+        imports.add('org.opencb.' + self.app + '.client.config.ClientConfiguration;')
+        imports.add('org.opencb.' + self.app + '.client.rest.AbstractParentClient;')
+        imports.add('org.opencb.' + self.app + '.core.response.RestResponse;')
 
         for java_type in self.java_types:
             if java_type in self.type_imports and java_type not in self.ignore_types:
