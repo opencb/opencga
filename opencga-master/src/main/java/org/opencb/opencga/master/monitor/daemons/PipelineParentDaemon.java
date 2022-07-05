@@ -85,7 +85,7 @@ public abstract class PipelineParentDaemon extends MonitorParentDaemon {
 
             boolean satisfies = comparator == Pipeline.Comparator.AND; // true if AND, false if OR
             for (String condition : jobCondition.getChecks()) {
-                String resolvedCondition = resolveDynamicValue(condition, execution);
+                String resolvedCondition = String.valueOf(resolveDynamicValue(condition, execution));
                 boolean check = CheckUtils.check(resolvedCondition);
                 if (comparator == Pipeline.Comparator.AND) {
                     satisfies = satisfies && check;
@@ -129,7 +129,7 @@ public abstract class PipelineParentDaemon extends MonitorParentDaemon {
         return finalParams;
     }
 
-    private String resolveDynamicValue(String value, Execution execution) throws CatalogException {
+    private Object resolveDynamicValue(String value, Execution execution) throws CatalogException {
         if (EXECUTION_VARIABLE_PATTERN.matcher(value).find()) {
             try {
                 String executionJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(execution);
@@ -165,8 +165,8 @@ public abstract class PipelineParentDaemon extends MonitorParentDaemon {
 
         for (Map.Entry<String, Object> entry : params.entrySet()) {
             if (entry.getValue() instanceof String) {
-                String value = String.valueOf(entry.getValue());
-                Matcher matcher = CATALET_VARIABLE_PATTERN.matcher(value);
+                Object value = entry.getValue();
+                Matcher matcher = CATALET_VARIABLE_PATTERN.matcher(String.valueOf(value));
                 while (matcher.find()) {
                     if (catalet == null) {
                         catalet = new Catalet(catalogManager, studyId, userToken);
@@ -175,10 +175,15 @@ public abstract class PipelineParentDaemon extends MonitorParentDaemon {
                     // Fetch data from catalog
                     Object fetch = catalet.fetch(matcher.group(1));
 
-                    // Replace value
-                    value = value.replace(matcher.group(1), String.valueOf(fetch));
+                    if (matcher.group(1).equals(value)) {
+                        // If the group matching is the entire value, we can simply assign the new value to the variable
+                        value = fetch;
+                    } else {
+                        // If the group matching is just part of the string, we will replace the matching group
+                        value = String.valueOf(value).replace(matcher.group(1), String.valueOf(fetch));
+                    }
 
-                    matcher = CATALET_VARIABLE_PATTERN.matcher(value);
+                    matcher = CATALET_VARIABLE_PATTERN.matcher(String.valueOf(value));
                 }
 
                 entry.setValue(value);

@@ -482,7 +482,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     Enums.Priority.getPriority(parameters.getString(QueryParams.PRIORITY.key())).getValue());
         }
 
-        String[] acceptedObjectParams = {QueryParams.RESULT.key(), QueryParams.STUDY.key(), QueryParams.INTERNAL_STATUS.key()};
+        String[] acceptedObjectParams = {QueryParams.RESULT.key(), QueryParams.STUDY.key(), QueryParams.INTERNAL_STATUS.key(),
+                QueryParams.PARAMS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         if (document.getSet().containsKey(QueryParams.STUDY.key())) {

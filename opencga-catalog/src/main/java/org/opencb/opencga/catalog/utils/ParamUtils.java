@@ -378,10 +378,10 @@ public class ParamUtils {
                             processDynamicVariables(sourceMap, tmpMap, pattern);
                         }
                     } else if (values.get(0) instanceof String) {
-                        List<String> newValues = new ArrayList(values.size());
+                        List<Object> newValues = new ArrayList(values.size());
                         // Loop over all the String elements to see if needs any value replacing
                         for (Object value : values) {
-                            String newValue = resolveDynamicPropertyValue(sourceMap, String.valueOf(value), pattern);
+                            Object newValue = resolveDynamicPropertyValue(sourceMap, value, pattern);
                             newValues.add(newValue);
                         }
                         entry.setValue(newValues);
@@ -390,24 +390,28 @@ public class ParamUtils {
             }
             if (entry.getValue() instanceof String) {
                 // Process String
-                String originalValue = String.valueOf(entry.getValue());
-                String newValue = resolveDynamicPropertyValue(sourceMap, originalValue, pattern);
+                Object newValue = resolveDynamicPropertyValue(sourceMap, entry.getValue(), pattern);
                 entry.setValue(newValue);
             }
         }
     }
 
-    public static String resolveDynamicPropertyValue(ObjectMap fullMap, String originalValue, Pattern pattern) throws ToolException {
-        String newValue = originalValue;
-        Matcher matcher = pattern.matcher(originalValue);
+    public static Object resolveDynamicPropertyValue(ObjectMap fullMap, Object originalValue, Pattern pattern) throws ToolException {
+        Object newValue = originalValue;
+        Matcher matcher = pattern.matcher(String.valueOf(originalValue));
         while (matcher.find()) {
             String variable = matcher.group(2);
             Object objectValue = fullMap.get(variable);
             if (objectValue != null) {
                 // Only replace if it is not null, otherwise we will keep the property
-                String value = String.valueOf(objectValue);
-                value = resolveDynamicPropertyValue(fullMap, value, pattern);
-                newValue = newValue.replace(matcher.group(1), value);
+                objectValue = resolveDynamicPropertyValue(fullMap, objectValue, pattern);
+                if (matcher.group(1).equals(newValue)) {
+                    // If the group matching is the entire value, we can simply assign the new value to the variable
+                    newValue = objectValue;
+                } else {
+                    // If the group matching is just part of the string, we will replace the matching group
+                    newValue = String.valueOf(newValue).replace(matcher.group(1), String.valueOf(objectValue));
+                }
             } else {
                 throw new ToolException("Could not find a value for dynamic expression '" + matcher.group(1) + "'");
             }
