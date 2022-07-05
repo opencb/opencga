@@ -1573,6 +1573,9 @@ public class JobManager extends ResourceManager<Job> {
                     case Enums.ExecutionStatus.DONE:
                         stats.setDone(stats.getDone() + count);
                         break;
+                    case Enums.ExecutionStatus.SKIPPED:
+                        stats.setDone(stats.getSkipped() + count);
+                        break;
                     case Enums.ExecutionStatus.ERROR:
                         stats.setError(stats.getError() + count);
                         break;

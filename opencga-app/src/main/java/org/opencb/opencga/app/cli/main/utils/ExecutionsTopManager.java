@@ -144,6 +144,7 @@ public class ExecutionsTopManager {
         executionTable.print(Enums.ExecutionStatus.QUEUED + ": " + top.getStats().getQueued() + ", ");
         executionTable.print(Enums.ExecutionStatus.PENDING + ": " + top.getStats().getPending() + ", ");
         executionTable.print(Enums.ExecutionStatus.DONE + ": " + top.getStats().getDone() + ", ");
+        executionTable.print(Enums.ExecutionStatus.SKIPPED + ": " + top.getStats().getSkipped() + ", ");
         executionTable.print(Enums.ExecutionStatus.ERROR + ": " + top.getStats().getError() + ", ");
         executionTable.print(Enums.ExecutionStatus.ABORTED + ": " + top.getStats().getAborted());
         executionTable.println();

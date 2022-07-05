@@ -288,7 +288,6 @@ public class ExecutionDaemon extends PipelineParentDaemon {
         int pendingJobs = 0;
         int runningJobs = 0;
         int errorJobs = 0;
-//        int doneJobs = 0;
         int queuedJobs = 0;
         int abortedJobs = 0;
 
@@ -306,7 +305,7 @@ public class ExecutionDaemon extends PipelineParentDaemon {
                     errorJobs++;
                     break;
                 case Enums.ExecutionStatus.DONE:
-//                    doneJobs++;
+                case Enums.ExecutionStatus.SKIPPED:
                     break;
                 case Enums.ExecutionStatus.QUEUED:
                     queuedJobs++;
@@ -447,7 +446,6 @@ public class ExecutionDaemon extends PipelineParentDaemon {
                 jobParams.put(JobDaemon.OUTDIR_PARAM, execution.getOutDir().getPath() + pipelineJobId);
                 Job job = createJobInstance(execution.getId(), pipelineJobId, pipelineJob.getDescription(), execution.getPriority(),
                         jobParams, execution.getTags(), pipelineJob.getDependsOn(), execution.getUserId());
-                job.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.BLOCKED));
 //                try {
 //                    job = fillDynamicJobInformation(execution, job, userToken);
 //                } catch (CatalogException e) {
@@ -530,7 +528,7 @@ public class ExecutionDaemon extends PipelineParentDaemon {
     private Job createJobInstance(String executionId, String toolId, String description, Enums.Priority priority,
                                   Map<String, Object> params, List<String> tags, List<String> dependsOn, String userId) {
         return new Job("", "", description, executionId, StringUtils.isNotEmpty(toolId) ? new ToolInfo().setId(toolId) : null, userId, null,
-                params, null, null, priority, JobInternal.init().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.PENDING)), null,
+                params, null, null, priority, JobInternal.init().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.BLOCKED)), null,
                 null, null, CollectionUtils.isNotEmpty(dependsOn)
                 ? dependsOn.stream().map(dpo -> new Job().setId(dpo)).collect(Collectors.toList())
                 : null,

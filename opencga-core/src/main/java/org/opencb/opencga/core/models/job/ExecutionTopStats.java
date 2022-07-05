@@ -27,19 +27,22 @@ public class ExecutionTopStats {
     private int blocked;
     private int pending;
     private int done;
+    private int skipped;
     private int aborted;
     private int error;
 
     public ExecutionTopStats() {
     }
 
-    public ExecutionTopStats(int processed, int blocked, int running, int queued, int pending, int done, int aborted, int error) {
+    public ExecutionTopStats(int processed, int blocked, int running, int queued, int pending, int done, int skipped, int aborted,
+                             int error) {
         this.processed = processed;
         this.blocked = blocked;
         this.running = running;
         this.queued = queued;
         this.pending = pending;
         this.done = done;
+        this.skipped = skipped;
         this.aborted = aborted;
         this.error = error;
     }
@@ -53,6 +56,7 @@ public class ExecutionTopStats {
         sb.append(", blocked=").append(blocked);
         sb.append(", pending=").append(pending);
         sb.append(", done=").append(done);
+        sb.append(", skipped=").append(skipped);
         sb.append(", aborted=").append(aborted);
         sb.append(", error=").append(error);
         sb.append('}');
@@ -74,6 +78,7 @@ public class ExecutionTopStats {
                 .append(blocked, that.blocked)
                 .append(pending, that.pending)
                 .append(done, that.done)
+                .append(skipped, that.skipped)
                 .append(aborted, that.aborted)
                 .append(error, that.error)
                 .isEquals();
@@ -88,6 +93,7 @@ public class ExecutionTopStats {
                 .append(blocked)
                 .append(pending)
                 .append(done)
+                .append(skipped)
                 .append(aborted)
                 .append(error)
                 .toHashCode();
@@ -144,6 +150,15 @@ public class ExecutionTopStats {
 
     public ExecutionTopStats setDone(int done) {
         this.done = done;
+        return this;
+    }
+
+    public int getSkipped() {
+        return skipped;
+    }
+
+    public ExecutionTopStats setSkipped(int skipped) {
+        this.skipped = skipped;
         return this;
     }
 

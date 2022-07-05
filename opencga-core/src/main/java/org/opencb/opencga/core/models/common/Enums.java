@@ -284,12 +284,16 @@ public final class Enums {
          */
         public static final String UNKNOWN = "UNKNOWN";
         /**
+         * SKIPPED status means that the job was skipped because the conditions did not meet.
+         */
+        public static final String SKIPPED = "SKIPPED";
+        /**
          * ABORTED status means that the job was aborted and could not be executed.
          */
         public static final String ABORTED = "ABORTED";
 
         public static final List<String> STATUS_LIST = Arrays.asList(BLOCKED, PENDING, PROCESSED, QUEUED, RUNNING, DONE, ERROR, UNKNOWN,
-                ABORTED, DELETED);
+                ABORTED, SKIPPED, DELETED);
 
         public ExecutionStatus(String status, String message) {
             if (isValid(status)) {

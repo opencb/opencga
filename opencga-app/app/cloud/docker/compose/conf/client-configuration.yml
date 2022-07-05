@@ -8,7 +8,7 @@ cliSessionDuration: 600
 rest:
   hosts:
     - name: "opencga"
-      url: "http://rest:9090/opencga-2.4.0-SNAPSHOT"
+      url: "http://rest:9090/opencga-2.5.0-SNAPSHOT"
   tokenAutoRefresh: true
   tlsAllowInvalidCertificates: false
   timeout: 90000

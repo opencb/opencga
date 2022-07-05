@@ -5,10 +5,10 @@ config:
   timeout: 3600
 params:
   variantStatsDescription: ""
-  variantStatsQuery: ""
+  variantStatsQuery: {}
   signatureId: ""
   signatureDescription: ""
-  signatureQuery: ""
+  signatureQuery: {}
   signatureRelease: ""
   genomePlotId: ""
   genomePlotDescription: ""

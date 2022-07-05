@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 
 public class Catalet {
 
-    public static final Pattern FETCH_PATTERN = Pattern.compile("^FETCH_FIELD\\((\\w+),\\s*(\\S+),\\s*(\\S+),\\s*(\\S+)\\)$");
+    public static final Pattern FETCH_PATTERN = Pattern.compile("^FETCH_FIELD\\((\\w+),\\s*(\\S+),\\s*(\\S*),\\s*(\\S+)\\)$");
     public static final Set<Enums.Resource> RESOURCE_SET;
 
     private final CatalogManager catalogManager;
@@ -74,7 +74,7 @@ public class Catalet {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, expectedField);
         OpenCGAResult<?> search = manager.search(studyStr, query, options, token);
         if (search.getNumResults() == 0) {
-            throw new CatalogException("No results found. Please check your query parameters.");
+            return "";
         } else if (search.getNumResults() > 1) {
             throw new CatalogException("More than one result found. Please narrow down your query.");
         }

@@ -1116,7 +1116,7 @@ public class VariantCommandOptions {
         @Parameter(names = {"--batch-size"}, description = "Number of samples to compute in parallel.")
         public Integer batchSize;
 
-        @Parameter(names = {"--index"}, description = "Index result in catalog as sampleQc.", arity = 0)
+        @Parameter(names = {"--index"}, description = "Index result in catalog as sampleQc.", arity = 1)
         public boolean index;
 
         @Parameter(names = {"--index-id"}, description = "SampleQC identifier")
@@ -1125,7 +1125,7 @@ public class VariantCommandOptions {
         @Parameter(names = {"--index-description"}, description = "SampleQC description")
         public String indexDescription;
 
-        @Parameter(names = {"--index-overwrite"}, description = "Overwrite already indexed sample stats", arity = 0)
+        @Parameter(names = {"--index-overwrite"}, description = "Overwrite already indexed sample stats", arity = 1)
         public boolean indexOverwrite;
     }
 

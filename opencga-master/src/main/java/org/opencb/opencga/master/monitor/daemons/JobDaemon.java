@@ -60,6 +60,7 @@ import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
+import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.analysis.wrappers.bwa.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
@@ -213,7 +214,7 @@ public class JobDaemon extends PipelineParentDaemon {
             put(VariantExportTool.ID, "variant export-run");
             put(VariantStatsAnalysis.ID, "variant stats-run");
             put("variant-stats-export", "variant stats-export-run");
-//            put(SampleVariantStatsAnalysis.ID, "variant sample-stats-run");
+            put(SampleVariantStatsAnalysis.ID, "variant sample-stats-run");
             put(CohortVariantStatsAnalysis.ID, "variant cohort-stats-run");
             put(GwasAnalysis.ID, "variant gwas-run");
             put(PlinkWrapperAnalysis.ID, "variant " + PlinkWrapperAnalysis.ID + "-run");
@@ -546,11 +547,20 @@ public class JobDaemon extends PipelineParentDaemon {
         // Check if the conditions match
         try {
             if (!checkJobCondition(execution, pipelineJob)) {
-                return abortJob(job, "Pipeline job check(s) not satisfied");
+                return skipJob(job, ParamUtils.defaultString(pipelineJob.getWhen().getMessage(), "Pipeline job check(s) not satisfied"));
             }
         } catch (CatalogException e) {
             logger.error("Could not run PipelineJob validations: {}", e.getMessage(), e);
             return abortJob(job, "Could not run PipelineJob validations. " + e.getMessage());
+        }
+
+        Map<String, Object> params;
+        try {
+            // Filter out params that are not the ones used by the tool
+            params = filterJobParams(job.getParams(), job.getTool().getId());
+            job.setParams(params);
+        } catch (ToolException e) {
+            return abortJob(job, e.getMessage());
         }
 
         // If job gets this far, everything is OK and it should be changed to PENDING status
@@ -667,15 +677,7 @@ public class JobDaemon extends PipelineParentDaemon {
             return abortJob(job, e);
         }
 
-        Map<String, Object> params;
-        try {
-            params = filterJobParams(job.getParams(), job.getTool().getId());
-            job.setParams(params);
-            updateParams.setParams(params);
-        } catch (ToolException e) {
-            return abortJob(job, e.getMessage());
-        }
-
+        Map<String, Object> params = job.getParams();
         String outDirPathParam = (String) params.get(OUTDIR_PARAM);
         if (!StringUtils.isEmpty(outDirPathParam)) {
             try {
@@ -1018,6 +1020,11 @@ public class JobDaemon extends PipelineParentDaemon {
     private int abortJob(Job job, Exception e) {
         logger.error(e.getMessage(), e);
         return abortJob(job, e.getMessage());
+    }
+
+    private int skipJob(Job job, String description) {
+        logger.info("Skipping job: {} - Reason: '{}'", job.getId(), description);
+        return setStatus(job, new Enums.ExecutionStatus(Enums.ExecutionStatus.SKIPPED, description));
     }
 
     private int abortJob(Job job, String description) {

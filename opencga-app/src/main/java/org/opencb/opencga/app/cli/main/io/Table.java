@@ -458,7 +458,7 @@ public class Table<T> {
             Ansi.Color fg = Ansi.Color.DEFAULT;
             if (printValue.startsWith("RUNNING")) {
                 fg = Ansi.Color.GREEN;
-            } else if (printValue.startsWith("DONE")) {
+            } else if (printValue.startsWith("DONE") || printValue.startsWith("SKIPPED")) {
                 fg = Ansi.Color.BLUE;
             } else if (printValue.startsWith("ERROR")) {
                 fg = Ansi.Color.RED;
