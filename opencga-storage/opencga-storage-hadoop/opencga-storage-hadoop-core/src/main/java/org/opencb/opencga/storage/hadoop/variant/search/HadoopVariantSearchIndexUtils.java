@@ -26,12 +26,11 @@ public class HadoopVariantSearchIndexUtils {
      * Marks the row as Not Sync Status. This method should be called when loading annotations or statistics, and when removing a study.
      *
      * @param put Mutation to add new Variant information.
-     * @param columnFamily Main column family.
      * @return The same put operation with the {@link VariantColumn#INDEX_NOT_SYNC} column.
      */
-    public static Put addNotSyncStatus(Put put, byte[] columnFamily) {
+    public static Put addNotSyncStatus(Put put) {
         if (put != null) {
-            put.addColumn(columnFamily, VariantColumn.INDEX_NOT_SYNC.bytes(), System.currentTimeMillis(),
+            put.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantColumn.INDEX_NOT_SYNC.bytes(), System.currentTimeMillis(),
                     PBoolean.TRUE_BYTES);
         }
         return put;
@@ -41,12 +40,11 @@ public class HadoopVariantSearchIndexUtils {
      * Marks the row as Unknown Sync Status. This method should be called when loading or removing files.
      *
      * @param put Mutation to add new Variant information.
-     * @param columnFamily Main column family.
      * @return The same put operation with the {@link VariantColumn#INDEX_UNKNOWN} column.
      */
-    public static Put addUnknownSyncStatus(Put put, byte[] columnFamily) {
+    public static Put addUnknownSyncStatus(Put put) {
         if (put != null) {
-            put.addColumn(columnFamily, VariantColumn.INDEX_UNKNOWN.bytes(), System.currentTimeMillis(),
+            put.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantColumn.INDEX_UNKNOWN.bytes(), System.currentTimeMillis(),
                     PBoolean.TRUE_BYTES);
         }
         return put;

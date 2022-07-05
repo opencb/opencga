@@ -47,6 +47,7 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         MODIFICATION_DATE("modificationDate", DATE, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
         ORGANIZATION("organization", TEXT, ""),
+        CELLBASE("cellbase", OBJECT, ""),
         ORGANISM("organism", TEXT_ARRAY, ""),
         ORGANISM_SCIENTIFIC_NAME("organism.scientificName", TEXT, ""),
         ORGANISM_COMMON_NAME("organism.commonName", TEXT, ""),
@@ -60,7 +61,6 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         USER_ID("userId", TEXT, ""),
         INTERNAL_DATASTORES("internal.datastores", TEXT_ARRAY, ""),
         INTERNAL_DATASTORES_VARIANT("internal.datastores.variant", TEXT_ARRAY, ""),
-        INTERNAL_CELLBASE("internal.cellbase", TEXT_ARRAY, ""),
         INTERNAL("internal", TEXT_ARRAY, ""),
 
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"

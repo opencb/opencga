@@ -77,7 +77,8 @@ class OpencgaClient(object):
         self.alignments = Alignment(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.variants = Variant(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.clinical = Clinical(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
-        self.variant_operations = VariantOperation(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
+        self.operations = VariantOperation(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
+        self.variant_operations = self.operations  # DEPRECATED: use 'self.operations'
         self.meta = Meta(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.ga4gh = GA4GH(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.admin = Admin(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)

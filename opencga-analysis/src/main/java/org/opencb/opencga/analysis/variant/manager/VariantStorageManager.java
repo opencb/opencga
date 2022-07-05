@@ -66,6 +66,7 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.variant.VariantPruneParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.core.tools.ToolParams;
@@ -526,7 +527,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                                                          boolean skipRebuild, String token)
             throws CatalogException, StorageEngineException {
         return secureOperation("configure", studyStr, new ObjectMap(), token, engine -> {
-            sampleIndexConfiguration.validate();
+            String version = engine.getCellBaseUtils().getCellBaseClient().getClientConfiguration().getVersion();
+            sampleIndexConfiguration.validate(version);
             String studyFqn = getStudyFqn(studyStr, token);
             engine.getMetadataManager().addSampleIndexConfiguration(studyFqn, sampleIndexConfiguration, true);
 
@@ -598,7 +600,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     }
                 }
             }
-            catalogManager.getProjectManager().setInternalCellbaseConfiguration(project, cellbaseConfiguration, token);
+            catalogManager.getProjectManager().setCellbaseConfiguration(project, cellbaseConfiguration, token);
             result.setTime((int) stopwatch.getTime(TimeUnit.MILLISECONDS));
             return result;
         });
@@ -1007,7 +1009,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     private void setCellbaseConfiguration(VariantStorageEngine engine, String project, String token)
             throws CatalogException {
         CellBaseConfiguration cellbase = catalogManager.getProjectManager()
-                .get(project, new QueryOptions(INCLUDE, ProjectDBAdaptor.QueryParams.INTERNAL.key()), token)
+                .get(project, new QueryOptions(INCLUDE, ProjectDBAdaptor.QueryParams.CELLBASE.key()), token)
                 .first().getCellbase();
         if (cellbase != null) {
             engine.getConfiguration().setCellbase(cellbase);
@@ -1101,6 +1103,13 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         String studyFqn = getStudyFqn(study, token);
         VariantStorageEngine engine = getVariantStorageEngine(studyFqn, token);
         return engine.getMetadataManager().studyExists(studyFqn);
+    }
+
+    public void variantPrune(String project, URI outdir, VariantPruneParams params, String token) throws StorageEngineException, CatalogException {
+        secureOperationByProject(VariantPruneOperationTool.ID, project, new ObjectMap(), token, engine -> {
+            engine.variantsPrune(params.isDryRun(), params.isResume(), outdir);
+            return null;
+        });
     }
 
     // Permission related methods

@@ -55,7 +55,7 @@ public class IndividualQcUtils {
                 "/data/output");
 
         // MAF parameter:
-        //    - For annotated population studies, e.g.: 1kG_phase3:CEU>0.3
+        //    - For annotated population studies, e.g.: 1000G:CEU>0.3
         //    - For cohort, e.g.: cohort:ALL>0.3
 
         // Apply filter: biallelic variants

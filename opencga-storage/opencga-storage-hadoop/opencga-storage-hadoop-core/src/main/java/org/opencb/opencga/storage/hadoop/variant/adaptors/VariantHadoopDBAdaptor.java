@@ -40,9 +40,11 @@ import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.MultiVariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
@@ -100,6 +102,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final VariantHBaseQueryParser hbaseQueryParser;
     private final HBaseFileMetadataDBAdaptor variantFileMetadataDBAdaptor;
     private final int phoenixFetchSize;
+    private final int phoenixQueryComplexityThreshold;
     private boolean clientSideSkip;
     private HBaseManager hBaseManager;
 
@@ -135,6 +138,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         phoenixFetchSize = options.getInt(
                 HadoopVariantStorageOptions.DBADAPTOR_PHOENIX_FETCH_SIZE.key(),
                 HadoopVariantStorageOptions.DBADAPTOR_PHOENIX_FETCH_SIZE.defaultValue());
+
+        phoenixQueryComplexityThreshold = options.getInt(
+                HadoopVariantStorageOptions.DBADAPTOR_PHOENIX_QUERY_COMPLEXITY_THRESHOLD.key(),
+                HadoopVariantStorageOptions.DBADAPTOR_PHOENIX_QUERY_COMPLEXITY_THRESHOLD.defaultValue());
 
         phoenixHelper = new PhoenixHelper(this.configuration);
 
@@ -345,7 +352,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             return archiveIterator(variantQuery, options);
         }
 
-        VariantStorageMetadataManager metadataManager = getMetadataManager();
         Query query = variantQuery.getQuery();
         String unknownGenotype = null;
         if (isValidParam(query, UNKNOWN_GENOTYPE)) {
@@ -365,88 +371,102 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 .build();
 
         if (hbaseIterator) {
-            logger.debug("Creating " + VariantHBaseScanIterator.class.getSimpleName() + " iterator");
-            List<Scan> scans = hbaseQueryParser.parseQueryMultiRegion(variantQuery, options);
-            Iterator<ResultScanner> resScans = scans.stream().map(scan -> {
-                try {
-                    return hBaseManager.getScanner(variantTable, scan);
-                } catch (IOException e) {
-                    throw VariantQueryException.internalException(e);
-                }
-            }).iterator();
-
-            VariantHBaseScanIterator iterator = new VariantHBaseScanIterator(
-                    resScans, metadataManager, converterConfiguration, options);
-
-            // Client side skip!
-            int skip = options.getInt(QueryOptions.SKIP, -1);
-            if (skip > 0) {
-                logger.info("Client side skip! skip = {}", skip);
-                iterator.skip(skip);
-            }
-            return iterator;
+            return hbaseIterator(variantQuery, options, converterConfiguration);
         } else {
-            logger.debug("Table name = " + variantTable);
-            logger.info("Query : " + VariantQueryUtils.printQuery(query));
-            String sql = queryParser.parse(variantQuery, options);
-            logger.info(sql);
-            logger.debug("Creating {} iterator", VariantHBaseResultSetIterator.class);
-            java.sql.Connection jdbcConnection = openJdbcConnection(); // Closed by iterator or catch
-            Statement statement = null; // Closed by iterator or catch
-            ResultSet resultSet = null; // Closed by iterator or catch
-            try {
-                statement = jdbcConnection.createStatement();
-                statement.setFetchSize(options.getInt("batchSize", phoenixFetchSize));
-                resultSet = statement.executeQuery(sql);
+            return phoenixIterator(variantQuery, options, converterConfiguration);
+        }
+    }
 
-                if (options.getBoolean("explain", false)) {
-                    logger.info("---- " + "EXPLAIN " + sql);
+    private VariantHBaseResultSetIterator phoenixIterator(ParsedVariantQuery variantQuery, QueryOptions options,
+                                                          HBaseVariantConverterConfiguration converterConfiguration) {
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        new VariantQueryParser(null, metadataManager).optimize(variantQuery);
+
+        logger.debug("Table name = " + variantTable);
+        logger.info("Query : " + VariantQueryUtils.printQuery(variantQuery.getQuery()));
+        String sql = queryParser.parse(variantQuery, options);
+        logger.info(sql);
+        logger.debug("Creating {} iterator", VariantHBaseResultSetIterator.class);
+        java.sql.Connection jdbcConnection = openJdbcConnection(); // Closed by iterator or catch
+        Statement statement = null; // Closed by iterator or catch
+        ResultSet resultSet = null; // Closed by iterator or catch
+        try {
+            statement = jdbcConnection.createStatement();
+            statement.setFetchSize(options.getInt("batchSize", phoenixFetchSize));
+            resultSet = statement.executeQuery(sql);
+
+            if (options.getBoolean("explain", false)) {
+                logger.info("---- " + "EXPLAIN " + sql);
 //                    phoenixHelper.getPhoenixHelper().explain(getJdbcConnection(), sql, Logger::info);
-                    List<String> planSteps = new LinkedList<>();
-                    resultSet.unwrap(PhoenixResultSet.class).getUnderlyingIterator().explain(planSteps);
-                    for (String planStep : planSteps) {
-                        logger.info(" | " + planStep);
-                    }
+                List<String> planSteps = new LinkedList<>();
+                resultSet.unwrap(PhoenixResultSet.class).getUnderlyingIterator().explain(planSteps);
+                for (String planStep : planSteps) {
+                    logger.info(" | " + planStep);
                 }
+            }
 
 //                VariantPhoenixCursorIterator iterator = new VariantPhoenixCursorIterator(phoenixQuery, getJdbcConnection(), converter);
-                VariantHBaseResultSetIterator iterator = new VariantHBaseResultSetIterator(jdbcConnection, statement,
-                        resultSet, metadataManager, converterConfiguration);
+            VariantHBaseResultSetIterator iterator = new VariantHBaseResultSetIterator(jdbcConnection, statement,
+                    resultSet, metadataManager, converterConfiguration);
 
-                if (clientSideSkip) {
-                    // Client side skip!
-                    int skip = options.getInt(QueryOptions.SKIP, -1);
-                    if (skip > 0) {
-                        logger.info("Client side skip! skip = {}", skip);
-                        iterator.skip(skip);
-                    }
+            if (clientSideSkip) {
+                // Client side skip!
+                int skip = options.getInt(QueryOptions.SKIP, -1);
+                if (skip > 0) {
+                    logger.info("Client side skip! skip = {}", skip);
+                    iterator.skip(skip);
                 }
-                return iterator;
-            } catch (SQLException e) {
-                if (e.getErrorCode() == SQLExceptionCode.COLUMN_NOT_FOUND.getErrorCode()) {
-                    try {
-                        logger.error(e.getMessage());
-                        List<PhoenixHelper.Column> columns = phoenixHelper
-                                .getColumns(jdbcConnection, variantTable, VariantPhoenixSchema.DEFAULT_TABLE_TYPE);
-                        logger.info("Available columns from table " + variantTable + " :");
-                        for (PhoenixHelper.Column column : columns) {
-                            logger.info(" - " + column.toColumnInfo());
-                        }
-                    } catch (SQLException e1) {
-                        logger.error("Error reading columns for table " + variantTable, e1);
-                    }
-                }
-                closeOrSuppress(jdbcConnection, e);
-                closeOrSuppress(statement, e);
-                closeOrSuppress(resultSet, e);
-                throw VariantQueryException.internalException(e);
-            } catch (Exception e) {
-                closeOrSuppress(jdbcConnection, e);
-                closeOrSuppress(statement, e);
-                closeOrSuppress(resultSet, e);
-                throw e;
             }
+            return iterator;
+        } catch (SQLException e) {
+            if (e.getErrorCode() == SQLExceptionCode.COLUMN_NOT_FOUND.getErrorCode()) {
+                try {
+                    logger.error(e.getMessage());
+                    List<PhoenixHelper.Column> columns = phoenixHelper
+                            .getColumns(jdbcConnection, variantTable, VariantPhoenixSchema.DEFAULT_TABLE_TYPE);
+                    logger.info("Available columns from table " + variantTable + " :");
+                    for (PhoenixHelper.Column column : columns) {
+                        logger.info(" - " + column.toColumnInfo());
+                    }
+                } catch (SQLException e1) {
+                    logger.error("Error reading columns for table " + variantTable, e1);
+                }
+            }
+            closeOrSuppress(jdbcConnection, e);
+            closeOrSuppress(statement, e);
+            closeOrSuppress(resultSet, e);
+            throw VariantQueryException.internalException(e);
+        } catch (Exception e) {
+            closeOrSuppress(jdbcConnection, e);
+            closeOrSuppress(statement, e);
+            closeOrSuppress(resultSet, e);
+            throw e;
         }
+    }
+
+    private VariantHBaseScanIterator hbaseIterator(ParsedVariantQuery variantQuery, QueryOptions options,
+                                                   HBaseVariantConverterConfiguration converterConfiguration) {
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        logger.debug("Creating " + VariantHBaseScanIterator.class.getSimpleName() + " iterator");
+        List<Scan> scans = hbaseQueryParser.parseQueryMultiRegion(variantQuery, options);
+        Iterator<ResultScanner> resScans = scans.stream().map(scan -> {
+            try {
+                return hBaseManager.getScanner(variantTable, scan);
+            } catch (IOException e) {
+                throw VariantQueryException.internalException(e);
+            }
+        }).iterator();
+
+        VariantHBaseScanIterator iterator = new VariantHBaseScanIterator(
+                resScans, metadataManager, converterConfiguration, options);
+
+        // Client side skip!
+        int skip = options.getInt(QueryOptions.SKIP, -1);
+        if (skip > 0) {
+            logger.info("Client side skip! skip = {}", skip);
+            iterator.skip(skip);
+        }
+        return iterator;
     }
 
     private void closeOrSuppress(AutoCloseable autoCloseable, Exception e) {
@@ -514,6 +534,20 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             return new VariantHadoopArchiveDBIterator(resScan, archiveHelper, options).setRegion(region);
         } catch (IOException e) {
             throw VariantQueryException.internalException(e);
+        }
+    }
+
+    @Override
+    public MultiVariantDBIterator iterator(Iterator<?> variants, Query query, QueryOptions options, int batchSize) {
+        boolean nativeQuery = VariantHBaseQueryParser.isSupportedQuery(query);
+        if (nativeQuery) {
+            // Don't use custom split
+            return VariantDBAdaptor.super.iterator(variants, query, options, batchSize);
+        } else {
+            // Use phoenix custom split for large number of genes.
+            MultiVariantDBIterator.VariantQueryIterator queryIterator =
+                    new VariantQueryIteratorCustomSplit(variants, query, batchSize, options);
+            return new MultiVariantDBIterator(variants, options, this::iterator, queryIterator);
         }
     }
 
@@ -633,4 +667,50 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         }
     }
 
+    private class VariantQueryIteratorCustomSplit extends MultiVariantDBIterator.VariantQueryIterator {
+        private final VariantQueryParser parser;
+        private final ParsedVariantQuery variantQuery;
+        private final int cts;
+        private final int bts;
+        private final int flags;
+
+        VariantQueryIteratorCustomSplit(Iterator<?> variants, Query query, int batchSize, QueryOptions options) {
+            super(variants, query, batchSize);
+            parser = new VariantQueryParser(null, getMetadataManager());
+            variantQuery = parser.parseQuery(query, options);
+            cts = sizeOrOne(variantQuery.getConsequenceTypes());
+            bts = sizeOrOne(variantQuery.getBiotypes());
+            flags = sizeOrOne(variantQuery.getTranscriptFlags());
+        }
+
+        private int sizeOrOne(List<String> list) {
+            int size = list.size();
+            return size == 0 ? 1 : size;
+        }
+
+        @Override
+        protected boolean isTooComplex(List<Object> variants) {
+            if (variants.size() < 50) {
+                // Skip first 50 variants check
+                return false;
+            } else if (variants.size() % 10 != 0) {
+                // Only check one every 10 variants
+                return false;
+            }
+            ParsedVariantQuery variantQuery = new ParsedVariantQuery(this.variantQuery);
+            variantQuery.getQuery().put(ID_INTERSECT.key(), variants);
+            parser.optimize(variantQuery, true);
+
+            int complexityIndex = 0;
+
+            ParsedVariantQuery.VariantQueryXref xrefs = variantQuery.getXrefs();
+            complexityIndex += xrefs.getGenes().size() * cts * bts * flags;
+            if (complexityIndex > phoenixQueryComplexityThreshold) {
+                // It is too complex
+                logger.info("Limit query to {} variants due to complexity index of {}", variants.size(), complexityIndex);
+                return true;
+            }
+            return false;
+        }
+    }
 }

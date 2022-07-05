@@ -22,6 +22,8 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysisTest;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
@@ -34,10 +36,12 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -60,11 +64,22 @@ public class ClinicalAnalysisUtilsTest {
         catalogManagerResource.getConfiguration().serialize(
                 new FileOutputStream(catalogManagerResource.getOpencgaHome().resolve("conf").resolve("configuration.yml").toString()));
 
-        InputStream storageConfigurationStream = MongoDBVariantStorageTest.class.getClassLoader()
+        InputStream inputStream = MongoDBVariantStorageTest.class.getClassLoader()
                 .getResourceAsStream("storage-configuration.yml");
-        Files.copy(storageConfigurationStream, catalogManagerResource.getOpencgaHome().resolve("conf").resolve("storage-configuration.yml"),
+        Files.copy(inputStream, catalogManagerResource.getOpencgaHome().resolve("conf").resolve("storage-configuration.yml"),
                 StandardCopyOption.REPLACE_EXISTING);
 
+        // Exomiser analysis
+        Path exomiserDataPath = catalogManagerResource.getOpencgaHome().resolve("analysis/exomiser");
+        Files.createDirectories(exomiserDataPath);
+        Path parent = Paths.get(ClinicalAnalysisUtilsTest.class.getClassLoader().getResource("pheno").getPath()).getParent();
+        Files.copy(parent.resolve("exomiser/application.properties"), exomiserDataPath.resolve("application.properties"),
+                StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(parent.resolve("exomiser/output.yml"), exomiserDataPath.resolve("output.yml"),
+                StandardCopyOption.REPLACE_EXISTING);
+
+
+        // Storage
         ObjectMap storageOptions = new ObjectMap()
                 .append(VariantStorageOptions.ANNOTATE.key(), true)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
@@ -80,6 +95,7 @@ public class ClinicalAnalysisUtilsTest {
         Files.createDirectories(outDir);
 
         variantStorageManager.index(clinicalTest.studyFqn, "family.vcf", outDir.toString(), storageOptions, clinicalTest.token);
+        variantStorageManager.index(clinicalTest.studyFqn, "exomiser.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
 
         return clinicalTest;
     }

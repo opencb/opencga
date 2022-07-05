@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,6 +32,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.user.Account;
@@ -39,8 +41,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import java.io.IOException;
 import java.util.Collections;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by pfurio on 28/11/16.
@@ -184,5 +185,24 @@ public class ProjectManagerTest extends GenericTest {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Cannot update organism");
         catalogManager.getProjectManager().update(pr.getId(), objectMap, null, sessionIdUser);
+    }
+
+    @Test
+    public void updateCellbaseInProject() throws CatalogException, JsonProcessingException {
+        Project pr = catalogManager.getProjectManager().create("project2", "Project about some genomes", "", "Homo sapiens",
+                null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
+        assertNotNull(pr.getCellbase());
+        assertEquals("https://ws.zettagenomics.com/cellbase", pr.getCellbase().getUrl());
+        assertEquals("v5", pr.getCellbase().getVersion());
+
+        CellBaseConfiguration cb = new CellBaseConfiguration("https://ws.opencb.org/cellbase", "v3");
+        OpenCGAResult<Project> update = catalogManager.getProjectManager().setCellbaseConfiguration(pr.getId(),
+                new CellBaseConfiguration("https://ws.opencb.org/cellbase", "v3"), sessionIdUser);
+        assertEquals(1, update.getNumUpdated());
+
+        Project project = catalogManager.getProjectManager().get(pr.getId(), QueryOptions.empty(), sessionIdUser).first();
+        assertNotNull(pr.getCellbase());
+        assertEquals(cb.getUrl(), project.getCellbase().getUrl());
+        assertEquals(cb.getVersion(), project.getCellbase().getVersion());
     }
 }

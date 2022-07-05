@@ -81,7 +81,7 @@ class RestResponse:
                     return '.'
         if is_list:
             if len(result2) == 0 or isinstance(result2[0], (list, dict)):
-                return '.'
+                return '{} items'.format(len(result2))
             return ','.join(map(str, set(result2)))
         else:
             return result2

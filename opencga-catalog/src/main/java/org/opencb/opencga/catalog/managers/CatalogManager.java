@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -135,15 +136,15 @@ public class CatalogManager implements AutoCloseable {
             configuration.setAdmin(new Admin());
         }
 
+        String secretKey = ParamUtils.defaultString(configuration.getAdmin().getSecretKey(),
+                PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH));
+        String algorithm = ParamUtils.defaultString(configuration.getAdmin().getAlgorithm(), "HS256");
         if (existsCatalogDB()) {
-            String secretKey = catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readSecretKey();
-            String algorithm = catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readAlgorithm();
-
-            configuration.getAdmin().setAlgorithm(algorithm);
-            configuration.getAdmin().setSecretKey(secretKey);
-        } else {
-            configuration.getAdmin().setAlgorithm("HS256");
+            secretKey = catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readSecretKey();
+            algorithm = catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readAlgorithm();
         }
+        configuration.getAdmin().setAlgorithm(algorithm);
+        configuration.getAdmin().setSecretKey(secretKey);
     }
 
     public void updateJWTParameters(ObjectMap params, String token) throws CatalogException {

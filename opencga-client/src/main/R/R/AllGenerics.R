@@ -5,22 +5,22 @@ setGeneric("userClient", function(OpencgaR, filterId, users, user, endpointName,
 
 # ##############################################################################
 ## ProjectClient
-setGeneric("projectClient", function(OpencgaR, projects, project, endpointName, params=NULL, ...)
+setGeneric("projectClient", function(OpencgaR, project, projects, endpointName, params=NULL, ...)
     standardGeneric("projectClient"))
 
 # ##############################################################################
 ## StudyClient
-setGeneric("studyClient", function(OpencgaR, group, templateId, studies, variableSet, study, members, endpointName, params=NULL, ...)
+setGeneric("studyClient", function(OpencgaR, group, studies, study, members, templateId, variableSet, endpointName, params=NULL, ...)
     standardGeneric("studyClient"))
 
 # ##############################################################################
 ## FileClient
-setGeneric("fileClient", function(OpencgaR, annotationSet, folder, files, members, file, endpointName, params=NULL, ...)
+setGeneric("fileClient", function(OpencgaR, files, folder, file, annotationSet, members, endpointName, params=NULL, ...)
     standardGeneric("fileClient"))
 
 # ##############################################################################
 ## ExecutionClient
-setGeneric("executionClient", function(OpencgaR, jobs, job, executions, members, endpointName, params=NULL, ...)
+setGeneric("executionClient", function(OpencgaR, jobs, executions, job, members, endpointName, params=NULL, ...)
     standardGeneric("executionClient"))
 
 # ##############################################################################
@@ -30,22 +30,22 @@ setGeneric("jobClient", function(OpencgaR, jobs, job, members, endpointName, par
 
 # ##############################################################################
 ## SampleClient
-setGeneric("sampleClient", function(OpencgaR, annotationSet, samples, members, sample, endpointName, params=NULL, ...)
+setGeneric("sampleClient", function(OpencgaR, sample, annotationSet, samples, members, endpointName, params=NULL, ...)
     standardGeneric("sampleClient"))
 
 # ##############################################################################
 ## IndividualClient
-setGeneric("individualClient", function(OpencgaR, annotationSet, individuals, members, individual, endpointName, params=NULL, ...)
+setGeneric("individualClient", function(OpencgaR, individuals, individual, annotationSet, members, endpointName, params=NULL, ...)
     standardGeneric("individualClient"))
 
 # ##############################################################################
 ## FamilyClient
-setGeneric("familyClient", function(OpencgaR, annotationSet, members, family, families, endpointName, params=NULL, ...)
+setGeneric("familyClient", function(OpencgaR, family, families, annotationSet, members, endpointName, params=NULL, ...)
     standardGeneric("familyClient"))
 
 # ##############################################################################
 ## CohortClient
-setGeneric("cohortClient", function(OpencgaR, cohort, cohorts, members, annotationSet, endpointName, params=NULL, ...)
+setGeneric("cohortClient", function(OpencgaR, cohorts, cohort, annotationSet, members, endpointName, params=NULL, ...)
     standardGeneric("cohortClient"))
 
 # ##############################################################################
@@ -64,9 +64,9 @@ setGeneric("variantClient", function(OpencgaR, endpointName, params=NULL, ...)
     standardGeneric("variantClient"))
 
 # ##############################################################################
-## ClinicalClient
-setGeneric("clinicalClient", function(OpencgaR, clinicalAnalysis, clinicalAnalyses, interpretation, members, interpretations, endpointName, params=NULL, ...)
-    standardGeneric("clinicalClient"))
+## ClinicalAnalysisClient
+setGeneric("clinicalanalysisClient", function(OpencgaR, clinicalAnalysis, interpretation, members, clinicalAnalyses, interpretations, endpointName, params=NULL, ...)
+    standardGeneric("clinicalanalysisClient"))
 
 # ##############################################################################
 ## VariantOperationClient

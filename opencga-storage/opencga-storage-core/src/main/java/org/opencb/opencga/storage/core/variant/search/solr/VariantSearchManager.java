@@ -37,6 +37,7 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
+import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -57,6 +58,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 
 /**
@@ -506,6 +508,19 @@ public class VariantSearchManager {
 
     public void close() throws IOException {
         solrManager.close();
+    }
+
+    public DataWriter<Variant> getVariantDeleter(String collection) {
+        return list -> {
+            try {
+                if (list != null) {
+                    delete(collection, list.stream().map(Variant::toString).collect(Collectors.toList()));
+                }
+            } catch (IOException | SolrServerException e) {
+                throw new RuntimeException(e);
+            }
+            return true;
+        };
     }
 
     /*-------------------------------------

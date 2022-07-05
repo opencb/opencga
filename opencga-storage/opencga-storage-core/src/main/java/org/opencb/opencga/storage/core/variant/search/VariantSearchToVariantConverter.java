@@ -31,6 +31,7 @@ import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
@@ -936,7 +937,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 }
             }
             // Add 0.0 for mot commonly used populations, this will allow to skip a NON EXIST query and improve performance
-            populationFrequencies.putIfAbsent("popFreq" + FIELD_SEPARATOR + "1kG_phase3__ALL", 0.0f);
+            populationFrequencies.putIfAbsent("popFreq" + FIELD_SEPARATOR + ParamConstants.POP_FREQ_1000G + FIELD_SEPARATOR + "ALL", 0.0f);
             populationFrequencies.putIfAbsent("popFreq" + FIELD_SEPARATOR + "GNOMAD_GENOMES__ALL", 0.0f);
 //            populationFrequencies.putIfAbsent("popFreq" + FIELD_SEPARATOR + "GNOMAD_EXOMES__ALL", 0.0f);
             // Set population frequencies into the model
@@ -1075,7 +1076,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             variantSearchModel.getStudies().add(studyId);
 
             // We store the cohort stats:
-            //    - altStats__STUDY__COHORT = alternate allele freq, e.g. altStats_1kg_phase3_ALL=0.02
+            //    - altStats__STUDY__COHORT = alternate allele freq, e.g. altStats_1000G_ALL=0.02
             //    - passStats__STUDY__COHORT = pass filter freq
             if (studyEntry.getStats() != null && studyEntry.getStats().size() > 0) {
                 List<VariantStats> studyStats = studyEntry.getStats();

@@ -83,6 +83,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     private final IndividualConverter individualConverter;
     private final VersionedMongoDBAdaptor versionedMongoDBAdaptor;
 
+    private final FamilyMongoDBAdaptor familyDBAdaptor;
+
     public IndividualMongoDBAdaptor(MongoDBCollection individualCollection, MongoDBCollection archiveIndividualCollection,
                                     MongoDBCollection deletedIndividualCollection, Configuration configuration,
                                     MongoDBAdaptorFactory dbAdaptorFactory) {
@@ -94,6 +96,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         this.individualConverter = new IndividualConverter();
         this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(individualCollection, archiveIndividualCollection,
                 deletedIndividualCollection);
+
+        this.familyDBAdaptor = dbAdaptorFactory.getCatalogFamilyDBAdaptor();
     }
 
     @Override
@@ -445,8 +449,13 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                             individual.getId(), parameters.getString(QueryParams.ID.key()));
 
                     // Update the family roles
-                    dbAdaptorFactory.getCatalogFamilyDBAdaptor().updateIndividualIdFromFamilies(clientSession, individual.getStudyUid(),
+                    familyDBAdaptor.updateIndividualIdFromFamilies(clientSession, individual.getStudyUid(),
                             individual.getUid(), individual.getId(), parameters.getString(QueryParams.ID.key()));
+                }
+
+                if (parameters.containsKey(QueryParams.FATHER_UID.key()) || parameters.containsKey(QueryParams.MOTHER_UID.key())) {
+                    // If the parents have changed, we need to check family roles
+                    recalculateFamilyRolesForMember(clientSession, individual.getStudyUid(), individual.getUid());
                 }
 
                 logger.debug("Individual {} successfully updated", individual.getId());
@@ -455,6 +464,24 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             return endWrite(tmpStartTime, 1, 1, events);
         }, (MongoDBIterator<Document> iterator) -> updateReferencesAfterIndividualVersionIncrement(clientSession, individual.getStudyUid(),
                 iterator));
+    }
+
+    private void recalculateFamilyRolesForMember(ClientSession clientSession, long studyUid, long memberUid)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        Query query = new Query()
+                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), memberUid);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(FamilyDBAdaptor.QueryParams.ID.key(), FamilyDBAdaptor.QueryParams.UID.key(),
+                        FamilyDBAdaptor.QueryParams.VERSION.key(), FamilyDBAdaptor.QueryParams.STUDY_UID.key(),
+                        FamilyDBAdaptor.QueryParams.MEMBERS.key() + "." + IndividualDBAdaptor.QueryParams.ID.key()));
+        try (DBIterator<Family> iterator = familyDBAdaptor.iterator(clientSession, query, options)) {
+            while (iterator.hasNext()) {
+                Family family = iterator.next();
+                familyDBAdaptor.privateUpdate(clientSession, family, new ObjectMap(), null,
+                        new QueryOptions(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true));
+            }
+        }
     }
 
     private void updateReferencesAfterIndividualVersionIncrement(ClientSession clientSession, long studyUid,
@@ -468,7 +495,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
 
         if (!individualMap.isEmpty()) {
-            dbAdaptorFactory.getCatalogFamilyDBAdaptor().updateIndividualReferencesInFamily(clientSession, studyUid, individualMap);
+            familyDBAdaptor.updateIndividualReferencesInFamily(clientSession, studyUid, individualMap);
         }
     }
 
@@ -480,8 +507,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         Individual currentIndividual = get(clientSession, new Query()
                 .append(QueryParams.STUDY_UID.key(), individual.getStudyUid())
                 .append(QueryParams.UID.key(), individual.getUid()), individualOptions).first();
-
-        FamilyMongoDBAdaptor familyDBAdaptor = dbAdaptorFactory.getCatalogFamilyDBAdaptor();
 
         Query familyQuery = new Query()
                 .append(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), individual.getUid())
@@ -919,8 +944,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
     OpenCGAResult<Object> privateDelete(ClientSession clientSession, Document individualDocument)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        FamilyMongoDBAdaptor familyDBAdaptor = dbAdaptorFactory.getCatalogFamilyDBAdaptor();
-
         String individualId = individualDocument.getString(QueryParams.ID.key());
         long individualUid = individualDocument.getLong(PRIVATE_UID);
         long studyUid = individualDocument.getLong(PRIVATE_STUDY_UID);

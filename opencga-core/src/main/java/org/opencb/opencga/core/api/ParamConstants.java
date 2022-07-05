@@ -73,6 +73,12 @@ public class ParamConstants {
     public static final String DISORDERS_DESCRIPTION = "Comma separated list of disorder ids or names";
     public static final String BODY_PARAM = "body";
     public static final String OVERWRITE = "overwrite";
+
+    public static final String POP_FREQ_1000G_CB_V4 = "1kG_phase3";
+    public static final String POP_FREQ_1000G_CB_V5 = "1000G";
+    public static final String POP_FREQ_1000G = POP_FREQ_1000G_CB_V5;
+    public static final String POP_FREQ_GNOMAD_GENOMES = "GNOMAD_GENOMES";
+
     // ---------------------------------------------
     public static final String FORCE = "force";
     public static final String ANNOTATION_DOC_URL = "http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0";

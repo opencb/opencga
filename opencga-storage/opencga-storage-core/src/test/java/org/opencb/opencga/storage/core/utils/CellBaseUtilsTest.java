@@ -10,12 +10,15 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.ConsequenceType;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -138,6 +141,21 @@ public class CellBaseUtilsTest {
         assertNotNull(versions);
         assertNotNull(versions.allResults());
         assertNotEquals(0, versions.allResults().size());
+    }
+
+    @Test
+    public void testGetTranscriptFlags() throws IOException {
+        CellBaseDataResponse<VariantAnnotation> v = cellBaseClient.getVariantClient()
+                .getAnnotationByVariantIds(Collections.singletonList("1:26644214:T:C"), new QueryOptions());
+        VariantAnnotation variantAnnotation = v.firstResult();
+        System.out.println("variantAnnotation = " + variantAnnotation);
+        boolean withTranscriptFlags = false;
+        for (ConsequenceType consequenceType : variantAnnotation.getConsequenceTypes()) {
+            if (consequenceType.getTranscriptFlags() != null) {
+                withTranscriptFlags = true;
+            }
+        }
+        assertTrue(withTranscriptFlags);
     }
 
 }
