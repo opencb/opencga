@@ -18,8 +18,8 @@ package org.opencb.opencga.app.cli.admin;
 
 import com.beust.jcommander.ParameterException;
 import org.opencb.commons.utils.GitRepositoryState;
-import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.admin.executors.*;
+import org.opencb.opencga.app.cli.main.impl.CommandExecutorImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +82,7 @@ public class AdminMain {
                 System.exit(1);
             }
         } else {
-            CommandExecutor commandExecutor = null;
+            CommandExecutorImpl commandExecutor = null;
             // Check if any command -h option is present
             if (cliOptionsParser.isHelp()) {
                 cliOptionsParser.printUsage();

@@ -5,7 +5,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 
-import static org.opencb.opencga.app.cli.GeneralCliOptions.CommonCommandOptions;
+import static org.opencb.commons.app.cli.GeneralCliOptions.CommonCommandOptions;
 
 /**
  * This class contains methods for the Files command line. OpenCGA version: 2.2.0-SNAPSHOT PATH: /{apiVersion}/files

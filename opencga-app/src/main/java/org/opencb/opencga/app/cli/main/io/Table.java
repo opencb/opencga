@@ -18,13 +18,9 @@ import static org.fusesource.jansi.Ansi.ansi;
 public class Table<T> {
     public static final String DEFAULT_EMPTY_VALUE = "-";
     private final List<TableColumnSchema<T>> schema = new ArrayList<>();
-    private List<TableColumn<T>> columns = new ArrayList<>();
     private final TablePrinter tablePrinter;
+    private List<TableColumn<T>> columns = new ArrayList<>();
     private boolean multiLine = true;
-
-    public enum PrinterType {
-        ASCII, JANSI, TSV,
-    }
 
     public Table() {
         this(new JAnsiTablePrinter());
@@ -141,10 +137,40 @@ public class Table<T> {
         columns = schema.stream().map(column -> new TableColumn<>(column, rows)).collect(Collectors.toList());
     }
 
+    public enum PrinterType {
+        ASCII, JANSI, TSV,
+    }
+
+
+    public interface TablePrinter {
+
+        // Restores initial position so content is overwritten
+        void restorePosition();
+
+        void println(String content);
+
+        void print(String content);
+
+        <T> void printHeader(List<Table.TableColumn<T>> columns);
+
+        default <T> void printFooter(List<TableColumn<T>> columns) {
+            printFullLine(columns);
+        }
+
+        <T> void printLine(List<Table.TableColumn<T>> columns);
+
+        <T> void printFullLine(List<Table.TableColumn<T>> columns);
+
+        <T> void printRow(List<TableColumn<T>> columns, int i);
+
+        default <T> void printRowMultiLine(List<TableColumn<T>> columns, int i) {
+            printRow(columns, i);
+        }
+    }
 
     public static class TableColumn<T> {
         private final TableColumnSchema<T> tableColumnSchema;
-        private ArrayList<String> values = new ArrayList<>();
+        private final ArrayList<String> values = new ArrayList<>();
         private int width;
 
         public TableColumn(TableColumnSchema<T> tableColumnSchema, List<T> rows) {
@@ -241,16 +267,12 @@ public class Table<T> {
     }
 
     public static class TableColumnSchema<T> {
-        private interface SecureGet<T> extends Function<T, String> {
-        }
-
         public static final int DEFAULT_MAX_WIDTH = 30;
         public static final int DEFAULT_MIN_WIDTH = 5;
         private final String name;
         private final SecureGet<T> get;
         private final int minWidth;
         private final int maxWidth;
-
         public TableColumnSchema(String name, Function<T, String> get) {
             this(name, get, DEFAULT_MAX_WIDTH, DEFAULT_MIN_WIDTH);
         }
@@ -309,41 +331,18 @@ public class Table<T> {
         public int getMinWidth() {
             return minWidth;
         }
-    }
 
-    public interface TablePrinter {
-
-        // Restores initial position so content is overwritten
-        void restorePosition();
-
-        void println(String content);
-
-        void print(String content);
-
-        <T> void printHeader(List<Table.TableColumn<T>> columns);
-
-        default <T> void printFooter(List<TableColumn<T>> columns) {
-            printFullLine(columns);
-        }
-
-        <T> void printLine(List<Table.TableColumn<T>> columns);
-
-        <T> void printFullLine(List<Table.TableColumn<T>> columns);
-
-        <T> void printRow(List<TableColumn<T>> columns, int i);
-
-        default <T> void printRowMultiLine(List<TableColumn<T>> columns, int i) {
-            printRow(columns, i);
+        private interface SecureGet<T> extends Function<T, String> {
         }
     }
 
     public static class JAnsiTablePrinter implements TablePrinter {
 
         private final PrintStream out;
-        private String sep = " ";
-        private String pad = " ";
+        private final String sep = " ";
+        private final String pad = " ";
+        private final boolean colour;
         private int numLines = 0;
-        private boolean colour;
 
         public JAnsiTablePrinter() {
             this(AnsiConsole.out);
@@ -505,9 +504,9 @@ public class Table<T> {
     }
 
     public static class AsciiTablePrinter implements TablePrinter {
-        private String sep = "|";
-        private String pad = " ";
-        private PrintStream out;
+        private final String sep = "|";
+        private final String pad = " ";
+        private final PrintStream out;
 
         public AsciiTablePrinter() {
             out = System.out;
@@ -595,8 +594,8 @@ public class Table<T> {
     }
 
     public static class TsvTablePrinter implements TablePrinter {
-        private String sep = "\t";
-        private PrintStream out;
+        private final String sep = "\t";
+        private final PrintStream out;
 
         public TsvTablePrinter() {
             this(System.out);

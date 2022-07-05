@@ -20,12 +20,12 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import org.opencb.commons.utils.CommandLineUtils;
+import org.opencb.commons.app.cli.CliOptionsParser;
+import org.opencb.commons.app.cli.GeneralCliOptions;
+import org.opencb.commons.app.cli.main.utils.CommandLineUtils;
 import org.opencb.commons.utils.GitRepositoryState;
-import org.opencb.opencga.app.cli.CliOptionsParser;
-import org.opencb.opencga.app.cli.CommandExecutor;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
+import org.opencb.opencga.app.cli.main.impl.CommandExecutorImpl;
 import org.opencb.opencga.core.models.user.Account;
 
 import java.util.List;
@@ -36,10 +36,10 @@ import java.util.List;
  */
 public class AdminCliOptionsParser extends CliOptionsParser {
 
+    protected static final String DEPRECATED = "[DEPRECATED] ";
     private final GeneralCliOptions.CommonCommandOptions generalCommonCommandOptions;
     private final AdminCommonCommandOptions commonCommandOptions;
     private final IgnorePasswordCommonCommandOptions noPasswordCommonCommandOptions;
-
     private final CatalogCommandOptions catalogCommandOptions;
     private final UsersCommandOptions usersCommandOptions;
     private final AuditCommandOptions auditCommandOptions;
@@ -48,8 +48,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     private final PanelCommandOptions panelCommandOptions;
     private final AdminCliOptionsParser.MetaCommandOptions metaCommandOptions;
     private final MigrationCommandOptions migrationCommandOptions;
-
-    protected static final String DEPRECATED = "[DEPRECATED] ";
 
     public AdminCliOptionsParser() {
         jCommander.setProgramName("opencga-admin.sh");
@@ -136,6 +134,102 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         return generalCommonCommandOptions.help;
     }
 
+    @Override
+    public void printUsage() {
+        String parsedCommand = getCommand();
+        if (parsedCommand.isEmpty()) {
+            System.err.println("");
+            System.err.println("Program:     OpenCGA Admin (OpenCB)");
+            System.err.println("Version:     " + GitRepositoryState.get().getBuildVersion());
+            System.err.println("Git commit:  " + GitRepositoryState.get().getCommitId());
+            System.err.println("Description: Big Data platform for processing and analysing NGS data");
+            System.err.println("");
+            System.err.println("Usage:       opencga-admin.sh [-h|--help] [--version] <command> [options]");
+            System.err.println("");
+            System.err.println("Commands:");
+            printMainUsage();
+            System.err.println("");
+        } else {
+            String parsedSubCommand = getSubCommand();
+            if (parsedSubCommand.isEmpty()) {
+                System.err.println("");
+                System.err.println("Usage:   opencga-admin.sh " + parsedCommand + " <subcommand> [options]");
+                System.err.println("");
+                System.err.println("Subcommands:");
+                printCommands(jCommander.getCommands().get(parsedCommand));
+                System.err.println("");
+            } else {
+                System.err.println("");
+                System.err.println("Usage:   opencga-admin.sh " + parsedCommand + " " + parsedSubCommand + " [options]");
+                System.err.println("");
+                System.err.println("Options:");
+                CommandLineUtils.printCommandUsage(jCommander.getCommands().get(parsedCommand).getCommands().get(parsedSubCommand));
+
+                System.err.println("");
+            }
+        }
+    }
+
+    public AdminCommonCommandOptions getCommonOptions() {
+        return commonCommandOptions;
+    }
+
+    public CatalogCommandOptions getCatalogCommandOptions() {
+        return catalogCommandOptions;
+    }
+
+    public UsersCommandOptions getUsersCommandOptions() {
+        return usersCommandOptions;
+    }
+
+    public AuditCommandOptions getAuditCommandOptions() {
+        return auditCommandOptions;
+    }
+
+    public ToolsCommandOptions getToolsCommandOptions() {
+        return toolsCommandOptions;
+    }
+
+    public ServerCommandOptions getServerCommandOptions() {
+        return serverCommandOptions;
+    }
+
+    public AdminCliOptionsParser.MetaCommandOptions getMetaCommandOptions() {
+        return this.metaCommandOptions;
+    }
+
+    public PanelCommandOptions getPanelCommandOptions() {
+        return panelCommandOptions;
+    }
+
+    public MigrationCommandOptions getMigrationCommandOptions() {
+        return migrationCommandOptions;
+    }
+
+    /**
+     * Auxiliary class for Database connection.
+     */
+    public static class CatalogDatabaseCommandOptions {
+
+        @Parameter(names = {"-d", "--database-prefix"}, description = "Prefix name of the catalog database. If not present this is read "
+                + "from configuration.yml.")
+        public String prefix;
+
+        @Parameter(names = {"--database-host"}, description = "Database host and port, eg. localhost:27017. If not present is read from configuration.yml")
+        public String databaseHost;
+
+        @Parameter(names = {"--database-user"}, description = "Database user name. If not present is read from configuration.yml")
+        public String databaseUser;
+
+        @Parameter(names = {"--database-password"}, description = "Database password. If not present is read from configuration.yml", password = true, arity = 0)
+        public String databasePassword;
+    }
+
+
+
+    /*
+     *  CATALOG SUB-COMMANDS
+     */
 
     /**
      * This class contains all those parameters available for all 'commands'
@@ -150,7 +244,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         }
 
         public String getParsedSubCommand() {
-            return CommandExecutor.getParsedSubCommand(jCommander);
+            return CommandExecutorImpl.getParsedSubCommand(jCommander);
         }
     }
 
@@ -178,7 +272,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @Parameter(names = {"-p", "--password"}, description = "Administrator password", hidden = true, arity = 0)
         public boolean adminPassword;
     }
-
 
     /*
      * Catalog CLI options
@@ -246,17 +339,15 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     @Parameters(commandNames = {"audit"}, commandDescription = "Implements different tools for working with audit")
     public class AuditCommandOptions extends CommandOptions {
 
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
         QueryAuditCommandOptions queryAuditCommandOptions;
         StatsAuditCommandOptions statsAuditCommandOptions;
-
-        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         public AuditCommandOptions() {
             this.queryAuditCommandOptions = new QueryAuditCommandOptions();
             this.statsAuditCommandOptions = new StatsAuditCommandOptions();
         }
     }
-
 
     /*
      * Tools CLI options
@@ -321,31 +412,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
             this.metaKeyCommandOptions = new MetaKeyCommandOptions();
         }
     }
-
-    /**
-     * Auxiliary class for Database connection.
-     */
-    public static class CatalogDatabaseCommandOptions {
-
-        @Parameter(names = {"-d", "--database-prefix"}, description = "Prefix name of the catalog database. If not present this is read "
-                + "from configuration.yml.")
-        public String prefix;
-
-        @Parameter(names = {"--database-host"}, description = "Database host and port, eg. localhost:27017. If not present is read from configuration.yml")
-        public String databaseHost;
-
-        @Parameter(names = {"--database-user"}, description = "Database user name. If not present is read from configuration.yml")
-        public String databaseUser;
-
-        @Parameter(names = {"--database-password"}, description = "Database password. If not present is read from configuration.yml", password = true, arity = 0)
-        public String databasePassword;
-    }
-
-
-
-    /*
-     *  CATALOG SUB-COMMANDS
-     */
 
     @Parameters(commandNames = {"demo"}, commandDescription = "Install and populate a catalog database with demonstration purposes.")
     public class DemoCatalogCommandOptions {
@@ -515,7 +581,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
     }
 
-
     /*
      * USER SUB-COMMANDS
      */
@@ -635,7 +700,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
     }
 
-
     @Parameters(commandNames = {"quota"}, commandDescription = "Set a new disk quota for an user")
     public class QuotaUserCommandOptions extends CatalogDatabaseCommandOptions {
 
@@ -661,7 +725,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public String userId;
 
     }
-
 
     /*
      * TOOL SUB-COMMANDS
@@ -776,78 +839,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
         @Parameter(names = {"--algorithm"}, description = "Update JWT algorithm in OpenCGA", arity = 1)
         public String algorithm;
-    }
-
-    @Override
-    public void printUsage() {
-        String parsedCommand = getCommand();
-        if (parsedCommand.isEmpty()) {
-            System.err.println("");
-            System.err.println("Program:     OpenCGA Admin (OpenCB)");
-            System.err.println("Version:     " + GitRepositoryState.get().getBuildVersion());
-            System.err.println("Git commit:  " + GitRepositoryState.get().getCommitId());
-            System.err.println("Description: Big Data platform for processing and analysing NGS data");
-            System.err.println("");
-            System.err.println("Usage:       opencga-admin.sh [-h|--help] [--version] <command> [options]");
-            System.err.println("");
-            System.err.println("Commands:");
-            printMainUsage();
-            System.err.println("");
-        } else {
-            String parsedSubCommand = getSubCommand();
-            if (parsedSubCommand.isEmpty()) {
-                System.err.println("");
-                System.err.println("Usage:   opencga-admin.sh " + parsedCommand + " <subcommand> [options]");
-                System.err.println("");
-                System.err.println("Subcommands:");
-                printCommands(jCommander.getCommands().get(parsedCommand));
-                System.err.println("");
-            } else {
-                System.err.println("");
-                System.err.println("Usage:   opencga-admin.sh " + parsedCommand + " " + parsedSubCommand + " [options]");
-                System.err.println("");
-                System.err.println("Options:");
-                CommandLineUtils.printCommandUsage(jCommander.getCommands().get(parsedCommand).getCommands().get(parsedSubCommand));
-                System.err.println("");
-            }
-        }
-    }
-
-
-    public AdminCommonCommandOptions getCommonOptions() {
-        return commonCommandOptions;
-    }
-
-    public CatalogCommandOptions getCatalogCommandOptions() {
-        return catalogCommandOptions;
-    }
-
-    public UsersCommandOptions getUsersCommandOptions() {
-        return usersCommandOptions;
-    }
-
-    public AuditCommandOptions getAuditCommandOptions() {
-        return auditCommandOptions;
-    }
-
-    public ToolsCommandOptions getToolsCommandOptions() {
-        return toolsCommandOptions;
-    }
-
-    public ServerCommandOptions getServerCommandOptions() {
-        return serverCommandOptions;
-    }
-
-    public AdminCliOptionsParser.MetaCommandOptions getMetaCommandOptions() {
-        return this.metaCommandOptions;
-    }
-
-    public PanelCommandOptions getPanelCommandOptions() {
-        return panelCommandOptions;
-    }
-
-    public MigrationCommandOptions getMigrationCommandOptions() {
-        return migrationCommandOptions;
     }
 
 }

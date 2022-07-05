@@ -4,7 +4,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.commons.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.core.api.ParamConstants;
 
@@ -12,12 +12,10 @@ import org.opencb.opencga.core.api.ParamConstants;
 public class FamilyCommandOptions {
 
     public final static String OUTDIR_PARAM_NAME = "outdir";
-
-    public SecondaryIndex secondaryIndex;
-    public TsvLoad tsvLoad;
-
     public final GeneralCliOptions.CommonCommandOptions familyCommandOptions;
     public final InternalCliOptionsParser.JobOptions internalJobOptions;
+    public SecondaryIndex secondaryIndex;
+    public TsvLoad tsvLoad;
     public JCommander jCommander;
 
     public FamilyCommandOptions(GeneralCliOptions.CommonCommandOptions familyCommandOptions, JCommander jCommander) {

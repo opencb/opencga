@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.collections4.CollectionUtils;
+import org.opencb.commons.app.cli.main.config.IClientConfiguration;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.slf4j.Logger;
@@ -35,7 +36,7 @@ import java.util.Map;
 /**
  * Created by imedina on 04/05/16.
  */
-public final class ClientConfiguration {
+public final class ClientConfiguration implements IClientConfiguration {
 
     private static final String DEFAULT_CONFIGURATION_FORMAT = "YAML";
     private static Logger logger;

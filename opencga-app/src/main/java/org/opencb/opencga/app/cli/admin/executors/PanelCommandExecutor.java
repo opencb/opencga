@@ -3,8 +3,8 @@ package org.opencb.opencga.app.cli.admin.executors;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.tools.clinical.DiseasePanelParsers;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
+import org.opencb.opencga.app.cli.main.impl.CommandExecutorImpl;
 import org.opencb.opencga.core.common.JacksonUtils;
 
 import java.io.FileWriter;
@@ -19,7 +19,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class PanelCommandExecutor extends CommandExecutor {
+public class PanelCommandExecutor extends CommandExecutorImpl {
 
     private final AdminCliOptionsParser.PanelCommandOptions panelCommandOptions;
 

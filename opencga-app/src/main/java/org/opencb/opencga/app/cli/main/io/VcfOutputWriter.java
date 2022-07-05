@@ -26,7 +26,7 @@ public class VcfOutputWriter extends AbstractOutputWriter {
 
     private final List<String> annotations;
     private final PrintStream outputStream;
-    private VariantMetadata metadata;
+    private final VariantMetadata metadata;
 
     public VcfOutputWriter(VariantMetadata metadata, List<String> annotations, PrintStream outputStream) {
         this.metadata = metadata;
@@ -73,7 +73,7 @@ public class VcfOutputWriter extends AbstractOutputWriter {
             writer.pre();
             for (Variant variant : variantQueryResult.getResults()) {
                 // FIXME: The server may be returning the StudyEntry with a different name
-                String shortStudy = study.substring(study.lastIndexOf(':') + 1, study.length());
+                String shortStudy = study.substring(study.lastIndexOf(':') + 1);
                 if (variant.getStudy(study) == null && variant.getStudy(shortStudy) != null) {
                     variant.addStudyEntry(variant.getStudy(shortStudy).setStudyId(study));
                 }

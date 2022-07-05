@@ -19,13 +19,13 @@ package org.opencb.opencga.app.cli.main.executors;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.app.cli.GeneralCliOptions;
+import org.opencb.commons.app.cli.main.utils.CommandLineUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.DataModelsUtils;
-import org.opencb.opencga.app.cli.CommandExecutor;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.main.impl.CommandExecutorImpl;
+import org.opencb.opencga.app.cli.main.impl.SessionManagerImpl;
 import org.opencb.opencga.app.cli.main.io.*;
-import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
-import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -51,7 +51,7 @@ import java.util.List;
  *
  * @author imedina
  */
-public abstract class OpencgaCommandExecutor extends CommandExecutor {
+public abstract class OpencgaCommandExecutor extends CommandExecutorImpl {
 
     protected OpenCGAClient openCGAClient;
     protected AbstractOutputWriter writer;
@@ -131,7 +131,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
             } else {
                 privateLogger.debug("No token has been provided, reading session file");
                 if (!StringUtils.isEmpty(sessionManager.getSession().getToken())
-                        && !SessionManager.NO_TOKEN.equals(sessionManager.getSession().getToken())) {
+                        && !SessionManagerImpl.NO_TOKEN.equals(sessionManager.getSession().getToken())) {
                     // FIXME it seems skipDuration is not longer used,
                     //  this should be either implemented or removed
                     if (skipDuration) {

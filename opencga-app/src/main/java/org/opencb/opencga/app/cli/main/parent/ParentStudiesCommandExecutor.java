@@ -17,8 +17,8 @@ package org.opencb.opencga.app.cli.main.parent;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.app.cli.GeneralCliOptions;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.StudiesCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;

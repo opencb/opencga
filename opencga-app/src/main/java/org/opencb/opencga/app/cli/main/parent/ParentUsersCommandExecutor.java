@@ -16,11 +16,11 @@
 package org.opencb.opencga.app.cli.main.parent;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.app.cli.GeneralCliOptions;
+import org.opencb.commons.app.cli.main.utils.CommandLineUtils;
 import org.opencb.commons.datastore.core.Event;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.UsersCommandOptions;
-import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.QueryType;

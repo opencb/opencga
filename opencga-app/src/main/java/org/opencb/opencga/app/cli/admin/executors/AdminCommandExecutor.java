@@ -17,8 +17,8 @@
 package org.opencb.opencga.app.cli.admin.executors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
+import org.opencb.opencga.app.cli.main.impl.CommandExecutorImpl;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.Admin;
 
@@ -29,7 +29,7 @@ import java.util.Collections;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public abstract class AdminCommandExecutor extends CommandExecutor {
+public abstract class AdminCommandExecutor extends CommandExecutorImpl {
 
     protected String adminPassword;
 
@@ -43,7 +43,7 @@ public abstract class AdminCommandExecutor extends CommandExecutor {
         return adminPassword;
     }
 
-    public CommandExecutor setAdminPassword(String adminPassword) {
+    public CommandExecutorImpl setAdminPassword(String adminPassword) {
         this.adminPassword = adminPassword;
         return this;
     }
@@ -55,6 +55,7 @@ public abstract class AdminCommandExecutor extends CommandExecutor {
                 catalogDatabaseOptions.databasePassword,
                 adminOptions.adminPassword);
     }
+
     protected void setCatalogDatabaseCredentials(String host, String prefix, String user, String password, String adminPassword)
             throws CatalogException {
 

@@ -1,6 +1,6 @@
 package org.opencb.opencga.app.cli.main.executors;
 
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
+import org.opencb.opencga.app.cli.main.parser.OpencgaCliOptionsParser;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 import static org.opencb.commons.utils.PrintUtils.printError;

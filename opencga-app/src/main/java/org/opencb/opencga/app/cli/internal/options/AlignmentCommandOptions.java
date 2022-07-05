@@ -17,12 +17,12 @@
 package org.opencb.opencga.app.cli.internal.options;
 
 import com.beust.jcommander.*;
+import org.opencb.commons.app.cli.GeneralCliOptions;
 import org.opencb.opencga.analysis.wrappers.bwa.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 
 import java.util.HashMap;
@@ -36,11 +36,15 @@ import static org.opencb.opencga.core.api.ParamConstants.*;
 @Parameters(commandNames = {"alignment"}, commandDescription = "Implement several tools for the genomic alignment analysis")
 public class AlignmentCommandOptions {
 
+    public final GeneralCliOptions.JobOptions commonJobOptions;
+    public final InternalCliOptionsParser.JobOptions internalJobOptions;
+    private final Object commonJobOptionsObject;
+    private final Object internalJobOptionsObject;
     public IndexAlignmentCommandOptions indexAlignmentCommandOptions;
     public QueryAlignmentCommandOptions queryAlignmentCommandOptions;
     public QcAlignmentCommandOptions qcAlignmentCommandOptions;
     public GeneCoverageStatsAlignmentCommandOptions geneCoverageStatsAlignmentCommandOptions;
-//    public StatsAlignmentCommandOptions statsAlignmentCommandOptions;
+    //    public StatsAlignmentCommandOptions statsAlignmentCommandOptions;
 //    public FlagStatsAlignmentCommandOptions flagStatsAlignmentCommandOptions;
 //    public FastQcMetricsAlignmentCommandOptions fastQcMetricsAlignmentCommandOptions;
 //    public HsMetricsAlignmentCommandOptions hsMetricsAlignmentCommandOptions;
@@ -48,19 +52,13 @@ public class AlignmentCommandOptions {
     public CoverageQueryAlignmentCommandOptions coverageQueryAlignmentCommandOptions;
     public CoverageRatioAlignmentCommandOptions coverageRatioAlignmentCommandOptions;
     public CoverageStatsAlignmentCommandOptions coverageStatsAlignmentCommandOptions;
-
     // Wrappers
     public BwaCommandOptions bwaCommandOptions;
     public SamtoolsCommandOptions samtoolsCommandOptions;
     public DeeptoolsCommandOptions deeptoolsCommandOptions;
     public FastqcCommandOptions fastqcCommandOptions;
     public PicardCommandOptions picardCommandOptions;
-
     public GeneralCliOptions.CommonCommandOptions analysisCommonOptions;
-    public final GeneralCliOptions.JobOptions commonJobOptions;
-    public final InternalCliOptionsParser.JobOptions internalJobOptions;
-    private final Object commonJobOptionsObject;
-    private final Object internalJobOptionsObject;
     public JCommander jCommander;
 
     public AlignmentCommandOptions(GeneralCliOptions.CommonCommandOptions analysisCommonCommandOptions, JCommander jCommander,

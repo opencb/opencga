@@ -1,14 +1,15 @@
 import argparse
-import sys
-import re
 import os
+import re
+import sys
 
 from rest_client_generator import RestClientGenerator
 
+
 class RClientGenerator(RestClientGenerator):
 
-    def __init__(self, server_url, output_dir):
-        super().__init__(server_url, output_dir)
+    def __init__(self, app, server_url, output_dir):
+        super().__init__(app, server_url, output_dir)
 
         self.categories = {
             'Users': 'User',
@@ -57,7 +58,8 @@ class RClientGenerator(RestClientGenerator):
         text.append("#' @include AllClasses.R")
         text.append("#' @include AllGenerics.R")
         text.append("#' @include commons.R\n")
-        text.append("#' @description This function implements the OpenCGA calls for managing {}.\n".format(self.get_category_name(category)))
+        text.append("#' @description This function implements the OpenCGA calls for managing {}.\n".format(
+            self.get_category_name(category)))
         text.append("#' The following table summarises the available *actions* for this client:\n#'")
         text.append("#' | endpointName | Endpoint WS | parameters accepted |")
         text.append("#' | -- | :-- | --: |")
@@ -70,11 +72,12 @@ class RClientGenerator(RestClientGenerator):
                     if param["param"] == "path":
                         class_path_params.append(param["name"])
             text.append("#' | {} | {} | {} |".format(self.get_method_name(myEndpoint, category),
-                                                       myEndpoint['path'],
-                                                       ", ".join(endpoint_params)))
+                                                     myEndpoint['path'],
+                                                     ", ".join(endpoint_params)))
         path_params = set(class_path_params)
         text.append("#'\n#' @md")
-        text.append("#' @seealso \\url{http://docs.opencb.org/display/opencga/Using+OpenCGA} and the RESTful API documentation")
+        text.append(
+            "#' @seealso \\url{http://docs.opencb.org/display/opencga/Using+OpenCGA} and the RESTful API documentation")
         text.append("#' \\url{http://bioinfo.hpc.cam.ac.uk/opencga-prod/webservices/}")
         text.append("#' [*]: Required parameter")
         text.append("#' @export\n")
@@ -126,7 +129,8 @@ class RClientGenerator(RestClientGenerator):
 
         # Get query params
         if len(self.get_mandatory_query_params(endpoint)) > 0:
-            query_params = 'c({})'.format(','.join('"{0}"'.format(w) for w in self.get_mandatory_query_params(endpoint)))
+            query_params = 'c({})'.format(
+                ','.join('"{0}"'.format(w) for w in self.get_mandatory_query_params(endpoint)))
         else:
             query_params = 'NULL'
 
@@ -137,16 +141,15 @@ class RClientGenerator(RestClientGenerator):
         #                   'subcategoryId={}, action="{}", params=params, httpMethod="{}", as.queryParam={}, ...),'.format(
         append_text(text, '{}{}=fetchOpenCGA(object=OpencgaR, category={}, categoryId={}, subcategory={}, '
                           'subcategoryId={}, action="{}", params=params, httpMethod="{}", as.queryParam={}, ...),'.format(
-                   ' ' * 8,
-                   self.get_method_name(endpoint, category),
-                   '"{0}"'.format(self.get_endpoint_category()),
-                   self.get_endpoint_id1() if self.get_endpoint_id1() else 'NULL',
-                   '"{0}"'.format(self.get_endpoint_subcategory()) if self.get_endpoint_subcategory() else 'NULL',
-                   self.get_endpoint_id2() if self.get_endpoint_id2() else 'NULL',
-                   self.get_endpoint_action() if self.get_endpoint_action() else 'NULL',
-                   self.get_endpoint_method(endpoint),
-                   query_params), sep=8)
-
+            ' ' * 8,
+            self.get_method_name(endpoint, category),
+            '"{0}"'.format(self.get_endpoint_category()),
+            self.get_endpoint_id1() if self.get_endpoint_id1() else 'NULL',
+            '"{0}"'.format(self.get_endpoint_subcategory()) if self.get_endpoint_subcategory() else 'NULL',
+            self.get_endpoint_id2() if self.get_endpoint_id2() else 'NULL',
+            self.get_endpoint_action() if self.get_endpoint_action() else 'NULL',
+            self.get_endpoint_method(endpoint),
+            query_params), sep=8)
 
         # text.append('{}"""'.format(' ' * 8))
         # # text.append(self.format_line('{}{}'.format(' ' * 8, self.get_endpoint_description(endpoint))))
@@ -238,21 +241,22 @@ def _append_text(array, string, sep, comment):
             array.append(my_string)
 
 
-
 def _setup_argparse():
-    desc = 'This script creates automatically all RestClient files'
-    parser = argparse.ArgumentParser(description=desc, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    desc = 'This script creates automatically all RestClients files'
+    parser = argparse.ArgumentParser(description=desc)
 
+    parser.add_argument('app', help='Client app')
     parser.add_argument('server_url', help='server URL')
     parser.add_argument('output_dir', help='output directory')
     args = parser.parse_args()
     return args
 
+
 def main():
     # Getting arg parameters
     args = _setup_argparse()
 
-    client_generator = RClientGenerator(args.server_url, args.output_dir)
+    client_generator = RClientGenerator(args.app, args.server_url, args.output_dir)
     client_generator.create_rest_clients()
 
 

@@ -39,6 +39,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-cli</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-catalog</artifactId>
         </dependency>
@@ -186,7 +190,7 @@
                     <programs>
                         <program>
                             <id>opencga.sh</id>
-                            <mainClass>org.opencb.opencga.app.cli.main.OpencgaMain</mainClass>
+                            <mainClass>org.opencb.opencga.app.cli.main.OpencgaCommandLine</mainClass>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>

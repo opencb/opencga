@@ -15,8 +15,8 @@
  */
 package org.opencb.opencga.app.cli.main.parent;
 
+import org.opencb.commons.app.cli.GeneralCliOptions;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.JobsCommandOptions;
 import org.opencb.opencga.app.cli.main.utils.JobsLog;

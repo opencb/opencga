@@ -4,8 +4,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import com.microsoft.graph.models.extensions.Post;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.commons.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.core.api.ParamConstants;
 
@@ -15,16 +14,14 @@ import java.util.List;
 public class FileCommandOptions {
 
     public final static String OUTDIR_PARAM_NAME = "outdir";
-
+    public final GeneralCliOptions.CommonCommandOptions fileCommonOptions;
+    public final InternalCliOptionsParser.JobOptions internalJobOptions;
     public DeleteCommandOptions deleteCommandOptions;
     public UnlinkCommandOptions unlinkCommandOptions;
     public FetchCommandOptions fetchCommandOptions;
     public PostlinkCommandOptions postlinkCommandOptions;
     public SecondaryIndex secondaryIndex;
     public TsvLoad tsvLoad;
-
-    public final GeneralCliOptions.CommonCommandOptions fileCommonOptions;
-    public final InternalCliOptionsParser.JobOptions internalJobOptions;
     public JCommander jCommander;
 
     public FileCommandOptions(GeneralCliOptions.CommonCommandOptions fileCommonCommandOptions, JCommander jCommander) {

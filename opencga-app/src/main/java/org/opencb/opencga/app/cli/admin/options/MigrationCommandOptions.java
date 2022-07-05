@@ -4,7 +4,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.commons.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.app.cli.admin.executors.MigrationCommandExecutor;
 import org.opencb.opencga.catalog.migration.Migration;
@@ -34,6 +34,25 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         this.runManualCommandOptions = new RunManualCommandOptions();
     }
 
+    public SummaryCommandOptions getSummaryCommandOptions() {
+        return summaryCommandOptions;
+    }
+
+    public SearchCommandOptions getSearchCommandOptions() {
+        return searchCommandOptions;
+    }
+
+    public RunCommandOptions getRunCommandOptions() {
+        return runCommandOptions;
+    }
+
+    public RunManualCommandOptions getRunManualCommandOptions() {
+        return runManualCommandOptions;
+    }
+
+    public AdminCliOptionsParser.AdminCommonCommandOptions getCommonOptions() {
+        return commonOptions;
+    }
 
     @Parameters(commandNames = {"summary"}, commandDescription = "Obtain migrations status summary")
     public class SummaryCommandOptions extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
@@ -67,7 +86,7 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         @Parameter(names = {"--version"}, description = "Migration version")
         public String version;
     }
-    
+
     @Parameters(commandNames = {"run"}, commandDescription = "Run migrations")
     public class RunCommandOptions extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
 
@@ -110,25 +129,5 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         @Parameter(names = {"--force"}, description = "Force migration run even if it's on status DONE, ON_HOLD or REDUNDANT", arity = 0)
         public boolean force;
 
-    }
-
-    public SummaryCommandOptions getSummaryCommandOptions() {
-        return summaryCommandOptions;
-    }
-
-    public SearchCommandOptions getSearchCommandOptions() {
-        return searchCommandOptions;
-    }
-
-    public RunCommandOptions getRunCommandOptions() {
-        return runCommandOptions;
-    }
-
-    public RunManualCommandOptions getRunManualCommandOptions() {
-        return runManualCommandOptions;
-    }
-
-    public AdminCliOptionsParser.AdminCommonCommandOptions getCommonOptions() {
-        return commonOptions;
     }
 }

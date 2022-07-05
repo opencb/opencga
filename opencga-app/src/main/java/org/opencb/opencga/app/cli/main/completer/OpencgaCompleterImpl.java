@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.main;
+package org.opencb.opencga.app.cli.main.completer;
 
 import org.jline.reader.Candidate;
+import org.opencb.opencga.app.cli.main.OpencgaCommandLine;
+import org.opencb.opencga.app.cli.main.impl.SessionManagerImpl;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 
-public class OpenCgaCompleterImpl extends OpenCgaCompleter {
+public class OpencgaCompleterImpl extends OpencgaCompleter {
 
     public List<Candidate> checkCandidates(Map<String, List<Candidate>> candidatesMap, String line) {
         List<Candidate> res = new ArrayList();
@@ -48,7 +50,7 @@ public class OpenCgaCompleterImpl extends OpenCgaCompleter {
 
 
     private List<Candidate> getStudyCandidates() {
-        List<String> studies = OpencgaMain.getShell().getSessionManager().getSession().getStudies();
+        List<String> studies = ((SessionManagerImpl) OpencgaCommandLine.getCommandLine().getShell().getSessionManager()).getSession().getStudies();
         List<Candidate> res = new ArrayList();
         for (String study : studies) {
             res.add(new Candidate(study));

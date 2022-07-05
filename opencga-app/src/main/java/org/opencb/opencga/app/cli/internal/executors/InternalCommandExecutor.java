@@ -16,11 +16,11 @@
 
 package org.opencb.opencga.app.cli.internal.executors;
 
+import org.opencb.commons.app.cli.GeneralCliOptions;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.ToolRunner;
-import org.opencb.opencga.app.cli.CommandExecutor;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.main.impl.CommandExecutorImpl;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.models.study.Study;
@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public abstract class InternalCommandExecutor extends CommandExecutor {
+public abstract class InternalCommandExecutor extends CommandExecutorImpl {
 
     protected CatalogManager catalogManager;
     protected StorageEngineFactory storageEngineFactory;

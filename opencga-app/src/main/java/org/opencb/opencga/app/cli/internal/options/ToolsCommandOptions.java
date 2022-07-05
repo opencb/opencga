@@ -1,10 +1,10 @@
 package org.opencb.opencga.app.cli.internal.options;
 
 import com.beust.jcommander.*;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.commons.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
-import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.tools.annotations.Tool;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,13 +12,11 @@ import java.util.Map;
 @Parameters(commandNames = {"tools"}, commandDescription = "Implements different tools for working with tools")
 public class ToolsCommandOptions {
 
+    public final InternalCliOptionsParser.JobOptions internalJobOptions;
     public ListToolCommandOptions listToolCommandOptions;
     public ShowToolCommandOptions showToolCommandOptions;
     public ExecuteJobCommandOptions executeJobCommandOptions;
     public ExecuteToolCommandOptions executeToolCommandOptions;
-
-    public final InternalCliOptionsParser.JobOptions internalJobOptions;
-
     public JCommander jCommander;
     public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
 

@@ -1,8 +1,9 @@
 package org.opencb.opencga.app.cli.main.utils;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.opencb.commons.app.cli.main.utils.CommandLineUtils;
 import org.opencb.commons.utils.PrintUtils;
-import org.opencb.opencga.app.cli.main.OpencgaMain;
+import org.opencb.opencga.app.cli.main.OpencgaCommandLine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +31,7 @@ public class LoginUtils {
         //      2. login imedina
         //      3. login --host host
         //      4. login imedina --host host
-        switch(args.length) {
+        switch (args.length) {
             case 2:
                 if (args[1].startsWith("-")) {
                     printUsage(args);
@@ -60,7 +61,7 @@ public class LoginUtils {
         // Add 'users' as first argument
         args = ArrayUtils.addFirst(args, "users");
 
-        if (args.length == 2 || args.length == 4 ) {
+        if (args.length == 2 || args.length == 4) {
             // We need to ask for the user in 2 of the 4 possible cases here:
             //  1. users login
             //  2. users login --host host
@@ -111,7 +112,7 @@ public class LoginUtils {
         if (!isHelp(args)) {
             PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Invalid Command: ", CommandLineUtils.argsToString(args)));
         }
-        if (OpencgaMain.isShellMode()) {
+        if (OpencgaCommandLine.isShellMode()) {
             PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Usage:", "       login [user] [--host host]"));
         } else {
             PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Usage:", "       opencga.sh login [user] [--host host]"));

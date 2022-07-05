@@ -20,10 +20,10 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import org.opencb.commons.utils.CommandLineUtils;
+import org.opencb.commons.app.cli.CliOptionsParser;
+import org.opencb.commons.app.cli.GeneralCliOptions;
+import org.opencb.commons.app.cli.main.utils.CommandLineUtils;
 import org.opencb.commons.utils.GitRepositoryState;
-import org.opencb.opencga.app.cli.CliOptionsParser;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.options.*;
 
 import java.util.List;
@@ -280,6 +280,111 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         return commonCommandOptions.help;
     }
 
+    @Override
+    public void printUsage() {
+        String parsedCommand = getCommand();
+        if (parsedCommand.isEmpty()) {
+            System.err.println("");
+            System.err.println("Program:     OpenCGA Analysis (OpenCB)");
+            System.err.println("Version:     " + GitRepositoryState.get().getBuildVersion());
+            System.err.println("Git commit:  " + GitRepositoryState.get().getCommitId());
+            System.err.println("Description: Big Data platform for processing and analysing NGS data");
+            System.err.println("");
+            System.err.println("Usage:       opencga-internal.sh [-h|--help] [--version] <command> [options]");
+            System.err.println("");
+            System.err.println("Commands:");
+            printMainUsage();
+            System.err.println("");
+        } else {
+            String parsedSubCommand = getSubCommand();
+            if (parsedSubCommand.isEmpty()) {
+                System.err.println("");
+                System.err.println("Usage:   opencga-internal.sh " + parsedCommand + " <subcommand> [options]");
+                System.err.println("");
+                System.err.println("Subcommands:");
+                printCommands(jCommander.getCommands().get(parsedCommand));
+                System.err.println("");
+            } else {
+                System.err.println("");
+                System.err.println("Usage:   opencga-internal.sh " + parsedCommand + " " + parsedSubCommand + " [options]");
+                System.err.println("");
+                System.err.println("Options:");
+                CommandLineUtils.printCommandUsage(jCommander.getCommands().get(parsedCommand).getCommands().get(parsedSubCommand));
+                System.err.println("");
+            }
+        }
+    }
+
+    public GeneralCliOptions.CommonCommandOptions getCommonOptions() {
+        return commonCommandOptions;
+    }
+
+    public org.opencb.opencga.app.cli.internal.options.VariantCommandOptions getVariantCommandOptions() {
+        return variantCommandOptions;
+    }
+
+    public FunctionalCommandOptions getFunctionalCommandOptions() {
+        return functionalCommandOptions;
+    }
+
+    public ExpressionCommandOptions getExpressionCommandOptions() {
+        return expressionCommandOptions;
+    }
+
+    public ToolsCommandOptions getToolsCommandOptions() {
+        return toolsCommandOptions;
+    }
+
+    public AlignmentCommandOptions getAlignmentCommandOptions() {
+        return alignmentCommandOptions;
+    }
+
+
+
+    /*
+     * USER SUB-COMMANDS
+     */
+
+    public ClinicalCommandOptions getClinicalCommandOptions() {
+        return clinicalCommandOptions;
+    }
+
+    public FileCommandOptions getFileCommandOptions() {
+        return fileCommandOptions;
+    }
+
+    /*
+     *  Variant SUB-COMMANDS
+     */
+
+    public SampleCommandOptions getSampleCommandOptions() {
+        return sampleCommandOptions;
+    }
+
+    public FamilyCommandOptions getFamilyCommandOptions() {
+        return familyCommandOptions;
+    }
+
+    public CohortCommandOptions getCohortCommandOptions() {
+        return cohortCommandOptions;
+    }
+
+    public IndividualCommandOptions getIndividualCommandOptions() {
+        return individualCommandOptions;
+    }
+
+    public JobCommandOptions getJobCommandOptions() {
+        return jobCommandOptions;
+    }
+
+    public DiseasePanelInternalCommandOptions getPanelInternalCommandOptions() {
+        return panelInternalCommandOptions;
+    }
+
+    public StudyCommandOptions getStudyCommandOptions() {
+        return studyCommandOptions;
+    }
+
     public static class JobOptions {
         @Parameter(names = {"--job"}, description = "Job id executing the command line", arity = 1)
         public String jobId;
@@ -382,12 +487,6 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
     }
 
-
-
-    /*
-     * USER SUB-COMMANDS
-     */
-
     @Parameters(commandNames = {"fatigo"}, commandDescription = "Create a new user in Catalog database and the workspace")
     public class FatigoFunctionalCommandOptions extends CatalogDatabaseCommandOptions {
 
@@ -413,10 +512,6 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         @Parameter(names = {"--user-id"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
         public String userId;
     }
-
-    /*
-     *  Variant SUB-COMMANDS
-     */
 
     public class QueryCommandOptions {
 
@@ -450,100 +545,5 @@ public class InternalCliOptionsParser extends CliOptionsParser {
 
         @Parameter(names = {"--count"}, description = "Count results. Do not return elements.", required = false, arity = 0)
         public boolean count;
-    }
-
-    @Override
-    public void printUsage() {
-        String parsedCommand = getCommand();
-        if (parsedCommand.isEmpty()) {
-            System.err.println("");
-            System.err.println("Program:     OpenCGA Analysis (OpenCB)");
-            System.err.println("Version:     " + GitRepositoryState.get().getBuildVersion());
-            System.err.println("Git commit:  " + GitRepositoryState.get().getCommitId());
-            System.err.println("Description: Big Data platform for processing and analysing NGS data");
-            System.err.println("");
-            System.err.println("Usage:       opencga-internal.sh [-h|--help] [--version] <command> [options]");
-            System.err.println("");
-            System.err.println("Commands:");
-            printMainUsage();
-            System.err.println("");
-        } else {
-            String parsedSubCommand = getSubCommand();
-            if (parsedSubCommand.isEmpty()) {
-                System.err.println("");
-                System.err.println("Usage:   opencga-internal.sh " + parsedCommand + " <subcommand> [options]");
-                System.err.println("");
-                System.err.println("Subcommands:");
-                printCommands(jCommander.getCommands().get(parsedCommand));
-                System.err.println("");
-            } else {
-                System.err.println("");
-                System.err.println("Usage:   opencga-internal.sh " + parsedCommand + " " + parsedSubCommand + " [options]");
-                System.err.println("");
-                System.err.println("Options:");
-                CommandLineUtils.printCommandUsage(jCommander.getCommands().get(parsedCommand).getCommands().get(parsedSubCommand));
-                System.err.println("");
-            }
-        }
-    }
-
-    public GeneralCliOptions.CommonCommandOptions getCommonOptions() {
-        return commonCommandOptions;
-    }
-
-    public org.opencb.opencga.app.cli.internal.options.VariantCommandOptions getVariantCommandOptions() {
-        return variantCommandOptions;
-    }
-
-    public FunctionalCommandOptions getFunctionalCommandOptions() {
-        return functionalCommandOptions;
-    }
-
-    public ExpressionCommandOptions getExpressionCommandOptions() {
-        return expressionCommandOptions;
-    }
-
-    public ToolsCommandOptions getToolsCommandOptions() {
-        return toolsCommandOptions;
-    }
-
-    public AlignmentCommandOptions getAlignmentCommandOptions() {
-        return alignmentCommandOptions;
-    }
-
-    public ClinicalCommandOptions getClinicalCommandOptions() {
-        return clinicalCommandOptions;
-    }
-
-    public FileCommandOptions getFileCommandOptions() {
-        return fileCommandOptions;
-    }
-
-    public SampleCommandOptions getSampleCommandOptions() {
-        return sampleCommandOptions;
-    }
-
-    public FamilyCommandOptions getFamilyCommandOptions() {
-        return familyCommandOptions;
-    }
-
-    public CohortCommandOptions getCohortCommandOptions() {
-        return cohortCommandOptions;
-    }
-
-    public IndividualCommandOptions getIndividualCommandOptions() {
-        return individualCommandOptions;
-    }
-
-    public JobCommandOptions getJobCommandOptions() {
-        return jobCommandOptions;
-    }
-
-    public DiseasePanelInternalCommandOptions getPanelInternalCommandOptions() {
-        return panelInternalCommandOptions;
-    }
-
-    public StudyCommandOptions getStudyCommandOptions() {
-        return studyCommandOptions;
     }
 }

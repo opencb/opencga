@@ -1,13 +1,12 @@
 package org.opencb.opencga.app.cli.main.parent;
 
 import com.beust.jcommander.JCommander;
-import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.utils.CommandLineUtils;
+import org.opencb.commons.app.cli.CliOptionsParser;
+import org.opencb.commons.app.cli.GeneralCliOptions;
+import org.opencb.commons.app.cli.main.utils.CommandLineUtils;
 import org.opencb.commons.utils.PrintUtils;
-import org.opencb.opencga.app.cli.CliOptionsParser;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
-import org.opencb.opencga.app.cli.main.OpencgaMain;
+import org.opencb.opencga.app.cli.main.OpencgaCommandLine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,19 +36,6 @@ public class ParentCliOptionsParser extends CliOptionsParser {
     }
 
 
-    public boolean isValid(String parsedCommand) {
-        if (StringUtils.isEmpty(parsedCommand)) {
-            // 1. Check if a command has been provided
-            logger.debug("IS EMPTY COMMAND " + parsedCommand);
-            return false;
-        } else {
-            // 2. Check if a subcommand has been provided
-            String parsedSubCommand = getSubCommand();
-            logger.debug("PARSED SUBCOMMAND " + parsedCommand);
-            return !StringUtils.isEmpty(parsedSubCommand);
-        }
-    }
-
     public void printUsage(String[] args) {
         parse(args);
         printUsage();
@@ -60,9 +46,9 @@ public class ParentCliOptionsParser extends CliOptionsParser {
         String parsedCommand = getCommand();
         if (parsedCommand.isEmpty()) {
             System.err.println();
-            PrintUtils.println(org.opencb.opencga.app.cli.main.utils.CommandLineUtils.getHelpVersionString());
+            PrintUtils.println(CommandLineUtils.getHelpVersionString());
             System.err.println();
-            if (OpencgaMain.isShellMode()) {
+            if (OpencgaCommandLine.isShellMode()) {
                 PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Usage:", "       " + getPrefix() + " <command> [options] [-h|--help] [--version]"));
             } else {
                 PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Usage:", "       " + getPrefix() + "[-h|--help] [--shell] [--host] [--version] <command> [options]"));
@@ -91,7 +77,7 @@ public class ParentCliOptionsParser extends CliOptionsParser {
     }
 
     private String getPrefix() {
-        if (OpencgaMain.isShellMode()) {
+        if (OpencgaCommandLine.isShellMode()) {
             return "";
         }
         return "opencga.sh ";
@@ -135,7 +121,7 @@ public class ParentCliOptionsParser extends CliOptionsParser {
         }
 
         System.err.println();
-        if (!OpencgaMain.isShellMode()) {
+        if (!OpencgaCommandLine.isShellMode()) {
             PrintUtils.println(PrintUtils.format("Opencga options:", PrintUtils.Color.GREEN));
         } else {
             PrintUtils.println(PrintUtils.format("Opencga commands:", PrintUtils.Color.GREEN));
@@ -149,7 +135,7 @@ public class ParentCliOptionsParser extends CliOptionsParser {
         Map<String, String> h = new HashMap<>();
         h.put("login [user]", "Authenticates new user in OpenCGA");
         h.put("logout", "Logouts the current user from OpenCGA");
-        if (!OpencgaMain.isShellMode()) {
+        if (!OpencgaCommandLine.isShellMode()) {
             h.put("--host", "Set the host server to query data");
             h.put("--shell", "Interactive mode opencga shell");
         } else {

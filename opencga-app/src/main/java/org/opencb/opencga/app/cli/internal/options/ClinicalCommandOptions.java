@@ -5,13 +5,13 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
+import org.opencb.commons.app.cli.GeneralCliOptions;
 import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.BasicVariantQueryOptions;
@@ -25,18 +25,17 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 @Parameters(commandNames = {"clinical"}, commandDescription = "Clinical analysis commands")
 public class ClinicalCommandOptions {
 
+    public final InternalCliOptionsParser.JobOptions internalJobOptions;
     public TieringCommandOptions tieringCommandOptions;
     public TeamCommandOptions teamCommandOptions;
     public ZettaCommandOptions zettaCommandOptions;
     public CancerTieringCommandOptions cancerTieringCommandOptions;
     public RgaSecondaryIndexCommandOptions rgaSecondaryIndexCommandOptions;
     public RgaAuxiliarSecondaryIndexCommandOptions rgaAuxiliarSecondaryIndexCommandOptions;
-
     public JCommander jCommander;
     public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
     public GeneralCliOptions.DataModelOptions commonDataModelOptions;
     public GeneralCliOptions.NumericOptions commonNumericOptions;
-    public final InternalCliOptionsParser.JobOptions internalJobOptions;
 
     public ClinicalCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, JCommander jCommander) {
 
@@ -176,54 +175,34 @@ public class ClinicalCommandOptions {
 
         @Parameter(names = {"--drug"}, description = ANNOT_DRUG_DESCR)
         public String drugs;
-
-        @Parameter(names = {"--trait"}, description = ANNOT_TRAIT_DESCR)
-        void setTrait(String trait) {
-            this.trait = this.trait == null ? trait : this.trait + ',' + trait;
-        }
-
         public String trait;
-
         @Parameter(names = {"--cohort"}, description = COHORT_DESCR)
         public String cohort;
-
         @Parameter(names = {"--mgf", "--cohort-stats-mgf"}, description = STATS_MGF_DESCR)
         public String mgf;
-
         @Parameter(names = {"--cohort-stats-pass"}, description = STATS_PASS_FREQ_DESCR)
         public String cohortStatsPass;
-
         @Parameter(names = {"--annotations", "--output-vcf-info"}, description = "Set variant annotation to return in the INFO column. " +
                 "Accepted values include 'all', 'default' or a comma-separated list such as 'gene,biotype,consequenceType'", arity = 1)
         public String annotations;
-
         @Parameter(names = {"--xref"}, description = ANNOT_XREF_DESCR)
         public String xref;
-
         @Parameter(names = {"--clinical"}, description = ANNOT_CLINICAL_DESCR)
         public String clinical;
-
         @Parameter(names = {"--clinical-significance"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
         public String clinicalSignificance;
-
         @Parameter(names = {"--clinical-confirmed-status"}, description = ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR)
         public boolean clinicalConfirmedStatus;
-
         @Parameter(names = {"--family"}, description = FAMILY_DESC, arity = 1)
         public String family;
-
         @Parameter(names = {"--family-disorder"}, description = FAMILY_DISORDER_DESC, arity = 1)
         public String familyPhenotype;
-
         @Parameter(names = {"--family-segregation"}, description = FAMILY_SEGREGATION_DESCR, arity = 1)
         public String modeOfInheritance;
-
         @Parameter(names = {"--family-members"}, description = FAMILY_MEMBERS_DESC, arity = 1)
         public String familyMembers;
-
         @Parameter(names = {"--family-proband"}, description = FAMILY_PROBAND_DESC, arity = 1)
         public String familyProband;
-
         @Parameter(names = {"--panel"}, description = PANEL_DESC, arity = 1)
         public String panel;
         @Parameter(names = {"--panel-mode-of-inheritance"}, description = PANEL_MOI_DESC, arity = 1)
@@ -234,15 +213,18 @@ public class ClinicalCommandOptions {
         public String panelRoleInCancer;
         @Parameter(names = {"--panel-intersection"}, description = PANEL_INTERSECTION_DESC, arity = 1)
         public Boolean panelIntersection;
-
         @Parameter(names = {"--" + PRIMARY_INTERPRETATION_PARAM_NAME}, description = "Primary interpretation", arity = 0)
         public boolean primary;
+        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
+        public String outdir;
 
 ////        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
 ////        public boolean includeUntieredVariants;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
-        public String outdir;
+        @Parameter(names = {"--trait"}, description = ANNOT_TRAIT_DESCR)
+        void setTrait(String trait) {
+            this.trait = this.trait == null ? trait : this.trait + ',' + trait;
+        }
     }
 
     @Parameters(commandNames = {""}, commandDescription = CancerTieringInterpretationAnalysis.DESCRIPTION)

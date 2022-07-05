@@ -1,16 +1,21 @@
-package org.opencb.opencga.app.cli.main.processors;
+package org.opencb.opencga.app.cli.main.impl;
 
 import com.beust.jcommander.ParameterException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.app.cli.CliOptionsParser;
+import org.opencb.commons.app.cli.main.processors.AbstractCommandProcessor;
+import org.opencb.commons.app.cli.main.utils.CommandLineUtils;
+import org.opencb.commons.app.cli.session.Session;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
+import org.opencb.commons.utils.GitRepositoryState;
+import org.opencb.commons.utils.PrintUtils;
+import org.opencb.opencga.app.cli.main.OpencgaCommandLine;
 import org.opencb.opencga.app.cli.main.executors.ExecutorProvider;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
-import org.opencb.opencga.app.cli.session.Session;
-import org.opencb.opencga.app.cli.session.SessionManager;
+import org.opencb.opencga.app.cli.main.parser.OpencgaCliOptionsParser;
+import org.opencb.opencga.app.cli.main.utils.LoginUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.JwtUtils;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -31,13 +36,14 @@ import java.util.Date;
 import java.util.List;
 
 import static org.opencb.commons.utils.PrintUtils.printWarn;
+import static org.opencb.commons.utils.PrintUtils.println;
 
-public class CommandProcessor {
+public class CommandProcessorImpl extends AbstractCommandProcessor {
 
-    private static final Logger logger = LoggerFactory.getLogger(CommandProcessor.class);
+    private static final Logger logger = LoggerFactory.getLogger(CommandProcessorImpl.class);
 
-    public void process(String[] args) {
-        OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
+    public void process(String[] args, CliOptionsParser parser) {
+        OpencgaCliOptionsParser cliOptionsParser = (OpencgaCliOptionsParser) parser;
         try {
             if (!ArrayUtils.isEmpty(args)) {
                 //2. Parse params of options files
@@ -107,6 +113,57 @@ public class CommandProcessor {
 
     }
 
+    public String[] processShortCuts(String[] args) {
+        OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
+        switch (CommandLineUtils.getShortcut(args)) {
+            case "login":
+                return LoginUtils.parseLoginCommand(args);
+            case "--help":
+            case "help":
+            case "-h":
+            case "?":
+                if (ArrayUtils.contains(args, "help")) {
+                    for (int i = 0; i < args.length; i++) {
+                        if (args[i].equals("help") || args[i].equals("?") || args[i].equals("-h")) {
+                            args[i] = "--help";
+                        }
+                    }
+                }
+                try {
+                    cliOptionsParser.printUsage(args);
+                } catch (Exception e) {
+                    // malformed command
+                    return args;
+                }
+                break;
+            case "--version":
+            case "version":
+                println(CommandLineUtils.getVersionString());
+                break;
+            case "--build-version":
+            case "build-version":
+                println(GitRepositoryState.get().getBuildVersion());
+                break;
+            case "logout":
+                return ArrayUtils.addAll(new String[]{"users"}, args);
+            case "list":
+                if (OpencgaCommandLine.isShellMode()) {
+                    if (args.length > 1 && args[1].equals("studies")) {
+                        println(String.join(", ", OpencgaCommandLine.getCommandLine().getShell().getSessionManager().getSession().getStudies()), PrintUtils.Color.GREEN);
+                    } else {
+                        printWarn("Opencga version " + GitRepositoryState.get().getBuildVersion() + " can only list studies");
+                    }
+                } else {
+                    printWarn("List studies is only available in Shell mode");
+                }
+                break;
+            default:
+                return args;
+        }
+        return null;
+    }
+
+
     private void refreshToken(OpencgaCommandExecutor commandExecutor) throws ClientException, IOException {
         AuthenticationResponse response = commandExecutor.getOpenCGAClient().
                 refresh(commandExecutor.getSessionManager().getSession().getRefreshToken());
@@ -132,7 +189,7 @@ public class CommandProcessor {
 
     public void loadSessionStudies(OpencgaCommandExecutor commandExecutor) {
         Session session = commandExecutor.getSessionManager().getSession();
-        if (!StringUtils.isEmpty(session.getToken()) && !SessionManager.NO_TOKEN.equals(session.getToken())) {
+        if (!StringUtils.isEmpty(session.getToken()) && !SessionManagerImpl.NO_TOKEN.equals(session.getToken())) {
             logger.debug("Loading session studies using token: "
                     + session.getToken());
 

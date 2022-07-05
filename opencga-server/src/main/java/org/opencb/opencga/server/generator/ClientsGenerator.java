@@ -16,7 +16,6 @@ import org.opencb.commons.api.writers.cli.ExecutorsCliRestApiWriter;
 import org.opencb.commons.api.writers.cli.OptionsCliRestApiWriter;
 import org.opencb.commons.api.writers.cli.ParserCliRestApiWriter;
 import org.opencb.commons.utils.GitRepositoryState;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.server.rest.*;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
 import org.opencb.opencga.server.rest.analysis.AlignmentWebService;
@@ -93,20 +92,21 @@ public class ClientsGenerator {
         ObjectMapper mapper = RestApiUtils.generateDefaultObjectMapper();
         mapper.writeValue(outDir, restApi);
 
-        generateLibrary("java", restApiFilePath, "opencga-client/src/main/java/org/opencb/opencga/client/rest/clients/");
-        generateLibrary("python", restApiFilePath, "opencga-client/src/main/python/pyopencga/rest_clients/");
-        generateLibrary("javascript", restApiFilePath, "opencga-client/src/main/javascript/");
-        generateLibrary("r", restApiFilePath, "opencga-client/src/main/R/R/");
+        generateLibrary("java", "opencga", restApiFilePath, "opencga-client/src/main/java/org/opencb/opencga/client/rest/clients/");
+        generateLibrary("python", "opencga", restApiFilePath, "opencga-client/src/main/python/pyopencga/rest_clients/");
+        generateLibrary("javascript", "opencga", restApiFilePath, "opencga-client/src/main/javascript/");
+        generateLibrary("r", "opencga", restApiFilePath, "opencga-client/src/main/R/R/");
 
         logger.info("Deleting temporal RestApi object from {}", restApiFilePath);
         Files.delete(outDir.toPath());
     }
 
-    private static void generateLibrary(String language, String restFilePath, String outDir) {
+    private static void generateLibrary(String language, String app, String restFilePath, String outDir) {
         String binary = "opencga-app/app/misc/clients/" + language + "_client_generator.py";
 
-        ProcessBuilder processBuilder = new ProcessBuilder("python3", binary, restFilePath, outDir);
+        ProcessBuilder processBuilder = new ProcessBuilder("python3", binary, app, restFilePath, outDir);
         processBuilder.redirectErrorStream(true);
+        processBuilder.redirectError(new File("/home/juanfe/generate-opencga-client.log"));
         Process p;
         try {
             p = processBuilder.start();
@@ -118,6 +118,7 @@ public class ClientsGenerator {
             p.waitFor();
             input.close();
         } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
             throw new RuntimeException("Error executing cli: " + e.getMessage(), e);
         }
 
