@@ -223,18 +223,19 @@ public class ExecutionDaemon extends PipelineParentDaemon {
         Date end = null;
         for (Job job : execution.getJobs()) {
             // All jobs should have been executed before writing the execution end to the execution
-            if (job.getResult() == null || job.getResult().getEnd() == null
-                    || JobDaemon.ON_GOING_STATUSES.contains(job.getInternal().getStatus().getId())) {
+            if (JobDaemon.ON_GOING_STATUSES.contains(job.getInternal().getStatus().getId())) {
                 updateEnd = false;
                 break;
             }
-            if (end == null) {
-                end = job.getResult().getEnd();
-            } else {
-                end = end.after(job.getResult().getEnd()) ? end : job.getResult().getEnd();
+            if (job.getResult() != null && job.getResult().getEnd() != null) {
+                if (end == null) {
+                    end = job.getResult().getEnd();
+                } else {
+                    end = end.after(job.getResult().getEnd()) ? end : job.getResult().getEnd();
+                }
             }
         }
-        if (updateEnd) {
+        if (updateEnd && end != null) {
             changed = true;
             updateParams.getInternal().setEnd(end);
         }
@@ -290,6 +291,7 @@ public class ExecutionDaemon extends PipelineParentDaemon {
         int errorJobs = 0;
         int queuedJobs = 0;
         int abortedJobs = 0;
+        int done = 0;
 
         for (Job job : execution.getJobs()) {
             String status = job.getInternal().getStatus().getId();
@@ -305,13 +307,15 @@ public class ExecutionDaemon extends PipelineParentDaemon {
                     errorJobs++;
                     break;
                 case Enums.ExecutionStatus.DONE:
-                case Enums.ExecutionStatus.SKIPPED:
+                    done++;
                     break;
                 case Enums.ExecutionStatus.QUEUED:
                     queuedJobs++;
                     break;
                 case Enums.ExecutionStatus.ABORTED:
                     abortedJobs++;
+                    break;
+                case Enums.ExecutionStatus.SKIPPED:
                     break;
                 default:
                     throw new RuntimeException("Unexpected job status in job '" + job.getId() + "': " + status);
@@ -330,7 +334,10 @@ public class ExecutionDaemon extends PipelineParentDaemon {
         if (errorJobs > 0 || abortedJobs > 0) {
             return Enums.ExecutionStatus.ERROR;
         }
-        return Enums.ExecutionStatus.DONE;
+        if (done > 0) {
+            return Enums.ExecutionStatus.DONE;
+        }
+        return Enums.ExecutionStatus.SKIPPED;
     }
 
     protected void checkPendingExecutions() {

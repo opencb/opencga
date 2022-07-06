@@ -445,8 +445,10 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         collections.put(AUDIT_COLLECTION, auditCollection);
 
         fileDBAdaptor = new FileMongoDBAdaptor(fileCollection, deletedFileCollection, catalogConfiguration, this);
-        individualDBAdaptor = new IndividualMongoDBAdaptor(individualCollection, individualArchivedCollection, deletedIndividualCollection,
+        familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, familyArchivedCollection, deletedFamilyCollection,
                 catalogConfiguration, this);
+        individualDBAdaptor = new IndividualMongoDBAdaptor(individualCollection, individualArchivedCollection, deletedIndividualCollection,
+                catalogConfiguration, familyDBAdaptor, this);
         executionDBAdaptor = new ExecutionMongoDBAdaptor(executionCollection, deletedExecutionCollection, catalogConfiguration, this);
         jobDBAdaptor = new JobMongoDBAdaptor(jobCollection, deletedJobCollection, catalogConfiguration, this);
         projectDBAdaptor = new ProjectMongoDBAdaptor(userCollection, deletedUserCollection, catalogConfiguration, this);
@@ -457,8 +459,6 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         cohortDBAdaptor = new CohortMongoDBAdaptor(cohortCollection, deletedCohortCollection, catalogConfiguration, this);
         panelDBAdaptor = new PanelMongoDBAdaptor(panelCollection, panelArchivedCollection, deletedPanelCollection, catalogConfiguration,
                 this);
-        familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, familyArchivedCollection, deletedFamilyCollection,
-                catalogConfiguration, this);
         pipelineDBAdaptor = new PipelineMongoDBAdaptor(pipelineCollection, pipelineArchiveCollection, deletedPipelineCollection,
                 catalogConfiguration, this);
         clinicalDBAdaptor = new ClinicalAnalysisMongoDBAdaptor(clinicalCollection, deletedClinicalCollection, catalogConfiguration, this);

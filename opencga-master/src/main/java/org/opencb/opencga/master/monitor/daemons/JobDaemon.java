@@ -175,6 +175,7 @@ public class JobDaemon extends PipelineParentDaemon {
 
         SUCCESS_FINAL_STATUSES = new HashSet<>();
         SUCCESS_FINAL_STATUSES.add(Enums.ExecutionStatus.DONE);
+        SUCCESS_FINAL_STATUSES.add(Enums.ExecutionStatus.SKIPPED);
         SUCCESS_FINAL_STATUSES.add(Enums.ExecutionStatus.READY);
 
         TOOL_CLI_MAP = new HashMap<String, String>() {{

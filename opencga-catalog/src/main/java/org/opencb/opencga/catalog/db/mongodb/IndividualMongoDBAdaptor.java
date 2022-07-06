@@ -87,7 +87,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
     public IndividualMongoDBAdaptor(MongoDBCollection individualCollection, MongoDBCollection archiveIndividualCollection,
                                     MongoDBCollection deletedIndividualCollection, Configuration configuration,
-                                    MongoDBAdaptorFactory dbAdaptorFactory) {
+                                    FamilyMongoDBAdaptor familyDBAdaptor, MongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(IndividualMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.individualCollection = individualCollection;
@@ -97,7 +97,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(individualCollection, archiveIndividualCollection,
                 deletedIndividualCollection);
 
-        this.familyDBAdaptor = dbAdaptorFactory.getCatalogFamilyDBAdaptor();
+        this.familyDBAdaptor = familyDBAdaptor;
     }
 
     @Override
