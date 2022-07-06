@@ -25,12 +25,14 @@ import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentQcAnalysis;
 import org.opencb.opencga.analysis.variant.operations.VariantAnnotationIndexOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.core.models.file.FileLinkParams;
@@ -337,44 +339,6 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         checkStatus(getJob(jobId), Enums.ExecutionStatus.DONE);
     }
 
-    @Test
-    public void testCheckLogs() throws Exception {
-        HashMap<String, Object> params = new HashMap<>();
-        org.opencb.opencga.core.models.file.File inputFile = catalogManager.getFileManager().get(studyFqn, testFile1, null, token).first();
-        params.put("myFile", inputFile.getPath());
-        Execution exec = catalogManager.getExecutionManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, params, token).first();
-        String executionId = exec.getId();
-
-        executionDaemon.checkPendingExecutions();
-        List<Job> jobs = getExecution(executionId).getJobs();
-        assertEquals(1, jobs.size());
-        String jobId = jobs.get(0).getId();
-        jobDaemon.checkJobs();
-
-        String[] cli = getJob(jobId).getCommandLine().split(" ");
-        int i = Arrays.asList(cli).indexOf("--my-file");
-        assertEquals("'" + inputFile.getPath() + "'", cli[i + 1]);
-        assertEquals(1, getJob(jobId).getInput().size());
-        assertEquals(inputFile.getPath(), getJob(jobId).getInput().get(0).getPath());
-        checkStatus(getJob(jobId), Enums.ExecutionStatus.QUEUED);
-        executor.jobStatus.put(jobId, Enums.ExecutionStatus.RUNNING);
-
-        Job job = catalogManager.getJobManager().get(studyFqn, jobId, null, token).first();
-
-        jobDaemon.checkJobs();
-        assertEquals(Enums.ExecutionStatus.RUNNING, getJob(jobId).getInternal().getStatus().getId());
-
-        InputStream inputStream = new ByteArrayInputStream("my log content\nlast line".getBytes(StandardCharsets.UTF_8));
-        catalogManager.getIoManagerFactory().getDefault().copy(inputStream,
-                Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".log").toUri());
-
-        OpenCGAResult<FileContent> fileContentResult = catalogManager.getJobManager().log(studyFqn, jobId, 0, 1, "stdout", true, token);
-        assertEquals("last line", fileContentResult.first().getContent());
-
-        fileContentResult = catalogManager.getJobManager().log(studyFqn, jobId, 0, 1, "stdout", false, token);
-        assertEquals("my log content\n", fileContentResult.first().getContent());
-    }
-
 //    @Test
 //    public void testRegisterFilesSuccessfully() throws Exception {
 //        HashMap<String, Object> params = new HashMap<>();
@@ -466,6 +430,81 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 //        assertEquals(Enums.ExecutionStatus.ERROR, getJob(jobId).getInternal().getStatus().getId());
 //        assertEquals("Job could not finish successfully", getJob(jobId).getInternal().getStatus().getDescription());
 //    }
+
+    @Test
+    public void testCheckLogs() throws Exception {
+        HashMap<String, Object> params = new HashMap<>();
+        org.opencb.opencga.core.models.file.File inputFile = catalogManager.getFileManager().get(studyFqn, testFile1, null, token).first();
+        params.put("myFile", inputFile.getPath());
+        Execution exec = catalogManager.getExecutionManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, params, token).first();
+        String executionId = exec.getId();
+
+        executionDaemon.checkPendingExecutions();
+        List<Job> jobs = getExecution(executionId).getJobs();
+        assertEquals(1, jobs.size());
+        String jobId = jobs.get(0).getId();
+        jobDaemon.checkJobs();
+
+        String[] cli = getJob(jobId).getCommandLine().split(" ");
+        int i = Arrays.asList(cli).indexOf("--my-file");
+        assertEquals("'" + inputFile.getPath() + "'", cli[i + 1]);
+        assertEquals(1, getJob(jobId).getInput().size());
+        assertEquals(inputFile.getPath(), getJob(jobId).getInput().get(0).getPath());
+        checkStatus(getJob(jobId), Enums.ExecutionStatus.QUEUED);
+        executor.jobStatus.put(jobId, Enums.ExecutionStatus.RUNNING);
+
+        Job job = catalogManager.getJobManager().get(studyFqn, jobId, null, token).first();
+
+        jobDaemon.checkJobs();
+        assertEquals(Enums.ExecutionStatus.RUNNING, getJob(jobId).getInternal().getStatus().getId());
+
+        InputStream inputStream = new ByteArrayInputStream("my log content\nlast line".getBytes(StandardCharsets.UTF_8));
+        catalogManager.getIoManagerFactory().getDefault().copy(inputStream,
+                Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".log").toUri());
+
+        OpenCGAResult<FileContent> fileContentResult = catalogManager.getJobManager().log(studyFqn, jobId, 0, 1, "stdout", true, token);
+        assertEquals("last line", fileContentResult.first().getContent());
+
+        fileContentResult = catalogManager.getJobManager().log(studyFqn, jobId, 0, 1, "stdout", false, token);
+        assertEquals("my log content\n", fileContentResult.first().getContent());
+    }
+
+    @Test
+    public void testCheckLogsNoPermissions() throws Exception {
+        HashMap<String, Object> params = new HashMap<>();
+        org.opencb.opencga.core.models.file.File inputFile = catalogManager.getFileManager().get(studyFqn, testFile1, null, token).first();
+        params.put("myFile", inputFile.getPath());
+        Execution exec = catalogManager.getExecutionManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, params, token).first();
+        String executionId = exec.getId();
+
+        executionDaemon.checkPendingExecutions();
+        List<Job> jobs = getExecution(executionId).getJobs();
+        assertEquals(1, jobs.size());
+        String jobId = jobs.get(0).getId();
+        jobDaemon.checkJobs();
+
+        String[] cli = getJob(jobId).getCommandLine().split(" ");
+        int i = Arrays.asList(cli).indexOf("--my-file");
+        assertEquals("'" + inputFile.getPath() + "'", cli[i + 1]);
+        assertEquals(1, getJob(jobId).getInput().size());
+        assertEquals(inputFile.getPath(), getJob(jobId).getInput().get(0).getPath());
+        checkStatus(getJob(jobId), Enums.ExecutionStatus.QUEUED);
+        executor.jobStatus.put(jobId, Enums.ExecutionStatus.RUNNING);
+
+        Job job = catalogManager.getJobManager().get(studyFqn, jobId, null, token).first();
+        jobDaemon.checkJobs();
+        assertEquals(Enums.ExecutionStatus.RUNNING, getJob(jobId).getInternal().getStatus().getId());
+
+        catalogManager.getExecutionManager().updateAcl(studyFqn, Collections.singletonList(executionId), "user2",
+                new AclParams(ExecutionAclEntry.ExecutionPermissions.VIEW.name()), ParamUtils.AclAction.ADD, token);
+
+        InputStream inputStream = new ByteArrayInputStream("my log content\nlast line".getBytes(StandardCharsets.UTF_8));
+        catalogManager.getIoManagerFactory().getDefault().copy(inputStream,
+                Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".log").toUri());
+
+        thrown.expect(CatalogAuthorizationException.class);
+        catalogManager.getJobManager().log(studyFqn, jobId, 0, 1, "stdout", true, token);
+    }
 
     @Test
     public void testRunJobFailMissingExecutionResult() throws Exception {
