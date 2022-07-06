@@ -210,7 +210,16 @@ public class RestApiParser {
                     // 4.4 Set all collected vales and add REST parameter to endpoint
                     restParameter.setType(type);
                     restParameter.setTypeClass(typeClass.getName() + ";");
-                    restParameter.setAllowedValues(apiParam.allowableValues());
+                    if (typeClass.isEnum()) {
+                        // The param is an Enum
+                        restParameter.setType("enum");
+                        restParameter.setAllowedValues(Arrays.stream(typeClass.getEnumConstants())
+                                .map(Object::toString)
+                                .collect(Collectors.joining(" ")));
+                    } else {
+                        restParameter.setAllowedValues(apiParam.allowableValues());
+                    }
+
                     restParameter.setRequired(apiParam.required() || restParameter.getParam() == RestParamType.PATH);
                     restParameter.setDefaultValue(apiParam.defaultValue());
                     restParameter.setDescription(apiParam.value());
