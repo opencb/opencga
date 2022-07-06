@@ -21,7 +21,10 @@ class JavaScriptClientGenerator(RestClientGenerator):
             'list': 'Object',
             'boolean': 'Boolean',
             'enum': 'String',
-            'inputstream': 'InputStream'
+            'inputstream': 'Inputstream',
+            'java.util.List': 'Object',
+            'String': 'String',
+            'java.lang.Boolean': 'Boolean'
         }
 
     def get_imports(self):
