@@ -24,7 +24,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga-test</artifactId>
-    <version>2.2.3-SNAPSHOT</version>
+    <version>2.2.3</version>
     <packaging>pom</packaging>
 
     <dependencies>
