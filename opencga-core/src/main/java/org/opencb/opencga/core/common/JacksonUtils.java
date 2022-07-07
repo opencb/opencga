@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.util.TokenBuffer;
 import org.apache.avro.generic.GenericRecord;
 import org.opencb.opencga.core.models.PrivateUidMixin;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
@@ -40,6 +41,7 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.VariableSet;
 
 import javax.ws.rs.ext.ContextResolver;
+import java.io.IOException;
 
 public class JacksonUtils {
 
@@ -140,6 +142,15 @@ public class JacksonUtils {
         public ObjectMapper getContext(Class<?> type) {
             return mapper;
         }
+    }
+
+    public static <T> T copy(T instance, Class<T> clazz) throws IOException {
+        if (instance == null) {
+            return null;
+        }
+        TokenBuffer tokenBuffer = new TokenBuffer(defaultObjectMapper, false);
+        defaultObjectMapper.writeValue(tokenBuffer, instance);
+        return defaultObjectMapper.readValue(tokenBuffer.asParser(), clazz);
     }
 
 }
