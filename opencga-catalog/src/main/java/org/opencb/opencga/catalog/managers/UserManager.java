@@ -808,6 +808,10 @@ public class UserManager extends AbstractManager {
         OpenCGAResult<User> userOpenCGAResult = userDBAdaptor.get(username, INCLUDE_ACCOUNT);
         if (userOpenCGAResult.getNumResults() == 1) {
             authId = userOpenCGAResult.first().getAccount().getAuthentication().getId();
+            if (!authenticationManagerMap.containsKey(authId)) {
+                throw new CatalogException("Could not authenticate user '" + username + "'. The authentication origin '" + authId
+                        + "' could not be found.");
+            }
             try {
                 response = authenticationManagerMap.get(authId).authenticate(username, password);
             } catch (CatalogAuthenticationException e) {
