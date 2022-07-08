@@ -16,17 +16,18 @@
 
 package org.opencb.opencga.core.models.study;
 
-public class StudyAclUpdateParams {
+import org.opencb.opencga.core.models.AclParams;
+
+public class StudyAclUpdateParams extends AclParams {
 
     private String study;
     private String template;
-    private String permissions;
 
     public StudyAclUpdateParams() {
     }
 
     public StudyAclUpdateParams(String permissions, String study, String template) {
-        this.permissions = permissions;
+        super(permissions);
         this.study = study;
         this.template = template;
     }
@@ -39,15 +40,6 @@ public class StudyAclUpdateParams {
         sb.append(", permissions='").append(permissions).append('\'');
         sb.append('}');
         return sb.toString();
-    }
-
-    public String getPermissions() {
-        return permissions;
-    }
-
-    public StudyAclUpdateParams setPermissions(String permissions) {
-        this.permissions = permissions;
-        return this;
     }
 
     public String getStudy() {
@@ -65,6 +57,11 @@ public class StudyAclUpdateParams {
 
     public StudyAclUpdateParams setTemplate(String template) {
         this.template = template;
+        return this;
+    }
+
+    public StudyAclUpdateParams setPermissions(String permissions) {
+        super.setPermissions(permissions);
         return this;
     }
 
