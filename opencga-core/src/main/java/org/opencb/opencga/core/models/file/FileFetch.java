@@ -17,12 +17,14 @@
 package org.opencb.opencga.core.models.file;
 
 import org.opencb.opencga.core.tools.ToolParams;
+import org.opencb.opencga.core.tools.annotations.CliParam;
 
 public class FileFetch extends ToolParams {
 
     /**
      * External url where the file to be registered can be downloaded from.
      */
+    @CliParam(required = true)
     private String url;
 
     /**
