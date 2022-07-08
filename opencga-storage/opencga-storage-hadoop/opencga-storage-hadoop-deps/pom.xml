@@ -825,6 +825,13 @@
                                     <!--Netty uses proto2 (see ProtobufDecoder)-->
                                     <include>org.apache.hbase.thirdparty:hbase-shaded-netty</include>
 
+                                    <include>org.eclipse.jetty:jetty-server</include>
+                                    <include>org.eclipse.jetty:jetty-webapp</include>
+                                    <include>org.eclipse.jetty:jetty-servlet</include>
+                                    <include>org.eclipse.jetty:jetty-security</include>
+                                    <include>org.eclipse.jetty:jetty-http</include>
+                                    <include>org.eclipse.jetty:jetty-io</include>
+                                    <include>org.eclipse.jetty:jetty-util</include>
                                 </includes>
                                 <excludes>
                                     <!--Exclude all test dependencies.-->
@@ -907,13 +914,6 @@
                                     <include>org.mortbay.jetty:jetty</include>
                                     <include>org.mortbay.jetty:jetty-util</include>
                                     <include>org.mortbay.jetty:jetty-sslengine</include>
-                                    <include>org.eclipse.jetty:jetty-server</include>
-                                    <include>org.eclipse.jetty:jetty-webapp</include>
-                                    <include>org.eclipse.jetty:jetty-servlet</include>
-                                    <include>org.eclipse.jetty:jetty-security</include>
-                                    <include>org.eclipse.jetty:jetty-http</include>
-                                    <include>org.eclipse.jetty:jetty-io</include>
-                                    <include>org.eclipse.jetty:jetty-util</include>
                                     <exclude>log4j:**</exclude>
                                 </includes>
                             </artifactSet>
