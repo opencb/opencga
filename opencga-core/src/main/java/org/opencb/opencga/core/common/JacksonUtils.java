@@ -23,11 +23,15 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.avro.generic.GenericRecord;
+import org.opencb.biodata.models.variant.Genotype;
+import org.opencb.biodata.models.variant.avro.VariantStats;
 import org.opencb.opencga.core.models.PrivateUidMixin;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.cohort.Cohort;
-import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.core.models.common.mixins.GenotypeJsonMixin;
+import org.opencb.opencga.core.models.common.mixins.VariantStatsJsonMixin;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyMixin;
 import org.opencb.opencga.core.models.file.File;
@@ -79,6 +83,8 @@ public class JacksonUtils {
         objectMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
 
         objectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+        objectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
+        objectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
         return objectMapper;
     }
 
