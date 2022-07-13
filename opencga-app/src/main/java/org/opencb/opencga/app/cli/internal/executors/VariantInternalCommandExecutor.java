@@ -48,6 +48,7 @@ import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
+import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
@@ -60,6 +61,7 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.exceptions.AnalysisExecutionException;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.clinical.ExomiserWrapperParams;
 import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.variant.*;
@@ -82,6 +84,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.ExomiserAnalysisCommandOptions.EXOMISER_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyQcCommandOptions.FAMILY_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
@@ -254,6 +257,9 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 break;
             case VariantCommandOptions.JulieRunCommandOptions.JULIE_RUN_COMMAND:
                 julie();
+                break;
+            case EXOMISER_RUN_COMMAND:
+                exomiser();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -959,6 +965,17 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .toObjectMap(cliOptions.basicOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
         toolRunner.execute(GatkWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+    }
+
+    private void exomiser() throws Exception {
+        VariantCommandOptions.ExomiserAnalysisCommandOptions cliOptions = variantCommandOptions.exomiserAnalysisCommandOptions;
+
+        ObjectMap params = new ExomiserWrapperParams(
+                cliOptions.sample,
+                cliOptions.outdir)
+                .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
+
+        toolRunner.execute(ExomiserWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
     private void checkSignatureRelease(String release) throws ClientException {
