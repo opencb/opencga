@@ -55,6 +55,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -305,6 +306,42 @@ public class ClinicalInterpretationManager extends StorageManager {
             ClinicalVariant clinicalVariant = createClinicalVariant(variant, genePanelMap, roleInCancer, actionableVariants, config);
             if (clinicalVariant != null) {
                 clinicalVariants.add(clinicalVariant);
+            }
+        }
+
+        // Include interpretation management
+        if (query.containsKey(ParamConstants.INCLUDE_INTERPRETATION)
+                && StringUtils.isNotEmpty(query.getString(ParamConstants.INCLUDE_INTERPRETATION))) {
+            OpenCGAResult<Interpretation> interpretationResult = catalogManager.getInterpretationManager().get(studyId,
+                    query.getString(ParamConstants.INCLUDE_INTERPRETATION), QueryOptions.empty(), token);
+            int numResults = interpretationResult.getNumResults();
+            if (numResults == 1) {
+                // Interpretation found
+                Interpretation interpretation = interpretationResult.first();
+                if (CollectionUtils.isNotEmpty(interpretation.getPrimaryFindings())) {
+                    for (ClinicalVariant primaryFinding : interpretation.getPrimaryFindings()) {
+                        for (int i = 0; i < clinicalVariants.size(); i++) {
+                            if (clinicalVariants.get(i).getId().equals(primaryFinding.getId())) {
+                                clinicalVariants.get(i).setComments(primaryFinding.getComments());
+                                clinicalVariants.get(i).setFilters(primaryFinding.getFilters());
+                                clinicalVariants.get(i).setDiscussion(primaryFinding.getDiscussion());
+                                clinicalVariants.get(i).setStatus(primaryFinding.getStatus());
+                                clinicalVariants.get(i).setAttributes(primaryFinding.getAttributes());
+                            }
+                        }
+                    }
+                } else {
+                    logger.warn("Interpretation {} does not have any primary finding",
+                            query.getString(ParamConstants.INCLUDE_INTERPRETATION));
+                }
+            } else {
+                if (interpretationResult.getNumResults() <= 0) {
+                    logger.warn("Interpretation {} not found when running the clinical variant query",
+                            query.getString(ParamConstants.INCLUDE_INTERPRETATION));
+                } else {
+                    logger.warn("Multiple interpretations {} were found for ID {} when running the clinical variant query  ",
+                            interpretationResult.getNumResults(), query.getString(ParamConstants.INCLUDE_INTERPRETATION));
+                }
             }
         }
 
