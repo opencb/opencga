@@ -316,17 +316,18 @@ public class ClinicalInterpretationManager extends StorageManager {
                     query.getString(ParamConstants.INCLUDE_INTERPRETATION), QueryOptions.empty(), token);
             int numResults = interpretationResult.getNumResults();
             if (numResults == 1) {
-                // Interpretation found
+                // Interpretation found, check if its primary findings are matching any retrieved variants, in that case set the
+                // fields: comments, filters, discusssion, status and attributes
                 Interpretation interpretation = interpretationResult.first();
                 if (CollectionUtils.isNotEmpty(interpretation.getPrimaryFindings())) {
                     for (ClinicalVariant primaryFinding : interpretation.getPrimaryFindings()) {
-                        for (int i = 0; i < clinicalVariants.size(); i++) {
-                            if (clinicalVariants.get(i).getId().equals(primaryFinding.getId())) {
-                                clinicalVariants.get(i).setComments(primaryFinding.getComments());
-                                clinicalVariants.get(i).setFilters(primaryFinding.getFilters());
-                                clinicalVariants.get(i).setDiscussion(primaryFinding.getDiscussion());
-                                clinicalVariants.get(i).setStatus(primaryFinding.getStatus());
-                                clinicalVariants.get(i).setAttributes(primaryFinding.getAttributes());
+                        for (ClinicalVariant clinicalVariant : clinicalVariants) {
+                            if (clinicalVariant.getId().equals(primaryFinding.getId())) {
+                                clinicalVariant.setComments(primaryFinding.getComments())
+                                        .setFilters(primaryFinding.getFilters())
+                                        .setDiscussion(primaryFinding.getDiscussion())
+                                        .setStatus(primaryFinding.getStatus())
+                                        .setAttributes(primaryFinding.getAttributes());
                             }
                         }
                     }
