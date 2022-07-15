@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -2107,13 +2108,15 @@ public class FileManagerTest extends AbstractManagerTest {
                         .setContent("My content"),
                 true, token);
 
-        DataResult<Map<String, List<String>>> dataResult = fileManager.updateAcl(studyFqn, Arrays.asList("data/new/",
+        OpenCGAResult<AclEntryList<FileAclEntry.FilePermissions>> dataResult = fileManager.updateAcl(studyFqn, Arrays.asList("data/new/",
                 filePath.toString()), "user2", new FileAclParams(null, "VIEW"), ParamUtils.AclAction.SET, token);
 
         assertEquals(3, dataResult.getNumResults());
-        for (Map<String, List<String>> result : dataResult.getResults()) {
-            assertEquals(1, result.get("user2").size());
-            assertEquals(FileAclEntry.FilePermissions.VIEW.name(), result.get("user2").iterator().next());
+        for (AclEntryList<FileAclEntry.FilePermissions> result : dataResult.getResults()) {
+            assertEquals(1, result.size());
+            assertEquals("user2", result.get(0).getMember());
+            assertEquals(1, result.get(0).getPermissions().size());
+            assertTrue(result.get(0).getPermissions().contains(FileAclEntry.FilePermissions.VIEW));
         }
     }
 

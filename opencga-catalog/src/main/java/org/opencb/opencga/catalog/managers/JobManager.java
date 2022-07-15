@@ -39,6 +39,7 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
@@ -1611,8 +1612,8 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     // **************************   ACLs  ******************************** //
-    public OpenCGAResult<Map<String, List<String>>> getAcls(String studyId, List<String> jobList, String member, boolean ignoreException,
-                                                            String token) throws CatalogException {
+    public OpenCGAResult<AclEntryList<JobAclEntry.JobPermissions>> getAcls(String studyId, List<String> jobList, String member,
+                                                                           boolean ignoreException, String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -1624,7 +1625,9 @@ public class JobManager extends ResourceManager<Job> {
                 .append("ignoreException", ignoreException)
                 .append("token", token);
         try {
-            OpenCGAResult<Map<String, List<String>>> jobAclList = OpenCGAResult.empty();
+            auditManager.initAuditBatch(operationId);
+
+            OpenCGAResult<AclEntryList<JobAclEntry.JobPermissions>> jobAclList = OpenCGAResult.empty();
             InternalGetDataResult<Job> queryResult = internalGet(study.getUid(), jobList, INCLUDE_JOB_IDS, user, ignoreException);
 
             Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
@@ -1637,7 +1640,7 @@ public class JobManager extends ResourceManager<Job> {
                 if (!missingMap.containsKey(jobId)) {
                     Job job = queryResult.getResults().get(counter);
                     try {
-                        OpenCGAResult<Map<String, List<String>>> allJobAcls;
+                        OpenCGAResult<AclEntryList<JobAclEntry.JobPermissions>> allJobAcls;
                         if (StringUtils.isNotEmpty(member)) {
                             allJobAcls = authorizationManager.getJobAcl(study.getUid(), job.getUid(), user, member);
                         } else {
@@ -1678,11 +1681,13 @@ public class JobManager extends ResourceManager<Job> {
                         new ObjectMap());
             }
             throw e;
+        } finally {
+            auditManager.finishAuditBatch(operationId);
         }
     }
 
-    public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, List<String> jobStrList, String memberList,
-                                                              AclParams aclParams, ParamUtils.AclAction action, String token)
+    public OpenCGAResult<AclEntryList<JobAclEntry.JobPermissions>> updateAcl(String studyId, List<String> jobStrList, String memberList,
+                                                                             AclParams aclParams, ParamUtils.AclAction action, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId);
@@ -1697,6 +1702,8 @@ public class JobManager extends ResourceManager<Job> {
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         try {
+            auditManager.initAuditBatch(operationId);
+
             if (jobStrList == null || jobStrList.isEmpty()) {
                 throw new CatalogException("Missing job parameter");
             }
@@ -1729,24 +1736,25 @@ public class JobManager extends ResourceManager<Job> {
             AuthorizationManager.CatalogAclParams catalogAclParams = new AuthorizationManager.CatalogAclParams(jobUids, permissions,
                     Enums.Resource.JOB);
 
-            OpenCGAResult<Map<String, List<String>>> queryResultList;
             switch (action) {
                 case SET:
-                    queryResultList = authorizationManager.setAcls(study.getUid(), members, catalogAclParams);
+                    authorizationManager.setAcls(study.getUid(), members, catalogAclParams);
                     break;
                 case ADD:
-                    queryResultList = authorizationManager.addAcls(study.getUid(), members, catalogAclParams);
+                    authorizationManager.addAcls(study.getUid(), members, catalogAclParams);
                     break;
                 case REMOVE:
-                    queryResultList = authorizationManager.removeAcls(members, catalogAclParams);
+                    authorizationManager.removeAcls(members, catalogAclParams);
                     break;
                 case RESET:
                     catalogAclParams.setPermissions(null);
-                    queryResultList = authorizationManager.removeAcls(members, catalogAclParams);
+                    authorizationManager.removeAcls(members, catalogAclParams);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");
             }
+            OpenCGAResult<AclEntryList<JobAclEntry.JobPermissions>> queryResultList = authorizationManager.getAcls(jobUids, members,
+                    Enums.Resource.JOB, JobAclEntry.JobPermissions.class);
 
             for (Job job : jobList) {
                 auditManager.audit(operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.JOB, job.getId(),
@@ -1763,6 +1771,8 @@ public class JobManager extends ResourceManager<Job> {
                 }
             }
             throw e;
+        } finally {
+            auditManager.finishAuditBatch(operationId);
         }
     }
 

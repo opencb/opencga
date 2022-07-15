@@ -17,6 +17,7 @@
 package org.opencb.opencga.server.rest.analysis;
 
 import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -369,7 +370,7 @@ public class ClinicalWebService extends AnalysisWebService {
     @GET
     @Path("/{clinicalAnalyses}/acl")
     @ApiOperation(value = "Returns the acl of the clinical analyses. If member is provided, it will only return the acl for the member.",
-            response = Map.class)
+            response = AclEntryList.class)
     public Response getAcls(
             @ApiParam(value = ParamConstants.CLINICAL_ANALYSES_DESCRIPTION, required = true)
             @PathParam("clinicalAnalyses") String clinicalAnalysis,
@@ -387,7 +388,7 @@ public class ClinicalWebService extends AnalysisWebService {
 
     @POST
     @Path("/acl/{members}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
+    @ApiOperation(value = "Update the set of permissions granted for the member", response = AclEntryList.class)
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group IDs", required = true) @PathParam("members") String memberId,

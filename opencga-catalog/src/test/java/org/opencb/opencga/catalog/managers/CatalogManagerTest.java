@@ -32,6 +32,8 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.AclEntry;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -369,10 +371,11 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         catalogManager.getStudyManager().createGroup("user@1000G:phase1", "group_cancer_some_thing_else",
                 Collections.singletonList("test"), token);
-        DataResult<Map<String, List<String>>> permissions = catalogManager.getStudyManager().updateAcl(
+        DataResult<AclEntryList<StudyAclEntry.StudyPermissions>> permissions = catalogManager.getStudyManager().updateAcl(
                 Collections.singletonList("user@1000G:phase1"), "@group_cancer_some_thing_else",
                 new StudyAclParams("", "view_only"), ParamUtils.AclAction.SET, token);
-        assertTrue(permissions.first().containsKey("@group_cancer_some_thing_else"));
+        assertEquals("@group_cancer_some_thing_else", permissions.first().get(0).getMember());
+        assertFalse(permissions.first().get(0).getPermissions().isEmpty());
 
         String token = catalogManager.getUserManager().login("test", TestParamConstants.PASSWORD).getToken();
         DataResult<Study> studyDataResult = catalogManager.getStudyManager().get("user@1000G:phase1", QueryOptions.empty(), token);
@@ -712,16 +715,17 @@ public class CatalogManagerTest extends AbstractManagerTest {
         List<String> sampleIds = sampleDataResult.getResults().stream()
                 .map(Sample::getId)
                 .collect(Collectors.toList());
-        DataResult<Map<String, List<String>>> sampleAclResult = catalogManager.getSampleManager().updateAcl(studyFqn,
+        DataResult<AclEntryList<SampleAclEntry.SamplePermissions>> sampleAclResult = catalogManager.getSampleManager().updateAcl(studyFqn,
                 sampleIds, "user2,user3", sampleAclParams, ParamUtils.AclAction.SET, token);
         assertEquals(sampleIds.size(), sampleAclResult.getNumResults());
-        for (Map<String, List<String>> result : sampleAclResult.getResults()) {
+        for (AclEntryList<SampleAclEntry.SamplePermissions> result : sampleAclResult.getResults()) {
             assertEquals(2, result.size());
-            assertTrue(result.keySet().containsAll(Arrays.asList("user2", "user3")));
-            assertTrue(result.get("user2").containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name(),
-                    SampleAclEntry.SamplePermissions.WRITE.name())));
-            assertTrue(result.get("user3").containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name(),
-                    SampleAclEntry.SamplePermissions.WRITE.name())));
+            assertTrue(result.stream().map(AclEntry::getMember).collect(Collectors.toList()).containsAll(Arrays.asList("user2", "user3")));
+            assertEquals("user2", result.get(0).getMember());
+            assertTrue(result.get(0).getPermissions().containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.VIEW,
+                    SampleAclEntry.SamplePermissions.WRITE)));
+            assertTrue(result.get(1).getPermissions().containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.VIEW,
+                    SampleAclEntry.SamplePermissions.WRITE)));
         }
 
         // Remove all the permissions to both users in the study. That should also remove the permissions they had in all the samples.
@@ -732,7 +736,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         // Get sample permissions for those members
         for (Sample sample : sampleDataResult.getResults()) {
             long sampleUid = sample.getUid();
-            DataResult<Map<String, List<String>>> sampleAcl =
+            OpenCGAResult<AclEntryList<SampleAclEntry.SamplePermissions>> sampleAcl =
                     catalogManager.getAuthorizationManager().getSampleAcl(studyUid, sampleUid, "user", "user2");
             assertEquals(0, sampleAcl.getNumResults());
             sampleAcl = catalogManager.getAuthorizationManager().getSampleAcl(studyUid, sampleUid, "user", "user3");
@@ -760,16 +764,17 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 SampleAclEntry.SamplePermissions.VIEW.name() + "," + SampleAclEntry.SamplePermissions.WRITE.name());
         List<String> sampleIds = sampleDataResult.getResults().stream().map(Sample::getId).collect(Collectors.toList());
 
-        DataResult<Map<String, List<String>>> sampleAclResult = catalogManager.getSampleManager().updateAcl(studyFqn,
+        OpenCGAResult<AclEntryList<SampleAclEntry.SamplePermissions>> sampleAclResult = catalogManager.getSampleManager().updateAcl(studyFqn,
                 sampleIds, "user2,user3", sampleAclParams, ParamUtils.AclAction.SET, token);
         assertEquals(sampleIds.size(), sampleAclResult.getNumResults());
-        for (Map<String, List<String>> result : sampleAclResult.getResults()) {
+        for (AclEntryList<SampleAclEntry.SamplePermissions> result : sampleAclResult.getResults()) {
             assertEquals(2, result.size());
-            assertTrue(result.keySet().containsAll(Arrays.asList("user2", "user3")));
-            assertTrue(result.get("user2").containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name(),
-                    SampleAclEntry.SamplePermissions.WRITE.name())));
-            assertTrue(result.get("user3").containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name(),
-                    SampleAclEntry.SamplePermissions.WRITE.name())));
+            assertTrue(result.stream().map(AclEntry::getMember).collect(Collectors.toList()).containsAll(Arrays.asList("user2", "user3")));
+            assertEquals("user2", result.get(0).getMember());
+            assertTrue(result.get(0).getPermissions().containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.VIEW,
+                    SampleAclEntry.SamplePermissions.WRITE)));
+            assertTrue(result.get(1).getPermissions().containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.VIEW,
+                    SampleAclEntry.SamplePermissions.WRITE)));
         }
 
         catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.REMOVE,
@@ -778,7 +783,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         String userId1 = catalogManager.getUserManager().getUserId(token);
         Study study3 = catalogManager.getStudyManager().resolveId(studyFqn, userId1);
 
-        DataResult<Map<String, List<String>>> studyAcl = catalogManager.getAuthorizationManager()
+        OpenCGAResult<AclEntryList<StudyAclEntry.StudyPermissions>> studyAcl = catalogManager.getAuthorizationManager()
                 .getStudyAcl(userId1, study3.getUid(), "user2");
         assertEquals(0, studyAcl.getNumResults());
         String userId = catalogManager.getUserManager().getUserId(token);
@@ -793,7 +798,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         }
 
         for (Sample sample : sampleDataResult.getResults()) {
-            DataResult<Map<String, List<String>>> sampleAcl =
+            OpenCGAResult<AclEntryList<SampleAclEntry.SamplePermissions>> sampleAcl =
                     catalogManager.getAuthorizationManager().getSampleAcl(studyUid, sample.getUid(), "user", "user2");
             assertEquals(0, sampleAcl.getNumResults());
             sampleAcl = catalogManager.getAuthorizationManager().getSampleAcl(studyUid, sample.getUid(), "user", "user3");

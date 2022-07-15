@@ -17,7 +17,7 @@
 package org.opencb.opencga.core.models.cohort;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.models.AbstractAclEntry;
+import org.opencb.opencga.core.models.AclEntry;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 11/05/16.
  */
-public class CohortAclEntry extends AbstractAclEntry<CohortAclEntry.CohortPermissions> {
+public class CohortAclEntry extends AclEntry<CohortAclEntry.CohortPermissions> {
 
     public enum CohortPermissions {
         VIEW(Collections.emptyList()),

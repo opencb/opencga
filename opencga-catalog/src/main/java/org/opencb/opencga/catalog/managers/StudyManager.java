@@ -45,6 +45,7 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.cohort.CohortAclEntry;
@@ -1497,7 +1498,8 @@ public class StudyManager extends AbstractManager {
 
 
     // **************************   ACLs  ******************************** //
-    public OpenCGAResult<Map<String, List<String>>> getAcls(List<String> studyIdList, String member, boolean ignoreException, String token)
+    public OpenCGAResult<AclEntryList<StudyAclEntry.StudyPermissions>> getAcls(List<String> studyIdList, String member,
+                                                                               boolean ignoreException, String token)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         List<Study> studyList = resolveIds(studyIdList, userId);
@@ -1509,13 +1511,13 @@ public class StudyManager extends AbstractManager {
                 .append("token", token);
         String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
-        OpenCGAResult<Map<String, List<String>>> studyAclList = OpenCGAResult.empty();
+        OpenCGAResult<AclEntryList<StudyAclEntry.StudyPermissions>> studyAclList = OpenCGAResult.empty();
 
         for (int i = 0; i < studyList.size(); i++) {
             Study study = studyList.get(i);
             long studyId = study.getUid();
             try {
-                OpenCGAResult<Map<String, List<String>>> allStudyAcls;
+                OpenCGAResult<AclEntryList<StudyAclEntry.StudyPermissions>> allStudyAcls;
                 if (StringUtils.isNotEmpty(member)) {
                     allStudyAcls = authorizationManager.getStudyAcl(userId, studyId, member);
                 } else {
@@ -1532,8 +1534,7 @@ public class StudyManager extends AbstractManager {
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 if (ignoreException) {
                     Event event = new Event(Event.Type.ERROR, study.getFqn(), e.getMessage());
-                    studyAclList.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0,
-                            Collections.singletonList(Collections.emptyMap()), 0));
+                    studyAclList.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.singletonList(null), 0));
                 } else {
                     throw e;
                 }
@@ -1542,13 +1543,14 @@ public class StudyManager extends AbstractManager {
         return studyAclList;
     }
 
-    public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, String memberIds, StudyAclParams aclParams,
+    public OpenCGAResult<AclEntryList<StudyAclEntry.StudyPermissions>> updateAcl(String studyId, String memberIds, StudyAclParams aclParams,
                                                               ParamUtils.AclAction action, String token) throws CatalogException {
         return updateAcl(Collections.singletonList(studyId), memberIds, aclParams, action, token);
     }
 
-    public OpenCGAResult<Map<String, List<String>>> updateAcl(List<String> studyIdList, String memberIds, StudyAclParams aclParams,
-                                                              ParamUtils.AclAction action, String token) throws CatalogException {
+    public OpenCGAResult<AclEntryList<StudyAclEntry.StudyPermissions>> updateAcl(List<String> studyIdList, String memberIds,
+                                                                                 StudyAclParams aclParams, ParamUtils.AclAction action,
+                                                                                 String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         List<Study> studies = resolveIds(studyIdList, userId);
 
@@ -1624,46 +1626,38 @@ public class StudyManager extends AbstractManager {
                 checkMembers(study.getUid(), members);
             }
 
-            OpenCGAResult<Map<String, List<String>>> aclResult;
+            List<Long> studyUidList = studies
+                    .stream()
+                    .map(Study::getUid)
+                    .collect(Collectors.toList());
+
             switch (action) {
                 case SET:
-                    aclResult = authorizationManager.setStudyAcls(studies.
-                                    stream()
-                                    .map(Study::getUid)
-                                    .collect(Collectors.toList()),
-                            members, permissions);
+                    authorizationManager.setStudyAcls(studyUidList, members, permissions);
                     break;
                 case ADD:
-                    aclResult = authorizationManager.addStudyAcls(studies
-                                    .stream()
-                                    .map(Study::getUid)
-                                    .collect(Collectors.toList()),
-                            members, permissions);
+                    authorizationManager.addStudyAcls(studyUidList, members, permissions);
                     break;
                 case REMOVE:
-                    aclResult = authorizationManager.removeStudyAcls(studies
-                                    .stream()
-                                    .map(Study::getUid)
-                                    .collect(Collectors.toList()),
-                            members, permissions);
+                    authorizationManager.removeStudyAcls(studyUidList, members, permissions);
                     break;
                 case RESET:
-                    aclResult = authorizationManager.removeStudyAcls(studies
-                                    .stream()
-                                    .map(Study::getUid)
-                                    .collect(Collectors.toList()),
-                            members, null);
+                    authorizationManager.removeStudyAcls(studyUidList, members, null);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");
             }
+
+            OpenCGAResult<AclEntryList<StudyAclEntry.StudyPermissions>> remainingAcls = authorizationManager.getAcls(studyUidList, members,
+                    Enums.Resource.STUDY, StudyAclEntry.StudyPermissions.class);
 
             for (Study study : studies) {
                 auditManager.audit(operationUuid, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.STUDY, study.getId(),
                         study.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
             }
-            return aclResult;
+
+            return remainingAcls;
         } catch (CatalogException e) {
             for (Study study : studies) {
                 auditManager.audit(operationUuid, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.STUDY, study.getId(),

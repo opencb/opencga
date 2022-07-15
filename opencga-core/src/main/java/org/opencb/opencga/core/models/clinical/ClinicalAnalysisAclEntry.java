@@ -18,7 +18,7 @@ package org.opencb.opencga.core.models.clinical;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.CollectionUtils;
-import org.opencb.opencga.core.models.AbstractAclEntry;
+import org.opencb.opencga.core.models.AclEntry;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 05/06/17.
  */
-public class ClinicalAnalysisAclEntry extends AbstractAclEntry<ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions> {
+public class ClinicalAnalysisAclEntry extends AclEntry<ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions> {
 
     public enum ClinicalAnalysisPermissions {
         VIEW(Collections.emptyList()),

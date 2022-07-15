@@ -42,13 +42,13 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.common.FlagValue;
-import org.opencb.opencga.core.models.clinical.ClinicalStatusValue;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileReferenceParam;
@@ -1954,9 +1954,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     // **************************   ACLs  ******************************** //
-    public OpenCGAResult<Map<String, List<String>>> getAcls(String studyStr, List<String> clinicalList, String member,
-                                                            boolean ignoreException, String token) throws CatalogException {
-        OpenCGAResult<Map<String, List<String>>> clinicalAclList = OpenCGAResult.empty();
+    public OpenCGAResult<AclEntryList<ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions>> getAcls(
+            String studyStr, List<String> clinicalList, String member, boolean ignoreException, String token) throws CatalogException {
+        OpenCGAResult<AclEntryList<ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions>> clinicalAclList = OpenCGAResult.empty();
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, user);
 
@@ -1972,7 +1972,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         for (String clinicalAnalysis : clinicalList) {
             if (!missingMap.containsKey(clinicalAnalysis)) {
                 try {
-                    OpenCGAResult<Map<String, List<String>>> allClinicalAcls;
+                    OpenCGAResult<AclEntryList<ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions>> allClinicalAcls;
                     if (StringUtils.isNotEmpty(member)) {
                         allClinicalAcls = authorizationManager.getClinicalAnalysisAcl(study.getUid(),
                                 queryResult.getResults().get(counter).getUid(), user, member);
@@ -2000,10 +2000,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         return clinicalAclList;
     }
 
-    public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyStr, List<String> clinicalList, String memberIds,
-                                                              AclParams clinicalAclParams, ParamUtils.AclAction action, boolean propagate,
-                                                              String token)
-            throws CatalogException {
+    public OpenCGAResult<AclEntryList<ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions>> updateAcl(
+            String studyStr, List<String> clinicalList, String memberIds, AclParams clinicalAclParams, ParamUtils.AclAction action,
+            boolean propagate, String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, user);
 
@@ -2113,34 +2112,35 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 AuthorizationManager.CatalogAclParams.addToList(fileUids, propagatedPermissions, Enums.Resource.FILE, aclParamsList);
             }
 
-            OpenCGAResult<Map<String, List<String>>> queryResults;
+            OpenCGAResult<AclEntryList<ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions>> queryResults;
             switch (action) {
                 case SET:
-                    queryResults = authorizationManager.setAcls(study.getUid(), members, aclParamsList);
+                    authorizationManager.setAcls(study.getUid(), members, aclParamsList);
                     break;
                 case ADD:
-                    queryResults = authorizationManager.addAcls(study.getUid(), members, aclParamsList);
+                    authorizationManager.addAcls(study.getUid(), members, aclParamsList);
                     break;
                 case REMOVE:
-                    queryResults = authorizationManager.removeAcls(members, aclParamsList);
+                    authorizationManager.removeAcls(members, aclParamsList);
                     break;
                 case RESET:
                     for (AuthorizationManager.CatalogAclParams aclParams : aclParamsList) {
                         aclParams.setPermissions(null);
                     }
-                    queryResults = authorizationManager.removeAcls(members, aclParamsList);
+                    authorizationManager.removeAcls(members, aclParamsList);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");
             }
+
+            queryResults = authorizationManager.getAcls(clinicalUidList, members, Enums.Resource.CLINICAL_ANALYSIS,
+                    ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.class);
 
             for (ClinicalAnalysis clinicalAnalysis : queryResult.getResults()) {
                 auditManager.audit(operationUuid, user, Enums.Action.UPDATE_ACLS, Enums.Resource.CLINICAL_ANALYSIS,
                         clinicalAnalysis.getId(), clinicalAnalysis.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
             }
-
-            auditManager.finishAuditBatch(operationUuid);
 
             return queryResults;
         } catch (CatalogException e) {
@@ -2151,8 +2151,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                             new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 }
             }
-            auditManager.finishAuditBatch(operationUuid);
             throw e;
+        } finally {
+            auditManager.finishAuditBatch(operationUuid);
         }
     }
 

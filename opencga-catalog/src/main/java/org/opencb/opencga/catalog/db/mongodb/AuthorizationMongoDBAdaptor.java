@@ -41,6 +41,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.AclEntry;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.PermissionRule;
 import org.opencb.opencga.core.models.study.Study;
@@ -64,7 +66,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     private static final String ANONYMOUS = "*";
     static final String MEMBER_WITH_INTERNAL_ACL = "_withInternalAcls";
 
-    public AuthorizationMongoDBAdaptor(DBAdaptorFactory dbFactory, Configuration configuration) throws CatalogDBException {
+    public AuthorizationMongoDBAdaptor(DBAdaptorFactory dbFactory, Configuration configuration) {
         super(configuration, LoggerFactory.getLogger(AuthorizationMongoDBAdaptor.class));
         this.dbAdaptorFactory = (MongoDBAdaptorFactory) dbFactory;
         initCollectionConnections();
@@ -158,6 +160,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             case DISEASE_PANEL:
             case FAMILY:
             case CLINICAL_ANALYSIS:
+            case CLINICAL:
                 return;
             default:
                 throw new CatalogDBException("Unexpected parameter received. " + entry + " has been received.");
@@ -256,7 +259,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         return entryPermission;
     }
 
-    class EntryPermission {
+    static class EntryPermission {
         /**
          * Entry id.
          */
@@ -293,26 +296,42 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public OpenCGAResult<Map<String, List<String>>> get(long resourceId, List<String> members, Enums.Resource entry)
-            throws CatalogException {
+    public <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> get(long resourceId, List<String> members, Enums.Resource entry,
+                                                                  Class<T> clazz) throws CatalogException {
         validateEntry(entry);
         long startTime = startQuery();
 
         EntryPermission entryPermission = internalGet(resourceId, members, entry);
         Map<String, List<String>> myMap = entryPermission.getPermissions().get(QueryParams.ACL.key());
-        return endQuery(startTime, myMap.isEmpty() ? Collections.emptyList() : Collections.singletonList(myMap));
+
+        AclEntryList<T> aclList = new AclEntryList<>();
+        if (members != null) {
+            for (String member : members) {
+                EnumSet<T> permissions = null;
+                if (myMap.containsKey(member)) {
+                    List<T> allPermissions = myMap.get(member).stream().map(p -> T.valueOf(clazz, p)).collect(Collectors.toList());
+                    permissions = allPermissions.isEmpty() ? EnumSet.noneOf(clazz) : EnumSet.copyOf(allPermissions);
+                }
+                aclList.add(new AclEntry<>(member, permissions));
+            }
+        } else {
+            for (Map.Entry<String, List<String>> tmpEntry : myMap.entrySet()) {
+                List<T> allPermissions = tmpEntry.getValue().stream().map(p -> T.valueOf(clazz, p)).collect(Collectors.toList());
+                EnumSet<T> permissions = allPermissions.isEmpty() ? EnumSet.noneOf(clazz) : EnumSet.copyOf(allPermissions);
+                aclList.add(new AclEntry<>(tmpEntry.getKey(), permissions));
+            }
+        }
+
+        return endQuery(startTime, Collections.singletonList(aclList));
     }
 
     @Override
-    public OpenCGAResult<Map<String, List<String>>> get(List<Long> resourceIds, List<String> members, Enums.Resource entry)
-            throws CatalogException {
-        OpenCGAResult<Map<String, List<String>>> result = OpenCGAResult.empty();
+    public <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> get(List<Long> resourceIds, List<String> members, Enums.Resource entry,
+                                                                  Class<T> clazz) throws CatalogException {
+        OpenCGAResult<AclEntryList<T>> result = OpenCGAResult.empty();
         for (Long resourceId : resourceIds) {
-            OpenCGAResult<Map<String, List<String>>> tmpResult = get(resourceId, members, entry);
+            OpenCGAResult<AclEntryList<T>> tmpResult = get(resourceId, members, entry, clazz);
             result.append(tmpResult);
-            if (tmpResult.getNumResults() == 0) {
-                result.getResults().add(Collections.emptyMap());
-            }
         }
         return result;
     }
@@ -557,7 +576,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     // TODO: Make this method transactional
     @Override
-    public OpenCGAResult<Map<String, List<String>>> setAcls(List<Long> resourceIds, Map<String, List<String>> acls, Enums.Resource resource)
+    public OpenCGAResult setAcls(List<Long> resourceIds, AclEntryList<?> acls, Enums.Resource resource)
             throws CatalogDBException {
         validateEntry(resource);
 
@@ -565,12 +584,12 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             // Get current permissions for resource and override with new ones set for members (already existing or not)
             Map<String, Map<String, List<String>>> currentPermissions = internalGet(resourceId, Collections.emptyList(), resource)
                     .getPermissions();
-            for (Map.Entry<String, List<String>> entry : acls.entrySet()) {
+            for (AclEntry<?> acl : acls) {
                 // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
-                List<String> permissions = new ArrayList<>(entry.getValue());
+                List<String> permissions = acl.getPermissions().stream().map(Enum::name).collect(Collectors.toList());
                 permissions.add("NONE");
-                currentPermissions.get(QueryParams.ACL.key()).put(entry.getKey(), permissions);
-                currentPermissions.get(QueryParams.USER_DEFINED_ACLS.key()).put(entry.getKey(), permissions);
+                currentPermissions.get(QueryParams.ACL.key()).put(acl.getMember(), permissions);
+                currentPermissions.get(QueryParams.USER_DEFINED_ACLS.key()).put(acl.getMember(), permissions);
             }
             List<String> permissionArray = createPermissionArray(currentPermissions.get(QueryParams.ACL.key()));
             List<String> manualPermissionArray = createPermissionArray(currentPermissions.get(QueryParams.USER_DEFINED_ACLS.key()));
@@ -870,6 +889,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             case FAMILY:
                 return dbAdaptorFactory.getCatalogFamilyDBAdaptor().parseQuery(query, rawQuery);
             case CLINICAL_ANALYSIS:
+            case CLINICAL:
                 return dbAdaptorFactory.getClinicalAnalysisDBAdaptor().parseQuery(query, rawQuery);
             default:
                 throw new CatalogException("Unexpected parameter received. " + entry + " has been received.");

@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
@@ -1189,8 +1190,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
 
     // **************************   ACLs  ******************************** //
-    public OpenCGAResult<Map<String, List<String>>> getAcls(String studyId, List<String> individualList, String member,
-                                                            boolean ignoreException, String token) throws CatalogException {
+    public OpenCGAResult<AclEntryList<IndividualAclEntry.IndividualPermissions>> getAcls(String studyId, List<String> individualList,
+                                                                                         String member, boolean ignoreException,
+                                                                                         String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -1202,7 +1204,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 .append("ignoreException", ignoreException)
                 .append("token", token);
         try {
-            OpenCGAResult<Map<String, List<String>>> individualAclList = OpenCGAResult.empty();
+            auditManager.initAuditBatch(operationId);
+
+            OpenCGAResult<AclEntryList<IndividualAclEntry.IndividualPermissions>> individualAclList = OpenCGAResult.empty();
             InternalGetDataResult<Individual> queryResult = internalGet(study.getUid(), individualList, INCLUDE_INDIVIDUAL_IDS, user,
                     ignoreException);
 
@@ -1216,7 +1220,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 if (!missingMap.containsKey(individualId)) {
                     Individual individual = queryResult.getResults().get(counter);
                     try {
-                        OpenCGAResult<Map<String, List<String>>> allIndividualAcls;
+                        OpenCGAResult<AclEntryList<IndividualAclEntry.IndividualPermissions>> allIndividualAcls;
                         if (StringUtils.isNotEmpty(member)) {
                             allIndividualAcls = authorizationManager.getIndividualAcl(study.getUid(), individual.getUid(), user, member);
                         } else {
@@ -1258,12 +1262,15 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                         new ObjectMap());
             }
             throw e;
+        } finally {
+            auditManager.finishAuditBatch(operationId);
         }
     }
 
-    public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, List<String> individualStrList, String memberList,
-                                                              IndividualAclParams aclParams, ParamUtils.AclAction action, boolean propagate,
-                                                              String token) throws CatalogException {
+    public OpenCGAResult<AclEntryList<IndividualAclEntry.IndividualPermissions>> updateAcl(String studyId, List<String> individualStrList,
+                                                                                           String memberList, IndividualAclParams aclParams,
+                                                                                           ParamUtils.AclAction action, boolean propagate,
+                                                                                           String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId, StudyManager.INCLUDE_STUDY_UID);
 
@@ -1278,6 +1285,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         try {
+            auditManager.initAuditBatch(operationId);
+
             int count = 0;
             count += individualStrList != null && !individualStrList.isEmpty() ? 1 : 0;
             count += StringUtils.isNotEmpty(aclParams.getSample()) ? 1 : 0;
@@ -1331,26 +1340,28 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 aclParamsList.add(new AuthorizationManager.CatalogAclParams(sampleUids, permissions, Enums.Resource.SAMPLE));
             }
 
-            OpenCGAResult<Map<String, List<String>>> queryResults;
             switch (action) {
                 case SET:
-                    queryResults = authorizationManager.setAcls(study.getUid(), members, aclParamsList);
+                    authorizationManager.setAcls(study.getUid(), members, aclParamsList);
                     break;
                 case ADD:
-                    queryResults = authorizationManager.addAcls(study.getUid(), members, aclParamsList);
+                    authorizationManager.addAcls(study.getUid(), members, aclParamsList);
                     break;
                 case REMOVE:
-                    queryResults = authorizationManager.removeAcls(members, aclParamsList);
+                    authorizationManager.removeAcls(members, aclParamsList);
                     break;
                 case RESET:
                     for (AuthorizationManager.CatalogAclParams catalogAclParams : aclParamsList) {
                         catalogAclParams.setPermissions(null);
                     }
-                    queryResults = authorizationManager.removeAcls(members, aclParamsList);
+                    authorizationManager.removeAcls(members, aclParamsList);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");
             }
+
+            OpenCGAResult<AclEntryList<IndividualAclEntry.IndividualPermissions>> queryResults = authorizationManager
+                    .getAcls(individualUids, members, Enums.Resource.INDIVIDUAL, IndividualAclEntry.IndividualPermissions.class);
 
             for (Individual individual : individualList) {
                 auditManager.audit(operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.INDIVIDUAL, individual.getId(),
@@ -1367,6 +1378,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 }
             }
             throw e;
+        } finally {
+            auditManager.finishAuditBatch(operationId);
         }
     }
 

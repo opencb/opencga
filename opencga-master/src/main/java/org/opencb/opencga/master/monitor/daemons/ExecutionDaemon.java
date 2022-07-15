@@ -26,7 +26,6 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
@@ -92,6 +91,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Execution;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntry;
@@ -727,9 +727,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
 
         // Check if the user already has permissions set in his folder
-        OpenCGAResult<Map<String, List<String>>> result = fileManager.getAcls(job.getStudy().getId(),
+        OpenCGAResult<AclEntryList<FileAclEntry.FilePermissions>> result = fileManager.getAcls(job.getStudy().getId(),
                 Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(), true, token);
-        if (result.getNumResults() == 0 || result.first().isEmpty() || ListUtils.isEmpty(result.first().get(job.getUserId()))) {
+        if (result.getNumResults() == 0 || result.first().isEmpty() || CollectionUtils.isEmpty(result.first().get(0).getPermissions())) {
             // Add permissions to do anything under that path to the user launching the job
             String allFilePermissions = EnumSet.allOf(FileAclEntry.FilePermissions.class)
                     .stream()

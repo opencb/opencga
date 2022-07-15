@@ -17,7 +17,7 @@
 package org.opencb.opencga.core.models.sample;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.models.AbstractAclEntry;
+import org.opencb.opencga.core.models.AclEntry;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 11/05/16.
  */
-public class SampleAclEntry extends AbstractAclEntry<SampleAclEntry.SamplePermissions> {
+public class SampleAclEntry extends AclEntry<SampleAclEntry.SamplePermissions> {
 
     public enum SamplePermissions {
         VIEW(Collections.emptyList()),

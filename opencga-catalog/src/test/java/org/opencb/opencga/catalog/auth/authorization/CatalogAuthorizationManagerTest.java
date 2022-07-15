@@ -34,6 +34,8 @@ import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.AclEntry;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
@@ -381,14 +383,14 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.getStudyManager().createGroup(studyFqn, group, Collections.singletonList(newUser), studyAdmin1SessionId);
         StudyAclParams aclParams = new StudyAclParams("", AuthorizationManager.ROLE_ANALYST);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), group, aclParams, ParamUtils.AclAction.ADD, studyAdmin1SessionId);
-        DataResult<Map<String, List<String>>> studyAcls = catalogManager.getAuthorizationManager()
+        OpenCGAResult<AclEntryList<StudyAclEntry.StudyPermissions>> studyAcls = catalogManager.getAuthorizationManager()
                 .getStudyAcl(studyAdminUser1, studyUid, group);
         assertEquals(1, studyAcls.getNumResults());
-        assertTrue(studyAcls.first().containsKey(group));
+        assertEquals(group, studyAcls.first().get(0).getMember());
 
-        assertEquals(AuthorizationManager.getAnalystAcls().size(), studyAcls.first().get(group).size());
+        assertEquals(AuthorizationManager.getAnalystAcls().size(), studyAcls.first().get(0).getPermissions().size());
         for (StudyAclEntry.StudyPermissions analystAcl : AuthorizationManager.getAnalystAcls()) {
-            assertTrue(studyAcls.first().get(group).contains(analystAcl.name()));
+            assertTrue(studyAcls.first().get(0).getPermissions().contains(analystAcl));
         }
     }
 
@@ -413,12 +415,12 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void changeUserRole() throws CatalogException {
-        DataResult<Map<String, List<String>>> studyAcls = catalogManager.getStudyManager().getAcls(Collections.singletonList(studyFqn),
-                externalUser, false, studyAdmin1SessionId);
+        OpenCGAResult<AclEntryList<StudyAclEntry.StudyPermissions>> studyAcls = catalogManager.getStudyManager()
+                .getAcls(Collections.singletonList(studyFqn), externalUser, false, studyAdmin1SessionId);
 
         assertEquals(1, studyAcls.getNumResults());
         assertEquals(1, studyAcls.first().size());
-        assertTrue(studyAcls.first().containsKey(externalUser));
+        assertEquals(externalUser, studyAcls.first().get(0).getMember());
 
         // Change role
         StudyAclParams aclParams1 = new StudyAclParams(null, null);
@@ -433,10 +435,10 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
         assertEquals(1, studyAcls.getNumResults());
         assertEquals(1, studyAcls.first().size());
-        assertTrue(studyAcls.first().containsKey(externalUser));
-        assertEquals(AuthorizationManager.getAnalystAcls().size(), studyAcls.first().get(externalUser).size());
+        assertEquals(externalUser, studyAcls.first().get(0).getMember());
+        assertEquals(AuthorizationManager.getAnalystAcls().size(), studyAcls.first().get(0).getPermissions().size());
         for (StudyAclEntry.StudyPermissions analystAcl : AuthorizationManager.getAnalystAcls()) {
-            assertTrue(studyAcls.first().get(externalUser).contains(analystAcl.name()));
+            assertTrue(studyAcls.first().get(0).getPermissions().contains(analystAcl));
         }
     }
 
@@ -451,7 +453,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), externalUser, aclParams, RESET,
                 studyAdmin1SessionId);
 
-        DataResult<Map<String, List<String>>> studyAcls = catalogManager.getStudyManager().getAcls(Collections.singletonList(studyFqn),
+        OpenCGAResult<AclEntryList<StudyAclEntry.StudyPermissions>> studyAcls = catalogManager.getStudyManager().getAcls(Collections.singletonList(studyFqn),
                 externalUser, false, studyAdmin1SessionId);
         assertEquals(0, studyAcls.getNumResults());
     }
@@ -472,14 +474,14 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), group, new StudyAclParams("", "admin"), SET, ownerSessionId);
 
         Study study = catalogManager.getStudyManager().get(studyFqn, QueryOptions.empty(), studyAdmin1SessionId).first();
-        DataResult<Map<String, List<String>>> studyAcls = catalogManager.getAuthorizationManager().getStudyAcl(studyAdminUser1,
+        OpenCGAResult<AclEntryList<StudyAclEntry.StudyPermissions>> studyAcls = catalogManager.getAuthorizationManager().getStudyAcl(studyAdminUser1,
                 study.getUid(), group);
         assertEquals(1, studyAcls.getNumResults());
-        assertTrue(studyAcls.first().containsKey(group));
+        assertEquals(group, studyAcls.first().get(0).getMember());
 
-        assertEquals(AuthorizationManager.getAdminAcls().size(), studyAcls.first().get(group).size());
+        assertEquals(AuthorizationManager.getAdminAcls().size(), studyAcls.first().get(0).getPermissions().size());
         for (StudyAclEntry.StudyPermissions adminAcl : AuthorizationManager.getAdminAcls()) {
-            assertTrue(studyAcls.first().get(group).contains(adminAcl.name()));
+            assertTrue(studyAcls.first().get(0).getPermissions().contains(adminAcl));
         }
 
         StudyAclParams aclParams = new StudyAclParams(null, null);
@@ -930,21 +932,35 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         studyManager.updateAcl(Collections.singletonList(studyFqn), externalUser,
                 new StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_FILES.name(), ""), ADD, ownerSessionId);
 
-        OpenCGAResult<Map<String, List<String>>> acls = studyManager.getAcls(Collections.singletonList(studyFqn), externalUser, false,
+        OpenCGAResult<AclEntryList<StudyAclEntry.StudyPermissions>> acls = studyManager.getAcls(Collections.singletonList(studyFqn), externalUser, false,
                 externalSessionId);
         assertEquals(1, acls.getNumResults());
-        assertTrue(acls.first().keySet().containsAll(Arrays.asList(externalUser, "@group1")));
+        assertTrue(acls.first().stream().map(AclEntry::getMember).collect(Collectors.toSet()).containsAll(Arrays.asList(externalUser, "@group1")));
+//        assertTrue(acls.first().keySet().containsAll(Arrays.asList(externalUser, "@group1")));
 
         studyManager.updateAcl(Collections.singletonList(studyFqn), "@group2",
                 new StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), ""), ADD, ownerSessionId);
         acls = studyManager.getAcls(Collections.singletonList(studyFqn), externalUser, false,
                 externalSessionId);
         assertEquals(1, acls.getNumResults());
-        assertTrue(acls.first().keySet().containsAll(Arrays.asList(externalUser, "@group1", "@group2")));
+        assertTrue(acls.first().stream().map(AclEntry::getMember).collect(Collectors.toSet()).containsAll(Arrays.asList(externalUser, "@group1", "@group2")));
+//        assertTrue(acls.first().keySet().containsAll(Arrays.asList(externalUser, "@group1", "@group2")));
 
-        assertEquals(StudyAclEntry.StudyPermissions.VIEW_FILES.name(), acls.first().get(externalUser).get(0));
-        assertEquals(StudyAclEntry.StudyPermissions.VIEW_COHORTS.name(), acls.first().get("@group1").get(0));
-        assertEquals(StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), acls.first().get("@group2").get(0));
+        for (AclEntry<StudyAclEntry.StudyPermissions> aclEntry : acls.first()) {
+            switch (aclEntry.getMember()) {
+                case externalUser:
+                    assertTrue(aclEntry.getPermissions().contains(StudyAclEntry.StudyPermissions.VIEW_FILES));
+                    break;
+                case "@group1":
+                    assertTrue(aclEntry.getPermissions().contains(StudyAclEntry.StudyPermissions.VIEW_COHORTS));
+                    break;
+                case "@group2":
+                    assertTrue(aclEntry.getPermissions().contains(StudyAclEntry.StudyPermissions.VIEW_SAMPLES));
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 
     @Test

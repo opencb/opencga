@@ -21,18 +21,16 @@ import java.util.EnumSet;
 /**
  * Created by pfurio on 04/07/16.
  */
-public abstract class AbstractAclEntry<E extends Enum<E>> {
-
-    public static final String USER_OTHERS_ID = "*";
+public class AclEntry<E extends Enum<E>> {
 
     protected String member;
     protected EnumSet<E> permissions;
 
-    public AbstractAclEntry() {
+    public AclEntry() {
         this("", null);
     }
 
-    public AbstractAclEntry(String member, EnumSet<E> permissions) {
+    public AclEntry(String member, EnumSet<E> permissions) {
         this.member = member;
         this.permissions = permissions;
     }
@@ -41,7 +39,7 @@ public abstract class AbstractAclEntry<E extends Enum<E>> {
         return member;
     }
 
-    public AbstractAclEntry setMember(String member) {
+    public AclEntry setMember(String member) {
         this.member = member;
         return this;
     }
@@ -50,7 +48,7 @@ public abstract class AbstractAclEntry<E extends Enum<E>> {
         return permissions;
     }
 
-    public AbstractAclEntry setPermissions(EnumSet<E> permissions) {
+    public AclEntry setPermissions(EnumSet<E> permissions) {
         this.permissions = permissions;
         return this;
     }

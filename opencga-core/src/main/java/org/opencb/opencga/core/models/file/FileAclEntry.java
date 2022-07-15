@@ -17,7 +17,7 @@
 package org.opencb.opencga.core.models.file;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.models.AbstractAclEntry;
+import org.opencb.opencga.core.models.AclEntry;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 11/05/16.
  */
-public class FileAclEntry extends AbstractAclEntry<FileAclEntry.FilePermissions> {
+public class FileAclEntry extends AclEntry<FileAclEntry.FilePermissions> {
 
     public enum FilePermissions {
         VIEW(Collections.emptyList()),

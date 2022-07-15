@@ -46,6 +46,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -1070,8 +1071,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     // **************************   ACLs  ******************************** //
-    public OpenCGAResult<Map<String, List<String>>> getAcls(String studyId, List<String> familyList, String member, boolean ignoreException,
-                                                            String token) throws CatalogException {
+    public OpenCGAResult<AclEntryList<FamilyAclEntry.FamilyPermissions>> getAcls(String studyId, List<String> familyList, String member,
+                                                                                 boolean ignoreException, String token)
+            throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -1084,7 +1086,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 .append("token", token);
 
         try {
-            OpenCGAResult<Map<String, List<String>>> familyAclList = OpenCGAResult.empty();
+            OpenCGAResult<AclEntryList<FamilyAclEntry.FamilyPermissions>> familyAclList = OpenCGAResult.empty();
             InternalGetDataResult<Family> familyDataResult = internalGet(study.getUid(), familyList, INCLUDE_FAMILY_IDS, user,
                     ignoreException);
 
@@ -1098,7 +1100,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 if (!missingMap.containsKey(familyId)) {
                     Family family = familyDataResult.getResults().get(counter);
                     try {
-                        OpenCGAResult<Map<String, List<String>>> allFamilyAcls;
+                        OpenCGAResult<AclEntryList<FamilyAclEntry.FamilyPermissions>> allFamilyAcls;
                         if (StringUtils.isNotEmpty(member)) {
                             allFamilyAcls = authorizationManager.getFamilyAcl(study.getUid(), family.getUid(), user, member);
                         } else {
@@ -1119,14 +1121,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                         } else {
                             Event event = new Event(Event.Type.ERROR, familyId, missingMap.get(familyId).getErrorMsg());
                             familyAclList.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0,
-                                    Collections.singletonList(Collections.emptyMap()), 0));
+                                    Collections.singletonList(null), 0));
                         }
                     }
                     counter += 1;
                 } else {
                     Event event = new Event(Event.Type.ERROR, familyId, missingMap.get(familyId).getErrorMsg());
-                    familyAclList.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0,
-                            Collections.singletonList(Collections.emptyMap()), 0));
+                    familyAclList.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.singletonList(null), 0));
 
                     auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.FAMILY, familyId, "",
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
@@ -1144,8 +1145,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
     }
 
-    public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, FamilyAclParams aclParams, String memberList,
-                                                              ParamUtils.AclAction action, String token) throws CatalogException {
+    public OpenCGAResult<AclEntryList<FamilyAclEntry.FamilyPermissions>> updateAcl(String studyId, FamilyAclParams aclParams,
+                                                                                   String memberList, ParamUtils.AclAction action,
+                                                                                   String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -1155,10 +1157,11 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 .append("memberList", memberList)
                 .append("action", action)
                 .append("token", token);
-        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+        String operationUUID = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         List<Family> familyList = null;
         try {
+            auditManager.initAuditBatch(operationUUID);
             authorizationManager.checkCanAssignOrSeePermissions(study.getUid(), user);
 
             int count = 0;
@@ -1251,42 +1254,47 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 }
             }
 
-            OpenCGAResult<Map<String, List<String>>> aclResults;
             switch (action) {
                 case SET:
-                    aclResults = authorizationManager.setAcls(study.getUid(), members, aclParamsList);
+                    authorizationManager.setAcls(study.getUid(), members, aclParamsList);
                     break;
                 case ADD:
-                    aclResults = authorizationManager.addAcls(study.getUid(), members, aclParamsList);
+                    authorizationManager.addAcls(study.getUid(), members, aclParamsList);
                     break;
                 case REMOVE:
-                    aclResults = authorizationManager.removeAcls(members, aclParamsList);
+                    authorizationManager.removeAcls(members, aclParamsList);
                     break;
                 case RESET:
                     for (AuthorizationManager.CatalogAclParams auxAclParams : aclParamsList) {
                         auxAclParams.setPermissions(null);
                     }
-                    aclResults = authorizationManager.removeAcls(members, aclParamsList);
+                    authorizationManager.removeAcls(members, aclParamsList);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");
             }
 
+            OpenCGAResult<AclEntryList<FamilyAclEntry.FamilyPermissions>> remainingAcls = authorizationManager.getAcls(familyUids, members,
+                    Enums.Resource.FAMILY, FamilyAclEntry.FamilyPermissions.class);
+
             for (Family family : familyList) {
-                auditManager.audit(operationId, user, Enums.Action.UPDATE_ACLS, Enums.Resource.FAMILY, family.getId(),
+                auditManager.audit(operationUUID, user, Enums.Action.UPDATE_ACLS, Enums.Resource.FAMILY, family.getId(),
                         family.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
             }
-            return aclResults;
+
+            return remainingAcls;
         } catch (CatalogException e) {
             if (familyList != null) {
                 for (Family family : familyList) {
-                    auditManager.audit(operationId, user, Enums.Action.UPDATE_ACLS, Enums.Resource.FAMILY, family.getId(), "",
+                    auditManager.audit(operationUUID, user, Enums.Action.UPDATE_ACLS, Enums.Resource.FAMILY, family.getId(), "",
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                     e.getError()), new ObjectMap());
                 }
             }
             throw e;
+        } finally {
+            auditManager.finishAuditBatch(operationUUID);
         }
     }
 

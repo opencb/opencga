@@ -18,7 +18,7 @@ package org.opencb.opencga.core.models.study;
 
 import org.apache.commons.collections4.map.LinkedMap;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.models.AbstractAclEntry;
+import org.opencb.opencga.core.models.AclEntry;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.cohort.CohortAclEntry;
 import org.opencb.opencga.core.models.family.FamilyAclEntry;
@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 11/05/16.
  */
-public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissions> {
+public class StudyAclEntry extends AclEntry<StudyAclEntry.StudyPermissions> {
 
     public StudyAclEntry() {
     }

@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.auth.authorization;
 
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.cohort.CohortAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
@@ -36,7 +37,6 @@ import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 
 import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermissions.*;
 
@@ -147,7 +147,7 @@ public interface AuthorizationManager {
      * @return a list of studyAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the study does not have proper permissions.
      */
-    OpenCGAResult<Map<String, List<String>>> getAllStudyAcls(String userId, long studyId) throws CatalogException;
+    OpenCGAResult<AclEntryList<StudyAclEntry.StudyPermissions>> getAllStudyAcls(String userId, long studyId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -158,7 +158,8 @@ public interface AuthorizationManager {
      * @return the studyAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    OpenCGAResult<Map<String, List<String>>> getStudyAcl(String userId, long studyId, String member) throws CatalogException;
+    OpenCGAResult<AclEntryList<StudyAclEntry.StudyPermissions>> getStudyAcl(String userId, long studyId, String member)
+            throws CatalogException;
 
     //------------------------- End of study ACL ----------------------
 
@@ -174,7 +175,8 @@ public interface AuthorizationManager {
      * @return a list of sampleAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
-    OpenCGAResult<Map<String, List<String>>> getAllSampleAcls(long studyId, long sampleId, String userId) throws CatalogException;
+    OpenCGAResult<AclEntryList<SampleAclEntry.SamplePermissions>> getAllSampleAcls(long studyId, long sampleId, String userId)
+            throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -187,7 +189,7 @@ public interface AuthorizationManager {
      * @return the SampleAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    OpenCGAResult<Map<String, List<String>>> getSampleAcl(long studyId, long sampleId, String userId, String member)
+    OpenCGAResult<AclEntryList<SampleAclEntry.SamplePermissions>> getSampleAcl(long studyId, long sampleId, String userId, String member)
             throws CatalogException;
 
     //------------------------- End of sample ACL ----------------------
@@ -204,7 +206,7 @@ public interface AuthorizationManager {
      * @return a list of FileAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
-    default OpenCGAResult<Map<String, List<String>>> getAllFileAcls(long studyId, long fileId) throws CatalogException {
+    default OpenCGAResult<AclEntryList<FileAclEntry.FilePermissions>> getAllFileAcls(long studyId, long fileId) throws CatalogException {
         return getAllFileAcls(studyId, fileId, "", false);
     }
 
@@ -221,8 +223,8 @@ public interface AuthorizationManager {
      * @return a list of FileAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
-    OpenCGAResult<Map<String, List<String>>> getAllFileAcls(long studyId, long fileId, String userId, boolean checkPermission)
-            throws CatalogException;
+    OpenCGAResult<AclEntryList<FileAclEntry.FilePermissions>> getAllFileAcls(long studyId, long fileId, String userId,
+                                                                             boolean checkPermission) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -235,7 +237,8 @@ public interface AuthorizationManager {
      * @return the FileAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    OpenCGAResult<Map<String, List<String>>> getFileAcl(long studyId, long fileId, String userId, String member) throws CatalogException;
+    OpenCGAResult<AclEntryList<FileAclEntry.FilePermissions>> getFileAcl(long studyId, long fileId, String userId, String member)
+            throws CatalogException;
 
     //------------------------- End of file ACL ----------------------
 
@@ -251,7 +254,8 @@ public interface AuthorizationManager {
      * @return a list of IndividualAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
-    OpenCGAResult<Map<String, List<String>>> getAllIndividualAcls(long studyId, long individualId, String userId) throws CatalogException;
+    OpenCGAResult<AclEntryList<IndividualAclEntry.IndividualPermissions>> getAllIndividualAcls(long studyId, long individualId,
+                                                                                               String userId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -264,8 +268,8 @@ public interface AuthorizationManager {
      * @return the IndividualAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    OpenCGAResult<Map<String, List<String>>> getIndividualAcl(long studyId, long individualId, String userId, String member)
-            throws CatalogException;
+    OpenCGAResult<AclEntryList<IndividualAclEntry.IndividualPermissions>> getIndividualAcl(long studyId, long individualId, String userId,
+                                                                                           String member) throws CatalogException;
 
     //------------------------- End of individual ACL ----------------------
 
@@ -281,7 +285,8 @@ public interface AuthorizationManager {
      * @return a list of CohortAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the cohort does not have proper permissions.
      */
-    OpenCGAResult<Map<String, List<String>>> getAllCohortAcls(long studyId, long cohortId, String userId) throws CatalogException;
+    OpenCGAResult<AclEntryList<CohortAclEntry.CohortPermissions>> getAllCohortAcls(long studyId, long cohortId, String userId)
+            throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -294,7 +299,7 @@ public interface AuthorizationManager {
      * @return the CohortAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    OpenCGAResult<Map<String, List<String>>> getCohortAcl(long studyId, long cohortId, String userId, String member)
+    OpenCGAResult<AclEntryList<CohortAclEntry.CohortPermissions>> getCohortAcl(long studyId, long cohortId, String userId, String member)
             throws CatalogException;
 
     //------------------------- End of cohort ACL ----------------------
@@ -311,7 +316,8 @@ public interface AuthorizationManager {
      * @return a list of DiseasePanelAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the panel does not have proper permissions.
      */
-    OpenCGAResult<Map<String, List<String>>> getAllPanelAcls(long studyId, long panelId, String userId) throws CatalogException;
+    OpenCGAResult<AclEntryList<PanelAclEntry.PanelPermissions>> getAllPanelAcls(long studyId, long panelId, String userId)
+            throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -324,7 +330,8 @@ public interface AuthorizationManager {
      * @return the DiseasePanelAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    OpenCGAResult<Map<String, List<String>>> getPanelAcl(long studyId, long panelId, String userId, String member) throws CatalogException;
+    OpenCGAResult<AclEntryList<PanelAclEntry.PanelPermissions>> getPanelAcl(long studyId, long panelId, String userId, String member)
+            throws CatalogException;
 
     //------------------------- End of panel ACL ----------------------
 
@@ -340,7 +347,7 @@ public interface AuthorizationManager {
      * @return a list of JobAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
-    OpenCGAResult<Map<String, List<String>>> getAllJobAcls(long studyId, long jobId, String userId) throws CatalogException;
+    OpenCGAResult<AclEntryList<JobAclEntry.JobPermissions>> getAllJobAcls(long studyId, long jobId, String userId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -353,7 +360,8 @@ public interface AuthorizationManager {
      * @return the JobAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    OpenCGAResult<Map<String, List<String>>> getJobAcl(long studyId, long jobId, String userId, String member) throws CatalogException;
+    OpenCGAResult<AclEntryList<JobAclEntry.JobPermissions>> getJobAcl(long studyId, long jobId, String userId, String member)
+            throws CatalogException;
 
     /**
      * Return all the ACLs defined for the family.
@@ -365,7 +373,8 @@ public interface AuthorizationManager {
      * @return a list of FamilyAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the family does not have proper permissions.
      */
-    OpenCGAResult<Map<String, List<String>>> getAllFamilyAcls(long studyId, long familyId, String userId) throws CatalogException;
+    OpenCGAResult<AclEntryList<FamilyAclEntry.FamilyPermissions>> getAllFamilyAcls(long studyId, long familyId, String userId)
+            throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -378,7 +387,7 @@ public interface AuthorizationManager {
      * @return the FamilyAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    OpenCGAResult<Map<String, List<String>>> getFamilyAcl(long studyId, long familyId, String userId, String member)
+    OpenCGAResult<AclEntryList<FamilyAclEntry.FamilyPermissions>> getFamilyAcl(long studyId, long familyId, String userId, String member)
             throws CatalogException;
 
     /**
@@ -392,7 +401,9 @@ public interface AuthorizationManager {
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the clinical analysis does not have proper
      * permissions.
      */
-    OpenCGAResult<Map<String, List<String>>> getAllClinicalAnalysisAcls(long studyId, long clinicalAnalysisId, String userId)
+    OpenCGAResult<AclEntryList<ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions>> getAllClinicalAnalysisAcls(long studyId,
+                                                                                                                 long clinicalAnalysisId,
+                                                                                                                 String userId)
             throws CatalogException;
 
     /**
@@ -406,45 +417,40 @@ public interface AuthorizationManager {
      * @return the ClinicalAnalysisAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    OpenCGAResult<Map<String, List<String>>> getClinicalAnalysisAcl(long studyId, long clinicalAnalysisId, String userId, String member)
+    OpenCGAResult<AclEntryList<ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions>> getClinicalAnalysisAcl(long studyId,
+                                                                                                             long clinicalAnalysisId,
+                                                                                                             String userId, String member)
             throws CatalogException;
 
 
-    OpenCGAResult<Map<String, List<String>>> setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
-            throws CatalogException;
+    <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcls(List<Long> resourceUids, List<String> members, Enums.Resource resource,
+                                                               Class<T> clazz) throws CatalogException;
 
-    OpenCGAResult<Map<String, List<String>>> addStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
-            throws CatalogException;
+    void setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogException;
 
-    OpenCGAResult<Map<String, List<String>>> removeStudyAcls(List<Long> studyIds, List<String> members, @Nullable List<String> permissions)
-            throws CatalogException;
+    void addStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogException;
 
-    default OpenCGAResult<Map<String, List<String>>> setAcls(long studyUid, List<String> members, CatalogAclParams... aclParams)
-            throws CatalogException {
-        return setAcls(studyUid, members, Arrays.asList(aclParams));
+    void removeStudyAcls(List<Long> studyIds, List<String> members, @Nullable List<String> permissions) throws CatalogException;
+
+    default void setAcls(long studyUid, List<String> members, CatalogAclParams... aclParams) throws CatalogException {
+        setAcls(studyUid, members, Arrays.asList(aclParams));
     }
 
-    OpenCGAResult<Map<String, List<String>>> setAcls(long studyUid, List<String> members, List<CatalogAclParams> aclParams)
-            throws CatalogException;
+    void setAcls(long studyUid, List<String> members, List<CatalogAclParams> aclParams) throws CatalogException;
 
-    default OpenCGAResult<Map<String, List<String>>> addAcls(long studyId, List<String> members, CatalogAclParams... aclParams)
-            throws CatalogException {
-        return addAcls(studyId, members, Arrays.asList(aclParams));
+    default void addAcls(long studyId, List<String> members, CatalogAclParams... aclParams) throws CatalogException {
+        addAcls(studyId, members, Arrays.asList(aclParams));
     }
 
-    OpenCGAResult<Map<String, List<String>>> addAcls(long studyId, List<String> members, List<CatalogAclParams> aclParams)
-            throws CatalogException;
+    void addAcls(long studyId, List<String> members, List<CatalogAclParams> aclParams) throws CatalogException;
 
-    default OpenCGAResult<Map<String, List<String>>> removeAcls(List<String> members, CatalogAclParams... aclParams)
-            throws CatalogException {
-        return removeAcls(members, Arrays.asList(aclParams));
+    default void removeAcls(List<String> members, CatalogAclParams... aclParams) throws CatalogException {
+        removeAcls(members, Arrays.asList(aclParams));
     }
 
-    OpenCGAResult<Map<String, List<String>>> removeAcls(List<String> members, List<CatalogAclParams> aclParams) throws CatalogException;
+    void removeAcls(List<String> members, List<CatalogAclParams> aclParams) throws CatalogException;
 
-    OpenCGAResult<Map<String, List<String>>> replicateAcls(long studyId, List<Long> ids, Map<String, List<String>> aclEntries,
-                                                           Enums.Resource resource)
-            throws CatalogException;
+    void replicateAcls(List<Long> uids, AclEntryList<?> aclEntryList, Enums.Resource resource) throws CatalogException;
 
     void resetPermissionsFromAllEntities(long studyId, List<String> members) throws CatalogException;
 

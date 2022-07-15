@@ -42,6 +42,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
@@ -872,8 +873,9 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     // **************************   ACLs  ******************************** //
-    public OpenCGAResult<Map<String, List<String>>> getAcls(String studyId, List<String> panelList, String member, boolean ignoreException,
-                                                            String token) throws CatalogException {
+    public OpenCGAResult<AclEntryList<PanelAclEntry.PanelPermissions>> getAcls(String studyId, List<String> panelList, String member,
+                                                                               boolean ignoreException, String token)
+            throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -885,7 +887,9 @@ public class PanelManager extends ResourceManager<Panel> {
                 .append("ignoreException", ignoreException)
                 .append("token", token);
         try {
-            OpenCGAResult<Map<String, List<String>>> panelAclList = OpenCGAResult.empty();
+            auditManager.initAuditBatch(operationId);
+
+            OpenCGAResult<AclEntryList<PanelAclEntry.PanelPermissions>> panelAclList = OpenCGAResult.empty();
             InternalGetDataResult<Panel> queryResult = internalGet(study.getUid(), panelList, INCLUDE_PANEL_IDS, user, ignoreException);
 
             Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
@@ -898,7 +902,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 if (!missingMap.containsKey(panelId)) {
                     Panel panel = queryResult.getResults().get(counter);
                     try {
-                        OpenCGAResult<Map<String, List<String>>> allPanelAcls;
+                        OpenCGAResult<AclEntryList<PanelAclEntry.PanelPermissions>> allPanelAcls;
                         if (StringUtils.isNotEmpty(member)) {
                             allPanelAcls = authorizationManager.getPanelAcl(study.getUid(), panel.getUid(), user, member);
                         } else {
@@ -940,11 +944,14 @@ public class PanelManager extends ResourceManager<Panel> {
                         new ObjectMap());
             }
             throw e;
+        } finally {
+            auditManager.finishAuditBatch(operationId);
         }
     }
 
-    public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, List<String> panelStrList, String memberList,
-                                                              AclParams aclParams, ParamUtils.AclAction action, String token)
+    public OpenCGAResult<AclEntryList<PanelAclEntry.PanelPermissions>> updateAcl(String studyId, List<String> panelStrList,
+                                                                                 String memberList, AclParams aclParams,
+                                                                                 ParamUtils.AclAction action, String token)
             throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
@@ -959,6 +966,8 @@ public class PanelManager extends ResourceManager<Panel> {
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         try {
+            auditManager.initAuditBatch(operationId);
+
             if (panelStrList == null || panelStrList.isEmpty()) {
                 throw new CatalogException("Update ACL: Missing panel parameter");
             }
@@ -990,24 +999,26 @@ public class PanelManager extends ResourceManager<Panel> {
             AuthorizationManager.CatalogAclParams catalogAclParams = new AuthorizationManager.CatalogAclParams(panelUids, permissions,
                     Enums.Resource.DISEASE_PANEL);
 
-            OpenCGAResult<Map<String, List<String>>> queryResultList;
             switch (action) {
                 case SET:
-                    queryResultList = authorizationManager.setAcls(study.getUid(), members, catalogAclParams);
+                    authorizationManager.setAcls(study.getUid(), members, catalogAclParams);
                     break;
                 case ADD:
-                    queryResultList = authorizationManager.addAcls(study.getUid(), members, catalogAclParams);
+                    authorizationManager.addAcls(study.getUid(), members, catalogAclParams);
                     break;
                 case REMOVE:
-                    queryResultList = authorizationManager.removeAcls(members, catalogAclParams);
+                    authorizationManager.removeAcls(members, catalogAclParams);
                     break;
                 case RESET:
                     catalogAclParams.setPermissions(null);
-                    queryResultList = authorizationManager.removeAcls(members, catalogAclParams);
+                    authorizationManager.removeAcls(members, catalogAclParams);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");
             }
+            OpenCGAResult<AclEntryList<PanelAclEntry.PanelPermissions>> queryResultList = authorizationManager.getAcls(panelUids, members,
+                    Enums.Resource.DISEASE_PANEL, PanelAclEntry.PanelPermissions.class);
+
             for (Panel panel : panelDataResult.getResults()) {
                 auditManager.audit(operationId, user, Enums.Action.UPDATE_ACLS, Enums.Resource.DISEASE_PANEL, panel.getId(),
                         panel.getUuid(), study.getId(), study.getUuid(), auditParams,
@@ -1023,6 +1034,8 @@ public class PanelManager extends ResourceManager<Panel> {
                 }
             }
             throw e;
+        } finally {
+            auditManager.finishAuditBatch(operationId);
         }
     }
 

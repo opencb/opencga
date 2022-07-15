@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.catalog.auth.authorization;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBAdaptor;
@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.cohort.CohortAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
@@ -442,39 +443,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public OpenCGAResult<Map<String, List<String>>> getAllStudyAcls(String userId, long studyId) throws CatalogException {
+    public OpenCGAResult<AclEntryList<StudyAclEntry.StudyPermissions>> getAllStudyAcls(String userId, long studyId)
+            throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(studyId, null, Enums.Resource.STUDY);
+        return aclDBAdaptor.get(studyId, null, Enums.Resource.STUDY, StudyAclEntry.StudyPermissions.class);
     }
 
     @Override
-    public OpenCGAResult<Map<String, List<String>>> getStudyAcl(String userId, long studyId, String member) throws CatalogException {
-        try {
-            checkCanAssignOrSeePermissions(studyId, userId);
-        } catch (CatalogException e) {
-            // It will be OK if the userId asking for the ACLs wants to see its own permissions
-            checkAskingOwnPermissions(userId, member, studyId);
-        }
-
-        List<String> memberList = new ArrayList<>();
-        memberList.add(member);
-        if (!member.startsWith("@")) {
-            // If member is a user, we will also add all the groups the user might belong to
-            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
-            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
-        }
-
-        return aclDBAdaptor.get(studyId, memberList, Enums.Resource.STUDY);
-    }
-
-    @Override
-    public OpenCGAResult<Map<String, List<String>>> getAllSampleAcls(long studyId, long sampleId, String userId) throws CatalogException {
-        checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(sampleId, null, Enums.Resource.SAMPLE);
-    }
-
-    @Override
-    public OpenCGAResult<Map<String, List<String>>> getSampleAcl(long studyId, long sampleId, String userId, String member)
+    public OpenCGAResult<AclEntryList<StudyAclEntry.StudyPermissions>> getStudyAcl(String userId, long studyId, String member)
             throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
@@ -491,7 +467,35 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
         }
 
-        return aclDBAdaptor.get(sampleId, memberList, Enums.Resource.SAMPLE);
+        return aclDBAdaptor.get(studyId, memberList, Enums.Resource.STUDY, StudyAclEntry.StudyPermissions.class);
+    }
+
+    @Override
+    public OpenCGAResult<AclEntryList<SampleAclEntry.SamplePermissions>> getAllSampleAcls(long studyId, long sampleId, String userId)
+            throws CatalogException {
+        checkCanAssignOrSeePermissions(studyId, userId);
+        return aclDBAdaptor.get(sampleId, null, Enums.Resource.SAMPLE, SampleAclEntry.SamplePermissions.class);
+    }
+
+    @Override
+    public OpenCGAResult<AclEntryList<SampleAclEntry.SamplePermissions>> getSampleAcl(long studyId, long sampleId, String userId,
+                                                                                      String member) throws CatalogException {
+        try {
+            checkCanAssignOrSeePermissions(studyId, userId);
+        } catch (CatalogException e) {
+            // It will be OK if the userId asking for the ACLs wants to see its own permissions
+            checkAskingOwnPermissions(userId, member, studyId);
+        }
+
+        List<String> memberList = new ArrayList<>();
+        memberList.add(member);
+        if (!member.startsWith("@")) {
+            // If member is a user, we will also add all the groups the user might belong to
+            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
+            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
+        }
+
+        return aclDBAdaptor.get(sampleId, memberList, Enums.Resource.SAMPLE, SampleAclEntry.SamplePermissions.class);
     }
 
     @Override
@@ -500,16 +504,16 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public OpenCGAResult<Map<String, List<String>>> getAllFileAcls(long studyId, long fileId, String userId, boolean checkPermission)
-            throws CatalogException {
+    public OpenCGAResult<AclEntryList<FileAclEntry.FilePermissions>> getAllFileAcls(long studyId, long fileId, String userId,
+                                                                                    boolean checkPermission) throws CatalogException {
         if (checkPermission) {
             checkCanAssignOrSeePermissions(studyId, userId);
         }
-        return aclDBAdaptor.get(fileId, null, Enums.Resource.FILE);
+        return aclDBAdaptor.get(fileId, null, Enums.Resource.FILE, FileAclEntry.FilePermissions.class);
     }
 
     @Override
-    public OpenCGAResult<Map<String, List<String>>> getFileAcl(long studyId, long fileId, String userId, String member)
+    public OpenCGAResult<AclEntryList<FileAclEntry.FilePermissions>> getFileAcl(long studyId, long fileId, String userId, String member)
             throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
@@ -526,18 +530,20 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
         }
 
-        return aclDBAdaptor.get(fileId, memberList, Enums.Resource.FILE);
+        return aclDBAdaptor.get(fileId, memberList, Enums.Resource.FILE, FileAclEntry.FilePermissions.class);
     }
 
     @Override
-    public OpenCGAResult<Map<String, List<String>>> getAllIndividualAcls(long studyId, long individualId, String userId)
+    public OpenCGAResult<AclEntryList<IndividualAclEntry.IndividualPermissions>> getAllIndividualAcls(long studyId, long individualId,
+                                                                                                      String userId)
             throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(individualId, null, Enums.Resource.INDIVIDUAL);
+        return aclDBAdaptor.get(individualId, null, Enums.Resource.INDIVIDUAL, IndividualAclEntry.IndividualPermissions.class);
     }
 
     @Override
-    public OpenCGAResult<Map<String, List<String>>> getIndividualAcl(long studyId, long individualId, String userId, String member)
+    public OpenCGAResult<AclEntryList<IndividualAclEntry.IndividualPermissions>> getIndividualAcl(long studyId, long individualId,
+                                                                                                  String userId, String member)
             throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
@@ -554,127 +560,19 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
         }
 
-        return aclDBAdaptor.get(individualId, memberList, Enums.Resource.INDIVIDUAL);
+        return aclDBAdaptor.get(individualId, memberList, Enums.Resource.INDIVIDUAL, IndividualAclEntry.IndividualPermissions.class);
     }
 
     @Override
-    public OpenCGAResult<Map<String, List<String>>> getAllCohortAcls(long studyId, long cohortId, String userId) throws CatalogException {
-        checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(cohortId, null, Enums.Resource.COHORT);
-    }
-
-    @Override
-    public OpenCGAResult<Map<String, List<String>>> getCohortAcl(long studyId, long cohortId, String userId, String member)
-            throws CatalogException {
-        try {
-            checkCanAssignOrSeePermissions(studyId, userId);
-        } catch (CatalogException e) {
-            // It will be OK if the userId asking for the ACLs wants to see its own permissions
-            checkAskingOwnPermissions(userId, member, studyId);
-        }
-
-        List<String> memberList = new ArrayList<>();
-        memberList.add(member);
-        if (!member.startsWith("@")) {
-            // If member is a user, we will also add all the groups the user might belong to
-            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
-            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
-        }
-
-        return aclDBAdaptor.get(cohortId, memberList, Enums.Resource.COHORT);
-    }
-
-    @Override
-    public OpenCGAResult<Map<String, List<String>>> getAllPanelAcls(long studyId, long panelId, String userId) throws CatalogException {
-        checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(panelId, null, Enums.Resource.DISEASE_PANEL);
-    }
-
-    @Override
-    public OpenCGAResult<Map<String, List<String>>> getPanelAcl(long studyId, long panelId, String userId, String member)
-            throws CatalogException {
-        try {
-            checkCanAssignOrSeePermissions(studyId, userId);
-        } catch (CatalogException e) {
-            // It will be OK if the userId asking for the ACLs wants to see its own permissions
-            checkAskingOwnPermissions(userId, member, studyId);
-        }
-
-        List<String> memberList = new ArrayList<>();
-        memberList.add(member);
-        if (!member.startsWith("@")) {
-            // If member is a user, we will also add all the groups the user might belong to
-            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
-            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
-        }
-
-        return aclDBAdaptor.get(panelId, memberList, Enums.Resource.DISEASE_PANEL);
-    }
-
-    @Override
-    public OpenCGAResult<Map<String, List<String>>> getAllJobAcls(long studyId, long jobId, String userId) throws CatalogException {
-        checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(jobId, null, Enums.Resource.JOB);
-    }
-
-    @Override
-    public OpenCGAResult<Map<String, List<String>>> getJobAcl(long studyId, long jobId, String userId, String member)
-            throws CatalogException {
-        try {
-            checkCanAssignOrSeePermissions(studyId, userId);
-        } catch (CatalogException e) {
-            // It will be OK if the userId asking for the ACLs wants to see its own permissions
-            checkAskingOwnPermissions(userId, member, studyId);
-        }
-
-        List<String> memberList = new ArrayList<>();
-        memberList.add(member);
-        if (!member.startsWith("@")) {
-            // If member is a user, we will also add all the groups the user might belong to
-            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
-            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
-        }
-
-        return aclDBAdaptor.get(jobId, memberList, Enums.Resource.JOB);
-    }
-
-    @Override
-    public OpenCGAResult<Map<String, List<String>>> getAllFamilyAcls(long studyId, long familyId, String userId) throws CatalogException {
-        checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(familyId, null, Enums.Resource.FAMILY);
-    }
-
-    @Override
-    public OpenCGAResult<Map<String, List<String>>> getFamilyAcl(long studyId, long familyId, String userId, String member)
-            throws CatalogException {
-        try {
-            checkCanAssignOrSeePermissions(studyId, userId);
-        } catch (CatalogException e) {
-            // It will be OK if the userId asking for the ACLs wants to see its own permissions
-            checkAskingOwnPermissions(userId, member, studyId);
-        }
-
-        List<String> memberList = new ArrayList<>();
-        memberList.add(member);
-        if (!member.startsWith("@")) {
-            // If member is a user, we will also add all the groups the user might belong to
-            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
-            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
-        }
-
-        return aclDBAdaptor.get(familyId, memberList, Enums.Resource.FAMILY);
-    }
-
-    @Override
-    public OpenCGAResult<Map<String, List<String>>> getAllClinicalAnalysisAcls(long studyId, long clinicalAnalysisId, String userId)
+    public OpenCGAResult<AclEntryList<CohortAclEntry.CohortPermissions>> getAllCohortAcls(long studyId, long cohortId, String userId)
             throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(clinicalAnalysisId, null, Enums.Resource.CLINICAL_ANALYSIS);
+        return aclDBAdaptor.get(cohortId, null, Enums.Resource.COHORT, CohortAclEntry.CohortPermissions.class);
     }
 
     @Override
-    public OpenCGAResult<Map<String, List<String>>> getClinicalAnalysisAcl(long studyId, long clinicalAnalysisId, String userId,
-                                                                           String member) throws CatalogException {
+    public OpenCGAResult<AclEntryList<CohortAclEntry.CohortPermissions>> getCohortAcl(long studyId, long cohortId, String userId,
+                                                                                      String member) throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
@@ -690,7 +588,127 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
         }
 
-        return aclDBAdaptor.get(clinicalAnalysisId, memberList, Enums.Resource.CLINICAL_ANALYSIS);
+        return aclDBAdaptor.get(cohortId, memberList, Enums.Resource.COHORT, CohortAclEntry.CohortPermissions.class);
+    }
+
+    @Override
+    public OpenCGAResult<AclEntryList<PanelAclEntry.PanelPermissions>> getAllPanelAcls(long studyId, long panelId, String userId)
+            throws CatalogException {
+        checkCanAssignOrSeePermissions(studyId, userId);
+        return aclDBAdaptor.get(panelId, null, Enums.Resource.DISEASE_PANEL, PanelAclEntry.PanelPermissions.class);
+    }
+
+    @Override
+    public OpenCGAResult<AclEntryList<PanelAclEntry.PanelPermissions>> getPanelAcl(long studyId, long panelId, String userId, String member)
+            throws CatalogException {
+        try {
+            checkCanAssignOrSeePermissions(studyId, userId);
+        } catch (CatalogException e) {
+            // It will be OK if the userId asking for the ACLs wants to see its own permissions
+            checkAskingOwnPermissions(userId, member, studyId);
+        }
+
+        List<String> memberList = new ArrayList<>();
+        memberList.add(member);
+        if (!member.startsWith("@")) {
+            // If member is a user, we will also add all the groups the user might belong to
+            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
+            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
+        }
+
+        return aclDBAdaptor.get(panelId, memberList, Enums.Resource.DISEASE_PANEL, PanelAclEntry.PanelPermissions.class);
+    }
+
+    @Override
+    public OpenCGAResult<AclEntryList<JobAclEntry.JobPermissions>> getAllJobAcls(long studyId, long jobId, String userId)
+            throws CatalogException {
+        checkCanAssignOrSeePermissions(studyId, userId);
+        return aclDBAdaptor.get(jobId, null, Enums.Resource.JOB, JobAclEntry.JobPermissions.class);
+    }
+
+    @Override
+    public OpenCGAResult<AclEntryList<JobAclEntry.JobPermissions>> getJobAcl(long studyId, long jobId, String userId, String member)
+            throws CatalogException {
+        try {
+            checkCanAssignOrSeePermissions(studyId, userId);
+        } catch (CatalogException e) {
+            // It will be OK if the userId asking for the ACLs wants to see its own permissions
+            checkAskingOwnPermissions(userId, member, studyId);
+        }
+
+        List<String> memberList = new ArrayList<>();
+        memberList.add(member);
+        if (!member.startsWith("@")) {
+            // If member is a user, we will also add all the groups the user might belong to
+            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
+            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
+        }
+
+        return aclDBAdaptor.get(jobId, memberList, Enums.Resource.JOB, JobAclEntry.JobPermissions.class);
+    }
+
+    @Override
+    public OpenCGAResult<AclEntryList<FamilyAclEntry.FamilyPermissions>> getAllFamilyAcls(long studyId, long familyId, String userId)
+            throws CatalogException {
+        checkCanAssignOrSeePermissions(studyId, userId);
+        return aclDBAdaptor.get(familyId, null, Enums.Resource.FAMILY, FamilyAclEntry.FamilyPermissions.class);
+    }
+
+    @Override
+    public OpenCGAResult<AclEntryList<FamilyAclEntry.FamilyPermissions>> getFamilyAcl(long studyId, long familyId, String userId,
+                                                                                      String member) throws CatalogException {
+        try {
+            checkCanAssignOrSeePermissions(studyId, userId);
+        } catch (CatalogException e) {
+            // It will be OK if the userId asking for the ACLs wants to see its own permissions
+            checkAskingOwnPermissions(userId, member, studyId);
+        }
+
+        List<String> memberList = new ArrayList<>();
+        memberList.add(member);
+        if (!member.startsWith("@")) {
+            // If member is a user, we will also add all the groups the user might belong to
+            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
+            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
+        }
+
+        return aclDBAdaptor.get(familyId, memberList, Enums.Resource.FAMILY, FamilyAclEntry.FamilyPermissions.class);
+    }
+
+    @Override
+    public OpenCGAResult<AclEntryList<ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions>> getAllClinicalAnalysisAcls(
+            long studyId, long clinicalAnalysisId, String userId) throws CatalogException {
+        checkCanAssignOrSeePermissions(studyId, userId);
+        return aclDBAdaptor.get(clinicalAnalysisId, null, Enums.Resource.CLINICAL_ANALYSIS,
+                ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.class);
+    }
+
+    @Override
+    public OpenCGAResult<AclEntryList<ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions>> getClinicalAnalysisAcl(
+            long studyId, long clinicalAnalysisId, String userId, String member) throws CatalogException {
+        try {
+            checkCanAssignOrSeePermissions(studyId, userId);
+        } catch (CatalogException e) {
+            // It will be OK if the userId asking for the ACLs wants to see its own permissions
+            checkAskingOwnPermissions(userId, member, studyId);
+        }
+
+        List<String> memberList = new ArrayList<>();
+        memberList.add(member);
+        if (!member.startsWith("@")) {
+            // If member is a user, we will also add all the groups the user might belong to
+            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
+            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
+        }
+
+        return aclDBAdaptor.get(clinicalAnalysisId, memberList, Enums.Resource.CLINICAL_ANALYSIS,
+                ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.class);
+    }
+
+    @Override
+    public <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcls(List<Long> resourceUids, List<String> members,
+                                                                      Enums.Resource resource, Class<T> clazz) throws CatalogException {
+        return aclDBAdaptor.get(resourceUids, members, resource, clazz);
     }
 
     private void checkAskingOwnPermissions(String userId, String member, long studyId) throws CatalogException {
@@ -714,55 +732,36 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public OpenCGAResult<Map<String, List<String>>> setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
-            throws CatalogException {
+    public void setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogException {
         aclDBAdaptor.setToMembers(studyIds, members, getImplicitPermissions(permissions, Enums.Resource.STUDY));
-        return aclDBAdaptor.get(studyIds, members, Enums.Resource.STUDY);
     }
 
     @Override
-    public OpenCGAResult<Map<String, List<String>>> addStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
-            throws CatalogException {
+    public void addStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogException {
         aclDBAdaptor.addToMembers(studyIds, members, getImplicitPermissions(permissions, Enums.Resource.STUDY));
-        return aclDBAdaptor.get(studyIds, members, Enums.Resource.STUDY);
     }
 
     @Override
-    public OpenCGAResult<Map<String, List<String>>> removeStudyAcls(List<Long> studyIds, List<String> members,
-                                                                    @Nullable List<String> permissions) throws CatalogException {
-        return removeAcls(members, new CatalogAclParams(studyIds, permissions, Enums.Resource.STUDY));
-    }
-
-    private OpenCGAResult<Map<String, List<String>>> getAcls(List<Long> ids, List<String> members, Enums.Resource resource)
-            throws CatalogException {
-        return aclDBAdaptor.get(ids, members, resource);
+    public void removeStudyAcls(List<Long> studyIds, List<String> members, @Nullable List<String> permissions) throws CatalogException {
+        removeAcls(members, new CatalogAclParams(studyIds, permissions, Enums.Resource.STUDY));
     }
 
     @Override
-    public OpenCGAResult<Map<String, List<String>>> setAcls(long studyUid, List<String> members, List<CatalogAclParams> aclParams)
-            throws CatalogException {
-        long startTime = System.currentTimeMillis();
+    public void setAcls(long studyUid, List<String> members, List<CatalogAclParams> aclParams) throws CatalogException {
         setImplicitPermissions(aclParams);
         aclDBAdaptor.setToMembers(studyUid, members, aclParams);
-        return getAclResult(aclParams.get(0).getIds(), members, aclParams.get(0).getResource(), startTime);
     }
 
     @Override
-    public OpenCGAResult<Map<String, List<String>>> addAcls(long studyId, List<String> members, List<CatalogAclParams> aclParams)
-            throws CatalogException {
-        long startTime = System.currentTimeMillis();
+    public void addAcls(long studyId, List<String> members, List<CatalogAclParams> aclParams) throws CatalogException {
         setImplicitPermissions(aclParams);
         aclDBAdaptor.addToMembers(studyId, members, aclParams);
-        return getAclResult(aclParams.get(0).getIds(), members, aclParams.get(0).getResource(), startTime);
     }
 
     @Override
-    public OpenCGAResult<Map<String, List<String>>> removeAcls(List<String> members, List<CatalogAclParams> aclParams)
-            throws CatalogException {
-        long startTime = System.currentTimeMillis();
+    public void removeAcls(List<String> members, List<CatalogAclParams> aclParams) throws CatalogException {
         setDependentPermissions(aclParams);
         aclDBAdaptor.removeFromMembers(members, aclParams);
-        return getAclResult(aclParams.get(0).getIds(), members, aclParams.get(0).getResource(), startTime);
     }
 
     private void setDependentPermissions(List<CatalogAclParams> aclParams) throws CatalogAuthorizationException {
@@ -1104,31 +1103,25 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         return new ArrayList<>(allPermissions);
     }
 
-    OpenCGAResult<Map<String, List<String>>> getAclResult(List<Long> ids, List<String> members, Enums.Resource resource, long startTime)
-            throws CatalogException {
+    <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAclResult(List<Long> ids, List<String> members, Enums.Resource resource,
+                                                                    Class<T> clazz, long startTime) throws CatalogException {
         int dbTime = (int) (System.currentTimeMillis() - startTime);
 
-        OpenCGAResult<Map<String, List<String>>> result = getAcls(ids, members, resource);
+        OpenCGAResult<AclEntryList<T>> result = getAcls(ids, members, resource, clazz);
         result.setTime(result.getTime() + dbTime);
 
         return result;
     }
 
     @Override
-    public OpenCGAResult<Map<String, List<String>>> replicateAcls(long studyId, List<Long> ids, Map<String, List<String>> aclEntries,
-                                                                  Enums.Resource resource) throws CatalogException {
-        if (ids == null || ids.isEmpty()) {
+    public void replicateAcls(List<Long> uids, AclEntryList<?> aclEntryList, Enums.Resource resource) throws CatalogException {
+        if (CollectionUtils.isEmpty(uids)) {
             throw new CatalogDBException("Missing identifiers to set acls");
         }
-
-        long startTime = System.currentTimeMillis();
-        aclDBAdaptor.setAcls(ids, aclEntries, resource);
-        int dbTime = (int) (System.currentTimeMillis() - startTime);
-
-        OpenCGAResult result = getAcls(ids, null, resource);
-        result.setTime(result.getTime() + dbTime);
-
-        return result;
+        if (CollectionUtils.isEmpty(aclEntryList)) {
+            return;
+        }
+        aclDBAdaptor.setAcls(uids, aclEntryList, resource);
     }
 
     @Override

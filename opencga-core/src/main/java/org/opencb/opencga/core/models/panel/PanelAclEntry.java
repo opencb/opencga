@@ -17,7 +17,7 @@
 package org.opencb.opencga.core.models.panel;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.models.AbstractAclEntry;
+import org.opencb.opencga.core.models.AclEntry;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 01/06/16.
  */
-public class PanelAclEntry extends AbstractAclEntry<PanelAclEntry.PanelPermissions> {
+public class PanelAclEntry extends AclEntry<PanelAclEntry.PanelPermissions> {
 
     public enum PanelPermissions {
         VIEW(Collections.emptyList()),

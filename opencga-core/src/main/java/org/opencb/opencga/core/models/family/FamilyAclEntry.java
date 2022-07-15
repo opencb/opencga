@@ -18,7 +18,7 @@ package org.opencb.opencga.core.models.family;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.CollectionUtils;
-import org.opencb.opencga.core.models.AbstractAclEntry;
+import org.opencb.opencga.core.models.AclEntry;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 02/05/17.
  */
-public class FamilyAclEntry extends AbstractAclEntry<FamilyAclEntry.FamilyPermissions> {
+public class FamilyAclEntry extends AclEntry<FamilyAclEntry.FamilyPermissions> {
 
     public enum FamilyPermissions {
         VIEW(Collections.emptyList()),
