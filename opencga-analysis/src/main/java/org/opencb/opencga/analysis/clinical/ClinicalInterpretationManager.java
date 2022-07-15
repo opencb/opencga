@@ -116,14 +116,14 @@ public class ClinicalInterpretationManager extends StorageManager {
     static {
         defaultDeNovoQuery = new Query()
                 .append(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
-                          ParamConstants.POP_FREQ_1000G + ":AFR<0.002;"
-                        + ParamConstants.POP_FREQ_1000G + ":AMR<0.002;"
-                        + ParamConstants.POP_FREQ_1000G + ":EAS<0.002;"
-                        + ParamConstants.POP_FREQ_1000G + ":EUR<0.002;"
-                        + ParamConstants.POP_FREQ_1000G + ":SAS<0.002;"
-                        + "GNOMAD_EXOMES:AFR<0.001;GNOMAD_EXOMES:AMR<0.001;"
-                        + "GNOMAD_EXOMES:EAS<0.001;GNOMAD_EXOMES:FIN<0.001;GNOMAD_EXOMES:NFE<0.001;GNOMAD_EXOMES:ASJ<0.001;"
-                        + "GNOMAD_EXOMES:OTH<0.002")
+                        ParamConstants.POP_FREQ_1000G + ":AFR<0.002;"
+                                + ParamConstants.POP_FREQ_1000G + ":AMR<0.002;"
+                                + ParamConstants.POP_FREQ_1000G + ":EAS<0.002;"
+                                + ParamConstants.POP_FREQ_1000G + ":EUR<0.002;"
+                                + ParamConstants.POP_FREQ_1000G + ":SAS<0.002;"
+                                + "GNOMAD_EXOMES:AFR<0.001;GNOMAD_EXOMES:AMR<0.001;"
+                                + "GNOMAD_EXOMES:EAS<0.001;GNOMAD_EXOMES:FIN<0.001;GNOMAD_EXOMES:NFE<0.001;GNOMAD_EXOMES:ASJ<0.001;"
+                                + "GNOMAD_EXOMES:OTH<0.002")
                 .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.001")
                 .append(VariantQueryParam.ANNOT_BIOTYPE.key(), ModeOfInheritance.proteinCoding)
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ModeOfInheritance.extendedLof)
@@ -310,19 +310,25 @@ public class ClinicalInterpretationManager extends StorageManager {
         }
 
         // Include interpretation management
-        if (query.containsKey(ParamConstants.INCLUDE_INTERPRETATION)
-                && StringUtils.isNotEmpty(query.getString(ParamConstants.INCLUDE_INTERPRETATION))) {
+        logger.info("Checking the parameter {} with value = {}", ParamConstants.INCLUDE_INTERPRETATION,
+                query.getString(ParamConstants.INCLUDE_INTERPRETATION));
+        String includeInterpretation = query.getString(ParamConstants.INCLUDE_INTERPRETATION);
+        if (StringUtils.isNotEmpty(includeInterpretation)) {
             OpenCGAResult<Interpretation> interpretationResult = catalogManager.getInterpretationManager().get(studyId,
-                    query.getString(ParamConstants.INCLUDE_INTERPRETATION), QueryOptions.empty(), token);
+                    includeInterpretation, QueryOptions.empty(), token);
             int numResults = interpretationResult.getNumResults();
+            logger.info("Checking number of results ({}) found for the interpretation ID {}, it should be 1, otherwise something wrong"
+                    + " happened", numResults, includeInterpretation);
             if (numResults == 1) {
                 // Interpretation found, check if its primary findings are matching any retrieved variants, in that case set the
-                // fields: comments, filters, discusssion, status and attributes
+                // fields: comments, filters, discussion, status and attributes
                 Interpretation interpretation = interpretationResult.first();
                 if (CollectionUtils.isNotEmpty(interpretation.getPrimaryFindings())) {
+                    logger.info("Checking the primary findings ({}) of the interpretation {}", interpretation.getPrimaryFindings().size(),
+                            query.getString(ParamConstants.INCLUDE_INTERPRETATION));
                     for (ClinicalVariant primaryFinding : interpretation.getPrimaryFindings()) {
                         for (ClinicalVariant clinicalVariant : clinicalVariants) {
-                            if (clinicalVariant.getId().equals(primaryFinding.getId())) {
+                            if (clinicalVariant.toStringSimple().equals(primaryFinding.toStringSimple())) {
                                 clinicalVariant.setComments(primaryFinding.getComments())
                                         .setFilters(primaryFinding.getFilters())
                                         .setDiscussion(primaryFinding.getDiscussion())
@@ -332,16 +338,14 @@ public class ClinicalInterpretationManager extends StorageManager {
                         }
                     }
                 } else {
-                    logger.warn("Interpretation {} does not have any primary finding",
-                            query.getString(ParamConstants.INCLUDE_INTERPRETATION));
+                    logger.warn("Interpretation {} does not have any primary finding", includeInterpretation);
                 }
             } else {
                 if (interpretationResult.getNumResults() <= 0) {
-                    logger.warn("Interpretation {} not found when running the clinical variant query",
-                            query.getString(ParamConstants.INCLUDE_INTERPRETATION));
+                    logger.warn("Interpretation {} not found when running the clinical variant query", includeInterpretation);
                 } else {
-                    logger.warn("Multiple interpretations {} were found for ID {} when running the clinical variant query  ",
-                            interpretationResult.getNumResults(), query.getString(ParamConstants.INCLUDE_INTERPRETATION));
+                    logger.warn("Multiple interpretations {} were found for ID {} when running the clinical variant query",
+                            interpretationResult.getNumResults(), includeInterpretation);
                 }
             }
         }
