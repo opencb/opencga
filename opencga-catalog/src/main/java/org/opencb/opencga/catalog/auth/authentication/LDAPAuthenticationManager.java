@@ -45,10 +45,9 @@ import static org.opencb.opencga.core.config.AuthenticationOrigin.*;
  */
 public class LDAPAuthenticationManager extends AuthenticationManager {
 
+    private static final String OPENCGA_DISTINGUISHED_NAME = "opencga_dn";
     private final String originId;
     private final ExecutorService executorService;
-    private String host;
-
     private final String authUserId;
     private final String authPassword;
     private final String groupsSearch;
@@ -64,10 +63,9 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     private final Hashtable<String, Object> env;
 
     private final long expiration;
-
-    private static final String OPENCGA_DISTINGUISHED_NAME = "opencga_dn";
-    private boolean ldaps;
     private final boolean sslInvalidCertificatesAllowed;
+    private String host;
+    private boolean ldaps;
 
     public LDAPAuthenticationManager(AuthenticationOrigin authenticationOrigin, String secretKeyString, long expiration) {
         super();
@@ -113,6 +111,18 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
         this.expiration = expiration;
         Key secretKey = this.converStringToKeyObject(secretKeyString, SignatureAlgorithm.HS256.getJcaName());
         this.jwtManager = new JwtManager(SignatureAlgorithm.HS256.getValue(), secretKey);
+    }
+
+    protected static String envToStringRedacted(Hashtable<String, Object> env) {
+        // Replace credentials only if exists
+        Object remove = env.replace(DirContext.SECURITY_CREDENTIALS, "*********");
+
+        String string = env.toString();
+
+        // Restore credentials, if any
+        env.replace(DirContext.SECURITY_CREDENTIALS, remove);
+
+        return string;
     }
 
     @Override
@@ -198,17 +208,17 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
 
     @Override
     public void changePassword(String userId, String oldPassword, String newPassword) throws CatalogException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("To change the password contact the LDAP administrator");
     }
 
     @Override
     public OpenCGAResult resetPassword(String userId) throws CatalogException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("To reset the password contact the LDAP administrator");
     }
 
     @Override
     public void newPassword(String userId, String newPassword) throws CatalogException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("To renew the password contact the LDAP administrator");
     }
 
     @Override
@@ -485,24 +495,13 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
         return new CatalogAuthenticationException("LDAP: " + msg, e);
     }
 
-    protected static String envToStringRedacted(Hashtable<String, Object> env) {
-        // Replace credentials only if exists
-        Object remove = env.replace(DirContext.SECURITY_CREDENTIALS, "*********");
-
-        String string = env.toString();
-
-        // Restore credentials, if any
-        env.replace(DirContext.SECURITY_CREDENTIALS, remove);
-
-        return string;
-    }
-
     /**
      * Get String from objectMap and remove.
-     * @param objectMap         ObjectMap
-     * @param key               key
-     * @param defaultValue      default value
-     * @return  taken value, or the default value.
+     *
+     * @param objectMap    ObjectMap
+     * @param key          key
+     * @param defaultValue default value
+     * @return taken value, or the default value.
      */
     private String takeString(ObjectMap objectMap, String key, String defaultValue) {
         String value = objectMap.getString(key, defaultValue);

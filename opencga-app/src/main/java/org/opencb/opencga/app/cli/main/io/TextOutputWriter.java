@@ -97,20 +97,18 @@ public class TextOutputWriter extends AbstractOutputWriter {
             return;
         }
         if (queryResponse.getResponses().size() == 0 || ((OpenCGAResult) queryResponse.getResponses().get(0)).getNumResults() == 0) {
-            if (queryResponse.getResponses().size() == 1 && queryResponse.first().getNumMatches() > 0) {
-                // count
-                PrintUtils.println(String.valueOf(queryResponse.first().getNumMatches()));
+            if (queryResponse.getResponses().size() == 1 && queryResponse.first().getNumMatches() > 0 && CollectionUtils.isEmpty(queryResponse.getEvents())) {
+                PrintUtils.println(String.valueOf(queryResponse.first()));
             } else {
-
                 if (CollectionUtils.isNotEmpty(queryResponse.getEvents())) {
                     for (Event event : ((RestResponse<?>) queryResponse).getEvents()) {
                         if (StringUtils.isNotEmpty(event.getMessage())) {
                             PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("EVENT: ", event.getMessage()));
                         }
                     }
+                } else {
+                    PrintUtils.printInfo("No results found.");
                 }
-
-                PrintUtils.printInfo("No results found for the query.");
             }
             return;
         }
