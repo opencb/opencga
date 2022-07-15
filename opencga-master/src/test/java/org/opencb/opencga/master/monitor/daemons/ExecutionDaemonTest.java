@@ -512,13 +512,13 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         public Map<String, String> jobStatus = new HashMap<>();
 
         @Override
-        public void execute(String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
+        public void execute(String studyId, String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
             System.out.println("Executing job " + jobId + " --- " + commandLine);
             jobStatus.put(jobId, Enums.ExecutionStatus.QUEUED);
         }
 
         @Override
-        public String getStatus(String jobId) {
+        public String getStatus(String studyId, String jobId) {
             return jobStatus.getOrDefault(jobId, Enums.ExecutionStatus.UNKNOWN);
         }
 
@@ -528,17 +528,17 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         }
 
         @Override
-        public boolean stop(String jobId) throws Exception {
+        public boolean stop(String studyId, String jobId) throws Exception {
             return false;
         }
 
         @Override
-        public boolean resume(String jobId) throws Exception {
+        public boolean resume(String studyId, String jobId) throws Exception {
             return false;
         }
 
         @Override
-        public boolean kill(String jobId) throws Exception {
+        public boolean kill(String studyId, String jobId) throws Exception {
             return false;
         }
     }

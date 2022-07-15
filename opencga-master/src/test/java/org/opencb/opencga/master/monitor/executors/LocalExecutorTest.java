@@ -45,13 +45,14 @@ public class LocalExecutorTest {
     @Test(timeout = 10000)
     public void test() throws Exception {
         System.out.println(rootDir.toAbsolutePath());
+        String study = "study";
         for (int i = 0; i < 10; i++) {
-            localExecutor.execute("jobId-" + i, "default", "echo Hello World", rootDir.resolve("out_" + i + ".txt"), rootDir.resolve("err_" + i + ".txt"));
+            localExecutor.execute(study, "jobId-" + i, "default", "echo Hello World", rootDir.resolve("out_" + i + ".txt"), rootDir.resolve("err_" + i + ".txt"));
         }
 
         for (int i = 0; i < 10; i++) {
             String jobId = "jobId-" + i;
-            while(!localExecutor.getStatus(jobId).equals("DONE")) {
+            while(!localExecutor.getStatus(study, jobId).equals("DONE")) {
                 Thread.sleep(1000);
             }
             Assert.assertTrue(Files.exists(rootDir.resolve("out_" + i + ".txt")));

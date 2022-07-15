@@ -37,12 +37,12 @@ public class SGEExecutor implements BatchExecutor {
     }
 
     @Override
-    public void execute(String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
+    public void execute(String studyId, String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
         sgeManager.queueJob(jobId, "", -1, getCommandLine(commandLine, stdout, stderr), null);
     }
 
     @Override
-    public String getStatus(String jobId) {
+    public String getStatus(String studyId, String jobId) {
         return Enums.ExecutionStatus.UNKNOWN;
 //        String status;
 //        try {
@@ -70,17 +70,17 @@ public class SGEExecutor implements BatchExecutor {
     }
 
     @Override
-    public boolean stop(String jobId) throws Exception {
+    public boolean stop(String studyId, String jobId) throws Exception {
         return false;
     }
 
     @Override
-    public boolean resume(String jobId) throws Exception {
+    public boolean resume(String studyId, String jobId) throws Exception {
         return false;
     }
 
     @Override
-    public boolean kill(String jobId) throws Exception {
+    public boolean kill(String studyId, String jobId) throws Exception {
         return false;
     }
 

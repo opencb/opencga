@@ -236,8 +236,8 @@ public class K8SExecutor implements BatchExecutor {
     }
 
     @Override
-    public void execute(String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
-        String jobName = buildJobName(jobId);
+    public void execute(String studyId, String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
+        String jobName = buildJobName(studyId, jobId);
         final io.fabric8.kubernetes.api.model.batch.Job k8sJob = new JobBuilder()
                 .withApiVersion("batch/v1")
                 .withKind("Job")
@@ -305,12 +305,20 @@ public class K8SExecutor implements BatchExecutor {
      * DNS-1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must
      * start and end with an alphanumeric character (e.g. 'example.com', regex used for validation
      * is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')
-     * @param jobIdInput job Is
+     *
+     * @param studyId    Study id
+     * @param jobIdInput job Id
      * @link https://github.com/kubernetes/kubernetes/blob/c560907/staging/src/k8s.io/apimachinery/pkg/util/validation/validation.go#L135
      * @return valid name
      */
-    protected static String buildJobName(String jobIdInput) {
-        String jobId = jobIdInput.replace("_", "-");
+    protected static String buildJobName(String studyId, String jobIdInput) {
+        String jobId;
+        if (studyId != null) {
+            jobId = studyId.substring(studyId.indexOf(":") + 1) + "-" + jobIdInput;
+            jobIdInput = studyId + "-" + jobIdInput;
+        } else {
+            jobId = jobIdInput;
+        }
         int[] invalidChars = jobId
                 .chars()
                 .filter(c -> c != '-' && !StringUtils.isAlphanumeric(String.valueOf((char) c)))
@@ -335,40 +343,47 @@ public class K8SExecutor implements BatchExecutor {
     }
 
     @Override
-    public String getStatus(String jobId) {
-        String k8sJobName = buildJobName(jobId);
-        String status = jobStatusCache.compute(k8sJobName, (k, v) -> {
-            if (v == null) {
-                logger.warn("Missing job " + k8sJobName + " in cache. Fetch JOB info");
-                return Pair.of(Instant.now(), getStatusForce(k));
-            } else if (v.getKey().until(Instant.now(), ChronoUnit.MINUTES) > 10) {
-                String newStatus = getStatusForce(k);
-                String oldStatus = v.getValue();
-                if (!oldStatus.equals(newStatus)) {
-                    logger.warn("Update job " + k8sJobName + " from status cache. Change from " + oldStatus + " to " + newStatus);
-                } else {
-                    logger.debug("Update job " + k8sJobName + " from status cache. Status unchanged");
-                }
-                return Pair.of(Instant.now(), newStatus);
-            }
-            return v;
-        }).getValue();
+    public String getStatus(String studyId, String jobId) {
+        String k8sJobName = buildJobName(studyId, jobId);
+        String status = jobStatusCache.compute(k8sJobName, this::updateStatus).getValue();
+        if (Objects.equals(status, Enums.ExecutionStatus.ABORTED)) {
+            // FIXME: Keep compatibility with running k8s jobs without studyId. This should be removed
+            //  See #TASK-1384
+            status = jobStatusCache.compute(buildJobName(null, jobId), this::updateStatus).getValue();
+        }
         logger.debug("Get status from job " + k8sJobName + ". Cache size: " + jobStatusCache.size() + " . Status: " + status);
         return status;
     }
 
+    private Pair<Instant, String> updateStatus(String k8sJobName, Pair<Instant, String> v) {
+        if (v == null) {
+            logger.warn("Missing job " + k8sJobName + " in cache. Fetch JOB info");
+            return Pair.of(Instant.now(), getStatusForce(k8sJobName));
+        } else if (v.getKey().until(Instant.now(), ChronoUnit.MINUTES) > 10) {
+            String newStatus = getStatusForce(k8sJobName);
+            String oldStatus = v.getValue();
+            if (!oldStatus.equals(newStatus)) {
+                logger.warn("Update job " + k8sJobName + " from status cache. Change from " + oldStatus + " to " + newStatus);
+            } else {
+                logger.debug("Update job " + k8sJobName + " from status cache. Status unchanged");
+            }
+            return Pair.of(Instant.now(), newStatus);
+        }
+        return v;
+    }
+
     @Override
-    public boolean stop(String jobId) throws Exception {
+    public boolean stop(String studyId, String jobId) throws Exception {
         return false;
     }
 
     @Override
-    public boolean resume(String jobId) throws Exception {
+    public boolean resume(String studyId, String jobId) throws Exception {
         return false;
     }
 
     @Override
-    public boolean kill(String jobId) throws Exception {
+    public boolean kill(String studyId, String jobId) throws Exception {
         return false;
     }
 

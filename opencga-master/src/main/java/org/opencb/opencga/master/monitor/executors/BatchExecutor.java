@@ -34,15 +34,15 @@ public interface BatchExecutor {
     String OUT_LOG_EXTENSION = ".out";
     String ERR_LOG_EXTENSION = ".err";
 
-    void execute(String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception;
+    void execute(String studyId, String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception;
 
-    String getStatus(String jobId);
+    String getStatus(String studyId, String jobId);
 
-    boolean stop(String jobId) throws Exception;
+    boolean stop(String studyId, String jobId) throws Exception;
 
-    boolean resume(String jobId) throws Exception;
+    boolean resume(String studyId, String jobId) throws Exception;
 
-    boolean kill(String jobId) throws Exception;
+    boolean kill(String studyId, String jobId) throws Exception;
 
     default boolean canBeQueued() {
         return true;
