@@ -251,6 +251,9 @@ public class ClinicalInterpretationManager extends StorageManager {
 
     public OpenCGAResult<ClinicalVariant> get(Query query, QueryOptions queryOptions, InterpretationAnalysisConfiguration config,
                                               String token) throws CatalogException, IOException, StorageEngineException {
+        String includeInterpretation = query.getString(ParamConstants.INCLUDE_INTERPRETATION);
+        logger.info("Checking the parameter {} with value = {} in query {}", ParamConstants.INCLUDE_INTERPRETATION, includeInterpretation,
+                query.toJson());
 
         VariantQueryResult<Variant> variantQueryResult = variantStorageManager.get(query, queryOptions, token);
         List<Variant> variants = variantQueryResult.getResults();
@@ -310,9 +313,6 @@ public class ClinicalInterpretationManager extends StorageManager {
         }
 
         // Include interpretation management
-        logger.info("Checking the parameter {} with value = {}", ParamConstants.INCLUDE_INTERPRETATION,
-                query.getString(ParamConstants.INCLUDE_INTERPRETATION));
-        String includeInterpretation = query.getString(ParamConstants.INCLUDE_INTERPRETATION);
         if (StringUtils.isNotEmpty(includeInterpretation)) {
             OpenCGAResult<Interpretation> interpretationResult = catalogManager.getInterpretationManager().get(studyId,
                     includeInterpretation, QueryOptions.empty(), token);
