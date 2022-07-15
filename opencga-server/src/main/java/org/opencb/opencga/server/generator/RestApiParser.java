@@ -287,12 +287,21 @@ public class RestApiParser {
         param.setParam(RestParamType.BODY);
         param.setParentName(parentParamName);
         param.setTypeClass(propertyClass.getName() + ";");
-        param.setRequired(isRequired(property));
-//        innerParam.setDefaultValue(property.getMetadata().getDefaultValue());
-        param.setDefaultValue("");
-        param.setComplex(!CommandLineUtils.isPrimitiveType(propertyClass.getName()));
-        param.setDescription(getDescriptionField(variablePrefix, property));
 
+//        innerParam.setDefaultValue(property.getMetadata().getDefaultValue());
+
+
+        param.setComplex(!CommandLineUtils.isPrimitiveType(propertyClass.getName()));
+
+        if (property.getField() != null && property.getField().getAnnotation(DataField.class) != null) {
+            param.setDefaultValue(property.getField().getAnnotation(DataField.class).defaultValue());
+            param.setRequired(property.getField().getAnnotation(DataField.class).required());
+            param.setDescription(property.getField().getAnnotation(DataField.class).description());
+        } else {
+            param.setDefaultValue("");
+            param.setRequired(isRequired(property));
+            param.setDescription(getDescriptionField(variablePrefix, property));
+        }
         if (propertyClass.isEnum()) {
             // The param is an Enum
             param.setType("enum");

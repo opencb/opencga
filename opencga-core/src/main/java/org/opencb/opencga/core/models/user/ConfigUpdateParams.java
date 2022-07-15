@@ -16,10 +16,13 @@
 
 package org.opencb.opencga.core.models.user;
 
+import org.opencb.commons.annotations.DataField;
+
 import java.util.Map;
 
 public class ConfigUpdateParams {
 
+    @DataField(required = true, description = "Config id (Required)")
     private String id;
     private Map<String, Object> configuration;
 
