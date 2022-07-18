@@ -314,8 +314,11 @@ public class ClinicalInterpretationManager extends StorageManager {
 
         // Include interpretation management
         if (StringUtils.isNotEmpty(includeInterpretation)) {
-            OpenCGAResult<Interpretation> interpretationResult = catalogManager.getInterpretationManager().get(studyId,
-                    includeInterpretation, QueryOptions.empty(), token);
+            Query iQuery = new Query(ParamConstants.INTERPRETATION_ID_PARAM, includeInterpretation);
+            OpenCGAResult<Interpretation> interpretationResult = catalogManager.getInterpretationManager().search(studyId, iQuery,
+                    QueryOptions.empty(), token);
+//            OpenCGAResult<Interpretation> interpretationResult = catalogManager.getInterpretationManager().get(studyId,
+//                    includeInterpretation, QueryOptions.empty(), token);
             int numResults = interpretationResult.getNumResults();
             logger.info("Checking number of results ({}) found for the interpretation ID {}, it should be 1, otherwise something wrong"
                     + " happened", numResults, includeInterpretation);
@@ -333,7 +336,8 @@ public class ClinicalInterpretationManager extends StorageManager {
                                         .setFilters(primaryFinding.getFilters())
                                         .setDiscussion(primaryFinding.getDiscussion())
                                         .setStatus(primaryFinding.getStatus())
-                                        .setAttributes(primaryFinding.getAttributes());
+                                        .setAttributes(primaryFinding.getAttributes())
+                                        .setEvidences(primaryFinding.getEvidences());
                             }
                         }
                     }
