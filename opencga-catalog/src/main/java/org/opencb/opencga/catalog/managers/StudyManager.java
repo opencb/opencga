@@ -220,6 +220,10 @@ public class StudyManager extends AbstractManager {
         OpenCGAResult<Study> studyDataResult = studyDBAdaptor.get(query, queryOptions, userId);
 
         if (studyDataResult.getNumResults() == 0) {
+            if (!query.containsKey(StudyDBAdaptor.QueryParams.FQN.key())) {
+                // By default, exclude the opencga study for the validation
+                query.put(StudyDBAdaptor.QueryParams.FQN.key(), "!=opencga@admin:admin");
+            }
             studyDataResult = studyDBAdaptor.get(query, queryOptions);
             if (studyDataResult.getNumResults() == 0) {
                 String studyMessage = "";
@@ -228,7 +232,7 @@ public class StudyManager extends AbstractManager {
                 }
                 throw new CatalogException("No study found" + studyMessage + ".");
             } else {
-                throw CatalogAuthorizationException.deny(userId, "view", "study", studyDataResult.first().getFqn(), null);
+                throw CatalogAuthorizationException.denyAny(userId, "view", "study");
             }
         }
 
