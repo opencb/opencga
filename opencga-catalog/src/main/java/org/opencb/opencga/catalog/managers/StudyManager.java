@@ -83,6 +83,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
+import static org.opencb.opencga.core.api.ParamConstants.ADMIN_PROJECT;
+import static org.opencb.opencga.core.api.ParamConstants.ADMIN_STUDY;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 /**
@@ -222,7 +224,7 @@ public class StudyManager extends AbstractManager {
         if (studyDataResult.getNumResults() == 0) {
             if (!query.containsKey(StudyDBAdaptor.QueryParams.FQN.key())) {
                 // By default, exclude the opencga study for the validation
-                query.put(StudyDBAdaptor.QueryParams.FQN.key(), "!=opencga@admin:admin");
+                query.put(StudyDBAdaptor.QueryParams.FQN.key(), "!=" + OPENCGA + "@" + ADMIN_PROJECT + ":" + ADMIN_STUDY);
             }
             studyDataResult = studyDBAdaptor.get(query, queryOptions);
             if (studyDataResult.getNumResults() == 0) {
