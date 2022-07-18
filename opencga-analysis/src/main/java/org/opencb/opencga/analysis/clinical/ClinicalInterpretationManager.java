@@ -251,10 +251,6 @@ public class ClinicalInterpretationManager extends StorageManager {
 
     public OpenCGAResult<ClinicalVariant> get(Query query, QueryOptions queryOptions, InterpretationAnalysisConfiguration config,
                                               String token) throws CatalogException, IOException, StorageEngineException {
-        String includeInterpretation = query.getString(ParamConstants.INCLUDE_INTERPRETATION);
-        logger.info("Checking the parameter {} with value = {} in query {}", ParamConstants.INCLUDE_INTERPRETATION, includeInterpretation,
-                query.toJson());
-
         VariantQueryResult<Variant> variantQueryResult = variantStorageManager.get(query, queryOptions, token);
         List<Variant> variants = variantQueryResult.getResults();
 
@@ -313,12 +309,12 @@ public class ClinicalInterpretationManager extends StorageManager {
         }
 
         // Include interpretation management
+        String includeInterpretation = query.getString(ParamConstants.INCLUDE_INTERPRETATION);
+        logger.info("Checking the parameter {} with value = {} in query {}", ParamConstants.INCLUDE_INTERPRETATION, includeInterpretation,
+                query.toJson());
         if (StringUtils.isNotEmpty(includeInterpretation)) {
-            Query iQuery = new Query(ParamConstants.INTERPRETATION_ID_PARAM, includeInterpretation);
-            OpenCGAResult<Interpretation> interpretationResult = catalogManager.getInterpretationManager().search(studyId, iQuery,
-                    QueryOptions.empty(), token);
-//            OpenCGAResult<Interpretation> interpretationResult = catalogManager.getInterpretationManager().get(studyId,
-//                    includeInterpretation, QueryOptions.empty(), token);
+            OpenCGAResult<Interpretation> interpretationResult = catalogManager.getInterpretationManager().get(studyId,
+                    includeInterpretation, QueryOptions.empty(), token);
             int numResults = interpretationResult.getNumResults();
             logger.info("Checking number of results ({}) found for the interpretation ID {}, it should be 1, otherwise something wrong"
                     + " happened", numResults, includeInterpretation);

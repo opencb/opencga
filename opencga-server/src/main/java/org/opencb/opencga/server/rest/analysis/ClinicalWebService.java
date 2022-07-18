@@ -1134,7 +1134,7 @@ public class ClinicalWebService extends AnalysisWebService {
             // Because of the parameter includeInterpretation is not a standard variant query parameter, it is added to the query
             // after parsing the query parameters
             if (uriInfo.getQueryParameters().containsKey(INCLUDE_INTERPRETATION)) {
-                String includeInterpretation = String.valueOf(uriInfo.getQueryParameters().get(INCLUDE_INTERPRETATION));
+                String includeInterpretation = uriInfo.getQueryParameters().get(INCLUDE_INTERPRETATION).get(0);
                 logger.info("Adding the includeInterpretation ({}) to the variant query", includeInterpretation);
                 query.put(INCLUDE_INTERPRETATION, includeInterpretation);
             }
