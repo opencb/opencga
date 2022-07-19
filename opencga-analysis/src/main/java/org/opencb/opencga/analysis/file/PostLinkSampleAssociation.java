@@ -20,9 +20,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 @Tool(id = PostLinkSampleAssociation.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION,
         description = PostLinkSampleAssociation.DESCRIPTION)
@@ -31,6 +29,8 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
     public static final String ID = "postlink";
     public static final String DESCRIPTION = "Associate samples to files that were linked and could not associate their samples because "
             + "the number of samples contained was too high.";
+
+    private Set<String> existingSamples = new HashSet<>();
 
     @ToolParams
     protected final PostLinkToolParams postLinkParams = new PostLinkToolParams();
@@ -195,10 +195,17 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
     }
 
     private boolean sampleExists(String sampleId) throws CatalogException {
+        if (existingSamples.contains(sampleId)) {
+            return true;
+        }
+
         Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.ID.key(), sampleId);
         OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().search(study, sampleQuery,
                 SampleManager.INCLUDE_SAMPLE_IDS, token);
 
-        return sampleResult.getNumResults() == 1;
+        if (sampleResult.getNumResults() == 1) {
+            existingSamples.add(sampleId);
+        }
+        return existingSamples.contains(sampleId);
     }
 }
