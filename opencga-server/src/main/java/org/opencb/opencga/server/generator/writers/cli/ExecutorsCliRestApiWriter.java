@@ -230,7 +230,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                                 "CommandOptions."
                                 + getAsCamelCase(commandName) + "CommandOptions;\n");
                         sb.append(getQueryParams(restEndpoint, config, getAsCamelCase(commandName)));
-                        sb.append(getBodyParams(restEndpoint, config, commandName));
+                        sb.append(getBodyParams(restCategory, restEndpoint, config, commandName));
                         sb.append(getReturn(restCategory, restEndpoint, config, commandName));
                     }
                     sb.append("    }\n");
@@ -262,91 +262,65 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         return res;
     }
 
-    private String getBodyParams(RestEndpoint restEndpoint, CategoryConfig config, String commandName) {
+    private String getBodyParams(RestCategory restCategory, RestEndpoint restEndpoint, CategoryConfig config, String commandName) {
         StringBuilder sb = new StringBuilder();
         String bodyClassName = restEndpoint.getBodyClassName();
         if (StringUtils.isNotEmpty(bodyClassName)) {
-            for (RestParameter restParameter : restEndpoint.getParameters()) {
-                if (restParameter.getData() != null && !restParameter.getData().isEmpty()) {
-                    sb.append(generateBeans(restParameter.getData()));
-                    for (RestParameter bparameter : restParameter.getData()) {
-                        if (bparameter.getType().equals("enum")) {
-                            sb.append("        " + getEnumName(bparameter.getTypeClass()) + " " + normalizeNames(getAsCamelCase(bparameter.getName() + "Param")) + " = null;");
-                            sb.append("\n        if (commandOptions." + normalizeNames(getAsCamelCase(bparameter.getName())) + " != null) {\n ");
-                            sb.append("        " + normalizeNames(getAsCamelCase(bparameter.getName() + "Param")) + " = "
-                                    + getEnumName(bparameter.getTypeClass()) + ".valueOf(commandOptions." + normalizeNames(getAsCamelCase(bparameter.getName())) + ");\n");
-                            sb.append("\n        } \n");
-                            //   sb.append(getSwitchEnum(bparameter, normaliceNames(getAsCamelCase(bparameter.getName() + "Param")), getEnumName(bparameter.getTypeClass())));
-                        }
-                    }
-                }
-            }
 
-            sb.append("\n        " + bodyClassName + " " + getAsVariableName(bodyClassName) + " = new " + bodyClassName + "();");
+            String variableName = getAsVariableName(bodyClassName);
+            sb.append("\n        " + bodyClassName + " " + variableName + "= null;");
             sb.append("\n        if (commandOptions.jsonDataModel) {");
+            sb.append("\n            " + variableName + " = new " + bodyClassName + "();");
             sb.append("\n            RestResponse<" + getValidResponseNames(restEndpoint.getResponse()) + "> res = new RestResponse<>();");
             sb.append("\n            res.setType(QueryType.VOID);");
-            sb.append("\n            PrintUtils.println(getObjectAsJSON(" + getAsVariableName(bodyClassName) + "));");
+            sb.append("\n            PrintUtils.println(getObjectAsJSON(" + variableName + "));");
             sb.append("\n            return res;");
             sb.append("\n        } else if (commandOptions.jsonFile != null) {");
             sb.append("\n            " + getAsVariableName(bodyClassName) + " = JacksonUtils.getDefaultObjectMapper()");
             sb.append("\n                    .readValue(new java.io.File(commandOptions.jsonFile), " + bodyClassName + ".class);");
-            sb.append("\n        } ");
+            sb.append("\n        }");
             if (hasParameters(restEndpoint.getParameters(), commandName, config)) {
-                sb.append(" else {");
-                if (hasParametersNoBoolean(restEndpoint.getParameters(), commandName, config)) {
-                    sb.append("\n        ((" + bodyClassName + ")" + getAsVariableName(bodyClassName) + ")");
+                sb.append(" else {\n");
+                RestParameter body = restEndpoint.getParameters().stream().filter(r -> r.getName().equals("body")).findFirst().orElse(null);
+                if (body != null) {
+                    sb.append("            ObjectMap beanParams = new ObjectMap();\n");
+                    sb.append(getBodyParams(body));
+                    sb.append("\n            " + getAsVariableName(bodyClassName) + " = JacksonUtils.getDefaultObjectMapper()");
+                    sb.append("\n                    .readValue(beanParams.toJson(), " + bodyClassName + ".class);");
+                    sb.append("\n        }\n");
                 }
-                Set<String> variables = new HashSet<>();
-                for (RestParameter restParameter : restEndpoint.getParameters()) {
-                    if (restParameter.getData() != null && !restParameter.getData().isEmpty()) {
-                        List<RestParameter> booleanParams = new ArrayList<>();
-                        for (RestParameter bodyParam : restParameter.getData()) {
-                            if (config.isAvailableSubCommand(bodyParam.getName(), commandName)) {
-                                if (bodyParam.getType().toLowerCase().contains("boolean") && !bodyParam.isComplex() && !bodyParam.isInnerParam()) {
-                                    // boolean params must check null values
-                                    booleanParams.add(bodyParam);
-                                } else if (!bodyParam.isComplex() && !bodyParam.isInnerParam()) {
-                                    // sometimes the name of the parameter has the prefix "body" so as not to coincide with another parameter
-                                    // with the same name, but the setter does not have this prefix, so it must be removed
-                                    sb.append("\n            .set" + getAsClassName(bodyParam.getName().replaceAll("body_", "")) +
-                                            "(commandOptions."
-                                            + normalizeNames(getAsCamelCase(bodyParam.getName())) + ")");
-                                } else if (bodyParam.isStringList()) {
-                                    sb.append("\n            .set" + getAsClassName(bodyParam.getName().replaceAll("body_", "")) +
-                                            "(splitWithTrim(commandOptions."
-                                            + normalizeNames(getAsCamelCase(bodyParam.getName())) + "))");
-                                }
-                                if (bodyParam.getType().equals("enum")) {
-                                    if (reverseCommandName(commandName).contains("create")) {
-                                        sb.append("\n            .set" + getAsClassName(bodyParam.getName().replaceAll("body_", "")) +
-                                                "("
-                                                + normalizeNames(getAsCamelCase(bodyParam.getName() + "Param")) + ")");
+            } else {
+                sb.append("\n");
+            }
+        }
+        return sb.toString();
+    }
 
-                                    }
-                                }
-                            }
-
-                            // If the parameter is InnerParam (It means it's a field of inner bean) need to add to the variables Set
-                            // for no duplicate set action of Bean (Parent)
-                            if (bodyParam.isInnerParam() && !bodyParam.isCollection()) {
-                                if (!variables.contains(bodyParam.getParentParamName())) {
-                                    sb.append("\n            .set" + getAsClassName(bodyParam.getParentParamName()) + "("
-                                            + CommandLineUtils.getAsVariableName(CommandLineUtils.getClassName(bodyParam.getGenericType()))
-                                            + ")");
-                                    variables.add(bodyParam.getParentParamName());
-                                }
-                            }
-                        }
-                        sb.append(";\n");
-                        sb.append(appendBooleanParams(booleanParams, "((" + bodyClassName + ")" + getAsVariableName(bodyClassName) + ")"));
-                        sb.append("\n        }\n");
+    private String getBodyParams(RestParameter body) {
+        StringBuilder sb = new StringBuilder();
+        for (RestParameter restParameter : body.getData()) {
+            if (CollectionUtils.isEmpty(restParameter.getData())) {
+                if (restParameter.isAvailableType()) {
+                    String javaCommandOptionsField = "commandOptions." + getJavaFieldName(restParameter);
+                    String label = StringUtils.isEmpty(restParameter.getParentParamName()) ? restParameter.getName() : restParameter.getParentParamName() + "." + restParameter.getName();
+                    if (restParameter.getTypeClass().equals("java.lang.String;")) {
+                        sb.append("            putNestedIfNotEmpty(beanParams, \"" + label + "\"," + javaCommandOptionsField + ", true);\n ");
+                    } else {
+                        sb.append("            putNestedIfNotNull(beanParams, \"" + label + "\"," + javaCommandOptionsField + ", true);\n ");
                     }
                 }
             }
         }
 
         return sb.toString();
+    }
+
+    private String getJavaFieldName(RestParameter restParam) {
+        if (restParam.getParentParamName() != null) {
+            return normalizeNames(getAsCamelCase(restParam.getParentParamName() + " " + restParam.getName()));
+        } else {
+            return normalizeNames(getAsCamelCase(restParam.getName()));
+        }
     }
 
     private StringBuilder appendBooleanParams(List<RestParameter> booleanParams, String variableName) {

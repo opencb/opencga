@@ -27,7 +27,7 @@ Sample data model hosts information about any biological material, normally extr
 ## Data Model
 
 ### Sample
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/Sample.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/Sample.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -52,7 +52,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **internal**<br>*[SampleInternal](https://docs.opencga.opencb.org/data-models/sample#sampleinternal)* <br><br>_since_: 2.0 | <p>Sample internal information.</p> |
 
 ### SampleProcessing
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleProcessing.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleProcessing.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -64,18 +64,28 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **date**<br>*String* <br> | <p>Date when the sample was processed in the lab.</p> |
 | **attributes**<br>*Map<String,Object>* <br> | <p>Attributes of the processing.</p> |
 
-### SampleInternal
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleInternal.java).
+### SampleQualityControl
+You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleQualityControl.java).
 
 | Field | Description |
 | :---  | :--- |
-| **RgaIndex.rga**<br>*[RgaIndex](https://docs.opencga.opencb.org/data-models/sample#rgaindex)* <br> | <p>Rga index for Sample internal.</p> |
-| **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/sample#status)* <br> | <p>Status of the internal object.</p> |
-| **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
-| **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
+| **files**<br>*List<<em>String</em>>* <br> | <p>Files used for the quality control of the sample.</p> |
+| **comments**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/sample#clinicalcomment"><em>ClinicalComment</em></a>>* <br> | <p>Comments for the quality control of the sample.</p> |
+| **variant**<br>*[SampleVariantQualityControlMetrics](https://docs.opencga.opencb.org/data-models/sample#samplevariantqualitycontrolmetrics)* <br> | <p>Describes variant quality control.</p> |
+
+### ExternalSource
+You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/common/ExternalSource.java).
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br>*String* <br> | <p>Source ID...</p> |
+| **name**<br>*String* <br> | <p>Source name...</p> |
+| **description**<br>*String* <br> | <p>Source description...</p> |
+| **source**<br>*String* <br> | <p>Source ...</p> |
+| **url**<br>*String* <br> | <p>Source ID</p> |
 
 ### SampleCollection
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleCollection.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleCollection.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -86,16 +96,19 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **date**<br>*String* <br> | <p>Date when the sample was collected.</p> |
 | **attributes**<br>*Map<String,Object>* <br> | <p>Attributes of the sample collection.</p> |
 
-### ExternalSource
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/ExternalSource.java).
+### Status
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
+
+
+### SampleInternal
+You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleInternal.java).
 
 | Field | Description |
 | :---  | :--- |
-| **id**<br>*String* <br> | <p>Source ID...</p> |
-| **name**<br>*String* <br> | <p>Source name...</p> |
-| **description**<br>*String* <br> | <p>Source description...</p> |
-| **source**<br>*String* <br> | <p>Source ...</p> |
-| **url**<br>*String* <br> | <p>Source ID</p> |
+| **RgaIndex.rga**<br>*[RgaIndex](https://docs.opencga.opencb.org/data-models/sample#rgaindex)* <br> | <p>Rga index for Sample internal.</p> |
+| **status**<br>*[InternalStatus](https://docs.opencga.opencb.org/data-models/sample#internalstatus)* <br> | <p>Status of the internal object.</p> |
+| **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
+| **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
 
 ### Phenotype
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/Phenotype.java).
@@ -111,36 +124,13 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 | **url**<br>*String* <br> | <p>Ontology url</p> |
 | **attributes**<br>*Map<String,String>* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
 
-### Status
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
-
-
-### SampleQualityControl
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleQualityControl.java).
-
-| Field | Description |
-| :---  | :--- |
-| **files**<br>*List<<em>String</em>>* <br> | <p>Files used for the quality control of the sample.</p> |
-| **comments**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/sample#clinicalcomment"><em>ClinicalComment</em></a>>* <br> | <p>Comments for the quality control of the sample.</p> |
-| **variant**<br>*[SampleVariantQualityControlMetrics](https://docs.opencga.opencb.org/data-models/sample#samplevariantqualitycontrolmetrics)* <br> | <p>Describes variant quality control.</p> |
-
 ### RgaIndex
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/RgaIndex.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/common/RgaIndex.java).
 
 | Field | Description |
 | :---  | :--- |
 | **status**<br>*Status* <br> | <p>Status of the Rga index NOT_INDEXED, INDEXED, INVALID_PERMISSIONS, INVALID_METADATA, INVALID.</p> |
 | **date**<br>*String* <br> | <p>Date of Rga index.</p> |
-
-### ClinicalComment
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/ClinicalComment.java).
-
-| Field | Description |
-| :---  | :--- |
-| **author**<br>*String* <br> | <p>Clinical comment author</p> |
-| **message**<br>*String* <br> | <p>Clinical comment message</p> |
-| **tags**<br>*List<<em>String</em>>* <br> | <p>List of tags for the clinical comment</p> |
-| **date**<br>*String* <br> | <p>Date of the clinical comment</p> |
 
 ### OntologyTermAnnotation
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/core/OntologyTermAnnotation.java).
@@ -155,7 +145,7 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 | **attributes**<br>*Map<String,String>* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
 
 ### SampleVariantQualityControlMetrics
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleVariantQualityControlMetrics.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleVariantQualityControlMetrics.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -163,6 +153,20 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **signatures**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/sample#signature"><em>Signature</em></a>>* <br> | <p>Signature for the quality control of the sample.</p> |
 | **genomePlot**<br>*[GenomePlot](https://docs.opencga.opencb.org/data-models/sample#genomeplot)* <br> | <p>Genome plot for the quality control of the sample.</p> |
 | **files**<br>*List<<em>String</em>>* <br> | <p>File for the quality control metrics of the sample.</p> |
+
+### InternalStatus
+You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/common/InternalStatus.java).
+
+
+### ClinicalComment
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/ClinicalComment.java).
+
+| Field | Description |
+| :---  | :--- |
+| **author**<br>*String* <br> | <p>Clinical comment author</p> |
+| **message**<br>*String* <br> | <p>Clinical comment message</p> |
+| **tags**<br>*List<<em>String</em>>* <br> | <p>List of tags for the clinical comment</p> |
+| **date**<br>*String* <br> | <p>Date of the clinical comment</p> |
 
 ### GenomePlot
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/GenomePlot.java).
@@ -173,17 +177,6 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 | **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
 | **config**<br>*[GenomePlotConfig](https://docs.opencga.opencb.org/data-models/sample#genomeplotconfig)* <br> | <p>Config of the genomePlot</p> |
 | **file**<br>*String* <br> | <p>File of the genomePlot</p> |
-
-### SampleQcVariantStats
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/SampleQcVariantStats.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br>*String* <br> | <p>Id to identify the object</p> |
-| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **query**<br>*Map<String,String>* <br> | <p>Map for query</p> |
-| **stats**<br>*SampleVariantStats* <br> | <p>Stats result set</p> |
-| **sampleId**<br>*String* <br> | <p>Stats result set</p> |
 
 ### Signature
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/Signature.java).
@@ -198,6 +191,27 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 | **files**<br>*List<<em>String</em>>* <br> | <p>List of files of signature</p> |
 | **fitting**<br>*[SignatureFitting](https://docs.opencga.opencb.org/data-models/sample#signaturefitting)* <br> | <p>Signature fitting</p> |
 
+### SampleQcVariantStats
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/SampleQcVariantStats.java).
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br>*String* <br> | <p>Id to identify the object</p> |
+| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **query**<br>*Map<String,String>* <br> | <p>Map for query</p> |
+| **stats**<br>*SampleVariantStats* <br> | <p>Stats result set</p> |
+| **sampleId**<br>*String* <br> | <p>Stats result set</p> |
+
+### GenomePlotConfig
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/GenomePlotConfig.java).
+
+| Field | Description |
+| :---  | :--- |
+| **title**<br>*String* <br> | <p>Title of the genome plot configuration</p> |
+| **density**<br>*String* <br> | <p>Density of the genome plot configuration</p> |
+| **generalQuery**<br>*Map<String,String>* <br> | <p>Map for the general query of the genome plot configuration</p> |
+| **tracks**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/sample#genomeplottrack"><em>GenomePlotTrack</em></a>>* <br> | <p>List of GenomePlotTrack</p> |
+
 ### SignatureFitting
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/SignatureFitting.java).
 
@@ -209,16 +223,6 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 | **scores**<br>*List<<em>Score</em>>* <br> | <p>Scores of the fitting signature</p> |
 | **coeff**<br>*double* <br> | <p>Coefficient of the fitting signature</p> |
 | **file**<br>*String* <br> | <p>Files of the fitting signature</p> |
-
-### GenomePlotConfig
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/GenomePlotConfig.java).
-
-| Field | Description |
-| :---  | :--- |
-| **title**<br>*String* <br> | <p>Title of the genome plot configuration</p> |
-| **density**<br>*String* <br> | <p>Density of the genome plot configuration</p> |
-| **generalQuery**<br>*Map<String,String>* <br> | <p>Map for the general query of the genome plot configuration</p> |
-| **tracks**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/sample#genomeplottrack"><em>GenomePlotTrack</em></a>>* <br> | <p>List of GenomePlotTrack</p> |
 
 ### GenomeContextCount
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/Signature/GenomeContextCount.java).
@@ -236,86 +240,3 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 | **type**<br>*String* <br> | <p>Genome Plot Track Type</p> |
 | **description**<br>*String* <br> | <p>Genome Plot Track description</p> |
 | **query**<br>*Map<String,String>* <br> | <p>Genome Plot Track map for query</p> |
-## Example
-This is a full JSON example:
-```javascript
-{
-  id: "ISDBM322015",
-  uuid: "eba13afe-0172-0004-0001-d4c92fd95e0a",
-  individualId: "ISDBM322015",
-  fileIds: [
-    "data:quartet.variants.annotated.vcf.gz",
-    "SonsAlignedBamFile.bam"
-  ],
-  annotationSets: [],
-  description: "",
-  somatic: false,
-  qualityControl: {
-    fileIds: [],
-    comments: [],
-    alignmentMetrics: [
-      {
-        bamFileId: SonsAlignedBamFile.bam,
-        fastQc: {13 items},
-        samtoolsFlagstats: {14 items},
-        geneCoverageStats: [2 items]
-      }
-    ],
-    variantMetrics: {
-      variantStats: [1 item],
-      signatures: [],
-      vcfFileIds: []
-    }
-  },
-  release: 1,
-  version: 5,
-  creationDate: "20200625131831",
-  modificationDate: "20200709003738",
-  phenotypes: [
-    {
-      id: "HP:0000545",
-      name: "Myopia",
-      source: "HPO"
-    }
-  ],
-  status: {
-    name: "",
-    description: "",
-    date: ""
-  },
-  internal: {
-    status: {
-      name: "READY",
-      date: "20200625131831",
-      description: ""
-    }
-  },
-  attributes: {
-    OPENCGA_INDIVIDUAL: {
-      id: "ISDBM322015",
-      name: "ISDBM322015",
-      uuid: "eba13738-0172-0006-0001-283471b7ae69",
-      father: {4 items},
-      mother: {4 items},
-      location: {},
-      qualityControl: {4 items},
-      sex: "MALE",
-      karyotypicSex: "XY",
-      ethnicity: "",
-      population: {},
-      release: 1,
-      version: 6,
-      creationDate: "20200625131830",
-      modificationDate: "20201027004616",
-      lifeStatus: "ALIVE",
-      phenotypes: [2 items],
-      disorders: [1 item],
-      parentalConsanguinity: false,
-      status: {3 items},
-      internal: {1 item},
-      attributes: {}
-    }
-  }
-}
-
-```
