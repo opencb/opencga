@@ -88,7 +88,7 @@ public class ClinicalWebService extends AnalysisWebService {
                 rgaManager = rgaManagerAtomicRef.get();
                 if (rgaManager == null) {
                     VariantStorageManager variantStorageManager = getVariantStorageManager();
-                    rgaManager = new RgaManager(catalogManager, variantStorageManager, storageEngineFactory);
+                    rgaManager = new RgaManager(catalogManager, variantStorageManager);
                     rgaManagerAtomicRef.set(rgaManager);
                 }
             }
