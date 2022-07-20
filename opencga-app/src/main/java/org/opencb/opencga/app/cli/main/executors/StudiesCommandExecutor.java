@@ -454,6 +454,9 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return openCGAClient.getStudyClient().deleteTemplates(commandOptions.study, commandOptions.templateId, queryParams);
     }

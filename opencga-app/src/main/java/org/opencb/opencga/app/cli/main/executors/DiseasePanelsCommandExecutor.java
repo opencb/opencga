@@ -107,6 +107,9 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
 
         PanelAclUpdateParams panelAclUpdateParams = new PanelAclUpdateParams();
@@ -137,6 +140,9 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
 
         PanelCreateParams panelCreateParams = new PanelCreateParams();
@@ -203,6 +209,9 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("acl", commandOptions.acl);
         queryParams.putIfNotEmpty("release", commandOptions.release);
         queryParams.putIfNotNull("snapshot", commandOptions.snapshot);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return openCGAClient.getDiseasePanelClient().distinct(commandOptions.field, queryParams);
     }
@@ -219,6 +228,9 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
 
         PanelImportParams panelImportParams = new PanelImportParams();
@@ -283,6 +295,9 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("member", commandOptions.member);
         queryParams.putIfNotNull("silent", commandOptions.silent);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return openCGAClient.getDiseasePanelClient().acl(commandOptions.panels, queryParams);
     }
@@ -295,6 +310,9 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return openCGAClient.getDiseasePanelClient().delete(commandOptions.panels, queryParams);
     }
@@ -311,6 +329,9 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("version", commandOptions.version);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return openCGAClient.getDiseasePanelClient().info(commandOptions.panels, queryParams);
     }
@@ -326,6 +347,9 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
 
         PanelUpdateParams panelUpdateParams = new PanelUpdateParams();

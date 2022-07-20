@@ -127,6 +127,9 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
 
         BwaWrapperParams bwaWrapperParams = new BwaWrapperParams();
@@ -162,6 +165,9 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
 
         CoverageIndexParams coverageIndexParams = new CoverageIndexParams();
@@ -196,6 +202,9 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
 
         AlignmentGeneCoverageStatsParams alignmentGeneCoverageStatsParams = new AlignmentGeneCoverageStatsParams();
@@ -231,6 +240,9 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("range", commandOptions.range);
         queryParams.putIfNotNull("windowSize", commandOptions.windowSize);
         queryParams.putIfNotNull("splitResults", commandOptions.splitResults);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return openCGAClient.getAlignmentClient().queryCoverage(commandOptions.file, queryParams);
     }
@@ -250,6 +262,9 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("onlyExons", commandOptions.onlyExons);
         queryParams.putIfNotNull("windowSize", commandOptions.windowSize);
         queryParams.putIfNotNull("splitResults", commandOptions.splitResults);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return openCGAClient.getAlignmentClient().ratioCoverage(commandOptions.file1, commandOptions.file2, queryParams);
     }
@@ -263,6 +278,9 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("threshold", commandOptions.threshold);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return openCGAClient.getAlignmentClient().statsCoverage(commandOptions.file, commandOptions.gene, queryParams);
     }
@@ -279,6 +297,9 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
 
         DeeptoolsWrapperParams deeptoolsWrapperParams = new DeeptoolsWrapperParams();
@@ -311,6 +332,9 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
 
         FastqcWrapperParams fastqcWrapperParams = new FastqcWrapperParams();
@@ -343,6 +367,9 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
 
         AlignmentIndexParams alignmentIndexParams = new AlignmentIndexParams();
@@ -376,6 +403,9 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
 
         PicardWrapperParams picardWrapperParams = new PicardWrapperParams();
@@ -408,6 +438,9 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
 
         AlignmentQcParams alignmentQcParams = new AlignmentQcParams();
@@ -459,6 +492,9 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("forceMDField", commandOptions.forceMDField);
         queryParams.putIfNotNull("binQualities", commandOptions.binQualities);
         queryParams.putIfNotNull("splitResults", commandOptions.splitResults);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return openCGAClient.getAlignmentClient().query(commandOptions.file, queryParams);
     }
@@ -475,6 +511,9 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
 
         SamtoolsWrapperParams samtoolsWrapperParams = new SamtoolsWrapperParams();

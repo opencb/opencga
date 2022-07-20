@@ -173,6 +173,9 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
         queryParams.putIfNotEmpty("release", commandOptions.release);
         queryParams.putIfNotNull("default_values", commandOptions.default_values);
         queryParams.putIfNotEmpty("field", commandOptions.field);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return openCGAClient.getJobClient().aggregationStats(queryParams);
     }
@@ -185,6 +188,9 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
 
         JobCreateParams jobCreateParams = new JobCreateParams();
@@ -277,6 +283,9 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
         queryParams.putIfNotEmpty("acl", commandOptions.acl);
         queryParams.putIfNotEmpty("release", commandOptions.release);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return openCGAClient.getJobClient().distinct(commandOptions.field, queryParams);
     }
@@ -293,6 +302,9 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
         queryParams.putIfNotEmpty("study", commandOptions.study);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
 
         JobRetryParams jobRetryParams = new JobRetryParams();
@@ -379,6 +391,9 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return openCGAClient.getJobClient().delete(commandOptions.jobs, queryParams);
     }
@@ -394,6 +409,9 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return openCGAClient.getJobClient().info(commandOptions.jobs, queryParams);
     }
@@ -409,6 +427,9 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
 
         JobUpdateParams jobUpdateParams = new JobUpdateParams();
@@ -443,6 +464,9 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
         queryParams.putIfNotNull("offset", commandOptions.offset);
         queryParams.putIfNotNull("lines", commandOptions.lines);
         queryParams.putIfNotEmpty("type", commandOptions.type);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return openCGAClient.getJobClient().headLog(commandOptions.job, queryParams);
     }
@@ -457,6 +481,9 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("lines", commandOptions.lines);
         queryParams.putIfNotEmpty("type", commandOptions.type);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return openCGAClient.getJobClient().tailLog(commandOptions.job, queryParams);
     }
