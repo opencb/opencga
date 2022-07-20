@@ -24,10 +24,15 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class UserConfiguration extends ObjectMap {
 
     private static final String FILTERS = "filters";
+    @DataField(description = ParamConstants.USER_CONFIGURATION_OBJECT_MAPPER_DESCRIPTION)
     private ObjectMapper objectMapper;
+    @DataField(description = ParamConstants.USER_CONFIGURATION_OBJECT_READER_DESCRIPTION)
     private ObjectReader objectReader;
 
     public UserConfiguration() {

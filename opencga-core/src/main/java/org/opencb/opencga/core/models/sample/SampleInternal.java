@@ -29,11 +29,14 @@ import java.util.Objects;
  * Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh interdum
  * finibus.
  */
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class SampleInternal extends Internal {
 
     @DataField(id = "RgaIndex.rga", name = "rga", indexed = true,
             description = FieldConstants.SAMPLE_INTERNAL_RGA_DESCRIPTION)
     private RgaIndex rga;
+    @DataField(description = ParamConstants.SAMPLE_INTERNAL_VARIANT_DESCRIPTION)
     private SampleInternalVariant variant;
 
     public SampleInternal() {

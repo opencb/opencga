@@ -2,6 +2,9 @@ package org.opencb.opencga.core.models.alignment;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class AlignmentQcParams extends ToolParams {
     public static String STATS_SKIP_VALUE = "stats";
     public static String FLAGSTATS_SKIP_VALUE = "flagstats";
@@ -13,11 +16,17 @@ public class AlignmentQcParams extends ToolParams {
             + " computing hybrid-selection (HS) metrics. In order to skip some metrics, use the following keywords (separated by commas): "
             + "stats, flagstats, fastqc and hsmetrics";
 
+    @DataField(description = ParamConstants.ALIGNMENT_QC_PARAMS_BAM_FILE_DESCRIPTION)
     private String bamFile;
+    @DataField(description = ParamConstants.ALIGNMENT_QC_PARAMS_BED_FILE_DESCRIPTION)
     private String bedFile;
+    @DataField(description = ParamConstants.ALIGNMENT_QC_PARAMS_DICT_FILE_DESCRIPTION)
     private String dictFile;
+    @DataField(description = ParamConstants.ALIGNMENT_QC_PARAMS_SKIP_DESCRIPTION)
     private String skip;
+    @DataField(description = ParamConstants.ALIGNMENT_QC_PARAMS_OVERWRITE_DESCRIPTION)
     private boolean overwrite;
+    @DataField(description = ParamConstants.ALIGNMENT_QC_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
 
     public AlignmentQcParams() {

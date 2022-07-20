@@ -2,10 +2,14 @@ package org.opencb.opencga.core.models.clinical;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class RgaAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Recessive Gene Analysis index params";
     public static final String FILE = "file";
 
+    @DataField(description = ParamConstants.RGA_ANALYSIS_PARAMS_FILE_DESCRIPTION)
     private String file;
 
     public RgaAnalysisParams() {

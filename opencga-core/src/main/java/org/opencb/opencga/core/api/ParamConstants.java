@@ -1498,4 +1498,1704 @@ public class ParamConstants {
     public static final String STUDIES_DESCRIPTION = "Comma separated list of Studies [[user@]project:]study where study and project can " +
             "be either the ID or UUID" + UP_TO_100;
     public static final String PANELS_DESCRIPTION = "Comma separated list of panel IDs" + UP_TO_100;
+
+    public static final String RGA_ANALYSIS_PARAMS_FILE_DESCRIPTION = "The body file RgaAnalysisParams web service parameter";
+
+
+
+
+    public static final String CLINICAL_ANALYSIS_VARIANT_QC_STATS_DESCRIPTION = "The body stats ClinicalAnalysisVariantQc web service parameter";
+    public static final String CLINICAL_ANALYSIS_VARIANT_QC_FILES_DESCRIPTION = "The body files ClinicalAnalysisVariantQc web service parameter";
+
+
+    public static final String CLINICAL_ANALYST_PARAM_ID_DESCRIPTION = "The body id ClinicalAnalystParam web service parameter";
+
+
+    public static final String FLAG_VALUE_PARAM_ID_DESCRIPTION = "The body id FlagValueParam web service parameter";
+
+
+    public static final String SAMPLE_PARAMS_ID_DESCRIPTION = "The body id SampleParams web service parameter";
+
+
+
+
+
+
+    public static final String CLINICAL_ANALYSIS_ALIGNMENT_QC_STATS_DESCRIPTION = "The body stats ClinicalAnalysisAlignmentQc web service parameter";
+    public static final String CLINICAL_ANALYSIS_ALIGNMENT_QC_GENE_COVERAGE_STATS_DESCRIPTION = "The body geneCoverageStats ClinicalAnalysisAlignmentQc web service parameter";
+    public static final String CLINICAL_ANALYSIS_ALIGNMENT_QC_FILES_DESCRIPTION = "The body files ClinicalAnalysisAlignmentQc web service parameter";
+
+
+    public static final String CANCER_TIERING_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_ANALYSIS_DESCRIPTION = "The body clinicalAnalysis CancerTieringInterpretationAnalysisParams web service parameter";
+    public static final String CANCER_TIERING_INTERPRETATION_ANALYSIS_PARAMS_DISCARDED_VARIANTS_DESCRIPTION = "The body discardedVariants CancerTieringInterpretationAnalysisParams web service parameter";
+    public static final String CANCER_TIERING_INTERPRETATION_ANALYSIS_PARAMS_PRIMARY_DESCRIPTION = "The body primary CancerTieringInterpretationAnalysisParams web service parameter";
+
+
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_ANALYSIS_DESCRIPTION = "The body clinicalAnalysis ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_ID_DESCRIPTION = "The body id ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_REGION_DESCRIPTION = "The body region ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_TYPE_DESCRIPTION = "The body type ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_STUDY_DESCRIPTION = "The body study ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_FILE_DESCRIPTION = "The body file ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_FILTER_DESCRIPTION = "The body filter ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_QUAL_DESCRIPTION = "The body qual ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_FILE_DATA_DESCRIPTION = "The body fileData ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION = "The body sample ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_SAMPLE_DATA_DESCRIPTION = "The body sampleData ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_SAMPLE_ANNOTATION_DESCRIPTION = "The body sampleAnnotation ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_SAMPLE_METADATA_DESCRIPTION = "The body sampleMetadata ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_COHORT_DESCRIPTION = "The body cohort ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_COHORT_STATS_REF_DESCRIPTION = "The body cohortStatsRef ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_COHORT_STATS_ALT_DESCRIPTION = "The body cohortStatsAlt ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_COHORT_STATS_MAF_DESCRIPTION = "The body cohortStatsMaf ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_COHORT_STATS_MGF_DESCRIPTION = "The body cohortStatsMgf ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_COHORT_STATS_PASS_DESCRIPTION = "The body cohortStatsPass ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_SCORE_DESCRIPTION = "The body score ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_FAMILY_DESCRIPTION = "The body family ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_FAMILY_DISORDER_DESCRIPTION = "The body familyDisorder ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_FAMILY_SEGREGATION_DESCRIPTION = "The body familySegregation ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_FAMILY_MEMBERS_DESCRIPTION = "The body familyMembers ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_FAMILY_PROBAND_DESCRIPTION = "The body familyProband ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_GENE_DESCRIPTION = "The body gene ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_CT_DESCRIPTION = "The body ct ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_XREF_DESCRIPTION = "The body xref ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_BIOTYPE_DESCRIPTION = "The body biotype ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_PROTEIN_SUBSTITUTION_DESCRIPTION = "The body proteinSubstitution ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_CONSERVATION_DESCRIPTION = "The body conservation ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_POPULATION_FREQUENCY_ALT_DESCRIPTION = "The body populationFrequencyAlt ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_POPULATION_FREQUENCY_REF_DESCRIPTION = "The body populationFrequencyRef ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_POPULATION_FREQUENCY_MAF_DESCRIPTION = "The body populationFrequencyMaf ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_TRANSCRIPT_FLAG_DESCRIPTION = "The body transcriptFlag ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_GENE_TRAIT_ID_DESCRIPTION = "The body geneTraitId ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_GO_DESCRIPTION = "The body go ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_EXPRESSION_DESCRIPTION = "The body expression ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_PROTEIN_KEYWORD_DESCRIPTION = "The body proteinKeyword ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_DRUG_DESCRIPTION = "The body drug ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_FUNCTIONAL_SCORE_DESCRIPTION = "The body functionalScore ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_DESCRIPTION = "The body clinical ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_SIGNIFICANCE_DESCRIPTION = "The body clinicalSignificance ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_CONFIRMED_STATUS_DESCRIPTION = "The body clinicalConfirmedStatus ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_CUSTOM_ANNOTATION_DESCRIPTION = "The body customAnnotation ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_PANEL_DESCRIPTION = "The body panel ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_PANEL_MODE_OF_INHERITANCE_DESCRIPTION = "The body panelModeOfInheritance ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_PANEL_CONFIDENCE_DESCRIPTION = "The body panelConfidence ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_PANEL_ROLE_IN_CANCER_DESCRIPTION = "The body panelRoleInCancer ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_TRAIT_DESCRIPTION = "The body trait ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_PRIMARY_DESCRIPTION = "The body primary ZettaInterpretationAnalysisParams web service parameter";
+
+
+    public static final String FAMILY_PARAM_ID_DESCRIPTION = "The body id FamilyParam web service parameter";
+    public static final String FAMILY_PARAM_MEMBERS_DESCRIPTION = "The body members FamilyParam web service parameter";
+
+
+    public static final String CLINICAL_ANALYSIS_QUALITY_CONTROL_UPDATE_PARAM_SUMMARY_DESCRIPTION = "The body summary ClinicalAnalysisQualityControlUpdateParam web service parameter";
+    public static final String CLINICAL_ANALYSIS_QUALITY_CONTROL_UPDATE_PARAM_COMMENTS_DESCRIPTION = "The body comments ClinicalAnalysisQualityControlUpdateParam web service parameter";
+    public static final String CLINICAL_ANALYSIS_QUALITY_CONTROL_UPDATE_PARAM_FILES_DESCRIPTION = "The body files ClinicalAnalysisQualityControlUpdateParam web service parameter";
+
+
+    public static final String GENERIC_DESCRIPTION_DESCRIPTION = "Field to store information of the item";
+    public static final String INTERPRETATION_UPDATE_PARAMS_ANALYST_DESCRIPTION = "The body analyst InterpretationUpdateParams web service parameter";
+    public static final String INTERPRETATION_UPDATE_PARAMS_METHOD_DESCRIPTION = "The body method InterpretationUpdateParams web service parameter";
+    public static final String GENERIC_CREATION_DATE_DESCRIPTION = "The creation date of the item";
+    public static final String GENERIC_MODIFICATION_DATE_DESCRIPTION = "The last modification date of the item";
+    public static final String INTERPRETATION_UPDATE_PARAMS_PRIMARY_FINDINGS_DESCRIPTION = "The body primaryFindings InterpretationUpdateParams web service parameter";
+    public static final String INTERPRETATION_UPDATE_PARAMS_SECONDARY_FINDINGS_DESCRIPTION = "The body secondaryFindings InterpretationUpdateParams web service parameter";
+    public static final String INTERPRETATION_UPDATE_PARAMS_PANELS_DESCRIPTION = "The body panels InterpretationUpdateParams web service parameter";
+    public static final String INTERPRETATION_UPDATE_PARAMS_COMMENTS_DESCRIPTION = "The body comments InterpretationUpdateParams web service parameter";
+    public static final String GENERIC_STATUS_DESCRIPTION = "A map of customizable attributes";
+    public static final String INTERPRETATION_UPDATE_PARAMS_LOCKED_DESCRIPTION = "The body locked InterpretationUpdateParams web service parameter";
+    public static final String GENERIC_ATTRIBUTES_DESCRIPTION = "A map of customizable attributes";
+
+
+    public static final String CLINICAL_ANALYSIS_UPDATE_PARAMS_ID_DESCRIPTION = "The body id ClinicalAnalysisUpdateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_UPDATE_PARAMS_TYPE_DESCRIPTION = "The body type ClinicalAnalysisUpdateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_UPDATE_PARAMS_DISORDER_DESCRIPTION = "The body disorder ClinicalAnalysisUpdateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_UPDATE_PARAMS_FILES_DESCRIPTION = "The body files ClinicalAnalysisUpdateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_UPDATE_PARAMS_PANELS_DESCRIPTION = "The body panels ClinicalAnalysisUpdateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_UPDATE_PARAMS_PANEL_LOCK_DESCRIPTION = "The body panelLock ClinicalAnalysisUpdateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_UPDATE_PARAMS_PROBAND_DESCRIPTION = "The body proband ClinicalAnalysisUpdateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_UPDATE_PARAMS_FAMILY_DESCRIPTION = "The body family ClinicalAnalysisUpdateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_UPDATE_PARAMS_LOCKED_DESCRIPTION = "The body locked ClinicalAnalysisUpdateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_UPDATE_PARAMS_ANALYST_DESCRIPTION = "The body analyst ClinicalAnalysisUpdateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_UPDATE_PARAMS_REPORT_DESCRIPTION = "The body report ClinicalAnalysisUpdateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_UPDATE_PARAMS_QUALITY_CONTROL_DESCRIPTION = "The body qualityControl ClinicalAnalysisUpdateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_UPDATE_PARAMS_CONSENT_DESCRIPTION = "The body consent ClinicalAnalysisUpdateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_UPDATE_PARAMS_DUE_DATE_DESCRIPTION = "The body dueDate ClinicalAnalysisUpdateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_UPDATE_PARAMS_COMMENTS_DESCRIPTION = "The body comments ClinicalAnalysisUpdateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_UPDATE_PARAMS_PRIORITY_DESCRIPTION = "The body priority ClinicalAnalysisUpdateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_UPDATE_PARAMS_FLAGS_DESCRIPTION = "The body flags ClinicalAnalysisUpdateParams web service parameter";
+
+
+
+
+
+
+    public static final String PRIORITY_PARAM_ID_DESCRIPTION = "The body id PriorityParam web service parameter";
+
+
+
+
+    public static final String TEAM_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_ANALYSIS_DESCRIPTION = "The body clinicalAnalysis TeamInterpretationAnalysisParams web service parameter";
+    public static final String TEAM_INTERPRETATION_ANALYSIS_PARAMS_PANELS_DESCRIPTION = "The body panels TeamInterpretationAnalysisParams web service parameter";
+    public static final String TEAM_INTERPRETATION_ANALYSIS_PARAMS_FAMILY_SEGREGATION_DESCRIPTION = "The body familySegregation TeamInterpretationAnalysisParams web service parameter";
+    public static final String TEAM_INTERPRETATION_ANALYSIS_PARAMS_PRIMARY_DESCRIPTION = "The body primary TeamInterpretationAnalysisParams web service parameter";
+
+
+    public static final String CLINICAL_CONSENT_PRIMARY_FINDINGS_DESCRIPTION = "The body primaryFindings ClinicalConsent web service parameter";
+    public static final String CLINICAL_CONSENT_SECONDARY_FINDINGS_DESCRIPTION = "The body secondaryFindings ClinicalConsent web service parameter";
+    public static final String CLINICAL_CONSENT_CARRIER_FINDINGS_DESCRIPTION = "The body carrierFindings ClinicalConsent web service parameter";
+    public static final String CLINICAL_CONSENT_RESEARCH_FINDINGS_DESCRIPTION = "The body researchFindings ClinicalConsent web service parameter";
+
+
+    public static final String ALERT_AUTHOR_DESCRIPTION = "The body author Alert web service parameter";
+    public static final String ALERT_DATE_DESCRIPTION = "The body date Alert web service parameter";
+    public static final String ALERT_MESSAGE_DESCRIPTION = "The body message Alert web service parameter";
+    public static final String ALERT_RISK_DESCRIPTION = "The body risk Alert web service parameter";
+
+
+    public static final String CLINICAL_ANALYSIS_CREATE_PARAMS_ID_DESCRIPTION = "The body id ClinicalAnalysisCreateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_CREATE_PARAMS_TYPE_DESCRIPTION = "The body type ClinicalAnalysisCreateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_CREATE_PARAMS_DISORDER_DESCRIPTION = "The body disorder ClinicalAnalysisCreateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_CREATE_PARAMS_FILES_DESCRIPTION = "The body files ClinicalAnalysisCreateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_CREATE_PARAMS_PROBAND_DESCRIPTION = "The body proband ClinicalAnalysisCreateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_CREATE_PARAMS_FAMILY_DESCRIPTION = "The body family ClinicalAnalysisCreateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_CREATE_PARAMS_PANELS_DESCRIPTION = "The body panels ClinicalAnalysisCreateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_CREATE_PARAMS_PANEL_LOCK_DESCRIPTION = "The body panelLock ClinicalAnalysisCreateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_CREATE_PARAMS_ANALYST_DESCRIPTION = "The body analyst ClinicalAnalysisCreateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_CREATE_PARAMS_REPORT_DESCRIPTION = "The body report ClinicalAnalysisCreateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_CREATE_PARAMS_INTERPRETATION_DESCRIPTION = "The body interpretation ClinicalAnalysisCreateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_CREATE_PARAMS_QUALITY_CONTROL_DESCRIPTION = "The body qualityControl ClinicalAnalysisCreateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_CREATE_PARAMS_CONSENT_DESCRIPTION = "The body consent ClinicalAnalysisCreateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_CREATE_PARAMS_DUE_DATE_DESCRIPTION = "The body dueDate ClinicalAnalysisCreateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_CREATE_PARAMS_COMMENTS_DESCRIPTION = "The body comments ClinicalAnalysisCreateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_CREATE_PARAMS_PRIORITY_DESCRIPTION = "The body priority ClinicalAnalysisCreateParams web service parameter";
+    public static final String CLINICAL_ANALYSIS_CREATE_PARAMS_FLAGS_DESCRIPTION = "The body flags ClinicalAnalysisCreateParams web service parameter";
+
+
+    public static final String PROBAND_PARAM_ID_DESCRIPTION = "The body id ProbandParam web service parameter";
+    public static final String PROBAND_PARAM_SAMPLES_DESCRIPTION = "The body samples ProbandParam web service parameter";
+
+
+    public static final String CLINICAL_COMMENT_PARAM_MESSAGE_DESCRIPTION = "The body message ClinicalCommentParam web service parameter";
+    public static final String CLINICAL_COMMENT_PARAM_TAGS_DESCRIPTION = "The body tags ClinicalCommentParam web service parameter";
+    public static final String CLINICAL_COMMENT_PARAM_DATE_DESCRIPTION = "The body date ClinicalCommentParam web service parameter";
+
+
+
+
+    public static final String DISORDER_REFERENCE_PARAM_ID_DESCRIPTION = "The body id DisorderReferenceParam web service parameter";
+
+
+    public static final String CLINICAL_ANALYSIS_ACL_UPDATE_PARAMS_CLINICAL_ANALYSIS_DESCRIPTION = "The body clinicalAnalysis ClinicalAnalysisAclUpdateParams web service parameter";
+
+
+    public static final String EXOMISER_WRAPPER_PARAMS_SAMPLE_DESCRIPTION = "The body sample ExomiserWrapperParams web service parameter";
+    public static final String EXOMISER_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = "The body outdir ExomiserWrapperParams web service parameter";
+
+
+
+
+
+
+    public static final String INTERPRETATION_MERGE_PARAMS_METHOD_DESCRIPTION = "The body method InterpretationMergeParams web service parameter";
+    public static final String INTERPRETATION_MERGE_PARAMS_PRIMARY_FINDINGS_DESCRIPTION = "The body primaryFindings InterpretationMergeParams web service parameter";
+    public static final String INTERPRETATION_MERGE_PARAMS_SECONDARY_FINDINGS_DESCRIPTION = "The body secondaryFindings InterpretationMergeParams web service parameter";
+
+
+    public static final String TIERING_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_ANALYSIS_DESCRIPTION = "The body clinicalAnalysis TieringInterpretationAnalysisParams web service parameter";
+    public static final String TIERING_INTERPRETATION_ANALYSIS_PARAMS_PANELS_DESCRIPTION = "The body panels TieringInterpretationAnalysisParams web service parameter";
+    public static final String TIERING_INTERPRETATION_ANALYSIS_PARAMS_PENETRANCE_DESCRIPTION = "The body penetrance TieringInterpretationAnalysisParams web service parameter";
+    public static final String TIERING_INTERPRETATION_ANALYSIS_PARAMS_PRIMARY_DESCRIPTION = "The body primary TieringInterpretationAnalysisParams web service parameter";
+
+
+    public static final String EXOMISER_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_ANALYSIS_DESCRIPTION = "The body clinicalAnalysis ExomiserInterpretationAnalysisParams web service parameter";
+
+
+    public static final String INTERPRETATION_CREATE_PARAMS_CLINICAL_ANALYSIS_ID_DESCRIPTION = "The body clinicalAnalysisId InterpretationCreateParams web service parameter";
+    public static final String INTERPRETATION_CREATE_PARAMS_ANALYST_DESCRIPTION = "The body analyst InterpretationCreateParams web service parameter";
+    public static final String INTERPRETATION_CREATE_PARAMS_METHOD_DESCRIPTION = "The body method InterpretationCreateParams web service parameter";
+    public static final String INTERPRETATION_CREATE_PARAMS_PRIMARY_FINDINGS_DESCRIPTION = "The body primaryFindings InterpretationCreateParams web service parameter";
+    public static final String INTERPRETATION_CREATE_PARAMS_SECONDARY_FINDINGS_DESCRIPTION = "The body secondaryFindings InterpretationCreateParams web service parameter";
+    public static final String INTERPRETATION_CREATE_PARAMS_PANELS_DESCRIPTION = "The body panels InterpretationCreateParams web service parameter";
+    public static final String INTERPRETATION_CREATE_PARAMS_COMMENTS_DESCRIPTION = "The body comments InterpretationCreateParams web service parameter";
+    public static final String INTERPRETATION_CREATE_PARAMS_LOCKED_DESCRIPTION = "The body locked InterpretationCreateParams web service parameter";
+
+
+    public static final String CLINICAL_STATUS_VALUE_ID_DESCRIPTION = "The body id ClinicalStatusValue web service parameter";
+    public static final String CLINICAL_STATUS_VALUE_TYPE_DESCRIPTION = "The body type ClinicalStatusValue web service parameter";
+
+
+
+
+    public static final String DATASET_ID_DESCRIPTION = "The body id Dataset web service parameter";
+    public static final String DATASET_NAME_DESCRIPTION = "The body name Dataset web service parameter";
+    public static final String DATASET_FILES_DESCRIPTION = "The body files Dataset web service parameter";
+
+
+
+
+    public static final String VARIANT_AGGREGATE_PARAMS_OVERWRITE_DESCRIPTION = "The body overwrite VariantAggregateParams web service parameter";
+    public static final String VARIANT_AGGREGATE_PARAMS_RESUME_DESCRIPTION = "The body resume VariantAggregateParams web service parameter";
+
+
+    public static final String VARIANT_STORAGE_METADATA_REPAIR_TOOL_PARAMS_STUDIES_DESCRIPTION = "The body studies VariantStorageMetadataRepairToolParams web service parameter";
+    public static final String VARIANT_STORAGE_METADATA_REPAIR_TOOL_PARAMS_SAMPLES_BATCH_SIZE_DESCRIPTION = "The body samplesBatchSize VariantStorageMetadataRepairToolParams web service parameter";
+    public static final String VARIANT_STORAGE_METADATA_REPAIR_TOOL_PARAMS_WHAT_DESCRIPTION = "The body what VariantStorageMetadataRepairToolParams web service parameter";
+
+
+    public static final String VARIANT_ANNOTATION_SAVE_PARAMS_ANNOTATION_ID_DESCRIPTION = "The body annotationId VariantAnnotationSaveParams web service parameter";
+
+
+    public static final String VARIANT_AGGREGATE_FAMILY_PARAMS_SAMPLES_DESCRIPTION = "The body samples VariantAggregateFamilyParams web service parameter";
+    public static final String VARIANT_AGGREGATE_FAMILY_PARAMS_GAPS_GENOTYPE_DESCRIPTION = "The body gapsGenotype VariantAggregateFamilyParams web service parameter";
+    public static final String VARIANT_AGGREGATE_FAMILY_PARAMS_RESUME_DESCRIPTION = "The body resume VariantAggregateFamilyParams web service parameter";
+
+
+    public static final String VARIANT_STATS_EXPORT_PARAMS_COHORTS_DESCRIPTION = "The body cohorts VariantStatsExportParams web service parameter";
+    public static final String VARIANT_STATS_EXPORT_PARAMS_OUTPUT_DESCRIPTION = "The body output VariantStatsExportParams web service parameter";
+    public static final String VARIANT_STATS_EXPORT_PARAMS_REGION_DESCRIPTION = "The body region VariantStatsExportParams web service parameter";
+    public static final String VARIANT_STATS_EXPORT_PARAMS_GENE_DESCRIPTION = "The body gene VariantStatsExportParams web service parameter";
+    public static final String VARIANT_STATS_EXPORT_PARAMS_OUTPUT_FILE_FORMAT_DESCRIPTION = "The body outputFileFormat VariantStatsExportParams web service parameter";
+
+
+    public static final String VARIANT_SCORE_INDEX_PARAMS_SCORE_NAME_DESCRIPTION = "The body scoreName VariantScoreIndexParams web service parameter";
+    public static final String VARIANT_SCORE_INDEX_PARAMS_COHORT1_DESCRIPTION = "The body cohort1 VariantScoreIndexParams web service parameter";
+    public static final String VARIANT_SCORE_INDEX_PARAMS_COHORT2_DESCRIPTION = "The body cohort2 VariantScoreIndexParams web service parameter";
+    public static final String VARIANT_SCORE_INDEX_PARAMS_INPUT_DESCRIPTION = "The body input VariantScoreIndexParams web service parameter";
+    public static final String VARIANT_SCORE_INDEX_PARAMS_INPUT_COLUMNS_DESCRIPTION = "The body inputColumns VariantScoreIndexParams web service parameter";
+    public static final String VARIANT_SCORE_INDEX_PARAMS_RESUME_DESCRIPTION = "The body resume VariantScoreIndexParams web service parameter";
+
+
+    public static final String VARIANT_SCORE_DELETE_PARAMS_SCORE_NAME_DESCRIPTION = "The body scoreName VariantScoreDeleteParams web service parameter";
+    public static final String VARIANT_SCORE_DELETE_PARAMS_FORCE_DESCRIPTION = "The body force VariantScoreDeleteParams web service parameter";
+    public static final String VARIANT_SCORE_DELETE_PARAMS_RESUME_DESCRIPTION = "The body resume VariantScoreDeleteParams web service parameter";
+
+
+    public static final String JULIE_PARAMS_COHORTS_DESCRIPTION = "The body cohorts JulieParams web service parameter";
+    public static final String JULIE_PARAMS_REGION_DESCRIPTION = "The body region JulieParams web service parameter";
+    public static final String JULIE_PARAMS_OVERWRITE_DESCRIPTION = "The body overwrite JulieParams web service parameter";
+
+
+    public static final String VARIANT_SECONDARY_INDEX_PARAMS_REGION_DESCRIPTION = "The body region VariantSecondaryIndexParams web service parameter";
+    public static final String VARIANT_SECONDARY_INDEX_PARAMS_SAMPLE_DESCRIPTION = "The body sample VariantSecondaryIndexParams web service parameter";
+    public static final String VARIANT_SECONDARY_INDEX_PARAMS_OVERWRITE_DESCRIPTION = "The body overwrite VariantSecondaryIndexParams web service parameter";
+
+
+    public static final String VARIANT_ANNOTATION_DELETE_PARAMS_ANNOTATION_ID_DESCRIPTION = "The body annotationId VariantAnnotationDeleteParams web service parameter";
+
+
+    public static final String VARIANT_ANNOTATION_INDEX_PARAMS_OUTDIR_DESCRIPTION = "The body outdir VariantAnnotationIndexParams web service parameter";
+    public static final String VARIANT_ANNOTATION_INDEX_PARAMS_OUTPUT_FILE_NAME_DESCRIPTION = "The body outputFileName VariantAnnotationIndexParams web service parameter";
+    public static final String VARIANT_ANNOTATION_INDEX_PARAMS_ANNOTATOR_DESCRIPTION = "The body annotator VariantAnnotationIndexParams web service parameter";
+    public static final String VARIANT_ANNOTATION_INDEX_PARAMS_OVERWRITE_ANNOTATIONS_DESCRIPTION = "The body overwriteAnnotations VariantAnnotationIndexParams web service parameter";
+    public static final String VARIANT_ANNOTATION_INDEX_PARAMS_REGION_DESCRIPTION = "The body region VariantAnnotationIndexParams web service parameter";
+    public static final String VARIANT_ANNOTATION_INDEX_PARAMS_CREATE_DESCRIPTION = "The body create VariantAnnotationIndexParams web service parameter";
+    public static final String VARIANT_ANNOTATION_INDEX_PARAMS_LOAD_DESCRIPTION = "The body load VariantAnnotationIndexParams web service parameter";
+    public static final String VARIANT_ANNOTATION_INDEX_PARAMS_CUSTOM_NAME_DESCRIPTION = "The body customName VariantAnnotationIndexParams web service parameter";
+    public static final String VARIANT_ANNOTATION_INDEX_PARAMS_SAMPLE_INDEX_ANNOTATION_DESCRIPTION = "The body sampleIndexAnnotation VariantAnnotationIndexParams web service parameter";
+
+
+    public static final String VARIANT_SAMPLE_INDEX_PARAMS_SAMPLE_DESCRIPTION = "The body sample VariantSampleIndexParams web service parameter";
+    public static final String VARIANT_SAMPLE_INDEX_PARAMS_BUILD_INDEX_DESCRIPTION = "The body buildIndex VariantSampleIndexParams web service parameter";
+    public static final String VARIANT_SAMPLE_INDEX_PARAMS_ANNOTATE_DESCRIPTION = "The body annotate VariantSampleIndexParams web service parameter";
+    public static final String VARIANT_SAMPLE_INDEX_PARAMS_FAMILY_INDEX_DESCRIPTION = "The body familyIndex VariantSampleIndexParams web service parameter";
+    public static final String VARIANT_SAMPLE_INDEX_PARAMS_OVERWRITE_DESCRIPTION = "The body overwrite VariantSampleIndexParams web service parameter";
+
+
+    public static final String VARIANT_STATS_DELETE_PARAMS_COHORT_DESCRIPTION = "The body cohort VariantStatsDeleteParams web service parameter";
+    public static final String VARIANT_STATS_DELETE_PARAMS_FORCE_DESCRIPTION = "The body force VariantStatsDeleteParams web service parameter";
+
+
+    public static final String VARIANT_FAMILY_INDEX_PARAMS_FAMILY_DESCRIPTION = "The body family VariantFamilyIndexParams web service parameter";
+    public static final String VARIANT_FAMILY_INDEX_PARAMS_OVERWRITE_DESCRIPTION = "The body overwrite VariantFamilyIndexParams web service parameter";
+    public static final String VARIANT_FAMILY_INDEX_PARAMS_UPDATE_INDEX_DESCRIPTION = "The body updateIndex VariantFamilyIndexParams web service parameter";
+    public static final String VARIANT_FAMILY_INDEX_PARAMS_SKIP_INCOMPLETE_FAMILIES_DESCRIPTION = "The body skipIncompleteFamilies VariantFamilyIndexParams web service parameter";
+
+
+    public static final String VARIANT_STATS_INDEX_PARAMS_COHORT_DESCRIPTION = "The body cohort VariantStatsIndexParams web service parameter";
+    public static final String VARIANT_STATS_INDEX_PARAMS_REGION_DESCRIPTION = "The body region VariantStatsIndexParams web service parameter";
+    public static final String VARIANT_STATS_INDEX_PARAMS_OVERWRITE_STATS_DESCRIPTION = "The body overwriteStats VariantStatsIndexParams web service parameter";
+    public static final String VARIANT_STATS_INDEX_PARAMS_RESUME_DESCRIPTION = "The body resume VariantStatsIndexParams web service parameter";
+    public static final String VARIANT_STATS_INDEX_PARAMS_AGGREGATED_DESCRIPTION = "The body aggregated VariantStatsIndexParams web service parameter";
+    public static final String VARIANT_STATS_INDEX_PARAMS_AGGREGATION_MAPPING_FILE_DESCRIPTION = "The body aggregationMappingFile VariantStatsIndexParams web service parameter";
+
+
+
+
+
+
+    public static final String PANEL_ACL_UPDATE_PARAMS_PANEL_DESCRIPTION = "The body panel PanelAclUpdateParams web service parameter";
+
+
+    public static final String PANEL_REFERENCE_PARAM_ID_DESCRIPTION = "The body id PanelReferenceParam web service parameter";
+
+
+    public static final String PANEL_UPDATE_PARAMS_ID_DESCRIPTION = "The body id PanelUpdateParams web service parameter";
+    public static final String PANEL_UPDATE_PARAMS_NAME_DESCRIPTION = "The body name PanelUpdateParams web service parameter";
+    public static final String PANEL_UPDATE_PARAMS_AUTHOR_DESCRIPTION = "The body author PanelUpdateParams web service parameter";
+    public static final String PANEL_UPDATE_PARAMS_SOURCE_DESCRIPTION = "The body source PanelUpdateParams web service parameter";
+    public static final String PANEL_UPDATE_PARAMS_CATEGORIES_DESCRIPTION = "The body categories PanelUpdateParams web service parameter";
+    public static final String PANEL_UPDATE_PARAMS_TAGS_DESCRIPTION = "The body tags PanelUpdateParams web service parameter";
+    public static final String PANEL_UPDATE_PARAMS_DISORDERS_DESCRIPTION = "The body disorders PanelUpdateParams web service parameter";
+    public static final String PANEL_UPDATE_PARAMS_VARIANTS_DESCRIPTION = "The body variants PanelUpdateParams web service parameter";
+    public static final String PANEL_UPDATE_PARAMS_GENES_DESCRIPTION = "The body genes PanelUpdateParams web service parameter";
+    public static final String PANEL_UPDATE_PARAMS_REGIONS_DESCRIPTION = "The body regions PanelUpdateParams web service parameter";
+    public static final String PANEL_UPDATE_PARAMS_STRS_DESCRIPTION = "The body strs PanelUpdateParams web service parameter";
+    public static final String PANEL_UPDATE_PARAMS_STATS_DESCRIPTION = "The body stats PanelUpdateParams web service parameter";
+
+
+
+
+    public static final String PANEL_CREATE_PARAMS_ID_DESCRIPTION = "The body id PanelCreateParams web service parameter";
+    public static final String PANEL_CREATE_PARAMS_NAME_DESCRIPTION = "The body name PanelCreateParams web service parameter";
+    public static final String PANEL_CREATE_PARAMS_AUTHOR_DESCRIPTION = "The body author PanelCreateParams web service parameter";
+    public static final String PANEL_CREATE_PARAMS_SOURCE_DESCRIPTION = "The body source PanelCreateParams web service parameter";
+    public static final String PANEL_CREATE_PARAMS_CATEGORIES_DESCRIPTION = "The body categories PanelCreateParams web service parameter";
+    public static final String PANEL_CREATE_PARAMS_TAGS_DESCRIPTION = "The body tags PanelCreateParams web service parameter";
+    public static final String PANEL_CREATE_PARAMS_DISORDERS_DESCRIPTION = "The body disorders PanelCreateParams web service parameter";
+    public static final String PANEL_CREATE_PARAMS_VARIANTS_DESCRIPTION = "The body variants PanelCreateParams web service parameter";
+    public static final String PANEL_CREATE_PARAMS_GENES_DESCRIPTION = "The body genes PanelCreateParams web service parameter";
+    public static final String PANEL_CREATE_PARAMS_REGIONS_DESCRIPTION = "The body regions PanelCreateParams web service parameter";
+    public static final String PANEL_CREATE_PARAMS_STRS_DESCRIPTION = "The body strs PanelCreateParams web service parameter";
+    public static final String PANEL_CREATE_PARAMS_STATS_DESCRIPTION = "The body stats PanelCreateParams web service parameter";
+
+
+
+
+
+
+
+
+    public static final String AUDIT_RECORD_ID_DESCRIPTION = "The body id AuditRecord web service parameter";
+    public static final String AUDIT_RECORD_OPERATION_ID_DESCRIPTION = "The body operationId AuditRecord web service parameter";
+    public static final String AUDIT_RECORD_USER_ID_DESCRIPTION = "The body userId AuditRecord web service parameter";
+    public static final String AUDIT_RECORD_API_VERSION_DESCRIPTION = "The body apiVersion AuditRecord web service parameter";
+    public static final String AUDIT_RECORD_ACTION_DESCRIPTION = "The body action AuditRecord web service parameter";
+    public static final String AUDIT_RECORD_RESOURCE_DESCRIPTION = "The body resource AuditRecord web service parameter";
+    public static final String AUDIT_RECORD_RESOURCE_ID_DESCRIPTION = "The body resourceId AuditRecord web service parameter";
+    public static final String AUDIT_RECORD_RESOURCE_UUID_DESCRIPTION = "The body resourceUuid AuditRecord web service parameter";
+    public static final String AUDIT_RECORD_STUDY_ID_DESCRIPTION = "The body studyId AuditRecord web service parameter";
+    public static final String AUDIT_RECORD_STUDY_UUID_DESCRIPTION = "The body studyUuid AuditRecord web service parameter";
+    public static final String AUDIT_RECORD_PARAMS_DESCRIPTION = "The body params AuditRecord web service parameter";
+    public static final String AUDIT_RECORD_DATE_DESCRIPTION = "The body date AuditRecord web service parameter";
+
+
+    public static final String VARIABLE_SET_SUMMARY_ID_DESCRIPTION = "The body id VariableSetSummary web service parameter";
+    public static final String VARIABLE_SET_SUMMARY_NAME_DESCRIPTION = "The body name VariableSetSummary web service parameter";
+    public static final String VARIABLE_SET_SUMMARY_SAMPLES_DESCRIPTION = "The body samples VariableSetSummary web service parameter";
+    public static final String VARIABLE_SET_SUMMARY_INDIVIDUALS_DESCRIPTION = "The body individuals VariableSetSummary web service parameter";
+    public static final String VARIABLE_SET_SUMMARY_COHORTS_DESCRIPTION = "The body cohorts VariableSetSummary web service parameter";
+    public static final String VARIABLE_SET_SUMMARY_FAMILIES_DESCRIPTION = "The body families VariableSetSummary web service parameter";
+
+
+    public static final String STUDY_SUMMARY_NAME_DESCRIPTION = "The body name StudySummary web service parameter";
+    public static final String STUDY_SUMMARY_ALIAS_DESCRIPTION = "The body alias StudySummary web service parameter";
+    public static final String STUDY_SUMMARY_CREATOR_ID_DESCRIPTION = "The body creatorId StudySummary web service parameter";
+    public static final String STUDY_SUMMARY_INTERNAL_DESCRIPTION = "The body internal StudySummary web service parameter";
+    public static final String STUDY_SUMMARY_SIZE_DESCRIPTION = "The body size StudySummary web service parameter";
+    public static final String STUDY_SUMMARY_CIPHER_DESCRIPTION = "The body cipher StudySummary web service parameter";
+    public static final String STUDY_SUMMARY_GROUPS_DESCRIPTION = "The body groups StudySummary web service parameter";
+    public static final String STUDY_SUMMARY_EXPERIMENTS_DESCRIPTION = "The body experiments StudySummary web service parameter";
+    public static final String STUDY_SUMMARY_FILES_DESCRIPTION = "The body files StudySummary web service parameter";
+    public static final String STUDY_SUMMARY_JOBS_DESCRIPTION = "The body jobs StudySummary web service parameter";
+    public static final String STUDY_SUMMARY_INDIVIDUALS_DESCRIPTION = "The body individuals StudySummary web service parameter";
+    public static final String STUDY_SUMMARY_SAMPLES_DESCRIPTION = "The body samples StudySummary web service parameter";
+    public static final String STUDY_SUMMARY_COHORTS_DESCRIPTION = "The body cohorts StudySummary web service parameter";
+    public static final String STUDY_SUMMARY_VARIABLE_SETS_DESCRIPTION = "The body variableSets StudySummary web service parameter";
+
+
+    public static final String VARIABLE_SUMMARY_NAME_DESCRIPTION = "The body name VariableSummary web service parameter";
+    public static final String VARIABLE_SUMMARY_ANNOTATIONS_DESCRIPTION = "The body annotations VariableSummary web service parameter";
+
+
+    public static final String FEATURE_COUNT_NAME_DESCRIPTION = "The body name FeatureCount web service parameter";
+    public static final String FEATURE_COUNT_COUNT_DESCRIPTION = "The body count FeatureCount web service parameter";
+
+
+
+
+    public static final String FILE_INTERNAL_VARIANT_INDEX_DESCRIPTION = "The body index FileInternalVariant web service parameter";
+    public static final String FILE_INTERNAL_VARIANT_ANNOTATION_INDEX_DESCRIPTION = "The body annotationIndex FileInternalVariant web service parameter";
+    public static final String FILE_INTERNAL_VARIANT_SECONDARY_INDEX_DESCRIPTION = "The body secondaryIndex FileInternalVariant web service parameter";
+
+
+    public static final String FILE_LINK_INTERNAL_PARAMS_SAMPLE_MAP_DESCRIPTION = "The body sampleMap FileLinkInternalParams web service parameter";
+
+
+    public static final String SMALL_FILE_INTERNAL_MISSING_SAMPLES_DESCRIPTION = "The body missingSamples SmallFileInternal web service parameter";
+
+
+    public static final String FILE_REFERENCE_PARAM_ID_DESCRIPTION = "The body id FileReferenceParam web service parameter";
+
+
+    public static final String FILE_INTERNAL_ALIGNMENT_INDEX_FILE_ID_DESCRIPTION = "The body fileId FileInternalAlignmentIndex web service parameter";
+    public static final String FILE_INTERNAL_ALIGNMENT_INDEX_INDEXER_DESCRIPTION = "The body indexer FileInternalAlignmentIndex web service parameter";
+
+
+    public static final String FILE_INTERNAL_VARIANT_INDEX_RELEASE_DESCRIPTION = "The body release FileInternalVariantIndex web service parameter";
+    public static final String FILE_INTERNAL_VARIANT_INDEX_TRANSFORM_DESCRIPTION = "The body transform FileInternalVariantIndex web service parameter";
+
+
+
+
+    public static final String FILE_RELATED_FILE_FILE_DESCRIPTION = "The body file FileRelatedFile web service parameter";
+    public static final String FILE_RELATED_FILE_RELATION_DESCRIPTION = "The body relation FileRelatedFile web service parameter";
+
+
+    public static final String POST_LINK_TOOL_PARAMS_FILES_DESCRIPTION = "The body files PostLinkToolParams web service parameter";
+    public static final String POST_LINK_TOOL_PARAMS_BATCH_SIZE_DESCRIPTION = "The body batchSize PostLinkToolParams web service parameter";
+
+
+
+
+
+
+    public static final String SMALL_RELATED_FILE_PARAMS_FILE_DESCRIPTION = "The body file SmallRelatedFileParams web service parameter";
+    public static final String SMALL_RELATED_FILE_PARAMS_RELATION_DESCRIPTION = "The body relation SmallRelatedFileParams web service parameter";
+
+
+    public static final String FILE_FETCH_URL_DESCRIPTION = "The body url FileFetch web service parameter";
+    public static final String FILE_FETCH_PATH_DESCRIPTION = "The body path FileFetch web service parameter";
+
+
+    public static final String FILE_INTERNAL_ALIGNMENT_INDEX_DESCRIPTION = "The body index FileInternalAlignment web service parameter";
+
+
+
+
+    public static final String FILE_CREATE_PARAMS_CONTENT_DESCRIPTION = "The body content FileCreateParams web service parameter";
+    public static final String FILE_CREATE_PARAMS_PATH_DESCRIPTION = "The body path FileCreateParams web service parameter";
+    public static final String FILE_CREATE_PARAMS_TYPE_DESCRIPTION = "The body type FileCreateParams web service parameter";
+    public static final String FILE_CREATE_PARAMS_FORMAT_DESCRIPTION = "The body format FileCreateParams web service parameter";
+    public static final String FILE_CREATE_PARAMS_BIOFORMAT_DESCRIPTION = "The body bioformat FileCreateParams web service parameter";
+    public static final String FILE_CREATE_PARAMS_SAMPLE_IDS_DESCRIPTION = "The body sampleIds FileCreateParams web service parameter";
+    public static final String FILE_CREATE_PARAMS_SOFTWARE_DESCRIPTION = "The body software FileCreateParams web service parameter";
+    public static final String FILE_CREATE_PARAMS_TAGS_DESCRIPTION = "The body tags FileCreateParams web service parameter";
+    public static final String FILE_CREATE_PARAMS_JOB_ID_DESCRIPTION = "The body jobId FileCreateParams web service parameter";
+
+
+
+
+    public static final String FILE_EXPERIMENT_TECHNOLOGY_DESCRIPTION = "The body technology FileExperiment web service parameter";
+    public static final String FILE_EXPERIMENT_METHOD_DESCRIPTION = "The body method FileExperiment web service parameter";
+    public static final String FILE_EXPERIMENT_NUCLEIC_ACID_TYPE_DESCRIPTION = "The body nucleicAcidType FileExperiment web service parameter";
+    public static final String FILE_EXPERIMENT_MANUFACTURER_DESCRIPTION = "The body manufacturer FileExperiment web service parameter";
+    public static final String FILE_EXPERIMENT_PLATFORM_DESCRIPTION = "The body platform FileExperiment web service parameter";
+    public static final String FILE_EXPERIMENT_LIBRARY_DESCRIPTION = "The body library FileExperiment web service parameter";
+    public static final String FILE_EXPERIMENT_DATE_DESCRIPTION = "The body date FileExperiment web service parameter";
+    public static final String FILE_EXPERIMENT_CENTER_DESCRIPTION = "The body center FileExperiment web service parameter";
+    public static final String FILE_EXPERIMENT_LAB_DESCRIPTION = "The body lab FileExperiment web service parameter";
+    public static final String FILE_EXPERIMENT_RESPONSIBLE_DESCRIPTION = "The body responsible FileExperiment web service parameter";
+
+
+    public static final String FILE_TREE_BUILDER_FILE_DESCRIPTION = "The body file FileTreeBuilder web service parameter";
+    public static final String FILE_TREE_BUILDER_FILE_TREE_MAP_DESCRIPTION = "The body fileTreeMap FileTreeBuilder web service parameter";
+
+
+    public static final String FILE_CONTENT_FILE_ID_DESCRIPTION = "The body fileId FileContent web service parameter";
+    public static final String FILE_CONTENT_EOF_DESCRIPTION = "The body eof FileContent web service parameter";
+    public static final String FILE_CONTENT_OFFSET_DESCRIPTION = "The body offset FileContent web service parameter";
+    public static final String FILE_CONTENT_SIZE_DESCRIPTION = "The body size FileContent web service parameter";
+    public static final String FILE_CONTENT_LINES_DESCRIPTION = "The body lines FileContent web service parameter";
+    public static final String FILE_CONTENT_CONTENT_DESCRIPTION = "The body content FileContent web service parameter";
+
+
+
+
+    public static final String FILE_UPDATE_PARAMS_NAME_DESCRIPTION = "The body name FileUpdateParams web service parameter";
+    public static final String FILE_UPDATE_PARAMS_SAMPLE_IDS_DESCRIPTION = "The body sampleIds FileUpdateParams web service parameter";
+    public static final String FILE_UPDATE_PARAMS_CHECKSUM_DESCRIPTION = "The body checksum FileUpdateParams web service parameter";
+    public static final String FILE_UPDATE_PARAMS_FORMAT_DESCRIPTION = "The body format FileUpdateParams web service parameter";
+    public static final String FILE_UPDATE_PARAMS_BIOFORMAT_DESCRIPTION = "The body bioformat FileUpdateParams web service parameter";
+    public static final String FILE_UPDATE_PARAMS_SOFTWARE_DESCRIPTION = "The body software FileUpdateParams web service parameter";
+    public static final String FILE_UPDATE_PARAMS_EXPERIMENT_DESCRIPTION = "The body experiment FileUpdateParams web service parameter";
+    public static final String FILE_UPDATE_PARAMS_TAGS_DESCRIPTION = "The body tags FileUpdateParams web service parameter";
+    public static final String FILE_UPDATE_PARAMS_INTERNAL_DESCRIPTION = "The body internal FileUpdateParams web service parameter";
+    public static final String FILE_UPDATE_PARAMS_RELATED_FILES_DESCRIPTION = "The body relatedFiles FileUpdateParams web service parameter";
+    public static final String FILE_UPDATE_PARAMS_SIZE_DESCRIPTION = "The body size FileUpdateParams web service parameter";
+    public static final String FILE_UPDATE_PARAMS_ANNOTATION_SETS_DESCRIPTION = "The body annotationSets FileUpdateParams web service parameter";
+    public static final String FILE_UPDATE_PARAMS_QUALITY_CONTROL_DESCRIPTION = "The body qualityControl FileUpdateParams web service parameter";
+    public static final String FILE_UPDATE_PARAMS_STATS_DESCRIPTION = "The body stats FileUpdateParams web service parameter";
+
+
+    public static final String FILE_ACL_UPDATE_PARAMS_FILE_DESCRIPTION = "The body file FileAclUpdateParams web service parameter";
+    public static final String FILE_ACL_UPDATE_PARAMS_SAMPLE_DESCRIPTION = "The body sample FileAclUpdateParams web service parameter";
+
+
+
+
+    public static final String FILE_LINK_PARAMS_URI_DESCRIPTION = "The body uri FileLinkParams web service parameter";
+    public static final String FILE_LINK_PARAMS_PATH_DESCRIPTION = "The body path FileLinkParams web service parameter";
+    public static final String FILE_LINK_PARAMS_RELATED_FILES_DESCRIPTION = "The body relatedFiles FileLinkParams web service parameter";
+    public static final String FILE_LINK_PARAMS_INTERNAL_DESCRIPTION = "The body internal FileLinkParams web service parameter";
+
+
+    public static final String FILE_QUALITY_CONTROL_VARIANT_DESCRIPTION = "The body variant FileQualityControl web service parameter";
+    public static final String FILE_QUALITY_CONTROL_ALIGNMENT_DESCRIPTION = "The body alignment FileQualityControl web service parameter";
+    public static final String FILE_QUALITY_CONTROL_COVERAGE_DESCRIPTION = "The body coverage FileQualityControl web service parameter";
+    public static final String FILE_QUALITY_CONTROL_COMMENTS_DESCRIPTION = "The body comments FileQualityControl web service parameter";
+    public static final String FILE_QUALITY_CONTROL_FILES_DESCRIPTION = "The body files FileQualityControl web service parameter";
+
+
+
+
+    public static final String FILE_LINK_TOOL_PARAMS_URI_DESCRIPTION = "The body uri FileLinkToolParams web service parameter";
+    public static final String FILE_LINK_TOOL_PARAMS_PATH_DESCRIPTION = "The body path FileLinkToolParams web service parameter";
+    public static final String FILE_LINK_TOOL_PARAMS_PARENTS_DESCRIPTION = "The body parents FileLinkToolParams web service parameter";
+
+
+    public static final String FILE_TREE_FILE_DESCRIPTION = "The body file FileTree web service parameter";
+    public static final String FILE_TREE_CHILDREN_DESCRIPTION = "The body children FileTree web service parameter";
+
+
+    public static final String FILE_ACL_PARAMS_SAMPLE_DESCRIPTION = "The body sample FileAclParams web service parameter";
+
+
+    public static final String FILE_CREATE_PARAMS_OLD_PATH_DESCRIPTION = "The body path FileCreateParamsOld web service parameter";
+    public static final String FILE_CREATE_PARAMS_OLD_CONTENT_DESCRIPTION = "The body content FileCreateParamsOld web service parameter";
+    public static final String FILE_CREATE_PARAMS_OLD_PARENTS_DESCRIPTION = "The body parents FileCreateParamsOld web service parameter";
+    public static final String FILE_CREATE_PARAMS_OLD_DIRECTORY_DESCRIPTION = "The body directory FileCreateParamsOld web service parameter";
+
+
+    public static final String FILE_LIBRARY_EXPERIMENT_PREPARATION_KIT_DESCRIPTION = "The body preparationKit FileLibraryExperiment web service parameter";
+    public static final String FILE_LIBRARY_EXPERIMENT_PREPARATION_KIT_MANUFACTURER_DESCRIPTION = "The body preparationKitManufacturer FileLibraryExperiment web service parameter";
+    public static final String FILE_LIBRARY_EXPERIMENT_CAPTURE_MANUFACTURER_DESCRIPTION = "The body captureManufacturer FileLibraryExperiment web service parameter";
+    public static final String FILE_LIBRARY_EXPERIMENT_CAPTURE_KIT_DESCRIPTION = "The body captureKit FileLibraryExperiment web service parameter";
+    public static final String FILE_LIBRARY_EXPERIMENT_CAPTURE_VERSION_DESCRIPTION = "The body captureVersion FileLibraryExperiment web service parameter";
+    public static final String FILE_LIBRARY_EXPERIMENT_TARGETED_REGION_DESCRIPTION = "The body targetedRegion FileLibraryExperiment web service parameter";
+
+
+
+
+    public static final String STATUS_PARAMS_ID_DESCRIPTION = "The body id StatusParams web service parameter";
+    public static final String STATUS_PARAMS_NAME_DESCRIPTION = "The body name StatusParams web service parameter";
+
+
+
+
+    public static final String INTERNAL_STATUS_VERSION_DESCRIPTION = "The body version InternalStatus web service parameter";
+    public static final String INTERNAL_STATUS_COMMIT_DESCRIPTION = "The body commit InternalStatus web service parameter";
+
+
+    public static final String ANNOTABLE_ID_DESCRIPTION = "The body id Annotable web service parameter";
+
+
+
+
+    public static final String ANNOTATION_SET_ID_DESCRIPTION = "The body id AnnotationSet web service parameter";
+    public static final String ANNOTATION_SET_NAME_DESCRIPTION = "The body name AnnotationSet web service parameter";
+    public static final String ANNOTATION_SET_VARIABLE_SET_ID_DESCRIPTION = "The body variableSetId AnnotationSet web service parameter";
+    public static final String ANNOTATION_SET_ANNOTATIONS_DESCRIPTION = "The body annotations AnnotationSet web service parameter";
+    public static final String ANNOTATION_SET_RELEASE_DESCRIPTION = "The body release AnnotationSet web service parameter";
+
+
+    public static final String FLAG_VALUE_ID_DESCRIPTION = "The body id FlagValue web service parameter";
+
+
+
+
+
+
+
+
+    public static final String TSV_ANNOTATION_PARAMS_CONTENT_DESCRIPTION = "The body content TsvAnnotationParams web service parameter";
+
+
+
+
+    public static final String ENTRY_PARAM_ID_DESCRIPTION = "The body id EntryParam web service parameter";
+
+
+
+
+    public static final String STATUS_PARAM_ID_DESCRIPTION = "The body id StatusParam web service parameter";
+
+
+
+
+    public static final String CUSTOM_GROUP_ID_DESCRIPTION = "The body id CustomGroup web service parameter";
+    public static final String CUSTOM_GROUP_USERS_DESCRIPTION = "The body users CustomGroup web service parameter";
+    public static final String CUSTOM_GROUP_SYNCED_FROM_DESCRIPTION = "The body syncedFrom CustomGroup web service parameter";
+
+
+
+
+
+
+    public static final String STUDY_VARIANT_ENGINE_CONFIGURATION_OPTIONS_DESCRIPTION = "The body options StudyVariantEngineConfiguration web service parameter";
+    public static final String STUDY_VARIANT_ENGINE_CONFIGURATION_SAMPLE_INDEX_DESCRIPTION = "The body sampleIndex StudyVariantEngineConfiguration web service parameter";
+
+
+    public static final String GROUP_ID_DESCRIPTION = "The body id Group web service parameter";
+    public static final String GROUP_USER_IDS_DESCRIPTION = "The body userIds Group web service parameter";
+    public static final String GROUP_SYNCED_FROM_DESCRIPTION = "The body syncedFrom Group web service parameter";
+
+
+    public static final String TEMPLATE_PARAMS_ID_DESCRIPTION = "The body id TemplateParams web service parameter";
+    public static final String TEMPLATE_PARAMS_OVERWRITE_DESCRIPTION = "The body overwrite TemplateParams web service parameter";
+    public static final String TEMPLATE_PARAMS_RESUME_DESCRIPTION = "The body resume TemplateParams web service parameter";
+
+
+
+
+    public static final String STUDY_UPDATE_PARAMS_NAME_DESCRIPTION = "The body name StudyUpdateParams web service parameter";
+    public static final String STUDY_UPDATE_PARAMS_ALIAS_DESCRIPTION = "The body alias StudyUpdateParams web service parameter";
+    public static final String STUDY_UPDATE_PARAMS_TYPE_DESCRIPTION = "The body type StudyUpdateParams web service parameter";
+    public static final String STUDY_UPDATE_PARAMS_SOURCES_DESCRIPTION = "The body sources StudyUpdateParams web service parameter";
+    public static final String STUDY_UPDATE_PARAMS_NOTIFICATION_DESCRIPTION = "The body notification StudyUpdateParams web service parameter";
+    public static final String STUDY_UPDATE_PARAMS_ADDITIONAL_INFO_DESCRIPTION = "The body additionalInfo StudyUpdateParams web service parameter";
+
+
+    public static final String STUDY_ACL_UPDATE_PARAMS_STUDY_DESCRIPTION = "The body study StudyAclUpdateParams web service parameter";
+    public static final String STUDY_ACL_UPDATE_PARAMS_TEMPLATE_DESCRIPTION = "The body template StudyAclUpdateParams web service parameter";
+
+
+    public static final String CLINICAL_CONSENT_ANNOTATION_PARAM_CONSENTS_DESCRIPTION = "The body consents ClinicalConsentAnnotationParam web service parameter";
+
+
+    public static final String INTERPRETATION_VARIANT_CALLER_CONFIGURATION_ID_DESCRIPTION = "The body id InterpretationVariantCallerConfiguration web service parameter";
+    public static final String INTERPRETATION_VARIANT_CALLER_CONFIGURATION_SOMATIC_DESCRIPTION = "The body somatic InterpretationVariantCallerConfiguration web service parameter";
+    public static final String INTERPRETATION_VARIANT_CALLER_CONFIGURATION_TYPES_DESCRIPTION = "The body types InterpretationVariantCallerConfiguration web service parameter";
+    public static final String INTERPRETATION_VARIANT_CALLER_CONFIGURATION_COLUMNS_DESCRIPTION = "The body columns InterpretationVariantCallerConfiguration web service parameter";
+    public static final String INTERPRETATION_VARIANT_CALLER_CONFIGURATION_DATA_FILTERS_DESCRIPTION = "The body dataFilters InterpretationVariantCallerConfiguration web service parameter";
+
+
+
+
+
+
+    public static final String CLINICAL_CONSENT_ID_DESCRIPTION = "The body id ClinicalConsent web service parameter";
+    public static final String CLINICAL_CONSENT_NAME_DESCRIPTION = "The body name ClinicalConsent web service parameter";
+
+
+    public static final String CLINICAL_PRIORITY_VALUE_ID_DESCRIPTION = "The body id ClinicalPriorityValue web service parameter";
+    public static final String CLINICAL_PRIORITY_VALUE_RANK_DESCRIPTION = "The body rank ClinicalPriorityValue web service parameter";
+    public static final String CLINICAL_PRIORITY_VALUE_DEFAULT_PRIORITY_DESCRIPTION = "The body defaultPriority ClinicalPriorityValue web service parameter";
+
+
+    public static final String STUDY_CONFIGURATION_CLINICAL_DESCRIPTION = "The body clinical StudyConfiguration web service parameter";
+    public static final String STUDY_CONFIGURATION_VARIANT_ENGINE_DESCRIPTION = "The body variantEngine StudyConfiguration web service parameter";
+
+
+    public static final String INTERPRETATION_STUDY_CONFIGURATION_VARIANT_CALLERS_DESCRIPTION = "The body variantCallers InterpretationStudyConfiguration web service parameter";
+    public static final String INTERPRETATION_STUDY_CONFIGURATION_DEFAULT_FILTER_DESCRIPTION = "The body defaultFilter InterpretationStudyConfiguration web service parameter";
+
+
+    public static final String CLINICAL_ANALYSIS_STUDY_CONFIGURATION_INTERPRETATION_DESCRIPTION = "The body interpretation ClinicalAnalysisStudyConfiguration web service parameter";
+    public static final String CLINICAL_ANALYSIS_STUDY_CONFIGURATION_PRIORITIES_DESCRIPTION = "The body priorities ClinicalAnalysisStudyConfiguration web service parameter";
+    public static final String CLINICAL_ANALYSIS_STUDY_CONFIGURATION_FLAGS_DESCRIPTION = "The body flags ClinicalAnalysisStudyConfiguration web service parameter";
+    public static final String CLINICAL_ANALYSIS_STUDY_CONFIGURATION_CONSENT_DESCRIPTION = "The body consent ClinicalAnalysisStudyConfiguration web service parameter";
+
+
+    public static final String CLINICAL_CONSENT_CONFIGURATION_CONSENTS_DESCRIPTION = "The body consents ClinicalConsentConfiguration web service parameter";
+
+
+
+
+
+
+    public static final String STUDY_CREATE_PARAMS_ID_DESCRIPTION = "The body id StudyCreateParams web service parameter";
+    public static final String STUDY_CREATE_PARAMS_NAME_DESCRIPTION = "The body name StudyCreateParams web service parameter";
+    public static final String STUDY_CREATE_PARAMS_ALIAS_DESCRIPTION = "The body alias StudyCreateParams web service parameter";
+    public static final String STUDY_CREATE_PARAMS_TYPE_DESCRIPTION = "The body type StudyCreateParams web service parameter";
+    public static final String STUDY_CREATE_PARAMS_SOURCES_DESCRIPTION = "The body sources StudyCreateParams web service parameter";
+    public static final String STUDY_CREATE_PARAMS_NOTIFICATION_DESCRIPTION = "The body notification StudyCreateParams web service parameter";
+    public static final String STUDY_CREATE_PARAMS_ADDITIONAL_INFO_DESCRIPTION = "The body additionalInfo StudyCreateParams web service parameter";
+
+
+
+
+    public static final String VARIABLE_SET_CREATE_PARAMS_ID_DESCRIPTION = "The body id VariableSetCreateParams web service parameter";
+    public static final String VARIABLE_SET_CREATE_PARAMS_NAME_DESCRIPTION = "The body name VariableSetCreateParams web service parameter";
+    public static final String VARIABLE_SET_CREATE_PARAMS_UNIQUE_DESCRIPTION = "The body unique VariableSetCreateParams web service parameter";
+    public static final String VARIABLE_SET_CREATE_PARAMS_CONFIDENTIAL_DESCRIPTION = "The body confidential VariableSetCreateParams web service parameter";
+    public static final String VARIABLE_SET_CREATE_PARAMS_ENTITIES_DESCRIPTION = "The body entities VariableSetCreateParams web service parameter";
+    public static final String VARIABLE_SET_CREATE_PARAMS_VARIABLES_DESCRIPTION = "The body variables VariableSetCreateParams web service parameter";
+
+
+    public static final String STUDY_ACL_PARAMS_TEMPLATE_DESCRIPTION = "The body template StudyAclParams web service parameter";
+
+
+    public static final String VARIABLE_SET_ID_DESCRIPTION = "The body id VariableSet web service parameter";
+    public static final String VARIABLE_SET_NAME_DESCRIPTION = "The body name VariableSet web service parameter";
+    public static final String VARIABLE_SET_UNIQUE_DESCRIPTION = "The body unique VariableSet web service parameter";
+    public static final String VARIABLE_SET_CONFIDENTIAL_DESCRIPTION = "The body confidential VariableSet web service parameter";
+    public static final String VARIABLE_SET_INTERNAL_DESCRIPTION = "The body internal VariableSet web service parameter";
+    public static final String VARIABLE_SET_VARIABLES_DESCRIPTION = "The body variables VariableSet web service parameter";
+    public static final String VARIABLE_SET_ENTITIES_DESCRIPTION = "The body entities VariableSet web service parameter";
+    public static final String VARIABLE_SET_RELEASE_DESCRIPTION = "The body release VariableSet web service parameter";
+
+
+
+
+
+
+    public static final String GROUP_CREATE_PARAMS_ID_DESCRIPTION = "The body id GroupCreateParams web service parameter";
+    public static final String GROUP_CREATE_PARAMS_USERS_DESCRIPTION = "The body users GroupCreateParams web service parameter";
+
+
+
+
+    public static final String GROUP_UPDATE_PARAMS_USERS_DESCRIPTION = "The body users GroupUpdateParams web service parameter";
+
+
+    public static final String VARIABLE_ID_DESCRIPTION = "The body id Variable web service parameter";
+    public static final String VARIABLE_NAME_DESCRIPTION = "The body name Variable web service parameter";
+    public static final String VARIABLE_CATEGORY_DESCRIPTION = "The body category Variable web service parameter";
+    public static final String VARIABLE_TYPE_DESCRIPTION = "The body type Variable web service parameter";
+    public static final String VARIABLE_DEFAULT_VALUE_DESCRIPTION = "The body defaultValue Variable web service parameter";
+    public static final String VARIABLE_REQUIRED_DESCRIPTION = "The body required Variable web service parameter";
+    public static final String VARIABLE_MULTI_VALUE_DESCRIPTION = "The body multiValue Variable web service parameter";
+    public static final String VARIABLE_ALLOWED_VALUES_DESCRIPTION = "The body allowedValues Variable web service parameter";
+    public static final String VARIABLE_ALLOWED_KEYS_DESCRIPTION = "The body allowedKeys Variable web service parameter";
+    public static final String VARIABLE_RANK_DESCRIPTION = "The body rank Variable web service parameter";
+    public static final String VARIABLE_DEPENDS_ON_DESCRIPTION = "The body dependsOn Variable web service parameter";
+    public static final String VARIABLE_VARIABLE_SET_DESCRIPTION = "The body variableSet Variable web service parameter";
+    public static final String VARIABLE_VARIABLES_DESCRIPTION = "The body variables Variable web service parameter";
+
+
+    public static final String STUDY_INDEX_RECESSIVE_GENE_DESCRIPTION = "The body recessiveGene StudyIndex web service parameter";
+
+
+
+
+    public static final String PROJECT_UPDATE_PARAMS_NAME_DESCRIPTION = "The body name ProjectUpdateParams web service parameter";
+    public static final String PROJECT_UPDATE_PARAMS_ORGANISM_DESCRIPTION = "The body organism ProjectUpdateParams web service parameter";
+
+
+
+
+    public static final String DATASTORES_VARIANT_DESCRIPTION = "The body variant Datastores web service parameter";
+
+
+    public static final String PROJECT_CREATE_PARAMS_ID_DESCRIPTION = "The body id ProjectCreateParams web service parameter";
+    public static final String PROJECT_CREATE_PARAMS_NAME_DESCRIPTION = "The body name ProjectCreateParams web service parameter";
+    public static final String PROJECT_CREATE_PARAMS_ORGANISM_DESCRIPTION = "The body organism ProjectCreateParams web service parameter";
+    public static final String PROJECT_CREATE_PARAMS_CELLBASE_DESCRIPTION = "The body cellbase ProjectCreateParams web service parameter";
+
+
+    public static final String DATA_STORE_STORAGE_ENGINE_DESCRIPTION = "The body storageEngine DataStore web service parameter";
+    public static final String DATA_STORE_DB_NAME_DESCRIPTION = "The body dbName DataStore web service parameter";
+    public static final String DATA_STORE_OPTIONS_DESCRIPTION = "The body options DataStore web service parameter";
+
+
+    public static final String PROJECT_ORGANISM_SCIENTIFIC_NAME_DESCRIPTION = "The body scientificName ProjectOrganism web service parameter";
+    public static final String PROJECT_ORGANISM_COMMON_NAME_DESCRIPTION = "The body commonName ProjectOrganism web service parameter";
+    public static final String PROJECT_ORGANISM_ASSEMBLY_DESCRIPTION = "The body assembly ProjectOrganism web service parameter";
+
+
+    public static final String SAMPLE_INTERNAL_VARIANT_INDEX_DESCRIPTION = "The body index SampleInternalVariant web service parameter";
+    public static final String SAMPLE_INTERNAL_VARIANT_SAMPLE_GENOTYPE_INDEX_DESCRIPTION = "The body sampleGenotypeIndex SampleInternalVariant web service parameter";
+    public static final String SAMPLE_INTERNAL_VARIANT_ANNOTATION_INDEX_DESCRIPTION = "The body annotationIndex SampleInternalVariant web service parameter";
+    public static final String SAMPLE_INTERNAL_VARIANT_SECONDARY_INDEX_DESCRIPTION = "The body secondaryIndex SampleInternalVariant web service parameter";
+
+
+
+
+    public static final String SAMPLE_INTERNAL_VARIANT_INDEX_NUM_FILES_DESCRIPTION = "The body numFiles SampleInternalVariantIndex web service parameter";
+    public static final String SAMPLE_INTERNAL_VARIANT_INDEX_MULTI_FILE_DESCRIPTION = "The body multiFile SampleInternalVariantIndex web service parameter";
+
+
+    public static final String SAMPLE_ALIGNMENT_QUALITY_CONTROL_METRICS_BAM_FILE_ID_DESCRIPTION = "The body bamFileId SampleAlignmentQualityControlMetrics web service parameter";
+    public static final String SAMPLE_ALIGNMENT_QUALITY_CONTROL_METRICS_FAST_QC_METRICS_DESCRIPTION = "The body fastQcMetrics SampleAlignmentQualityControlMetrics web service parameter";
+    public static final String SAMPLE_ALIGNMENT_QUALITY_CONTROL_METRICS_SAMTOOLS_FLAGSTATS_DESCRIPTION = "The body samtoolsFlagstats SampleAlignmentQualityControlMetrics web service parameter";
+    public static final String SAMPLE_ALIGNMENT_QUALITY_CONTROL_METRICS_HS_METRICS_DESCRIPTION = "The body hsMetrics SampleAlignmentQualityControlMetrics web service parameter";
+    public static final String SAMPLE_ALIGNMENT_QUALITY_CONTROL_METRICS_GENE_COVERAGE_STATS_DESCRIPTION = "The body geneCoverageStats SampleAlignmentQualityControlMetrics web service parameter";
+
+
+    public static final String SAMPLE_CREATE_PARAMS_ID_DESCRIPTION = "The body id SampleCreateParams web service parameter";
+    public static final String SAMPLE_CREATE_PARAMS_INDIVIDUAL_ID_DESCRIPTION = "The body individualId SampleCreateParams web service parameter";
+    public static final String SAMPLE_CREATE_PARAMS_SOURCE_DESCRIPTION = "The body source SampleCreateParams web service parameter";
+    public static final String SAMPLE_CREATE_PARAMS_PROCESSING_DESCRIPTION = "The body processing SampleCreateParams web service parameter";
+    public static final String SAMPLE_CREATE_PARAMS_COLLECTION_DESCRIPTION = "The body collection SampleCreateParams web service parameter";
+    public static final String SAMPLE_CREATE_PARAMS_SOMATIC_DESCRIPTION = "The body somatic SampleCreateParams web service parameter";
+    public static final String SAMPLE_CREATE_PARAMS_PHENOTYPES_DESCRIPTION = "The body phenotypes SampleCreateParams web service parameter";
+    public static final String SAMPLE_CREATE_PARAMS_ANNOTATION_SETS_DESCRIPTION = "The body annotationSets SampleCreateParams web service parameter";
+
+
+
+
+
+
+
+
+    public static final String SAMPLE_REFERENCE_PARAM_ID_DESCRIPTION = "The body id SampleReferenceParam web service parameter";
+    public static final String SAMPLE_REFERENCE_PARAM_UUID_DESCRIPTION = "The body uuid SampleReferenceParam web service parameter";
+
+
+
+
+    public static final String SAMPLE_ACL_PARAMS_INDIVIDUAL_DESCRIPTION = "The body individual SampleAclParams web service parameter";
+    public static final String SAMPLE_ACL_PARAMS_FAMILY_DESCRIPTION = "The body family SampleAclParams web service parameter";
+    public static final String SAMPLE_ACL_PARAMS_FILE_DESCRIPTION = "The body file SampleAclParams web service parameter";
+    public static final String SAMPLE_ACL_PARAMS_COHORT_DESCRIPTION = "The body cohort SampleAclParams web service parameter";
+
+
+
+
+
+
+    public static final String SAMPLE_UPDATE_PARAMS_ID_DESCRIPTION = "The body id SampleUpdateParams web service parameter";
+    public static final String SAMPLE_UPDATE_PARAMS_INDIVIDUAL_ID_DESCRIPTION = "The body individualId SampleUpdateParams web service parameter";
+    public static final String SAMPLE_UPDATE_PARAMS_SOURCE_DESCRIPTION = "The body source SampleUpdateParams web service parameter";
+    public static final String SAMPLE_UPDATE_PARAMS_PROCESSING_DESCRIPTION = "The body processing SampleUpdateParams web service parameter";
+    public static final String SAMPLE_UPDATE_PARAMS_COLLECTION_DESCRIPTION = "The body collection SampleUpdateParams web service parameter";
+    public static final String SAMPLE_UPDATE_PARAMS_QUALITY_CONTROL_DESCRIPTION = "The body qualityControl SampleUpdateParams web service parameter";
+    public static final String SAMPLE_UPDATE_PARAMS_SOMATIC_DESCRIPTION = "The body somatic SampleUpdateParams web service parameter";
+    public static final String SAMPLE_UPDATE_PARAMS_PHENOTYPES_DESCRIPTION = "The body phenotypes SampleUpdateParams web service parameter";
+    public static final String SAMPLE_UPDATE_PARAMS_ANNOTATION_SETS_DESCRIPTION = "The body annotationSets SampleUpdateParams web service parameter";
+
+
+    public static final String SAMPLE_INTERNAL_VARIANT_DESCRIPTION = "The body variant SampleInternal web service parameter";
+
+
+
+
+
+
+    public static final String SAMPLE_ACL_UPDATE_PARAMS_SAMPLE_DESCRIPTION = "The body sample SampleAclUpdateParams web service parameter";
+    public static final String SAMPLE_ACL_UPDATE_PARAMS_INDIVIDUAL_DESCRIPTION = "The body individual SampleAclUpdateParams web service parameter";
+    public static final String SAMPLE_ACL_UPDATE_PARAMS_FAMILY_DESCRIPTION = "The body family SampleAclUpdateParams web service parameter";
+    public static final String SAMPLE_ACL_UPDATE_PARAMS_FILE_DESCRIPTION = "The body file SampleAclUpdateParams web service parameter";
+    public static final String SAMPLE_ACL_UPDATE_PARAMS_COHORT_DESCRIPTION = "The body cohort SampleAclUpdateParams web service parameter";
+
+
+
+
+    public static final String FAMILY_ACL_PARAMS_FAMILY_DESCRIPTION = "The body family FamilyAclParams web service parameter";
+    public static final String FAMILY_ACL_PARAMS_INDIVIDUAL_DESCRIPTION = "The body individual FamilyAclParams web service parameter";
+    public static final String FAMILY_ACL_PARAMS_SAMPLE_DESCRIPTION = "The body sample FamilyAclParams web service parameter";
+    public static final String FAMILY_ACL_PARAMS_PROPAGATE_DESCRIPTION = "The body propagate FamilyAclParams web service parameter";
+
+
+
+
+
+
+    public static final String FAMILY_ACL_UPDATE_PARAMS_FAMILY_DESCRIPTION = "The body family FamilyAclUpdateParams web service parameter";
+    public static final String FAMILY_ACL_UPDATE_PARAMS_INDIVIDUAL_DESCRIPTION = "The body individual FamilyAclUpdateParams web service parameter";
+    public static final String FAMILY_ACL_UPDATE_PARAMS_SAMPLE_DESCRIPTION = "The body sample FamilyAclUpdateParams web service parameter";
+
+
+
+
+    public static final String FAMILY_UPDATE_PARAMS_ID_DESCRIPTION = "The body id FamilyUpdateParams web service parameter";
+    public static final String FAMILY_UPDATE_PARAMS_NAME_DESCRIPTION = "The body name FamilyUpdateParams web service parameter";
+    public static final String FAMILY_UPDATE_PARAMS_MEMBERS_DESCRIPTION = "The body members FamilyUpdateParams web service parameter";
+    public static final String FAMILY_UPDATE_PARAMS_EXPECTED_SIZE_DESCRIPTION = "The body expectedSize FamilyUpdateParams web service parameter";
+    public static final String FAMILY_UPDATE_PARAMS_QUALITY_CONTROL_DESCRIPTION = "The body qualityControl FamilyUpdateParams web service parameter";
+    public static final String FAMILY_UPDATE_PARAMS_ANNOTATION_SETS_DESCRIPTION = "The body annotationSets FamilyUpdateParams web service parameter";
+
+
+
+
+    public static final String INDIVIDUAL_CREATE_PARAMS_ID_DESCRIPTION = "The body id IndividualCreateParams web service parameter";
+    public static final String INDIVIDUAL_CREATE_PARAMS_NAME_DESCRIPTION = "The body name IndividualCreateParams web service parameter";
+    public static final String INDIVIDUAL_CREATE_PARAMS_FATHER_DESCRIPTION = "The body father IndividualCreateParams web service parameter";
+    public static final String INDIVIDUAL_CREATE_PARAMS_MOTHER_DESCRIPTION = "The body mother IndividualCreateParams web service parameter";
+    public static final String INDIVIDUAL_CREATE_PARAMS_LOCATION_DESCRIPTION = "The body location IndividualCreateParams web service parameter";
+    public static final String INDIVIDUAL_CREATE_PARAMS_SEX_DESCRIPTION = "The body sex IndividualCreateParams web service parameter";
+    public static final String INDIVIDUAL_CREATE_PARAMS_ETHNICITY_DESCRIPTION = "The body ethnicity IndividualCreateParams web service parameter";
+    public static final String INDIVIDUAL_CREATE_PARAMS_PARENTAL_CONSANGUINITY_DESCRIPTION = "The body parentalConsanguinity IndividualCreateParams web service parameter";
+    public static final String INDIVIDUAL_CREATE_PARAMS_POPULATION_DESCRIPTION = "The body population IndividualCreateParams web service parameter";
+    public static final String INDIVIDUAL_CREATE_PARAMS_DATE_OF_BIRTH_DESCRIPTION = "The body dateOfBirth IndividualCreateParams web service parameter";
+    public static final String INDIVIDUAL_CREATE_PARAMS_KARYOTYPIC_SEX_DESCRIPTION = "The body karyotypicSex IndividualCreateParams web service parameter";
+    public static final String INDIVIDUAL_CREATE_PARAMS_LIFE_STATUS_DESCRIPTION = "The body lifeStatus IndividualCreateParams web service parameter";
+    public static final String INDIVIDUAL_CREATE_PARAMS_ANNOTATION_SETS_DESCRIPTION = "The body annotationSets IndividualCreateParams web service parameter";
+    public static final String INDIVIDUAL_CREATE_PARAMS_PHENOTYPES_DESCRIPTION = "The body phenotypes IndividualCreateParams web service parameter";
+    public static final String INDIVIDUAL_CREATE_PARAMS_DISORDERS_DESCRIPTION = "The body disorders IndividualCreateParams web service parameter";
+
+
+
+
+    public static final String FAMILY_CREATE_PARAMS_ID_DESCRIPTION = "The body id FamilyCreateParams web service parameter";
+    public static final String FAMILY_CREATE_PARAMS_NAME_DESCRIPTION = "The body name FamilyCreateParams web service parameter";
+    public static final String FAMILY_CREATE_PARAMS_MEMBERS_DESCRIPTION = "The body members FamilyCreateParams web service parameter";
+    public static final String FAMILY_CREATE_PARAMS_EXPECTED_SIZE_DESCRIPTION = "The body expectedSize FamilyCreateParams web service parameter";
+    public static final String FAMILY_CREATE_PARAMS_ANNOTATION_SETS_DESCRIPTION = "The body annotationSets FamilyCreateParams web service parameter";
+
+
+
+
+    public static final String GATK_WRAPPER_PARAMS_COMMAND_DESCRIPTION = "The body command GatkWrapperParams web service parameter";
+    public static final String GATK_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = "The body outdir GatkWrapperParams web service parameter";
+    public static final String GATK_WRAPPER_PARAMS_GATK_PARAMS_DESCRIPTION = "The body gatkParams GatkWrapperParams web service parameter";
+
+
+
+
+    public static final String FAMILY_QC_ANALYSIS_PARAMS_FAMILY_DESCRIPTION = "The body family FamilyQcAnalysisParams web service parameter";
+    public static final String FAMILY_QC_ANALYSIS_PARAMS_RELATEDNESS_METHOD_DESCRIPTION = "The body relatednessMethod FamilyQcAnalysisParams web service parameter";
+    public static final String FAMILY_QC_ANALYSIS_PARAMS_RELATEDNESS_MAF_DESCRIPTION = "The body relatednessMaf FamilyQcAnalysisParams web service parameter";
+    public static final String FAMILY_QC_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir FamilyQcAnalysisParams web service parameter";
+
+
+    public static final String VARIANT_FILE_QUALITY_CONTROL_VARIANT_SET_METRICS_DESCRIPTION = "The body variantSetMetrics VariantFileQualityControl web service parameter";
+    public static final String VARIANT_FILE_QUALITY_CONTROL_ASCAT_METRICS_DESCRIPTION = "The body ascatMetrics VariantFileQualityControl web service parameter";
+
+
+    public static final String GENOME_PLOT_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION = "The body sample GenomePlotAnalysisParams web service parameter";
+    public static final String GENOME_PLOT_ANALYSIS_PARAMS_ID_DESCRIPTION = "The body id GenomePlotAnalysisParams web service parameter";
+    public static final String GENOME_PLOT_ANALYSIS_PARAMS_CONFIG_FILE_DESCRIPTION = "The body configFile GenomePlotAnalysisParams web service parameter";
+    public static final String GENOME_PLOT_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir GenomePlotAnalysisParams web service parameter";
+
+
+    public static final String VARIANT_STUDY_DELETE_PARAMS_RESUME_DESCRIPTION = "The body resume VariantStudyDeleteParams web service parameter";
+
+
+    public static final String VARIANT_INDEX_PARAMS_FILE_DESCRIPTION = "The body file VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_RESUME_DESCRIPTION = "The body resume VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_OUTDIR_DESCRIPTION = "The body outdir VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_TRANSFORM_DESCRIPTION = "The body transform VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_GVCF_DESCRIPTION = "The body gvcf VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_NORMALIZATION_SKIP_DESCRIPTION = "The body normalizationSkip VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_REFERENCE_GENOME_DESCRIPTION = "The body referenceGenome VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_FAIL_ON_MALFORMED_LINES_DESCRIPTION = "The body failOnMalformedLines VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_FAMILY_DESCRIPTION = "The body family VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_SOMATIC_DESCRIPTION = "The body somatic VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_LOAD_DESCRIPTION = "The body load VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_LOAD_SPLIT_DATA_DESCRIPTION = "The body loadSplitData VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_LOAD_MULTI_FILE_DATA_DESCRIPTION = "The body loadMultiFileData VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_LOAD_SAMPLE_INDEX_DESCRIPTION = "The body loadSampleIndex VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_LOAD_ARCHIVE_DESCRIPTION = "The body loadArchive VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_LOAD_HOM_REF_DESCRIPTION = "The body loadHomRef VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_POST_LOAD_CHECK_DESCRIPTION = "The body postLoadCheck VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_INCLUDE_GENOTYPES_DESCRIPTION = "The body includeGenotypes VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_INCLUDE_SAMPLE_DATA_DESCRIPTION = "The body includeSampleData VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_MERGE_DESCRIPTION = "The body merge VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_DEDUPLICATION_POLICY_DESCRIPTION = "The body deduplicationPolicy VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_CALCULATE_STATS_DESCRIPTION = "The body calculateStats VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_AGGREGATED_DESCRIPTION = "The body aggregated VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_AGGREGATION_MAPPING_FILE_DESCRIPTION = "The body aggregationMappingFile VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_ANNOTATE_DESCRIPTION = "The body annotate VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_ANNOTATOR_DESCRIPTION = "The body annotator VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_OVERWRITE_ANNOTATIONS_DESCRIPTION = "The body overwriteAnnotations VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_INDEX_SEARCH_DESCRIPTION = "The body indexSearch VariantIndexParams web service parameter";
+    public static final String VARIANT_INDEX_PARAMS_SKIP_INDEXED_FILES_DESCRIPTION = "The body skipIndexedFiles VariantIndexParams web service parameter";
+
+
+    public static final String VARIANT_PRUNE_PARAMS_PROJECT_DESCRIPTION = "The body project VariantPruneParams web service parameter";
+    public static final String VARIANT_PRUNE_PARAMS_DRY_RUN_DESCRIPTION = "The body dryRun VariantPruneParams web service parameter";
+    public static final String VARIANT_PRUNE_PARAMS_RESUME_DESCRIPTION = "The body resume VariantPruneParams web service parameter";
+
+
+    public static final String KNOCKOUT_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION = "The body sample KnockoutAnalysisParams web service parameter";
+    public static final String KNOCKOUT_ANALYSIS_PARAMS_GENE_DESCRIPTION = "The body gene KnockoutAnalysisParams web service parameter";
+    public static final String KNOCKOUT_ANALYSIS_PARAMS_PANEL_DESCRIPTION = "The body panel KnockoutAnalysisParams web service parameter";
+    public static final String KNOCKOUT_ANALYSIS_PARAMS_BIOTYPE_DESCRIPTION = "The body biotype KnockoutAnalysisParams web service parameter";
+    public static final String KNOCKOUT_ANALYSIS_PARAMS_CONSEQUENCE_TYPE_DESCRIPTION = "The body consequenceType KnockoutAnalysisParams web service parameter";
+    public static final String KNOCKOUT_ANALYSIS_PARAMS_FILTER_DESCRIPTION = "The body filter KnockoutAnalysisParams web service parameter";
+    public static final String KNOCKOUT_ANALYSIS_PARAMS_QUAL_DESCRIPTION = "The body qual KnockoutAnalysisParams web service parameter";
+    public static final String KNOCKOUT_ANALYSIS_PARAMS_SKIP_GENES_FILE_DESCRIPTION = "The body skipGenesFile KnockoutAnalysisParams web service parameter";
+    public static final String KNOCKOUT_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir KnockoutAnalysisParams web service parameter";
+    public static final String KNOCKOUT_ANALYSIS_PARAMS_INDEX_DESCRIPTION = "The body index KnockoutAnalysisParams web service parameter";
+
+
+    public static final String VARIANT_SAMPLE_DELETE_PARAMS_SAMPLE_DESCRIPTION = "The body sample VariantSampleDeleteParams web service parameter";
+    public static final String VARIANT_SAMPLE_DELETE_PARAMS_FORCE_DESCRIPTION = "The body force VariantSampleDeleteParams web service parameter";
+    public static final String VARIANT_SAMPLE_DELETE_PARAMS_RESUME_DESCRIPTION = "The body resume VariantSampleDeleteParams web service parameter";
+
+
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION = "The body sample SampleQcAnalysisParams web service parameter";
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_VARIANT_STATS_ID_DESCRIPTION = "The body variantStatsId SampleQcAnalysisParams web service parameter";
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_VARIANT_STATS_DESCRIPTION_DESCRIPTION = "The body variantStatsDescription SampleQcAnalysisParams web service parameter";
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_VARIANT_STATS_QUERY_DESCRIPTION = "The body variantStatsQuery SampleQcAnalysisParams web service parameter";
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_SIGNATURE_ID_DESCRIPTION = "The body signatureId SampleQcAnalysisParams web service parameter";
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_SIGNATURE_DESCRIPTION_DESCRIPTION = "The body signatureDescription SampleQcAnalysisParams web service parameter";
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_SIGNATURE_QUERY_DESCRIPTION = "The body signatureQuery SampleQcAnalysisParams web service parameter";
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_SIGNATURE_RELEASE_DESCRIPTION = "The body signatureRelease SampleQcAnalysisParams web service parameter";
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_GENOME_PLOT_ID_DESCRIPTION = "The body genomePlotId SampleQcAnalysisParams web service parameter";
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_GENOME_PLOT_DESCRIPTION_DESCRIPTION = "The body genomePlotDescription SampleQcAnalysisParams web service parameter";
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_GENOME_PLOT_CONFIG_FILE_DESCRIPTION = "The body genomePlotConfigFile SampleQcAnalysisParams web service parameter";
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir SampleQcAnalysisParams web service parameter";
+
+
+    public static final String MENDELIAN_ERROR_ANALYSIS_PARAMS_FAMILY_DESCRIPTION = "The body family MendelianErrorAnalysisParams web service parameter";
+    public static final String MENDELIAN_ERROR_ANALYSIS_PARAMS_INDIVIDUAL_DESCRIPTION = "The body individual MendelianErrorAnalysisParams web service parameter";
+    public static final String MENDELIAN_ERROR_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION = "The body sample MendelianErrorAnalysisParams web service parameter";
+    public static final String MENDELIAN_ERROR_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir MendelianErrorAnalysisParams web service parameter";
+
+
+    public static final String INFERRED_SEX_ANALYSIS_PARAMS_INDIVIDUAL_DESCRIPTION = "The body individual InferredSexAnalysisParams web service parameter";
+    public static final String INFERRED_SEX_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION = "The body sample InferredSexAnalysisParams web service parameter";
+    public static final String INFERRED_SEX_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir InferredSexAnalysisParams web service parameter";
+
+
+    public static final String VARIANT_QUERY_PARAMS_SAVED_FILTER_DESCRIPTION = "The body savedFilter VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_CHROMOSOME_DESCRIPTION = "The body chromosome VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_REFERENCE_DESCRIPTION = "The body reference VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_ALTERNATE_DESCRIPTION = "The body alternate VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_RELEASE_DESCRIPTION = "The body release VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_INCLUDE_STUDY_DESCRIPTION = "The body includeStudy VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_INCLUDE_SAMPLE_DESCRIPTION = "The body includeSample VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_INCLUDE_FILE_DESCRIPTION = "The body includeFile VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_INCLUDE_SAMPLE_DATA_DESCRIPTION = "The body includeSampleData VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_INCLUDE_SAMPLE_ID_DESCRIPTION = "The body includeSampleId VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_INCLUDE_GENOTYPE_DESCRIPTION = "The body includeGenotype VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_FILE_DESCRIPTION = "The body file VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_QUAL_DESCRIPTION = "The body qual VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_FILTER_DESCRIPTION = "The body filter VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_FILE_DATA_DESCRIPTION = "The body fileData VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_GENOTYPE_DESCRIPTION = "The body genotype VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_SAMPLE_DESCRIPTION = "The body sample VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_SAMPLE_LIMIT_DESCRIPTION = "The body sampleLimit VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_SAMPLE_SKIP_DESCRIPTION = "The body sampleSkip VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_SAMPLE_DATA_DESCRIPTION = "The body sampleData VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_SAMPLE_ANNOTATION_DESCRIPTION = "The body sampleAnnotation VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_FAMILY_DESCRIPTION = "The body family VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_FAMILY_MEMBERS_DESCRIPTION = "The body familyMembers VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_FAMILY_DISORDER_DESCRIPTION = "The body familyDisorder VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_FAMILY_PROBAND_DESCRIPTION = "The body familyProband VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_FAMILY_SEGREGATION_DESCRIPTION = "The body familySegregation VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_COHORT_DESCRIPTION = "The body cohort VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_COHORT_STATS_PASS_DESCRIPTION = "The body cohortStatsPass VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_COHORT_STATS_MGF_DESCRIPTION = "The body cohortStatsMgf VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_MISSING_ALLELES_DESCRIPTION = "The body missingAlleles VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_MISSING_GENOTYPES_DESCRIPTION = "The body missingGenotypes VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_ANNOTATION_EXISTS_DESCRIPTION = "The body annotationExists VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_SCORE_DESCRIPTION = "The body score VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_POLYPHEN_DESCRIPTION = "The body polyphen VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_SIFT_DESCRIPTION = "The body sift VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_GENE_TRAIT_ID_DESCRIPTION = "The body geneTraitId VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_GENE_TRAIT_NAME_DESCRIPTION = "The body geneTraitName VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_TRAIT_DESCRIPTION = "The body trait VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_COSMIC_DESCRIPTION = "The body cosmic VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_CLINVAR_DESCRIPTION = "The body clinvar VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_HPO_DESCRIPTION = "The body hpo VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_GO_DESCRIPTION = "The body go VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_EXPRESSION_DESCRIPTION = "The body expression VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_PROTEIN_KEYWORD_DESCRIPTION = "The body proteinKeyword VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_DRUG_DESCRIPTION = "The body drug VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_CUSTOM_ANNOTATION_DESCRIPTION = "The body customAnnotation VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_UNKNOWN_GENOTYPE_DESCRIPTION = "The body unknownGenotype VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_SAMPLE_METADATA_DESCRIPTION = "The body sampleMetadata VariantQueryParams web service parameter";
+    public static final String VARIANT_QUERY_PARAMS_SORT_DESCRIPTION = "The body sort VariantQueryParams web service parameter";
+
+
+    public static final String SAMPLE_VARIANT_STATS_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION = "The body sample SampleVariantStatsAnalysisParams web service parameter";
+    public static final String SAMPLE_VARIANT_STATS_ANALYSIS_PARAMS_INDIVIDUAL_DESCRIPTION = "The body individual SampleVariantStatsAnalysisParams web service parameter";
+    public static final String SAMPLE_VARIANT_STATS_ANALYSIS_PARAMS_VARIANT_QUERY_DESCRIPTION = "The body variantQuery SampleVariantStatsAnalysisParams web service parameter";
+    public static final String SAMPLE_VARIANT_STATS_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir SampleVariantStatsAnalysisParams web service parameter";
+    public static final String SAMPLE_VARIANT_STATS_ANALYSIS_PARAMS_INDEX_DESCRIPTION = "The body index SampleVariantStatsAnalysisParams web service parameter";
+    public static final String SAMPLE_VARIANT_STATS_ANALYSIS_PARAMS_INDEX_OVERWRITE_DESCRIPTION = "The body indexOverwrite SampleVariantStatsAnalysisParams web service parameter";
+    public static final String SAMPLE_VARIANT_STATS_ANALYSIS_PARAMS_INDEX_ID_DESCRIPTION = "The body indexId SampleVariantStatsAnalysisParams web service parameter";
+    public static final String SAMPLE_VARIANT_STATS_ANALYSIS_PARAMS_INDEX_DESCRIPTION_DESCRIPTION = "The body indexDescription SampleVariantStatsAnalysisParams web service parameter";
+    public static final String SAMPLE_VARIANT_STATS_ANALYSIS_PARAMS_BATCH_SIZE_DESCRIPTION = "The body batchSize SampleVariantStatsAnalysisParams web service parameter";
+
+
+    public static final String COHORT_VARIANT_STATS_ANALYSIS_PARAMS_COHORT_DESCRIPTION = "The body cohort CohortVariantStatsAnalysisParams web service parameter";
+    public static final String COHORT_VARIANT_STATS_ANALYSIS_PARAMS_SAMPLES_DESCRIPTION = "The body samples CohortVariantStatsAnalysisParams web service parameter";
+    public static final String COHORT_VARIANT_STATS_ANALYSIS_PARAMS_INDEX_DESCRIPTION = "The body index CohortVariantStatsAnalysisParams web service parameter";
+    public static final String COHORT_VARIANT_STATS_ANALYSIS_PARAMS_SAMPLE_ANNOTATION_DESCRIPTION = "The body sampleAnnotation CohortVariantStatsAnalysisParams web service parameter";
+    public static final String COHORT_VARIANT_STATS_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir CohortVariantStatsAnalysisParams web service parameter";
+
+
+    public static final String MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION = "The body sample MutationalSignatureAnalysisParams web service parameter";
+    public static final String MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_ID_DESCRIPTION = "The body id MutationalSignatureAnalysisParams web service parameter";
+    public static final String MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_QUERY_DESCRIPTION = "The body query MutationalSignatureAnalysisParams web service parameter";
+    public static final String MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_RELEASE_DESCRIPTION = "The body release MutationalSignatureAnalysisParams web service parameter";
+    public static final String MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_FITTING_DESCRIPTION = "The body fitting MutationalSignatureAnalysisParams web service parameter";
+    public static final String MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir MutationalSignatureAnalysisParams web service parameter";
+
+
+    public static final String BASIC_VARIANT_QUERY_PARAMS_PROJECT_DESCRIPTION = "The body project BasicVariantQueryParams web service parameter";
+    public static final String BASIC_VARIANT_QUERY_PARAMS_STUDY_DESCRIPTION = "The body study BasicVariantQueryParams web service parameter";
+
+
+    public static final String GWAS_ANALYSIS_PARAMS_PHENOTYPE_DESCRIPTION = "The body phenotype GwasAnalysisParams web service parameter";
+    public static final String GWAS_ANALYSIS_PARAMS_INDEX_DESCRIPTION = "The body index GwasAnalysisParams web service parameter";
+    public static final String GWAS_ANALYSIS_PARAMS_INDEX_SCORE_ID_DESCRIPTION = "The body indexScoreId GwasAnalysisParams web service parameter";
+    public static final String GWAS_ANALYSIS_PARAMS_METHOD_DESCRIPTION = "The body method GwasAnalysisParams web service parameter";
+    public static final String GWAS_ANALYSIS_PARAMS_FISHER_MODE_DESCRIPTION = "The body fisherMode GwasAnalysisParams web service parameter";
+    public static final String GWAS_ANALYSIS_PARAMS_CASE_COHORT_DESCRIPTION = "The body caseCohort GwasAnalysisParams web service parameter";
+    public static final String GWAS_ANALYSIS_PARAMS_CASE_COHORT_SAMPLES_ANNOTATION_DESCRIPTION = "The body caseCohortSamplesAnnotation GwasAnalysisParams web service parameter";
+    public static final String GWAS_ANALYSIS_PARAMS_CASE_COHORT_SAMPLES_DESCRIPTION = "The body caseCohortSamples GwasAnalysisParams web service parameter";
+    public static final String GWAS_ANALYSIS_PARAMS_CONTROL_COHORT_DESCRIPTION = "The body controlCohort GwasAnalysisParams web service parameter";
+    public static final String GWAS_ANALYSIS_PARAMS_CONTROL_COHORT_SAMPLES_ANNOTATION_DESCRIPTION = "The body controlCohortSamplesAnnotation GwasAnalysisParams web service parameter";
+    public static final String GWAS_ANALYSIS_PARAMS_CONTROL_COHORT_SAMPLES_DESCRIPTION = "The body controlCohortSamples GwasAnalysisParams web service parameter";
+    public static final String GWAS_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir GwasAnalysisParams web service parameter";
+
+
+    public static final String SAMPLE_QC_SIGNATURE_QUERY_PARAMS_SAMPLE_DESCRIPTION = "The body sample SampleQcSignatureQueryParams web service parameter";
+    public static final String SAMPLE_QC_SIGNATURE_QUERY_PARAMS_CT_DESCRIPTION = "The body ct SampleQcSignatureQueryParams web service parameter";
+    public static final String SAMPLE_QC_SIGNATURE_QUERY_PARAMS_BIOTYPE_DESCRIPTION = "The body biotype SampleQcSignatureQueryParams web service parameter";
+    public static final String SAMPLE_QC_SIGNATURE_QUERY_PARAMS_FILTER_DESCRIPTION = "The body filter SampleQcSignatureQueryParams web service parameter";
+    public static final String SAMPLE_QC_SIGNATURE_QUERY_PARAMS_QUAL_DESCRIPTION = "The body qual SampleQcSignatureQueryParams web service parameter";
+    public static final String SAMPLE_QC_SIGNATURE_QUERY_PARAMS_REGION_DESCRIPTION = "The body region SampleQcSignatureQueryParams web service parameter";
+    public static final String SAMPLE_QC_SIGNATURE_QUERY_PARAMS_GENE_DESCRIPTION = "The body gene SampleQcSignatureQueryParams web service parameter";
+    public static final String SAMPLE_QC_SIGNATURE_QUERY_PARAMS_PANEL_DESCRIPTION = "The body panel SampleQcSignatureQueryParams web service parameter";
+
+
+    public static final String VARIANT_FILE_DELETE_PARAMS_FILE_DESCRIPTION = "The body file VariantFileDeleteParams web service parameter";
+    public static final String VARIANT_FILE_DELETE_PARAMS_RESUME_DESCRIPTION = "The body resume VariantFileDeleteParams web service parameter";
+
+
+    public static final String SAMPLE_VARIANT_FILTER_PARAMS_GENOTYPES_DESCRIPTION = "The body genotypes SampleVariantFilterParams web service parameter";
+    public static final String SAMPLE_VARIANT_FILTER_PARAMS_SAMPLE_DESCRIPTION = "The body sample SampleVariantFilterParams web service parameter";
+    public static final String SAMPLE_VARIANT_FILTER_PARAMS_SAMPLES_IN_ALL_VARIANTS_DESCRIPTION = "The body samplesInAllVariants SampleVariantFilterParams web service parameter";
+    public static final String SAMPLE_VARIANT_FILTER_PARAMS_MAX_VARIANTS_DESCRIPTION = "The body maxVariants SampleVariantFilterParams web service parameter";
+
+
+    public static final String PLINK_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = "The body outdir PlinkWrapperParams web service parameter";
+    public static final String PLINK_WRAPPER_PARAMS_PLINK_PARAMS_DESCRIPTION = "The body plinkParams PlinkWrapperParams web service parameter";
+
+
+    public static final String RELATEDNESS_ANALYSIS_PARAMS_INDIVIDUALS_DESCRIPTION = "The body individuals RelatednessAnalysisParams web service parameter";
+    public static final String RELATEDNESS_ANALYSIS_PARAMS_SAMPLES_DESCRIPTION = "The body samples RelatednessAnalysisParams web service parameter";
+    public static final String RELATEDNESS_ANALYSIS_PARAMS_MINOR_ALLELE_FREQ_DESCRIPTION = "The body minorAlleleFreq RelatednessAnalysisParams web service parameter";
+    public static final String RELATEDNESS_ANALYSIS_PARAMS_METHOD_DESCRIPTION = "The body method RelatednessAnalysisParams web service parameter";
+    public static final String RELATEDNESS_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir RelatednessAnalysisParams web service parameter";
+
+
+    public static final String CIRCOS_ANALYSIS_PARAMS_TITLE_DESCRIPTION = "The body title CircosAnalysisParams web service parameter";
+    public static final String CIRCOS_ANALYSIS_PARAMS_DENSITY_DESCRIPTION = "The body density CircosAnalysisParams web service parameter";
+    public static final String CIRCOS_ANALYSIS_PARAMS_QUERY_DESCRIPTION = "The body query CircosAnalysisParams web service parameter";
+    public static final String CIRCOS_ANALYSIS_PARAMS_TRACKS_DESCRIPTION = "The body tracks CircosAnalysisParams web service parameter";
+    public static final String CIRCOS_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir CircosAnalysisParams web service parameter";
+
+
+
+
+    public static final String VARIANT_FILE_INDEX_JOB_LAUNCHER_PARAMS_NAME_DESCRIPTION = "The body name VariantFileIndexJobLauncherParams web service parameter";
+    public static final String VARIANT_FILE_INDEX_JOB_LAUNCHER_PARAMS_DIRECTORY_DESCRIPTION = "The body directory VariantFileIndexJobLauncherParams web service parameter";
+    public static final String VARIANT_FILE_INDEX_JOB_LAUNCHER_PARAMS_RESUME_FAILED_DESCRIPTION = "The body resumeFailed VariantFileIndexJobLauncherParams web service parameter";
+    public static final String VARIANT_FILE_INDEX_JOB_LAUNCHER_PARAMS_IGNORE_FAILED_DESCRIPTION = "The body ignoreFailed VariantFileIndexJobLauncherParams web service parameter";
+    public static final String VARIANT_FILE_INDEX_JOB_LAUNCHER_PARAMS_MAX_JOBS_DESCRIPTION = "The body maxJobs VariantFileIndexJobLauncherParams web service parameter";
+    public static final String VARIANT_FILE_INDEX_JOB_LAUNCHER_PARAMS_INDEX_PARAMS_DESCRIPTION = "The body indexParams VariantFileIndexJobLauncherParams web service parameter";
+
+
+    public static final String RVTESTS_WRAPPER_PARAMS_COMMAND_DESCRIPTION = "The body command RvtestsWrapperParams web service parameter";
+    public static final String RVTESTS_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = "The body outdir RvtestsWrapperParams web service parameter";
+    public static final String RVTESTS_WRAPPER_PARAMS_RVTESTS_PARAMS_DESCRIPTION = "The body rvtestsParams RvtestsWrapperParams web service parameter";
+
+
+    public static final String VARIANT_CONFIGURE_PARAMS_CONFIGURATION_DESCRIPTION = "The body configuration VariantConfigureParams web service parameter";
+
+
+    public static final String VARIANT_EXPORT_PARAMS_OUTDIR_DESCRIPTION = "The body outdir VariantExportParams web service parameter";
+    public static final String VARIANT_EXPORT_PARAMS_OUTPUT_FILE_NAME_DESCRIPTION = "The body outputFileName VariantExportParams web service parameter";
+    public static final String VARIANT_EXPORT_PARAMS_OUTPUT_FILE_FORMAT_DESCRIPTION = "The body outputFileFormat VariantExportParams web service parameter";
+    public static final String VARIANT_EXPORT_PARAMS_VARIANTS_FILE_DESCRIPTION = "The body variantsFile VariantExportParams web service parameter";
+    public static final String VARIANT_EXPORT_PARAMS_INCLUDE_DESCRIPTION = "The body include VariantExportParams web service parameter";
+    public static final String VARIANT_EXPORT_PARAMS_EXCLUDE_DESCRIPTION = "The body exclude VariantExportParams web service parameter";
+    public static final String VARIANT_EXPORT_PARAMS_COMPRESS_DESCRIPTION = "The body compress VariantExportParams web service parameter";
+    public static final String VARIANT_EXPORT_PARAMS_LIMIT_DESCRIPTION = "The body limit VariantExportParams web service parameter";
+    public static final String VARIANT_EXPORT_PARAMS_SKIP_DESCRIPTION = "The body skip VariantExportParams web service parameter";
+    public static final String VARIANT_EXPORT_PARAMS_SUMMARY_DESCRIPTION = "The body summary VariantExportParams web service parameter";
+
+
+    public static final String SAMPLE_ELIGIBILITY_ANALYSIS_PARAMS_QUERY_DESCRIPTION = "The body query SampleEligibilityAnalysisParams web service parameter";
+    public static final String SAMPLE_ELIGIBILITY_ANALYSIS_PARAMS_INDEX_DESCRIPTION = "The body index SampleEligibilityAnalysisParams web service parameter";
+    public static final String SAMPLE_ELIGIBILITY_ANALYSIS_PARAMS_COHORT_ID_DESCRIPTION = "The body cohortId SampleEligibilityAnalysisParams web service parameter";
+
+
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_ID_DESCRIPTION = "The body id AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_REGION_DESCRIPTION = "The body region AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_GENE_DESCRIPTION = "The body gene AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_TYPE_DESCRIPTION = "The body type AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_PANEL_DESCRIPTION = "The body panel AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_PANEL_MODE_OF_INHERITANCE_DESCRIPTION = "The body panelModeOfInheritance AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_PANEL_CONFIDENCE_DESCRIPTION = "The body panelConfidence AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_PANEL_ROLE_IN_CANCER_DESCRIPTION = "The body panelRoleInCancer AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_PANEL_INTERSECTION_DESCRIPTION = "The body panelIntersection AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_COHORT_STATS_REF_DESCRIPTION = "The body cohortStatsRef AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_COHORT_STATS_ALT_DESCRIPTION = "The body cohortStatsAlt AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_COHORT_STATS_MAF_DESCRIPTION = "The body cohortStatsMaf AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_CT_DESCRIPTION = "The body ct AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_XREF_DESCRIPTION = "The body xref AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_BIOTYPE_DESCRIPTION = "The body biotype AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_PROTEIN_SUBSTITUTION_DESCRIPTION = "The body proteinSubstitution AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_CONSERVATION_DESCRIPTION = "The body conservation AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_POPULATION_FREQUENCY_MAF_DESCRIPTION = "The body populationFrequencyMaf AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_POPULATION_FREQUENCY_ALT_DESCRIPTION = "The body populationFrequencyAlt AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_POPULATION_FREQUENCY_REF_DESCRIPTION = "The body populationFrequencyRef AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_TRANSCRIPT_FLAG_DESCRIPTION = "The body transcriptFlag AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_FUNCTIONAL_SCORE_DESCRIPTION = "The body functionalScore AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_CLINICAL_DESCRIPTION = "The body clinical AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_CLINICAL_SIGNIFICANCE_DESCRIPTION = "The body clinicalSignificance AnnotationVariantQueryParams web service parameter";
+    public static final String ANNOTATION_VARIANT_QUERY_PARAMS_CLINICAL_CONFIRMED_STATUS_DESCRIPTION = "The body clinicalConfirmedStatus AnnotationVariantQueryParams web service parameter";
+
+
+    public static final String CIRCOS_TRACK_ID_DESCRIPTION = "The body id CircosTrack web service parameter";
+    public static final String CIRCOS_TRACK_TYPE_DESCRIPTION = "The body type CircosTrack web service parameter";
+    public static final String CIRCOS_TRACK_QUERY_DESCRIPTION = "The body query CircosTrack web service parameter";
+
+
+    public static final String VARIANT_STORAGE_METADATA_SYNCHRONIZE_PARAMS_STUDY_DESCRIPTION = "The body study VariantStorageMetadataSynchronizeParams web service parameter";
+    public static final String VARIANT_STORAGE_METADATA_SYNCHRONIZE_PARAMS_FILES_DESCRIPTION = "The body files VariantStorageMetadataSynchronizeParams web service parameter";
+
+
+    public static final String VARIANT_STATS_ANALYSIS_PARAMS_COHORT_DESCRIPTION = "The body cohort VariantStatsAnalysisParams web service parameter";
+    public static final String VARIANT_STATS_ANALYSIS_PARAMS_SAMPLES_DESCRIPTION = "The body samples VariantStatsAnalysisParams web service parameter";
+    public static final String VARIANT_STATS_ANALYSIS_PARAMS_REGION_DESCRIPTION = "The body region VariantStatsAnalysisParams web service parameter";
+    public static final String VARIANT_STATS_ANALYSIS_PARAMS_GENE_DESCRIPTION = "The body gene VariantStatsAnalysisParams web service parameter";
+    public static final String VARIANT_STATS_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir VariantStatsAnalysisParams web service parameter";
+    public static final String VARIANT_STATS_ANALYSIS_PARAMS_OUTPUT_FILE_NAME_DESCRIPTION = "The body outputFileName VariantStatsAnalysisParams web service parameter";
+    public static final String VARIANT_STATS_ANALYSIS_PARAMS_AGGREGATED_DESCRIPTION = "The body aggregated VariantStatsAnalysisParams web service parameter";
+    public static final String VARIANT_STATS_ANALYSIS_PARAMS_AGGREGATION_MAPPING_FILE_DESCRIPTION = "The body aggregationMappingFile VariantStatsAnalysisParams web service parameter";
+
+
+    public static final String INDIVIDUAL_QC_ANALYSIS_PARAMS_INDIVIDUAL_DESCRIPTION = "The body individual IndividualQcAnalysisParams web service parameter";
+    public static final String INDIVIDUAL_QC_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION = "The body sample IndividualQcAnalysisParams web service parameter";
+    public static final String INDIVIDUAL_QC_ANALYSIS_PARAMS_INFERRED_SEX_METHOD_DESCRIPTION = "The body inferredSexMethod IndividualQcAnalysisParams web service parameter";
+    public static final String INDIVIDUAL_QC_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir IndividualQcAnalysisParams web service parameter";
+
+
+    public static final String TOOL_ID_DESCRIPTION = "The body id Tool web service parameter";
+    public static final String TOOL_ALIAS_DESCRIPTION = "The body alias Tool web service parameter";
+    public static final String TOOL_NAME_DESCRIPTION = "The body name Tool web service parameter";
+    public static final String TOOL_MANIFEST_DESCRIPTION = "The body manifest Tool web service parameter";
+    public static final String TOOL_RESULT_DESCRIPTION = "The body result Tool web service parameter";
+    public static final String TOOL_PATH_DESCRIPTION = "The body path Tool web service parameter";
+
+
+
+
+    public static final String JOB_TOP_DATE_DESCRIPTION = "The body date JobTop web service parameter";
+    public static final String JOB_TOP_STATS_DESCRIPTION = "The body stats JobTop web service parameter";
+    public static final String JOB_TOP_JOBS_DESCRIPTION = "The body jobs JobTop web service parameter";
+
+
+    public static final String JOB_RETRY_PARAMS_JOB_DESCRIPTION = "The body job JobRetryParams web service parameter";
+    public static final String JOB_RETRY_PARAMS_FORCE_DESCRIPTION = "The body force JobRetryParams web service parameter";
+    public static final String JOB_RETRY_PARAMS_PARAMS_DESCRIPTION = "The body params JobRetryParams web service parameter";
+
+
+    public static final String JOB_CREATE_PARAMS_ID_DESCRIPTION = "The body id JobCreateParams web service parameter";
+    public static final String JOB_CREATE_PARAMS_TOOL_DESCRIPTION = "The body tool JobCreateParams web service parameter";
+    public static final String JOB_CREATE_PARAMS_PRIORITY_DESCRIPTION = "The body priority JobCreateParams web service parameter";
+    public static final String JOB_CREATE_PARAMS_COMMAND_LINE_DESCRIPTION = "The body commandLine JobCreateParams web service parameter";
+    public static final String JOB_CREATE_PARAMS_PARAMS_DESCRIPTION = "The body params JobCreateParams web service parameter";
+    public static final String JOB_CREATE_PARAMS_INTERNAL_DESCRIPTION = "The body internal JobCreateParams web service parameter";
+    public static final String JOB_CREATE_PARAMS_OUT_DIR_DESCRIPTION = "The body outDir JobCreateParams web service parameter";
+    public static final String JOB_CREATE_PARAMS_INPUT_DESCRIPTION = "The body input JobCreateParams web service parameter";
+    public static final String JOB_CREATE_PARAMS_OUTPUT_DESCRIPTION = "The body output JobCreateParams web service parameter";
+    public static final String JOB_CREATE_PARAMS_TAGS_DESCRIPTION = "The body tags JobCreateParams web service parameter";
+    public static final String JOB_CREATE_PARAMS_RESULT_DESCRIPTION = "The body result JobCreateParams web service parameter";
+    public static final String JOB_CREATE_PARAMS_STDOUT_DESCRIPTION = "The body stdout JobCreateParams web service parameter";
+    public static final String JOB_CREATE_PARAMS_STDERR_DESCRIPTION = "The body stderr JobCreateParams web service parameter";
+
+
+
+
+    public static final String JOB_REFERENCE_PARAM_STUDY_ID_DESCRIPTION = "The body studyId JobReferenceParam web service parameter";
+    public static final String JOB_REFERENCE_PARAM_ID_DESCRIPTION = "The body id JobReferenceParam web service parameter";
+    public static final String JOB_REFERENCE_PARAM_UUID_DESCRIPTION = "The body uuid JobReferenceParam web service parameter";
+
+
+
+
+    public static final String JOB_TOP_STATS_RUNNING_DESCRIPTION = "The body running JobTopStats web service parameter";
+    public static final String JOB_TOP_STATS_QUEUED_DESCRIPTION = "The body queued JobTopStats web service parameter";
+    public static final String JOB_TOP_STATS_PENDING_DESCRIPTION = "The body pending JobTopStats web service parameter";
+    public static final String JOB_TOP_STATS_DONE_DESCRIPTION = "The body done JobTopStats web service parameter";
+    public static final String JOB_TOP_STATS_ABORTED_DESCRIPTION = "The body aborted JobTopStats web service parameter";
+    public static final String JOB_TOP_STATS_ERROR_DESCRIPTION = "The body error JobTopStats web service parameter";
+
+
+
+
+
+
+
+
+    public static final String JOB_ACL_UPDATE_PARAMS_JOB_DESCRIPTION = "The body job JobAclUpdateParams web service parameter";
+
+
+    public static final String JOB_UPDATE_PARAMS_TAGS_DESCRIPTION = "The body tags JobUpdateParams web service parameter";
+    public static final String JOB_UPDATE_PARAMS_VISITED_DESCRIPTION = "The body visited JobUpdateParams web service parameter";
+
+
+    public static final String USER_IMPORT_PARAMS_AUTHENTICATION_ORIGIN_ID_DESCRIPTION = "The body authenticationOriginId UserImportParams web service parameter";
+    public static final String USER_IMPORT_PARAMS_ID_DESCRIPTION = "The body id UserImportParams web service parameter";
+    public static final String USER_IMPORT_PARAMS_RESOURCE_TYPE_DESCRIPTION = "The body resourceType UserImportParams web service parameter";
+    public static final String USER_IMPORT_PARAMS_STUDY_DESCRIPTION = "The body study UserImportParams web service parameter";
+    public static final String USER_IMPORT_PARAMS_STUDY_GROUP_DESCRIPTION = "The body studyGroup UserImportParams web service parameter";
+
+
+    public static final String GROUP_SYNC_PARAMS_AUTHENTICATION_ORIGIN_ID_DESCRIPTION = "The body authenticationOriginId GroupSyncParams web service parameter";
+    public static final String GROUP_SYNC_PARAMS_FROM_DESCRIPTION = "The body from GroupSyncParams web service parameter";
+    public static final String GROUP_SYNC_PARAMS_TO_DESCRIPTION = "The body to GroupSyncParams web service parameter";
+    public static final String GROUP_SYNC_PARAMS_STUDY_DESCRIPTION = "The body study GroupSyncParams web service parameter";
+    public static final String GROUP_SYNC_PARAMS_SYNC_ALL_DESCRIPTION = "The body syncAll GroupSyncParams web service parameter";
+    public static final String GROUP_SYNC_PARAMS_TYPE_DESCRIPTION = "The body type GroupSyncParams web service parameter";
+    public static final String GROUP_SYNC_PARAMS_FORCE_DESCRIPTION = "The body force GroupSyncParams web service parameter";
+
+
+    public static final String JWT_PARAMS_SECRET_KEY_DESCRIPTION = "The body secretKey JWTParams web service parameter";
+
+
+    public static final String INSTALLATION_PARAMS_SECRET_KEY_DESCRIPTION = "The body secretKey InstallationParams web service parameter";
+    public static final String INSTALLATION_PARAMS_PASSWORD_DESCRIPTION = "The body password InstallationParams web service parameter";
+    public static final String INSTALLATION_PARAMS_EMAIL_DESCRIPTION = "The body email InstallationParams web service parameter";
+    public static final String INSTALLATION_PARAMS_ORGANIZATION_DESCRIPTION = "The body organization InstallationParams web service parameter";
+
+
+    public static final String USER_CREATE_PARAMS_TYPE_DESCRIPTION = "The body type UserCreateParams web service parameter";
+
+
+    public static final String PRIVATE_STUDY_UID_ID_DESCRIPTION = "The body id PrivateStudyUid web service parameter";
+    public static final String PRIVATE_STUDY_UID_STUDY_UID_DESCRIPTION = "The body studyUid PrivateStudyUid web service parameter";
+
+
+
+
+    public static final String ANNOTATION_NAME_DESCRIPTION = "The body name Annotation web service parameter";
+    public static final String ANNOTATION_VALUE_DESCRIPTION = "The body value Annotation web service parameter";
+
+
+
+
+    public static final String METADATA_VERSION_DESCRIPTION = "The body version Metadata web service parameter";
+    public static final String METADATA_ID_COUNTER_DESCRIPTION = "The body idCounter Metadata web service parameter";
+
+
+    public static final String USER_UPDATE_PARAMS_NAME_DESCRIPTION = "The body name UserUpdateParams web service parameter";
+    public static final String USER_UPDATE_PARAMS_EMAIL_DESCRIPTION = "The body email UserUpdateParams web service parameter";
+    public static final String USER_UPDATE_PARAMS_ORGANIZATION_DESCRIPTION = "The body organization UserUpdateParams web service parameter";
+
+
+    public static final String AUTHENTICATION_RESPONSE_TOKEN_DESCRIPTION = "The body token AuthenticationResponse web service parameter";
+    public static final String AUTHENTICATION_RESPONSE_REFRESH_TOKEN_DESCRIPTION = "The body refreshToken AuthenticationResponse web service parameter";
+
+
+
+
+    public static final String USER_QUOTA_DISK_USAGE_DESCRIPTION = "The body diskUsage UserQuota web service parameter";
+    public static final String USER_QUOTA_CPU_USAGE_DESCRIPTION = "The body cpuUsage UserQuota web service parameter";
+    public static final String USER_QUOTA_MAX_DISK_DESCRIPTION = "The body maxDisk UserQuota web service parameter";
+    public static final String USER_QUOTA_MAX_CPU_DESCRIPTION = "The body maxCpu UserQuota web service parameter";
+
+
+
+
+
+
+    public static final String CONFIG_UPDATE_PARAMS_CONFIGURATION_DESCRIPTION = "The body configuration ConfigUpdateParams web service parameter";
+
+
+    public static final String LOGIN_PARAMS_USER_DESCRIPTION = "The body user LoginParams web service parameter";
+    public static final String LOGIN_PARAMS_PASSWORD_DESCRIPTION = "The body password LoginParams web service parameter";
+    public static final String LOGIN_PARAMS_REFRESH_TOKEN_DESCRIPTION = "The body refreshToken LoginParams web service parameter";
+
+
+    public static final String FILTER_UPDATE_PARAMS_RESOURCE_DESCRIPTION = "The body resource FilterUpdateParams web service parameter";
+    public static final String FILTER_UPDATE_PARAMS_QUERY_DESCRIPTION = "The body query FilterUpdateParams web service parameter";
+    public static final String FILTER_UPDATE_PARAMS_OPTIONS_DESCRIPTION = "The body options FilterUpdateParams web service parameter";
+
+
+    public static final String PASSWORD_CHANGE_PARAMS_USER_DESCRIPTION = "The body user PasswordChangeParams web service parameter";
+    public static final String PASSWORD_CHANGE_PARAMS_PASSWORD_DESCRIPTION = "The body password PasswordChangeParams web service parameter";
+    public static final String PASSWORD_CHANGE_PARAMS_NEW_PASSWORD_DESCRIPTION = "The body newPassword PasswordChangeParams web service parameter";
+    public static final String PASSWORD_CHANGE_PARAMS_RESET_DESCRIPTION = "The body reset PasswordChangeParams web service parameter";
+
+
+
+
+    public static final String USER_CONFIGURATION_OBJECT_MAPPER_DESCRIPTION = "The body objectMapper UserConfiguration web service parameter";
+    public static final String USER_CONFIGURATION_OBJECT_READER_DESCRIPTION = "The body objectReader UserConfiguration web service parameter";
+
+
+    public static final String USER_CREATE_PARAMS_ID_DESCRIPTION = "The body id UserCreateParams web service parameter";
+    public static final String USER_CREATE_PARAMS_NAME_DESCRIPTION = "The body name UserCreateParams web service parameter";
+    public static final String USER_CREATE_PARAMS_EMAIL_DESCRIPTION = "The body email UserCreateParams web service parameter";
+    public static final String USER_CREATE_PARAMS_PASSWORD_DESCRIPTION = "The body password UserCreateParams web service parameter";
+    public static final String USER_CREATE_PARAMS_ORGANIZATION_DESCRIPTION = "The body organization UserCreateParams web service parameter";
+
+
+
+
+    public static final String KNOCKOUT_VARIANT_ID_DESCRIPTION = "The body id KnockoutVariant web service parameter";
+    public static final String KNOCKOUT_VARIANT_DB_SNP_DESCRIPTION = "The body dbSnp KnockoutVariant web service parameter";
+    public static final String KNOCKOUT_VARIANT_CHROMOSOME_DESCRIPTION = "The body chromosome KnockoutVariant web service parameter";
+    public static final String KNOCKOUT_VARIANT_START_DESCRIPTION = "The body start KnockoutVariant web service parameter";
+    public static final String KNOCKOUT_VARIANT_END_DESCRIPTION = "The body end KnockoutVariant web service parameter";
+    public static final String KNOCKOUT_VARIANT_LENGTH_DESCRIPTION = "The body length KnockoutVariant web service parameter";
+    public static final String KNOCKOUT_VARIANT_REFERENCE_DESCRIPTION = "The body reference KnockoutVariant web service parameter";
+    public static final String KNOCKOUT_VARIANT_ALTERNATE_DESCRIPTION = "The body alternate KnockoutVariant web service parameter";
+    public static final String KNOCKOUT_VARIANT_TYPE_DESCRIPTION = "The body type KnockoutVariant web service parameter";
+    public static final String KNOCKOUT_VARIANT_GENOTYPE_DESCRIPTION = "The body genotype KnockoutVariant web service parameter";
+    public static final String KNOCKOUT_VARIANT_DEPTH_DESCRIPTION = "The body depth KnockoutVariant web service parameter";
+    public static final String KNOCKOUT_VARIANT_FILTER_DESCRIPTION = "The body filter KnockoutVariant web service parameter";
+    public static final String KNOCKOUT_VARIANT_QUAL_DESCRIPTION = "The body qual KnockoutVariant web service parameter";
+    public static final String KNOCKOUT_VARIANT_STATS_DESCRIPTION = "The body stats KnockoutVariant web service parameter";
+    public static final String KNOCKOUT_VARIANT_KNOCKOUT_TYPE_DESCRIPTION = "The body knockoutType KnockoutVariant web service parameter";
+    public static final String KNOCKOUT_VARIANT_PARENTAL_ORIGIN_DESCRIPTION = "The body parentalOrigin KnockoutVariant web service parameter";
+    public static final String KNOCKOUT_VARIANT_POPULATION_FREQUENCIES_DESCRIPTION = "The body populationFrequencies KnockoutVariant web service parameter";
+    public static final String KNOCKOUT_VARIANT_SEQUENCE_ONTOLOGY_TERMS_DESCRIPTION = "The body sequenceOntologyTerms KnockoutVariant web service parameter";
+    public static final String KNOCKOUT_VARIANT_CLINICAL_SIGNIFICANCE_DESCRIPTION = "The body clinicalSignificance KnockoutVariant web service parameter";
+
+
+    public static final String KNOCKOUT_BY_GENE_ID_DESCRIPTION = "The body id KnockoutByGene web service parameter";
+    public static final String KNOCKOUT_BY_GENE_NAME_DESCRIPTION = "The body name KnockoutByGene web service parameter";
+    public static final String KNOCKOUT_BY_GENE_CHROMOSOME_DESCRIPTION = "The body chromosome KnockoutByGene web service parameter";
+    public static final String KNOCKOUT_BY_GENE_START_DESCRIPTION = "The body start KnockoutByGene web service parameter";
+    public static final String KNOCKOUT_BY_GENE_END_DESCRIPTION = "The body end KnockoutByGene web service parameter";
+    public static final String KNOCKOUT_BY_GENE_STRAND_DESCRIPTION = "The body strand KnockoutByGene web service parameter";
+    public static final String KNOCKOUT_BY_GENE_BIOTYPE_DESCRIPTION = "The body biotype KnockoutByGene web service parameter";
+    public static final String KNOCKOUT_BY_GENE_ANNOTATION_DESCRIPTION = "The body annotation KnockoutByGene web service parameter";
+    public static final String KNOCKOUT_BY_GENE_INDIVIDUALS_DESCRIPTION = "The body individuals KnockoutByGene web service parameter";
+
+
+    public static final String KNOCKOUT_STATS_COUNT_DESCRIPTION = "The body count KnockoutStats web service parameter";
+    public static final String KNOCKOUT_STATS_NUM_HOM_ALT_DESCRIPTION = "The body numHomAlt KnockoutStats web service parameter";
+    public static final String KNOCKOUT_STATS_NUM_COMP_HET_DESCRIPTION = "The body numCompHet KnockoutStats web service parameter";
+    public static final String KNOCKOUT_STATS_NUM_HET_ALT_DESCRIPTION = "The body numHetAlt KnockoutStats web service parameter";
+    public static final String KNOCKOUT_STATS_NUM_DEL_OVERLAP_DESCRIPTION = "The body numDelOverlap KnockoutStats web service parameter";
+
+
+    public static final String KNOCKOUT_BY_VARIANT_ID_DESCRIPTION = "The body id KnockoutByVariant web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_DB_SNP_DESCRIPTION = "The body dbSnp KnockoutByVariant web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_CHROMOSOME_DESCRIPTION = "The body chromosome KnockoutByVariant web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_START_DESCRIPTION = "The body start KnockoutByVariant web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_END_DESCRIPTION = "The body end KnockoutByVariant web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_LENGTH_DESCRIPTION = "The body length KnockoutByVariant web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_REFERENCE_DESCRIPTION = "The body reference KnockoutByVariant web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_ALTERNATE_DESCRIPTION = "The body alternate KnockoutByVariant web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_TYPE_DESCRIPTION = "The body type KnockoutByVariant web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_POPULATION_FREQUENCIES_DESCRIPTION = "The body populationFrequencies KnockoutByVariant web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_CLINICAL_SIGNIFICANCE_DESCRIPTION = "The body clinicalSignificance KnockoutByVariant web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_NUM_INDIVIDUALS_DESCRIPTION = "The body numIndividuals KnockoutByVariant web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_HAS_NEXT_INDIVIDUAL_DESCRIPTION = "The body hasNextIndividual KnockoutByVariant web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_INDIVIDUALS_DESCRIPTION = "The body individuals KnockoutByVariant web service parameter";
+
+
+
+
+    public static final String KNOCKOUT_BY_INDIVIDUAL_SUMMARY_ID_DESCRIPTION = "The body id KnockoutByIndividualSummary web service parameter";
+    public static final String KNOCKOUT_BY_INDIVIDUAL_SUMMARY_SAMPLE_ID_DESCRIPTION = "The body sampleId KnockoutByIndividualSummary web service parameter";
+    public static final String KNOCKOUT_BY_INDIVIDUAL_SUMMARY_MOTHER_ID_DESCRIPTION = "The body motherId KnockoutByIndividualSummary web service parameter";
+    public static final String KNOCKOUT_BY_INDIVIDUAL_SUMMARY_MOTHER_SAMPLE_ID_DESCRIPTION = "The body motherSampleId KnockoutByIndividualSummary web service parameter";
+    public static final String KNOCKOUT_BY_INDIVIDUAL_SUMMARY_FATHER_ID_DESCRIPTION = "The body fatherId KnockoutByIndividualSummary web service parameter";
+    public static final String KNOCKOUT_BY_INDIVIDUAL_SUMMARY_FATHER_SAMPLE_ID_DESCRIPTION = "The body fatherSampleId KnockoutByIndividualSummary web service parameter";
+    public static final String KNOCKOUT_BY_INDIVIDUAL_SUMMARY_SEX_DESCRIPTION = "The body sex KnockoutByIndividualSummary web service parameter";
+    public static final String KNOCKOUT_BY_INDIVIDUAL_SUMMARY_PHENOTYPES_DESCRIPTION = "The body phenotypes KnockoutByIndividualSummary web service parameter";
+    public static final String KNOCKOUT_BY_INDIVIDUAL_SUMMARY_DISORDERS_DESCRIPTION = "The body disorders KnockoutByIndividualSummary web service parameter";
+    public static final String KNOCKOUT_BY_INDIVIDUAL_SUMMARY_NUM_PARENTS_DESCRIPTION = "The body numParents KnockoutByIndividualSummary web service parameter";
+    public static final String KNOCKOUT_BY_INDIVIDUAL_SUMMARY_GENES_DESCRIPTION = "The body genes KnockoutByIndividualSummary web service parameter";
+    public static final String KNOCKOUT_BY_INDIVIDUAL_SUMMARY_VARIANT_STATS_DESCRIPTION = "The body variantStats KnockoutByIndividualSummary web service parameter";
+
+
+    public static final String RGA_KNOCKOUT_BY_GENE_NUM_INDIVIDUALS_DESCRIPTION = "The body numIndividuals RgaKnockoutByGene web service parameter";
+    public static final String RGA_KNOCKOUT_BY_GENE_HAS_NEXT_INDIVIDUAL_DESCRIPTION = "The body hasNextIndividual RgaKnockoutByGene web service parameter";
+
+
+    public static final String KNOCKOUT_BY_INDIVIDUAL_ID_DESCRIPTION = "The body id KnockoutByIndividual web service parameter";
+    public static final String KNOCKOUT_BY_INDIVIDUAL_SAMPLE_ID_DESCRIPTION = "The body sampleId KnockoutByIndividual web service parameter";
+    public static final String KNOCKOUT_BY_INDIVIDUAL_MOTHER_ID_DESCRIPTION = "The body motherId KnockoutByIndividual web service parameter";
+    public static final String KNOCKOUT_BY_INDIVIDUAL_MOTHER_SAMPLE_ID_DESCRIPTION = "The body motherSampleId KnockoutByIndividual web service parameter";
+    public static final String KNOCKOUT_BY_INDIVIDUAL_FATHER_ID_DESCRIPTION = "The body fatherId KnockoutByIndividual web service parameter";
+    public static final String KNOCKOUT_BY_INDIVIDUAL_FATHER_SAMPLE_ID_DESCRIPTION = "The body fatherSampleId KnockoutByIndividual web service parameter";
+    public static final String KNOCKOUT_BY_INDIVIDUAL_SEX_DESCRIPTION = "The body sex KnockoutByIndividual web service parameter";
+    public static final String KNOCKOUT_BY_INDIVIDUAL_PHENOTYPES_DESCRIPTION = "The body phenotypes KnockoutByIndividual web service parameter";
+    public static final String KNOCKOUT_BY_INDIVIDUAL_DISORDERS_DESCRIPTION = "The body disorders KnockoutByIndividual web service parameter";
+    public static final String KNOCKOUT_BY_INDIVIDUAL_STATS_DESCRIPTION = "The body stats KnockoutByIndividual web service parameter";
+    public static final String KNOCKOUT_BY_INDIVIDUAL_GENES_MAP_DESCRIPTION = "The body genesMap KnockoutByIndividual web service parameter";
+
+
+    public static final String VARIANT_KNOCKOUT_STATS_NUM_PAIRED_COMP_HET_DESCRIPTION = "The body numPairedCompHet VariantKnockoutStats web service parameter";
+
+
+    public static final String KNOCKOUT_TRANSCRIPT_ID_DESCRIPTION = "The body id KnockoutTranscript web service parameter";
+    public static final String KNOCKOUT_TRANSCRIPT_CHROMOSOME_DESCRIPTION = "The body chromosome KnockoutTranscript web service parameter";
+    public static final String KNOCKOUT_TRANSCRIPT_START_DESCRIPTION = "The body start KnockoutTranscript web service parameter";
+    public static final String KNOCKOUT_TRANSCRIPT_END_DESCRIPTION = "The body end KnockoutTranscript web service parameter";
+    public static final String KNOCKOUT_TRANSCRIPT_BIOTYPE_DESCRIPTION = "The body biotype KnockoutTranscript web service parameter";
+    public static final String KNOCKOUT_TRANSCRIPT_STRAND_DESCRIPTION = "The body strand KnockoutTranscript web service parameter";
+    public static final String KNOCKOUT_TRANSCRIPT_VARIANTS_DESCRIPTION = "The body variants KnockoutTranscript web service parameter";
+
+
+    public static final String INDIVIDUAL_KNOCKOUT_STATS_MISSING_PARENTS_DESCRIPTION = "The body missingParents IndividualKnockoutStats web service parameter";
+    public static final String INDIVIDUAL_KNOCKOUT_STATS_SINGLE_PARENT_DESCRIPTION = "The body singleParent IndividualKnockoutStats web service parameter";
+    public static final String INDIVIDUAL_KNOCKOUT_STATS_BOTH_PARENTS_DESCRIPTION = "The body bothParents IndividualKnockoutStats web service parameter";
+
+
+    public static final String KNOCKOUT_BY_VARIANT_SUMMARY_ID_DESCRIPTION = "The body id KnockoutByVariantSummary web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_SUMMARY_DB_SNP_DESCRIPTION = "The body dbSnp KnockoutByVariantSummary web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_SUMMARY_CHROMOSOME_DESCRIPTION = "The body chromosome KnockoutByVariantSummary web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_SUMMARY_START_DESCRIPTION = "The body start KnockoutByVariantSummary web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_SUMMARY_END_DESCRIPTION = "The body end KnockoutByVariantSummary web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_SUMMARY_LENGTH_DESCRIPTION = "The body length KnockoutByVariantSummary web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_SUMMARY_REFERENCE_DESCRIPTION = "The body reference KnockoutByVariantSummary web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_SUMMARY_ALTERNATE_DESCRIPTION = "The body alternate KnockoutByVariantSummary web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_SUMMARY_TYPE_DESCRIPTION = "The body type KnockoutByVariantSummary web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_SUMMARY_GENES_DESCRIPTION = "The body genes KnockoutByVariantSummary web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_SUMMARY_POPULATION_FREQUENCIES_DESCRIPTION = "The body populationFrequencies KnockoutByVariantSummary web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_SUMMARY_SEQUENCE_ONTOLOGY_TERMS_DESCRIPTION = "The body sequenceOntologyTerms KnockoutByVariantSummary web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_SUMMARY_CLINICAL_SIGNIFICANCES_DESCRIPTION = "The body clinicalSignificances KnockoutByVariantSummary web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_SUMMARY_ALLELE_PAIRS_DESCRIPTION = "The body allelePairs KnockoutByVariantSummary web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_SUMMARY_INDIVIDUAL_STATS_DESCRIPTION = "The body individualStats KnockoutByVariantSummary web service parameter";
+    public static final String KNOCKOUT_BY_VARIANT_SUMMARY_TRANSCRIPT_CH_PAIRS_DESCRIPTION = "The body transcriptChPairs KnockoutByVariantSummary web service parameter";
+
+
+    public static final String KNOCKOUT_BY_GENE_SUMMARY_ID_DESCRIPTION = "The body id KnockoutByGeneSummary web service parameter";
+    public static final String KNOCKOUT_BY_GENE_SUMMARY_NAME_DESCRIPTION = "The body name KnockoutByGeneSummary web service parameter";
+    public static final String KNOCKOUT_BY_GENE_SUMMARY_CHROMOSOME_DESCRIPTION = "The body chromosome KnockoutByGeneSummary web service parameter";
+    public static final String KNOCKOUT_BY_GENE_SUMMARY_START_DESCRIPTION = "The body start KnockoutByGeneSummary web service parameter";
+    public static final String KNOCKOUT_BY_GENE_SUMMARY_END_DESCRIPTION = "The body end KnockoutByGeneSummary web service parameter";
+    public static final String KNOCKOUT_BY_GENE_SUMMARY_STRAND_DESCRIPTION = "The body strand KnockoutByGeneSummary web service parameter";
+    public static final String KNOCKOUT_BY_GENE_SUMMARY_BIOTYPE_DESCRIPTION = "The body biotype KnockoutByGeneSummary web service parameter";
+    public static final String KNOCKOUT_BY_GENE_SUMMARY_INDIVIDUAL_STATS_DESCRIPTION = "The body individualStats KnockoutByGeneSummary web service parameter";
+    public static final String KNOCKOUT_BY_GENE_SUMMARY_VARIANT_STATS_DESCRIPTION = "The body variantStats KnockoutByGeneSummary web service parameter";
+
+
+    public static final String PRIVATE_FIELDS_UID_DESCRIPTION = "The body uid PrivateFields web service parameter";
+
+
+
+
+    public static final String INDIVIDUAL_UPDATE_PARAMS_ID_DESCRIPTION = "The body id IndividualUpdateParams web service parameter";
+    public static final String INDIVIDUAL_UPDATE_PARAMS_NAME_DESCRIPTION = "The body name IndividualUpdateParams web service parameter";
+    public static final String INDIVIDUAL_UPDATE_PARAMS_FATHER_DESCRIPTION = "The body father IndividualUpdateParams web service parameter";
+    public static final String INDIVIDUAL_UPDATE_PARAMS_MOTHER_DESCRIPTION = "The body mother IndividualUpdateParams web service parameter";
+    public static final String INDIVIDUAL_UPDATE_PARAMS_PARENTAL_CONSANGUINITY_DESCRIPTION = "The body parentalConsanguinity IndividualUpdateParams web service parameter";
+    public static final String INDIVIDUAL_UPDATE_PARAMS_LOCATION_DESCRIPTION = "The body location IndividualUpdateParams web service parameter";
+    public static final String INDIVIDUAL_UPDATE_PARAMS_SEX_DESCRIPTION = "The body sex IndividualUpdateParams web service parameter";
+    public static final String INDIVIDUAL_UPDATE_PARAMS_ETHNICITY_DESCRIPTION = "The body ethnicity IndividualUpdateParams web service parameter";
+    public static final String INDIVIDUAL_UPDATE_PARAMS_POPULATION_DESCRIPTION = "The body population IndividualUpdateParams web service parameter";
+    public static final String INDIVIDUAL_UPDATE_PARAMS_DATE_OF_BIRTH_DESCRIPTION = "The body dateOfBirth IndividualUpdateParams web service parameter";
+    public static final String INDIVIDUAL_UPDATE_PARAMS_KARYOTYPIC_SEX_DESCRIPTION = "The body karyotypicSex IndividualUpdateParams web service parameter";
+    public static final String INDIVIDUAL_UPDATE_PARAMS_LIFE_STATUS_DESCRIPTION = "The body lifeStatus IndividualUpdateParams web service parameter";
+    public static final String INDIVIDUAL_UPDATE_PARAMS_SAMPLES_DESCRIPTION = "The body samples IndividualUpdateParams web service parameter";
+    public static final String INDIVIDUAL_UPDATE_PARAMS_ANNOTATION_SETS_DESCRIPTION = "The body annotationSets IndividualUpdateParams web service parameter";
+    public static final String INDIVIDUAL_UPDATE_PARAMS_PHENOTYPES_DESCRIPTION = "The body phenotypes IndividualUpdateParams web service parameter";
+    public static final String INDIVIDUAL_UPDATE_PARAMS_DISORDERS_DESCRIPTION = "The body disorders IndividualUpdateParams web service parameter";
+    public static final String INDIVIDUAL_UPDATE_PARAMS_QUALITY_CONTROL_DESCRIPTION = "The body qualityControl IndividualUpdateParams web service parameter";
+
+
+    public static final String INDIVIDUAL_ACL_PARAMS_SAMPLE_DESCRIPTION = "The body sample IndividualAclParams web service parameter";
+
+
+    public static final String INDIVIDUAL_CREATE_PARAMS_SAMPLES_DESCRIPTION = "The body samples IndividualCreateParams web service parameter";
+
+
+
+
+
+
+
+
+    public static final String INDIVIDUAL_REFERENCE_PARAM_ID_DESCRIPTION = "The body id IndividualReferenceParam web service parameter";
+    public static final String INDIVIDUAL_REFERENCE_PARAM_UUID_DESCRIPTION = "The body uuid IndividualReferenceParam web service parameter";
+
+
+
+
+
+
+    public static final String INDIVIDUAL_ACL_UPDATE_PARAMS_INDIVIDUAL_DESCRIPTION = "The body individual IndividualAclUpdateParams web service parameter";
+    public static final String INDIVIDUAL_ACL_UPDATE_PARAMS_SAMPLE_DESCRIPTION = "The body sample IndividualAclUpdateParams web service parameter";
+
+
+
+
+    public static final String SAMTOOLS_WRAPPER_PARAMS_COMMAND_DESCRIPTION = "The body command SamtoolsWrapperParams web service parameter";
+    public static final String SAMTOOLS_WRAPPER_PARAMS_INPUT_FILE_DESCRIPTION = "The body inputFile SamtoolsWrapperParams web service parameter";
+    public static final String SAMTOOLS_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = "The body outdir SamtoolsWrapperParams web service parameter";
+    public static final String SAMTOOLS_WRAPPER_PARAMS_SAMTOOLS_PARAMS_DESCRIPTION = "The body samtoolsParams SamtoolsWrapperParams web service parameter";
+
+
+    public static final String ALIGNMENT_HS_METRICS_PARAMS_BAM_FILE_DESCRIPTION = "The body bamFile AlignmentHsMetricsParams web service parameter";
+    public static final String ALIGNMENT_HS_METRICS_PARAMS_BED_FILE_DESCRIPTION = "The body bedFile AlignmentHsMetricsParams web service parameter";
+    public static final String ALIGNMENT_HS_METRICS_PARAMS_DICT_FILE_DESCRIPTION = "The body dictFile AlignmentHsMetricsParams web service parameter";
+    public static final String ALIGNMENT_HS_METRICS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir AlignmentHsMetricsParams web service parameter";
+
+
+    public static final String ALIGNMENT_FILE_QUALITY_CONTROL_FAST_QC_METRICS_DESCRIPTION = "The body fastQcMetrics AlignmentFileQualityControl web service parameter";
+    public static final String ALIGNMENT_FILE_QUALITY_CONTROL_SAMTOOLS_STATS_DESCRIPTION = "The body samtoolsStats AlignmentFileQualityControl web service parameter";
+    public static final String ALIGNMENT_FILE_QUALITY_CONTROL_SAMTOOLS_FLAG_STATS_DESCRIPTION = "The body samtoolsFlagStats AlignmentFileQualityControl web service parameter";
+    public static final String ALIGNMENT_FILE_QUALITY_CONTROL_HS_METRICS_DESCRIPTION = "The body hsMetrics AlignmentFileQualityControl web service parameter";
+
+
+    public static final String ALIGNMENT_FLAG_STATS_PARAMS_FILE_DESCRIPTION = "The body file AlignmentFlagStatsParams web service parameter";
+    public static final String ALIGNMENT_FLAG_STATS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir AlignmentFlagStatsParams web service parameter";
+
+
+    public static final String PICARD_WRAPPER_PARAMS_COMMAND_DESCRIPTION = "The body command PicardWrapperParams web service parameter";
+    public static final String PICARD_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = "The body outdir PicardWrapperParams web service parameter";
+    public static final String PICARD_WRAPPER_PARAMS_PICARD_PARAMS_DESCRIPTION = "The body picardParams PicardWrapperParams web service parameter";
+
+
+    public static final String ALIGNMENT_FAST_QC_METRICS_PARAMS_FILE_DESCRIPTION = "The body file AlignmentFastQcMetricsParams web service parameter";
+    public static final String ALIGNMENT_FAST_QC_METRICS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir AlignmentFastQcMetricsParams web service parameter";
+
+
+    public static final String ALIGNMENT_INDEX_PARAMS_FILE_DESCRIPTION = "The body file AlignmentIndexParams web service parameter";
+    public static final String ALIGNMENT_INDEX_PARAMS_OVERWRITE_DESCRIPTION = "The body overwrite AlignmentIndexParams web service parameter";
+
+
+    public static final String FASTQC_WRAPPER_PARAMS_INPUT_FILE_DESCRIPTION = "The body inputFile FastqcWrapperParams web service parameter";
+    public static final String FASTQC_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = "The body outdir FastqcWrapperParams web service parameter";
+    public static final String FASTQC_WRAPPER_PARAMS_FASTQC_PARAMS_DESCRIPTION = "The body fastqcParams FastqcWrapperParams web service parameter";
+
+
+    public static final String BWA_WRAPPER_PARAMS_COMMAND_DESCRIPTION = "The body command BwaWrapperParams web service parameter";
+    public static final String BWA_WRAPPER_PARAMS_FASTA_FILE_DESCRIPTION = "The body fastaFile BwaWrapperParams web service parameter";
+    public static final String BWA_WRAPPER_PARAMS_FASTQ1FILE_DESCRIPTION = "The body fastq1File BwaWrapperParams web service parameter";
+    public static final String BWA_WRAPPER_PARAMS_FASTQ2FILE_DESCRIPTION = "The body fastq2File BwaWrapperParams web service parameter";
+    public static final String BWA_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = "The body outdir BwaWrapperParams web service parameter";
+    public static final String BWA_WRAPPER_PARAMS_BWA_PARAMS_DESCRIPTION = "The body bwaParams BwaWrapperParams web service parameter";
+
+
+    public static final String ALIGNMENT_STATS_PARAMS_FILE_DESCRIPTION = "The body file AlignmentStatsParams web service parameter";
+    public static final String ALIGNMENT_STATS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir AlignmentStatsParams web service parameter";
+
+
+    public static final String DEEPTOOLS_WRAPPER_PARAMS_COMMAND_DESCRIPTION = "The body command DeeptoolsWrapperParams web service parameter";
+    public static final String DEEPTOOLS_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = "The body outdir DeeptoolsWrapperParams web service parameter";
+    public static final String DEEPTOOLS_WRAPPER_PARAMS_DEEPTOOLS_PARAMS_DESCRIPTION = "The body deeptoolsParams DeeptoolsWrapperParams web service parameter";
+
+
+    public static final String ALIGNMENT_QC_PARAMS_BAM_FILE_DESCRIPTION = "The body bamFile AlignmentQcParams web service parameter";
+    public static final String ALIGNMENT_QC_PARAMS_BED_FILE_DESCRIPTION = "The body bedFile AlignmentQcParams web service parameter";
+    public static final String ALIGNMENT_QC_PARAMS_DICT_FILE_DESCRIPTION = "The body dictFile AlignmentQcParams web service parameter";
+    public static final String ALIGNMENT_QC_PARAMS_SKIP_DESCRIPTION = "The body skip AlignmentQcParams web service parameter";
+    public static final String ALIGNMENT_QC_PARAMS_OVERWRITE_DESCRIPTION = "The body overwrite AlignmentQcParams web service parameter";
+    public static final String ALIGNMENT_QC_PARAMS_OUTDIR_DESCRIPTION = "The body outdir AlignmentQcParams web service parameter";
+
+
+    public static final String ALIGNMENT_GENE_COVERAGE_STATS_PARAMS_BAM_FILE_DESCRIPTION = "The body bamFile AlignmentGeneCoverageStatsParams web service parameter";
+    public static final String ALIGNMENT_GENE_COVERAGE_STATS_PARAMS_GENES_DESCRIPTION = "The body genes AlignmentGeneCoverageStatsParams web service parameter";
+    public static final String ALIGNMENT_GENE_COVERAGE_STATS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir AlignmentGeneCoverageStatsParams web service parameter";
+
+
+    public static final String COVERAGE_INDEX_PARAMS_FILE_DESCRIPTION = "The body file CoverageIndexParams web service parameter";
+    public static final String COVERAGE_INDEX_PARAMS_WINDOW_SIZE_DESCRIPTION = "The body windowSize CoverageIndexParams web service parameter";
+    public static final String COVERAGE_INDEX_PARAMS_OVERWRITE_DESCRIPTION = "The body overwrite CoverageIndexParams web service parameter";
+
+
+    public static final String COVERAGE_FILE_QUALITY_CONTROL_GENE_COVERAGE_STATS_DESCRIPTION = "The body geneCoverageStats CoverageFileQualityControl web service parameter";
+
+
+
+
+    public static final String COHORT_NAME_DESCRIPTION = "The body name Cohort web service parameter";
+
+
+    public static final String COHORT_UPDATE_PARAMS_ID_DESCRIPTION = "The body id CohortUpdateParams web service parameter";
+    public static final String COHORT_UPDATE_PARAMS_NAME_DESCRIPTION = "The body name CohortUpdateParams web service parameter";
+    public static final String COHORT_UPDATE_PARAMS_TYPE_DESCRIPTION = "The body type CohortUpdateParams web service parameter";
+    public static final String COHORT_UPDATE_PARAMS_SAMPLES_DESCRIPTION = "The body samples CohortUpdateParams web service parameter";
+    public static final String COHORT_UPDATE_PARAMS_ANNOTATION_SETS_DESCRIPTION = "The body annotationSets CohortUpdateParams web service parameter";
+
+
+
+
+    public static final String COHORT_ACL_UPDATE_PARAMS_COHORT_DESCRIPTION = "The body cohort CohortAclUpdateParams web service parameter";
+
+
+    public static final String COHORT_GENERATE_PARAMS_ID_DESCRIPTION = "The body id CohortGenerateParams web service parameter";
+    public static final String COHORT_GENERATE_PARAMS_NAME_DESCRIPTION = "The body name CohortGenerateParams web service parameter";
+    public static final String COHORT_GENERATE_PARAMS_TYPE_DESCRIPTION = "The body type CohortGenerateParams web service parameter";
+    public static final String COHORT_GENERATE_PARAMS_ANNOTATION_SETS_DESCRIPTION = "The body annotationSets CohortGenerateParams web service parameter";
+
+
+    public static final String COHORT_CREATE_PARAMS_ID_DESCRIPTION = "The body id CohortCreateParams web service parameter";
+    public static final String COHORT_CREATE_PARAMS_NAME_DESCRIPTION = "The body name CohortCreateParams web service parameter";
+    public static final String COHORT_CREATE_PARAMS_TYPE_DESCRIPTION = "The body type CohortCreateParams web service parameter";
+    public static final String COHORT_CREATE_PARAMS_SAMPLES_DESCRIPTION = "The body samples CohortCreateParams web service parameter";
+    public static final String COHORT_CREATE_PARAMS_ANNOTATION_SETS_DESCRIPTION = "The body annotationSets CohortCreateParams web service parameter";
+
+
+
 }

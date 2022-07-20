@@ -3,31 +3,59 @@ package org.opencb.opencga.core.models.variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.tools.ToolParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class AnnotationVariantQueryParams extends ToolParams {
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_REGION_DESCRIPTION)
     private String region;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_GENE_DESCRIPTION)
     private String gene;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_TYPE_DESCRIPTION)
     private String type;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_PANEL_DESCRIPTION)
     private String panel;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_PANEL_MODE_OF_INHERITANCE_DESCRIPTION)
     private String panelModeOfInheritance;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_PANEL_CONFIDENCE_DESCRIPTION)
     private String panelConfidence;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_PANEL_ROLE_IN_CANCER_DESCRIPTION)
     private String panelRoleInCancer;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_PANEL_INTERSECTION_DESCRIPTION)
     private Boolean panelIntersection;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_COHORT_STATS_REF_DESCRIPTION)
     private String cohortStatsRef;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_COHORT_STATS_ALT_DESCRIPTION)
     private String cohortStatsAlt;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_COHORT_STATS_MAF_DESCRIPTION)
     private String cohortStatsMaf;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_CT_DESCRIPTION)
     private String ct;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_XREF_DESCRIPTION)
     private String xref;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_TYPE_DESCRIPTION)
     private String biotype;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_PROTEIN_SUBSTITUTION_DESCRIPTION)
     private String proteinSubstitution;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_CONSERVATION_DESCRIPTION)
     private String conservation;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_POPULATION_FREQUENCY_MAF_DESCRIPTION)
     private String populationFrequencyMaf;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_POPULATION_FREQUENCY_ALT_DESCRIPTION)
     private String populationFrequencyAlt;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_POPULATION_FREQUENCY_REF_DESCRIPTION)
     private String populationFrequencyRef;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_TRANSCRIPT_FLAG_DESCRIPTION)
     private String transcriptFlag;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_FUNCTIONAL_SCORE_DESCRIPTION)
     private String functionalScore;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_CLINICAL_DESCRIPTION)
     private String clinical;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_CLINICAL_SIGNIFICANCE_DESCRIPTION)
     private String clinicalSignificance;
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_CLINICAL_CONFIRMED_STATUS_DESCRIPTION)
     private String clinicalConfirmedStatus;
 
     public AnnotationVariantQueryParams() {

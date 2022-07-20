@@ -42,6 +42,8 @@ import java.util.*;
 /**
  * Created by jacobo on 11/09/14.
  */
+import org.opencb.opencga.core.api.ParamConstants;
+
 @DataClass(id = "Study", since = "1.0",
         description = "Study data model hosts information about any study.")
 public class Study extends PrivateFields {

@@ -19,9 +19,15 @@ package org.opencb.opencga.core.models.job;
 import java.util.Date;
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class JobTop {
+    @DataField(description = ParamConstants.JOB_TOP_DATE_DESCRIPTION)
     private Date date;
+    @DataField(description = ParamConstants.JOB_TOP_STATS_DESCRIPTION)
     private JobTopStats stats;
+    @DataField(description = ParamConstants.JOB_TOP_JOBS_DESCRIPTION)
     private List<Job> jobs;
     
     public JobTop() {

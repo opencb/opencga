@@ -19,14 +19,20 @@ package org.opencb.opencga.core.models.variant;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
+import org.opencb.commons.annotations.DataField;
+
 public class FamilyQcAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Family QC analysis params. Family ID. Relatedness method, by default 'PLINK/IBD'. Minor "
             + " allele frequence (MAF) is used to filter variants before computing relatedness, e.g.: " + ParamConstants.POP_FREQ_1000G
             + ":CEU>0.35 or cohort:ALL>0.05";
+    @DataField(description = ParamConstants.FAMILY_QC_ANALYSIS_PARAMS_FAMILY_DESCRIPTION)
     private String family;
+    @DataField(description = ParamConstants.FAMILY_QC_ANALYSIS_PARAMS_RELATEDNESS_METHOD_DESCRIPTION)
     private String relatednessMethod;
+    @DataField(description = ParamConstants.FAMILY_QC_ANALYSIS_PARAMS_RELATEDNESS_MAF_DESCRIPTION)
     private String relatednessMaf;
 
+    @DataField(description = ParamConstants.FAMILY_QC_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
 
     public FamilyQcAnalysisParams() {

@@ -4,8 +4,12 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.configuration.ClinicalPriorityAnnotation;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class PriorityParam {
 
+    @DataField(description = ParamConstants.PRIORITY_PARAM_ID_DESCRIPTION)
     private String id;
 
     public PriorityParam() {

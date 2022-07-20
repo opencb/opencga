@@ -24,22 +24,38 @@ import org.opencb.opencga.core.models.common.ExternalSource;
 import java.util.List;
 import java.util.Map;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class SampleCreateParams {
 
+    @DataField(description = ParamConstants.SAMPLE_CREATE_PARAMS_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+    @DataField(description = ParamConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
+    @DataField(description = ParamConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
+    @DataField(description = ParamConstants.SAMPLE_CREATE_PARAMS_INDIVIDUAL_ID_DESCRIPTION)
     private String individualId;
+    @DataField(description = ParamConstants.SAMPLE_CREATE_PARAMS_SOURCE_DESCRIPTION)
     private ExternalSource source;
+    @DataField(description = ParamConstants.SAMPLE_CREATE_PARAMS_PROCESSING_DESCRIPTION)
     private SampleProcessing processing;
+    @DataField(description = ParamConstants.SAMPLE_CREATE_PARAMS_COLLECTION_DESCRIPTION)
     private SampleCollection collection;
+    @DataField(description = ParamConstants.SAMPLE_CREATE_PARAMS_SOMATIC_DESCRIPTION)
     private Boolean somatic;
+    @DataField(description = ParamConstants.SAMPLE_CREATE_PARAMS_PHENOTYPES_DESCRIPTION)
     private List<Phenotype> phenotypes;
 
+    @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
     private StatusParams status;
 
+    @DataField(description = ParamConstants.SAMPLE_CREATE_PARAMS_ANNOTATION_SETS_DESCRIPTION)
     private List<AnnotationSet> annotationSets;
+    @DataField(description = ParamConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public SampleCreateParams() {

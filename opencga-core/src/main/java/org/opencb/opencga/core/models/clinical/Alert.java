@@ -16,11 +16,18 @@
 
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class Alert {
 
+    @DataField(description = ParamConstants.ALERT_AUTHOR_DESCRIPTION)
     private String author;
+    @DataField(description = ParamConstants.ALERT_DATE_DESCRIPTION)
     private String date;
+    @DataField(description = ParamConstants.ALERT_MESSAGE_DESCRIPTION)
     private String message;
+    @DataField(description = ParamConstants.ALERT_RISK_DESCRIPTION)
     private Risk risk;
 
     public Alert() {

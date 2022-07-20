@@ -4,11 +4,17 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class AlignmentGeneCoverageStatsParams extends ToolParams {
     public static final String DESCRIPTION = "Gene coverage stats parameters for a given BAM file and a list of genes";
 
+    @DataField(description = ParamConstants.ALIGNMENT_GENE_COVERAGE_STATS_PARAMS_BAM_FILE_DESCRIPTION)
     private String bamFile;
+    @DataField(description = ParamConstants.ALIGNMENT_GENE_COVERAGE_STATS_PARAMS_GENES_DESCRIPTION)
     private List<String> genes;
+    @DataField(description = ParamConstants.ALIGNMENT_GENE_COVERAGE_STATS_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
 
     public AlignmentGeneCoverageStatsParams() {

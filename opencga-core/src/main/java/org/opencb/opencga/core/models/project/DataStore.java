@@ -21,10 +21,16 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import java.util.Objects;
 
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class DataStore {
 
+    @DataField(description = ParamConstants.DATA_STORE_STORAGE_ENGINE_DESCRIPTION)
     private String storageEngine;
+    @DataField(description = ParamConstants.DATA_STORE_DB_NAME_DESCRIPTION)
     private String dbName;
+    @DataField(description = ParamConstants.DATA_STORE_OPTIONS_DESCRIPTION)
     private ObjectMap options;
 
     public DataStore() {

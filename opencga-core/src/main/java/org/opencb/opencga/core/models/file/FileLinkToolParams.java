@@ -20,10 +20,17 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FileLinkToolParams extends ToolParams {
+    @DataField(description = ParamConstants.FILE_LINK_TOOL_PARAMS_URI_DESCRIPTION)
     private List<String> uri;
+    @DataField(description = ParamConstants.FILE_LINK_TOOL_PARAMS_PATH_DESCRIPTION)
     private String path;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+    @DataField(description = ParamConstants.FILE_LINK_TOOL_PARAMS_PARENTS_DESCRIPTION)
     private boolean parents;
 
     public FileLinkToolParams() {

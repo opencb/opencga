@@ -24,6 +24,8 @@ import org.opencb.opencga.core.models.common.Internal;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FileInternal extends Internal {
 
     @DataField(id = "status", indexed = true,

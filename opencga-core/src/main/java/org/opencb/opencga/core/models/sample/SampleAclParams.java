@@ -22,11 +22,18 @@ import org.opencb.opencga.core.models.AclParams;
 import java.util.Objects;
 
 // Acl params to communicate the WS and the sample manager
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class SampleAclParams extends AclParams {
 
+    @DataField(description = ParamConstants.SAMPLE_ACL_PARAMS_INDIVIDUAL_DESCRIPTION)
     private String individual;
+    @DataField(description = ParamConstants.SAMPLE_ACL_PARAMS_FAMILY_DESCRIPTION)
     private String family;
+    @DataField(description = ParamConstants.SAMPLE_ACL_PARAMS_FILE_DESCRIPTION)
     private String file;
+    @DataField(description = ParamConstants.SAMPLE_ACL_PARAMS_COHORT_DESCRIPTION)
     private String cohort;
 
     public SampleAclParams() {

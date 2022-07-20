@@ -2,8 +2,12 @@ package org.opencb.opencga.core.models.file;
 
 import java.util.Objects;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FileInternalAlignment {
 
+    @DataField(description = ParamConstants.FILE_INTERNAL_ALIGNMENT_INDEX_DESCRIPTION)
     private FileInternalAlignmentIndex index;
 
     public FileInternalAlignment() {

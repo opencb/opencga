@@ -26,6 +26,9 @@ import java.util.*;
 /**
  * Created by pfurio on 11/03/16.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class InternalStatus extends Status {
 
     /**
@@ -37,7 +40,9 @@ public class InternalStatus extends Status {
      */
     public static final String DELETED = "DELETED";
     public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED);
+    @DataField(description = ParamConstants.INTERNAL_STATUS_VERSION_DESCRIPTION)
     private String version;
+    @DataField(description = ParamConstants.INTERNAL_STATUS_COMMIT_DESCRIPTION)
     private String commit;
 
 

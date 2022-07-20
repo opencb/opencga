@@ -21,6 +21,9 @@ import org.opencb.opencga.core.tools.annotations.CliParam;
 /**
  * Created by pfurio on 29/03/17.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class AclParams {
 
     @CliParam(required = true)

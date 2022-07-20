@@ -21,19 +21,34 @@ import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class GwasAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Gwas analysis params";
+    @DataField(description = ParamConstants.GWAS_ANALYSIS_PARAMS_PHENOTYPE_DESCRIPTION)
     private String phenotype;
+    @DataField(description = ParamConstants.GWAS_ANALYSIS_PARAMS_INDEX_DESCRIPTION)
     private Boolean index;
+    @DataField(description = ParamConstants.GWAS_ANALYSIS_PARAMS_INDEX_SCORE_ID_DESCRIPTION)
     private String indexScoreId;
+    @DataField(description = ParamConstants.GWAS_ANALYSIS_PARAMS_METHOD_DESCRIPTION)
     private GwasConfiguration.Method method;
+    @DataField(description = ParamConstants.GWAS_ANALYSIS_PARAMS_FISHER_MODE_DESCRIPTION)
     private GwasConfiguration.FisherMode fisherMode;
+    @DataField(description = ParamConstants.GWAS_ANALYSIS_PARAMS_CASE_COHORT_DESCRIPTION)
     private String caseCohort;
+    @DataField(description = ParamConstants.GWAS_ANALYSIS_PARAMS_CASE_COHORT_SAMPLES_ANNOTATION_DESCRIPTION)
     private String caseCohortSamplesAnnotation;
+    @DataField(description = ParamConstants.GWAS_ANALYSIS_PARAMS_CASE_COHORT_SAMPLES_DESCRIPTION)
     private List<String> caseCohortSamples;
+    @DataField(description = ParamConstants.GWAS_ANALYSIS_PARAMS_CONTROL_COHORT_DESCRIPTION)
     private String controlCohort;
+    @DataField(description = ParamConstants.GWAS_ANALYSIS_PARAMS_CONTROL_COHORT_SAMPLES_ANNOTATION_DESCRIPTION)
     private String controlCohortSamplesAnnotation;
+    @DataField(description = ParamConstants.GWAS_ANALYSIS_PARAMS_CONTROL_COHORT_SAMPLES_DESCRIPTION)
     private List<String> controlCohortSamples;
+    @DataField(description = ParamConstants.GWAS_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
 
     public GwasAnalysisParams() {

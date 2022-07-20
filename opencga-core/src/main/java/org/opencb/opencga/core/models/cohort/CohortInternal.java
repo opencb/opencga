@@ -21,8 +21,12 @@ import org.opencb.opencga.core.models.common.Internal;
 
 import java.util.Objects;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class CohortInternal extends Internal {
 
+    @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
     private CohortStatus status;
 
     public CohortInternal() {

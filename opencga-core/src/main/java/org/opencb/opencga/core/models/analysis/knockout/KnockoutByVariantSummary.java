@@ -8,25 +8,44 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import java.util.List;
 import java.util.Map;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class KnockoutByVariantSummary {
 
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_SUMMARY_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_SUMMARY_DB_SNP_DESCRIPTION)
     private String dbSnp;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_SUMMARY_CHROMOSOME_DESCRIPTION)
     private String chromosome;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_SUMMARY_START_DESCRIPTION)
     private int start;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_SUMMARY_END_DESCRIPTION)
     private int end;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_SUMMARY_LENGTH_DESCRIPTION)
     private int length;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_SUMMARY_REFERENCE_DESCRIPTION)
     private String reference;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_SUMMARY_ALTERNATE_DESCRIPTION)
     private String alternate;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_SUMMARY_TYPE_DESCRIPTION)
     private VariantType type;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_SUMMARY_GENES_DESCRIPTION)
     private List<String> genes;
 
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_SUMMARY_POPULATION_FREQUENCIES_DESCRIPTION)
     private List<PopulationFrequency> populationFrequencies;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_SUMMARY_SEQUENCE_ONTOLOGY_TERMS_DESCRIPTION)
     private List<SequenceOntologyTerm> sequenceOntologyTerms;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_SUMMARY_CLINICAL_SIGNIFICANCES_DESCRIPTION)
     private List<ClinicalSignificance> clinicalSignificances;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_SUMMARY_ALLELE_PAIRS_DESCRIPTION)
     private List<KnockoutVariant> allelePairs;
 
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_SUMMARY_INDIVIDUAL_STATS_DESCRIPTION)
     private IndividualKnockoutStats individualStats;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_SUMMARY_TRANSCRIPT_CH_PAIRS_DESCRIPTION)
     private Map<String, List<String>> transcriptChPairs;
 
     public KnockoutByVariantSummary() {

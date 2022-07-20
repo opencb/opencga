@@ -18,11 +18,18 @@ package org.opencb.opencga.core.models.variant;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class MendelianErrorAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Mendelian error analysis params";
+    @DataField(description = ParamConstants.MENDELIAN_ERROR_ANALYSIS_PARAMS_FAMILY_DESCRIPTION)
     private String family;
+    @DataField(description = ParamConstants.MENDELIAN_ERROR_ANALYSIS_PARAMS_INDIVIDUAL_DESCRIPTION)
     private String individual;
+    @DataField(description = ParamConstants.MENDELIAN_ERROR_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION)
     private String sample;
+    @DataField(description = ParamConstants.MENDELIAN_ERROR_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
 
     public MendelianErrorAnalysisParams() {

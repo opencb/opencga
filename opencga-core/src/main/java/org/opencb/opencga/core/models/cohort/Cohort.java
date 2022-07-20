@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.opencb.opencga.core.api.ParamConstants;
+
 @DataClass(id = "Cohort", since = "1.0",
         description = "Cohort data model hosts information about any cohort.")
 public class Cohort extends Annotable {
@@ -48,6 +50,7 @@ public class Cohort extends Annotable {
      * Cohort name parameter.
      *
      */
+    @DataField(description = ParamConstants.COHORT_NAME_DESCRIPTION)
     private String name;
 
     /**

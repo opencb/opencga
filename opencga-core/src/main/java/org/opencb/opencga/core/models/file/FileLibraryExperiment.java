@@ -16,13 +16,22 @@
 
 package org.opencb.opencga.core.models.file;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FileLibraryExperiment {
 
+    @DataField(description = ParamConstants.FILE_LIBRARY_EXPERIMENT_PREPARATION_KIT_DESCRIPTION)
     private String preparationKit;
+    @DataField(description = ParamConstants.FILE_LIBRARY_EXPERIMENT_PREPARATION_KIT_MANUFACTURER_DESCRIPTION)
     private String preparationKitManufacturer;
+    @DataField(description = ParamConstants.FILE_LIBRARY_EXPERIMENT_CAPTURE_MANUFACTURER_DESCRIPTION)
     private String captureManufacturer;
+    @DataField(description = ParamConstants.FILE_LIBRARY_EXPERIMENT_CAPTURE_KIT_DESCRIPTION)
     private String captureKit;
+    @DataField(description = ParamConstants.FILE_LIBRARY_EXPERIMENT_CAPTURE_VERSION_DESCRIPTION)
     private String captureVersion;
+    @DataField(description = ParamConstants.FILE_LIBRARY_EXPERIMENT_TARGETED_REGION_DESCRIPTION)
     private File targetedRegion;
 
 }

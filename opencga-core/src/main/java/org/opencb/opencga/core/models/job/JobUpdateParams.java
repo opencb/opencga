@@ -25,12 +25,19 @@ import java.util.Map;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultNonNullObjectMapper;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class JobUpdateParams {
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
+    @DataField(description = ParamConstants.JOB_UPDATE_PARAMS_TAGS_DESCRIPTION)
     private List<String> tags;
+    @DataField(description = ParamConstants.JOB_UPDATE_PARAMS_VISITED_DESCRIPTION)
     private Boolean visited;
 
+    @DataField(description = ParamConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public JobUpdateParams() {

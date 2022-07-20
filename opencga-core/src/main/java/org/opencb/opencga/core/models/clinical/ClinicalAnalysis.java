@@ -39,6 +39,8 @@ import java.util.Map;
 /**
  * Created by pfurio on 05/06/17.
  */
+import org.opencb.opencga.core.api.ParamConstants;
+
 @DataClass(id = "ClinicalAnalysis", since = "1.0",
         description = "ClinicalAnalysis data model hosts information about any analysis.")
 public class ClinicalAnalysis extends PrivateStudyUid {

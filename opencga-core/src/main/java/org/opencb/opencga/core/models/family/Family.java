@@ -37,6 +37,8 @@ import java.util.Map;
 /**
  * Created by pfurio on 02/05/17.
  */
+import org.opencb.opencga.core.api.ParamConstants;
+
 @DataClass(id = "Family", since = "1.0",
         description = "Family data model hosts information about any family.")
 public class Family extends Annotable {

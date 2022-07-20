@@ -4,8 +4,12 @@ import org.opencb.opencga.core.models.common.IndexStatus;
 
 import java.util.Objects;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FileInternalVariantSecondaryIndex {
 
+    @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
     private IndexStatus status;
 
     public FileInternalVariantSecondaryIndex() {

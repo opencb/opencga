@@ -6,8 +6,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FamilyParam {
+    @DataField(description = ParamConstants.FAMILY_PARAM_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.FAMILY_PARAM_MEMBERS_DESCRIPTION)
     private List<ProbandParam> members;
 
     public FamilyParam() {

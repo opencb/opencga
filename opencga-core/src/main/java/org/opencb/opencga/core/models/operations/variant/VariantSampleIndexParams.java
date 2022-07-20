@@ -20,13 +20,21 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariantSampleIndexParams extends ToolParams {
 
     public static final String DESCRIPTION = "Variant sample index params";
+    @DataField(description = ParamConstants.VARIANT_SAMPLE_INDEX_PARAMS_SAMPLE_DESCRIPTION)
     private List<String> sample;
+    @DataField(description = ParamConstants.VARIANT_SAMPLE_INDEX_PARAMS_BUILD_INDEX_DESCRIPTION)
     private boolean buildIndex;
+    @DataField(description = ParamConstants.VARIANT_SAMPLE_INDEX_PARAMS_ANNOTATE_DESCRIPTION)
     private boolean annotate;
+    @DataField(description = ParamConstants.VARIANT_SAMPLE_INDEX_PARAMS_FAMILY_INDEX_DESCRIPTION)
     private boolean familyIndex;
+    @DataField(description = ParamConstants.VARIANT_SAMPLE_INDEX_PARAMS_OVERWRITE_DESCRIPTION)
     private boolean overwrite;
 
     public VariantSampleIndexParams() {

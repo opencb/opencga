@@ -19,13 +19,22 @@ package org.opencb.opencga.core.models.analysis.knockout;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class KnockoutTranscript {
 
+    @DataField(description = ParamConstants.KNOCKOUT_TRANSCRIPT_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.KNOCKOUT_TRANSCRIPT_CHROMOSOME_DESCRIPTION)
     private String chromosome;
+    @DataField(description = ParamConstants.KNOCKOUT_TRANSCRIPT_START_DESCRIPTION)
     private int start;
+    @DataField(description = ParamConstants.KNOCKOUT_TRANSCRIPT_END_DESCRIPTION)
     private int end;
+    @DataField(description = ParamConstants.KNOCKOUT_TRANSCRIPT_BIOTYPE_DESCRIPTION)
     private String biotype;
+    @DataField(description = ParamConstants.KNOCKOUT_TRANSCRIPT_STRAND_DESCRIPTION)
     private String strand;
 
     private List<KnockoutVariant> variants = new LinkedList<>();

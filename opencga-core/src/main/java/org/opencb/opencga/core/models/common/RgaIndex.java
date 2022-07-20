@@ -6,6 +6,8 @@ import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.Objects;
 
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class RgaIndex {
 
     /**

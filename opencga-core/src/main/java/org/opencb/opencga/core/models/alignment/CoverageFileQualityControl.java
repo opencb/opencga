@@ -6,8 +6,12 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class CoverageFileQualityControl implements Serializable {
 
+    @DataField(description = ParamConstants.COVERAGE_FILE_QUALITY_CONTROL_GENE_COVERAGE_STATS_DESCRIPTION)
     private List<GeneCoverageStats> geneCoverageStats;
 
     public CoverageFileQualityControl() {

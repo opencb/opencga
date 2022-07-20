@@ -20,11 +20,18 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.models.common.Enums;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FilterUpdateParams {
 
+    @DataField(description = ParamConstants.FILTER_UPDATE_PARAMS_RESOURCE_DESCRIPTION)
     private Enums.Resource resource;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+    @DataField(description = ParamConstants.FILTER_UPDATE_PARAMS_QUERY_DESCRIPTION)
     private Query query;
+    @DataField(description = ParamConstants.FILTER_UPDATE_PARAMS_OPTIONS_DESCRIPTION)
     private QueryOptions options;
 
     public FilterUpdateParams() {

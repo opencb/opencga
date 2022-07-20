@@ -22,15 +22,26 @@ import org.opencb.biodata.models.core.GeneAnnotation;
 
 import java.util.*;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class KnockoutByGene {
 
+    @DataField(description = ParamConstants.KNOCKOUT_BY_GENE_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_GENE_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_GENE_CHROMOSOME_DESCRIPTION)
     private String chromosome;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_GENE_START_DESCRIPTION)
     private int start;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_GENE_END_DESCRIPTION)
     private int end;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_GENE_STRAND_DESCRIPTION)
     private String strand;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_GENE_BIOTYPE_DESCRIPTION)
     private String biotype;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_GENE_ANNOTATION_DESCRIPTION)
     private GeneAnnotation annotation;
 
     private List<KnockoutIndividual> individuals = new LinkedList<>();
@@ -135,6 +146,7 @@ public class KnockoutByGene {
 
 
     public static class KnockoutIndividual {
+    @DataField(description = ParamConstants.KNOCKOUT_BY_GENE_ID_DESCRIPTION)
         private String id;
         private String sampleId;
         private String motherId;

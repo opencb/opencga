@@ -5,14 +5,21 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class TeamInterpretationAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "TEAM interpretation analysis params";
 
+    @DataField(description = ParamConstants.TEAM_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_ANALYSIS_DESCRIPTION)
     private String clinicalAnalysis;
+    @DataField(description = ParamConstants.TEAM_INTERPRETATION_ANALYSIS_PARAMS_PANELS_DESCRIPTION)
     private List<String> panels;
+    @DataField(description = ParamConstants.TEAM_INTERPRETATION_ANALYSIS_PARAMS_FAMILY_SEGREGATION_DESCRIPTION)
     private String familySegregation;
 
     @JsonProperty(defaultValue = "false")
+    @DataField(description = ParamConstants.TEAM_INTERPRETATION_ANALYSIS_PARAMS_PRIMARY_DESCRIPTION)
     private boolean primary; // primary interpretation (vs secondary interpretation)
 
     public TeamInterpretationAnalysisParams() {

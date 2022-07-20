@@ -4,6 +4,9 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class JulieParams extends ToolParams {
 
     public static final String DESCRIPTION = "Julie tool params. Specify list of cohorts from multiple studies with {study}:{cohort}";
@@ -11,13 +14,16 @@ public class JulieParams extends ToolParams {
     /**
      * List of cohorts from multiple studies with {study}:{cohort}
      */
+    @DataField(description = ParamConstants.JULIE_PARAMS_COHORTS_DESCRIPTION)
     private List<String> cohorts;
 
+    @DataField(description = ParamConstants.JULIE_PARAMS_REGION_DESCRIPTION)
     private String region;
 
     /**
      * Overwrite all population frequencies.
      */
+    @DataField(description = ParamConstants.JULIE_PARAMS_OVERWRITE_DESCRIPTION)
     private boolean overwrite;
 
 

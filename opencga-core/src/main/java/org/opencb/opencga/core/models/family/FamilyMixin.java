@@ -18,6 +18,9 @@ package org.opencb.opencga.core.models.family;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 @JsonIgnoreProperties({"uid", "studyUid", "creationDate", "status", "release", "version"})
 public abstract class FamilyMixin {
 }

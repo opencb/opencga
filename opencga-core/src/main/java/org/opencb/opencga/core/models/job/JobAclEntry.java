@@ -25,6 +25,9 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 11/05/16.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class JobAclEntry extends AbstractAclEntry<JobAclEntry.JobPermissions> {
 
     public enum JobPermissions {

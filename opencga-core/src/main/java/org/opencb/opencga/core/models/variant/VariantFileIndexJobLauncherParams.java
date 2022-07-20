@@ -2,14 +2,22 @@ package org.opencb.opencga.core.models.variant;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariantFileIndexJobLauncherParams extends ToolParams {
 
     public static final String DESCRIPTION = "";
+    @DataField(description = ParamConstants.VARIANT_FILE_INDEX_JOB_LAUNCHER_PARAMS_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.VARIANT_FILE_INDEX_JOB_LAUNCHER_PARAMS_DIRECTORY_DESCRIPTION)
     private String directory;
+    @DataField(description = ParamConstants.VARIANT_FILE_INDEX_JOB_LAUNCHER_PARAMS_RESUME_FAILED_DESCRIPTION)
     private boolean resumeFailed;
+    @DataField(description = ParamConstants.VARIANT_FILE_INDEX_JOB_LAUNCHER_PARAMS_IGNORE_FAILED_DESCRIPTION)
     private boolean ignoreFailed;
     private int maxJobs = -1;
+    @DataField(description = ParamConstants.VARIANT_FILE_INDEX_JOB_LAUNCHER_PARAMS_INDEX_PARAMS_DESCRIPTION)
     private VariantIndexParams indexParams;
 
     public VariantFileIndexJobLauncherParams() {

@@ -20,9 +20,14 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.Map;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class PlinkWrapperParams extends ToolParams {
     public static final String DESCRIPTION = "Plink params";
+    @DataField(description = ParamConstants.PLINK_WRAPPER_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
+    @DataField(description = ParamConstants.PLINK_WRAPPER_PARAMS_PLINK_PARAMS_DESCRIPTION)
     private Map<String, String> plinkParams;
 
     public PlinkWrapperParams() {

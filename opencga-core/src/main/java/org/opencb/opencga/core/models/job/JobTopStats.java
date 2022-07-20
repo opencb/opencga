@@ -18,13 +18,22 @@ package org.opencb.opencga.core.models.job;
 
 import java.util.Objects;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class JobTopStats {
 
+    @DataField(description = ParamConstants.JOB_TOP_STATS_RUNNING_DESCRIPTION)
     private int running;
+    @DataField(description = ParamConstants.JOB_TOP_STATS_QUEUED_DESCRIPTION)
     private int queued;
+    @DataField(description = ParamConstants.JOB_TOP_STATS_PENDING_DESCRIPTION)
     private int pending;
+    @DataField(description = ParamConstants.JOB_TOP_STATS_DONE_DESCRIPTION)
     private int done;
+    @DataField(description = ParamConstants.JOB_TOP_STATS_ABORTED_DESCRIPTION)
     private int aborted;
+    @DataField(description = ParamConstants.JOB_TOP_STATS_ERROR_DESCRIPTION)
     private int error;
 
     public JobTopStats() {

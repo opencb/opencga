@@ -20,12 +20,20 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class CohortVariantStatsAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Cohort variant stats params";
+    @DataField(description = ParamConstants.COHORT_VARIANT_STATS_ANALYSIS_PARAMS_COHORT_DESCRIPTION)
     private String cohort;
+    @DataField(description = ParamConstants.COHORT_VARIANT_STATS_ANALYSIS_PARAMS_SAMPLES_DESCRIPTION)
     private List<String> samples;
+    @DataField(description = ParamConstants.COHORT_VARIANT_STATS_ANALYSIS_PARAMS_INDEX_DESCRIPTION)
     private boolean index;
+    @DataField(description = ParamConstants.COHORT_VARIANT_STATS_ANALYSIS_PARAMS_SAMPLE_ANNOTATION_DESCRIPTION)
     private String sampleAnnotation;
+    @DataField(description = ParamConstants.COHORT_VARIANT_STATS_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
 
     public CohortVariantStatsAnalysisParams() {

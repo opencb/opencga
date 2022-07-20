@@ -20,12 +20,20 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class RelatednessAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Relatedness analysis params";
+    @DataField(description = ParamConstants.RELATEDNESS_ANALYSIS_PARAMS_INDIVIDUALS_DESCRIPTION)
     private List<String> individuals;
+    @DataField(description = ParamConstants.RELATEDNESS_ANALYSIS_PARAMS_SAMPLES_DESCRIPTION)
     private List<String> samples;
+    @DataField(description = ParamConstants.RELATEDNESS_ANALYSIS_PARAMS_MINOR_ALLELE_FREQ_DESCRIPTION)
     private String minorAlleleFreq;
+    @DataField(description = ParamConstants.RELATEDNESS_ANALYSIS_PARAMS_METHOD_DESCRIPTION)
     private String method;
+    @DataField(description = ParamConstants.RELATEDNESS_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
 
     public RelatednessAnalysisParams() {

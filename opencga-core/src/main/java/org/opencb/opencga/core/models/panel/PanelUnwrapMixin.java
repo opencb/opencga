@@ -19,6 +19,9 @@ package org.opencb.opencga.core.models.panel;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public interface PanelUnwrapMixin {
 
     @JsonUnwrapped

@@ -6,8 +6,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ClinicalConsentAnnotationParam {
 
+    @DataField(description = ParamConstants.CLINICAL_CONSENT_ANNOTATION_PARAM_CONSENTS_DESCRIPTION)
     private List<ClinicalConsentParam> consents;
 
     public ClinicalConsentAnnotationParam() {

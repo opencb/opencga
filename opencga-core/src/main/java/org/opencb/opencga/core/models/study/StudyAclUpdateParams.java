@@ -18,9 +18,14 @@ package org.opencb.opencga.core.models.study;
 
 import org.opencb.opencga.core.models.AclParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class StudyAclUpdateParams extends AclParams {
 
+    @DataField(description = ParamConstants.STUDY_ACL_UPDATE_PARAMS_STUDY_DESCRIPTION)
     private String study;
+    @DataField(description = ParamConstants.STUDY_ACL_UPDATE_PARAMS_TEMPLATE_DESCRIPTION)
     private String template;
 
     public StudyAclUpdateParams() {

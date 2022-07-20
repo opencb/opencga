@@ -18,9 +18,14 @@ package org.opencb.opencga.core.models.file;
 
 import org.apache.commons.lang3.StringUtils;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class SmallRelatedFileParams {
 
+    @DataField(description = ParamConstants.SMALL_RELATED_FILE_PARAMS_FILE_DESCRIPTION)
     private String file;
+    @DataField(description = ParamConstants.SMALL_RELATED_FILE_PARAMS_RELATION_DESCRIPTION)
     private FileRelatedFile.Relation relation;
 
     public SmallRelatedFileParams() {

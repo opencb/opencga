@@ -22,11 +22,17 @@ import org.opencb.opencga.core.common.TimeUtils;
 /**
  * Created by imedina on 13/09/14.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class Metadata {
 
+    @DataField(description = ParamConstants.METADATA_VERSION_DESCRIPTION)
     private String version;
+    @DataField(description = ParamConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
 
+    @DataField(description = ParamConstants.METADATA_ID_COUNTER_DESCRIPTION)
     private long idCounter;
 
 

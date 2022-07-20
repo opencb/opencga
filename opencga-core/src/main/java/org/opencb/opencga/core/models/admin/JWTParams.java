@@ -16,8 +16,12 @@
 
 package org.opencb.opencga.core.models.admin;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class JWTParams {
 
+    @DataField(description = ParamConstants.JWT_PARAMS_SECRET_KEY_DESCRIPTION)
     private String secretKey;
 
     public JWTParams() {

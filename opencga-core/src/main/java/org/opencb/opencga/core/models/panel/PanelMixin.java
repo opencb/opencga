@@ -18,6 +18,9 @@ package org.opencb.opencga.core.models.panel;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 @JsonIgnoreProperties({"uid", "studyUid", "release", "version", "creationDate", "status"})
 public interface PanelMixin {
 //public interface PanelMixin extends PanelUnwrapMixin {

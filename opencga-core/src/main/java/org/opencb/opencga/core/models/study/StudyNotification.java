@@ -21,6 +21,8 @@ import org.opencb.opencga.core.api.FieldConstants;
 
 import java.net.URL;
 
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class StudyNotification {
 
 

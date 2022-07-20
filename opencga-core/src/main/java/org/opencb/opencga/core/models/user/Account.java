@@ -25,6 +25,8 @@ import java.util.Calendar;
 /**
  * Created by pfurio on 02/09/16.
  */
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class Account {
 
     @DataField(id = "type", indexed = true, uncommentedClasses = {"AccountType"},

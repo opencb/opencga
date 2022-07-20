@@ -20,6 +20,9 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariantStatsExportParams extends ToolParams {
     public static final String DESCRIPTION = "Variant stats export params";
 
@@ -32,10 +35,15 @@ public class VariantStatsExportParams extends ToolParams {
         this.gene = gene;
         this.outputFileFormat = outputFileFormat;
     }
+    @DataField(description = ParamConstants.VARIANT_STATS_EXPORT_PARAMS_COHORTS_DESCRIPTION)
     private List<String> cohorts;
+    @DataField(description = ParamConstants.VARIANT_STATS_EXPORT_PARAMS_OUTPUT_DESCRIPTION)
     private String output;
+    @DataField(description = ParamConstants.VARIANT_STATS_EXPORT_PARAMS_REGION_DESCRIPTION)
     private String region;
+    @DataField(description = ParamConstants.VARIANT_STATS_EXPORT_PARAMS_GENE_DESCRIPTION)
     private String gene;
+    @DataField(description = ParamConstants.VARIANT_STATS_EXPORT_PARAMS_OUTPUT_FILE_FORMAT_DESCRIPTION)
     private String outputFileFormat;
 
     public List<String> getCohorts() {

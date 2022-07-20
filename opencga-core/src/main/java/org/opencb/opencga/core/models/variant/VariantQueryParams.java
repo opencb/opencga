@@ -21,63 +21,113 @@ import org.opencb.commons.datastore.core.Query;
 /**
  * Do not use native values (like boolean or int), so they are null by default.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariantQueryParams extends BasicVariantQueryParams {
 
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_SAVED_FILTER_DESCRIPTION)
     private String savedFilter;
 
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_CHROMOSOME_DESCRIPTION)
     private String chromosome;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_REFERENCE_DESCRIPTION)
     private String reference;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_ALTERNATE_DESCRIPTION)
     private String alternate;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_RELEASE_DESCRIPTION)
     private String release;
 
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_INCLUDE_STUDY_DESCRIPTION)
     private String includeStudy;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_INCLUDE_SAMPLE_DESCRIPTION)
     private String includeSample;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_INCLUDE_FILE_DESCRIPTION)
     private String includeFile;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_INCLUDE_SAMPLE_DATA_DESCRIPTION)
     private String includeSampleData;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_INCLUDE_SAMPLE_ID_DESCRIPTION)
     private String includeSampleId;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_INCLUDE_GENOTYPE_DESCRIPTION)
     private String includeGenotype;
 
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_FILE_DESCRIPTION)
     private String file;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_QUAL_DESCRIPTION)
     private String qual;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_FILTER_DESCRIPTION)
     private String filter;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_FILE_DATA_DESCRIPTION)
     private String fileData;
 
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_GENOTYPE_DESCRIPTION)
     private String genotype;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_SAMPLE_DESCRIPTION)
     private String sample;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_SAMPLE_LIMIT_DESCRIPTION)
     private Integer sampleLimit;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_SAMPLE_SKIP_DESCRIPTION)
     private Integer sampleSkip;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_SAMPLE_DATA_DESCRIPTION)
     private String sampleData;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_SAMPLE_ANNOTATION_DESCRIPTION)
     private String sampleAnnotation;
 
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_FAMILY_DESCRIPTION)
     private String family;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_FAMILY_MEMBERS_DESCRIPTION)
     private String familyMembers;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_FAMILY_DISORDER_DESCRIPTION)
     private String familyDisorder;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_FAMILY_PROBAND_DESCRIPTION)
     private String familyProband;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_FAMILY_SEGREGATION_DESCRIPTION)
     private String familySegregation;
 
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_COHORT_DESCRIPTION)
     private String cohort;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_COHORT_STATS_PASS_DESCRIPTION)
     private String cohortStatsPass;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_COHORT_STATS_MGF_DESCRIPTION)
     private String cohortStatsMgf;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_MISSING_ALLELES_DESCRIPTION)
     private String missingAlleles;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_MISSING_GENOTYPES_DESCRIPTION)
     private String missingGenotypes;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_ANNOTATION_EXISTS_DESCRIPTION)
     private Boolean annotationExists;
 
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_SCORE_DESCRIPTION)
     private String score;
 
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_POLYPHEN_DESCRIPTION)
     @Deprecated private String polyphen;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_SIFT_DESCRIPTION)
     @Deprecated private String sift;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_GENE_TRAIT_ID_DESCRIPTION)
     private String geneTraitId;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_GENE_TRAIT_NAME_DESCRIPTION)
     private String geneTraitName;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_TRAIT_DESCRIPTION)
     private String trait;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_COSMIC_DESCRIPTION)
     private String cosmic;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_CLINVAR_DESCRIPTION)
     private String clinvar;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_HPO_DESCRIPTION)
     private String hpo;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_GO_DESCRIPTION)
     private String go;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_EXPRESSION_DESCRIPTION)
     private String expression;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_PROTEIN_KEYWORD_DESCRIPTION)
     private String proteinKeyword;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_DRUG_DESCRIPTION)
     private String drug;
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_CUSTOM_ANNOTATION_DESCRIPTION)
     private String customAnnotation;
 
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_UNKNOWN_GENOTYPE_DESCRIPTION)
     private String unknownGenotype;
     private boolean sampleMetadata = false;
     private boolean sort = false;

@@ -26,33 +26,53 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class JobCreateParams {
 
+    @DataField(description = ParamConstants.JOB_CREATE_PARAMS_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
+    @DataField(description = ParamConstants.JOB_CREATE_PARAMS_TOOL_DESCRIPTION)
     private ToolInfo tool;
 
+    @DataField(description = ParamConstants.JOB_CREATE_PARAMS_PRIORITY_DESCRIPTION)
     private Enums.Priority priority;
 
+    @DataField(description = ParamConstants.JOB_CREATE_PARAMS_COMMAND_LINE_DESCRIPTION)
     private String commandLine;
 
+    @DataField(description = ParamConstants.JOB_CREATE_PARAMS_PARAMS_DESCRIPTION)
     private Map<String, Object> params;
 
+    @DataField(description = ParamConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
+    @DataField(description = ParamConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
+    @DataField(description = ParamConstants.JOB_CREATE_PARAMS_INTERNAL_DESCRIPTION)
     private JobInternal internal;
 
+    @DataField(description = ParamConstants.JOB_CREATE_PARAMS_OUT_DIR_DESCRIPTION)
     private TinyFile outDir;
+    @DataField(description = ParamConstants.JOB_CREATE_PARAMS_INPUT_DESCRIPTION)
     private List<TinyFile> input;    // input files to this job
+    @DataField(description = ParamConstants.JOB_CREATE_PARAMS_OUTPUT_DESCRIPTION)
     private List<TinyFile> output;   // output files of this job
+    @DataField(description = ParamConstants.JOB_CREATE_PARAMS_TAGS_DESCRIPTION)
     private List<String> tags;
 
+    @DataField(description = ParamConstants.JOB_CREATE_PARAMS_RESULT_DESCRIPTION)
     private ExecutionResult result;
 
+    @DataField(description = ParamConstants.JOB_CREATE_PARAMS_STDOUT_DESCRIPTION)
     private TinyFile stdout;
+    @DataField(description = ParamConstants.JOB_CREATE_PARAMS_STDERR_DESCRIPTION)
     private TinyFile stderr;
 
+    @DataField(description = ParamConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public JobCreateParams() {

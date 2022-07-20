@@ -20,8 +20,12 @@ import org.opencb.opencga.core.models.file.File;
 
 import java.util.Objects;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class Datastores {
 
+    @DataField(description = ParamConstants.DATASTORES_VARIANT_DESCRIPTION)
     private DataStore variant;
 //    private DataStore alignment;
 //    private DataStore expression;

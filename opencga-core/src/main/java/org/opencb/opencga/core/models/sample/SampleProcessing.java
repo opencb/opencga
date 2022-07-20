@@ -24,6 +24,8 @@ import org.opencb.opencga.core.api.FieldConstants;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class SampleProcessing {
 
 

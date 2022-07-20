@@ -18,6 +18,9 @@ package org.opencb.opencga.core.models.variant;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariantStudyDeleteParams extends ToolParams {
 
     public static final String DESCRIPTION = "Variant delete study params";
@@ -29,6 +32,7 @@ public class VariantStudyDeleteParams extends ToolParams {
         this.resume = resume;
     }
 
+    @DataField(description = ParamConstants.VARIANT_STUDY_DELETE_PARAMS_RESUME_DESCRIPTION)
     private boolean resume;
 
     public boolean isResume() {

@@ -23,6 +23,8 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class JobInternalWebhook implements Cloneable {
 
     @DataField(id = "webhook", indexed = true,

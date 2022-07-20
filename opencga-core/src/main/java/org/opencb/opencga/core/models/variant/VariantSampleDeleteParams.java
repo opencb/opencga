@@ -20,6 +20,9 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariantSampleDeleteParams extends ToolParams {
 
     public static final String DESCRIPTION = "Variant delete sample params";
@@ -33,8 +36,11 @@ public class VariantSampleDeleteParams extends ToolParams {
         this.resume = resume;
     }
 
+    @DataField(description = ParamConstants.VARIANT_SAMPLE_DELETE_PARAMS_SAMPLE_DESCRIPTION)
     private List<String> sample;
+    @DataField(description = ParamConstants.VARIANT_SAMPLE_DELETE_PARAMS_FORCE_DESCRIPTION)
     private boolean force;
+    @DataField(description = ParamConstants.VARIANT_SAMPLE_DELETE_PARAMS_RESUME_DESCRIPTION)
     private boolean resume;
 
     public List<String> getSample() {

@@ -1,9 +1,15 @@
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ClinicalStatusValue {
 
+    @DataField(description = ParamConstants.CLINICAL_STATUS_VALUE_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+    @DataField(description = ParamConstants.CLINICAL_STATUS_VALUE_TYPE_DESCRIPTION)
     private ClinicalStatusType type;
 
     public enum ClinicalStatusType {

@@ -4,9 +4,13 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ExomiserInterpretationAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Exomizer interpretation analysis params";
 
+    @DataField(description = ParamConstants.EXOMISER_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_ANALYSIS_DESCRIPTION)
     private String clinicalAnalysis;
 
     public ExomiserInterpretationAnalysisParams() {

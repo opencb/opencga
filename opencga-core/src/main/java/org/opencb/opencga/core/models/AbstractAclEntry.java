@@ -21,6 +21,9 @@ import java.util.EnumSet;
 /**
  * Created by pfurio on 04/07/16.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public abstract class AbstractAclEntry<E extends Enum<E>> {
 
     public static final String USER_OTHERS_ID = "*";

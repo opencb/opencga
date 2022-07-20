@@ -3,17 +3,29 @@ package org.opencb.opencga.core.models.analysis.knockout;
 import java.util.Map;
 import java.util.Set;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class KnockoutByGeneSummary {
 
+    @DataField(description = ParamConstants.KNOCKOUT_BY_GENE_SUMMARY_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_GENE_SUMMARY_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_GENE_SUMMARY_CHROMOSOME_DESCRIPTION)
     private String chromosome;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_GENE_SUMMARY_START_DESCRIPTION)
     private int start;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_GENE_SUMMARY_END_DESCRIPTION)
     private int end;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_GENE_SUMMARY_STRAND_DESCRIPTION)
     private String strand;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_GENE_SUMMARY_BIOTYPE_DESCRIPTION)
     private String biotype;
 
+    @DataField(description = ParamConstants.KNOCKOUT_BY_GENE_SUMMARY_INDIVIDUAL_STATS_DESCRIPTION)
     private IndividualKnockoutStats individualStats;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_GENE_SUMMARY_VARIANT_STATS_DESCRIPTION)
     private VariantKnockoutStats variantStats;
 
     public KnockoutByGeneSummary() {

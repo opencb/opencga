@@ -18,9 +18,14 @@ package org.opencb.opencga.core.models.individual;
 
 import org.opencb.opencga.core.models.AclParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class IndividualAclUpdateParams extends AclParams {
 
+    @DataField(description = ParamConstants.INDIVIDUAL_ACL_UPDATE_PARAMS_INDIVIDUAL_DESCRIPTION)
     private String individual;
+    @DataField(description = ParamConstants.INDIVIDUAL_ACL_UPDATE_PARAMS_SAMPLE_DESCRIPTION)
     private String sample;
 
     public IndividualAclUpdateParams() {

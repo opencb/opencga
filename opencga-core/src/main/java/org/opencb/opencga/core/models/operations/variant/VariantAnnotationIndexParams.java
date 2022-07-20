@@ -19,6 +19,9 @@ package org.opencb.opencga.core.models.operations.variant;
 import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.tools.ToolParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariantAnnotationIndexParams extends ToolParams {
 
     public static final String DESCRIPTION = "Variant annotation index params.";
@@ -40,14 +43,23 @@ public class VariantAnnotationIndexParams extends ToolParams {
         this.sampleIndexAnnotation = sampleIndexAnnotation;
     }
 
+    @DataField(description = ParamConstants.VARIANT_ANNOTATION_INDEX_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
+    @DataField(description = ParamConstants.VARIANT_ANNOTATION_INDEX_PARAMS_OUTPUT_FILE_NAME_DESCRIPTION)
     private String outputFileName;
+    @DataField(description = ParamConstants.VARIANT_ANNOTATION_INDEX_PARAMS_ANNOTATOR_DESCRIPTION)
     private String annotator;
+    @DataField(description = ParamConstants.VARIANT_ANNOTATION_INDEX_PARAMS_OVERWRITE_ANNOTATIONS_DESCRIPTION)
     private boolean overwriteAnnotations;
+    @DataField(description = ParamConstants.VARIANT_ANNOTATION_INDEX_PARAMS_REGION_DESCRIPTION)
     private String region;
+    @DataField(description = ParamConstants.VARIANT_ANNOTATION_INDEX_PARAMS_CREATE_DESCRIPTION)
     private boolean create;
+    @DataField(description = ParamConstants.VARIANT_ANNOTATION_INDEX_PARAMS_LOAD_DESCRIPTION)
     private String load;
+    @DataField(description = ParamConstants.VARIANT_ANNOTATION_INDEX_PARAMS_CUSTOM_NAME_DESCRIPTION)
     private String customName;
+    @DataField(description = ParamConstants.VARIANT_ANNOTATION_INDEX_PARAMS_SAMPLE_INDEX_ANNOTATION_DESCRIPTION)
     private YesNoAuto sampleIndexAnnotation;
 
     public String getOutdir() {

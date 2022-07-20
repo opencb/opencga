@@ -27,22 +27,39 @@ import java.util.Map;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class PanelUpdateParams {
 
+    @DataField(description = ParamConstants.PANEL_UPDATE_PARAMS_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.PANEL_UPDATE_PARAMS_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
     @Deprecated
+    @DataField(description = ParamConstants.PANEL_UPDATE_PARAMS_AUTHOR_DESCRIPTION)
     private String author;
+    @DataField(description = ParamConstants.PANEL_UPDATE_PARAMS_SOURCE_DESCRIPTION)
     private DiseasePanel.SourcePanel source;
+    @DataField(description = ParamConstants.PANEL_UPDATE_PARAMS_CATEGORIES_DESCRIPTION)
     private List<DiseasePanel.PanelCategory> categories;
+    @DataField(description = ParamConstants.PANEL_UPDATE_PARAMS_TAGS_DESCRIPTION)
     private List<String> tags;
+    @DataField(description = ParamConstants.PANEL_UPDATE_PARAMS_DISORDERS_DESCRIPTION)
     private List<OntologyTerm> disorders;
+    @DataField(description = ParamConstants.PANEL_UPDATE_PARAMS_VARIANTS_DESCRIPTION)
     private List<DiseasePanel.VariantPanel> variants;
+    @DataField(description = ParamConstants.PANEL_UPDATE_PARAMS_GENES_DESCRIPTION)
     private List<DiseasePanel.GenePanel> genes;
+    @DataField(description = ParamConstants.PANEL_UPDATE_PARAMS_REGIONS_DESCRIPTION)
     private List<DiseasePanel.RegionPanel> regions;
+    @DataField(description = ParamConstants.PANEL_UPDATE_PARAMS_STRS_DESCRIPTION)
     private List<DiseasePanel.STR> strs;
+    @DataField(description = ParamConstants.PANEL_UPDATE_PARAMS_STATS_DESCRIPTION)
     private Map<String, Integer> stats;
+    @DataField(description = ParamConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public PanelUpdateParams() {

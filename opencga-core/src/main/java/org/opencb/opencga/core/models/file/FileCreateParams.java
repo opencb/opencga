@@ -6,21 +6,38 @@ import org.opencb.opencga.core.models.common.StatusParams;
 import java.util.List;
 import java.util.Map;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FileCreateParams {
 
+    @DataField(description = ParamConstants.FILE_CREATE_PARAMS_CONTENT_DESCRIPTION)
     private String content;
+    @DataField(description = ParamConstants.FILE_CREATE_PARAMS_PATH_DESCRIPTION)
     private String path;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+    @DataField(description = ParamConstants.FILE_CREATE_PARAMS_TYPE_DESCRIPTION)
     private File.Type type;
+    @DataField(description = ParamConstants.FILE_CREATE_PARAMS_FORMAT_DESCRIPTION)
     private File.Format format;
+    @DataField(description = ParamConstants.FILE_CREATE_PARAMS_BIOFORMAT_DESCRIPTION)
     private File.Bioformat bioformat;
+    @DataField(description = ParamConstants.FILE_CREATE_PARAMS_SAMPLE_IDS_DESCRIPTION)
     private List<String> sampleIds;
+    @DataField(description = ParamConstants.FILE_CREATE_PARAMS_SOFTWARE_DESCRIPTION)
     private Software software;
+    @DataField(description = ParamConstants.FILE_CREATE_PARAMS_TAGS_DESCRIPTION)
     private List<String> tags;
+    @DataField(description = ParamConstants.FILE_CREATE_PARAMS_JOB_ID_DESCRIPTION)
     private String jobId;
+    @DataField(description = ParamConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
+    @DataField(description = ParamConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
+    @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
     private StatusParams status;
+    @DataField(description = ParamConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public FileCreateParams() {

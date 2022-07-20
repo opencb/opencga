@@ -24,17 +24,27 @@ import java.util.Map;
 /**
  * Created by imedina on 24/11/14.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 @Deprecated
 public class Dataset {
 
+    @DataField(description = ParamConstants.DATASET_ID_DESCRIPTION)
     private long id;
+    @DataField(description = ParamConstants.DATASET_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
+    @DataField(description = ParamConstants.DATASET_FILES_DESCRIPTION)
     private List<Long> files;
+    @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
     private InternalStatus status;
 
+    @DataField(description = ParamConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
 

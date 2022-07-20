@@ -18,8 +18,12 @@ package org.opencb.opencga.core.models.cohort;
 
 import org.opencb.opencga.core.models.AclParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class CohortAclUpdateParams extends AclParams {
 
+    @DataField(description = ParamConstants.COHORT_ACL_UPDATE_PARAMS_COHORT_DESCRIPTION)
     private String cohort;
 
     public CohortAclUpdateParams() {

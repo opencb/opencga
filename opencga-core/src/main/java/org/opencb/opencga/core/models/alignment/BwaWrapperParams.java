@@ -4,14 +4,23 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.Map;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class BwaWrapperParams extends ToolParams {
     public static final String DESCRIPTION = "BWA parameters";
 
+    @DataField(description = ParamConstants.BWA_WRAPPER_PARAMS_COMMAND_DESCRIPTION)
     private String command;       // Valid values: index or mem
+    @DataField(description = ParamConstants.BWA_WRAPPER_PARAMS_FASTA_FILE_DESCRIPTION)
     private String fastaFile;     //  Fasta file
+    @DataField(description = ParamConstants.BWA_WRAPPER_PARAMS_FASTQ1FILE_DESCRIPTION)
     private String fastq1File;    // FastQ #1 file
+    @DataField(description = ParamConstants.BWA_WRAPPER_PARAMS_FASTQ2FILE_DESCRIPTION)
     private String fastq2File;    // FastQ #2 file
+    @DataField(description = ParamConstants.BWA_WRAPPER_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
+    @DataField(description = ParamConstants.BWA_WRAPPER_PARAMS_BWA_PARAMS_DESCRIPTION)
     private Map<String, String> bwaParams;
 
     public BwaWrapperParams() {

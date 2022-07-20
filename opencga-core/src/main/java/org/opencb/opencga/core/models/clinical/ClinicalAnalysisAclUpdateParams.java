@@ -18,8 +18,12 @@ package org.opencb.opencga.core.models.clinical;
 
 import org.opencb.opencga.core.models.AclParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ClinicalAnalysisAclUpdateParams extends AclParams {
 
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_ACL_UPDATE_PARAMS_CLINICAL_ANALYSIS_DESCRIPTION)
     private String clinicalAnalysis;
 
     public ClinicalAnalysisAclUpdateParams() {

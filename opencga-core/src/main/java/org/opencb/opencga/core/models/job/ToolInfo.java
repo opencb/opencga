@@ -23,6 +23,8 @@ import org.opencb.opencga.core.models.common.Enums;
 import static org.opencb.opencga.core.tools.annotations.Tool.Scope;
 import static org.opencb.opencga.core.tools.annotations.Tool.Type;
 
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ToolInfo {
 
     @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,

@@ -19,6 +19,9 @@ package org.opencb.opencga.core.models.operations.variant;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.opencga.core.tools.ToolParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariantScoreIndexParams extends ToolParams {
 
     public static final String SCORE_NAME = "Unique name of the score within the study";
@@ -41,11 +44,17 @@ public class VariantScoreIndexParams extends ToolParams {
             + "inputColumns: " + INPUT_COLUMNS + ". "
             + "resume: " + RESUME;
 
+    @DataField(description = ParamConstants.VARIANT_SCORE_INDEX_PARAMS_SCORE_NAME_DESCRIPTION)
     private String scoreName;
+    @DataField(description = ParamConstants.VARIANT_SCORE_INDEX_PARAMS_COHORT1_DESCRIPTION)
     private String cohort1;
+    @DataField(description = ParamConstants.VARIANT_SCORE_INDEX_PARAMS_COHORT2_DESCRIPTION)
     private String cohort2;
+    @DataField(description = ParamConstants.VARIANT_SCORE_INDEX_PARAMS_INPUT_DESCRIPTION)
     private String input;
+    @DataField(description = ParamConstants.VARIANT_SCORE_INDEX_PARAMS_INPUT_COLUMNS_DESCRIPTION)
     private String inputColumns;
+    @DataField(description = ParamConstants.VARIANT_SCORE_INDEX_PARAMS_RESUME_DESCRIPTION)
     private boolean resume;
 
     public VariantScoreIndexParams() {

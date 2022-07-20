@@ -21,20 +21,35 @@ import java.util.Map;
 /**
  * Created by imedina on 11/09/14.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FileExperiment {
 
+    @DataField(description = ParamConstants.FILE_EXPERIMENT_TECHNOLOGY_DESCRIPTION)
     private Technology technology;
+    @DataField(description = ParamConstants.FILE_EXPERIMENT_METHOD_DESCRIPTION)
     private Method method;
+    @DataField(description = ParamConstants.FILE_EXPERIMENT_NUCLEIC_ACID_TYPE_DESCRIPTION)
     private NucleicAcidType nucleicAcidType;
+    @DataField(description = ParamConstants.FILE_EXPERIMENT_MANUFACTURER_DESCRIPTION)
     private String manufacturer;
+    @DataField(description = ParamConstants.FILE_EXPERIMENT_PLATFORM_DESCRIPTION)
     private String platform;
+    @DataField(description = ParamConstants.FILE_EXPERIMENT_LIBRARY_DESCRIPTION)
     private String library;
+    @DataField(description = ParamConstants.FILE_EXPERIMENT_DATE_DESCRIPTION)
     private String date;
+    @DataField(description = ParamConstants.FILE_EXPERIMENT_CENTER_DESCRIPTION)
     private String center;
+    @DataField(description = ParamConstants.FILE_EXPERIMENT_LAB_DESCRIPTION)
     private String lab;
+    @DataField(description = ParamConstants.FILE_EXPERIMENT_RESPONSIBLE_DESCRIPTION)
     private String responsible;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
+    @DataField(description = ParamConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public enum Technology {

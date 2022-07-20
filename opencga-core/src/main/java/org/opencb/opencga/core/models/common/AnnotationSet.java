@@ -28,18 +28,28 @@ import java.util.Map;
 /**
  * Created by imedina on 25/11/14.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class AnnotationSet {
 
+    @DataField(description = ParamConstants.ANNOTATION_SET_ID_DESCRIPTION)
     private String id;
     @Deprecated
+    @DataField(description = ParamConstants.ANNOTATION_SET_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.ANNOTATION_SET_VARIABLE_SET_ID_DESCRIPTION)
     private String variableSetId;
+    @DataField(description = ParamConstants.ANNOTATION_SET_ANNOTATIONS_DESCRIPTION)
     private Map<String, Object> annotations;
     @Deprecated
+    @DataField(description = ParamConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
     @Deprecated
+    @DataField(description = ParamConstants.ANNOTATION_SET_RELEASE_DESCRIPTION)
     private int release;
     @Deprecated
+    @DataField(description = ParamConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
 

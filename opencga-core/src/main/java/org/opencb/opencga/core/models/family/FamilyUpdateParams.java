@@ -31,17 +31,31 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FamilyUpdateParams {
+    @DataField(description = ParamConstants.FAMILY_UPDATE_PARAMS_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.FAMILY_UPDATE_PARAMS_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+    @DataField(description = ParamConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
+    @DataField(description = ParamConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
+    @DataField(description = ParamConstants.FAMILY_UPDATE_PARAMS_MEMBERS_DESCRIPTION)
     private List<IndividualReferenceParam> members;
+    @DataField(description = ParamConstants.FAMILY_UPDATE_PARAMS_EXPECTED_SIZE_DESCRIPTION)
     private Integer expectedSize;
+    @DataField(description = ParamConstants.FAMILY_UPDATE_PARAMS_QUALITY_CONTROL_DESCRIPTION)
     private FamilyQualityControl qualityControl;
+    @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
     private StatusParams status;
+    @DataField(description = ParamConstants.FAMILY_UPDATE_PARAMS_ANNOTATION_SETS_DESCRIPTION)
     private List<AnnotationSet> annotationSets;
+    @DataField(description = ParamConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public FamilyUpdateParams() {

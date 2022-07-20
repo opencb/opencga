@@ -2,10 +2,15 @@ package org.opencb.opencga.core.models.alignment;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class AlignmentFastQcMetricsParams extends ToolParams {
     public static final String DESCRIPTION = "Alignment FastQC metrics params";
 
+    @DataField(description = ParamConstants.ALIGNMENT_FAST_QC_METRICS_PARAMS_FILE_DESCRIPTION)
     private String file;
+    @DataField(description = ParamConstants.ALIGNMENT_FAST_QC_METRICS_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
 
     public AlignmentFastQcMetricsParams() {

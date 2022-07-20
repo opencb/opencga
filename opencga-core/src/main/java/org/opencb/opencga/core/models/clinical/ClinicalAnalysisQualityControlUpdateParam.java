@@ -7,10 +7,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ClinicalAnalysisQualityControlUpdateParam {
 
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_QUALITY_CONTROL_UPDATE_PARAM_SUMMARY_DESCRIPTION)
     private ClinicalAnalysisQualityControl.QualityControlSummary summary;
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_QUALITY_CONTROL_UPDATE_PARAM_COMMENTS_DESCRIPTION)
     private List<String> comments;
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_QUALITY_CONTROL_UPDATE_PARAM_FILES_DESCRIPTION)
     private List<String> files;
 
     public ClinicalAnalysisQualityControlUpdateParam() {

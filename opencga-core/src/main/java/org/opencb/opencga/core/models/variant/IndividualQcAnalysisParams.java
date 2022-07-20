@@ -18,12 +18,19 @@ package org.opencb.opencga.core.models.variant;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class IndividualQcAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Individual QC analysis params";
+    @DataField(description = ParamConstants.INDIVIDUAL_QC_ANALYSIS_PARAMS_INDIVIDUAL_DESCRIPTION)
     private String individual;
+    @DataField(description = ParamConstants.INDIVIDUAL_QC_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION)
     private String sample;
+    @DataField(description = ParamConstants.INDIVIDUAL_QC_ANALYSIS_PARAMS_INFERRED_SEX_METHOD_DESCRIPTION)
     private String inferredSexMethod;
 
+    @DataField(description = ParamConstants.INDIVIDUAL_QC_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
 
     public IndividualQcAnalysisParams() {

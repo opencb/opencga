@@ -19,16 +19,26 @@ package org.opencb.opencga.core.models.variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.tools.ToolParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class MutationalSignatureAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Mutational signature analysis params";
 
+    @DataField(description = ParamConstants.MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION)
     private String sample;
+    @DataField(description = ParamConstants.MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+    @DataField(description = ParamConstants.MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_QUERY_DESCRIPTION)
     private ObjectMap query;
+    @DataField(description = ParamConstants.MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_RELEASE_DESCRIPTION)
     private String release;
+    @DataField(description = ParamConstants.MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_FITTING_DESCRIPTION)
     private boolean fitting;
 
+    @DataField(description = ParamConstants.MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
 
     public MutationalSignatureAnalysisParams() {

@@ -1,16 +1,23 @@
 package org.opencb.opencga.core.models.study.configuration;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ClinicalPriorityValue {
 
+    @DataField(description = ParamConstants.CLINICAL_PRIORITY_VALUE_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
     /**
      * Highest priority: 1
      */
+    @DataField(description = ParamConstants.CLINICAL_PRIORITY_VALUE_RANK_DESCRIPTION)
     private int rank;
     /**
      * Flag indicating the default priority that will be applied when empty.
      */
+    @DataField(description = ParamConstants.CLINICAL_PRIORITY_VALUE_DEFAULT_PRIORITY_DESCRIPTION)
     private boolean defaultPriority;
 
     public ClinicalPriorityValue() {

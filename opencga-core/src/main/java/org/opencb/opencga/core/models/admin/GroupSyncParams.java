@@ -18,14 +18,24 @@ package org.opencb.opencga.core.models.admin;
 
 import org.opencb.opencga.core.models.user.Account;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class GroupSyncParams {
 
+    @DataField(description = ParamConstants.GROUP_SYNC_PARAMS_AUTHENTICATION_ORIGIN_ID_DESCRIPTION)
     private String authenticationOriginId;
+    @DataField(description = ParamConstants.GROUP_SYNC_PARAMS_FROM_DESCRIPTION)
     private String from;
+    @DataField(description = ParamConstants.GROUP_SYNC_PARAMS_TO_DESCRIPTION)
     private String to;
+    @DataField(description = ParamConstants.GROUP_SYNC_PARAMS_STUDY_DESCRIPTION)
     private String study;
+    @DataField(description = ParamConstants.GROUP_SYNC_PARAMS_SYNC_ALL_DESCRIPTION)
     private boolean syncAll;
+    @DataField(description = ParamConstants.GROUP_SYNC_PARAMS_TYPE_DESCRIPTION)
     private Account.AccountType type;
+    @DataField(description = ParamConstants.GROUP_SYNC_PARAMS_FORCE_DESCRIPTION)
     private boolean force;
 
     public GroupSyncParams() {

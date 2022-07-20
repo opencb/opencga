@@ -20,12 +20,19 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariantFamilyIndexParams extends ToolParams {
 
     public static final String DESCRIPTION = "Variant family index params.";
+    @DataField(description = ParamConstants.VARIANT_FAMILY_INDEX_PARAMS_FAMILY_DESCRIPTION)
     private List<String> family;
+    @DataField(description = ParamConstants.VARIANT_FAMILY_INDEX_PARAMS_OVERWRITE_DESCRIPTION)
     private boolean overwrite;
+    @DataField(description = ParamConstants.VARIANT_FAMILY_INDEX_PARAMS_UPDATE_INDEX_DESCRIPTION)
     private boolean updateIndex;
+    @DataField(description = ParamConstants.VARIANT_FAMILY_INDEX_PARAMS_SKIP_INCOMPLETE_FAMILIES_DESCRIPTION)
     private boolean skipIncompleteFamilies;
 
     public VariantFamilyIndexParams() {

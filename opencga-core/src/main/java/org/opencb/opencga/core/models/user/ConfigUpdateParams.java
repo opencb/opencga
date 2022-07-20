@@ -20,10 +20,13 @@ import org.opencb.commons.annotations.DataField;
 
 import java.util.Map;
 
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ConfigUpdateParams {
 
     @DataField(required = true, description = "Config id (Required)")
     private String id;
+    @DataField(description = ParamConstants.CONFIG_UPDATE_PARAMS_CONFIGURATION_DESCRIPTION)
     private Map<String, Object> configuration;
 
     public ConfigUpdateParams() {

@@ -3,13 +3,19 @@ package org.opencb.opencga.core.models.alignment;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class CoverageIndexParams {
     public static final String DESCRIPTION = "Coverage computation parameters";
 
+    @DataField(description = ParamConstants.COVERAGE_INDEX_PARAMS_FILE_DESCRIPTION)
     private String file;
 
     @JsonProperty(defaultValue = "1")
+    @DataField(description = ParamConstants.COVERAGE_INDEX_PARAMS_WINDOW_SIZE_DESCRIPTION)
     private int windowSize;
+    @DataField(description = ParamConstants.COVERAGE_INDEX_PARAMS_OVERWRITE_DESCRIPTION)
     private boolean overwrite;
 
     public CoverageIndexParams() {

@@ -18,9 +18,14 @@ package org.opencb.opencga.core.models.file;
 
 import org.opencb.opencga.core.models.AclParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FileAclUpdateParams extends AclParams {
 
+    @DataField(description = ParamConstants.FILE_ACL_UPDATE_PARAMS_FILE_DESCRIPTION)
     private String file;
+    @DataField(description = ParamConstants.FILE_ACL_UPDATE_PARAMS_SAMPLE_DESCRIPTION)
     private String sample;
 
     public FileAclUpdateParams() {

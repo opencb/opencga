@@ -16,11 +16,18 @@
 
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ClinicalConsent {
 
+    @DataField(description = ParamConstants.CLINICAL_CONSENT_PRIMARY_FINDINGS_DESCRIPTION)
     private ConsentStatus primaryFindings;
+    @DataField(description = ParamConstants.CLINICAL_CONSENT_SECONDARY_FINDINGS_DESCRIPTION)
     private ConsentStatus secondaryFindings;
+    @DataField(description = ParamConstants.CLINICAL_CONSENT_CARRIER_FINDINGS_DESCRIPTION)
     private ConsentStatus carrierFindings;
+    @DataField(description = ParamConstants.CLINICAL_CONSENT_RESEARCH_FINDINGS_DESCRIPTION)
     private ConsentStatus researchFindings;
 
     public enum ConsentStatus {

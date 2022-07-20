@@ -4,71 +4,125 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ZettaInterpretationAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Zetta interpretation analysis params";
 
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_ANALYSIS_DESCRIPTION)
     private String clinicalAnalysis;
 
     // Variant filters
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_ID_DESCRIPTION)
     private List<String> id;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_REGION_DESCRIPTION)
     private String region;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_TYPE_DESCRIPTION)
     private String type;
 
     // Study filters
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_STUDY_DESCRIPTION)
     private String study;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_FILE_DESCRIPTION)
     private String file;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_FILTER_DESCRIPTION)
     private String filter;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_QUAL_DESCRIPTION)
     private String qual;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_FILE_DATA_DESCRIPTION)
     private String fileData;
 
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION)
     private String sample;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_SAMPLE_DATA_DESCRIPTION)
     private String sampleData;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_SAMPLE_ANNOTATION_DESCRIPTION)
     private String sampleAnnotation;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_SAMPLE_METADATA_DESCRIPTION)
     private String sampleMetadata;
 
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_COHORT_DESCRIPTION)
     private String cohort;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_COHORT_STATS_REF_DESCRIPTION)
     private String cohortStatsRef;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_COHORT_STATS_ALT_DESCRIPTION)
     private String cohortStatsAlt;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_COHORT_STATS_MAF_DESCRIPTION)
     private String cohortStatsMaf;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_COHORT_STATS_MGF_DESCRIPTION)
     private String cohortStatsMgf;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_COHORT_STATS_PASS_DESCRIPTION)
     private String cohortStatsPass;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_SCORE_DESCRIPTION)
     private String score;
 
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_FAMILY_DESCRIPTION)
     private String family;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_FAMILY_DISORDER_DESCRIPTION)
     private String familyDisorder;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_FAMILY_SEGREGATION_DESCRIPTION)
     private String familySegregation;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_FAMILY_MEMBERS_DESCRIPTION)
     private String familyMembers;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_FAMILY_PROBAND_DESCRIPTION)
     private String familyProband;
 
     // Annotation filters
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_GENE_DESCRIPTION)
     private String gene;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_CT_DESCRIPTION)
     private String ct;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_XREF_DESCRIPTION)
     private String xref;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_TYPE_DESCRIPTION)
     private String biotype;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_PROTEIN_SUBSTITUTION_DESCRIPTION)
     private String proteinSubstitution;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_CONSERVATION_DESCRIPTION)
     private String conservation;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_POPULATION_FREQUENCY_ALT_DESCRIPTION)
     private String populationFrequencyAlt;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_POPULATION_FREQUENCY_REF_DESCRIPTION)
     private String populationFrequencyRef;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_POPULATION_FREQUENCY_MAF_DESCRIPTION)
     private String populationFrequencyMaf;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_TRANSCRIPT_FLAG_DESCRIPTION)
     private String transcriptFlag;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_GENE_TRAIT_ID_DESCRIPTION)
     private String geneTraitId;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_GO_DESCRIPTION)
     private String go;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_EXPRESSION_DESCRIPTION)
     private String expression;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_PROTEIN_KEYWORD_DESCRIPTION)
     private String proteinKeyword;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_DRUG_DESCRIPTION)
     private String drug;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_FUNCTIONAL_SCORE_DESCRIPTION)
     private String functionalScore;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_DESCRIPTION)
     private String clinical;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_SIGNIFICANCE_DESCRIPTION)
     private String clinicalSignificance;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_CONFIRMED_STATUS_DESCRIPTION)
     private boolean clinicalConfirmedStatus;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_CUSTOM_ANNOTATION_DESCRIPTION)
     private String customAnnotation;
 
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_PANEL_DESCRIPTION)
     private String panel;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_PANEL_MODE_OF_INHERITANCE_DESCRIPTION)
     private String panelModeOfInheritance;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_PANEL_CONFIDENCE_DESCRIPTION)
     private String panelConfidence;
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_PANEL_ROLE_IN_CANCER_DESCRIPTION)
     private String panelRoleInCancer;
 
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_TRAIT_DESCRIPTION)
     private String trait;
 
+    @DataField(description = ParamConstants.ZETTA_INTERPRETATION_ANALYSIS_PARAMS_PRIMARY_DESCRIPTION)
     private boolean primary; // primary interpretation (vs secondary interpretation)
 
     public ZettaInterpretationAnalysisParams() {

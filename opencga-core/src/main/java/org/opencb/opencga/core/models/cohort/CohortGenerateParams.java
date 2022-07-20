@@ -7,16 +7,28 @@ import org.opencb.opencga.core.models.common.StatusParams;
 import java.util.List;
 import java.util.Map;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class CohortGenerateParams {
 
+    @DataField(description = ParamConstants.COHORT_GENERATE_PARAMS_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.COHORT_GENERATE_PARAMS_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.COHORT_GENERATE_PARAMS_TYPE_DESCRIPTION)
     private Enums.CohortType type;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+    @DataField(description = ParamConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
+    @DataField(description = ParamConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
+    @DataField(description = ParamConstants.COHORT_GENERATE_PARAMS_ANNOTATION_SETS_DESCRIPTION)
     private List<AnnotationSet> annotationSets;
+    @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
     private StatusParams status;
+    @DataField(description = ParamConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public CohortGenerateParams() {

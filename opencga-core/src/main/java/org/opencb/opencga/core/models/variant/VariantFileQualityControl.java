@@ -19,9 +19,14 @@ package org.opencb.opencga.core.models.variant;
 import org.opencb.biodata.formats.sequence.ascat.AscatMetrics;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariantFileQualityControl {
 
+    @DataField(description = ParamConstants.VARIANT_FILE_QUALITY_CONTROL_VARIANT_SET_METRICS_DESCRIPTION)
     private VariantSetStats variantSetMetrics;
+    @DataField(description = ParamConstants.VARIANT_FILE_QUALITY_CONTROL_ASCAT_METRICS_DESCRIPTION)
     private AscatMetrics ascatMetrics;
 
     public VariantFileQualityControl() {

@@ -22,6 +22,8 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Internal;
 import org.opencb.opencga.core.models.common.InternalStatus;
 
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ProjectInternal extends Internal {
 
     @DataField(id = "datastores", indexed = true, uncommentedClasses = {"Datastores"},

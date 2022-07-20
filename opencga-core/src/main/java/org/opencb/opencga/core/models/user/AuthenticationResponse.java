@@ -1,8 +1,13 @@
 package org.opencb.opencga.core.models.user;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class AuthenticationResponse {
 
+    @DataField(description = ParamConstants.AUTHENTICATION_RESPONSE_TOKEN_DESCRIPTION)
     private String token;
+    @DataField(description = ParamConstants.AUTHENTICATION_RESPONSE_REFRESH_TOKEN_DESCRIPTION)
     private String refreshToken;
 
     public AuthenticationResponse() {

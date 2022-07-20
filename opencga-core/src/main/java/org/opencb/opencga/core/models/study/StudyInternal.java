@@ -24,6 +24,8 @@ import org.opencb.opencga.core.models.common.Internal;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
 
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class StudyInternal extends Internal {
 
 

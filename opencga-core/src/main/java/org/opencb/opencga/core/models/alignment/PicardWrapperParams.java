@@ -5,11 +5,16 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.Map;
 
+import org.opencb.commons.annotations.DataField;
+
 public class PicardWrapperParams extends ToolParams {
     public static final String DESCRIPTION = "Picard parameters. " + ParamConstants.PICARD_COMMAND_DESCRIPTION;
 
+    @DataField(description = ParamConstants.PICARD_WRAPPER_PARAMS_COMMAND_DESCRIPTION)
     private String command;
+    @DataField(description = ParamConstants.PICARD_WRAPPER_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
+    @DataField(description = ParamConstants.PICARD_WRAPPER_PARAMS_PICARD_PARAMS_DESCRIPTION)
     private Map<String, String> picardParams;
 
     public PicardWrapperParams() {

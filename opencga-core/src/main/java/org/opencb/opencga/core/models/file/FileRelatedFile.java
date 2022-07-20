@@ -19,9 +19,14 @@ package org.opencb.opencga.core.models.file;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FileRelatedFile {
 
+    @DataField(description = ParamConstants.FILE_RELATED_FILE_FILE_DESCRIPTION)
     private File file;
+    @DataField(description = ParamConstants.FILE_RELATED_FILE_RELATION_DESCRIPTION)
     private Relation relation;
 
     public enum Relation {

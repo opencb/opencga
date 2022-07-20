@@ -22,9 +22,14 @@ import java.util.List;
 /**
  * Created by pfurio on 12/08/16.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariableSummary {
 
+    @DataField(description = ParamConstants.VARIABLE_SUMMARY_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.VARIABLE_SUMMARY_ANNOTATIONS_DESCRIPTION)
     private List<FeatureCount> annotations;
 
     public VariableSummary() {

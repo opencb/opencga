@@ -4,21 +4,27 @@ import org.opencb.opencga.core.models.user.User;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class CustomGroup {
 
     /**
      * Group id, unique in the belonging study.
      */
+    @DataField(description = ParamConstants.CUSTOM_GROUP_ID_DESCRIPTION)
     private String id;
 
     /**
      * Set of users belonging to this group.
      */
+    @DataField(description = ParamConstants.CUSTOM_GROUP_USERS_DESCRIPTION)
     private List<User> users;
 
     /**
      * Group has been synchronised from an external authorization.
      */
+    @DataField(description = ParamConstants.CUSTOM_GROUP_SYNCED_FROM_DESCRIPTION)
     private Group.Sync syncedFrom;
 
     public CustomGroup() {

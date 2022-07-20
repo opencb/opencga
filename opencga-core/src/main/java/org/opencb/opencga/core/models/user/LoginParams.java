@@ -16,10 +16,16 @@
 
 package org.opencb.opencga.core.models.user;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class LoginParams {
 
+    @DataField(description = ParamConstants.LOGIN_PARAMS_USER_DESCRIPTION)
     private String user;
+    @DataField(description = ParamConstants.LOGIN_PARAMS_PASSWORD_DESCRIPTION)
     private String password;
+    @DataField(description = ParamConstants.LOGIN_PARAMS_REFRESH_TOKEN_DESCRIPTION)
     private String refreshToken;
 
     public LoginParams() {

@@ -2,10 +2,16 @@ package org.opencb.opencga.core.models.file;
 
 import java.util.Objects;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FileInternalVariant {
 
+    @DataField(description = ParamConstants.FILE_INTERNAL_VARIANT_INDEX_DESCRIPTION)
     private FileInternalVariantIndex index;
+    @DataField(description = ParamConstants.FILE_INTERNAL_VARIANT_ANNOTATION_INDEX_DESCRIPTION)
     private FileInternalVariantAnnotationIndex annotationIndex;
+    @DataField(description = ParamConstants.FILE_INTERNAL_VARIANT_SECONDARY_INDEX_DESCRIPTION)
     private FileInternalVariantSecondaryIndex secondaryIndex;
 
     public FileInternalVariant() {

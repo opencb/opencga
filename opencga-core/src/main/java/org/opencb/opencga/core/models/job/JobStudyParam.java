@@ -22,6 +22,8 @@ import org.opencb.opencga.core.api.FieldConstants;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class JobStudyParam {
 
     @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,

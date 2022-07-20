@@ -21,6 +21,9 @@ import org.opencb.opencga.core.models.common.InternalStatus;
 import java.util.Arrays;
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class InterpretationStatus extends InternalStatus {
 
     public static final String NOT_REVIEWED = "NOT_REVIEWED";

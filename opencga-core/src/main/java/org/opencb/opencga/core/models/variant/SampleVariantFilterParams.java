@@ -19,10 +19,14 @@ package org.opencb.opencga.core.models.variant;
 import java.util.Arrays;
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class SampleVariantFilterParams extends AnnotationVariantQueryParams {
 
     public static final String DESCRIPTION = "Sample variant filter params";
     private List<String> genotypes = Arrays.asList("0/1", "1/1");
+    @DataField(description = ParamConstants.SAMPLE_VARIANT_FILTER_PARAMS_SAMPLE_DESCRIPTION)
     private List<String> sample;
     private boolean samplesInAllVariants = false;
     private int maxVariants = 50;

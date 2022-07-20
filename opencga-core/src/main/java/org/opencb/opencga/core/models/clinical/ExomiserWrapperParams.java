@@ -4,10 +4,15 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.Map;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ExomiserWrapperParams extends ToolParams {
     public static final String DESCRIPTION = "Exomiser parameters";
 
+    @DataField(description = ParamConstants.EXOMISER_WRAPPER_PARAMS_SAMPLE_DESCRIPTION)
     private String sample;
+    @DataField(description = ParamConstants.EXOMISER_WRAPPER_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
 
     public ExomiserWrapperParams() {

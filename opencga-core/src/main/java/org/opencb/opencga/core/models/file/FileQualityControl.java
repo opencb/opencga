@@ -8,12 +8,20 @@ import org.opencb.opencga.core.models.variant.VariantFileQualityControl;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FileQualityControl {
 
+    @DataField(description = ParamConstants.FILE_QUALITY_CONTROL_VARIANT_DESCRIPTION)
     private VariantFileQualityControl variant;
+    @DataField(description = ParamConstants.FILE_QUALITY_CONTROL_ALIGNMENT_DESCRIPTION)
     private AlignmentFileQualityControl alignment;
+    @DataField(description = ParamConstants.FILE_QUALITY_CONTROL_COVERAGE_DESCRIPTION)
     private CoverageFileQualityControl coverage;
+    @DataField(description = ParamConstants.FILE_QUALITY_CONTROL_COMMENTS_DESCRIPTION)
     private List<ClinicalComment> comments;
+    @DataField(description = ParamConstants.FILE_QUALITY_CONTROL_FILES_DESCRIPTION)
     private List<String> files;
 
     public FileQualityControl() {

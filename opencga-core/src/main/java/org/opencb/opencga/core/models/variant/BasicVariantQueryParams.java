@@ -19,9 +19,14 @@ package org.opencb.opencga.core.models.variant;
 /**
  * Basic set of VariantQueryParams, containing only the most used ones.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class BasicVariantQueryParams extends AnnotationVariantQueryParams {
 
+    @DataField(description = ParamConstants.BASIC_VARIANT_QUERY_PARAMS_PROJECT_DESCRIPTION)
     private String project;
+    @DataField(description = ParamConstants.BASIC_VARIANT_QUERY_PARAMS_STUDY_DESCRIPTION)
     private String study;
 
     public String getProject() {

@@ -21,15 +21,24 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariantStatsIndexParams extends ToolParams {
     public static final String DESCRIPTION = "Variant stats index params";
 
+    @DataField(description = ParamConstants.VARIANT_STATS_INDEX_PARAMS_COHORT_DESCRIPTION)
     private List<String> cohort;
+    @DataField(description = ParamConstants.VARIANT_STATS_INDEX_PARAMS_REGION_DESCRIPTION)
     private String region;
+    @DataField(description = ParamConstants.VARIANT_STATS_INDEX_PARAMS_OVERWRITE_STATS_DESCRIPTION)
     private boolean overwriteStats;
+    @DataField(description = ParamConstants.VARIANT_STATS_INDEX_PARAMS_RESUME_DESCRIPTION)
     private boolean resume;
 
+    @DataField(description = ParamConstants.VARIANT_STATS_INDEX_PARAMS_AGGREGATED_DESCRIPTION)
     private Aggregation aggregated;
+    @DataField(description = ParamConstants.VARIANT_STATS_INDEX_PARAMS_AGGREGATION_MAPPING_FILE_DESCRIPTION)
     private String aggregationMappingFile;
 
     public VariantStatsIndexParams() {

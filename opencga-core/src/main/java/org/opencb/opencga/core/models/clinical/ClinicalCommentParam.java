@@ -4,10 +4,16 @@ import org.opencb.biodata.models.clinical.ClinicalComment;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ClinicalCommentParam {
 
+    @DataField(description = ParamConstants.CLINICAL_COMMENT_PARAM_MESSAGE_DESCRIPTION)
     private String message;
+    @DataField(description = ParamConstants.CLINICAL_COMMENT_PARAM_TAGS_DESCRIPTION)
     private List<String> tags;
+    @DataField(description = ParamConstants.CLINICAL_COMMENT_PARAM_DATE_DESCRIPTION)
     private String date;
 
     public ClinicalCommentParam() {

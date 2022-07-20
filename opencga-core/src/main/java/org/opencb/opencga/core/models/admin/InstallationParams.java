@@ -16,11 +16,18 @@
 
 package org.opencb.opencga.core.models.admin;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class InstallationParams {
 
+    @DataField(description = ParamConstants.INSTALLATION_PARAMS_SECRET_KEY_DESCRIPTION)
     private String secretKey;
+    @DataField(description = ParamConstants.INSTALLATION_PARAMS_PASSWORD_DESCRIPTION)
     private String password;
+    @DataField(description = ParamConstants.INSTALLATION_PARAMS_EMAIL_DESCRIPTION)
     private String email;
+    @DataField(description = ParamConstants.INSTALLATION_PARAMS_ORGANIZATION_DESCRIPTION)
     private String organization;
 
     public InstallationParams() {

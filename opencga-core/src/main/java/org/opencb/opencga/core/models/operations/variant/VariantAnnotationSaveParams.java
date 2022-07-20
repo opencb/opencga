@@ -18,9 +18,13 @@ package org.opencb.opencga.core.models.operations.variant;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariantAnnotationSaveParams extends ToolParams {
 
     public static final String DESCRIPTION = "Variant annotation save params";
+    @DataField(description = ParamConstants.VARIANT_ANNOTATION_SAVE_PARAMS_ANNOTATION_ID_DESCRIPTION)
     private String annotationId;
 
     public VariantAnnotationSaveParams() {

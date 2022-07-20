@@ -23,8 +23,12 @@ import java.util.List;
 /**
  * Created by pfurio on 07/07/16.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public abstract class Annotable extends PrivateStudyUid {
 
+    @DataField(description = ParamConstants.ANNOTABLE_ID_DESCRIPTION)
     private String id;
     protected List<AnnotationSet> annotationSets;
 

@@ -18,16 +18,21 @@ package org.opencb.opencga.core.models.file;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FileFetch extends ToolParams {
 
     /**
      * External url where the file to be registered can be downloaded from.
      */
+    @DataField(description = ParamConstants.FILE_FETCH_URL_DESCRIPTION)
     private String url;
 
     /**
      * Folder path where the file will be downloaded.
      */
+    @DataField(description = ParamConstants.FILE_FETCH_PATH_DESCRIPTION)
     private String path;
 
     public FileFetch() {

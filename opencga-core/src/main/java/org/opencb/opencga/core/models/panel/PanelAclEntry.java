@@ -25,6 +25,9 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 01/06/16.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class PanelAclEntry extends AbstractAclEntry<PanelAclEntry.PanelPermissions> {
 
     public enum PanelPermissions {

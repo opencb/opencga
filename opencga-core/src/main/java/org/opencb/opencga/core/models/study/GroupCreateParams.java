@@ -20,10 +20,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class GroupCreateParams {
 
     @JsonProperty(required = true)
+    @DataField(description = ParamConstants.GROUP_CREATE_PARAMS_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.GROUP_CREATE_PARAMS_USERS_DESCRIPTION)
     private List<String> users;
 
     public GroupCreateParams() {

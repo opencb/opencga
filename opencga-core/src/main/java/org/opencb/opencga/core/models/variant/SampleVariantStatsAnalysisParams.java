@@ -21,18 +21,29 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class SampleVariantStatsAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Sample variant stats params. "
             + "Use index=true and indexId='' to store the result in catalog sample QC. indexId=ALL requires an empty query. "
             + "Use sample=all to compute sample stats of all samples in the variant storage.";
+    @DataField(description = ParamConstants.SAMPLE_VARIANT_STATS_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION)
     private List<String> sample;
+    @DataField(description = ParamConstants.SAMPLE_VARIANT_STATS_ANALYSIS_PARAMS_INDIVIDUAL_DESCRIPTION)
     private List<String> individual;
     private VariantQueryParams variantQuery = new VariantQueryParams();
+    @DataField(description = ParamConstants.SAMPLE_VARIANT_STATS_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
+    @DataField(description = ParamConstants.SAMPLE_VARIANT_STATS_ANALYSIS_PARAMS_INDEX_DESCRIPTION)
     private boolean index;
+    @DataField(description = ParamConstants.SAMPLE_VARIANT_STATS_ANALYSIS_PARAMS_INDEX_OVERWRITE_DESCRIPTION)
     private boolean indexOverwrite;
+    @DataField(description = ParamConstants.SAMPLE_VARIANT_STATS_ANALYSIS_PARAMS_INDEX_ID_DESCRIPTION)
     private String indexId;
+    @DataField(description = ParamConstants.SAMPLE_VARIANT_STATS_ANALYSIS_PARAMS_INDEX_DESCRIPTION_DESCRIPTION)
     private String indexDescription;
+    @DataField(description = ParamConstants.SAMPLE_VARIANT_STATS_ANALYSIS_PARAMS_BATCH_SIZE_DESCRIPTION)
     private Integer batchSize;
 
     public static class VariantQueryParams extends AnnotationVariantQueryParams {

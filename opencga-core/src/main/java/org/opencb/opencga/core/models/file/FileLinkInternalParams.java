@@ -18,8 +18,12 @@ package org.opencb.opencga.core.models.file;
 
 import java.util.Map;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FileLinkInternalParams {
 
+    @DataField(description = ParamConstants.FILE_LINK_INTERNAL_PARAMS_SAMPLE_MAP_DESCRIPTION)
     private Map<String, String> sampleMap;
 
     public FileLinkInternalParams() {

@@ -16,11 +16,15 @@
 
 package org.opencb.opencga.core.models.common;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class TsvAnnotationParams {
 
     /**
      * Content of the TSV file if this does has not been registered yet in OpenCGA.
      */
+    @DataField(description = ParamConstants.TSV_ANNOTATION_PARAMS_CONTENT_DESCRIPTION)
     private String content;
 
 

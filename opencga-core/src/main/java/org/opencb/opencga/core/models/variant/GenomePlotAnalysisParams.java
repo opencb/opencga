@@ -18,15 +18,23 @@ package org.opencb.opencga.core.models.variant;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class GenomePlotAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Genome plot analysis params to customize the plot. The configuration file includes the title, "
             + " the plot density (i.e., the number of points to display), the general query and the list of tracks. Currently, the supported "
             + "track types are: COPY-NUMBER, INDEL, REARRANGEMENT and SNV. In addition, each track can contain a specific query";
 
+    @DataField(description = ParamConstants.GENOME_PLOT_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION)
     private String sample;
+    @DataField(description = ParamConstants.GENOME_PLOT_ANALYSIS_PARAMS_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+    @DataField(description = ParamConstants.GENOME_PLOT_ANALYSIS_PARAMS_CONFIG_FILE_DESCRIPTION)
     private String configFile;
+    @DataField(description = ParamConstants.GENOME_PLOT_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
 
     public GenomePlotAnalysisParams() {

@@ -24,14 +24,24 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariableSetCreateParams {
 
+    @DataField(description = ParamConstants.VARIABLE_SET_CREATE_PARAMS_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.VARIABLE_SET_CREATE_PARAMS_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.VARIABLE_SET_CREATE_PARAMS_UNIQUE_DESCRIPTION)
     private Boolean unique;
+    @DataField(description = ParamConstants.VARIABLE_SET_CREATE_PARAMS_CONFIDENTIAL_DESCRIPTION)
     private Boolean confidential;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+    @DataField(description = ParamConstants.VARIABLE_SET_CREATE_PARAMS_ENTITIES_DESCRIPTION)
     private List<VariableSet.AnnotableDataModels> entities;
+    @DataField(description = ParamConstants.VARIABLE_SET_CREATE_PARAMS_VARIABLES_DESCRIPTION)
     private List<Variable> variables;
 
     public VariableSetCreateParams() {

@@ -18,11 +18,18 @@ package org.opencb.opencga.core.models.user;
 
 import java.util.Map;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class UserUpdateParams {
 
+    @DataField(description = ParamConstants.USER_UPDATE_PARAMS_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.USER_UPDATE_PARAMS_EMAIL_DESCRIPTION)
     private String email;
+    @DataField(description = ParamConstants.USER_UPDATE_PARAMS_ORGANIZATION_DESCRIPTION)
     private String organization;
+    @DataField(description = ParamConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public UserUpdateParams() {

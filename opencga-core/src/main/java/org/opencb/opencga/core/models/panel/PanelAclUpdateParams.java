@@ -18,8 +18,12 @@ package org.opencb.opencga.core.models.panel;
 
 import org.opencb.opencga.core.models.AclParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class PanelAclUpdateParams extends AclParams {
 
+    @DataField(description = ParamConstants.PANEL_ACL_UPDATE_PARAMS_PANEL_DESCRIPTION)
     private String panel;
 
     public PanelAclUpdateParams() {

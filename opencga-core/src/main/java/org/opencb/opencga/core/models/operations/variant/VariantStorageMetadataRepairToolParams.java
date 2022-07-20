@@ -20,12 +20,17 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariantStorageMetadataRepairToolParams extends ToolParams {
 
     public static final String DESCRIPTION = "Variant storage metadata repair params.";
 
+    @DataField(description = ParamConstants.VARIANT_STORAGE_METADATA_REPAIR_TOOL_PARAMS_STUDIES_DESCRIPTION)
     private List<String> studies;
     private int samplesBatchSize = 1000;
+    @DataField(description = ParamConstants.VARIANT_STORAGE_METADATA_REPAIR_TOOL_PARAMS_WHAT_DESCRIPTION)
     private List<What> what;
 
     public enum What {

@@ -4,11 +4,16 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariantStorageMetadataSynchronizeParams extends ToolParams {
     public static final String DESCRIPTION = "Variant storage metadata synchronize params.";
 
+    @DataField(description = ParamConstants.VARIANT_STORAGE_METADATA_SYNCHRONIZE_PARAMS_STUDY_DESCRIPTION)
     private String study;
 
+    @DataField(description = ParamConstants.VARIANT_STORAGE_METADATA_SYNCHRONIZE_PARAMS_FILES_DESCRIPTION)
     private List<String> files;
 
     public String getStudy() {

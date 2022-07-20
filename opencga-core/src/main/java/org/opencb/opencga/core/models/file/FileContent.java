@@ -16,36 +16,45 @@
 
 package org.opencb.opencga.core.models.file;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FileContent {
 
     /**
      * File id.
      */
+    @DataField(description = ParamConstants.FILE_CONTENT_FILE_ID_DESCRIPTION)
     private String fileId;
 
     /**
      * Flag indicating whether the content has reached the end of file.
      */
+    @DataField(description = ParamConstants.FILE_CONTENT_EOF_DESCRIPTION)
     private boolean eof;
 
     /**
      * Final byte of the file read.
      */
+    @DataField(description = ParamConstants.FILE_CONTENT_OFFSET_DESCRIPTION)
     private long offset;
 
     /**
      * Number of bytes returned.
      */
+    @DataField(description = ParamConstants.FILE_CONTENT_SIZE_DESCRIPTION)
     private int size;
 
     /**
      * Number of lines read.
      */
+    @DataField(description = ParamConstants.FILE_CONTENT_LINES_DESCRIPTION)
     private int lines;
 
     /**
      * Partial or full content of the file.
      */
+    @DataField(description = ParamConstants.FILE_CONTENT_CONTENT_DESCRIPTION)
     private String content;
 
     public FileContent() {

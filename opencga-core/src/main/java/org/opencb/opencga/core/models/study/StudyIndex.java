@@ -1,7 +1,11 @@
 package org.opencb.opencga.core.models.study;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class StudyIndex {
 
+    @DataField(description = ParamConstants.STUDY_INDEX_RECESSIVE_GENE_DESCRIPTION)
     private RecessiveGeneSummaryIndex recessiveGene;
 
     public StudyIndex() {

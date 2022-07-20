@@ -20,6 +20,9 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariantFileDeleteParams extends ToolParams {
 
     public static final String DESCRIPTION = "Variant delete file params";
@@ -32,7 +35,9 @@ public class VariantFileDeleteParams extends ToolParams {
         this.resume = resume;
     }
 
+    @DataField(description = ParamConstants.VARIANT_FILE_DELETE_PARAMS_FILE_DESCRIPTION)
     private List<String> file;
+    @DataField(description = ParamConstants.VARIANT_FILE_DELETE_PARAMS_RESUME_DESCRIPTION)
     private boolean resume;
 
     public List<String> getFile() {

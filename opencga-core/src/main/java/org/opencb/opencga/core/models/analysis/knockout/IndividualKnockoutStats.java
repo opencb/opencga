@@ -1,9 +1,15 @@
 package org.opencb.opencga.core.models.analysis.knockout;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class IndividualKnockoutStats extends KnockoutStats {
 
+    @DataField(description = ParamConstants.INDIVIDUAL_KNOCKOUT_STATS_MISSING_PARENTS_DESCRIPTION)
     private KnockoutStats missingParents;
+    @DataField(description = ParamConstants.INDIVIDUAL_KNOCKOUT_STATS_SINGLE_PARENT_DESCRIPTION)
     private KnockoutStats singleParent;
+    @DataField(description = ParamConstants.INDIVIDUAL_KNOCKOUT_STATS_BOTH_PARENTS_DESCRIPTION)
     private KnockoutStats bothParents;
 
     public IndividualKnockoutStats() {

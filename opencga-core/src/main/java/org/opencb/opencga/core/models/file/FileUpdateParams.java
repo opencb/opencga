@@ -28,31 +28,53 @@ import java.util.Map;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FileUpdateParams {
 
+    @DataField(description = ParamConstants.FILE_UPDATE_PARAMS_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+    @DataField(description = ParamConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
+    @DataField(description = ParamConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
 
+    @DataField(description = ParamConstants.FILE_UPDATE_PARAMS_SAMPLE_IDS_DESCRIPTION)
     private List<String> sampleIds;
 
+    @DataField(description = ParamConstants.FILE_UPDATE_PARAMS_CHECKSUM_DESCRIPTION)
     private String checksum;
+    @DataField(description = ParamConstants.FILE_UPDATE_PARAMS_FORMAT_DESCRIPTION)
     private File.Format format;
+    @DataField(description = ParamConstants.FILE_UPDATE_PARAMS_BIOFORMAT_DESCRIPTION)
     private File.Bioformat bioformat;
+    @DataField(description = ParamConstants.FILE_UPDATE_PARAMS_SOFTWARE_DESCRIPTION)
     private Software software;
+    @DataField(description = ParamConstants.FILE_UPDATE_PARAMS_EXPERIMENT_DESCRIPTION)
     private FileExperiment experiment;
+    @DataField(description = ParamConstants.FILE_UPDATE_PARAMS_TAGS_DESCRIPTION)
     private List<String> tags;
+    @DataField(description = ParamConstants.FILE_UPDATE_PARAMS_INTERNAL_DESCRIPTION)
     private SmallFileInternal internal;
 
+    @DataField(description = ParamConstants.FILE_UPDATE_PARAMS_RELATED_FILES_DESCRIPTION)
     private List<SmallRelatedFileParams> relatedFiles;
 
+    @DataField(description = ParamConstants.FILE_UPDATE_PARAMS_SIZE_DESCRIPTION)
     private Long size;
 
+    @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
     private StatusParams status;
+    @DataField(description = ParamConstants.FILE_UPDATE_PARAMS_ANNOTATION_SETS_DESCRIPTION)
     private List<AnnotationSet> annotationSets;
+    @DataField(description = ParamConstants.FILE_UPDATE_PARAMS_QUALITY_CONTROL_DESCRIPTION)
     private FileQualityControl qualityControl;
+    @DataField(description = ParamConstants.FILE_UPDATE_PARAMS_STATS_DESCRIPTION)
     private Map<String, Object> stats;
+    @DataField(description = ParamConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public FileUpdateParams() {

@@ -20,10 +20,14 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class KnockoutAnalysisParams extends ToolParams {
 
     public static final String DESCRIPTION = "Gene knockout analysis params";
     // Sample filter
+    @DataField(description = ParamConstants.KNOCKOUT_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION)
     private List<String> sample;
     // family
     // phenotype
@@ -32,21 +36,30 @@ public class KnockoutAnalysisParams extends ToolParams {
     // annotation
 
     // Gene filter
+    @DataField(description = ParamConstants.KNOCKOUT_ANALYSIS_PARAMS_GENE_DESCRIPTION)
     private List<String> gene;
+    @DataField(description = ParamConstants.KNOCKOUT_ANALYSIS_PARAMS_PANEL_DESCRIPTION)
     private List<String> panel;
+    @DataField(description = ParamConstants.KNOCKOUT_ANALYSIS_PARAMS_BIOTYPE_DESCRIPTION)
     private String biotype;
     // HPO
 
     // Variant filter
+    @DataField(description = ParamConstants.KNOCKOUT_ANALYSIS_PARAMS_CONSEQUENCE_TYPE_DESCRIPTION)
     private String consequenceType;
+    @DataField(description = ParamConstants.KNOCKOUT_ANALYSIS_PARAMS_FILTER_DESCRIPTION)
     private String filter;
+    @DataField(description = ParamConstants.KNOCKOUT_ANALYSIS_PARAMS_QUAL_DESCRIPTION)
     private String qual;
 
     // Do not generate genes file
+    @DataField(description = ParamConstants.KNOCKOUT_ANALYSIS_PARAMS_SKIP_GENES_FILE_DESCRIPTION)
     private boolean skipGenesFile;
 
+    @DataField(description = ParamConstants.KNOCKOUT_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
 
+    @DataField(description = ParamConstants.KNOCKOUT_ANALYSIS_PARAMS_INDEX_DESCRIPTION)
     private boolean index;
 
     public KnockoutAnalysisParams() {

@@ -6,6 +6,8 @@ import org.opencb.opencga.core.api.FieldConstants;
 
 import java.util.List;
 
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ClinicalAnalysisQualityControl {
 
     @DataField(id = "summary", indexed = true,

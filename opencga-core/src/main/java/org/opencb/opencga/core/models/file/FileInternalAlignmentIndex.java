@@ -4,10 +4,16 @@ import org.opencb.opencga.core.models.common.InternalStatus;
 
 import java.util.Objects;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FileInternalAlignmentIndex {
 
+    @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
     private InternalStatus status;
+    @DataField(description = ParamConstants.FILE_INTERNAL_ALIGNMENT_INDEX_FILE_ID_DESCRIPTION)
     private String fileId;
+    @DataField(description = ParamConstants.FILE_INTERNAL_ALIGNMENT_INDEX_INDEXER_DESCRIPTION)
     private String indexer;
 
     public FileInternalAlignmentIndex() {

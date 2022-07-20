@@ -1,7 +1,11 @@
 package org.opencb.opencga.core.models.file;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FileReferenceParam {
 
+    @DataField(description = ParamConstants.FILE_REFERENCE_PARAM_ID_DESCRIPTION)
     private String id;
 
     public FileReferenceParam() {

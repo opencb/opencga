@@ -18,15 +18,22 @@ package org.opencb.opencga.core.models.user;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class PasswordChangeParams {
 
     @JsonProperty(required = true)
+    @DataField(description = ParamConstants.PASSWORD_CHANGE_PARAMS_USER_DESCRIPTION)
     private String user;
     @JsonProperty(required = false)
+    @DataField(description = ParamConstants.PASSWORD_CHANGE_PARAMS_PASSWORD_DESCRIPTION)
     private String password;
     @JsonProperty(required = false)
+    @DataField(description = ParamConstants.PASSWORD_CHANGE_PARAMS_NEW_PASSWORD_DESCRIPTION)
     private String newPassword;
     @JsonProperty(required = false)
+    @DataField(description = ParamConstants.PASSWORD_CHANGE_PARAMS_RESET_DESCRIPTION)
     private String reset;
 
     public PasswordChangeParams() {

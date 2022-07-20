@@ -22,9 +22,14 @@ import java.util.List;
 /**
  * Created by pfurio on 28/07/16.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FileTree {
 
+    @DataField(description = ParamConstants.FILE_TREE_FILE_DESCRIPTION)
     private File file;
+    @DataField(description = ParamConstants.FILE_TREE_CHILDREN_DESCRIPTION)
     private List<FileTree> children;
 
     public FileTree() {

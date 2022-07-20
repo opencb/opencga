@@ -6,10 +6,16 @@ import org.opencb.opencga.core.models.clinical.ClinicalStatusValue;
 import java.util.List;
 import java.util.Map;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class InterpretationStudyConfiguration {
 
+    @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
     private Map<ClinicalAnalysis.Type, List<ClinicalStatusValue>> status;
+    @DataField(description = ParamConstants.INTERPRETATION_STUDY_CONFIGURATION_VARIANT_CALLERS_DESCRIPTION)
     private List<InterpretationVariantCallerConfiguration> variantCallers;
+    @DataField(description = ParamConstants.INTERPRETATION_STUDY_CONFIGURATION_DEFAULT_FILTER_DESCRIPTION)
     private Map<String, Object> defaultFilter;
 
     public InterpretationStudyConfiguration() {

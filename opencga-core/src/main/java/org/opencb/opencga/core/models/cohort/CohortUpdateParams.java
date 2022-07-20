@@ -31,17 +31,30 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class CohortUpdateParams {
 
+    @DataField(description = ParamConstants.COHORT_UPDATE_PARAMS_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.COHORT_UPDATE_PARAMS_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.COHORT_UPDATE_PARAMS_TYPE_DESCRIPTION)
     private Enums.CohortType type;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+    @DataField(description = ParamConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
+    @DataField(description = ParamConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
+    @DataField(description = ParamConstants.COHORT_UPDATE_PARAMS_SAMPLES_DESCRIPTION)
     private List<SampleReferenceParam> samples;
+    @DataField(description = ParamConstants.COHORT_UPDATE_PARAMS_ANNOTATION_SETS_DESCRIPTION)
     private List<AnnotationSet> annotationSets;
+    @DataField(description = ParamConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
+    @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
     private StatusParams status;
 
     public CohortUpdateParams() {

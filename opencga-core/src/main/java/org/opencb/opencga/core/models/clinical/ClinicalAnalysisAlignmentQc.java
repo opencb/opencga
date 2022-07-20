@@ -6,10 +6,16 @@ import org.opencb.opencga.core.models.file.File;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ClinicalAnalysisAlignmentQc {
 
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_ALIGNMENT_QC_STATS_DESCRIPTION)
     private List<SamtoolsStats> stats;
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_ALIGNMENT_QC_GENE_COVERAGE_STATS_DESCRIPTION)
     private List<GeneCoverageStats> geneCoverageStats;
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_ALIGNMENT_QC_FILES_DESCRIPTION)
     private List<File> files;
 
     public ClinicalAnalysisAlignmentQc() {

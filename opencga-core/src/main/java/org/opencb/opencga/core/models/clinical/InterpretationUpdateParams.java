@@ -29,19 +29,34 @@ import java.util.Map;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class InterpretationUpdateParams {
 
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+    @DataField(description = ParamConstants.INTERPRETATION_UPDATE_PARAMS_ANALYST_DESCRIPTION)
     private ClinicalAnalystParam analyst;
+    @DataField(description = ParamConstants.INTERPRETATION_UPDATE_PARAMS_METHOD_DESCRIPTION)
     private InterpretationMethod method;
+    @DataField(description = ParamConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
+    @DataField(description = ParamConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
+    @DataField(description = ParamConstants.INTERPRETATION_UPDATE_PARAMS_PRIMARY_FINDINGS_DESCRIPTION)
     private List<ClinicalVariant> primaryFindings;
+    @DataField(description = ParamConstants.INTERPRETATION_UPDATE_PARAMS_SECONDARY_FINDINGS_DESCRIPTION)
     private List<ClinicalVariant> secondaryFindings;
+    @DataField(description = ParamConstants.INTERPRETATION_UPDATE_PARAMS_PANELS_DESCRIPTION)
     private List<PanelReferenceParam> panels;
+    @DataField(description = ParamConstants.INTERPRETATION_UPDATE_PARAMS_COMMENTS_DESCRIPTION)
     private List<ClinicalCommentParam> comments;
+    @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
     private StatusParam status;
+    @DataField(description = ParamConstants.INTERPRETATION_UPDATE_PARAMS_LOCKED_DESCRIPTION)
     private Boolean locked;
+    @DataField(description = ParamConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public InterpretationUpdateParams() {

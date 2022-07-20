@@ -23,21 +23,27 @@ import java.util.List;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class Group {
 
     /**
      * Group id, unique in the belonging study.
      */
+    @DataField(description = ParamConstants.GROUP_ID_DESCRIPTION)
     private String id;
 
     /**
      * Set of users belonging to this group.
      */
+    @DataField(description = ParamConstants.GROUP_USER_IDS_DESCRIPTION)
     private List<String> userIds;
 
     /**
      * Group has been synchronised from an external authorization.
      */
+    @DataField(description = ParamConstants.GROUP_SYNCED_FROM_DESCRIPTION)
     private Sync syncedFrom;
 
     public Group() {

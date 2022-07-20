@@ -6,11 +6,17 @@ import java.util.Map;
 
 import static org.opencb.opencga.core.api.ParamConstants.DEEPTOOLS_COMMAND_DESCRIPTION;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class DeeptoolsWrapperParams extends ToolParams {
     public static final String DESCRIPTION = "Deeptools parameters. " + DEEPTOOLS_COMMAND_DESCRIPTION;
 
+    @DataField(description = ParamConstants.DEEPTOOLS_WRAPPER_PARAMS_COMMAND_DESCRIPTION)
     private String command;     // Valid values: bamCoverage
+    @DataField(description = ParamConstants.DEEPTOOLS_WRAPPER_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
+    @DataField(description = ParamConstants.DEEPTOOLS_WRAPPER_PARAMS_DEEPTOOLS_PARAMS_DESCRIPTION)
     private Map<String, String> deeptoolsParams;
 
     public DeeptoolsWrapperParams() {

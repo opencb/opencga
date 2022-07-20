@@ -1,8 +1,13 @@
 package org.opencb.opencga.core.models.sample;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class SampleReferenceParam {
 
+    @DataField(description = ParamConstants.SAMPLE_REFERENCE_PARAM_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.SAMPLE_REFERENCE_PARAM_ID_DESCRIPTION)
     private String uuid;
 
     public SampleReferenceParam() {

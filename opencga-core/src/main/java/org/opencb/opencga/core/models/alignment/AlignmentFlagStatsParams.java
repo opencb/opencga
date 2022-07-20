@@ -2,10 +2,15 @@ package org.opencb.opencga.core.models.alignment;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class AlignmentFlagStatsParams extends ToolParams {
     public static final String DESCRIPTION = "Alignment flag stats params";
 
+    @DataField(description = ParamConstants.ALIGNMENT_FLAG_STATS_PARAMS_FILE_DESCRIPTION)
     private String file;
+    @DataField(description = ParamConstants.ALIGNMENT_FLAG_STATS_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
 
     public AlignmentFlagStatsParams() {

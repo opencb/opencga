@@ -1,8 +1,13 @@
 package org.opencb.opencga.core.models.individual;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class IndividualReferenceParam {
 
+    @DataField(description = ParamConstants.INDIVIDUAL_REFERENCE_PARAM_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.INDIVIDUAL_REFERENCE_PARAM_ID_DESCRIPTION)
     private String uuid;
 
     public IndividualReferenceParam() {

@@ -2,11 +2,18 @@ package org.opencb.opencga.core.models.sample;
 
 import java.util.Objects;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class SampleInternalVariant {
 
+    @DataField(description = ParamConstants.SAMPLE_INTERNAL_VARIANT_INDEX_DESCRIPTION)
     private SampleInternalVariantIndex index;
+    @DataField(description = ParamConstants.SAMPLE_INTERNAL_VARIANT_SAMPLE_GENOTYPE_INDEX_DESCRIPTION)
     private SampleInternalVariantGenotypeIndex sampleGenotypeIndex;
+    @DataField(description = ParamConstants.SAMPLE_INTERNAL_VARIANT_ANNOTATION_INDEX_DESCRIPTION)
     private SampleInternalVariantAnnotationIndex annotationIndex;
+    @DataField(description = ParamConstants.SAMPLE_INTERNAL_VARIANT_SECONDARY_INDEX_DESCRIPTION)
     private SampleInternalVariantSecondaryIndex secondaryIndex;
 
     public SampleInternalVariant() {

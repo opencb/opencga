@@ -34,6 +34,8 @@ import java.util.Map;
 /**
  * Created by jacobo on 11/09/14.
  */
+import org.opencb.opencga.core.api.ParamConstants;
+
 @DataClass(id = "File", since = "1.0",
         description = "File data model hosts information about any file.")
 public class File extends Annotable {

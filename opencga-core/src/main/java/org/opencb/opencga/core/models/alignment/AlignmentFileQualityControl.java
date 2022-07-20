@@ -7,11 +7,18 @@ import org.opencb.biodata.formats.sequence.fastqc.FastQcMetrics;
 
 import java.io.Serializable;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class AlignmentFileQualityControl implements Serializable {
 
+    @DataField(description = ParamConstants.ALIGNMENT_FILE_QUALITY_CONTROL_FAST_QC_METRICS_DESCRIPTION)
     private FastQcMetrics fastQcMetrics;
+    @DataField(description = ParamConstants.ALIGNMENT_FILE_QUALITY_CONTROL_SAMTOOLS_STATS_DESCRIPTION)
     private SamtoolsStats samtoolsStats;
+    @DataField(description = ParamConstants.ALIGNMENT_FILE_QUALITY_CONTROL_SAMTOOLS_FLAG_STATS_DESCRIPTION)
     private SamtoolsFlagstats samtoolsFlagStats;
+    @DataField(description = ParamConstants.ALIGNMENT_FILE_QUALITY_CONTROL_HS_METRICS_DESCRIPTION)
     private HsMetrics hsMetrics;
 
     public AlignmentFileQualityControl() {

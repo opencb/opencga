@@ -4,6 +4,7 @@ import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
+
 public class PanelImportParams extends ToolParams {
 
     @DataField(id = ParamConstants.PANEL_SOURCE_PARAM, description = ParamConstants.PANEL_IMPORT_SOURCE_DESCRIPTION)

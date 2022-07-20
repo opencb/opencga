@@ -5,6 +5,9 @@ import org.opencb.opencga.core.models.common.IndexStatus;
 import java.util.Arrays;
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariantIndexStatus extends IndexStatus {
 
     /*

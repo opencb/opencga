@@ -23,6 +23,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 @JsonIgnoreProperties({"schema"})
 public abstract class GenericRecordAvroJsonMixin {
 }

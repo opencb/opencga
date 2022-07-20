@@ -24,6 +24,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class SampleQualityControl implements Serializable {
 
     @DataField(id = "files", name = "files",

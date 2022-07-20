@@ -27,29 +27,49 @@ import java.util.Map;
 /**
  * Created by pfurio on 29/04/16.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class StudySummary {
 
+    @DataField(description = ParamConstants.STUDY_SUMMARY_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.STUDY_SUMMARY_ALIAS_DESCRIPTION)
     private String alias;
+    @DataField(description = ParamConstants.STUDY_SUMMARY_CREATOR_ID_DESCRIPTION)
     private String creatorId;
+    @DataField(description = ParamConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+    @DataField(description = ParamConstants.STUDY_SUMMARY_INTERNAL_DESCRIPTION)
     private StudyInternal internal;
+    @DataField(description = ParamConstants.STUDY_SUMMARY_SIZE_DESCRIPTION)
     private long size;
+    @DataField(description = ParamConstants.STUDY_SUMMARY_CIPHER_DESCRIPTION)
     private String cipher;
 
+    @DataField(description = ParamConstants.STUDY_SUMMARY_GROUPS_DESCRIPTION)
     private List<Group> groups;
 
+    @DataField(description = ParamConstants.STUDY_SUMMARY_EXPERIMENTS_DESCRIPTION)
     private List<FileExperiment> experiments;
 
+    @DataField(description = ParamConstants.STUDY_SUMMARY_FILES_DESCRIPTION)
     private long files;
+    @DataField(description = ParamConstants.STUDY_SUMMARY_JOBS_DESCRIPTION)
     private long jobs;
+    @DataField(description = ParamConstants.STUDY_SUMMARY_INDIVIDUALS_DESCRIPTION)
     private long individuals;
+    @DataField(description = ParamConstants.STUDY_SUMMARY_SAMPLES_DESCRIPTION)
     private long samples;
+    @DataField(description = ParamConstants.STUDY_SUMMARY_COHORTS_DESCRIPTION)
     private long cohorts;
 
+    @DataField(description = ParamConstants.STUDY_SUMMARY_VARIABLE_SETS_DESCRIPTION)
     private List<VariableSet> variableSets;
 
+    @DataField(description = ParamConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public StudySummary() {

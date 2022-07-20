@@ -4,10 +4,16 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.Objects;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FileInternalVariantIndex {
 
+    @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
     private VariantIndexStatus status;
+    @DataField(description = ParamConstants.FILE_INTERNAL_VARIANT_INDEX_RELEASE_DESCRIPTION)
     private int release;
+    @DataField(description = ParamConstants.FILE_INTERNAL_VARIANT_INDEX_TRANSFORM_DESCRIPTION)
     private Transform transform;
 
     public FileInternalVariantIndex() {

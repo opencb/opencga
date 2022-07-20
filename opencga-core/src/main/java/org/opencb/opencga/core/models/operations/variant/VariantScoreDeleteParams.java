@@ -18,12 +18,18 @@ package org.opencb.opencga.core.models.operations.variant;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariantScoreDeleteParams extends ToolParams {
 
     public static final String ID = "variant-score-delete";
     public static final String DESCRIPTION = "Remove a variant score in the database";
+    @DataField(description = ParamConstants.VARIANT_SCORE_DELETE_PARAMS_SCORE_NAME_DESCRIPTION)
     private String scoreName;
+    @DataField(description = ParamConstants.VARIANT_SCORE_DELETE_PARAMS_FORCE_DESCRIPTION)
     private boolean force;
+    @DataField(description = ParamConstants.VARIANT_SCORE_DELETE_PARAMS_RESUME_DESCRIPTION)
     private boolean resume;
 
     public VariantScoreDeleteParams() {

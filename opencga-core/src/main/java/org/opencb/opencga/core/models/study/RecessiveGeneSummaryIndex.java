@@ -2,9 +2,14 @@ package org.opencb.opencga.core.models.study;
 
 import org.opencb.opencga.core.common.TimeUtils;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class RecessiveGeneSummaryIndex {
 
+    @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
     private Status status;
+    @DataField(description = ParamConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
 
     public RecessiveGeneSummaryIndex() {

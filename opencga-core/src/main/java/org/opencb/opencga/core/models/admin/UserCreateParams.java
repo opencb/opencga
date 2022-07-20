@@ -19,8 +19,12 @@ package org.opencb.opencga.core.models.admin;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class UserCreateParams extends org.opencb.opencga.core.models.user.UserCreateParams {
 
+    @DataField(description = ParamConstants.USER_CREATE_PARAMS_TYPE_DESCRIPTION)
     private Account.AccountType type;
 
     public UserCreateParams() {

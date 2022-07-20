@@ -18,11 +18,17 @@ package org.opencb.opencga.core.models.variant;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class SampleEligibilityAnalysisParams extends ToolParams {
 
     public static final String DESCRIPTION = "";
+    @DataField(description = ParamConstants.SAMPLE_ELIGIBILITY_ANALYSIS_PARAMS_QUERY_DESCRIPTION)
     private String query;
+    @DataField(description = ParamConstants.SAMPLE_ELIGIBILITY_ANALYSIS_PARAMS_INDEX_DESCRIPTION)
     private boolean index;
+    @DataField(description = ParamConstants.SAMPLE_ELIGIBILITY_ANALYSIS_PARAMS_COHORT_ID_DESCRIPTION)
     private String cohortId;
 
     public SampleEligibilityAnalysisParams() {

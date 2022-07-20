@@ -2,13 +2,20 @@ package org.opencb.opencga.core.models.alignment;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class AlignmentHsMetricsParams extends ToolParams {
     public static final String DESCRIPTION = "Alignment hybrid-selection (HS) metrics params";
 
+    @DataField(description = ParamConstants.ALIGNMENT_HS_METRICS_PARAMS_BAM_FILE_DESCRIPTION)
     private String bamFile;
+    @DataField(description = ParamConstants.ALIGNMENT_HS_METRICS_PARAMS_BED_FILE_DESCRIPTION)
     private String bedFile;
 //    private String refSeqFile;
+    @DataField(description = ParamConstants.ALIGNMENT_HS_METRICS_PARAMS_DICT_FILE_DESCRIPTION)
     private String dictFile;
+    @DataField(description = ParamConstants.ALIGNMENT_HS_METRICS_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
 
     public AlignmentHsMetricsParams() {

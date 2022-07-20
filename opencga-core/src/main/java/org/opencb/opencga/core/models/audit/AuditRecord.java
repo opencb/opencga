@@ -23,71 +23,88 @@ import org.opencb.opencga.core.models.common.Enums;
 
 import java.util.Date;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class AuditRecord {
 
     /**
      * AuditRecord timestamp UUID.
      */
+    @DataField(description = ParamConstants.AUDIT_RECORD_ID_DESCRIPTION)
     private String id;
 
     /**
      * operationID timestamp UUID.
      */
+    @DataField(description = ParamConstants.AUDIT_RECORD_OPERATION_ID_DESCRIPTION)
     private String operationId;
 
     /**
      * User performing the action.
      */
+    @DataField(description = ParamConstants.AUDIT_RECORD_USER_ID_DESCRIPTION)
     private String userId;
     /**
      * OpenCGA API version.
      */
+    @DataField(description = ParamConstants.AUDIT_RECORD_API_VERSION_DESCRIPTION)
     private String apiVersion;
 
     /**
      * Action performed (CREATE, SEARCH, DOWNLOAD...).
      */
+    @DataField(description = ParamConstants.AUDIT_RECORD_ACTION_DESCRIPTION)
     private Enums.Action action;
 
     /**
      * Involved resource (User, Study, Sample, File...).
      */
+    @DataField(description = ParamConstants.AUDIT_RECORD_RESOURCE_DESCRIPTION)
     private Enums.Resource resource;
     /**
      * Id of the involved resource.
      */
+    @DataField(description = ParamConstants.AUDIT_RECORD_RESOURCE_ID_DESCRIPTION)
     private String resourceId;
     /**
      * UUID of the involved resource.
      */
+    @DataField(description = ParamConstants.AUDIT_RECORD_ID_DESCRIPTION)
     private String resourceUuid;
 
     /**
      * Study id corresponding to the involved resource. Does not apply to User or Project resources.
      */
+    @DataField(description = ParamConstants.AUDIT_RECORD_STUDY_ID_DESCRIPTION)
     private String studyId;
     /**
      * Study UUID corresponding to the involved resource. Does not apply to User or Project resources.
      */
+    @DataField(description = ParamConstants.AUDIT_RECORD_ID_DESCRIPTION)
     private String studyUuid;
 
     /**
      * User params sent by the user. All the parameters considered and sent by the user to perform the action.
      */
+    @DataField(description = ParamConstants.AUDIT_RECORD_PARAMS_DESCRIPTION)
     private ObjectMap params;
 
     /**
      * Final result of the action: success or error. In case of error, it will also contain the error code and the error message.
      */
+    @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
     private Status status;
 
     /**
      * Date of the audit record.
      */
+    @DataField(description = ParamConstants.AUDIT_RECORD_DATE_DESCRIPTION)
     private Date date;
     /**
      * Any additional information that might have not been covered by the data model.
      */
+    @DataField(description = ParamConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private ObjectMap attributes;
 
     public AuditRecord() {

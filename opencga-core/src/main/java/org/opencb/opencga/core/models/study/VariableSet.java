@@ -25,19 +25,32 @@ import java.util.Set;
 /**
  * Created by jacobo on 12/12/14.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariableSet extends PrivateFields {
 
+    @DataField(description = ParamConstants.VARIABLE_SET_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.VARIABLE_SET_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.VARIABLE_SET_UNIQUE_DESCRIPTION)
     private boolean unique;
+    @DataField(description = ParamConstants.VARIABLE_SET_CONFIDENTIAL_DESCRIPTION)
     private boolean confidential;
+    @DataField(description = ParamConstants.VARIABLE_SET_INTERNAL_DESCRIPTION)
     private boolean internal;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+    @DataField(description = ParamConstants.VARIABLE_SET_VARIABLES_DESCRIPTION)
     private Set<Variable> variables;
 
+    @DataField(description = ParamConstants.VARIABLE_SET_ENTITIES_DESCRIPTION)
     private List<AnnotableDataModels> entities;
 
+    @DataField(description = ParamConstants.VARIABLE_SET_RELEASE_DESCRIPTION)
     private int release;
+    @DataField(description = ParamConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public enum AnnotableDataModels {

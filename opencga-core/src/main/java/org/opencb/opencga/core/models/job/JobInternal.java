@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class JobInternal extends Internal implements Cloneable {
 
     @DataField(id = "status", indexed = true,

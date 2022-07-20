@@ -18,6 +18,9 @@ package org.opencb.opencga.core.models.individual;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 @JsonIgnoreProperties({"uid", "studyUid", "fatherId", "motherId", "family", "species", "release", "version", "creationDate", "status"})
 public class IndividualMixin {
 }

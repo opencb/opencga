@@ -6,23 +6,40 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class KnockoutByVariant {
 
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_DB_SNP_DESCRIPTION)
     private String dbSnp;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_CHROMOSOME_DESCRIPTION)
     private String chromosome;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_START_DESCRIPTION)
     private int start;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_END_DESCRIPTION)
     private int end;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_LENGTH_DESCRIPTION)
     private int length;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_REFERENCE_DESCRIPTION)
     private String reference;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_ALTERNATE_DESCRIPTION)
     private String alternate;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_TYPE_DESCRIPTION)
     private VariantType type;
 
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_POPULATION_FREQUENCIES_DESCRIPTION)
     private List<PopulationFrequency> populationFrequencies;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_CLINICAL_SIGNIFICANCE_DESCRIPTION)
     private List<ClinicalSignificance> clinicalSignificance;
 
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_NUM_INDIVIDUALS_DESCRIPTION)
     private int numIndividuals;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_HAS_NEXT_INDIVIDUAL_DESCRIPTION)
     private boolean hasNextIndividual;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_VARIANT_INDIVIDUALS_DESCRIPTION)
     private List<KnockoutByIndividual> individuals;
 
     public KnockoutByVariant() {

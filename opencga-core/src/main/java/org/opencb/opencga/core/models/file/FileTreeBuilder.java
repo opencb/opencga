@@ -5,9 +5,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FileTreeBuilder {
 
+    @DataField(description = ParamConstants.FILE_TREE_BUILDER_FILE_DESCRIPTION)
     private File file;
+    @DataField(description = ParamConstants.FILE_TREE_BUILDER_FILE_TREE_MAP_DESCRIPTION)
     private Map<String, FileTreeBuilder> fileTreeMap;
 
     public FileTreeBuilder(File file) {

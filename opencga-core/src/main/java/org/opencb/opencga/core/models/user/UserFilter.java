@@ -22,6 +22,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.common.Enums;
 
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class UserFilter {
 
     @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,

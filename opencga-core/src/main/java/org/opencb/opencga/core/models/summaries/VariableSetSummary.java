@@ -22,12 +22,21 @@ import java.util.List;
 /**
  * Created by pfurio on 12/08/16.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariableSetSummary {
+    @DataField(description = ParamConstants.VARIABLE_SET_SUMMARY_ID_DESCRIPTION)
     private long id;
+    @DataField(description = ParamConstants.VARIABLE_SET_SUMMARY_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.VARIABLE_SET_SUMMARY_SAMPLES_DESCRIPTION)
     private List<VariableSummary> samples;
+    @DataField(description = ParamConstants.VARIABLE_SET_SUMMARY_INDIVIDUALS_DESCRIPTION)
     private List<VariableSummary> individuals;
+    @DataField(description = ParamConstants.VARIABLE_SET_SUMMARY_COHORTS_DESCRIPTION)
     private List<VariableSummary> cohorts;
+    @DataField(description = ParamConstants.VARIABLE_SET_SUMMARY_FAMILIES_DESCRIPTION)
     private List<VariableSummary> families;
 
     public VariableSetSummary() {

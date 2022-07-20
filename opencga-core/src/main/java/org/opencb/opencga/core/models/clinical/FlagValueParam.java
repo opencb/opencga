@@ -3,8 +3,12 @@ package org.opencb.opencga.core.models.clinical;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FlagValueParam {
 
+    @DataField(description = ParamConstants.FLAG_VALUE_PARAM_ID_DESCRIPTION)
     private String id;
 
     public FlagValueParam() {

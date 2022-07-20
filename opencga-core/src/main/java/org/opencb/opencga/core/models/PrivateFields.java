@@ -16,8 +16,12 @@
 
 package org.opencb.opencga.core.models;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 abstract public class PrivateFields implements IPrivateFields {
 
+    @DataField(description = ParamConstants.PRIVATE_FIELDS_UID_DESCRIPTION)
     private long uid;
 
     public PrivateFields() {

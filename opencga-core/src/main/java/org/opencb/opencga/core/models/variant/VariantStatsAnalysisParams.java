@@ -21,6 +21,9 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariantStatsAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Variant stats params";
 
@@ -39,15 +42,23 @@ public class VariantStatsAnalysisParams extends ToolParams {
         this.aggregationMappingFile = aggregationMappingFile;
     }
 
+    @DataField(description = ParamConstants.VARIANT_STATS_ANALYSIS_PARAMS_COHORT_DESCRIPTION)
     private List<String> cohort;
+    @DataField(description = ParamConstants.VARIANT_STATS_ANALYSIS_PARAMS_SAMPLES_DESCRIPTION)
     private List<String> samples;
+    @DataField(description = ParamConstants.VARIANT_STATS_ANALYSIS_PARAMS_REGION_DESCRIPTION)
     private String region;
+    @DataField(description = ParamConstants.VARIANT_STATS_ANALYSIS_PARAMS_GENE_DESCRIPTION)
     private String gene;
+    @DataField(description = ParamConstants.VARIANT_STATS_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
+    @DataField(description = ParamConstants.VARIANT_STATS_ANALYSIS_PARAMS_OUTPUT_FILE_NAME_DESCRIPTION)
     private String outputFileName;
 
 
+    @DataField(description = ParamConstants.VARIANT_STATS_ANALYSIS_PARAMS_AGGREGATED_DESCRIPTION)
     private Aggregation aggregated;
+    @DataField(description = ParamConstants.VARIANT_STATS_ANALYSIS_PARAMS_AGGREGATION_MAPPING_FILE_DESCRIPTION)
     private String aggregationMappingFile;
 
     public List<String> getCohort() {

@@ -21,16 +21,27 @@ import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import java.util.Collections;
 import java.util.Map;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ProjectCreateParams {
 
+    @DataField(description = ParamConstants.PROJECT_CREATE_PARAMS_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.PROJECT_CREATE_PARAMS_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+    @DataField(description = ParamConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
+    @DataField(description = ParamConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
+    @DataField(description = ParamConstants.PROJECT_CREATE_PARAMS_ORGANISM_DESCRIPTION)
     private ProjectOrganism organism;
 
+    @DataField(description = ParamConstants.PROJECT_CREATE_PARAMS_CELLBASE_DESCRIPTION)
     private CellBaseConfiguration cellbase;
+    @DataField(description = ParamConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public ProjectCreateParams() {

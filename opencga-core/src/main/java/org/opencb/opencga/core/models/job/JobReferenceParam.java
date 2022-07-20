@@ -2,10 +2,16 @@ package org.opencb.opencga.core.models.job;
 
 import java.util.Objects;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class JobReferenceParam {
 
+    @DataField(description = ParamConstants.JOB_REFERENCE_PARAM_STUDY_ID_DESCRIPTION)
     private String studyId;
+    @DataField(description = ParamConstants.JOB_REFERENCE_PARAM_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.JOB_REFERENCE_PARAM_ID_DESCRIPTION)
     private String uuid;
 
     public JobReferenceParam() {

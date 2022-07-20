@@ -4,11 +4,17 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.Map;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FastqcWrapperParams extends ToolParams {
     public static final String DESCRIPTION = "FastQC parameters";
 
+    @DataField(description = ParamConstants.FASTQC_WRAPPER_PARAMS_INPUT_FILE_DESCRIPTION)
     private String inputFile;
+    @DataField(description = ParamConstants.FASTQC_WRAPPER_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
+    @DataField(description = ParamConstants.FASTQC_WRAPPER_PARAMS_FASTQC_PARAMS_DESCRIPTION)
     private Map<String, String> fastqcParams;
 
     public FastqcWrapperParams() {

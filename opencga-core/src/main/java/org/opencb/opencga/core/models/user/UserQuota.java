@@ -16,23 +16,30 @@
 
 package org.opencb.opencga.core.models.user;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class UserQuota {
 
     /**
      * Current disk usage of user in bytes.
      */
+    @DataField(description = ParamConstants.USER_QUOTA_DISK_USAGE_DESCRIPTION)
     private long diskUsage;
     /**
      * Current cpu usage in seconds.
      */
+    @DataField(description = ParamConstants.USER_QUOTA_CPU_USAGE_DESCRIPTION)
     private int cpuUsage;
     /**
      * Maximum amount of disk in bytes allowed for the user to use.
      */
+    @DataField(description = ParamConstants.USER_QUOTA_MAX_DISK_DESCRIPTION)
     private long maxDisk;
     /**
      * Maximum amount of seconds the user can use of CPU.
      */
+    @DataField(description = ParamConstants.USER_QUOTA_MAX_CPU_DESCRIPTION)
     private int maxCpu;
 
     public UserQuota() {

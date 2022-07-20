@@ -30,6 +30,8 @@ import java.util.Map;
 /**
  * Created by jacobo on 11/09/14.
  */
+import org.opencb.opencga.core.api.ParamConstants;
+
 @DataClass(id = "Job", since = "1.0",
         description = "Job data model hosts information about any job.")
 public class Job extends PrivateStudyUid {

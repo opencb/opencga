@@ -3,9 +3,14 @@ package org.opencb.opencga.core.models.study;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class StudyVariantEngineConfiguration {
 
+    @DataField(description = ParamConstants.STUDY_VARIANT_ENGINE_CONFIGURATION_OPTIONS_DESCRIPTION)
     private ObjectMap options;
+    @DataField(description = ParamConstants.STUDY_VARIANT_ENGINE_CONFIGURATION_SAMPLE_INDEX_DESCRIPTION)
     private SampleIndexConfiguration sampleIndex;
 
     public StudyVariantEngineConfiguration() {

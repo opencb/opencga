@@ -27,19 +27,32 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FamilyCreateParams {
 
+    @DataField(description = ParamConstants.FAMILY_CREATE_PARAMS_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.FAMILY_CREATE_PARAMS_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+    @DataField(description = ParamConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
+    @DataField(description = ParamConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
+    @DataField(description = ParamConstants.FAMILY_CREATE_PARAMS_MEMBERS_DESCRIPTION)
     private List<IndividualCreateParams> members;
 
+    @DataField(description = ParamConstants.FAMILY_CREATE_PARAMS_EXPECTED_SIZE_DESCRIPTION)
     private Integer expectedSize;
 
+    @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
     private StatusParams status;
+    @DataField(description = ParamConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
+    @DataField(description = ParamConstants.FAMILY_CREATE_PARAMS_ANNOTATION_SETS_DESCRIPTION)
     private List<AnnotationSet> annotationSets;
 
     public FamilyCreateParams() {

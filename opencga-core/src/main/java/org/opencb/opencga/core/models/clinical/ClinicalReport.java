@@ -3,6 +3,8 @@ package org.opencb.opencga.core.models.clinical;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ClinicalReport {
 
     @DataField(id = "title", indexed = true,

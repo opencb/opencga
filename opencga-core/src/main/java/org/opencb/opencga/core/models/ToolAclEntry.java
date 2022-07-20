@@ -26,6 +26,9 @@ import java.util.stream.Collectors;
 /**
  * Created by sgallego on 6/30/16.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 @Deprecated
 public class ToolAclEntry extends AbstractAclEntry<ToolAclEntry.ToolPermissions> {
 

@@ -4,11 +4,16 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class PostLinkToolParams extends ToolParams {
 
     public static final String DESCRIPTION = "File postlink params";
 
+    @DataField(description = ParamConstants.POST_LINK_TOOL_PARAMS_FILES_DESCRIPTION)
     private List<String> files;
+    @DataField(description = ParamConstants.POST_LINK_TOOL_PARAMS_BATCH_SIZE_DESCRIPTION)
     private Integer batchSize;
 
     public PostLinkToolParams() {

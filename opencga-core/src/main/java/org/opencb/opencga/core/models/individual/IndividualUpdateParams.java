@@ -36,29 +36,53 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class IndividualUpdateParams {
 
+    @DataField(description = ParamConstants.INDIVIDUAL_UPDATE_PARAMS_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.INDIVIDUAL_UPDATE_PARAMS_NAME_DESCRIPTION)
     private String name;
 
+    @DataField(description = ParamConstants.INDIVIDUAL_UPDATE_PARAMS_FATHER_DESCRIPTION)
     private IndividualReferenceParam father;
+    @DataField(description = ParamConstants.INDIVIDUAL_UPDATE_PARAMS_MOTHER_DESCRIPTION)
     private IndividualReferenceParam mother;
+    @DataField(description = ParamConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
+    @DataField(description = ParamConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
+    @DataField(description = ParamConstants.INDIVIDUAL_UPDATE_PARAMS_PARENTAL_CONSANGUINITY_DESCRIPTION)
     private Boolean parentalConsanguinity;
+    @DataField(description = ParamConstants.INDIVIDUAL_UPDATE_PARAMS_LOCATION_DESCRIPTION)
     private Location location;
+    @DataField(description = ParamConstants.INDIVIDUAL_UPDATE_PARAMS_SEX_DESCRIPTION)
     private SexOntologyTermAnnotation sex;
+    @DataField(description = ParamConstants.INDIVIDUAL_UPDATE_PARAMS_ETHNICITY_DESCRIPTION)
     private OntologyTermAnnotation ethnicity;
+    @DataField(description = ParamConstants.INDIVIDUAL_UPDATE_PARAMS_POPULATION_DESCRIPTION)
     private IndividualPopulation population;
+    @DataField(description = ParamConstants.INDIVIDUAL_UPDATE_PARAMS_DATE_OF_BIRTH_DESCRIPTION)
     private String dateOfBirth;
+    @DataField(description = ParamConstants.INDIVIDUAL_UPDATE_PARAMS_KARYOTYPIC_SEX_DESCRIPTION)
     private IndividualProperty.KaryotypicSex karyotypicSex;
+    @DataField(description = ParamConstants.INDIVIDUAL_UPDATE_PARAMS_LIFE_STATUS_DESCRIPTION)
     private IndividualProperty.LifeStatus lifeStatus;
+    @DataField(description = ParamConstants.INDIVIDUAL_UPDATE_PARAMS_SAMPLES_DESCRIPTION)
     private List<SampleReferenceParam> samples;
+    @DataField(description = ParamConstants.INDIVIDUAL_UPDATE_PARAMS_ANNOTATION_SETS_DESCRIPTION)
     private List<AnnotationSet> annotationSets;
+    @DataField(description = ParamConstants.INDIVIDUAL_UPDATE_PARAMS_PHENOTYPES_DESCRIPTION)
     private List<Phenotype> phenotypes;
+    @DataField(description = ParamConstants.INDIVIDUAL_UPDATE_PARAMS_DISORDERS_DESCRIPTION)
     private List<Disorder> disorders;
+    @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
     private StatusParams status;
+    @DataField(description = ParamConstants.INDIVIDUAL_UPDATE_PARAMS_QUALITY_CONTROL_DESCRIPTION)
     private IndividualQualityControl qualityControl;
+    @DataField(description = ParamConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public IndividualUpdateParams() {

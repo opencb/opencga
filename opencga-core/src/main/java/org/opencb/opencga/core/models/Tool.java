@@ -19,15 +19,25 @@ package org.opencb.opencga.core.models;
 /**
  * Created by jacobo on 11/09/14.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 @Deprecated
 public class Tool {
 
+    @DataField(description = ParamConstants.TOOL_ID_DESCRIPTION)
     private long id;
+    @DataField(description = ParamConstants.TOOL_ALIAS_DESCRIPTION)
     private String alias;
+    @DataField(description = ParamConstants.TOOL_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+    @DataField(description = ParamConstants.TOOL_MANIFEST_DESCRIPTION)
     private Object manifest;
+    @DataField(description = ParamConstants.TOOL_RESULT_DESCRIPTION)
     private Object result;
+    @DataField(description = ParamConstants.TOOL_PATH_DESCRIPTION)
     private String path;
 
     public Tool() {

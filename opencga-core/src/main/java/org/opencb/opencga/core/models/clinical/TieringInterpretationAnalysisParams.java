@@ -5,13 +5,20 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class TieringInterpretationAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Tiering interpretation analysis params";
 
+    @DataField(description = ParamConstants.TIERING_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_ANALYSIS_DESCRIPTION)
     private String clinicalAnalysis;
+    @DataField(description = ParamConstants.TIERING_INTERPRETATION_ANALYSIS_PARAMS_PANELS_DESCRIPTION)
     private List<String> panels;
+    @DataField(description = ParamConstants.TIERING_INTERPRETATION_ANALYSIS_PARAMS_PENETRANCE_DESCRIPTION)
     private ClinicalProperty.Penetrance penetrance;
 
+    @DataField(description = ParamConstants.TIERING_INTERPRETATION_ANALYSIS_PARAMS_PRIMARY_DESCRIPTION)
     private boolean primary; // primary interpretation (vs secondary interpretation)
 
     public TieringInterpretationAnalysisParams() {

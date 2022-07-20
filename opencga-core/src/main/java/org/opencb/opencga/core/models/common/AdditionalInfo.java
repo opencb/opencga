@@ -5,6 +5,8 @@ import org.opencb.opencga.core.api.FieldConstants;
 
 import java.util.Map;
 
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class AdditionalInfo {
 
     @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,

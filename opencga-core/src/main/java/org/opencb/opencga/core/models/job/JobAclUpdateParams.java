@@ -18,8 +18,12 @@ package org.opencb.opencga.core.models.job;
 
 import org.opencb.opencga.core.models.AclParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class JobAclUpdateParams extends AclParams {
 
+    @DataField(description = ParamConstants.JOB_ACL_UPDATE_PARAMS_JOB_DESCRIPTION)
     private String job;
 
     public JobAclUpdateParams() {

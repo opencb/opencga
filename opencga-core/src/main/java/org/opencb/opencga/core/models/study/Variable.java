@@ -24,35 +24,53 @@ import java.util.Set;
 /**
  * Created by jacobo on 11/09/14.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class Variable {
 
+    @DataField(description = ParamConstants.VARIABLE_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.VARIABLE_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.VARIABLE_CATEGORY_DESCRIPTION)
     private String category;
 
     /**
      * Type accepted values: text, numeric.
      */
+    @DataField(description = ParamConstants.VARIABLE_TYPE_DESCRIPTION)
     private VariableType type;
+    @DataField(description = ParamConstants.VARIABLE_DEFAULT_VALUE_DESCRIPTION)
     private Object defaultValue;
+    @DataField(description = ParamConstants.VARIABLE_REQUIRED_DESCRIPTION)
     private boolean required;
+    @DataField(description = ParamConstants.VARIABLE_MULTI_VALUE_DESCRIPTION)
     private boolean multiValue;
 
     /**
      * Example for numeric range: -3:5.
      * Example for categorical values: T,F
      */
+    @DataField(description = ParamConstants.VARIABLE_ALLOWED_VALUES_DESCRIPTION)
     private List<String> allowedValues;
+    @DataField(description = ParamConstants.VARIABLE_ALLOWED_KEYS_DESCRIPTION)
     private List<String> allowedKeys;
+    @DataField(description = ParamConstants.VARIABLE_RANK_DESCRIPTION)
     private long rank;
+    @DataField(description = ParamConstants.VARIABLE_DEPENDS_ON_DESCRIPTION)
     private String dependsOn;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
     /**
      * Variables for validate internal fields. Only valid if type is OBJECT.
      **/
     @Deprecated
+    @DataField(description = ParamConstants.VARIABLE_VARIABLE_SET_DESCRIPTION)
     private Set<Variable> variableSet;
+    @DataField(description = ParamConstants.VARIABLE_VARIABLES_DESCRIPTION)
     private Set<Variable> variables;
+    @DataField(description = ParamConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public Variable() {

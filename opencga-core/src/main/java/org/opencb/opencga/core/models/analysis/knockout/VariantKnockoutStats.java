@@ -1,7 +1,11 @@
 package org.opencb.opencga.core.models.analysis.knockout;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariantKnockoutStats extends KnockoutStats {
 
+    @DataField(description = ParamConstants.VARIANT_KNOCKOUT_STATS_NUM_PAIRED_COMP_HET_DESCRIPTION)
     private int numPairedCompHet;
 
     public VariantKnockoutStats() {

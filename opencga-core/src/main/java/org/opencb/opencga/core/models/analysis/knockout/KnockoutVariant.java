@@ -28,26 +28,47 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 
 import java.util.*;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class KnockoutVariant {
 
+    @DataField(description = ParamConstants.KNOCKOUT_VARIANT_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.KNOCKOUT_VARIANT_DB_SNP_DESCRIPTION)
     private String dbSnp;
+    @DataField(description = ParamConstants.KNOCKOUT_VARIANT_CHROMOSOME_DESCRIPTION)
     private String chromosome;
+    @DataField(description = ParamConstants.KNOCKOUT_VARIANT_START_DESCRIPTION)
     private int start;
+    @DataField(description = ParamConstants.KNOCKOUT_VARIANT_END_DESCRIPTION)
     private int end;
+    @DataField(description = ParamConstants.KNOCKOUT_VARIANT_LENGTH_DESCRIPTION)
     private int length;
+    @DataField(description = ParamConstants.KNOCKOUT_VARIANT_REFERENCE_DESCRIPTION)
     private String reference;
+    @DataField(description = ParamConstants.KNOCKOUT_VARIANT_ALTERNATE_DESCRIPTION)
     private String alternate;
+    @DataField(description = ParamConstants.KNOCKOUT_VARIANT_TYPE_DESCRIPTION)
     private VariantType type;
+    @DataField(description = ParamConstants.KNOCKOUT_VARIANT_GENOTYPE_DESCRIPTION)
     private String genotype;
+    @DataField(description = ParamConstants.KNOCKOUT_VARIANT_DEPTH_DESCRIPTION)
     private Integer depth;
+    @DataField(description = ParamConstants.KNOCKOUT_VARIANT_FILTER_DESCRIPTION)
     private String filter;
+    @DataField(description = ParamConstants.KNOCKOUT_VARIANT_QUAL_DESCRIPTION)
     private String qual;
+    @DataField(description = ParamConstants.KNOCKOUT_VARIANT_STATS_DESCRIPTION)
     private VariantStats stats;
+    @DataField(description = ParamConstants.KNOCKOUT_VARIANT_KNOCKOUT_TYPE_DESCRIPTION)
     private KnockoutType knockoutType;
     private ParentalOrigin parentalOrigin = ParentalOrigin.UNKNOWN;
+    @DataField(description = ParamConstants.KNOCKOUT_VARIANT_POPULATION_FREQUENCIES_DESCRIPTION)
     private List<PopulationFrequency> populationFrequencies;
+    @DataField(description = ParamConstants.KNOCKOUT_VARIANT_SEQUENCE_ONTOLOGY_TERMS_DESCRIPTION)
     private List<SequenceOntologyTerm> sequenceOntologyTerms;
+    @DataField(description = ParamConstants.KNOCKOUT_VARIANT_CLINICAL_SIGNIFICANCE_DESCRIPTION)
     private List<ClinicalSignificance> clinicalSignificance;
 
     public enum KnockoutType {

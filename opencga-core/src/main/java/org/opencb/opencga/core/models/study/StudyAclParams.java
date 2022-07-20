@@ -19,8 +19,12 @@ package org.opencb.opencga.core.models.study;
 import org.opencb.opencga.core.models.AclParams;
 
 // Acl params to communicate the WS and the sample manager
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class StudyAclParams extends AclParams {
 
+    @DataField(description = ParamConstants.STUDY_ACL_PARAMS_TEMPLATE_DESCRIPTION)
     private String template;
 
     public StudyAclParams() {

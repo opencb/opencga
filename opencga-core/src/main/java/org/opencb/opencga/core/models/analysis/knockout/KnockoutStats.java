@@ -1,11 +1,19 @@
 package org.opencb.opencga.core.models.analysis.knockout;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class KnockoutStats {
 
+    @DataField(description = ParamConstants.KNOCKOUT_STATS_COUNT_DESCRIPTION)
     private int count;
+    @DataField(description = ParamConstants.KNOCKOUT_STATS_NUM_HOM_ALT_DESCRIPTION)
     private int numHomAlt;
+    @DataField(description = ParamConstants.KNOCKOUT_STATS_NUM_COMP_HET_DESCRIPTION)
     private int numCompHet;
+    @DataField(description = ParamConstants.KNOCKOUT_STATS_NUM_HET_ALT_DESCRIPTION)
     private int numHetAlt;
+    @DataField(description = ParamConstants.KNOCKOUT_STATS_NUM_DEL_OVERLAP_DESCRIPTION)
     private int numDelOverlap;
 
     public KnockoutStats() {

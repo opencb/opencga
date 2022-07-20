@@ -33,6 +33,8 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
+import org.opencb.opencga.core.api.ParamConstants;
+
 @DataClass(id = "Panel", since = "1.0",
         description = "Panel data model hosts information about any panel.")
 public class Panel extends DiseasePanel implements IPrivateStudyUid {

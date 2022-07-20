@@ -18,12 +18,20 @@ package org.opencb.opencga.core.models.admin;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class UserImportParams {
 
+    @DataField(description = ParamConstants.USER_IMPORT_PARAMS_AUTHENTICATION_ORIGIN_ID_DESCRIPTION)
     private String authenticationOriginId;
+    @DataField(description = ParamConstants.USER_IMPORT_PARAMS_ID_DESCRIPTION)
     private List<String> id;
+    @DataField(description = ParamConstants.USER_IMPORT_PARAMS_RESOURCE_TYPE_DESCRIPTION)
     private ResourceType resourceType;
+    @DataField(description = ParamConstants.USER_IMPORT_PARAMS_STUDY_DESCRIPTION)
     private String study;
+    @DataField(description = ParamConstants.USER_IMPORT_PARAMS_STUDY_GROUP_DESCRIPTION)
     private String studyGroup;
 
     public enum ResourceType {

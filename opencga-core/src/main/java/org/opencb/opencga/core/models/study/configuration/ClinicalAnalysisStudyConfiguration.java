@@ -6,12 +6,20 @@ import org.opencb.opencga.core.models.clinical.ClinicalStatusValue;
 
 import java.util.*;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ClinicalAnalysisStudyConfiguration {
 
+    @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
     private Map<ClinicalAnalysis.Type, List<ClinicalStatusValue>> status;
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_STUDY_CONFIGURATION_INTERPRETATION_DESCRIPTION)
     private InterpretationStudyConfiguration interpretation;
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_STUDY_CONFIGURATION_PRIORITIES_DESCRIPTION)
     private List<ClinicalPriorityValue> priorities;
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_STUDY_CONFIGURATION_FLAGS_DESCRIPTION)
     private Map<ClinicalAnalysis.Type, List<FlagValue>> flags;
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_STUDY_CONFIGURATION_CONSENT_DESCRIPTION)
     private ClinicalConsentConfiguration consent;
 
 

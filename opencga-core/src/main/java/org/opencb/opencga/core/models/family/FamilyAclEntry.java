@@ -26,6 +26,9 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 02/05/17.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FamilyAclEntry extends AbstractAclEntry<FamilyAclEntry.FamilyPermissions> {
 
     public enum FamilyPermissions {

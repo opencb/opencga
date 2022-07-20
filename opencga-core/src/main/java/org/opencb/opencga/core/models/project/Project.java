@@ -32,6 +32,8 @@ import java.util.Map;
 /**
  * Created by jacobo on 11/09/14.
  */
+import org.opencb.opencga.core.api.ParamConstants;
+
 @DataClass(id = "Project", since = "1.0",
         description = "Project data model hosts information about any project.")
 public class Project extends PrivateFields {

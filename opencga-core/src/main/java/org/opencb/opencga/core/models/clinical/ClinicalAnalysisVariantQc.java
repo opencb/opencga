@@ -5,9 +5,14 @@ import org.opencb.opencga.core.models.file.File;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ClinicalAnalysisVariantQc {
 
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_VARIANT_QC_STATS_DESCRIPTION)
     private List<SampleQcVariantStats> stats;
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_VARIANT_QC_FILES_DESCRIPTION)
     private List<File> files;
 
     public ClinicalAnalysisVariantQc() {

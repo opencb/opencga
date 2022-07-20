@@ -5,11 +5,17 @@ import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 @Deprecated
 public class InterpretationMergeParams {
 
+    @DataField(description = ParamConstants.INTERPRETATION_MERGE_PARAMS_METHOD_DESCRIPTION)
     private InterpretationMethod method;
+    @DataField(description = ParamConstants.INTERPRETATION_MERGE_PARAMS_PRIMARY_FINDINGS_DESCRIPTION)
     private List<ClinicalVariant> primaryFindings;
+    @DataField(description = ParamConstants.INTERPRETATION_MERGE_PARAMS_SECONDARY_FINDINGS_DESCRIPTION)
     private List<ClinicalVariant> secondaryFindings;
 
     public InterpretationMergeParams() {

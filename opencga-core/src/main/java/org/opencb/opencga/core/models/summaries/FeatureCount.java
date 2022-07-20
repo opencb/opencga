@@ -19,8 +19,13 @@ package org.opencb.opencga.core.models.summaries;
 /**
  * Created by pfurio on 12/08/16.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FeatureCount {
+    @DataField(description = ParamConstants.FEATURE_COUNT_NAME_DESCRIPTION)
     private Object name;
+    @DataField(description = ParamConstants.FEATURE_COUNT_COUNT_DESCRIPTION)
     private long count;
 
     public FeatureCount(Object name, long count) {

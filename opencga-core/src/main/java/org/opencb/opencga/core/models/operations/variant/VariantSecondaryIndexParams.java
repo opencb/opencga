@@ -20,6 +20,9 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariantSecondaryIndexParams extends ToolParams {
     public static final String DESCRIPTION = "Variant secondary index params.";
 
@@ -30,8 +33,11 @@ public class VariantSecondaryIndexParams extends ToolParams {
         this.sample = sample;
         this.overwrite = overwrite;
     }
+    @DataField(description = ParamConstants.VARIANT_SECONDARY_INDEX_PARAMS_REGION_DESCRIPTION)
     private String region;
+    @DataField(description = ParamConstants.VARIANT_SECONDARY_INDEX_PARAMS_SAMPLE_DESCRIPTION)
     private List<String> sample;
+    @DataField(description = ParamConstants.VARIANT_SECONDARY_INDEX_PARAMS_OVERWRITE_DESCRIPTION)
     private boolean overwrite;
 
     public String getRegion() {

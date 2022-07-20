@@ -16,9 +16,14 @@
 
 package org.opencb.opencga.core.models.file;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class SmallFileInternal {
 
+    @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
     private FileStatus status;
+    @DataField(description = ParamConstants.SMALL_FILE_INTERNAL_MISSING_SAMPLES_DESCRIPTION)
     private MissingSamples missingSamples;
 
     public SmallFileInternal() {

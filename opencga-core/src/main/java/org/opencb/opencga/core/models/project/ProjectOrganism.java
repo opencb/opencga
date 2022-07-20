@@ -18,10 +18,16 @@ package org.opencb.opencga.core.models.project;
 
 import java.util.Objects;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ProjectOrganism {
 
+    @DataField(description = ParamConstants.PROJECT_ORGANISM_SCIENTIFIC_NAME_DESCRIPTION)
     private String scientificName;
+    @DataField(description = ParamConstants.PROJECT_ORGANISM_COMMON_NAME_DESCRIPTION)
     private String commonName;
+    @DataField(description = ParamConstants.PROJECT_ORGANISM_ASSEMBLY_DESCRIPTION)
     private String assembly;
 
     public ProjectOrganism() {

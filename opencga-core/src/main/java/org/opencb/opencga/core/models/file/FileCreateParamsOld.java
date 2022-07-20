@@ -18,18 +18,26 @@ package org.opencb.opencga.core.models.file;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 @Deprecated
 public class FileCreateParamsOld {
 
     @JsonProperty(required = true)
+    @DataField(description = ParamConstants.FILE_CREATE_PARAMS_OLD_PATH_DESCRIPTION)
     private String path;
+    @DataField(description = ParamConstants.FILE_CREATE_PARAMS_OLD_CONTENT_DESCRIPTION)
     private String content;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
     @JsonProperty(defaultValue = "false")
+    @DataField(description = ParamConstants.FILE_CREATE_PARAMS_OLD_PARENTS_DESCRIPTION)
     private boolean parents;
 
     @JsonProperty(defaultValue = "false")
+    @DataField(description = ParamConstants.FILE_CREATE_PARAMS_OLD_DIRECTORY_DESCRIPTION)
     private boolean directory;
 
     public FileCreateParamsOld() {

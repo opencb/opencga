@@ -7,6 +7,9 @@ import org.opencb.biodata.models.variant.avro.TraitAssociation;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariantAnnotationConstants {
 
     public static final String THREEPRIME_OVERLAPPING_NCRNA = "3prime_overlapping_ncrna";

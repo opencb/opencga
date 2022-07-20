@@ -2,11 +2,18 @@ package org.opencb.opencga.core.models.family;
 
 import org.opencb.opencga.core.models.AclParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FamilyAclParams extends AclParams {
 
+    @DataField(description = ParamConstants.FAMILY_ACL_PARAMS_FAMILY_DESCRIPTION)
     private String family;
+    @DataField(description = ParamConstants.FAMILY_ACL_PARAMS_INDIVIDUAL_DESCRIPTION)
     private String individual;
+    @DataField(description = ParamConstants.FAMILY_ACL_PARAMS_SAMPLE_DESCRIPTION)
     private String sample;
+    @DataField(description = ParamConstants.FAMILY_ACL_PARAMS_PROPAGATE_DESCRIPTION)
     private Propagate propagate;
 
     public enum Propagate {

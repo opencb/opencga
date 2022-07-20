@@ -26,6 +26,9 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 05/06/17.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ClinicalAnalysisAclEntry extends AbstractAclEntry<ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions> {
 
     public enum ClinicalAnalysisPermissions {

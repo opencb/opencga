@@ -37,6 +37,8 @@ import java.util.*;
 /**
  * Created by jacobo on 11/09/14.
  */
+import org.opencb.opencga.core.api.ParamConstants;
+
 @DataClass(id = "Individual", since = "1.0",
         description = "Individual data model hosts information about any indvidual.")
 public class Individual extends Annotable {

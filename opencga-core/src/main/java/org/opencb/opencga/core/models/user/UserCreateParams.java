@@ -19,16 +19,24 @@ package org.opencb.opencga.core.models.user;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.lang3.StringUtils;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class UserCreateParams {
 
     @JsonProperty(required = true)
+    @DataField(description = ParamConstants.USER_CREATE_PARAMS_ID_DESCRIPTION)
     private String id;
     @JsonProperty(required = true)
+    @DataField(description = ParamConstants.USER_CREATE_PARAMS_NAME_DESCRIPTION)
     private String name;
     @JsonProperty(required = true)
+    @DataField(description = ParamConstants.USER_CREATE_PARAMS_EMAIL_DESCRIPTION)
     private String email;
     @JsonProperty(required = true)
+    @DataField(description = ParamConstants.USER_CREATE_PARAMS_PASSWORD_DESCRIPTION)
     private String password;
+    @DataField(description = ParamConstants.USER_CREATE_PARAMS_ORGANIZATION_DESCRIPTION)
     private String organization;
 
     public UserCreateParams() {

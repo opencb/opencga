@@ -2,10 +2,15 @@ package org.opencb.opencga.core.models.alignment;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class AlignmentIndexParams extends ToolParams {
     public static final String DESCRIPTION = "Alignment index params";
 
+    @DataField(description = ParamConstants.ALIGNMENT_INDEX_PARAMS_FILE_DESCRIPTION)
     private String file;
+    @DataField(description = ParamConstants.ALIGNMENT_INDEX_PARAMS_OVERWRITE_DESCRIPTION)
     private boolean overwrite;
 
     public AlignmentIndexParams() {

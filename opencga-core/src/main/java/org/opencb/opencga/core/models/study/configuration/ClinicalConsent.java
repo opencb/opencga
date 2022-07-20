@@ -1,9 +1,15 @@
 package org.opencb.opencga.core.models.study.configuration;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ClinicalConsent {
 
+    @DataField(description = ParamConstants.CLINICAL_CONSENT_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.CLINICAL_CONSENT_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
     public ClinicalConsent() {

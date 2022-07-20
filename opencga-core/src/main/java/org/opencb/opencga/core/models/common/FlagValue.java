@@ -1,8 +1,13 @@
 package org.opencb.opencga.core.models.common;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FlagValue {
 
+    @DataField(description = ParamConstants.FLAG_VALUE_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
     public FlagValue() {

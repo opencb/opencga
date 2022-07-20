@@ -9,6 +9,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FamilyQualityControl implements Serializable {
 
 

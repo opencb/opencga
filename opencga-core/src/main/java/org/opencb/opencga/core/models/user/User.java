@@ -27,6 +27,8 @@ import java.util.*;
 /**
  * Created by imedina on 11/09/14.
  */
+import org.opencb.opencga.core.api.ParamConstants;
+
 @DataClass(id = "User", since = "1.0",
         description = "User data model hosts information about any user.")
 public class User {

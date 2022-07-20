@@ -2,9 +2,15 @@ package org.opencb.opencga.core.models.variant;
 
 import java.util.Map;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class CircosTrack {
+    @DataField(description = ParamConstants.CIRCOS_TRACK_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.CIRCOS_TRACK_TYPE_DESCRIPTION)
     private String type;
+    @DataField(description = ParamConstants.CIRCOS_TRACK_QUERY_DESCRIPTION)
     private Map<String, String> query;
 
     public CircosTrack() {

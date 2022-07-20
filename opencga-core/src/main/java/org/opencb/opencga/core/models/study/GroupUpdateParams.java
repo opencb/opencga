@@ -18,8 +18,12 @@ package org.opencb.opencga.core.models.study;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class GroupUpdateParams {
 
+    @DataField(description = ParamConstants.GROUP_UPDATE_PARAMS_USERS_DESCRIPTION)
     private List<String> users;
 
     public GroupUpdateParams() {

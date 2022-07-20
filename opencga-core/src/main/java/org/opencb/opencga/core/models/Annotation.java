@@ -19,13 +19,18 @@ package org.opencb.opencga.core.models;
 /**
  * Created by jacobo on 12/12/14.
  */
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 @Deprecated
 public class Annotation {
 
     /**
      * This name must be a valid variable name.
      */
+    @DataField(description = ParamConstants.ANNOTATION_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.ANNOTATION_VALUE_DESCRIPTION)
     private Object value;
 
 

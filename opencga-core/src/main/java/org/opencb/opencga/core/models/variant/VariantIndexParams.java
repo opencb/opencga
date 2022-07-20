@@ -21,6 +21,8 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.tools.ToolParams;
 
+import org.opencb.commons.annotations.DataField;
+
 public class VariantIndexParams extends ToolParams {
     public static final String DESCRIPTION = "Variant index params";
 
@@ -75,43 +77,70 @@ public class VariantIndexParams extends ToolParams {
         this.skipIndexedFiles = skipIndexedFiles;
     }
 
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_FILE_DESCRIPTION)
     private String file;
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_RESUME_DESCRIPTION)
     private boolean resume;
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
 
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_TRANSFORM_DESCRIPTION)
     private boolean transform;
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_GVCF_DESCRIPTION)
     private boolean gvcf;
 
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_NORMALIZATION_SKIP_DESCRIPTION)
     private boolean normalizationSkip;
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_REFERENCE_GENOME_DESCRIPTION)
     private String referenceGenome;
 
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_FAIL_ON_MALFORMED_LINES_DESCRIPTION)
     private String failOnMalformedLines;
 
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_FAMILY_DESCRIPTION)
     private boolean family;
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_SOMATIC_DESCRIPTION)
     private boolean somatic;
 
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_LOAD_DESCRIPTION)
     private boolean load;
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_LOAD_SPLIT_DATA_DESCRIPTION)
     private String loadSplitData;
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_LOAD_MULTI_FILE_DATA_DESCRIPTION)
     private boolean loadMultiFileData;
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_LOAD_SAMPLE_INDEX_DESCRIPTION)
     private String loadSampleIndex;
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_LOAD_ARCHIVE_DESCRIPTION)
     private String loadArchive;
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_LOAD_HOM_REF_DESCRIPTION)
     private String loadHomRef;
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_POST_LOAD_CHECK_DESCRIPTION)
     private String postLoadCheck;
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_INCLUDE_GENOTYPES_DESCRIPTION)
     private String includeGenotypes;
     private String includeSampleData = ParamConstants.ALL;
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_MERGE_DESCRIPTION)
     private String merge;
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_DEDUPLICATION_POLICY_DESCRIPTION)
     private String deduplicationPolicy;
 
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_CALCULATE_STATS_DESCRIPTION)
     private boolean calculateStats;
     private Aggregation aggregated = Aggregation.NONE;
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_AGGREGATION_MAPPING_FILE_DESCRIPTION)
     private String aggregationMappingFile;
 
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_ANNOTATE_DESCRIPTION)
     private boolean annotate;
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_ANNOTATOR_DESCRIPTION)
     private String annotator;
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_OVERWRITE_ANNOTATIONS_DESCRIPTION)
     private boolean overwriteAnnotations;
 
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_INDEX_SEARCH_DESCRIPTION)
     private boolean indexSearch;
 
+    @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_SKIP_INDEXED_FILES_DESCRIPTION)
     private boolean skipIndexedFiles;
 
     public String getFile() {

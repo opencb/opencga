@@ -21,18 +21,31 @@ import org.opencb.biodata.models.clinical.Phenotype;
 
 import java.util.*;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class KnockoutByIndividual {
 
+    @DataField(description = ParamConstants.KNOCKOUT_BY_INDIVIDUAL_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_INDIVIDUAL_SAMPLE_ID_DESCRIPTION)
     private String sampleId;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_INDIVIDUAL_MOTHER_ID_DESCRIPTION)
     private String motherId;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_INDIVIDUAL_MOTHER_SAMPLE_ID_DESCRIPTION)
     private String motherSampleId;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_INDIVIDUAL_FATHER_ID_DESCRIPTION)
     private String fatherId;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_INDIVIDUAL_FATHER_SAMPLE_ID_DESCRIPTION)
     private String fatherSampleId;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_INDIVIDUAL_SEX_DESCRIPTION)
     private String sex;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_INDIVIDUAL_PHENOTYPES_DESCRIPTION)
     private List<Phenotype> phenotypes;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_INDIVIDUAL_DISORDERS_DESCRIPTION)
     private List<Disorder> disorders;
 
+    @DataField(description = ParamConstants.KNOCKOUT_BY_INDIVIDUAL_STATS_DESCRIPTION)
     private GeneKnockoutByIndividualStats stats;
     private Map<String, KnockoutGene> genesMap = new HashMap<>();
 
@@ -251,6 +264,7 @@ public class KnockoutByIndividual {
     }
 
     public static class KnockoutGene {
+    @DataField(description = ParamConstants.KNOCKOUT_BY_INDIVIDUAL_ID_DESCRIPTION)
         private String id;
         private String name;
         private String chromosome;

@@ -19,10 +19,16 @@ package org.opencb.opencga.core.models.common;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.opencga.core.common.TimeUtils;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class StatusParams {
 
+    @DataField(description = ParamConstants.STATUS_PARAMS_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.STATUS_PARAMS_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
     public StatusParams() {

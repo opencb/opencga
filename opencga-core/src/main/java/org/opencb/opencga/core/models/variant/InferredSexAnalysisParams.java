@@ -20,10 +20,16 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class InferredSexAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Inferred sex analysis params";
+    @DataField(description = ParamConstants.INFERRED_SEX_ANALYSIS_PARAMS_INDIVIDUAL_DESCRIPTION)
     private String individual;
+    @DataField(description = ParamConstants.INFERRED_SEX_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION)
     private String sample;
+    @DataField(description = ParamConstants.INFERRED_SEX_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
 
     public InferredSexAnalysisParams() {

@@ -31,37 +31,62 @@ import org.opencb.opencga.core.models.study.configuration.ClinicalConsentAnnotat
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ClinicalAnalysisCreateParams {
 
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_CREATE_PARAMS_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_CREATE_PARAMS_TYPE_DESCRIPTION)
     private ClinicalAnalysis.Type type;
 
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_CREATE_PARAMS_DISORDER_DESCRIPTION)
     private DisorderReferenceParam disorder;
 
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_CREATE_PARAMS_FILES_DESCRIPTION)
     private List<FileReferenceParam> files;
 
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_CREATE_PARAMS_PROBAND_DESCRIPTION)
     private ProbandParam proband;
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_CREATE_PARAMS_FAMILY_DESCRIPTION)
     private FamilyParam family;
 
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_CREATE_PARAMS_PANELS_DESCRIPTION)
     private List<PanelReferenceParam> panels;
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_CREATE_PARAMS_PANEL_LOCK_DESCRIPTION)
     private Boolean panelLock;
 
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_CREATE_PARAMS_ANALYST_DESCRIPTION)
     private ClinicalAnalystParam analyst;
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_CREATE_PARAMS_REPORT_DESCRIPTION)
     private ClinicalReport report;
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_CREATE_PARAMS_INTERPRETATION_DESCRIPTION)
     private InterpretationCreateParams interpretation;
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_CREATE_PARAMS_QUALITY_CONTROL_DESCRIPTION)
     private ClinicalAnalysisQualityControlUpdateParam qualityControl;
 
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_CREATE_PARAMS_CONSENT_DESCRIPTION)
     private ClinicalConsentAnnotationParam consent;
 
+    @DataField(description = ParamConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
+    @DataField(description = ParamConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_CREATE_PARAMS_DUE_DATE_DESCRIPTION)
     private String dueDate;
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_CREATE_PARAMS_COMMENTS_DESCRIPTION)
     private List<ClinicalCommentParam> comments;
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_CREATE_PARAMS_PRIORITY_DESCRIPTION)
     private PriorityParam priority;
+    @DataField(description = ParamConstants.CLINICAL_ANALYSIS_CREATE_PARAMS_FLAGS_DESCRIPTION)
     private List<FlagValueParam> flags;
 
+    @DataField(description = ParamConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
+    @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
     private StatusParam status;
 
     public ClinicalAnalysisCreateParams() {

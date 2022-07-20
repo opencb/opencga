@@ -8,12 +8,20 @@ import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class SampleAlignmentQualityControlMetrics {
 
+    @DataField(description = ParamConstants.SAMPLE_ALIGNMENT_QUALITY_CONTROL_METRICS_BAM_FILE_ID_DESCRIPTION)
     private String bamFileId;
+    @DataField(description = ParamConstants.SAMPLE_ALIGNMENT_QUALITY_CONTROL_METRICS_FAST_QC_METRICS_DESCRIPTION)
     private FastQcMetrics fastQcMetrics;
+    @DataField(description = ParamConstants.SAMPLE_ALIGNMENT_QUALITY_CONTROL_METRICS_SAMTOOLS_FLAGSTATS_DESCRIPTION)
     private SamtoolsFlagstats samtoolsFlagstats;
+    @DataField(description = ParamConstants.SAMPLE_ALIGNMENT_QUALITY_CONTROL_METRICS_HS_METRICS_DESCRIPTION)
     private HsMetrics hsMetrics;
+    @DataField(description = ParamConstants.SAMPLE_ALIGNMENT_QUALITY_CONTROL_METRICS_GENE_COVERAGE_STATS_DESCRIPTION)
     private List<GeneCoverageStats> geneCoverageStats;
 
     public SampleAlignmentQualityControlMetrics() {

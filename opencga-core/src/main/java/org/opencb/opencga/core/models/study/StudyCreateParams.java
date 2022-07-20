@@ -23,19 +23,34 @@ import org.opencb.opencga.core.models.common.ExternalSource;
 import java.util.List;
 import java.util.Map;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class StudyCreateParams {
 
+    @DataField(description = ParamConstants.STUDY_CREATE_PARAMS_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.STUDY_CREATE_PARAMS_NAME_DESCRIPTION)
     private String name;
+    @DataField(description = ParamConstants.STUDY_CREATE_PARAMS_ALIAS_DESCRIPTION)
     private String alias;
+    @DataField(description = ParamConstants.STUDY_CREATE_PARAMS_TYPE_DESCRIPTION)
     private StudyType type;
+    @DataField(description = ParamConstants.STUDY_CREATE_PARAMS_SOURCES_DESCRIPTION)
     private List<ExternalSource> sources;
+    @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+    @DataField(description = ParamConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
+    @DataField(description = ParamConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
+    @DataField(description = ParamConstants.STUDY_CREATE_PARAMS_NOTIFICATION_DESCRIPTION)
     private StudyNotification notification;
+    @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
     private StatusParams status;
+    @DataField(description = ParamConstants.STUDY_CREATE_PARAMS_ADDITIONAL_INFO_DESCRIPTION)
     private List<AdditionalInfo> additionalInfo;
+    @DataField(description = ParamConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public StudyCreateParams() {

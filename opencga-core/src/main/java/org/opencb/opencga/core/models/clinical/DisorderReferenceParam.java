@@ -2,8 +2,12 @@ package org.opencb.opencga.core.models.clinical;
 
 import org.opencb.biodata.models.clinical.Disorder;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class DisorderReferenceParam {
 
+    @DataField(description = ParamConstants.DISORDER_REFERENCE_PARAM_ID_DESCRIPTION)
     private String id;
 
     public DisorderReferenceParam() {

@@ -19,20 +19,35 @@ package org.opencb.opencga.core.models.variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.tools.ToolParams;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class SampleQcAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Sample QC analysis params. Mutational signature and genome plot are calculated for somatic"
     + " samples only";
+    @DataField(description = ParamConstants.SAMPLE_QC_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION)
     private String sample;
+    @DataField(description = ParamConstants.SAMPLE_QC_ANALYSIS_PARAMS_VARIANT_STATS_ID_DESCRIPTION)
     private String variantStatsId;
+    @DataField(description = ParamConstants.SAMPLE_QC_ANALYSIS_PARAMS_VARIANT_STATS_DESCRIPTION_DESCRIPTION)
     private String variantStatsDescription;
+    @DataField(description = ParamConstants.SAMPLE_QC_ANALYSIS_PARAMS_VARIANT_STATS_QUERY_DESCRIPTION)
     private AnnotationVariantQueryParams variantStatsQuery;
+    @DataField(description = ParamConstants.SAMPLE_QC_ANALYSIS_PARAMS_SIGNATURE_ID_DESCRIPTION)
     private String signatureId;
+    @DataField(description = ParamConstants.SAMPLE_QC_ANALYSIS_PARAMS_SIGNATURE_DESCRIPTION_DESCRIPTION)
     private String signatureDescription;
+    @DataField(description = ParamConstants.SAMPLE_QC_ANALYSIS_PARAMS_SIGNATURE_QUERY_DESCRIPTION)
     private ObjectMap signatureQuery;
+    @DataField(description = ParamConstants.SAMPLE_QC_ANALYSIS_PARAMS_SIGNATURE_RELEASE_DESCRIPTION)
     private String signatureRelease;
+    @DataField(description = ParamConstants.SAMPLE_QC_ANALYSIS_PARAMS_GENOME_PLOT_ID_DESCRIPTION)
     private String genomePlotId;
+    @DataField(description = ParamConstants.SAMPLE_QC_ANALYSIS_PARAMS_GENOME_PLOT_DESCRIPTION_DESCRIPTION)
     private String genomePlotDescription;
+    @DataField(description = ParamConstants.SAMPLE_QC_ANALYSIS_PARAMS_GENOME_PLOT_CONFIG_FILE_DESCRIPTION)
     private String genomePlotConfigFile;
+    @DataField(description = ParamConstants.SAMPLE_QC_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
 
     public SampleQcAnalysisParams() {

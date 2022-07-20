@@ -2,8 +2,12 @@ package org.opencb.opencga.core.models.study.configuration;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ClinicalConsentConfiguration {
 
+    @DataField(description = ParamConstants.CLINICAL_CONSENT_CONFIGURATION_CONSENTS_DESCRIPTION)
     private List<ClinicalConsent> consents;
 
     public ClinicalConsentConfiguration() {

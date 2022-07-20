@@ -3,8 +3,12 @@ package org.opencb.opencga.core.models.common;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.opencga.core.common.TimeUtils;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class StatusParam {
 
+    @DataField(description = ParamConstants.STATUS_PARAM_ID_DESCRIPTION)
     private String id;
 
     public StatusParam() {

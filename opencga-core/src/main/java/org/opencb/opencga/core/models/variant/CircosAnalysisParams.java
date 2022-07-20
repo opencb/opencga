@@ -22,15 +22,23 @@ import org.opencb.opencga.core.tools.ToolParams;
 import java.util.List;
 import java.util.Map;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class CircosAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Circos analysis params to customize the plot. These parameters include the title,  the "
             + "plot density (i.e., the number of points to display), the general query and the list of tracks. Currently, the supported "
             + "track types are: COPY-NUMBER, INDEL, REARRANGEMENT and SNV. In addition, each track can contain a specific query";
+    @DataField(description = ParamConstants.CIRCOS_ANALYSIS_PARAMS_TITLE_DESCRIPTION)
     private String title;
+    @DataField(description = ParamConstants.CIRCOS_ANALYSIS_PARAMS_DENSITY_DESCRIPTION)
     private String density; // Density plot: LOW, MEDIUM or HIGH
+    @DataField(description = ParamConstants.CIRCOS_ANALYSIS_PARAMS_QUERY_DESCRIPTION)
     private Map<String, String> query;
+    @DataField(description = ParamConstants.CIRCOS_ANALYSIS_PARAMS_TRACKS_DESCRIPTION)
     private List<CircosTrack> tracks;
 
+    @DataField(description = ParamConstants.CIRCOS_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
 
     public CircosAnalysisParams() {

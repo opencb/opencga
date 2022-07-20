@@ -7,20 +7,35 @@ import org.opencb.biodata.models.clinical.Phenotype;
 import java.util.Collections;
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class KnockoutByIndividualSummary {
 
+    @DataField(description = ParamConstants.KNOCKOUT_BY_INDIVIDUAL_SUMMARY_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_INDIVIDUAL_SUMMARY_SAMPLE_ID_DESCRIPTION)
     private String sampleId;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_INDIVIDUAL_SUMMARY_MOTHER_ID_DESCRIPTION)
     private String motherId;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_INDIVIDUAL_SUMMARY_MOTHER_SAMPLE_ID_DESCRIPTION)
     private String motherSampleId;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_INDIVIDUAL_SUMMARY_FATHER_ID_DESCRIPTION)
     private String fatherId;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_INDIVIDUAL_SUMMARY_FATHER_SAMPLE_ID_DESCRIPTION)
     private String fatherSampleId;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_INDIVIDUAL_SUMMARY_SEX_DESCRIPTION)
     private String sex;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_INDIVIDUAL_SUMMARY_PHENOTYPES_DESCRIPTION)
     private List<Phenotype> phenotypes;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_INDIVIDUAL_SUMMARY_DISORDERS_DESCRIPTION)
     private List<Disorder> disorders;
 
+    @DataField(description = ParamConstants.KNOCKOUT_BY_INDIVIDUAL_SUMMARY_NUM_PARENTS_DESCRIPTION)
     private int numParents;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_INDIVIDUAL_SUMMARY_GENES_DESCRIPTION)
     private List<String> genes;
+    @DataField(description = ParamConstants.KNOCKOUT_BY_INDIVIDUAL_SUMMARY_VARIANT_STATS_DESCRIPTION)
     private VariantKnockoutStats variantStats;
 
     public KnockoutByIndividualSummary() {

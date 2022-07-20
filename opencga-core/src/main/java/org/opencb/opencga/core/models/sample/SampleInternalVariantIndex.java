@@ -4,10 +4,16 @@ import org.opencb.opencga.core.models.common.IndexStatus;
 
 import java.util.Objects;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class SampleInternalVariantIndex {
 
+    @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
     private IndexStatus status;
+    @DataField(description = ParamConstants.SAMPLE_INTERNAL_VARIANT_INDEX_NUM_FILES_DESCRIPTION)
     private int numFiles;
+    @DataField(description = ParamConstants.SAMPLE_INTERNAL_VARIANT_INDEX_MULTI_FILE_DESCRIPTION)
     private boolean multiFile;
 
     public SampleInternalVariantIndex() {

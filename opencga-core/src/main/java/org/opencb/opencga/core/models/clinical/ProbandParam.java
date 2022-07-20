@@ -8,8 +8,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class ProbandParam {
+    @DataField(description = ParamConstants.PROBAND_PARAM_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.PROBAND_PARAM_SAMPLES_DESCRIPTION)
     private List<SampleParams> samples;
 
     public ProbandParam() {

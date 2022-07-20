@@ -20,10 +20,15 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class VariantStatsDeleteParams extends ToolParams {
     public static final String DESCRIPTION = "Variant stats delete params";
 
+    @DataField(description = ParamConstants.VARIANT_STATS_DELETE_PARAMS_COHORT_DESCRIPTION)
     private List<String> cohort;
+    @DataField(description = ParamConstants.VARIANT_STATS_DELETE_PARAMS_FORCE_DESCRIPTION)
     private boolean force;
 //    private boolean resume;
 

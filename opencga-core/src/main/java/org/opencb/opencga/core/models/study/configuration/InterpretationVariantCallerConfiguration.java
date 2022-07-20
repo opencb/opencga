@@ -4,12 +4,20 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 
 import java.util.List;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class InterpretationVariantCallerConfiguration {
 
+    @DataField(description = ParamConstants.INTERPRETATION_VARIANT_CALLER_CONFIGURATION_ID_DESCRIPTION)
     private String id;
+    @DataField(description = ParamConstants.INTERPRETATION_VARIANT_CALLER_CONFIGURATION_SOMATIC_DESCRIPTION)
     private boolean somatic;
+    @DataField(description = ParamConstants.INTERPRETATION_VARIANT_CALLER_CONFIGURATION_TYPES_DESCRIPTION)
     private List<VariantType> types;
+    @DataField(description = ParamConstants.INTERPRETATION_VARIANT_CALLER_CONFIGURATION_COLUMNS_DESCRIPTION)
     private List<String> columns;
+    @DataField(description = ParamConstants.INTERPRETATION_VARIANT_CALLER_CONFIGURATION_DATA_FILTERS_DESCRIPTION)
     private List<DataFilter> dataFilters;
 
     public InterpretationVariantCallerConfiguration() {
@@ -83,6 +91,7 @@ public class InterpretationVariantCallerConfiguration {
 
     public static class DataFilter {
 
+    @DataField(description = ParamConstants.INTERPRETATION_VARIANT_CALLER_CONFIGURATION_ID_DESCRIPTION)
         private String id;
         private String name;
         private Source source;

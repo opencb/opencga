@@ -19,8 +19,12 @@ package org.opencb.opencga.core.models.family;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Internal;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
+
 public class FamilyInternal extends Internal {
 
+    @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
     private FamilyStatus status;
 
     public FamilyInternal() {
