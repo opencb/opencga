@@ -20,7 +20,7 @@ public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument
     private int insertedDocuments = 0;
     private long addTimeMs = 0;
     private long commitTimeMs = 0;
-    private final Logger logger = LoggerFactory.getLogger(VariantSearchManager.class);
+    private final Logger logger = LoggerFactory.getLogger(SolrInputDocumentDataWriter.class);
 
     public SolrInputDocumentDataWriter(String collection, SolrClient solrClient, int insertBatchSize) {
         this.collection = collection;
@@ -49,7 +49,7 @@ public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument
             Throwables.propagate(e);
         }
         logger.info("Finish Solr Bulk Load: {} inserted documents.", insertedDocuments);
-        logger.info("Push (add) time :{}", TimeUtils.durationToString(addTimeMs));
+        logger.info("Push (add) time: {}", TimeUtils.durationToString(addTimeMs));
         logger.info("Commit time: {}", TimeUtils.durationToString(commitTimeMs));
         return true;
     }
