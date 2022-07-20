@@ -540,7 +540,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
             if (config.isAvailableSubCommand(restParameter.getName(), commandName)) {
                 if (restParameter.getParam() == RestParamType.QUERY && !restParameter.isRequired() && restParameter.isAvailableType()) {
                     enc = true;
-                    if (normalizeNames(restParameter.getName()).equals("study") && restParameter.isRequired()) {
+                    if (normalizeNames(restParameter.getName()).equals("study") && !restEndpoint.getPath().contains("search")) {
                         studyPresent = true;
                     }
                     if (StringUtils.isNotEmpty(restParameter.getType()) && "string".equalsIgnoreCase(restParameter.getType())) {
