@@ -212,9 +212,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("propagate", commandOptions.propagate);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         ClinicalAnalysisAclUpdateParams clinicalAnalysisAclUpdateParams = new ClinicalAnalysisAclUpdateParams();
@@ -242,9 +239,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         ClinicalAnalysisStudyConfiguration clinicalAnalysisStudyConfiguration = new ClinicalAnalysisStudyConfiguration();
@@ -272,9 +266,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("skipCreateDefaultInterpretation", commandOptions.skipCreateDefaultInterpretation);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         ClinicalAnalysisCreateParams clinicalAnalysisCreateParams = new ClinicalAnalysisCreateParams();
@@ -401,9 +392,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("status", commandOptions.status);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getClinicalAnalysisClient().distinct(commandOptions.field, queryParams);
     }
@@ -429,9 +417,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("status", commandOptions.status);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
         queryParams.putIfNotEmpty("release", commandOptions.release);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getClinicalAnalysisClient().distinctInterpretation(commandOptions.field, queryParams);
     }
@@ -462,9 +447,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("status", commandOptions.status);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
         queryParams.putIfNotEmpty("release", commandOptions.release);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getClinicalAnalysisClient().searchInterpretation(queryParams);
     }
@@ -481,9 +463,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("version", commandOptions.version);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getClinicalAnalysisClient().infoInterpretation(commandOptions.interpretations, queryParams);
     }
@@ -500,9 +479,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         CancerTieringInterpretationAnalysisParams cancerTieringInterpretationAnalysisParams = new CancerTieringInterpretationAnalysisParams();
@@ -537,9 +513,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         ExomiserInterpretationAnalysisParams exomiserInterpretationAnalysisParams = new ExomiserInterpretationAnalysisParams();
@@ -570,9 +543,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         TeamInterpretationAnalysisParams teamInterpretationAnalysisParams = new TeamInterpretationAnalysisParams();
@@ -608,9 +578,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         TieringInterpretationAnalysisParams tieringInterpretationAnalysisParams = new TieringInterpretationAnalysisParams();
@@ -646,9 +613,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         ZettaInterpretationAnalysisParams zettaInterpretationAnalysisParams = new ZettaInterpretationAnalysisParams();
@@ -751,9 +715,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("populationFrequency", commandOptions.populationFrequency);
         queryParams.putIfNotEmpty("consequenceType", commandOptions.consequenceType);
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getClinicalAnalysisClient().aggregationStatsRga(commandOptions.field, queryParams);
     }
@@ -794,9 +755,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("populationFrequency", commandOptions.populationFrequency);
         queryParams.putIfNotEmpty("consequenceType", commandOptions.consequenceType);
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getClinicalAnalysisClient().queryRgaGene(queryParams);
     }
@@ -832,9 +790,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("populationFrequency", commandOptions.populationFrequency);
         queryParams.putIfNotEmpty("consequenceType", commandOptions.consequenceType);
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getClinicalAnalysisClient().summaryRgaGene(queryParams);
     }
@@ -852,9 +807,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
         queryParams.putIfNotNull("auxiliarIndex", commandOptions.auxiliarIndex);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         RgaAnalysisParams rgaAnalysisParams = new RgaAnalysisParams();
@@ -906,9 +858,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("populationFrequency", commandOptions.populationFrequency);
         queryParams.putIfNotEmpty("consequenceType", commandOptions.consequenceType);
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getClinicalAnalysisClient().queryRgaIndividual(queryParams);
     }
@@ -944,9 +893,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("populationFrequency", commandOptions.populationFrequency);
         queryParams.putIfNotEmpty("consequenceType", commandOptions.consequenceType);
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getClinicalAnalysisClient().summaryRgaIndividual(queryParams);
     }
@@ -987,9 +933,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("populationFrequency", commandOptions.populationFrequency);
         queryParams.putIfNotEmpty("consequenceType", commandOptions.consequenceType);
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getClinicalAnalysisClient().queryRgaVariant(queryParams);
     }
@@ -1025,9 +968,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("populationFrequency", commandOptions.populationFrequency);
         queryParams.putIfNotEmpty("consequenceType", commandOptions.consequenceType);
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getClinicalAnalysisClient().summaryRgaVariant(queryParams);
     }
@@ -1070,9 +1010,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("status", commandOptions.status);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getClinicalAnalysisClient().search(queryParams);
     }
@@ -1086,9 +1023,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("sample", commandOptions.sample);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getClinicalAnalysisClient().actionableVariant(queryParams);
     }
@@ -1160,9 +1094,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("panelFeatureType", commandOptions.panelFeatureType);
         queryParams.putIfNotNull("panelIntersection", commandOptions.panelIntersection);
         queryParams.putIfNotEmpty("trait", commandOptions.trait);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getClinicalAnalysisClient().queryVariant(queryParams);
     }
@@ -1177,9 +1108,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("member", commandOptions.member);
         queryParams.putIfNotNull("silent", commandOptions.silent);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getClinicalAnalysisClient().acl(commandOptions.clinicalAnalyses, queryParams);
     }
@@ -1193,9 +1121,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("force", commandOptions.force);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getClinicalAnalysisClient().delete(commandOptions.clinicalAnalyses, queryParams);
     }
@@ -1211,9 +1136,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         ClinicalAnalysisUpdateParams clinicalAnalysisUpdateParams = new ClinicalAnalysisUpdateParams();
@@ -1305,9 +1227,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getClinicalAnalysisClient().info(commandOptions.clinicalAnalysis, queryParams);
     }
@@ -1324,9 +1243,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("setAs", commandOptions.setAs);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         InterpretationCreateParams interpretationCreateParams = new InterpretationCreateParams();
@@ -1381,9 +1297,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getClinicalAnalysisClient().clearInterpretation(commandOptions.clinicalAnalysis, commandOptions.interpretations, queryParams);
     }
@@ -1397,9 +1310,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("setAsPrimary", commandOptions.setAsPrimary);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getClinicalAnalysisClient().deleteInterpretation(commandOptions.clinicalAnalysis, commandOptions.interpretations, queryParams);
     }
@@ -1412,9 +1322,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getClinicalAnalysisClient().revertInterpretation(commandOptions.clinicalAnalysis, commandOptions.interpretation, commandOptions.version, queryParams);
     }
@@ -1431,9 +1338,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("setAs", commandOptions.setAs);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         InterpretationUpdateParams interpretationUpdateParams = new InterpretationUpdateParams();

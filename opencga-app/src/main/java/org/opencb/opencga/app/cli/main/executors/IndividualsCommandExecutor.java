@@ -128,9 +128,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("propagate", commandOptions.propagate);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         IndividualAclUpdateParams individualAclUpdateParams = new IndividualAclUpdateParams();
@@ -179,9 +176,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
         queryParams.putIfNotNull("default_values", commandOptions.default_values);
         queryParams.putIfNotEmpty("field", commandOptions.field);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getIndividualClient().aggregationStats(queryParams);
     }
@@ -196,9 +190,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("parents", commandOptions.parents);
         queryParams.putIfNotEmpty("annotationSetId", commandOptions.annotationSetId);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         TsvAnnotationParams tsvAnnotationParams = new TsvAnnotationParams();
@@ -229,9 +220,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("samples", commandOptions.samples);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         IndividualCreateParams individualCreateParams = new IndividualCreateParams();
@@ -347,9 +335,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("acl", commandOptions.acl);
         queryParams.putIfNotEmpty("release", commandOptions.release);
         queryParams.putIfNotNull("snapshot", commandOptions.snapshot);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getIndividualClient().distinct(commandOptions.field, queryParams);
     }
@@ -393,9 +378,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("acl", commandOptions.acl);
         queryParams.putIfNotEmpty("release", commandOptions.release);
         queryParams.putIfNotNull("snapshot", commandOptions.snapshot);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getIndividualClient().search(queryParams);
     }
@@ -410,9 +392,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("member", commandOptions.member);
         queryParams.putIfNotNull("silent", commandOptions.silent);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getIndividualClient().acl(commandOptions.individuals, queryParams);
     }
@@ -426,9 +405,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("force", commandOptions.force);
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getIndividualClient().delete(commandOptions.individuals, queryParams);
     }
@@ -446,9 +422,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("version", commandOptions.version);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getIndividualClient().info(commandOptions.individuals, queryParams);
     }
@@ -464,9 +437,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         IndividualUpdateParams individualUpdateParams = new IndividualUpdateParams();
@@ -566,9 +536,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("action", commandOptions.action);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         ObjectMap objectMap = new ObjectMap();
@@ -596,9 +563,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("flattenAnnotations", commandOptions.flattenAnnotations);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("degree", commandOptions.degree);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getIndividualClient().relatives(commandOptions.individual, queryParams);
     }

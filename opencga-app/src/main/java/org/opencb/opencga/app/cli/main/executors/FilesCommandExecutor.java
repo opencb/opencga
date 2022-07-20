@@ -186,9 +186,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         FileAclUpdateParams fileAclUpdateParams = new FileAclUpdateParams();
@@ -236,9 +233,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
         queryParams.putIfNotNull("default_values", commandOptions.default_values);
         queryParams.putIfNotEmpty("field", commandOptions.field);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getFileClient().aggregationStats(queryParams);
     }
@@ -253,9 +247,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("parents", commandOptions.parents);
         queryParams.putIfNotEmpty("annotationSetId", commandOptions.annotationSetId);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         TsvAnnotationParams tsvAnnotationParams = new TsvAnnotationParams();
@@ -291,9 +282,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("parents", commandOptions.parents);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         FileCreateParams fileCreateParams = new FileCreateParams();
@@ -373,9 +361,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         queryParams.putIfNotEmpty("acl", commandOptions.acl);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
         queryParams.putIfNotEmpty("release", commandOptions.release);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getFileClient().distinct(commandOptions.field, queryParams);
     }
@@ -392,9 +377,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         FileFetch fileFetch = new FileFetch();
@@ -431,9 +413,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("parents", commandOptions.parents);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         FileLinkParams fileLinkParams = new FileLinkParams();
@@ -481,9 +460,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         FileLinkToolParams fileLinkToolParams = new FileLinkToolParams();
@@ -519,9 +495,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         PostLinkToolParams postLinkToolParams = new PostLinkToolParams();
@@ -580,9 +553,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         queryParams.putIfNotEmpty("acl", commandOptions.acl);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
         queryParams.putIfNotEmpty("release", commandOptions.release);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getFileClient().search(queryParams);
     }
@@ -605,9 +575,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("member", commandOptions.member);
         queryParams.putIfNotNull("silent", commandOptions.silent);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getFileClient().acl(commandOptions.files, queryParams);
     }
@@ -621,9 +588,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("skipTrash", commandOptions.skipTrash);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getFileClient().delete(commandOptions.files, queryParams);
     }
@@ -640,9 +604,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         queryParams.putIfNotNull("flattenAnnotations", commandOptions.flattenAnnotations);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getFileClient().info(commandOptions.files, queryParams);
     }
@@ -655,9 +616,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getFileClient().unlink(commandOptions.files, queryParams);
     }
@@ -673,9 +631,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("sampleIdsAction", commandOptions.sampleIdsAction);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         FileUpdateParams fileUpdateParams = new FileUpdateParams();
@@ -761,9 +716,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("action", commandOptions.action);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         ObjectMap objectMap = new ObjectMap();
@@ -787,9 +739,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getFileClient().download(commandOptions.file, queryParams);
     }
@@ -805,9 +754,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         queryParams.putIfNotEmpty("pattern", commandOptions.pattern);
         queryParams.putIfNotNull("ignoreCase", commandOptions.ignoreCase);
         queryParams.putIfNotNull("maxCount", commandOptions.maxCount);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getFileClient().grep(commandOptions.file, queryParams);
     }
@@ -822,9 +768,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("offset", commandOptions.offset);
         queryParams.putIfNotNull("lines", commandOptions.lines);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getFileClient().head(commandOptions.file, queryParams);
     }
@@ -837,9 +780,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getFileClient().image(commandOptions.file, queryParams);
     }
@@ -852,9 +792,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getFileClient().refresh(commandOptions.file, queryParams);
     }
@@ -868,9 +805,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("lines", commandOptions.lines);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getFileClient().tail(commandOptions.file, queryParams);
     }
@@ -888,9 +822,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         queryParams.putIfNotNull("skip", commandOptions.skip);
         queryParams.putIfNotNull("count", commandOptions.count);
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getFileClient().list(commandOptions.folder, queryParams);
     }
@@ -906,9 +837,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("maxDepth", commandOptions.maxDepth);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getFileClient().tree(commandOptions.folder, queryParams);
     }

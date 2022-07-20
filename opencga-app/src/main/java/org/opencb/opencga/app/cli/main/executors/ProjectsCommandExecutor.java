@@ -162,9 +162,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
         queryParams.putIfNotEmpty("attributes", commandOptions.attributes);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getProjectClient().search(queryParams);
     }

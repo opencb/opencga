@@ -126,9 +126,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         SampleAclUpdateParams sampleAclUpdateParams = new SampleAclUpdateParams();
@@ -174,9 +171,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
         queryParams.putIfNotNull("default_values", commandOptions.default_values);
         queryParams.putIfNotEmpty("field", commandOptions.field);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getSampleClient().aggregationStats(queryParams);
     }
@@ -191,9 +185,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("parents", commandOptions.parents);
         queryParams.putIfNotEmpty("annotationSetId", commandOptions.annotationSetId);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         TsvAnnotationParams tsvAnnotationParams = new TsvAnnotationParams();
@@ -223,9 +214,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         SampleCreateParams sampleCreateParams = new SampleCreateParams();
@@ -334,9 +322,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("statsBiotypeCount", commandOptions.statsBiotypeCount);
         queryParams.putIfNotEmpty("statsClinicalSignificanceCount", commandOptions.statsClinicalSignificanceCount);
         queryParams.putIfNotEmpty("statsConsequenceTypeCount", commandOptions.statsConsequenceTypeCount);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getSampleClient().distinct(commandOptions.field, queryParams);
     }
@@ -350,9 +335,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("variableSet", commandOptions.variableSet);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getSampleClient().load(commandOptions.file, queryParams);
     }
@@ -409,9 +391,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("statsBiotypeCount", commandOptions.statsBiotypeCount);
         queryParams.putIfNotEmpty("statsClinicalSignificanceCount", commandOptions.statsClinicalSignificanceCount);
         queryParams.putIfNotEmpty("statsConsequenceTypeCount", commandOptions.statsConsequenceTypeCount);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getSampleClient().search(queryParams);
     }
@@ -426,9 +405,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("member", commandOptions.member);
         queryParams.putIfNotNull("silent", commandOptions.silent);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getSampleClient().acl(commandOptions.samples, queryParams);
     }
@@ -444,9 +420,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("emptyFilesAction", commandOptions.emptyFilesAction);
         queryParams.putIfNotNull("deleteEmptyCohorts", commandOptions.deleteEmptyCohorts);
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getSampleClient().delete(commandOptions.samples, queryParams);
     }
@@ -465,9 +438,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("version", commandOptions.version);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getSampleClient().info(commandOptions.samples, queryParams);
     }
@@ -483,9 +453,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         SampleUpdateParams sampleUpdateParams = new SampleUpdateParams();
@@ -564,9 +531,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("action", commandOptions.action);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         ObjectMap objectMap = new ObjectMap();

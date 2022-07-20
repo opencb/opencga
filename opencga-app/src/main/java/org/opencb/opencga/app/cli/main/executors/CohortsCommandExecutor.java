@@ -122,9 +122,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         CohortAclUpdateParams cohortAclUpdateParams = new CohortAclUpdateParams();
@@ -163,9 +160,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
         queryParams.putIfNotNull("default_values", commandOptions.default_values);
         queryParams.putIfNotEmpty("field", commandOptions.field);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getCohortClient().aggregationStats(queryParams);
     }
@@ -180,9 +174,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("parents", commandOptions.parents);
         queryParams.putIfNotEmpty("annotationSetId", commandOptions.annotationSetId);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         TsvAnnotationParams tsvAnnotationParams = new TsvAnnotationParams();
@@ -214,9 +205,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("variableSet", commandOptions.variableSet);
         queryParams.putIfNotEmpty("variable", commandOptions.variable);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         CohortCreateParams cohortCreateParams = new CohortCreateParams();
@@ -273,9 +261,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("samples", commandOptions.samples);
         queryParams.putIfNotEmpty("numSamples", commandOptions.numSamples);
         queryParams.putIfNotEmpty("release", commandOptions.release);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getCohortClient().distinct(commandOptions.field, queryParams);
     }
@@ -304,9 +289,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("release", commandOptions.release);
         queryParams.putIfNotNull("snapshot", commandOptions.snapshot);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         CohortGenerateParams cohortGenerateParams = new CohortGenerateParams();
@@ -368,9 +350,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("samples", commandOptions.samples);
         queryParams.putIfNotEmpty("numSamples", commandOptions.numSamples);
         queryParams.putIfNotEmpty("release", commandOptions.release);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getCohortClient().search(queryParams);
     }
@@ -385,9 +364,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("member", commandOptions.member);
         queryParams.putIfNotNull("silent", commandOptions.silent);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getCohortClient().acl(commandOptions.cohorts, queryParams);
     }
@@ -400,9 +376,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getCohortClient().delete(commandOptions.cohorts, queryParams);
     }
@@ -419,9 +392,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("flattenAnnotations", commandOptions.flattenAnnotations);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getCohortClient().info(commandOptions.cohorts, queryParams);
     }
@@ -437,9 +407,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         CohortUpdateParams cohortUpdateParams = new CohortUpdateParams();
@@ -483,9 +450,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("action", commandOptions.action);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         ObjectMap objectMap = new ObjectMap();

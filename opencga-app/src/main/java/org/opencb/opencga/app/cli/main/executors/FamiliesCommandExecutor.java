@@ -119,9 +119,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("propagate", commandOptions.propagate);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         FamilyAclUpdateParams familyAclUpdateParams = new FamilyAclUpdateParams();
@@ -164,9 +161,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
         queryParams.putIfNotNull("default_values", commandOptions.default_values);
         queryParams.putIfNotEmpty("field", commandOptions.field);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getFamilyClient().aggregationStats(queryParams);
     }
@@ -181,9 +175,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("parents", commandOptions.parents);
         queryParams.putIfNotEmpty("annotationSetId", commandOptions.annotationSetId);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         TsvAnnotationParams tsvAnnotationParams = new TsvAnnotationParams();
@@ -214,9 +205,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("members", commandOptions.members);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         FamilyCreateParams familyCreateParams = new FamilyCreateParams();
@@ -276,9 +264,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("acl", commandOptions.acl);
         queryParams.putIfNotEmpty("release", commandOptions.release);
         queryParams.putIfNotNull("snapshot", commandOptions.snapshot);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getFamilyClient().distinct(commandOptions.field, queryParams);
     }
@@ -314,9 +299,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("acl", commandOptions.acl);
         queryParams.putIfNotEmpty("release", commandOptions.release);
         queryParams.putIfNotNull("snapshot", commandOptions.snapshot);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getFamilyClient().search(queryParams);
     }
@@ -331,9 +313,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("member", commandOptions.member);
         queryParams.putIfNotNull("silent", commandOptions.silent);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getFamilyClient().acl(commandOptions.families, queryParams);
     }
@@ -346,9 +325,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getFamilyClient().delete(commandOptions.families, queryParams);
     }
@@ -366,9 +342,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("version", commandOptions.version);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
         return openCGAClient.getFamilyClient().info(commandOptions.families, queryParams);
     }
@@ -385,9 +358,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("updateRoles", commandOptions.updateRoles);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         FamilyUpdateParams familyUpdateParams = new FamilyUpdateParams();
@@ -437,9 +407,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("action", commandOptions.action);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
 
 
         ObjectMap objectMap = new ObjectMap();
