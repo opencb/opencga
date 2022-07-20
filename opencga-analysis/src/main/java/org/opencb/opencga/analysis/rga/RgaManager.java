@@ -30,11 +30,10 @@ import org.opencb.opencga.core.models.analysis.knockout.*;
 import org.opencb.opencga.core.models.common.RgaIndex;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.RecessiveGeneSummaryIndex;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
-import org.opencb.opencga.core.models.study.StudyUpdateParams;
+import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -658,7 +657,7 @@ public class RgaManager implements AutoCloseable {
             if (!includeIndividuals.isEmpty()) {
                 // 3. Get list of indexed sample ids for which the user has permissions from the list of includeIndividuals provided
                 Query sampleQuery = new Query()
-                        .append(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
+                        .append(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS)
                         .append(SampleDBAdaptor.QueryParams.INTERNAL_RGA_STATUS.key(), RgaIndex.Status.INDEXED)
                         .append(SampleDBAdaptor.QueryParams.ID.key(), includeIndividuals);
                 OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
@@ -675,7 +674,7 @@ public class RgaManager implements AutoCloseable {
                 List<String> sampleIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
 
                 // 3. Get list of sample ids for which the user has permissions
-                Query sampleQuery = new Query(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
+                Query sampleQuery = new Query(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS)
                         .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
                 OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
                         SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
@@ -776,7 +775,7 @@ public class RgaManager implements AutoCloseable {
             if (!includeIndividuals.isEmpty()) {
                 // 3. Get list of sample ids for which the user has permissions from the list of includeIndividuals provided
                 Query sampleQuery = new Query()
-                        .append(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
+                        .append(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS)
                         .append(SampleDBAdaptor.QueryParams.INTERNAL_RGA_STATUS.key(), RgaIndex.Status.INDEXED)
                         .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), includeIndividuals);
                 OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
@@ -796,7 +795,7 @@ public class RgaManager implements AutoCloseable {
                 // TODO: Batches of samples to query catalog
                 // 3. Get list of individual ids for which the user has permissions
                 Query sampleQuery = new Query()
-                        .append(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
+                        .append(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS)
                         .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
                 OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
                         SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
@@ -937,7 +936,7 @@ public class RgaManager implements AutoCloseable {
         }
 
         catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), preprocess.getUserId(),
-                StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS);
+                StudyPermissions.Permissions.VIEW_AGGREGATED_VARIANTS);
 
         List<String> sampleIds = preprocess.getQuery().getAsStringList(RgaQueryParams.SAMPLE_ID.key());
         preprocess.getQuery().remove(RgaQueryParams.SAMPLE_ID.key());
@@ -1030,7 +1029,7 @@ public class RgaManager implements AutoCloseable {
         }
 
         catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId,
-                StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS);
+                StudyPermissions.Permissions.VIEW_AGGREGATED_VARIANTS);
 
         ExecutorService executor = Executors.newFixedThreadPool(4);
 
@@ -1110,7 +1109,7 @@ public class RgaManager implements AutoCloseable {
         }
 
         catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId,
-                StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS);
+                StudyPermissions.Permissions.VIEW_AGGREGATED_VARIANTS);
 
         ExecutorService executor = Executors.newFixedThreadPool(4);
 
@@ -1671,7 +1670,7 @@ public class RgaManager implements AutoCloseable {
         return knockoutByIndividualSummary;
     }
 
-    private Set<String> getAuthorisedSamples(String study, Set<String> sampleIds, List<SampleAclEntry.SamplePermissions> otherPermissions,
+    private Set<String> getAuthorisedSamples(String study, Set<String> sampleIds, List<SamplePermissions> otherPermissions,
                                              String userId, String token) throws CatalogException {
         Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
         if (org.apache.commons.collections4.CollectionUtils.isNotEmpty(otherPermissions)) {
@@ -1715,7 +1714,7 @@ public class RgaManager implements AutoCloseable {
                     .append(QueryOptions.COUNT, queryOptions.getBoolean(QueryOptions.COUNT));
             Query catalogQuery = new Query(SampleDBAdaptor.QueryParams.INTERNAL_RGA_STATUS.key(), RgaIndex.Status.INDEXED);
             if (!isOwnerOrAdmin) {
-                catalogQuery.put(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW_VARIANTS);
+                catalogQuery.put(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS);
             }
 
             OpenCGAResult<Sample> search = catalogManager.getSampleManager().search(study.getFqn(), catalogQuery, catalogOptions, token);
@@ -1744,7 +1743,7 @@ public class RgaManager implements AutoCloseable {
             // From the list of sample ids the user wants to retrieve data from, we filter those for which the user has permissions
             Query sampleQuery = new Query();
             if (!isOwnerOrAdmin) {
-                sampleQuery.put(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW_VARIANTS);
+                sampleQuery.put(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS);
             }
 
             List<String> authorisedSamples = new LinkedList<>();

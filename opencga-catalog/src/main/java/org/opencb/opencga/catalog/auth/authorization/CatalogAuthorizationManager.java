@@ -28,19 +28,16 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclEntryList;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
-import org.opencb.opencga.core.models.cohort.CohortAclEntry;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisPermissions;
+import org.opencb.opencga.core.models.cohort.CohortPermissions;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.family.FamilyAclEntry;
-import org.opencb.opencga.core.models.file.FileAclEntry;
-import org.opencb.opencga.core.models.individual.IndividualAclEntry;
-import org.opencb.opencga.core.models.job.JobAclEntry;
-import org.opencb.opencga.core.models.panel.PanelAclEntry;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
-import org.opencb.opencga.core.models.study.Group;
-import org.opencb.opencga.core.models.study.PermissionRule;
-import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.family.FamilyPermissions;
+import org.opencb.opencga.core.models.file.FilePermissions;
+import org.opencb.opencga.core.models.individual.IndividualPermissions;
+import org.opencb.opencga.core.models.job.JobPermissions;
+import org.opencb.opencga.core.models.panel.PanelPermissions;
+import org.opencb.opencga.core.models.sample.SamplePermissions;
+import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +58,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private final Logger logger;
 
-    private final DBAdaptorFactory dbAdaptorFactory;
     private final ProjectDBAdaptor projectDBAdaptor;
     private final StudyDBAdaptor studyDBAdaptor;
     private final FileDBAdaptor fileDBAdaptor;
@@ -84,7 +80,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         this.openRegister = configuration.isOpenRegister();
 
-        this.dbAdaptorFactory = dbFactory;
         projectDBAdaptor = dbFactory.getCatalogProjectDbAdaptor();
         studyDBAdaptor = dbFactory.getCatalogStudyDBAdaptor();
         fileDBAdaptor = dbFactory.getCatalogFileDBAdaptor();
@@ -132,12 +127,12 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkStudyPermission(long studyId, String userId, StudyAclEntry.StudyPermissions permission) throws CatalogException {
+    public void checkStudyPermission(long studyId, String userId, StudyPermissions.Permissions permission) throws CatalogException {
         checkStudyPermission(studyId, userId, permission, permission.toString());
     }
 
     @Override
-    public void checkStudyPermission(long studyId, String userId, StudyAclEntry.StudyPermissions permission, String message)
+    public void checkStudyPermission(long studyId, String userId, StudyPermissions.Permissions permission, String message)
             throws CatalogException {
         if (isInstallationAdministrator(userId)) {
             return;
@@ -319,7 +314,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkFilePermission(long studyId, long fileId, String userId, FileAclEntry.FilePermissions permission)
+    public void checkFilePermission(long studyId, long fileId, String userId, FilePermissions permission)
             throws CatalogException {
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.UID.key(), fileId)
@@ -344,7 +339,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkSamplePermission(long studyId, long sampleId, String userId, SampleAclEntry.SamplePermissions permission)
+    public void checkSamplePermission(long studyId, long sampleId, String userId, SamplePermissions permission)
             throws CatalogException {
         Query query = new Query()
                 .append(SampleDBAdaptor.QueryParams.UID.key(), sampleId)
@@ -359,7 +354,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkIndividualPermission(long studyId, long individualId, String userId,
-                                          IndividualAclEntry.IndividualPermissions permission) throws CatalogException {
+                                          IndividualPermissions permission) throws CatalogException {
         Query query = new Query()
                 .append(IndividualDBAdaptor.QueryParams.UID.key(), individualId)
                 .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
@@ -372,7 +367,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkJobPermission(long studyId, long jobId, String userId, JobAclEntry.JobPermissions permission) throws CatalogException {
+    public void checkJobPermission(long studyId, long jobId, String userId, JobPermissions permission) throws CatalogException {
         Query query = new Query()
                 .append(JobDBAdaptor.QueryParams.UID.key(), jobId)
                 .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
@@ -385,7 +380,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkCohortPermission(long studyId, long cohortId, String userId, CohortAclEntry.CohortPermissions permission)
+    public void checkCohortPermission(long studyId, long cohortId, String userId, CohortPermissions permission)
             throws CatalogException {
         Query query = new Query()
                 .append(CohortDBAdaptor.QueryParams.UID.key(), cohortId)
@@ -400,7 +395,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkPanelPermission(long studyId, long panelId, String userId, PanelAclEntry.PanelPermissions permission)
+    public void checkPanelPermission(long studyId, long panelId, String userId, PanelPermissions permission)
             throws CatalogException {
         Query query = new Query()
                 .append(PanelDBAdaptor.QueryParams.UID.key(), panelId)
@@ -414,7 +409,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkFamilyPermission(long studyId, long familyId, String userId, FamilyAclEntry.FamilyPermissions permission)
+    public void checkFamilyPermission(long studyId, long familyId, String userId, FamilyPermissions permission)
             throws CatalogException {
         Query query = new Query()
                 .append(FamilyDBAdaptor.QueryParams.UID.key(), familyId)
@@ -430,7 +425,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkClinicalAnalysisPermission(long studyId, long analysisId, String userId,
-                                                ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions permission) throws CatalogException {
+                                                ClinicalAnalysisPermissions permission) throws CatalogException {
         Query query = new Query()
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), analysisId)
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
@@ -443,272 +438,96 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public OpenCGAResult<AclEntryList<StudyAclEntry.StudyPermissions>> getAllStudyAcls(String userId, long studyId)
+    public OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> getAllStudyAcls(String userId, long studyId)
             throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(studyId, null, Enums.Resource.STUDY, StudyAclEntry.StudyPermissions.class);
+        return aclDBAdaptor.get(studyId, null, null, Enums.Resource.STUDY, StudyPermissions.Permissions.class);
     }
 
     @Override
-    public OpenCGAResult<AclEntryList<StudyAclEntry.StudyPermissions>> getStudyAcl(String userId, long studyId, String member)
+    public OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> getStudyAcl(String userId, long studyUid, List<String> members)
             throws CatalogException {
+        checkCanSeePermissions(userId, studyUid, members);
+        Map<String, List<String>> userGroups = extractUserGroups(studyUid, members);
+        return aclDBAdaptor.get(studyUid, members, userGroups, Enums.Resource.STUDY, StudyPermissions.Permissions.class);
+    }
+
+    @Override
+    public OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> getStudyAcl(List<Long> studyUids, List<String> members)
+            throws CatalogException {
+        OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> result = OpenCGAResult.empty();
+        for (Long studyUid : studyUids) {
+            Map<String, List<String>> userGroups = extractUserGroups(studyUid, members);
+            result.append(aclDBAdaptor.get(studyUid, members, userGroups, Enums.Resource.STUDY, StudyPermissions.Permissions.class));
+        }
+        return result;
+    }
+
+    @Override
+    public <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcl(String userId, long studyUid, List<Long> resourceUids,
+                                                                     List<String> members, Enums.Resource resource, Class<T> clazz)
+            throws CatalogException {
+        checkCanSeePermissions(userId, studyUid, members);
+        Map<String, List<String>> userGroups = extractUserGroups(studyUid, members);
+        return aclDBAdaptor.get(resourceUids, members, userGroups, resource, clazz);
+    }
+
+    @Override
+    public <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcl(String userId, long studyUid, List<Long> resourceUids,
+                                                                     Enums.Resource resource, Class<T> clazz) throws CatalogException {
+        checkCanAssignOrSeePermissions(studyUid, userId);
+        return aclDBAdaptor.get(resourceUids, null, null, resource, clazz);
+    }
+
+    @Override
+    public <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcls(long studyUid, List<Long> resourceUids, Enums.Resource resource,
+                                                                      Class<T> clazz) throws CatalogException {
+        return aclDBAdaptor.get(resourceUids, null, null, resource, clazz);
+    }
+
+    @Override
+    public <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcls(long studyUid, List<Long> resourceUids, List<String> members,
+                                                                      Enums.Resource resource, Class<T> clazz) throws CatalogException {
+        Map<String, List<String>> userGroups = extractUserGroups(studyUid, members);
+        return aclDBAdaptor.get(resourceUids, members, userGroups, resource, clazz);
+    }
+
+    private void checkCanSeePermissions(String userId, long studyId, List<String> members) throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
             // It will be OK if the userId asking for the ACLs wants to see its own permissions
-            checkAskingOwnPermissions(userId, member, studyId);
+            for (String member : members) {
+                checkAskingOwnPermissions(userId, member, studyId);
+            }
         }
-
-        List<String> memberList = new ArrayList<>();
-        memberList.add(member);
-        if (!member.startsWith("@")) {
-            // If member is a user, we will also add all the groups the user might belong to
-            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
-            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
-        }
-
-        return aclDBAdaptor.get(studyId, memberList, Enums.Resource.STUDY, StudyAclEntry.StudyPermissions.class);
     }
 
-    @Override
-    public OpenCGAResult<AclEntryList<SampleAclEntry.SamplePermissions>> getAllSampleAcls(long studyId, long sampleId, String userId)
-            throws CatalogException {
-        checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(sampleId, null, Enums.Resource.SAMPLE, SampleAclEntry.SamplePermissions.class);
-    }
+    private Map<String, List<String>> extractUserGroups(long studyId, List<String> members) throws CatalogException {
+        Map<String, List<String>> userGroups = new HashMap<>();
+        List<String> userList = members.stream().filter(m -> !m.startsWith("@")).collect(Collectors.toList());
+        if (!userList.isEmpty()) {
+            // If member is a user, we will also store the groups the user might belong to fetch those permissions as well
+            OpenCGAResult<Group> groups = getGroupBelonging(studyId, userList);
 
-    @Override
-    public OpenCGAResult<AclEntryList<SampleAclEntry.SamplePermissions>> getSampleAcl(long studyId, long sampleId, String userId,
-                                                                                      String member) throws CatalogException {
-        try {
-            checkCanAssignOrSeePermissions(studyId, userId);
-        } catch (CatalogException e) {
-            // It will be OK if the userId asking for the ACLs wants to see its own permissions
-            checkAskingOwnPermissions(userId, member, studyId);
+            // Fill in map with the results
+            for (String user : userList) {
+                userGroups.put(user, new LinkedList<>());
+            }
+            for (Group group : groups.getResults()) {
+                for (String user : userList) {
+                    if (group.getUserIds().contains(user)) {
+                        userGroups.get(user).add(group.getId());
+                    }
+                }
+            }
         }
-
-        List<String> memberList = new ArrayList<>();
-        memberList.add(member);
-        if (!member.startsWith("@")) {
-            // If member is a user, we will also add all the groups the user might belong to
-            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
-            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
-        }
-
-        return aclDBAdaptor.get(sampleId, memberList, Enums.Resource.SAMPLE, SampleAclEntry.SamplePermissions.class);
+        return userGroups;
     }
 
     @Override
     public void resetPermissionsFromAllEntities(long studyId, List<String> members) throws CatalogException {
         aclDBAdaptor.resetMembersFromAllEntries(studyId, members);
-    }
-
-    @Override
-    public OpenCGAResult<AclEntryList<FileAclEntry.FilePermissions>> getAllFileAcls(long studyId, long fileId, String userId,
-                                                                                    boolean checkPermission) throws CatalogException {
-        if (checkPermission) {
-            checkCanAssignOrSeePermissions(studyId, userId);
-        }
-        return aclDBAdaptor.get(fileId, null, Enums.Resource.FILE, FileAclEntry.FilePermissions.class);
-    }
-
-    @Override
-    public OpenCGAResult<AclEntryList<FileAclEntry.FilePermissions>> getFileAcl(long studyId, long fileId, String userId, String member)
-            throws CatalogException {
-        try {
-            checkCanAssignOrSeePermissions(studyId, userId);
-        } catch (CatalogException e) {
-            // It will be OK if the userId asking for the ACLs wants to see its own permissions
-            checkAskingOwnPermissions(userId, member, studyId);
-        }
-
-        List<String> memberList = new ArrayList<>();
-        memberList.add(member);
-        if (!member.startsWith("@")) {
-            // If member is a user, we will also add all the groups the user might belong to
-            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
-            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
-        }
-
-        return aclDBAdaptor.get(fileId, memberList, Enums.Resource.FILE, FileAclEntry.FilePermissions.class);
-    }
-
-    @Override
-    public OpenCGAResult<AclEntryList<IndividualAclEntry.IndividualPermissions>> getAllIndividualAcls(long studyId, long individualId,
-                                                                                                      String userId)
-            throws CatalogException {
-        checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(individualId, null, Enums.Resource.INDIVIDUAL, IndividualAclEntry.IndividualPermissions.class);
-    }
-
-    @Override
-    public OpenCGAResult<AclEntryList<IndividualAclEntry.IndividualPermissions>> getIndividualAcl(long studyId, long individualId,
-                                                                                                  String userId, String member)
-            throws CatalogException {
-        try {
-            checkCanAssignOrSeePermissions(studyId, userId);
-        } catch (CatalogException e) {
-            // It will be OK if the userId asking for the ACLs wants to see its own permissions
-            checkAskingOwnPermissions(userId, member, studyId);
-        }
-
-        List<String> memberList = new ArrayList<>();
-        memberList.add(member);
-        if (!member.startsWith("@")) {
-            // If member is a user, we will also add all the groups the user might belong to
-            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
-            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
-        }
-
-        return aclDBAdaptor.get(individualId, memberList, Enums.Resource.INDIVIDUAL, IndividualAclEntry.IndividualPermissions.class);
-    }
-
-    @Override
-    public OpenCGAResult<AclEntryList<CohortAclEntry.CohortPermissions>> getAllCohortAcls(long studyId, long cohortId, String userId)
-            throws CatalogException {
-        checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(cohortId, null, Enums.Resource.COHORT, CohortAclEntry.CohortPermissions.class);
-    }
-
-    @Override
-    public OpenCGAResult<AclEntryList<CohortAclEntry.CohortPermissions>> getCohortAcl(long studyId, long cohortId, String userId,
-                                                                                      String member) throws CatalogException {
-        try {
-            checkCanAssignOrSeePermissions(studyId, userId);
-        } catch (CatalogException e) {
-            // It will be OK if the userId asking for the ACLs wants to see its own permissions
-            checkAskingOwnPermissions(userId, member, studyId);
-        }
-
-        List<String> memberList = new ArrayList<>();
-        memberList.add(member);
-        if (!member.startsWith("@")) {
-            // If member is a user, we will also add all the groups the user might belong to
-            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
-            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
-        }
-
-        return aclDBAdaptor.get(cohortId, memberList, Enums.Resource.COHORT, CohortAclEntry.CohortPermissions.class);
-    }
-
-    @Override
-    public OpenCGAResult<AclEntryList<PanelAclEntry.PanelPermissions>> getAllPanelAcls(long studyId, long panelId, String userId)
-            throws CatalogException {
-        checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(panelId, null, Enums.Resource.DISEASE_PANEL, PanelAclEntry.PanelPermissions.class);
-    }
-
-    @Override
-    public OpenCGAResult<AclEntryList<PanelAclEntry.PanelPermissions>> getPanelAcl(long studyId, long panelId, String userId, String member)
-            throws CatalogException {
-        try {
-            checkCanAssignOrSeePermissions(studyId, userId);
-        } catch (CatalogException e) {
-            // It will be OK if the userId asking for the ACLs wants to see its own permissions
-            checkAskingOwnPermissions(userId, member, studyId);
-        }
-
-        List<String> memberList = new ArrayList<>();
-        memberList.add(member);
-        if (!member.startsWith("@")) {
-            // If member is a user, we will also add all the groups the user might belong to
-            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
-            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
-        }
-
-        return aclDBAdaptor.get(panelId, memberList, Enums.Resource.DISEASE_PANEL, PanelAclEntry.PanelPermissions.class);
-    }
-
-    @Override
-    public OpenCGAResult<AclEntryList<JobAclEntry.JobPermissions>> getAllJobAcls(long studyId, long jobId, String userId)
-            throws CatalogException {
-        checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(jobId, null, Enums.Resource.JOB, JobAclEntry.JobPermissions.class);
-    }
-
-    @Override
-    public OpenCGAResult<AclEntryList<JobAclEntry.JobPermissions>> getJobAcl(long studyId, long jobId, String userId, String member)
-            throws CatalogException {
-        try {
-            checkCanAssignOrSeePermissions(studyId, userId);
-        } catch (CatalogException e) {
-            // It will be OK if the userId asking for the ACLs wants to see its own permissions
-            checkAskingOwnPermissions(userId, member, studyId);
-        }
-
-        List<String> memberList = new ArrayList<>();
-        memberList.add(member);
-        if (!member.startsWith("@")) {
-            // If member is a user, we will also add all the groups the user might belong to
-            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
-            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
-        }
-
-        return aclDBAdaptor.get(jobId, memberList, Enums.Resource.JOB, JobAclEntry.JobPermissions.class);
-    }
-
-    @Override
-    public OpenCGAResult<AclEntryList<FamilyAclEntry.FamilyPermissions>> getAllFamilyAcls(long studyId, long familyId, String userId)
-            throws CatalogException {
-        checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(familyId, null, Enums.Resource.FAMILY, FamilyAclEntry.FamilyPermissions.class);
-    }
-
-    @Override
-    public OpenCGAResult<AclEntryList<FamilyAclEntry.FamilyPermissions>> getFamilyAcl(long studyId, long familyId, String userId,
-                                                                                      String member) throws CatalogException {
-        try {
-            checkCanAssignOrSeePermissions(studyId, userId);
-        } catch (CatalogException e) {
-            // It will be OK if the userId asking for the ACLs wants to see its own permissions
-            checkAskingOwnPermissions(userId, member, studyId);
-        }
-
-        List<String> memberList = new ArrayList<>();
-        memberList.add(member);
-        if (!member.startsWith("@")) {
-            // If member is a user, we will also add all the groups the user might belong to
-            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
-            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
-        }
-
-        return aclDBAdaptor.get(familyId, memberList, Enums.Resource.FAMILY, FamilyAclEntry.FamilyPermissions.class);
-    }
-
-    @Override
-    public OpenCGAResult<AclEntryList<ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions>> getAllClinicalAnalysisAcls(
-            long studyId, long clinicalAnalysisId, String userId) throws CatalogException {
-        checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(clinicalAnalysisId, null, Enums.Resource.CLINICAL_ANALYSIS,
-                ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.class);
-    }
-
-    @Override
-    public OpenCGAResult<AclEntryList<ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions>> getClinicalAnalysisAcl(
-            long studyId, long clinicalAnalysisId, String userId, String member) throws CatalogException {
-        try {
-            checkCanAssignOrSeePermissions(studyId, userId);
-        } catch (CatalogException e) {
-            // It will be OK if the userId asking for the ACLs wants to see its own permissions
-            checkAskingOwnPermissions(userId, member, studyId);
-        }
-
-        List<String> memberList = new ArrayList<>();
-        memberList.add(member);
-        if (!member.startsWith("@")) {
-            // If member is a user, we will also add all the groups the user might belong to
-            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
-            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
-        }
-
-        return aclDBAdaptor.get(clinicalAnalysisId, memberList, Enums.Resource.CLINICAL_ANALYSIS,
-                ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.class);
-    }
-
-    @Override
-    public <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcls(List<Long> resourceUids, List<String> members,
-                                                                      Enums.Resource resource, Class<T> clazz) throws CatalogException {
-        return aclDBAdaptor.get(resourceUids, members, resource, clazz);
     }
 
     private void checkAskingOwnPermissions(String userId, String member, long studyId) throws CatalogException {
@@ -772,8 +591,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                     case STUDY:
                         allPermissions.addAll(aclParam.getPermissions()
                                 .stream()
-                                .map(StudyAclEntry.StudyPermissions::valueOf)
-                                .map(StudyAclEntry.StudyPermissions::getDependentPermissions)
+                                .map(StudyPermissions.Permissions::valueOf)
+                                .map(StudyPermissions.Permissions::getDependentPermissions)
                                 .flatMap(List::stream)
                                 .collect(Collectors.toSet())
                                 .stream().map(Enum::name)
@@ -783,8 +602,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                     case FILE:
                         allPermissions.addAll(aclParam.getPermissions()
                                 .stream()
-                                .map(FileAclEntry.FilePermissions::valueOf)
-                                .map(FileAclEntry.FilePermissions::getDependentPermissions)
+                                .map(FilePermissions::valueOf)
+                                .map(FilePermissions::getDependentPermissions)
                                 .flatMap(List::stream)
                                 .collect(Collectors.toSet())
                                 .stream().map(Enum::name)
@@ -794,8 +613,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                     case SAMPLE:
                         allPermissions.addAll(aclParam.getPermissions()
                                 .stream()
-                                .map(SampleAclEntry.SamplePermissions::valueOf)
-                                .map(SampleAclEntry.SamplePermissions::getDependentPermissions)
+                                .map(SamplePermissions::valueOf)
+                                .map(SamplePermissions::getDependentPermissions)
                                 .flatMap(List::stream)
                                 .collect(Collectors.toSet())
                                 .stream().map(Enum::name)
@@ -805,8 +624,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                     case JOB:
                         allPermissions.addAll(aclParam.getPermissions()
                                 .stream()
-                                .map(JobAclEntry.JobPermissions::valueOf)
-                                .map(JobAclEntry.JobPermissions::getDependentPermissions)
+                                .map(JobPermissions::valueOf)
+                                .map(JobPermissions::getDependentPermissions)
                                 .flatMap(List::stream)
                                 .collect(Collectors.toSet())
                                 .stream().map(Enum::name)
@@ -816,8 +635,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                     case INDIVIDUAL:
                         allPermissions.addAll(aclParam.getPermissions()
                                 .stream()
-                                .map(IndividualAclEntry.IndividualPermissions::valueOf)
-                                .map(IndividualAclEntry.IndividualPermissions::getDependentPermissions)
+                                .map(IndividualPermissions::valueOf)
+                                .map(IndividualPermissions::getDependentPermissions)
                                 .flatMap(List::stream)
                                 .collect(Collectors.toSet())
                                 .stream().map(Enum::name)
@@ -827,8 +646,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                     case COHORT:
                         allPermissions.addAll(aclParam.getPermissions()
                                 .stream()
-                                .map(CohortAclEntry.CohortPermissions::valueOf)
-                                .map(CohortAclEntry.CohortPermissions::getDependentPermissions)
+                                .map(CohortPermissions::valueOf)
+                                .map(CohortPermissions::getDependentPermissions)
                                 .flatMap(List::stream)
                                 .collect(Collectors.toSet())
                                 .stream().map(Enum::name)
@@ -838,8 +657,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                     case DISEASE_PANEL:
                         allPermissions.addAll(aclParam.getPermissions()
                                 .stream()
-                                .map(PanelAclEntry.PanelPermissions::valueOf)
-                                .map(PanelAclEntry.PanelPermissions::getDependentPermissions)
+                                .map(PanelPermissions::valueOf)
+                                .map(PanelPermissions::getDependentPermissions)
                                 .flatMap(List::stream)
                                 .collect(Collectors.toSet())
                                 .stream().map(Enum::name)
@@ -849,8 +668,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                     case FAMILY:
                         allPermissions.addAll(aclParam.getPermissions()
                                 .stream()
-                                .map(FamilyAclEntry.FamilyPermissions::valueOf)
-                                .map(FamilyAclEntry.FamilyPermissions::getDependentPermissions)
+                                .map(FamilyPermissions::valueOf)
+                                .map(FamilyPermissions::getDependentPermissions)
                                 .flatMap(List::stream)
                                 .collect(Collectors.toSet())
                                 .stream().map(Enum::name)
@@ -860,8 +679,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                     case CLINICAL_ANALYSIS:
                         allPermissions.addAll(aclParam.getPermissions()
                                 .stream()
-                                .map(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::valueOf)
-                                .map(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::getDependentPermissions)
+                                .map(ClinicalAnalysisPermissions::valueOf)
+                                .map(ClinicalAnalysisPermissions::getDependentPermissions)
                                 .flatMap(List::stream)
                                 .collect(Collectors.toSet())
                                 .stream().map(Enum::name)
@@ -886,8 +705,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 case STUDY:
                     allPermissions.addAll(aclParam.getPermissions()
                             .stream()
-                            .map(StudyAclEntry.StudyPermissions::valueOf)
-                            .map(StudyAclEntry.StudyPermissions::getImplicitPermissions)
+                            .map(StudyPermissions.Permissions::valueOf)
+                            .map(StudyPermissions.Permissions::getImplicitPermissions)
                             .flatMap(List::stream)
                             .collect(Collectors.toSet())
                             .stream().map(Enum::name)
@@ -897,8 +716,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 case FILE:
                     allPermissions.addAll(aclParam.getPermissions()
                             .stream()
-                            .map(FileAclEntry.FilePermissions::valueOf)
-                            .map(FileAclEntry.FilePermissions::getImplicitPermissions)
+                            .map(FilePermissions::valueOf)
+                            .map(FilePermissions::getImplicitPermissions)
                             .flatMap(List::stream)
                             .collect(Collectors.toSet())
                             .stream().map(Enum::name)
@@ -908,8 +727,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 case SAMPLE:
                     allPermissions.addAll(aclParam.getPermissions()
                             .stream()
-                            .map(SampleAclEntry.SamplePermissions::valueOf)
-                            .map(SampleAclEntry.SamplePermissions::getImplicitPermissions)
+                            .map(SamplePermissions::valueOf)
+                            .map(SamplePermissions::getImplicitPermissions)
                             .flatMap(List::stream)
                             .collect(Collectors.toSet())
                             .stream().map(Enum::name)
@@ -919,8 +738,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 case JOB:
                     allPermissions.addAll(aclParam.getPermissions()
                             .stream()
-                            .map(JobAclEntry.JobPermissions::valueOf)
-                            .map(JobAclEntry.JobPermissions::getImplicitPermissions)
+                            .map(JobPermissions::valueOf)
+                            .map(JobPermissions::getImplicitPermissions)
                             .flatMap(List::stream)
                             .collect(Collectors.toSet())
                             .stream().map(Enum::name)
@@ -930,8 +749,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 case INDIVIDUAL:
                     allPermissions.addAll(aclParam.getPermissions()
                             .stream()
-                            .map(IndividualAclEntry.IndividualPermissions::valueOf)
-                            .map(IndividualAclEntry.IndividualPermissions::getImplicitPermissions)
+                            .map(IndividualPermissions::valueOf)
+                            .map(IndividualPermissions::getImplicitPermissions)
                             .flatMap(List::stream)
                             .collect(Collectors.toSet())
                             .stream().map(Enum::name)
@@ -941,8 +760,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 case COHORT:
                     allPermissions.addAll(aclParam.getPermissions()
                             .stream()
-                            .map(CohortAclEntry.CohortPermissions::valueOf)
-                            .map(CohortAclEntry.CohortPermissions::getImplicitPermissions)
+                            .map(CohortPermissions::valueOf)
+                            .map(CohortPermissions::getImplicitPermissions)
                             .flatMap(List::stream)
                             .collect(Collectors.toSet())
                             .stream().map(Enum::name)
@@ -952,8 +771,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 case DISEASE_PANEL:
                     allPermissions.addAll(aclParam.getPermissions()
                             .stream()
-                            .map(PanelAclEntry.PanelPermissions::valueOf)
-                            .map(PanelAclEntry.PanelPermissions::getImplicitPermissions)
+                            .map(PanelPermissions::valueOf)
+                            .map(PanelPermissions::getImplicitPermissions)
                             .flatMap(List::stream)
                             .collect(Collectors.toSet())
                             .stream().map(Enum::name)
@@ -963,8 +782,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 case FAMILY:
                     allPermissions.addAll(aclParam.getPermissions()
                             .stream()
-                            .map(FamilyAclEntry.FamilyPermissions::valueOf)
-                            .map(FamilyAclEntry.FamilyPermissions::getImplicitPermissions)
+                            .map(FamilyPermissions::valueOf)
+                            .map(FamilyPermissions::getImplicitPermissions)
                             .flatMap(List::stream)
                             .collect(Collectors.toSet())
                             .stream().map(Enum::name)
@@ -974,8 +793,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 case CLINICAL_ANALYSIS:
                     allPermissions.addAll(aclParam.getPermissions()
                             .stream()
-                            .map(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::valueOf)
-                            .map(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::getImplicitPermissions)
+                            .map(ClinicalAnalysisPermissions::valueOf)
+                            .map(ClinicalAnalysisPermissions::getImplicitPermissions)
                             .flatMap(List::stream)
                             .collect(Collectors.toSet())
                             .stream().map(Enum::name)
@@ -998,8 +817,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             case STUDY:
                 allPermissions.addAll(permissions
                         .stream()
-                        .map(StudyAclEntry.StudyPermissions::valueOf)
-                        .map(StudyAclEntry.StudyPermissions::getImplicitPermissions)
+                        .map(StudyPermissions.Permissions::valueOf)
+                        .map(StudyPermissions.Permissions::getImplicitPermissions)
                         .flatMap(List::stream)
                         .collect(Collectors.toSet())
                         .stream().map(Enum::name)
@@ -1009,8 +828,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             case FILE:
                 allPermissions.addAll(permissions
                         .stream()
-                        .map(FileAclEntry.FilePermissions::valueOf)
-                        .map(FileAclEntry.FilePermissions::getImplicitPermissions)
+                        .map(FilePermissions::valueOf)
+                        .map(FilePermissions::getImplicitPermissions)
                         .flatMap(List::stream)
                         .collect(Collectors.toSet())
                         .stream().map(Enum::name)
@@ -1020,8 +839,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             case SAMPLE:
                 allPermissions.addAll(permissions
                         .stream()
-                        .map(SampleAclEntry.SamplePermissions::valueOf)
-                        .map(SampleAclEntry.SamplePermissions::getImplicitPermissions)
+                        .map(SamplePermissions::valueOf)
+                        .map(SamplePermissions::getImplicitPermissions)
                         .flatMap(List::stream)
                         .collect(Collectors.toSet())
                         .stream().map(Enum::name)
@@ -1031,8 +850,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             case JOB:
                 allPermissions.addAll(permissions
                         .stream()
-                        .map(JobAclEntry.JobPermissions::valueOf)
-                        .map(JobAclEntry.JobPermissions::getImplicitPermissions)
+                        .map(JobPermissions::valueOf)
+                        .map(JobPermissions::getImplicitPermissions)
                         .flatMap(List::stream)
                         .collect(Collectors.toSet())
                         .stream().map(Enum::name)
@@ -1042,8 +861,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             case INDIVIDUAL:
                 allPermissions.addAll(permissions
                         .stream()
-                        .map(IndividualAclEntry.IndividualPermissions::valueOf)
-                        .map(IndividualAclEntry.IndividualPermissions::getImplicitPermissions)
+                        .map(IndividualPermissions::valueOf)
+                        .map(IndividualPermissions::getImplicitPermissions)
                         .flatMap(List::stream)
                         .collect(Collectors.toSet())
                         .stream().map(Enum::name)
@@ -1053,8 +872,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             case COHORT:
                 allPermissions.addAll(permissions
                         .stream()
-                        .map(CohortAclEntry.CohortPermissions::valueOf)
-                        .map(CohortAclEntry.CohortPermissions::getImplicitPermissions)
+                        .map(CohortPermissions::valueOf)
+                        .map(CohortPermissions::getImplicitPermissions)
                         .flatMap(List::stream)
                         .collect(Collectors.toSet())
                         .stream().map(Enum::name)
@@ -1064,8 +883,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             case DISEASE_PANEL:
                 allPermissions.addAll(permissions
                         .stream()
-                        .map(PanelAclEntry.PanelPermissions::valueOf)
-                        .map(PanelAclEntry.PanelPermissions::getImplicitPermissions)
+                        .map(PanelPermissions::valueOf)
+                        .map(PanelPermissions::getImplicitPermissions)
                         .flatMap(List::stream)
                         .collect(Collectors.toSet())
                         .stream().map(Enum::name)
@@ -1075,8 +894,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             case FAMILY:
                 allPermissions.addAll(permissions
                         .stream()
-                        .map(FamilyAclEntry.FamilyPermissions::valueOf)
-                        .map(FamilyAclEntry.FamilyPermissions::getImplicitPermissions)
+                        .map(FamilyPermissions::valueOf)
+                        .map(FamilyPermissions::getImplicitPermissions)
                         .flatMap(List::stream)
                         .collect(Collectors.toSet())
                         .stream().map(Enum::name)
@@ -1086,8 +905,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             case CLINICAL_ANALYSIS:
                 allPermissions.addAll(permissions
                         .stream()
-                        .map(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::valueOf)
-                        .map(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::getImplicitPermissions)
+                        .map(ClinicalAnalysisPermissions::valueOf)
+                        .map(ClinicalAnalysisPermissions::getImplicitPermissions)
                         .flatMap(List::stream)
                         .collect(Collectors.toSet())
                         .stream().map(Enum::name)
@@ -1101,16 +920,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         logger.debug("Permissions sent by the user '{}'. Complete list containing implicit permissions '{}'.", permissions, allPermissions);
 
         return new ArrayList<>(allPermissions);
-    }
-
-    <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAclResult(List<Long> ids, List<String> members, Enums.Resource resource,
-                                                                    Class<T> clazz, long startTime) throws CatalogException {
-        int dbTime = (int) (System.currentTimeMillis() - startTime);
-
-        OpenCGAResult<AclEntryList<T>> result = getAcls(ids, members, resource, clazz);
-        result.setTime(result.getTime() + dbTime);
-
-        return result;
     }
 
     @Override

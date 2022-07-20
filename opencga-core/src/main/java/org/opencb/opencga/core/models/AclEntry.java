@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.core.models;
 
+import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
 
 /**
  * Created by pfurio on 04/07/16.
@@ -25,14 +27,31 @@ public class AclEntry<E extends Enum<E>> {
 
     protected String member;
     protected EnumSet<E> permissions;
+    protected List<GroupAclEntry<E>> groups;
 
     public AclEntry() {
-        this("", null);
     }
 
     public AclEntry(String member, EnumSet<E> permissions) {
         this.member = member;
         this.permissions = permissions;
+        this.groups = Collections.emptyList();
+    }
+
+    public AclEntry(String member, EnumSet<E> permissions, List<GroupAclEntry<E>> groups) {
+        this.member = member;
+        this.permissions = permissions;
+        this.groups = groups;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("AclEntry{");
+        sb.append("member='").append(member).append('\'');
+        sb.append(", permissions=").append(permissions);
+        sb.append(", groups=").append(groups);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getMember() {
@@ -53,12 +72,52 @@ public class AclEntry<E extends Enum<E>> {
         return this;
     }
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("AclEntry{");
-        sb.append("member='").append(member).append('\'');
-        sb.append(", permissions=").append(permissions);
-        sb.append('}');
-        return sb.toString();
+    public List<GroupAclEntry<E>> getGroups() {
+        return groups;
+    }
+
+    public AclEntry<E> setGroups(List<GroupAclEntry<E>> groups) {
+        this.groups = groups;
+        return this;
+    }
+
+    public static class GroupAclEntry<E extends Enum<E>> {
+        private String id;
+        private EnumSet<E> permissions;
+
+        public GroupAclEntry() {
+        }
+
+        public GroupAclEntry(String id, EnumSet<E> permissions) {
+            this.id = id;
+            this.permissions = permissions;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("GroupAclEntry{");
+            sb.append("id='").append(id).append('\'');
+            sb.append(", permissions=").append(permissions);
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public GroupAclEntry<E> setId(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public EnumSet<E> getPermissions() {
+            return permissions;
+        }
+
+        public GroupAclEntry<E> setPermissions(EnumSet<E> permissions) {
+            this.permissions = permissions;
+            return this;
+        }
     }
 }

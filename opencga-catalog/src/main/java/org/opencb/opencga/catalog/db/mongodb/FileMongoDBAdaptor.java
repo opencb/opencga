@@ -48,7 +48,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -1088,8 +1088,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         Document studyDocument = getStudyDocument(null, studyUid);
         UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
-                StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
-                FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
+                StudyPermissions.Permissions.VIEW_FILE_ANNOTATIONS.name(),
+                FilePermissions.VIEW_ANNOTATIONS.name());
 
         return new FileCatalogMongoDBIterator<File>(mongoCursor, null, fileConverter, iteratorFilter, this,
                 studyUid, user, options);
@@ -1111,8 +1111,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         Document studyDocument = getStudyDocument(clientSession, studyUid);
         UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
-                StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
-                FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
+                StudyPermissions.Permissions.VIEW_FILE_ANNOTATIONS.name(),
+                FilePermissions.VIEW_ANNOTATIONS.name());
 
         return new FileCatalogMongoDBIterator<>(mongoCursor, null, null, iteratorFilter, this,
                 studyUid, user, options);
@@ -1227,10 +1227,10 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.FILE, user, configuration));
             } else {
                 if (containsAnnotationQuery(query)) {
-                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name(),
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FilePermissions.VIEW_ANNOTATIONS.name(),
                             Enums.Resource.FILE, configuration));
                 } else {
-                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FileAclEntry.FilePermissions.VIEW.name(),
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FilePermissions.VIEW.name(),
                             Enums.Resource.FILE, configuration));
                 }
             }

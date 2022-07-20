@@ -51,7 +51,7 @@ import org.opencb.opencga.core.models.individual.IndividualAclParams;
 import org.opencb.opencga.core.models.individual.IndividualReferenceParam;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -641,11 +641,11 @@ public class FamilyManagerTest extends GenericTest {
         }
         assertEquals(3, sampleList.size());
 
-        OpenCGAResult<AclEntryList<SampleAclEntry.SamplePermissions>> acls = catalogManager.getSampleManager().getAcls(STUDY,
+        OpenCGAResult<AclEntryList<SamplePermissions>> acls = catalogManager.getSampleManager().getAcls(STUDY,
                 sampleList.stream().map(Sample::getId).collect(Collectors.toList()), "user2", false, sessionIdUser);
-        for (AclEntryList<SampleAclEntry.SamplePermissions> result : acls.getResults()) {
-            assertTrue(result.get(0).getPermissions().contains(SampleAclEntry.SamplePermissions.VIEW));
-            assertFalse(result.get(0).getPermissions().contains(SampleAclEntry.SamplePermissions.VIEW_VARIANTS));
+        for (AclEntryList<SamplePermissions> result : acls.getResults()) {
+            assertTrue(result.get(0).getPermissions().contains(SamplePermissions.VIEW));
+            assertFalse(result.get(0).getPermissions().contains(SamplePermissions.VIEW_VARIANTS));
         }
 
         familyManager.updateAcl(STUDY, new FamilyAclParams("VIEW", "Martinez-Martinez", null, null,
@@ -661,9 +661,9 @@ public class FamilyManagerTest extends GenericTest {
 
         acls = catalogManager.getSampleManager().getAcls(STUDY, sampleList.stream().map(Sample::getId).collect(Collectors.toList()),
                 "user2", false, sessionIdUser);
-        for (AclEntryList<SampleAclEntry.SamplePermissions> result : acls.getResults()) {
-            assertTrue(result.get(0).getPermissions().contains(SampleAclEntry.SamplePermissions.VIEW));
-            assertTrue(result.get(0).getPermissions().contains(SampleAclEntry.SamplePermissions.VIEW_VARIANTS));
+        for (AclEntryList<SamplePermissions> result : acls.getResults()) {
+            assertTrue(result.get(0).getPermissions().contains(SamplePermissions.VIEW));
+            assertTrue(result.get(0).getPermissions().contains(SamplePermissions.VIEW_VARIANTS));
         }
     }
 

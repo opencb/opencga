@@ -2108,15 +2108,15 @@ public class FileManagerTest extends AbstractManagerTest {
                         .setContent("My content"),
                 true, token);
 
-        OpenCGAResult<AclEntryList<FileAclEntry.FilePermissions>> dataResult = fileManager.updateAcl(studyFqn, Arrays.asList("data/new/",
+        OpenCGAResult<AclEntryList<FilePermissions>> dataResult = fileManager.updateAcl(studyFqn, Arrays.asList("data/new/",
                 filePath.toString()), "user2", new FileAclParams(null, "VIEW"), ParamUtils.AclAction.SET, token);
 
         assertEquals(3, dataResult.getNumResults());
-        for (AclEntryList<FileAclEntry.FilePermissions> result : dataResult.getResults()) {
+        for (AclEntryList<FilePermissions> result : dataResult.getResults()) {
             assertEquals(1, result.size());
             assertEquals("user2", result.get(0).getMember());
             assertEquals(1, result.get(0).getPermissions().size());
-            assertTrue(result.get(0).getPermissions().contains(FileAclEntry.FilePermissions.VIEW));
+            assertTrue(result.get(0).getPermissions().contains(FilePermissions.VIEW));
         }
     }
 

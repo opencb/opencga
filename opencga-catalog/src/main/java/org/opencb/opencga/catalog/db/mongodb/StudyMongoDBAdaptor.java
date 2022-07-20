@@ -327,7 +327,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public boolean hasStudyPermission(long studyId, String user, StudyAclEntry.StudyPermissions permission) throws CatalogDBException {
+    public boolean hasStudyPermission(long studyId, String user, StudyPermissions.Permissions permission) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), studyId);
         OpenCGAResult queryResult = nativeGet(query, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
@@ -958,8 +958,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         // Check if it is confidential
         if (study.getVariableSets().get(0).isConfidential()) {
             if (!checkStudyPermission(studyDataResult.first(), user,
-                    StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS.toString())) {
-                throw CatalogAuthorizationException.deny(user, StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS.toString(),
+                    StudyPermissions.Permissions.CONFIDENTIAL_VARIABLE_SET_ACCESS.toString())) {
+                throw CatalogAuthorizationException.deny(user, StudyPermissions.Permissions.CONFIDENTIAL_VARIABLE_SET_ACCESS.toString(),
                         "VariableSet", variableSetId, "");
             }
         }
@@ -1109,7 +1109,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
 
         boolean hasConfidentialPermission = checkStudyPermission(queryResult.first(), user,
-                StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS.toString());
+                StudyPermissions.Permissions.CONFIDENTIAL_VARIABLE_SET_ACCESS.toString());
         List<VariableSet> variableSets = new ArrayList<>();
         for (Document studyDocument : queryResult.getResults()) {
             Study study = studyConverter.convertToDataModelType(studyDocument);
@@ -1329,7 +1329,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public OpenCGAResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission) throws CatalogDBException {
+    public OpenCGAResult<Long> count(Query query, String user, StudyPermissions.Permissions studyPermission) throws CatalogDBException {
         throw new NotImplementedException("Count not implemented for study collection");
     }
 

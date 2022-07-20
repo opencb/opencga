@@ -94,8 +94,8 @@ import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.file.FileAclParams;
+import org.opencb.opencga.core.models.file.FilePermissions;
 import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
@@ -727,13 +727,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
 
         // Check if the user already has permissions set in his folder
-        OpenCGAResult<AclEntryList<FileAclEntry.FilePermissions>> result = fileManager.getAcls(job.getStudy().getId(),
+        OpenCGAResult<AclEntryList<FilePermissions>> result = fileManager.getAcls(job.getStudy().getId(),
                 Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(), true, token);
         if (result.getNumResults() == 0 || result.first().isEmpty() || CollectionUtils.isEmpty(result.first().get(0).getPermissions())) {
             // Add permissions to do anything under that path to the user launching the job
-            String allFilePermissions = EnumSet.allOf(FileAclEntry.FilePermissions.class)
+            String allFilePermissions = EnumSet.allOf(FilePermissions.class)
                     .stream()
-                    .map(FileAclEntry.FilePermissions::toString)
+                    .map(FilePermissions::toString)
                     .collect(Collectors.joining(","));
             fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(),
                     new FileAclParams(null, allFilePermissions), SET, token);

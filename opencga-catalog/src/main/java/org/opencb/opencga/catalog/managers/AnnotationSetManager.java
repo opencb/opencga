@@ -41,10 +41,7 @@ import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileCreateParams;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
-import org.opencb.opencga.core.models.study.Variable;
-import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
@@ -256,7 +253,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                                 if (variableSet.isConfidential()) {
                                     if (!confidentialPermissionsChecked) {
                                         authorizationManager.checkStudyPermission(study.getUid(), user,
-                                                StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS, "");
+                                                StudyPermissions.Permissions.CONFIDENTIAL_VARIABLE_SET_ACCESS, "");
                                         confidentialPermissionsChecked = true;
                                     }
                                 }

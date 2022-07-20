@@ -25,7 +25,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.project.Project;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.*;
@@ -156,7 +156,7 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
 
     OpenCGAResult<Long> count(Query query) throws CatalogDBException;
 
-    OpenCGAResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+    OpenCGAResult<Long> count(Query query, String user, StudyPermissions.Permissions studyPermission)
             throws CatalogDBException, CatalogAuthorizationException;
 
     default OpenCGAResult distinct(String field) throws CatalogDBException {

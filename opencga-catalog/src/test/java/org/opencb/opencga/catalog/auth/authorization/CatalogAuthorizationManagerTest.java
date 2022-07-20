@@ -39,15 +39,15 @@ import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.file.FileAclParams;
 import org.opencb.opencga.core.models.file.FileCreateParams;
+import org.opencb.opencga.core.models.file.FilePermissions;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.sample.SampleAclParams;
+import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -79,17 +79,17 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     private final String groupMember = "@analyst";
 
     private final String ALL_FILE_PERMISSIONS = join(
-            EnumSet.allOf(FileAclEntry.FilePermissions.class)
+            EnumSet.allOf(FilePermissions.class)
                     .stream()
-                    .map(FileAclEntry.FilePermissions::name)
+                    .map(FilePermissions::name)
                     .collect(Collectors.toList()),
             ",");
     private final String DENY_FILE_PERMISSIONS = "";
 
     private final String ALL_SAMPLE_PERMISSIONS = join(
-            EnumSet.allOf(SampleAclEntry.SamplePermissions.class)
+            EnumSet.allOf(SamplePermissions.class)
                     .stream()
-                    .map(SampleAclEntry.SamplePermissions::name)
+                    .map(SamplePermissions::name)
                     .collect(Collectors.toList()),
             ",");
     private final String DENY_SAMPLE_PERMISSIONS = "";
@@ -383,13 +383,13 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.getStudyManager().createGroup(studyFqn, group, Collections.singletonList(newUser), studyAdmin1SessionId);
         StudyAclParams aclParams = new StudyAclParams("", AuthorizationManager.ROLE_ANALYST);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), group, aclParams, ParamUtils.AclAction.ADD, studyAdmin1SessionId);
-        OpenCGAResult<AclEntryList<StudyAclEntry.StudyPermissions>> studyAcls = catalogManager.getAuthorizationManager()
+        OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> studyAcls = catalogManager.getAuthorizationManager()
                 .getStudyAcl(studyAdminUser1, studyUid, group);
         assertEquals(1, studyAcls.getNumResults());
         assertEquals(group, studyAcls.first().get(0).getMember());
 
         assertEquals(AuthorizationManager.getAnalystAcls().size(), studyAcls.first().get(0).getPermissions().size());
-        for (StudyAclEntry.StudyPermissions analystAcl : AuthorizationManager.getAnalystAcls()) {
+        for (StudyPermissions.Permissions analystAcl : AuthorizationManager.getAnalystAcls()) {
             assertTrue(studyAcls.first().get(0).getPermissions().contains(analystAcl));
         }
     }
@@ -415,7 +415,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void changeUserRole() throws CatalogException {
-        OpenCGAResult<AclEntryList<StudyAclEntry.StudyPermissions>> studyAcls = catalogManager.getStudyManager()
+        OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> studyAcls = catalogManager.getStudyManager()
                 .getAcls(Collections.singletonList(studyFqn), externalUser, false, studyAdmin1SessionId);
 
         assertEquals(1, studyAcls.getNumResults());
@@ -437,7 +437,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         assertEquals(1, studyAcls.first().size());
         assertEquals(externalUser, studyAcls.first().get(0).getMember());
         assertEquals(AuthorizationManager.getAnalystAcls().size(), studyAcls.first().get(0).getPermissions().size());
-        for (StudyAclEntry.StudyPermissions analystAcl : AuthorizationManager.getAnalystAcls()) {
+        for (StudyPermissions.Permissions analystAcl : AuthorizationManager.getAnalystAcls()) {
             assertTrue(studyAcls.first().get(0).getPermissions().contains(analystAcl));
         }
     }
@@ -453,7 +453,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), externalUser, aclParams, RESET,
                 studyAdmin1SessionId);
 
-        OpenCGAResult<AclEntryList<StudyAclEntry.StudyPermissions>> studyAcls = catalogManager.getStudyManager().getAcls(Collections.singletonList(studyFqn),
+        OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> studyAcls = catalogManager.getStudyManager().getAcls(Collections.singletonList(studyFqn),
                 externalUser, false, studyAdmin1SessionId);
         assertEquals(0, studyAcls.getNumResults());
     }
@@ -474,13 +474,13 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), group, new StudyAclParams("", "admin"), SET, ownerSessionId);
 
         Study study = catalogManager.getStudyManager().get(studyFqn, QueryOptions.empty(), studyAdmin1SessionId).first();
-        OpenCGAResult<AclEntryList<StudyAclEntry.StudyPermissions>> studyAcls = catalogManager.getAuthorizationManager().getStudyAcl(studyAdminUser1,
+        OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> studyAcls = catalogManager.getAuthorizationManager().getStudyAcl(studyAdminUser1,
                 study.getUid(), group);
         assertEquals(1, studyAcls.getNumResults());
         assertEquals(group, studyAcls.first().get(0).getMember());
 
         assertEquals(AuthorizationManager.getAdminAcls().size(), studyAcls.first().get(0).getPermissions().size());
-        for (StudyAclEntry.StudyPermissions adminAcl : AuthorizationManager.getAdminAcls()) {
+        for (StudyPermissions.Permissions adminAcl : AuthorizationManager.getAdminAcls()) {
             assertTrue(studyAcls.first().get(0).getPermissions().contains(adminAcl));
         }
 
@@ -881,26 +881,26 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         sampleManager.create(studyFqn, new Sample().setId("s5"), QueryOptions.empty(), ownerSessionId);
 
         sampleManager.updateAcl(studyFqn, Collections.singletonList("s1"), memberUser,
-                new SampleAclParams(null, null, null, null, SampleAclEntry.SamplePermissions.DELETE.name()), SET, ownerSessionId);
+                new SampleAclParams(null, null, null, null, SamplePermissions.DELETE.name()), SET, ownerSessionId);
         sampleManager.updateAcl(studyFqn, Collections.singletonList("s2"), memberUser,
-                new SampleAclParams(null, null, null, null, SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name()), SET,
+                new SampleAclParams(null, null, null, null, SamplePermissions.VIEW_ANNOTATIONS.name()), SET,
                 ownerSessionId);
         sampleManager.updateAcl(studyFqn, Collections.singletonList("s3"), memberUser, new SampleAclParams(
-                null, null, null, null, SampleAclEntry.SamplePermissions.DELETE.name()), SET, ownerSessionId);
+                null, null, null, null, SamplePermissions.DELETE.name()), SET, ownerSessionId);
         sampleManager.updateAcl(studyFqn, Collections.singletonList("s4"), memberUser, new SampleAclParams(
-                null, null, null, null, SampleAclEntry.SamplePermissions.VIEW.name()), SET, ownerSessionId);
+                null, null, null, null, SamplePermissions.VIEW.name()), SET, ownerSessionId);
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());
 
         // member user wants to know the samples for which he has DELETE permissions
-        Query query = new Query(ParamConstants.ACL_PARAM, memberUser + ":" + SampleAclEntry.SamplePermissions.DELETE.name());
+        Query query = new Query(ParamConstants.ACL_PARAM, memberUser + ":" + SamplePermissions.DELETE.name());
         List<Sample> results = sampleManager.search(studyFqn, query, options, memberSessionId).getResults();
         assertEquals(3, results.stream().map(Sample::getId).collect(Collectors.toSet()).size());
         assertTrue(Arrays.asList("s1", "s3", "smp6").containsAll(results.stream().map(Sample::getId).collect(Collectors.toSet())));
 
         // member user wants to know the samples for which he has UPDATE permissions
         // He should have UPDATE permissions in the same samples where he has DELETE permissions
-        query = new Query(ParamConstants.ACL_PARAM, memberUser + ":" + SampleAclEntry.SamplePermissions.WRITE.name());
+        query = new Query(ParamConstants.ACL_PARAM, memberUser + ":" + SamplePermissions.WRITE.name());
         results = sampleManager.search(studyFqn, query, options, memberSessionId).getResults();
         System.out.println(results.stream().map(Sample::getId).collect(Collectors.toSet()));
         assertEquals(8, results.stream().map(Sample::getId).collect(Collectors.toSet()).size());
@@ -908,13 +908,13 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
                 .containsAll(results.stream().map(Sample::getId).collect(Collectors.toSet())));
 
         // Owner user wants to know the samples for which member user has DELETE permissions
-        query = new Query(ParamConstants.ACL_PARAM, memberUser + ":" + SampleAclEntry.SamplePermissions.DELETE.name());
+        query = new Query(ParamConstants.ACL_PARAM, memberUser + ":" + SamplePermissions.DELETE.name());
         results = sampleManager.search(studyFqn, query, options, ownerSessionId).getResults();
         assertEquals(3, results.stream().map(Sample::getId).collect(Collectors.toSet()).size());
         assertTrue(Arrays.asList("s1", "s3", "smp6").containsAll(results.stream().map(Sample::getId).collect(Collectors.toSet())));
 
         // member user wants to know the samples for which other user has DELETE permissions
-        query = new Query(ParamConstants.ACL_PARAM, ownerUser + ":" + SampleAclEntry.SamplePermissions.DELETE.name());
+        query = new Query(ParamConstants.ACL_PARAM, ownerUser + ":" + SamplePermissions.DELETE.name());
         thrown.expect(CatalogAuthorizationException.class);
         thrown.expectMessage("Only study owners or admins");
         sampleManager.search(studyFqn, query, options, memberSessionId);
@@ -928,34 +928,37 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         studyManager.createGroup(studyFqn, "group2", Collections.singletonList(externalUser), ownerSessionId);
 
         studyManager.updateAcl(Collections.singletonList(studyFqn), "@group1",
-                new StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_COHORTS.name(), ""), ADD, ownerSessionId);
+                new StudyAclParams(StudyPermissions.Permissions.VIEW_COHORTS.name(), ""), ADD, ownerSessionId);
         studyManager.updateAcl(Collections.singletonList(studyFqn), externalUser,
-                new StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_FILES.name(), ""), ADD, ownerSessionId);
+                new StudyAclParams(StudyPermissions.Permissions.VIEW_FILES.name(), ""), ADD, ownerSessionId);
 
-        OpenCGAResult<AclEntryList<StudyAclEntry.StudyPermissions>> acls = studyManager.getAcls(Collections.singletonList(studyFqn), externalUser, false,
+        OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> acls = studyManager.getAcls(Collections.singletonList(studyFqn), externalUser, false,
                 externalSessionId);
         assertEquals(1, acls.getNumResults());
-        assertTrue(acls.first().stream().map(AclEntry::getMember).collect(Collectors.toSet()).containsAll(Arrays.asList(externalUser, "@group1")));
+        assertEquals(1, acls.first().size());
+        assertEquals(externalUser, acls.first().get(0).getMember());
+        assertEquals(1, acls.first().get(0).getGroups().stream().filter(g -> "@group1".equals(g.getId())).count());
 //        assertTrue(acls.first().keySet().containsAll(Arrays.asList(externalUser, "@group1")));
 
         studyManager.updateAcl(Collections.singletonList(studyFqn), "@group2",
-                new StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), ""), ADD, ownerSessionId);
+                new StudyAclParams(StudyPermissions.Permissions.VIEW_SAMPLES.name(), ""), ADD, ownerSessionId);
         acls = studyManager.getAcls(Collections.singletonList(studyFqn), externalUser, false,
                 externalSessionId);
         assertEquals(1, acls.getNumResults());
-        assertTrue(acls.first().stream().map(AclEntry::getMember).collect(Collectors.toSet()).containsAll(Arrays.asList(externalUser, "@group1", "@group2")));
-//        assertTrue(acls.first().keySet().containsAll(Arrays.asList(externalUser, "@group1", "@group2")));
+        assertEquals(1, acls.first().size());
+        assertEquals(externalUser, acls.first().get(0).getMember());
+        assertEquals(2, acls.first().get(0).getGroups().stream()
+                .filter(g -> "@group1".equals(g.getId()) || "@group2".equals(g.getId()))
+                .count());
 
-        for (AclEntry<StudyAclEntry.StudyPermissions> aclEntry : acls.first()) {
-            switch (aclEntry.getMember()) {
-                case externalUser:
-                    assertTrue(aclEntry.getPermissions().contains(StudyAclEntry.StudyPermissions.VIEW_FILES));
-                    break;
+        assertTrue(acls.first().get(0).getPermissions().contains(StudyPermissions.Permissions.VIEW_FILES));
+        for (AclEntry.GroupAclEntry<StudyPermissions.Permissions> group : acls.first().get(0).getGroups()) {
+            switch (group.getId()) {
                 case "@group1":
-                    assertTrue(aclEntry.getPermissions().contains(StudyAclEntry.StudyPermissions.VIEW_COHORTS));
+                    assertTrue(group.getPermissions().contains(StudyPermissions.Permissions.VIEW_COHORTS));
                     break;
                 case "@group2":
-                    assertTrue(aclEntry.getPermissions().contains(StudyAclEntry.StudyPermissions.VIEW_SAMPLES));
+                    assertTrue(group.getPermissions().contains(StudyPermissions.Permissions.VIEW_SAMPLES));
                     break;
                 default:
                     break;

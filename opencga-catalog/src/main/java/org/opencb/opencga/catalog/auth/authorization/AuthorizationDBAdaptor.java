@@ -27,6 +27,7 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by pfurio on 20/04/17.
@@ -38,28 +39,31 @@ public interface AuthorizationDBAdaptor {
      *
      * @param resourceId id of the study, file, sample... where the Acl will be looked for.
      * @param members members for whom the Acls will be obtained.
+     * @param userGroups Map of user id - list of groups to retrieve permissions from those groups as well.
      * @param entry Entity for which the ACLs will be retrieved.
      * @param clazz Class of type T.
      * @return the list of Acls defined for the members.
      * @param <T> Permissions enum.
      * @throws CatalogException  CatalogException.
      */
-    <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> get(long resourceId, List<String> members, Enums.Resource entry, Class<T> clazz)
-            throws CatalogException;
+    <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> get(long resourceId, List<String> members, Map<String, List<String>> userGroups,
+                                                           Enums.Resource entry, Class<T> clazz) throws CatalogException;
 
     /**
      * Retrieve the list of Acls for the list of members in the resources given.
      *
      * @param resourceIds ids of the study, file, sample... where the Acl will be looked for.
      * @param members members for whom the Acls will be obtained.
+     * @param userGroups Map of user id - list of groups to retrieve permissions from those groups as well.
      * @param entry Entity for which the ACLs will be retrieved.
      * @param clazz Class of type T.
      * @return the list of Acls defined for the members.
      * @param <T> Permissions enum.
      * @throws CatalogException  CatalogException.
      */
-    <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> get(List<Long> resourceIds, List<String> members, Enums.Resource entry,
-                                                           Class<T> clazz) throws CatalogException;
+    <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> get(List<Long> resourceIds, List<String> members,
+                                                           Map<String, List<String>> userGroups, Enums.Resource entry, Class<T> clazz)
+            throws CatalogException;
 
     /**
      * Remove all the Acls defined for the member in the resource for the study.

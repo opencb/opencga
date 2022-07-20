@@ -41,7 +41,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS;
+import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_INDIVIDUALS;
 import static org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD;
 
 @Tool(id = IndividualQcAnalysis.ID, resource = Enums.Resource.SAMPLE, description = IndividualQcAnalysis.DESCRIPTION)

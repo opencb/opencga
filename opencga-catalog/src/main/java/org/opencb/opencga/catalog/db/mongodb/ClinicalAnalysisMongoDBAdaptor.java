@@ -1034,7 +1034,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             } else {
                 // Get the document query needed to check the permissions as well
                 andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                        ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW.name(), Enums.Resource.CLINICAL_ANALYSIS, configuration));
+                        ClinicalAnalysisPermissions.VIEW.name(), Enums.Resource.CLINICAL_ANALYSIS, configuration));
             }
 
             queryCopy.remove(ParamConstants.ACL_PARAM);

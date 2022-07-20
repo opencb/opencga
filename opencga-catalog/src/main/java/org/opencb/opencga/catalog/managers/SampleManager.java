@@ -55,7 +55,7 @@ import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
@@ -234,7 +234,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 .append("token", token);
         try {
             // 1. We check everything can be done
-            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
+            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyPermissions.Permissions.WRITE_SAMPLES);
 
             validateNewSample(study, sample, userId);
 
@@ -501,7 +501,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
                 if (checkPermissions) {
                     authorizationManager.checkSamplePermission(study.getUid(), sample.getUid(), userId,
-                            SampleAclEntry.SamplePermissions.DELETE);
+                            SamplePermissions.DELETE);
                 }
 
                 // Check if the sample can be deleted
@@ -591,7 +591,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             try {
                 if (checkPermissions) {
                     authorizationManager.checkSamplePermission(study.getUid(), sample.getUid(), userId,
-                            SampleAclEntry.SamplePermissions.DELETE);
+                            SamplePermissions.DELETE);
                 }
 
                 // Check if the sample can be deleted
@@ -1116,13 +1116,13 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         // Only check write annotation permissions if the user wants to update the annotation sets
         if (updateParams != null && updateParams.getAnnotationSets() != null) {
             authorizationManager.checkSamplePermission(study.getUid(), sample.getUid(), userId,
-                    SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS);
+                    SamplePermissions.WRITE_ANNOTATIONS);
         }
         // Only check update permissions if the user wants to update anything apart from the annotation sets
         if ((parameters.size() == 1 && !parameters.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
                 || parameters.size() > 1) {
             authorizationManager.checkSamplePermission(study.getUid(), sample.getUid(), userId,
-                    SampleAclEntry.SamplePermissions.WRITE);
+                    SamplePermissions.WRITE);
         }
 
         if (updateParams != null && StringUtils.isNotEmpty(updateParams.getId())) {
@@ -1166,7 +1166,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         // Fix query if it contains any annotation
         AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
 
-        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
+        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyPermissions.Permissions.VIEW_SAMPLES);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -1205,9 +1205,15 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     // **************************   ACLs  ******************************** //
-    public OpenCGAResult<AclEntryList<SampleAclEntry.SamplePermissions>> getAcls(String studyId, List<String> sampleList, String member,
-                                                                                 boolean ignoreException, String token)
+    public OpenCGAResult<AclEntryList<SamplePermissions>> getAcls(String studyId, List<String> sampleList, String member,
+                                                                  boolean ignoreException, String token)
             throws CatalogException {
+        return getAcls(studyId, sampleList, Collections.singletonList(member), ignoreException, token);
+    }
+
+    public OpenCGAResult<AclEntryList<SamplePermissions>> getAcls(String studyId, List<String> sampleList,
+                                                                  List<String> members, boolean ignoreException,
+                                                                  String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -1215,78 +1221,76 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
                 .append("sampleList", sampleList)
-                .append("member", member)
+                .append("members", members)
                 .append("ignoreException", ignoreException)
                 .append("token", token);
 
+        OpenCGAResult<AclEntryList<SamplePermissions>> sampleAcls = OpenCGAResult.empty();
+        Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
         try {
             auditManager.initAuditBatch(operationId);
-
-            OpenCGAResult<AclEntryList<SampleAclEntry.SamplePermissions>> sampleAclList = OpenCGAResult.empty();
             InternalGetDataResult<Sample> queryResult = internalGet(study.getUid(), sampleList, INCLUDE_SAMPLE_IDS, user, ignoreException);
 
-            Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
             if (queryResult.getMissing() != null) {
                 missingMap = queryResult.getMissing().stream()
                         .collect(Collectors.toMap(InternalGetDataResult.Missing::getId, Function.identity()));
             }
+
+            List<Long> sampleUids = queryResult.getResults().stream().map(Sample::getUid).collect(Collectors.toList());
+            if (CollectionUtils.isNotEmpty(members)) {
+                sampleAcls = authorizationManager.getAcl(user, study.getUid(), sampleUids, members, Enums.Resource.SAMPLE,
+                        SamplePermissions.class);
+            } else {
+                sampleAcls = authorizationManager.getAcl(user, study.getUid(), sampleUids, Enums.Resource.SAMPLE,
+                        SamplePermissions.class);
+            }
+
+            // Include non-existing samples to the result list
+            List<AclEntryList<SamplePermissions>> resultList = new ArrayList<>(sampleList.size());
+            List<Event> eventList = new ArrayList<>(missingMap.size());
             int counter = 0;
             for (String sampleId : sampleList) {
                 if (!missingMap.containsKey(sampleId)) {
                     Sample sample = queryResult.getResults().get(counter);
-                    try {
-                        OpenCGAResult<AclEntryList<SampleAclEntry.SamplePermissions>> sampleAcls;
-                        if (StringUtils.isNotEmpty(member)) {
-                            sampleAcls = authorizationManager.getSampleAcl(study.getUid(), sample.getUid(), user, member);
-                        } else {
-                            sampleAcls = authorizationManager.getAllSampleAcls(study.getUid(), sample.getUid(), user);
-                        }
-                        sampleAclList.append(sampleAcls);
-
-                        auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.SAMPLE, sample.getId(),
-                                sample.getUuid(), study.getId(), study.getUuid(), auditParams,
-                                new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
-                    } catch (CatalogException e) {
-                        auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.SAMPLE, sample.getId(),
-                                sample.getUuid(), study.getId(), study.getUuid(), auditParams,
-                                new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
-
-                        if (!ignoreException) {
-                            throw e;
-                        } else {
-                            Event event = new Event(Event.Type.ERROR, sampleId, missingMap.get(sampleId).getErrorMsg());
-                            sampleAclList.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0,
-                                    Collections.singletonList(Collections.emptyMap()), 0));
-                        }
-                    }
-                    counter += 1;
+                    resultList.add(sampleAcls.getResults().get(counter));
+                    auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.SAMPLE, sample.getId(),
+                            sample.getUuid(), study.getId(), study.getUuid(), auditParams,
+                            new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
+                    counter++;
                 } else {
-                    Event event = new Event(Event.Type.ERROR, sampleId, missingMap.get(sampleId).getErrorMsg());
-                    sampleAclList.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0,
-                            Collections.singletonList(Collections.emptyMap()), 0));
-
+                    resultList.add(new AclEntryList<>());
+                    eventList.add(new Event(Event.Type.ERROR, sampleId, missingMap.get(sampleId).getErrorMsg()));
                     auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.SAMPLE, sampleId, "",
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                     new Error(0, "", missingMap.get(sampleId).getErrorMsg())), new ObjectMap());
                 }
             }
-
-            return sampleAclList;
+            sampleAcls.setResults(resultList);
+            sampleAcls.setEvents(eventList);
         } catch (CatalogException e) {
             for (String sampleId : sampleList) {
                 auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.SAMPLE, sampleId, "",
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
                         new ObjectMap());
             }
-            throw e;
+            if (!ignoreException) {
+                throw e;
+            } else {
+                for (String sampleId : sampleList) {
+                    Event event = new Event(Event.Type.ERROR, sampleId, e.getMessage());
+                    sampleAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, new AclEntryList<>(), 0));
+                }
+            }
         } finally {
             auditManager.finishAuditBatch(operationId);
         }
+
+        return sampleAcls;
     }
 
-    public OpenCGAResult<AclEntryList<SampleAclEntry.SamplePermissions>> updateAcl(String studyId, List<String> sampleStringList,
-                                                                                   String memberList, SampleAclParams sampleAclParams,
-                                                                                   ParamUtils.AclAction action, String token)
+    public OpenCGAResult<AclEntryList<SamplePermissions>> updateAcl(String studyId, List<String> sampleStringList,
+                                                                    String memberList, SampleAclParams sampleAclParams,
+                                                                    ParamUtils.AclAction action, String token)
             throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
@@ -1327,7 +1331,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
             if (StringUtils.isNotEmpty(sampleAclParams.getPermissions())) {
                 permissions = Arrays.asList(sampleAclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
-                checkPermissions(permissions, SampleAclEntry.SamplePermissions::valueOf);
+                checkPermissions(permissions, SamplePermissions::valueOf);
             }
 
             if (StringUtils.isNotEmpty(sampleAclParams.getIndividual())) {
@@ -1411,7 +1415,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             throw e;
         }
 
-        OpenCGAResult<AclEntryList<SampleAclEntry.SamplePermissions>> aclResultList = OpenCGAResult.empty();
+        OpenCGAResult<AclEntryList<SamplePermissions>> aclResultList = OpenCGAResult.empty();
         int numProcessed = 0;
         do {
             List<Sample> batchSampleList = new ArrayList<>();
@@ -1445,8 +1449,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                         throw new CatalogException("Unexpected error occurred. No valid action found.");
                 }
 
-                OpenCGAResult<AclEntryList<SampleAclEntry.SamplePermissions>> queryResults = authorizationManager.getAcls(sampleUids,
-                        members, Enums.Resource.SAMPLE, SampleAclEntry.SamplePermissions.class);
+                OpenCGAResult<AclEntryList<SamplePermissions>> queryResults = authorizationManager.getAcls(study.getUid(),
+                        sampleUids, members, Enums.Resource.SAMPLE, SamplePermissions.class);
                 aclResultList.append(queryResults);
 
                 for (Sample sample : batchSampleList) {

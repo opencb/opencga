@@ -135,7 +135,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         this.dbCollectionMap.put(Enums.Resource.INDIVIDUAL, Arrays.asList(dbAdaptorFactory.getCatalogIndividualDBAdaptor().getCollection(),
                 dbAdaptorFactory.getCatalogIndividualDBAdaptor().getIndividualArchiveCollection()));
         this.dbCollectionMap.put(Enums.Resource.SAMPLE, Arrays.asList(dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection(),
-                        dbAdaptorFactory.getCatalogSampleDBAdaptor().getArchiveSampleCollection()));
+                dbAdaptorFactory.getCatalogSampleDBAdaptor().getArchiveSampleCollection()));
         this.dbCollectionMap.put(Enums.Resource.DISEASE_PANEL,
                 Arrays.asList(dbAdaptorFactory.getCatalogPanelDBAdaptor().getPanelCollection(),
                         dbAdaptorFactory.getCatalogPanelDBAdaptor().getPanelArchiveCollection()));
@@ -296,12 +296,25 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> get(long resourceId, List<String> members, Enums.Resource entry,
+    public <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> get(long resourceId, List<String> members,
+                                                                  Map<String, List<String>> userGroups, Enums.Resource entry,
                                                                   Class<T> clazz) throws CatalogException {
         validateEntry(entry);
         long startTime = startQuery();
 
-        EntryPermission entryPermission = internalGet(resourceId, members, entry);
+        // Extract unique whole list of members requested by the user and any groups the users might belong to
+        List<String> memberList = null;
+        if (members != null) {
+            Set<String> uniqueMembers = new HashSet<>(members);
+            if (userGroups != null) {
+                for (List<String> groups : userGroups.values()) {
+                    uniqueMembers.addAll(groups);
+                }
+            }
+            memberList = new ArrayList<>(uniqueMembers);
+        }
+
+        EntryPermission entryPermission = internalGet(resourceId, memberList, entry);
         Map<String, List<String>> myMap = entryPermission.getPermissions().get(QueryParams.ACL.key());
 
         AclEntryList<T> aclList = new AclEntryList<>();
@@ -312,13 +325,24 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                     List<T> allPermissions = myMap.get(member).stream().map(p -> T.valueOf(clazz, p)).collect(Collectors.toList());
                     permissions = allPermissions.isEmpty() ? EnumSet.noneOf(clazz) : EnumSet.copyOf(allPermissions);
                 }
-                aclList.add(new AclEntry<>(member, permissions));
+                List<AclEntry.GroupAclEntry<T>> groups = new ArrayList<>();
+                if (userGroups != null && userGroups.containsKey(member)) {
+                    for (String group : userGroups.get(member)) {
+                        EnumSet<T> groupPermissions = null;
+                        if (myMap.containsKey(group)) {
+                            List<T> allPermissions = myMap.get(group).stream().map(p -> T.valueOf(clazz, p)).collect(Collectors.toList());
+                            groupPermissions = allPermissions.isEmpty() ? EnumSet.noneOf(clazz) : EnumSet.copyOf(allPermissions);
+                        }
+                        groups.add(new AclEntry.GroupAclEntry<>(group, groupPermissions));
+                    }
+                }
+                aclList.add(new AclEntry<>(member, permissions, groups));
             }
         } else {
             for (Map.Entry<String, List<String>> tmpEntry : myMap.entrySet()) {
                 List<T> allPermissions = tmpEntry.getValue().stream().map(p -> T.valueOf(clazz, p)).collect(Collectors.toList());
                 EnumSet<T> permissions = allPermissions.isEmpty() ? EnumSet.noneOf(clazz) : EnumSet.copyOf(allPermissions);
-                aclList.add(new AclEntry<>(tmpEntry.getKey(), permissions));
+                aclList.add(new AclEntry<>(tmpEntry.getKey(), permissions, Collections.emptyList()));
             }
         }
 
@@ -326,11 +350,12 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> get(List<Long> resourceIds, List<String> members, Enums.Resource entry,
+    public <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> get(List<Long> resourceIds, List<String> members,
+                                                                  Map<String, List<String>> userGroups, Enums.Resource entry,
                                                                   Class<T> clazz) throws CatalogException {
         OpenCGAResult<AclEntryList<T>> result = OpenCGAResult.empty();
         for (Long resourceId : resourceIds) {
-            OpenCGAResult<AclEntryList<T>> tmpResult = get(resourceId, members, entry, clazz);
+            OpenCGAResult<AclEntryList<T>> tmpResult = get(resourceId, members, userGroups, entry, clazz);
             result.append(tmpResult);
         }
         return result;
