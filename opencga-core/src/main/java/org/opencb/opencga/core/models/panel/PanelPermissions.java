@@ -3,11 +3,12 @@ package org.opencb.opencga.core.models.panel;
 import java.util.*;
 
 public enum PanelPermissions {
+    NONE(Collections.emptyList()),
     VIEW(Collections.emptyList()),
     WRITE(Collections.singletonList(VIEW)),
     DELETE(Arrays.asList(VIEW, WRITE));
 
-    private List<PanelPermissions> implicitPermissions;
+    private final List<PanelPermissions> implicitPermissions;
 
     PanelPermissions(List<PanelPermissions> implicitPermissions) {
         this.implicitPermissions = implicitPermissions;

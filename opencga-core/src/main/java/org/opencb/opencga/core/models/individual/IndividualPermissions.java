@@ -3,6 +3,7 @@ package org.opencb.opencga.core.models.individual;
 import java.util.*;
 
 public enum IndividualPermissions {
+    NONE(Collections.emptyList()),
     VIEW(Collections.emptyList()),
     WRITE(Collections.singletonList(VIEW)),
     DELETE(Arrays.asList(VIEW, WRITE)),
@@ -10,7 +11,7 @@ public enum IndividualPermissions {
     WRITE_ANNOTATIONS(Arrays.asList(VIEW_ANNOTATIONS, VIEW)),
     DELETE_ANNOTATIONS(Arrays.asList(VIEW_ANNOTATIONS, WRITE_ANNOTATIONS, VIEW));
 
-    private List<IndividualPermissions> implicitPermissions;
+    private final List<IndividualPermissions> implicitPermissions;
 
     IndividualPermissions(List<IndividualPermissions> implicitPermissions) {
         this.implicitPermissions = implicitPermissions;

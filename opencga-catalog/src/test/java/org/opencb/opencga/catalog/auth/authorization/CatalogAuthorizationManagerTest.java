@@ -450,12 +450,29 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void removeUserFromRole() throws CatalogException {
         StudyAclParams aclParams = new StudyAclParams(null, null);
-        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), externalUser, aclParams, RESET,
-                studyAdmin1SessionId);
+        catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), externalUser, aclParams, RESET, studyAdmin1SessionId);
 
-        OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> studyAcls = catalogManager.getStudyManager().getAcls(Collections.singletonList(studyFqn),
-                externalUser, false, studyAdmin1SessionId);
-        assertEquals(0, studyAcls.getNumResults());
+        OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> studyAcls = catalogManager.getStudyManager().getAcls(
+                Collections.singletonList(studyFqn), externalUser, false, studyAdmin1SessionId);
+        assertEquals(1, studyAcls.getNumResults());
+        assertEquals(1, studyAcls.first().size());
+        assertEquals(externalUser, studyAcls.first().get(0).getMember());
+        assertNull(studyAcls.first().get(0).getPermissions());
+    }
+
+    // A user with proper permissions removes an existing user from a role
+    @Test
+    public void denyAllPermissions() throws CatalogException {
+        StudyAclParams aclParams = new StudyAclParams("", null);
+        catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), externalUser, aclParams, SET, studyAdmin1SessionId);
+
+        OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> studyAcls = catalogManager.getStudyManager().getAcls(
+                Collections.singletonList(studyFqn), externalUser, false, studyAdmin1SessionId);
+        assertEquals(1, studyAcls.getNumResults());
+        assertEquals(1, studyAcls.first().size());
+        assertEquals(externalUser, studyAcls.first().get(0).getMember());
+        assertEquals(1, studyAcls.first().get(0).getPermissions().size());
+        assertTrue(studyAcls.first().get(0).getPermissions().contains(StudyPermissions.Permissions.NONE));
     }
 
     // A user with no permissions tries to remove an existing user from a role
@@ -488,7 +505,10 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), group, aclParams, RESET, ownerSessionId);
         String userId = catalogManager.getUserManager().getUserId(ownerSessionId);
         studyAcls = catalogManager.getAuthorizationManager().getStudyAcl(userId, study.getUid(), group);
-        assertEquals(0, studyAcls.getNumResults());
+        assertEquals(1, studyAcls.getNumResults());
+        assertEquals(1, studyAcls.first().size());
+        assertEquals(group, studyAcls.first().get(0).getMember());
+        assertNull(studyAcls.first().get(0).getPermissions());
     }
 
     @Test

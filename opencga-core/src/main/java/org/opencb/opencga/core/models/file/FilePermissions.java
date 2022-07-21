@@ -3,6 +3,7 @@ package org.opencb.opencga.core.models.file;
 import java.util.*;
 
 public enum FilePermissions {
+    NONE(Collections.emptyList()),
     VIEW(Collections.emptyList()),
     VIEW_HEADER(Collections.singletonList(VIEW)),  // Includes permission to view the sample ids from a VCF file.,
     VIEW_CONTENT(Collections.singletonList(VIEW)),

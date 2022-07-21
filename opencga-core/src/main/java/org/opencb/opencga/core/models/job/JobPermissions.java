@@ -3,11 +3,12 @@ package org.opencb.opencga.core.models.job;
 import java.util.*;
 
 public enum JobPermissions {
+    NONE(Collections.emptyList()),
     VIEW(Collections.emptyList()),
     WRITE(Collections.singletonList(VIEW)),
     DELETE(Arrays.asList(VIEW, WRITE));
 
-    private List<JobPermissions> implicitPermissions;
+    private final List<JobPermissions> implicitPermissions;
 
     JobPermissions(List<JobPermissions> implicitPermissions) {
         this.implicitPermissions = implicitPermissions;

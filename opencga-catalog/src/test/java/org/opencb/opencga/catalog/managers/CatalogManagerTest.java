@@ -739,10 +739,16 @@ public class CatalogManagerTest extends AbstractManagerTest {
             OpenCGAResult<AclEntryList<SamplePermissions>> sampleAcl =
                     catalogManager.getAuthorizationManager().getAcl("user", studyUid, sampleUid, Collections.singletonList("user2"),
                             Enums.Resource.SAMPLE, SamplePermissions.class);
-            assertEquals(0, sampleAcl.getNumResults());
+            assertEquals(1, sampleAcl.getNumResults());
+            assertEquals(1, sampleAcl.first().size());
+            assertEquals("user2", sampleAcl.first().get(0).getMember());
+            assertNull(sampleAcl.first().get(0).getPermissions());
             sampleAcl = catalogManager.getAuthorizationManager().getAcl("user", studyUid, sampleUid, Collections.singletonList("user3"),
                     Enums.Resource.SAMPLE, SamplePermissions.class);
-            assertEquals(0, sampleAcl.getNumResults());
+            assertEquals(1, sampleAcl.getNumResults());
+            assertEquals(1, sampleAcl.first().size());
+            assertEquals("user3", sampleAcl.first().get(0).getMember());
+            assertNull(sampleAcl.first().get(0).getPermissions());
         }
     }
 
@@ -787,11 +793,17 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> studyAcl = catalogManager.getAuthorizationManager()
                 .getStudyAcl(userId1, study3.getUid(), "user2");
-        assertEquals(0, studyAcl.getNumResults());
+        assertEquals(1, studyAcl.getNumResults());
+        assertEquals(1, studyAcl.first().size());
+        assertEquals("user2", studyAcl.first().get(0).getMember());
+        assertNull(studyAcl.first().get(0).getPermissions());
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study1 = catalogManager.getStudyManager().resolveId(studyFqn, userId);
         studyAcl = catalogManager.getAuthorizationManager().getStudyAcl(userId, study1.getUid(), "user3");
-        assertEquals(0, studyAcl.getNumResults());
+        assertEquals(1, studyAcl.getNumResults());
+        assertEquals(1, studyAcl.first().size());
+        assertEquals("user3", studyAcl.first().get(0).getMember());
+        assertNull(studyAcl.first().get(0).getPermissions());
 
         groupDataResult = catalogManager.getStudyManager().getGroup(studyFqn, null, token);
         for (Group group : groupDataResult.getResults()) {
@@ -803,10 +815,16 @@ public class CatalogManagerTest extends AbstractManagerTest {
             OpenCGAResult<AclEntryList<SamplePermissions>> sampleAcl =
                     catalogManager.getAuthorizationManager().getAcl("user", studyUid, sample.getUid(), Collections.singletonList("user2"),
                             Enums.Resource.SAMPLE, SamplePermissions.class);
-            assertEquals(0, sampleAcl.getNumResults());
+            assertEquals(1, sampleAcl.getNumResults());
+            assertEquals(1, sampleAcl.first().size());
+            assertEquals("user2", sampleAcl.first().get(0).getMember());
+            assertNull(sampleAcl.first().get(0).getPermissions());
             sampleAcl = catalogManager.getAuthorizationManager().getAcl("user", studyUid, sample.getUid(), Collections.singletonList("user3"),
                     Enums.Resource.SAMPLE, SamplePermissions.class);
-            assertEquals(0, sampleAcl.getNumResults());
+            assertEquals(1, sampleAcl.getNumResults());
+            assertEquals(1, sampleAcl.first().size());
+            assertEquals("user3", sampleAcl.first().get(0).getMember());
+            assertNull(sampleAcl.first().get(0).getPermissions());
         }
     }
 

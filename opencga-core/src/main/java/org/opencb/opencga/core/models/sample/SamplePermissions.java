@@ -3,6 +3,7 @@ package org.opencb.opencga.core.models.sample;
 import java.util.*;
 
 public enum SamplePermissions {
+    NONE(Collections.emptyList()),
     VIEW(Collections.emptyList()),
     WRITE(Collections.singletonList(VIEW)),
     DELETE(Arrays.asList(VIEW, WRITE)),
@@ -11,7 +12,7 @@ public enum SamplePermissions {
     DELETE_ANNOTATIONS(Arrays.asList(VIEW_ANNOTATIONS, WRITE_ANNOTATIONS, VIEW)),
     VIEW_VARIANTS(Arrays.asList(VIEW, VIEW_ANNOTATIONS));
 
-    private List<SamplePermissions> implicitPermissions;
+    private final List<SamplePermissions> implicitPermissions;
 
     SamplePermissions(List<SamplePermissions> implicitPermissions) {
         this.implicitPermissions = implicitPermissions;

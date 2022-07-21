@@ -3,6 +3,7 @@ package org.opencb.opencga.core.models.family;
 import java.util.*;
 
 public enum FamilyPermissions {
+    NONE(Collections.emptyList()),
     VIEW(Collections.emptyList()),
     WRITE(Collections.singletonList(VIEW)),
     DELETE(Arrays.asList(VIEW, WRITE)),
@@ -10,7 +11,7 @@ public enum FamilyPermissions {
     WRITE_ANNOTATIONS(Arrays.asList(VIEW_ANNOTATIONS, VIEW)),
     DELETE_ANNOTATIONS(Arrays.asList(VIEW_ANNOTATIONS, WRITE_ANNOTATIONS, VIEW));
 
-    private List<FamilyPermissions> implicitPermissions;
+    private final List<FamilyPermissions> implicitPermissions;
 
     FamilyPermissions(List<FamilyPermissions> implicitPermissions) {
         this.implicitPermissions = implicitPermissions;

@@ -231,9 +231,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                         if (!permissions.get(QueryParams.ACL.key()).containsKey(split[0])) {
                             permissions.get(QueryParams.ACL.key()).put(split[0], new ArrayList<>());
                         }
-                        if (!("NONE").equals(split[1])) {
-                            permissions.get(QueryParams.ACL.key()).get(split[0]).add(split[1]);
-                        }
+                        permissions.get(QueryParams.ACL.key()).get(split[0]).add(split[1]);
                     }
                 }
             }
@@ -248,10 +246,17 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                         if (!permissions.get(QueryParams.USER_DEFINED_ACLS.key()).containsKey(split[0])) {
                             permissions.get(QueryParams.USER_DEFINED_ACLS.key()).put(split[0], new ArrayList<>());
                         }
-                        if (!("NONE").equals(split[1])) {
                             permissions.get(QueryParams.USER_DEFINED_ACLS.key()).get(split[0]).add(split[1]);
-                        }
                     }
+                }
+            }
+        }
+
+        // ------- Check for members with other permissions. In that case, we need to remove NONE from the list.
+        for (Map.Entry<String, Map<String, List<String>>> tmpEntry : entryPermission.getPermissions().entrySet()) {
+            for (Map.Entry<String, List<String>> tmpMemberPermissionEntry : tmpEntry.getValue().entrySet()) {
+                if (tmpMemberPermissionEntry.getValue().size() > 1) {
+                    tmpMemberPermissionEntry.getValue().remove("NONE");
                 }
             }
         }

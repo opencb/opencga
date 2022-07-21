@@ -3,6 +3,7 @@ package org.opencb.opencga.core.models.cohort;
 import java.util.*;
 
 public enum CohortPermissions {
+    NONE(Collections.emptyList()),
     VIEW(Collections.emptyList()),
     WRITE(Collections.singletonList(VIEW)),
     DELETE(Arrays.asList(VIEW, WRITE)),
@@ -10,7 +11,7 @@ public enum CohortPermissions {
     WRITE_ANNOTATIONS(Arrays.asList(VIEW_ANNOTATIONS, VIEW)),
     DELETE_ANNOTATIONS(Arrays.asList(VIEW_ANNOTATIONS, WRITE_ANNOTATIONS, VIEW));
 
-    private List<CohortPermissions> implicitPermissions;
+    private final List<CohortPermissions> implicitPermissions;
 
     CohortPermissions(List<CohortPermissions> implicitPermissions) {
         this.implicitPermissions = implicitPermissions;

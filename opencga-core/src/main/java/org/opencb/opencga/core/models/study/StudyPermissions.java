@@ -24,6 +24,7 @@ public class StudyPermissions {
 
     // Study Permissions
     public enum Permissions {
+        NONE(Collections.emptyList()),
         CONFIDENTIAL_VARIABLE_SET_ACCESS(Collections.emptyList()),
 
         // FILES
@@ -104,16 +105,16 @@ public class StudyPermissions {
         DELETE_CLINICAL_ANALYSIS(Arrays.asList(VIEW_CLINICAL_ANALYSIS, WRITE_CLINICAL_ANALYSIS),
                 ClinicalAnalysisPermissions.DELETE.name(), CLINICAL_ANALYSIS);
 
-        private static Map<String, Permissions> map;
+        private final static Map<String, Permissions> map;
 
         static {
-            map = new LinkedMap();
+            map = new LinkedMap<>();
             for (Permissions params : Permissions.values()) {
                 map.put(params.permission + "-" + params.type, params);
             }
         }
 
-        private List<Permissions> implicitPermissions;
+        private final List<Permissions> implicitPermissions;
         private String permission;
         private int type;
 

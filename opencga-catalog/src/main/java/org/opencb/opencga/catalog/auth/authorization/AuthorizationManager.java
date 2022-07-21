@@ -52,7 +52,9 @@ public interface AuthorizationManager {
     String ROLE_LOCKED = "locked";
 
     static EnumSet<StudyPermissions.Permissions> getAdminAcls() {
-        return EnumSet.allOf(StudyPermissions.Permissions.class);
+        EnumSet<StudyPermissions.Permissions> permissions = EnumSet.allOf(StudyPermissions.Permissions.class);
+        permissions.remove(NONE);
+        return permissions;
     }
 
     static EnumSet<StudyPermissions.Permissions> getAnalystAcls() {
