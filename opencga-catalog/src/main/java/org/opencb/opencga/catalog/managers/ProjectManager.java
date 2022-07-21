@@ -76,7 +76,7 @@ public class ProjectManager extends AbstractManager {
     ));
     private static final Set<String> PROTECTED_UPDATABLE_FIELDS = new HashSet<>(Arrays.asList(
             ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_VARIANT.key(),
-            ProjectDBAdaptor.QueryParams.INTERNAL_CELLBASE.key()
+            ProjectDBAdaptor.QueryParams.CELLBASE.key()
     ));
 
     ProjectManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
@@ -202,7 +202,8 @@ public class ProjectManager extends AbstractManager {
      * @throws CatalogException CatalogException
      */
     public OpenCGAResult<Project> getSharedProjects(String userId, QueryOptions queryOptions, String sessionId) throws CatalogException {
-        OpenCGAResult<Project> result = get(new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "!=" + userId), queryOptions, sessionId);
+        OpenCGAResult<Project> result = search(new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "!=" + userId), queryOptions,
+                sessionId);
         for (Event event : result.getEvents()) {
             if (event.getType() == Event.Type.ERROR) {
                 throw new CatalogAuthorizationException(event.getMessage());
@@ -215,7 +216,7 @@ public class ProjectManager extends AbstractManager {
     public OpenCGAResult<Project> create(String id, String name, String description, String scientificName, String commonName,
                                          String assembly, QueryOptions options, String sessionId) throws CatalogException {
         ProjectCreateParams projectCreateParams = new ProjectCreateParams(id, name, description, null, null,
-                new ProjectOrganism(scientificName, commonName, assembly), null);
+                new ProjectOrganism(scientificName, commonName, assembly), null, null);
         return create(projectCreateParams, options, sessionId);
     }
 
@@ -307,6 +308,8 @@ public class ProjectManager extends AbstractManager {
         project.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(project.getModificationDate(),
                 ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         project.setModificationDate(TimeUtils.getTime());
+        project.setCellbase(ParamUtils.defaultObject(project.getCellbase(),
+                new CellBaseConfiguration("https://ws.zettagenomics.com/cellbase", "v5")));
         project.setCurrentRelease(1);
         project.setInternal(ProjectInternal.init());
         project.setAttributes(ParamUtils.defaultObject(project.getAttributes(), HashMap::new));
@@ -386,7 +389,7 @@ public class ProjectManager extends AbstractManager {
      * @return All matching elements.
      * @throws CatalogException CatalogException
      */
-    public OpenCGAResult<Project> get(Query query, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Project> search(Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         String userId = catalogManager.getUserManager().getUserId(token);
@@ -549,10 +552,10 @@ public class ProjectManager extends AbstractManager {
                 new ObjectMap(ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_VARIANT.key(), dataStore), new QueryOptions(), true, token);
     }
 
-    public OpenCGAResult<Project> setInternalCellbaseConfiguration(String projectStr, CellBaseConfiguration configuration, String token)
+    public OpenCGAResult<Project> setCellbaseConfiguration(String projectStr, CellBaseConfiguration configuration, String token)
             throws CatalogException {
         return update(projectStr,
-                new ObjectMap(ProjectDBAdaptor.QueryParams.INTERNAL_CELLBASE.key(), configuration), new QueryOptions(), true, token);
+                new ObjectMap(ProjectDBAdaptor.QueryParams.CELLBASE.key(), configuration), new QueryOptions(), true, token);
     }
 
     public Map<String, Object> facet(String projectStr, String fileFields, String sampleFields, String individualFields,

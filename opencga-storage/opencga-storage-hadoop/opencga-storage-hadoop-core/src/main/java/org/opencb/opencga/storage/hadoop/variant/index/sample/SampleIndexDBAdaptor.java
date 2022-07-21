@@ -760,12 +760,24 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 
     public boolean createTableIfNeeded(int studyId, int version, ObjectMap options) {
         String sampleIndexTable = getSampleIndexTableName(studyId, version);
+        try {
+            if (hBaseManager.tableExists(sampleIndexTable)) {
+                return false;
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
         int files = options.getInt(
                 HadoopVariantStorageOptions.EXPECTED_FILES_NUMBER.key(),
                 HadoopVariantStorageOptions.EXPECTED_FILES_NUMBER.defaultValue());
         int samples = options.getInt(
                 HadoopVariantStorageOptions.EXPECTED_SAMPLES_NUMBER.key(),
                 files);
+        // Check actual indexed samples size.
+        // This value might be larger than "expected samples" if the table is being rebuilt.
+        int indexedSamplesSize = metadataManager.getIndexedSamples(studyId).size();
+        samples = Math.max(samples, indexedSamplesSize);
+
         int preSplitSize = options.getInt(
                 HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_PRESPLIT_SIZE.key(),
                 HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_PRESPLIT_SIZE.defaultValue());

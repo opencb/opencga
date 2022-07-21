@@ -31,8 +31,9 @@ public class Admin {
         return secretKey;
     }
 
-    public void setSecretKey(String secretKey) {
+    public Admin setSecretKey(String secretKey) {
         this.secretKey = secretKey;
+        return this;
     }
 
     public String getAlgorithm() {

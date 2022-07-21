@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.server.rest;
 
-import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
@@ -30,6 +29,7 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.user.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.annotations.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -226,7 +226,7 @@ public class UserWSServer extends OpenCGAWSServer {
             ParamUtils.checkIsSingleID(userId);
             query.remove("user");
             query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId);
-            return createOkResponse(catalogManager.getProjectManager().get(query, queryOptions, token));
+            return createOkResponse(catalogManager.getProjectManager().search(query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

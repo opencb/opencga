@@ -18,7 +18,6 @@ package org.opencb.opencga.core.api;
 
 public class ParamConstants {
 
-    private static final String UP_TO_100 = " up to a maximum of 100";
     public static final String NONE = "none";
     public static final String ALL = "all";
     public static final String ID = "id";
@@ -50,6 +49,8 @@ public class ParamConstants {
             + "all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators "
             + "can query by this field. ";
     public static final String ACL_DESCRIPTION = "Filter entries for which a user has the provided permissions. " + ACL_FORMAT;
+    public static final String FAMILY_ACL_DESCRIPTION = ACL_DESCRIPTION;
+    public static final String PANEL_ACL_DESCRIPTION = ACL_DESCRIPTION;
     public static final String ACL_ACTION_PARAM = "action";
     public static final String ACL_ACTION_DESCRIPTION = "Action to be performed [ADD, SET, REMOVE or RESET].";
     public static final String TSV_ANNOTATION_DESCRIPTION = "JSON containing the 'content' of the TSV file if this has not yet been "
@@ -70,14 +71,19 @@ public class ParamConstants {
     public static final String DISORDERS_DESCRIPTION = "Comma separated list of disorder ids or names";
     public static final String BODY_PARAM = "body";
     public static final String OVERWRITE = "overwrite";
-    public static final String FORCE = "force";
+
+    public static final String POP_FREQ_1000G_CB_V4 = "1kG_phase3";
+    public static final String POP_FREQ_1000G_CB_V5 = "1000G";
+    public static final String POP_FREQ_1000G = POP_FREQ_1000G_CB_V5;
+    public static final String POP_FREQ_GNOMAD_GENOMES = "GNOMAD_GENOMES";
+
     // ---------------------------------------------
-
+    public static final String FORCE = "force";
     public static final String ANNOTATION_DOC_URL = "http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0";
-
     public static final String VARIABLE_SET_DESCRIPTION = "Variable set ID or name";
     public static final String ANNOTATION_DESCRIPTION = "Annotation filters. Example: age>30;gender=FEMALE. For more information, " +
             "please visit " + ANNOTATION_DOC_URL;
+    public static final String FAMILY_ANNOTATION_DESCRIPTION = ANNOTATION_DESCRIPTION;
     public static final String ANNOTATION_AS_MAP_DESCRIPTION = "Indicates whether to show the annotations as key-value";
     public static final String ANNOTATION_SET_ID = "AnnotationSet ID to be updated.";
     public static final String ANNOTATION_SET_NAME = "Annotation set name. If provided, only chosen annotation set will be shown";
@@ -91,14 +97,13 @@ public class ParamConstants {
             + "'remove' containing the comma separated variables to be removed as a value when the action is REMOVE or a json "
             + "with only the key 'reset' containing the comma separated variables that will be set to the default value"
             + " when the action is RESET";
+
+    // ---------------------------------------------
     /**
      * Boolean indicating if the annotations have to be returned flattened or not. Default: false
      */
     public static final String FLATTEN_ANNOTATIONS = "flattenAnnotations";
     public static final String FLATTEN_ANNOTATION_DESCRIPTION = "Boolean indicating to flatten the annotations.";
-
-    // ---------------------------------------------
-
     public static final String USER_PROJECT_SEPARATOR = "@";
     // ---------------------------------------------
     public static final String PROJECT_STUDY_SEPARATOR = ":";
@@ -127,7 +132,6 @@ public class ParamConstants {
     public static final String DATE = "date";
     public static final String DATE_DESCRIPTION = "Date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
     public static final String USER = "user";
-
     // ---------------------------------------------
     public static final String USER_DESCRIPTION = "User ID";
     public static final String USERS_DESCRIPTION = "Comma separated list of user IDs";
@@ -138,12 +142,10 @@ public class ParamConstants {
     public static final String USER_CREATION_DATE = "creationDate";
     public static final String USER_CREATION_DATE_DESCRIPTION = CREATION_DATE_DESCRIPTION;
     public static final String PROJECT_PARAM = "project";
-
     // ---------------------------------------------
     public static final String PROJECT_DESCRIPTION = "Project [user@]project where project can be either the ID or the alias";
     public static final String STUDY_PARAM = "study";
     public static final String STUDY_DESCRIPTION = "Study [[user@]project:]study where study and project can be either the ID or UUID";
-
     // ---------------------------------------------
     public static final String OTHER_STUDIES_FLAG = "otherStudies";
     public static final String OTHER_STUDIES_FLAG_DESCRIPTION = "Flag indicating the entries being queried can belong to any related " +
@@ -152,20 +154,14 @@ public class ParamConstants {
     public static final String STUDY_NAME_DESCRIPTION = "Study name";
     public static final String STUDY_ID_DESCRIPTION = "Study ID";
     public static final String STUDY_ALIAS_DESCRIPTION = "Study alias";
+
+    // ---------------------------------------------
     public static final String STUDY_FQN_DESCRIPTION = "Study full qualified name";
     public static final String SILENT_DESCRIPTION = "Boolean to retrieve all possible entries that are queried for, false to raise an "
             + "exception whenever one of the entries looked for cannot be shown for whichever reason";
-
-    // ---------------------------------------------
-
-    public static final String FILES_DESCRIPTION = "Comma separated list of file IDs or names" + UP_TO_100;
-    public static final String FILES_ID_DESCRIPTION = "Comma separated list of file IDs" + UP_TO_100;
-    public static final String FILES_UUID_DESCRIPTION = "Comma separated list file UUIDs" + UP_TO_100;
-
     public static final String FILE_ID_DESCRIPTION = "File ID";
     public static final String FILE_NAME_DESCRIPTION = "File name";
     public static final String FILE_NAMES_DESCRIPTION = "Comma separated list of file names";
-
     // ---------------------------------------------
     public static final String FILE_PATH_PARAM = "path";
     public static final String FILE_PATH_DESCRIPTION = "File path";
@@ -176,7 +172,6 @@ public class ParamConstants {
     public static final String FILE_EXTERNAL_DESCRIPTION = "Boolean field indicating whether to filter by external or non external files";
     public static final String FILE_BIOFORMAT_DESCRIPTION = "Comma separated Bioformat values. For existing Bioformats see " +
             "files/bioformats";
-
     public static final String FILE_STATUS_DESCRIPTION = "File status";
     public static final String FILE_DESCRIPTION_DESCRIPTION = "Description";
     public static final String FILE_TAGS_DESCRIPTION = "Tags";
@@ -191,28 +186,19 @@ public class ParamConstants {
     public static final String FILE_FOLDER_DESCRIPTION = "Folder ID, name or path";
     public static final String FILE_PARENTS_PARAM = "parents";
     public static final String FILE_PARENTS_DESCRIPTION = "Create the parent directories if they do not exist";
-
-
     public static final String FILE_ALREADY_LINKED = "File already linked. Nothing to do";
     public static final int MAXIMUM_LINES_CONTENT = 1000;
     public static final String MAXIMUM_LINES_CONTENT_DESCRIPTION =
             "Maximum number of lines to be returned up to a maximum of " + MAXIMUM_LINES_CONTENT;
-
     public static final String PHENOTYPES_ACTION_PARAM = "phenotypesAction";
     public static final String PHENOTYPES_ACTION_DESCRIPTION = "Action to be performed if the array of phenotypes is being updated "
             + "[SET, ADD, REMOVE]";
     public static final String SAMPLE_DESCRIPTION = "Sample ID or UUID";
-    public static final String SAMPLES_DESCRIPTION = "Comma separated list sample IDs or UUIDs" + UP_TO_100;
-    public static final String SAMPLES_ID_DESCRIPTION = "Comma separated list sample IDs" + UP_TO_100;
-    public static final String SAMPLES_UUID_DESCRIPTION = "Comma separated list sample UUIDs" + UP_TO_100;
-
     public static final String SAMPLE_INDIVIDUAL_ID_PARAM = "individualId";
     public static final String SAMPLE_INDIVIDUAL_ID_DESCRIPTION = "Individual ID or UUID";
     public static final String SAMPLE_FILE_IDS_PARAM = "fileIds";
-
     // ---------------------------------------------
     public static final String SAMPLE_FILE_IDS_DESCRIPTION = "Comma separated list of file IDs, paths or UUIDs";
-
     public static final String SAMPLE_PHENOTYPES_ACTION_PARAM = PHENOTYPES_ACTION_PARAM;
     public static final String SAMPLE_PHENOTYPES_ACTION_DESCRIPTION = PHENOTYPES_ACTION_DESCRIPTION;
     public static final String SAMPLE_ID_PARAM = "id";
@@ -271,7 +257,6 @@ public class ParamConstants {
     public static final String SAMPLE_VARIANT_STATS_CONSEQUENCE_TYPE_COUNT_DESCRIPTION = "Sample variant stats ConsequenceTypeCount";
     public static final String SAMPLE_COHORT_IDS_PARAM = "cohortIds";
     public static final String SAMPLE_COHORT_IDS_DESCRIPTION = "Comma separated list of cohort IDs";
-
     public static final String SAMPLE_INCLUDE_INDIVIDUAL_PARAM = "includeIndividual";
     public static final String SAMPLE_INCLUDE_INDIVIDUAL_DESCRIPTION = "Include Individual object as an attribute";
     public static final String SAMPLE_EMPTY_FILES_ACTION_PARAM = "emptyFilesAction";
@@ -284,23 +269,14 @@ public class ParamConstants {
             + "individuals or cohorts.";
     public static final String SAMPLES_ACTION_PARAM = "samplesAction";
     public static final String SAMPLES_ACTION_DESCRIPTION = "Action to be performed if the array of samples is being updated.";
-
-    // ---------------------------------------------
-
     public static final String INDIVIDUAL_DESCRIPTION = "Individual ID, name or UUID";
-    public static final String INDIVIDUALS_DESCRIPTION = "Comma separated list of individual IDs, names or UUIDs" + UP_TO_100;
-    public static final String INDIVIDUALS_ID_DESCRIPTION = "Comma separated list individual IDs" + UP_TO_100;
-    public static final String INDIVIDUAL_NAME_DESCRIPTION = "Comma separated list individual names" + UP_TO_100;
-    public static final String INDIVIDUAL_UUID_DESCRIPTION = "Comma separated list individual UUIDs" + UP_TO_100;
-
     public static final String INDIVIDUAL_VERSION_PARAM = "version";
     public static final String INDIVIDUAL_VERSION_DESCRIPTION = "Comma separated list of individual versions. 'all' to get all the "
             + "individual versions. Not supported if multiple individual ids are provided";
     public static final String INDIVIDUAL_FAMILY_IDS_PARAM = "familyIds";
-    public static final String INDIVIDUAL_FAMILY_IDS_DESCRIPTION = "Comma separated list of family ids the individuals may belong to.";
 
     // ---------------------------------------------
-
+    public static final String INDIVIDUAL_FAMILY_IDS_DESCRIPTION = "Comma separated list of family ids the individuals may belong to.";
     public static final String INDIVIDUAL_PHENOTYPES_ACTION_PARAM = PHENOTYPES_ACTION_PARAM;
     public static final String INDIVIDUAL_PHENOTYPES_ACTION_DESCRIPTION = PHENOTYPES_ACTION_DESCRIPTION;
     public static final String INDIVIDUAL_DISORDERS_ACTION_PARAM = "disordersAction";
@@ -310,6 +286,8 @@ public class ParamConstants {
     public static final String INDIVIDUAL_NAME_PARAM = "name";
     public static final String INDIVIDUAL_UUID_PARAM = "uuid";
     public static final String INDIVIDUAL_FATHER_PARAM = "father";
+
+    // ---------------------------------------------
     public static final String INDIVIDUAL_MOTHER_PARAM = "mother";
     public static final String INDIVIDUAL_SAMPLES_PARAM = "samples";
     public static final String INDIVIDUAL_SEX_PARAM = "sex";
@@ -343,21 +321,17 @@ public class ParamConstants {
     public static final String INDIVIDUAL_MODIFICATION_DATE_DESCRIPTION = MODIFICATION_DATE_DESCRIPTION;
     public static final String INDIVIDUAL_RELEASE_DESCRIPTION = RELEASE_DESCRIPTION;
     public static final String INDIVIDUAL_SNAPSHOT_DESCRIPTION = SNAPSHOT_DESCRIPTION;
-
-    // ---------------------------------------------
-
-    public static final String FAMILIES_DESCRIPTION = "Comma separated list of family IDs or names" + UP_TO_100;
-
     public static final String FAMILY_UPDATE_ROLES_PARAM = "updateRoles";
     public static final String FAMILY_UPDATE_ROLES_DESCRIPTION = "Update the member roles within the family";
     public static final String FAMILY_VERSION_PARAM = "version";
     public static final String FAMILY_VERSION_DESCRIPTION = "Comma separated list of family versions. 'all' to get all the "
             + "family versions. Not supported if multiple family ids are provided";
-
     public static final String FAMILY_ID_PARAM = "id";
     public static final String FAMILY_UUID_PARAM = "uuid";
     public static final String FAMILY_NAME_PARAM = "name";
     public static final String FAMILY_MEMBERS_PARAM = "members";
+
+    // ---------------------------------------------
     public static final String FAMILY_SAMPLES_PARAM = "samples";
     public static final String FAMILY_EXPECTED_SIZE_PARAM = "expectedSize";
     public static final String FAMILY_PHENOTYPES_PARAM = PHENOTYPES_PARAM;
@@ -371,9 +345,6 @@ public class ParamConstants {
     public static final String FAMILY_ACL_PARAM = ACL_PARAM;
     public static final String FAMILY_RELEASE_PARAM = RELEASE_PARAM;
     public static final String FAMILY_SNAPSHOT_PARAM = SNAPSHOT_PARAM;
-    public static final String FAMILY_ID_DESCRIPTION = "Comma separated list family IDs" + UP_TO_100;
-    public static final String FAMILY_NAME_DESCRIPTION = "Comma separated list family names" + UP_TO_100;
-    public static final String FAMILY_UUID_DESCRIPTION = "Comma separated list family UUIDs" + UP_TO_100;
     public static final String FAMILY_MEMBERS_DESCRIPTION = "Comma separated list of family members";
     public static final String FAMILY_SAMPLES_DESCRIPTION = "Comma separated list of member's samples";
     public static final String FAMILY_EXPECTED_SIZE_DESCRIPTION = "Expected size of the family (number of members)";
@@ -384,19 +355,9 @@ public class ParamConstants {
     public static final String FAMILY_DELETED_DESCRIPTION = DELETED_DESCRIPTION;
     public static final String FAMILY_STATUS_DESCRIPTION = STATUS_DESCRIPTION;
     public static final String FAMILY_INTERNAL_STATUS_DESCRIPTION = INTERNAL_STATUS_DESCRIPTION;
-    public static final String FAMILY_ANNOTATION_DESCRIPTION = ANNOTATION_DESCRIPTION;
-    public static final String FAMILY_ACL_DESCRIPTION = ACL_DESCRIPTION;
     public static final String FAMILY_RELEASE_DESCRIPTION = RELEASE_DESCRIPTION;
     public static final String FAMILY_SNAPSHOT_DESCRIPTION = SNAPSHOT_DESCRIPTION;
-
-    // ---------------------------------------------
-
     public static final String COHORT_DESCRIPTION = "Cohort ID or UUID";
-    public static final String COHORTS_DESCRIPTION = "Comma separated list of cohort IDs or UUIDs" + UP_TO_100;
-    public static final String COHORT_IDS_DESCRIPTION = "Comma separated list of cohort IDs" + UP_TO_100;
-    public static final String COHORT_NAMES_DESCRIPTION = "Comma separated list of cohort names" + UP_TO_100;
-    public static final String COHORT_UUIDS_DESCRIPTION = "Comma separated list of cohort IDs" + UP_TO_100;
-
     public static final String COHORT_ID_PARAM = "id";
     public static final String COHORT_NAME_PARAM = "name";
     public static final String COHORT_UUID_PARAM = "uuid";
@@ -410,8 +371,9 @@ public class ParamConstants {
     public static final String COHORT_ACL_PARAM = ACL_PARAM;
     public static final String COHORT_SAMPLES_PARAM = "samples";
     public static final String COHORT_NUMBER_OF_SAMPLES_PARAM = "numSamples";
-    public static final String COHORT_RELEASE_PARAM = RELEASE_PARAM;
 
+    // ---------------------------------------------
+    public static final String COHORT_RELEASE_PARAM = RELEASE_PARAM;
     public static final String COHORT_ID_DESCRIPTION = "Cohort ID";
     public static final String COHORT_UUID_DESCRIPTION = "Cohort UUID";
     public static final String COHORT_TYPE_DESCRIPTION = "Cohort type";
@@ -425,9 +387,6 @@ public class ParamConstants {
     public static final String COHORT_SAMPLES_DESCRIPTION = "Cohort sample IDs";
     public static final String COHORT_NUMBER_OF_SAMPLES_DESCRIPTION = "Number of samples";
     public static final String COHORT_RELEASE_DESCRIPTION = RELEASE_PARAM;
-
-    // ---------------------------------------------
-
     public static final String CLINICAL_ID_PARAM = "id";
     public static final String CLINICAL_UUID_PARAM = "uuid";
     public static final String CLINICAL_TYPE_PARAM = "type";
@@ -447,13 +406,11 @@ public class ParamConstants {
     public static final String CLINICAL_FLAGS_PARAM = "flags";
     public static final String CLINICAL_CREATION_DATE_PARAM = CREATION_DATE_PARAM;
     public static final String CLINICAL_MODIFICATION_DATE_PARAM = MODIFICATION_DATE_PARAM;
+    public static final String CLINICAL_DUE_DATE_PARAM = "dueDate";
     public static final String CLINICAL_QUALITY_CONTROL_SUMMARY_PARAM = "qualityControlSummary";
     public static final String CLINICAL_RELEASE_PARAM = RELEASE_PARAM;
     public static final String CLINICAL_STATUS_PARAM = STATUS_PARAM;
     public static final String CLINICAL_INTERNAL_STATUS_PARAM = INTERNAL_STATUS_PARAM;
-
-    public static final String CLINICAL_ID_DESCRIPTION = "Comma separated list of Clinical Analysis IDs" + UP_TO_100;
-    public static final String CLINICAL_UUID_DESCRIPTION = "Comma separated list of Clinical Analysis UUIDs" + UP_TO_100;
     public static final String CLINICAL_TYPE_DESCRIPTION = "Clinical Analysis type";
     public static final String CLINICAL_DISORDER_DESCRIPTION = "Clinical Analysis disorder";
     public static final String CLINICAL_FILES_DESCRIPTION = "Clinical Analysis files";
@@ -471,20 +428,17 @@ public class ParamConstants {
     public static final String CLINICAL_FLAGS_DESCRIPTION = "Clinical Analysis flags";
     public static final String CLINICAL_CREATION_DATE_DESCRIPTION = "Clinical Analysis " + CREATION_DATE_DESCRIPTION;
     public static final String CLINICAL_MODIFICATION_DATE_DESCRIPTION = "Clinical Analysis " + MODIFICATION_DATE_DESCRIPTION;
+    public static final String CLINICAL_DUE_DATE_DESCRIPTION = "Clinical Analysis due date. Format: yyyyMMddHHmmss. Examples: >2018, "
+            + "2017-2018, <201805";
     public static final String CLINICAL_QUALITY_CONTROL_SUMMARY_DESCRIPTION = "Clinical Analysis quality control summary";
     public static final String CLINICAL_RELEASE_DESCRIPTION = RELEASE_DESCRIPTION;
     public static final String CLINICAL_STATUS_DESCRIPTION = STATUS_DESCRIPTION;
     public static final String CLINICAL_INTERNAL_STATUS_DESCRIPTION = INTERNAL_STATUS_DESCRIPTION;
-
-    public static final String CLINICAL_ANALYSES_DESCRIPTION = "Comma separated list of clinical analysis IDs or names" + UP_TO_100;
     public static final String CLINICAL_ANALYSES_PARAM = "clinicalAnalyses";
     public static final String CLINICAL_ANALYSIS_SKIP_CREATE_DEFAULT_INTERPRETATION_PARAM = "skipCreateDefaultInterpretation";
     public static final String CLINICAL_ANALYSIS_SKIP_CREATE_DEFAULT_INTERPRETATION_DESCRIPTION = "Flag to skip creating and initialise "
             + "an empty default primary interpretation (Id will be '{clinicalAnalysisId}.1'). This flag is only considered if no "
             + "Interpretation object is passed.";
-
-    // ---------------------------------------------
-
     public static final String INTERPRETATION_ID_PARAM = "id";
     public static final String INTERPRETATION_UUID_PARAM = "uuid";
     public static final String INTERPRETATION_CLINICAL_ANALYSIS_ID_PARAM = "clinicalAnalysisId";
@@ -499,9 +453,7 @@ public class ParamConstants {
     public static final String INTERPRETATION_INTERNAL_STATUS_PARAM = INTERNAL_STATUS_PARAM;
     //    public static final String INTERPRETATION_VERSION_PARAM = "version";
     public static final String INTERPRETATION_RELEASE_PARAM = RELEASE_PARAM;
-
-    public static final String INTERPRETATION_ID_DESCRIPTION = "Comma separated list of Interpretation IDs" + UP_TO_100;
-    public static final String INTERPRETATION_UUID_DESCRIPTION = "Comma separated list of Interpretation UUIDs" + UP_TO_100;
+    public static final String INTERPRETATION_LOCKED_PARAM = "locked";
     public static final String INTERPRETATION_CLINICAL_ANALYSIS_ID_DESCRIPTION = "Clinical Analysis id";
     public static final String INTERPRETATION_ANALYST_ID_DESCRIPTION = "Analyst ID";
     public static final String INTERPRETATION_METHOD_NAME_DESCRIPTION = "Interpretation method name";
@@ -509,16 +461,15 @@ public class ParamConstants {
     public static final String INTERPRETATION_PRIMARY_FINDINGS_IDS_DESCRIPTION = "Interpretation primary findings";
     public static final String INTERPRETATION_SECONDARY_FINDINGS_IDS_DESCRIPTION = "Interpretation secondary findings";
     public static final String INTERPRETATION_CREATION_DATE_DESCRIPTION = "Interpretation " + CREATION_DATE_DESCRIPTION;
+
+    // ---------------------------------------------
     public static final String INTERPRETATION_MODIFICATION_DATE_DESCRIPTION = "Interpretation " + MODIFICATION_DATE_DESCRIPTION;
     public static final String INTERPRETATION_STATUS_DESCRIPTION = STATUS_DESCRIPTION;
     public static final String INTERPRETATION_INTERNAL_STATUS_DESCRIPTION = INTERNAL_STATUS_DESCRIPTION;
     //    public static final String INTERPRETATION_VERSION_DESCRIPTION = VERSION_DESCRIPTION;
     public static final String INTERPRETATION_RELEASE_DESCRIPTION = RELEASE_DESCRIPTION;
-
-    public static final String INTERPRETATION_DESCRIPTION = "Comma separated list of clinical interpretation IDs " + UP_TO_100;
-
-    // ---------------------------------------------
-
+    public static final String INTERPRETATION_LOCKED_DESCRIPTION = "Field indicating whether the Interpretation is locked or not "
+            + "(can be altered or not)";
     public static final String PANEL_ID_PARAM = ID;
     public static final String PANEL_UUID_PARAM = "uuid";
     public static final String PANEL_NAME_PARAM = "name";
@@ -535,10 +486,6 @@ public class ParamConstants {
     public static final String PANEL_ACL_PARAM = ACL_PARAM;
     public static final String PANEL_RELEASE_PARAM = RELEASE_PARAM;
     public static final String PANEL_SNAPSHOT_PARAM = SNAPSHOT_PARAM;
-
-    public static final String PANEL_ID_DESCRIPTION = "Comma separated list of panel IDs " + UP_TO_100;
-    public static final String PANEL_UUID_DESCRIPTION = "Comma separated list of panel UUIDs " + UP_TO_100;
-    public static final String PANEL_NAME_DESCRIPTION = "Comma separated list of panel names " + UP_TO_100;
     public static final String PANEL_DISORDERS_DESCRIPTION = DISORDERS_DESCRIPTION;
     public static final String PANEL_VARIANTS_DESCRIPTION = "Comma separated list of variant ids";
     public static final String PANEL_GENES_DESCRIPTION = "Comma separated list of gene ids";
@@ -547,37 +494,29 @@ public class ParamConstants {
     public static final String PANEL_TAGS_DESCRIPTION = "Panel tags";
     public static final String PANEL_DELETED_DESCRIPTION = DELETED_DESCRIPTION;
     public static final String PANEL_STATUS_DESCRIPTION = STATUS_DESCRIPTION;
+
+    // ---------------------------------------------
     public static final String PANEL_CREATION_DATE_DESCRIPTION = CREATION_DATE_DESCRIPTION;
     public static final String PANEL_MODIFICATION_DATE_DESCRIPTION = MODIFICATION_DATE_DESCRIPTION;
-    public static final String PANEL_ACL_DESCRIPTION = ACL_DESCRIPTION;
     public static final String PANEL_RELEASE_DESCRIPTION = RELEASE_DESCRIPTION;
     public static final String PANEL_SNAPSHOT_DESCRIPTION = SNAPSHOT_DESCRIPTION;
     public static final String PANEL_VERSION_DESCRIPTION = "Comma separated list of panel versions. 'all' to get all the "
             + "panel versions. Not supported if multiple panel ids are provided";
-
-    public static final String PANEL_SOURCE = "source";
-    public static final String PANEL_SOURCE_DESCRIPTION = "Comma separated list of sources to import panels from. Current supported "
+    public static final String PANEL_SOURCE_PARAM = "source";
+    public static final String PANEL_SOURCE_DESCRIPTION = "Comma separated list of source ids or names.";
+    public static final String PANEL_IMPORT_SOURCE_DESCRIPTION = "Comma separated list of sources to import panels from. Current supported "
             + "sources are 'panelapp' and 'cancer-gene-census'";
     public static final String PANEL_SOURCE_ID = "id";
     public static final String PANEL_SOURCE_ID_DESCRIPTION = "Comma separated list of panel IDs to be imported from the defined source."
             + "If 'source' is provided and 'id' is empty, it will import all the panels from the source. When 'id' is provided, only one "
             + "'source' will be allowed.";
     public static final String PANEL_VERSION_PARAM = "version";
-
-    // ---------------------------------------------
-
-    public static final String JOBS_DESCRIPTION = "Comma separated list of job IDs or UUIDs" + UP_TO_100;
-    public static final String JOB_IDS_DESCRIPTION = "Comma separated list of job IDs" + UP_TO_100;
-    public static final String JOB_UUIDS_DESCRIPTION = "Comma separated list of job UUIDs" + UP_TO_100;
-
     public static final String JOB_ID_DESCRIPTION = "Job ID or UUID";
     public static final String JOB_ID_CREATION_DESCRIPTION = "Job ID. It must be a unique string within the study. An ID will be "
             + "autogenerated automatically if not provided.";
     public static final String JOB_PARAM = "job";
-
     // ---------------------------------------------
     public static final String JOB_ID = "jobId";
-
     // ---------------------------------------------
     public static final String JOB_ID_PARAM = ID;
     public static final String JOB_UUID_PARAM = "uuid";
@@ -587,9 +526,7 @@ public class ParamConstants {
     public static final String JOB_DEPENDS_ON_PARAM = "dependsOn";
     public static final String JOB_DEPENDS_ON_DESCRIPTION = "Comma separated list of existing job IDs the job will depend on.";
     public static final String JOB_TOOL_ID_PARAM = "toolId";
-
     public static final String JOB_TOOL_TYPE_PARAM = "toolType";
-
     public static final String JOB_TOOL_ID_DESCRIPTION = "Tool ID executed by the job";
     public static final String JOB_TOOL_TYPE_DESCRIPTION = "Tool type executed by the job [OPERATION, ANALYSIS]";
     public static final String JOB_USER_PARAM = "userId";
@@ -605,6 +542,8 @@ public class ParamConstants {
     public static final String JOB_TAGS = "jobTags";
     public static final String JOB_TAGS_PARAM = "tags";
     public static final String JOB_TAGS_DESCRIPTION = "Job tags";
+
+    // ---------------------------------------------
     public static final String JOB_INPUT_FILES_PARAM = "input";
     public static final String JOB_INPUT_FILES_DESCRIPTION = "Comma separated list of file IDs used as input.";
     public static final String JOB_OUTPUT_FILES_PARAM = "output";
@@ -615,10 +554,8 @@ public class ParamConstants {
     public static final String JOB_EXECUTION_END_PARAM = "execution.end";
     public static final String JOB_EXECUTION_END_DESCRIPTION = "Execution end date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, " +
             "<201805";
-
     public static final String VARIANTS_QUERY_DESCRIPTION = "Filter and fetch variants from indexed VCF files in the variant storage";
     public static final String OUTPUT_DIRECTORY_DESCRIPTION = "Output directory";
-
     // ---------------------------------------------
     public static final String REGION_DESCRIPTION = "Comma separated list of regions 'chr:start-end, e.g.: 2,3:63500-65000";
     public static final String REGION_PARAM = "region";
@@ -633,16 +570,11 @@ public class ParamConstants {
     public static final String ALIGNMENT_QUERY_DESCRIPTION = "Search over indexed alignments";
     public static final String ALIGNMENT_COVERAGE_DESCRIPTION = "Compute coverage for a given alignemnt file";
     public static final String ALIGNMENT_COVERAGE_QUERY_DESCRIPTION = "Query the coverage of an alignment file for regions or genes";
-
-    // ---------------------------------------------
-
     public static final String ALIGNMENT_COVERAGE_RATIO_DESCRIPTION = "Compute coverage ratio from file #1 vs file #2, (e.g. somatic vs " +
             "germline)";
-
     // ---------------------------------------------
     public static final String ALIGNMENT_QC_DESCRIPTION = "Compute quality control (QC) metrics for a given alignment file (including " +
             "samtools stats, samtools flag stats, FastQC and HS metrics)";
-
     public static final String ALIGNMENT_STATS_DESCRIPTION = "Compute stats (based on samtools/stats command) for a given alignment file";
     public static final String ALIGNMENT_FLAG_STATS_DESCRIPTION = "Compute flag stats (based on samtools/flagstat command) for a given " +
             "alignment file";
@@ -653,15 +585,12 @@ public class ParamConstants {
     public static final String ALIGNMENT_GENE_COVERAGE_STATS_DESCRIPTION = "Compute gene coverage stats for a given alignment file and a " +
             "list of genes";
     public static final String ALIGNMENT_QC_SAMTOOLS_STATS_DESCRIPTION = "Compute samtools stats";
-
     // ---------------------------------------------
     // alignment
     public static final String ALIGNMENT_QC_SAMTOOLS_FLAG_STATS_DESCRIPTION = "Compute samtools flag stats";
     public static final String ALIGNMENT_QC_FASTQC_DESCRIPTION = "Compute FastQC";
-
     public static final String ALIGNMENT_QC_HS_METRICS_DESCRIPTION = "Compute hybrid-selection (HS) metrics based on the Picard/HsMetrics" +
             " command";
-
     public static final String MINIMUM_MAPPING_QUALITY_DESCRIPTION = "Minimum mapping quality";
     public static final String MINIMUM_MAPPING_QUALITY_PARAM = "minMappingQuality";
     public static final String MAXIMUM_NUMBER_MISMATCHES_DESCRIPTION = "Maximum number of mismatches";
@@ -674,7 +603,6 @@ public class ParamConstants {
     public static final String MAXIMUM_INSERT_SIZE_PARAM = "maxInsertSize";
     public static final String SKIP_UNMAPPED_DESCRIPTION = "Skip unmapped alignments";
     public static final String SKIP_UNMAPPED_PARAM = "skipUnmapped";
-
     // ---------------------------------------------
     // alignment query
     public static final String SKIP_DUPLICATED_DESCRIPTION = "Skip duplicated alignments";
@@ -685,6 +613,8 @@ public class ParamConstants {
     public static final String FORCE_MD_FIELD_PARAM = "forceMDField";
     public static final String BIN_QUALITIES_DESCRIPTION = "Compress the nucleotide qualities by using 8 quality levels";
     public static final String BIN_QUALITIES_PARAM = "binQualities";
+
+    // ---------------------------------------------
     public static final String SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION = "Split results into regions (or gene/exon regions)";
     public static final String SPLIT_RESULTS_INTO_REGIONS_PARAM = "splitResults";
     public static final String OFFSET_DESCRIPTION = "Offset to extend the region, gene or exon at up and downstream";
@@ -701,10 +631,8 @@ public class ParamConstants {
     public static final String COVERAGE_WINDOW_SIZE_PARAM = "windowSize";
     public static final String COVERAGE_WINDOW_SIZE_DEFAULT = "1";
     public static final String ALIGNMENT_COVERAGE_STATS_DESCRIPTION = "Compute coverage stats per transcript for a list of genes.";
-
     public static final String LOW_COVERAGE_REGION_THRESHOLD_DESCRIPTION = "Only regions whose coverage depth is under this threshold " +
             "will be reported.";
-
     // ---------------------------------------------
     // alignment coverage
     public static final String LOW_COVERAGE_REGION_THRESHOLD_PARAM = "threshold";
@@ -728,10 +656,8 @@ public class ParamConstants {
     public static final String READS_UNMAPPED = "readsUnmapped";
     public static final String READS_UNMAPPED_DESCRIPTION = "Reads unmapped: [<|>|<=|>=]{number}, e.g. >=1000";
     public static final String READS_PROPERLY_PAIRED = "readsProperlyPaired";
-
     public static final String READS_PROPERLY_PAIRED_DESCRIPTION = "Reads properly paired (proper-pair bit set: [<|>|<=|>=]{number}, e.g." +
             " >=1000";
-
     // ---------------------------------------------
     // alignment stats query
     public static final String READS_PAIRED = "readsPaired";
@@ -783,19 +709,15 @@ public class ParamConstants {
     public static final String GATK_COMMANDS_SUPPORTED = "HaplotypeCaller";
     public static final String GATK_COMMAND_DESCRIPTION = "Supported Gatk commands: " + GATK_COMMANDS_SUPPORTED;
     public static final String RVTESTS_COMMANDS_SUPPORTED = "rvtest, vcf2kinship";
-
     // ---------------------------------------------
     public static final String RVTESTS_COMMAND_DESCRIPTION = "Supported RvTests commands: " + RVTESTS_COMMANDS_SUPPORTED;
-
     // ---------------------------------------------
     public static final String RPC_METHOD_DESCRIPTION = "RPC method used: {auto, gRPC, REST}. When auto, it will first try with gRPC and "
             + "if that does not work, it will try with REST";
     public static final String COMMAND_PARAMETER = "command";
-
     // ---------------------------------------------
     public static final String COMMAND_PARAMETER_DESCRIPTION = "Command name to execute in this tool.";
     public static final String FIELD_PARAM = "field";
-
     public static final String USERS_PASSWORD_USER = "The body web service user parameter";
     public static final String USERS_PASSWORD_PASSWORD = "The body web service password parameter";
     public static final String USERS_PASSWORD_NEWPASSWORD = "The body web service newPassword parameter";
@@ -874,7 +796,7 @@ public class ParamConstants {
     public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_ID = "The body web service id parameter";
     public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_NAME = "The body web service name parameter";
     public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_CATEGORY = "The body web service category parameter";
-    public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_TYPE = "The body web service type parameter";
+//    public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_TYPE = "The body web service type parameter";
     public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_DEFAULTVALUE = "The body web service defaultValue parameter";
     public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_REQUIRED = "The body web service required parameter";
     public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_MULTIVALUE = "The body web service multiValue parameter";
@@ -900,8 +822,8 @@ public class ParamConstants {
     public static final String FILES_UPDATE_MODIFICATIONDATE = "The body web service modificationDate parameter";
     public static final String FILES_UPDATE_SAMPLEIDS = "The body web service sampleIds parameter";
     public static final String FILES_UPDATE_CHECKSUM = "The body web service checksum parameter";
-    public static final String FILES_UPDATE_FORMAT = "The body web service format parameter";
-    public static final String FILES_UPDATE_BIOFORMAT = "The body web service bioformat parameter";
+//    public static final String FILES_UPDATE_FORMAT = "The body web service format parameter";
+//    public static final String FILES_UPDATE_BIOFORMAT = "The body web service bioformat parameter";
     public static final String FILES_UPDATE_SOFTWARE = "The body web service software parameter";
     public static final String FILES_UPDATE_EXPERIMENT = "The body web service experiment parameter";
     public static final String FILES_UPDATE_TAGS = "The body web service tags parameter";
@@ -1054,7 +976,7 @@ public class ParamConstants {
     public static final String FAMILIES_CREATE_ATTRIBUTES = "The body web service attributes parameter";
     public static final String FAMILIES_CREATE_ANNOTATIONSETS = "The body web service annotationSets parameter";
     public static final String COHORTS_UPDATE_ID = "The body web service id parameter";
-    public static final String COHORTS_UPDATE_TYPE = "The body web service type parameter";
+//    public static final String COHORTS_UPDATE_TYPE = "The body web service type parameter";
     public static final String COHORTS_UPDATE_DESCRIPTION = "The body web service description parameter";
     public static final String COHORTS_UPDATE_CREATIONDATE = "The body web service creationDate parameter";
     public static final String COHORTS_UPDATE_MODIFICATIONDATE = "The body web service modificationDate parameter";
@@ -1065,7 +987,7 @@ public class ParamConstants {
     public static final String COHORTS_ANNOTATIONSETS_LOAD_CONTENT = "The body web service content parameter";
     public static final String COHORTS_UPDATE_COHORT = "The body web service cohort parameter";
     public static final String COHORTS_CREATE_ID = "The body web service id parameter";
-    public static final String COHORTS_CREATE_TYPE = "The body web service type parameter";
+//    public static final String COHORTS_CREATE_TYPE = "The body web service type parameter";
     public static final String COHORTS_CREATE_DESCRIPTION = "The body web service description parameter";
     public static final String COHORTS_CREATE_CREATIONDATE = "The body web service creationDate parameter";
     public static final String COHORTS_CREATE_MODIFICATIONDATE = "The body web service modificationDate parameter";
@@ -1074,7 +996,7 @@ public class ParamConstants {
     public static final String COHORTS_CREATE_ATTRIBUTES = "The body web service attributes parameter";
     public static final String COHORTS_CREATE_STATUS = "The body web service status parameter";
     public static final String COHORTS_GENERATE_ID = "The body web service id parameter";
-    public static final String COHORTS_GENERATE_TYPE = "The body web service type parameter";
+//    public static final String COHORTS_GENERATE_TYPE = "The body web service type parameter";
     public static final String COHORTS_GENERATE_DESCRIPTION = "The body web service description parameter";
     public static final String COHORTS_GENERATE_CREATIONDATE = "The body web service creationDate parameter";
     public static final String COHORTS_GENERATE_MODIFICATIONDATE = "The body web service modificationDate parameter";
@@ -1300,7 +1222,7 @@ public class ParamConstants {
     public static final String ANALYSIS_VARIANT_CIRCOS_RUN_OUTDIR = "The body web service outdir parameter";
     public static final String ANALYSIS_CLINICAL_UPDATE_ID = "The body web service id parameter";
     public static final String ANALYSIS_CLINICAL_UPDATE_DESCRIPTION = "The body web service description parameter";
-    public static final String ANALYSIS_CLINICAL_UPDATE_TYPE = "The body web service type parameter";
+//    public static final String ANALYSIS_CLINICAL_UPDATE_TYPE = "The body web service type parameter";
     public static final String ANALYSIS_CLINICAL_UPDATE_DISORDER = "The body web service disorder parameter";
     public static final String ANALYSIS_CLINICAL_UPDATE_FILES = "The body web service files parameter";
     public static final String ANALYSIS_CLINICAL_UPDATE_PANELS = "The body web service panels parameter";
@@ -1335,7 +1257,7 @@ public class ParamConstants {
     public static final String ANALYSIS_CLINICAL_INTERPRETATION_CREATE_ATTRIBUTES = "The body web service attributes parameter";
     public static final String ANALYSIS_CLINICAL_CREATE_ID = "The body web service id parameter";
     public static final String ANALYSIS_CLINICAL_CREATE_DESCRIPTION = "The body web service description parameter";
-    public static final String ANALYSIS_CLINICAL_CREATE_TYPE = "The body web service type parameter";
+//    public static final String ANALYSIS_CLINICAL_CREATE_TYPE = "The body web service type parameter";
     public static final String ANALYSIS_CLINICAL_CREATE_DISORDER = "The body web service disorder parameter";
     public static final String ANALYSIS_CLINICAL_CREATE_FILES = "The body web service files parameter";
     public static final String ANALYSIS_CLINICAL_CREATE_PROBAND = "The body web service proband parameter";
@@ -1521,13 +1443,13 @@ public class ParamConstants {
     public static final String OPERATIONS_VARIANT_STORAGE_VARIANT_SAMPLE_INDEX_BUILDINDEX = "The body web service buildIndex parameter";
     public static final String OPERATIONS_VARIANT_STORAGE_VARIANT_SAMPLE_INDEX_ANNOTATE = "The body web service annotate parameter";
     public static final String OPERATIONS_VARIANT_STORAGE_VARIANT_SAMPLE_INDEX_OVERWRITE = "The body web service overwrite parameter";
-    public static final String ADMIN_USERS_CREATE_TYPE = "The body web service type parameter";
+//    public static final String ADMIN_USERS_CREATE_TYPE = "The body web service type parameter";
     public static final String ADMIN_USERS_SYNC_AUTHENTICATIONORIGINID = "The body web service authenticationOriginId parameter";
     public static final String ADMIN_USERS_SYNC_FROM = "The body web service from parameter";
     public static final String ADMIN_USERS_SYNC_TO = "The body web service to parameter";
     public static final String ADMIN_USERS_SYNC_STUDY = "The body web service study parameter";
     public static final String ADMIN_USERS_SYNC_SYNCALL = "The body web service syncAll parameter";
-    public static final String ADMIN_USERS_SYNC_TYPE = "The body web service type parameter";
+//    public static final String ADMIN_USERS_SYNC_TYPE = "The body web service type parameter";
     public static final String ADMIN_USERS_SYNC_FORCE = "The body web service force parameter";
     public static final String ADMIN_USERS_IMPORT_AUTHENTICATIONORIGINID = "The body web service authenticationOriginId parameter";
     public static final String ADMIN_USERS_IMPORT_ID = "The body web service id parameter";
@@ -1539,6 +1461,37 @@ public class ParamConstants {
     public static final String ADMIN_CATALOG_INSTALL_EMAIL = "The body web service email parameter";
     public static final String ADMIN_CATALOG_INSTALL_ORGANIZATION = "The body web service organization parameter";
     public static final String ADMIN_CATALOG_JWT_SECRETKEY = "The body web service secretKey parameter";
+    private static final String UP_TO_100 = " up to a maximum of 100";
+    public static final String FILES_DESCRIPTION = "Comma separated list of file IDs or names" + UP_TO_100;
+    public static final String FILES_ID_DESCRIPTION = "Comma separated list of file IDs" + UP_TO_100;
+    public static final String FILES_UUID_DESCRIPTION = "Comma separated list file UUIDs" + UP_TO_100;
+    public static final String SAMPLES_DESCRIPTION = "Comma separated list sample IDs or UUIDs" + UP_TO_100;
+    public static final String SAMPLES_ID_DESCRIPTION = "Comma separated list sample IDs" + UP_TO_100;
+    public static final String SAMPLES_UUID_DESCRIPTION = "Comma separated list sample UUIDs" + UP_TO_100;
+    public static final String INDIVIDUALS_DESCRIPTION = "Comma separated list of individual IDs, names or UUIDs" + UP_TO_100;
+    public static final String INDIVIDUALS_ID_DESCRIPTION = "Comma separated list individual IDs" + UP_TO_100;
+    public static final String INDIVIDUAL_NAME_DESCRIPTION = "Comma separated list individual names" + UP_TO_100;
+    public static final String INDIVIDUAL_UUID_DESCRIPTION = "Comma separated list individual UUIDs" + UP_TO_100;
+    public static final String FAMILIES_DESCRIPTION = "Comma separated list of family IDs or names" + UP_TO_100;
+    public static final String FAMILY_ID_DESCRIPTION = "Comma separated list family IDs" + UP_TO_100;
+    public static final String FAMILY_NAME_DESCRIPTION = "Comma separated list family names" + UP_TO_100;
+    public static final String FAMILY_UUID_DESCRIPTION = "Comma separated list family UUIDs" + UP_TO_100;
+    public static final String COHORTS_DESCRIPTION = "Comma separated list of cohort IDs or UUIDs" + UP_TO_100;
+    public static final String COHORT_IDS_DESCRIPTION = "Comma separated list of cohort IDs" + UP_TO_100;
+    public static final String COHORT_NAMES_DESCRIPTION = "Comma separated list of cohort names" + UP_TO_100;
+    public static final String COHORT_UUIDS_DESCRIPTION = "Comma separated list of cohort IDs" + UP_TO_100;
+    public static final String CLINICAL_ID_DESCRIPTION = "Comma separated list of Clinical Analysis IDs" + UP_TO_100;
+    public static final String CLINICAL_UUID_DESCRIPTION = "Comma separated list of Clinical Analysis UUIDs" + UP_TO_100;
+    public static final String CLINICAL_ANALYSES_DESCRIPTION = "Comma separated list of clinical analysis IDs or names" + UP_TO_100;
+    public static final String INTERPRETATION_ID_DESCRIPTION = "Comma separated list of Interpretation IDs" + UP_TO_100;
+    public static final String INTERPRETATION_UUID_DESCRIPTION = "Comma separated list of Interpretation UUIDs" + UP_TO_100;
+    public static final String INTERPRETATION_DESCRIPTION = "Comma separated list of clinical interpretation IDs " + UP_TO_100;
+    public static final String PANEL_ID_DESCRIPTION = "Comma separated list of panel IDs " + UP_TO_100;
+    public static final String PANEL_UUID_DESCRIPTION = "Comma separated list of panel UUIDs " + UP_TO_100;
+    public static final String PANEL_NAME_DESCRIPTION = "Comma separated list of panel names " + UP_TO_100;
+    public static final String JOBS_DESCRIPTION = "Comma separated list of job IDs or UUIDs" + UP_TO_100;
+    public static final String JOB_IDS_DESCRIPTION = "Comma separated list of job IDs" + UP_TO_100;
+    public static final String JOB_UUIDS_DESCRIPTION = "Comma separated list of job UUIDs" + UP_TO_100;
     // ---------------------------------------------
     public static final String PROJECTS_DESCRIPTION = "Comma separated list of projects [user@]project" + UP_TO_100;
     // ---------------------------------------------

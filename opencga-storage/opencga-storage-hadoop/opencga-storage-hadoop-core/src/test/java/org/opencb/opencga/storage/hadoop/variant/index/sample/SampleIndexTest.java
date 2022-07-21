@@ -77,11 +77,13 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     private SampleIndexDBAdaptor sampleIndexDBAdaptor;
     private static boolean loaded = false;
     public static final String STUDY_NAME_3 = "study_3";
-    private static final List<String> studies = Arrays.asList(STUDY_NAME, STUDY_NAME_2, STUDY_NAME_3);
+    public static final String STUDY_NAME_4 = "study_4";
+    private static final List<String> studies = Arrays.asList(STUDY_NAME, STUDY_NAME_2, STUDY_NAME_3, STUDY_NAME_4);
     private static final Map<String, List<String>> sampleNames = new HashMap<String, List<String>>() {{
         put(STUDY_NAME, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
         put(STUDY_NAME_2, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
         put(STUDY_NAME_3, Arrays.asList("NA12877", "NA12878"));
+        put(STUDY_NAME_4, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
     }};
 //    private static List<List<String>> trios = Arrays.asList(
 //            Arrays.asList("NA19600", "NA19660", "NA19661"),
@@ -159,6 +161,14 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         assertEquals(2, versioned.getVersion());
         // Not annotated
         assertEquals(StudyMetadata.SampleIndexConfigurationVersioned.Status.STAGING, versioned.getStatus());
+
+        // Study 4, dense
+        params = new ObjectMap()
+                .append(VariantStorageOptions.STUDY.key(), STUDY_NAME_4)
+                .append(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
+        runETL(engine, getResourceUri("variant-test-dense.vcf.gz"), outputUri, params, true, true, true);
+        engine.familyIndex(STUDY_NAME_4, trios, new ObjectMap());
 
 
         // ---------------- Annotate
@@ -533,16 +543,16 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @Test
     public void testQueryAnnotationIndex_pop_freq() throws Exception {
-        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL=0"));
-        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL>0"));
-        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL<0.001"));
-        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL>0.005"));
-        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL>0.008"));
-        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL>=0.005;GNOMAD_GENOMES:ALL>=0.005"));
+        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000G:ALL=0"));
+        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000G:ALL>0"));
+        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000G:ALL<0.001"));
+        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000G:ALL>0.005"));
+        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000G:ALL>0.008"));
+        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000G:ALL>=0.005;GNOMAD_GENOMES:ALL>=0.005"));
 
-        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL>=0.005,GNOMAD_GENOMES:ALL>=0.005"));
-        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL<0.005,GNOMAD_GENOMES:ALL<0.005"));
-        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL>0.005,GNOMAD_GENOMES:ALL>0.005"));
+        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000G:ALL>=0.005,GNOMAD_GENOMES:ALL>=0.005"));
+        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000G:ALL<0.005,GNOMAD_GENOMES:ALL<0.005"));
+        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000G:ALL>0.005,GNOMAD_GENOMES:ALL>0.005"));
     }
 
     @Test
@@ -602,7 +612,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
         // Query SampleIndex+DBAdaptor
         System.out.println("#Query SampleIndex+DBAdaptor");
-        queryResult = variantStorageEngine.get(new Query(query), new QueryOptions());
+        queryResult = variantStorageEngine.get(new Query(query), new QueryOptions(QueryOptions.COUNT, true).append(QueryOptions.LIMIT, 5000));
         int indexAndDBAdaptor = queryResult.getNumResults();
         long indexAndDBAdaptorMatches = queryResult.getNumMatches();
         assertEquals(indexAndDBAdaptorMatches, indexAndDBAdaptor);
@@ -942,7 +952,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                         .append(STUDY.key(), STUDY_NAME)
                         .append(SAMPLE.key(), sampleNames.get(STUDY_NAME).get(0))
                         .append(INCLUDE_SAMPLE_ID.key(), "true")
-                        .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL<0.9"),
+                        .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000G:ALL<0.9"),
                 new QueryOptions()
                         .append(QueryOptions.LIMIT, 10)
                         .append(VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.key(), 200)

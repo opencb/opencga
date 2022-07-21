@@ -63,7 +63,7 @@ public class VariantHadoopDBWriter extends AbstractHBaseDataWriter<Variant, Put>
             if (HadoopVariantStorageEngine.TARGET_VARIANT_TYPE_SET.contains(variant.getType())) {
                 Put put = converter.convert(variant);
                 if (put != null) {
-                    HadoopVariantSearchIndexUtils.addUnknownSyncStatus(put, GenomeHelper.COLUMN_FAMILY_BYTES);
+                    HadoopVariantSearchIndexUtils.addUnknownSyncStatus(put);
                     puts.add(put);
                     loadedVariants.getAndIncrement();
                 } else {

@@ -20,8 +20,8 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.*;
 import org.opencb.biodata.models.clinical.interpretation.*;
@@ -51,6 +51,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
@@ -80,7 +81,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.*;
+import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.calculateAcmgClassification;
+import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.computeClinicalSignificance;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.INCLUDE_SAMPLE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
@@ -112,8 +114,13 @@ public class ClinicalInterpretationManager extends StorageManager {
 
     static {
         defaultDeNovoQuery = new Query()
-                .append(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:AFR<0.002;1kG_phase3:AMR<0.002;"
-                        + "1kG_phase3:EAS<0.002;1kG_phase3:EUR<0.002;1kG_phase3:SAS<0.002;GNOMAD_EXOMES:AFR<0.001;GNOMAD_EXOMES:AMR<0.001;"
+                .append(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
+                          ParamConstants.POP_FREQ_1000G + ":AFR<0.002;"
+                        + ParamConstants.POP_FREQ_1000G + ":AMR<0.002;"
+                        + ParamConstants.POP_FREQ_1000G + ":EAS<0.002;"
+                        + ParamConstants.POP_FREQ_1000G + ":EUR<0.002;"
+                        + ParamConstants.POP_FREQ_1000G + ":SAS<0.002;"
+                        + "GNOMAD_EXOMES:AFR<0.001;GNOMAD_EXOMES:AMR<0.001;"
                         + "GNOMAD_EXOMES:EAS<0.001;GNOMAD_EXOMES:FIN<0.001;GNOMAD_EXOMES:NFE<0.001;GNOMAD_EXOMES:ASJ<0.001;"
                         + "GNOMAD_EXOMES:OTH<0.002")
                 .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.001")
@@ -1052,7 +1059,7 @@ public class ClinicalInterpretationManager extends StorageManager {
     public String getAssembly(String studyId, String sessionId) throws CatalogException {
         String assembly = "";
         OpenCGAResult<Project> projectQueryResult;
-        projectQueryResult = catalogManager.getProjectManager().get(new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId),
+        projectQueryResult = catalogManager.getProjectManager().search(new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId),
                 new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), sessionId);
         if (CollectionUtils.isNotEmpty(projectQueryResult.getResults())) {
             assembly = projectQueryResult.first().getOrganism().getAssembly();

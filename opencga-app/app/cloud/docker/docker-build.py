@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import json
 import os
 import requests
 import sys
@@ -11,13 +10,16 @@ from pathlib import Path
 ## Configure command-line options
 parser = argparse.ArgumentParser()
 parser.add_argument('action', help="Action to execute", choices=["build", "push", "delete"], default="build")
-parser.add_argument('--images', help="comma separated list of images to be made, e.g. base,init,demo,r,samtools,ext-tools")
+parser.add_argument('--images',
+                    help="comma separated list of images to be made, e.g. base,init,ext-tools,r-builder")
 parser.add_argument('--tag', help="the tag for this code, e.g. v2.0.0-hdp3.1")
 parser.add_argument('--build-folder', help="the location of the build folder, if not default location")
 parser.add_argument('--org', help="Docker organization", default="opencb")
 parser.add_argument('--username', help="Username to login to the docker registry (REQUIRED if deleting from DockerHub)")
 parser.add_argument('--password', help="Password to login to the docker registry (REQUIRED if deleting from DockerHub)")
-parser.add_argument('--docker-build-args', help="Additional build arguments to pass to the docker build command. Usage: --docker-build-args='ARGS' e.g: --docker-build-args='--no-cache'", default="")
+parser.add_argument('--docker-build-args',
+                    help="Additional build arguments to pass to the docker build command. Usage: --docker-build-args='ARGS' e.g: --docker-build-args='--no-cache'",
+                    default="")
 parser.add_argument('--server', help="Docker registry server", default="docker.io")
 
 ## Some ANSI colors to print shell output
@@ -30,14 +32,17 @@ shell_colors = {
     'reset': '\033[0m'
 }
 
+
 def error(message):
     sys.stderr.write(shell_colors['red'] + 'ERROR: %s\n' % message + shell_colors['reset'])
     sys.exit(2)
+
 
 def print_header(str):
     print(shell_colors['magenta'] + "*************************************************" + shell_colors['reset'])
     print(shell_colors['magenta'] + str + shell_colors['reset'])
     print(shell_colors['magenta'] + "*************************************************" + shell_colors['reset'])
+
 
 def run(command):
     print(shell_colors['bold'] + command + shell_colors['reset'])
@@ -67,18 +72,18 @@ def build():
 
         if i == "init" or i == "demo":
             command = ("docker build"
-                + " -t " + image
-                + " -f " + build_folder + "/cloud/docker/opencga-" + i + "/Dockerfile"
-                + " --build-arg TAG=" + tag
-                + " --build-arg ORG=" + org
-                + " " + args.docker_build_args + " "
-                + " " + build_folder)
+                       + " -t " + image
+                       + " -f " + build_folder + "/cloud/docker/opencga-" + i + "/Dockerfile"
+                       + " --build-arg TAG=" + tag
+                       + " --build-arg ORG=" + org
+                       + " " + args.docker_build_args + " "
+                       + " " + build_folder)
         else:
             command = ("docker build"
-                + " -t " + image
-                + " -f " + build_folder + "/cloud/docker/opencga-" + i + "/Dockerfile"
-                + " " + args.docker_build_args + " "
-                + " " + build_folder)
+                       + " -t " + image
+                       + " -f " + build_folder + "/cloud/docker/opencga-" + i + "/Dockerfile"
+                       + " " + args.docker_build_args + " "
+                       + " " + build_folder)
         run(command)
 
 
@@ -89,7 +94,6 @@ def tag_latest(image):
     if server:
         print("Don't use tag latest in server " + server)
         return
-
     latest_tag = os.popen(("curl -s https://registry.hub.docker.com/v1/repositories/" + org + "/opencga-" + image + "/tags"
                            + " | jq -r .[].name"
                            + " | grep -v latest"
@@ -136,7 +140,8 @@ def delete():
         headers = {
             'Authorization': 'JWT ' + json_response["token"]
         }
-        requests.delete('https://hub.docker.com/v2/repositories/' + org + '/opencga-' + i + '/tags/' + tag + '/', headers=headers)
+        requests.delete('https://hub.docker.com/v2/repositories/' + org + '/opencga-' + i + '/tags/' + tag + '/',
+                        headers=headers)
 
 
 ## Parse command-line parameters and init basedir, tag and build_folder
@@ -147,7 +152,8 @@ if args.build_folder is not None:
     build_folder = args.build_folder
     if not os.path.isdir(build_folder):
         error("Build folder does not exist: " + build_folder)
-    if not os.path.isdir(build_folder + "/libs") or not os.path.isdir(build_folder + "/conf") or not os.path.isdir(build_folder + "/bin"):
+    if not os.path.isdir(build_folder + "/libs") or not os.path.isdir(build_folder + "/conf") or not os.path.isdir(
+            build_folder + "/bin"):
         error("Not a build folder: " + build_folder)
 else:
     # root of the opencga repo
@@ -203,7 +209,6 @@ else:
         imagesUnsorted.remove("init")
         images += ["init"]
     images += imagesUnsorted
-
 
 ## Execute the action
 if args.action == "build":

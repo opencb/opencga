@@ -15,6 +15,7 @@ function printUsage() {
   echo "   * -s     --subscription            STRING      Subscription name or subscription id"
   echo "   * --af   --azure-file              FILE        Azure deploy parameters file [azuredeploy.parameters.private.json]"
   echo "   * --spf  --service-principal-file  FILE        Azure service principal deploy parameters file. Execute createsp.sh to obtain the service principal parameters"
+  echo "            --dry-run                 FLAG        Do not deploy arm template. Execute 'what-if'."
   echo "            --skip-k8s-deployment     FLAG        Skip k8s deployment. Skip 'setup-k8s.sh' "
   echo "     -c     --k8s-context             STRING      Kubernetes context"
   echo "            --k8s-namespace           STRING      Kubernetes namespace"
@@ -61,6 +62,7 @@ function requiredDirectory() {
 #spAzudeDeployParameters
 setupAksOpts=()
 keepTmpFiles=false
+dryRun=false
 outputDir="$(pwd)"
 
 while [[ $# -gt 0 ]]; do
@@ -85,6 +87,10 @@ while [[ $# -gt 0 ]]; do
     spAzudeDeployParameters="$value"
     shift # past argument
     shift # past value
+    ;;
+  --dry-run)
+    dryRun=true
+    shift # past argument
     ;;
   --skip-k8s-deployment)
     setupAksOpts+=("$key")
@@ -223,12 +229,22 @@ az storage blob upload-batch \
 
 echo "Files uploaded"
 
-expiretime=$(date -u -d '30 minutes' +%Y-%m-%dT%H:%MZ)
-token=$(az storage container generate-sas --name $templateContainer --expiry $expiretime --permissions r --output tsv --connection-string $connection)
+expireTime="$(date -u -d '30 minutes' +%Y-%m-%dT%H:%MZ)"
+token=$(az storage container generate-sas --name $templateContainer --expiry $expireTime --permissions r --output tsv --connection-string $connection)
 template_url="$(az storage blob url --container-name $templateContainer --name azuredeploy.json --output tsv --connection-string $connection)?$token"
 blob_base_url="$(az storage account show -n $storageAccountName --query primaryEndpoints.blob)"
 container_base_url=$(tr -d '"' <<< "${blob_base_url}")$templateContainer
 
+if [ "$dryRun" == "true" ]; then
+    echo "# WHAT-IF"
+    # deploy infra
+    az deployment sub what-if -n "$deployId" -l ${location} --template-uri $template_url \
+      --parameters @"${azudeDeployParameters}" \
+      --parameters @"${spAzudeDeployParameters}" \
+      --parameters _artifactsLocation=$container_base_url \
+      --parameters _artifactsLocationSasToken="?$token"
+    exit 0;
+fi
 echo "# Deploy infrastructure"
 echo "az deployment sub create -n $deployId ... > ${deploymentOut} "
 
@@ -238,6 +254,7 @@ az deployment sub create -n $deployId -l ${location} --template-uri $template_ur
   --parameters @"${spAzudeDeployParameters}" \
   --parameters _artifactsLocation=$container_base_url \
   --parameters _artifactsLocationSasToken="?$token"
+#  --confirm-with-what-if
 
 az deployment sub show -n $deployId -o json > "$deploymentOut"
 

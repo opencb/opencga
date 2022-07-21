@@ -11,6 +11,7 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     EXPECTED_FILES_NUMBER("expected_files_number", 5000),
     EXPECTED_SAMPLES_NUMBER("expected_samples_number"),
     DBADAPTOR_PHOENIX_FETCH_SIZE("storage.hadoop.phoenix.fetchSize", -1),
+    DBADAPTOR_PHOENIX_QUERY_COMPLEXITY_THRESHOLD("storage.hadoop.phoenix.queryComplexityThreshold", 250),
 
     /////////////////////////
     // MapReduce configuration
@@ -68,6 +69,9 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     VARIANT_TABLE_LOAD_REFERENCE("storage.hadoop.variant.table.load.reference", false),
     PENDING_SECONDARY_INDEX_TABLE_COMPRESSION("storage.hadoop.pendingSecondaryIndex.table.compression",
             Compression.Algorithm.SNAPPY.getName()),
+    PENDING_SECONDARY_INDEX_PRUNE_TABLE_COMPRESSION("storage.hadoop.pendingSecondaryIndexPrune.table.compression",
+            Compression.Algorithm.SNAPPY.getName()),
+
 
     /////////////////////////
     // Archive table configuration
@@ -88,8 +92,8 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     /////////////////////////
     SAMPLE_INDEX_TABLE_COMPRESSION("storage.hadoop.sampleIndex.table.compression", Compression.Algorithm.SNAPPY.getName()),
     SAMPLE_INDEX_TABLE_PRESPLIT_SIZE("storage.hadoop.sampleIndex.table.preSplit.samplesPerSplit", 15),
-    SAMPLE_INDEX_BUILD_MAX_SAMPLES_PER_MR("storage.hadoop.sampleIndex.build.maxSamplesPerMR", 5000),
-    SAMPLE_INDEX_ANNOTATION_MAX_SAMPLES_PER_MR("storage.hadoop.sampleIndex.annotation.maxSamplesPerMR", 5000),
+    SAMPLE_INDEX_BUILD_MAX_SAMPLES_PER_MR("storage.hadoop.sampleIndex.build.maxSamplesPerMR", 2000),
+    SAMPLE_INDEX_ANNOTATION_MAX_SAMPLES_PER_MR("storage.hadoop.sampleIndex.annotation.maxSamplesPerMR", 2000),
     SAMPLE_INDEX_FAMILY_MAX_TRIOS_PER_MR("storage.hadoop.sampleIndex.family.maxTriosPerMR", 1000),
 
     /////////////////////////

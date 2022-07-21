@@ -1,0 +1,28 @@
+mutator:
+  skip: true
+  mutations:
+    - file: "GATK_v4.2.15_Falb_COL1.vcf"
+      variants:
+        - chromosome: "5"
+          position: 555168
+          reference: "A"
+          alternate: "T"
+          id: "."
+          quality: "37.32"
+          filter: "PASS"
+          info: "RSPOS=564477;AF=0.009;NS=111"
+          format: "GT:DP"
+          samples:
+            - "1/1:23"
+            - "0/1:34"
+            - "0/0:13"
+        - chromosome: "5"
+          position: 2131278
+          reference: "A"
+          alternate: "T"
+          id: "."
+          quality: "37.32"
+          filter: "PASS"
+          info: "RSPOS=564477;AF=0.009;NS=111"
+          format: "GT:DP"
+          samples: [ "1/1:23", "0/1:34", "0/0:13" ]

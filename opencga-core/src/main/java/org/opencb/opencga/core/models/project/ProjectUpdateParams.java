@@ -24,6 +24,7 @@ public class ProjectUpdateParams {
     private String creationDate;
     private String modificationDate;
     private ProjectOrganism organism;
+
     private Map<String, Object> attributes;
 
     public ProjectUpdateParams() {
@@ -105,4 +106,5 @@ public class ProjectUpdateParams {
         this.attributes = attributes;
         return this;
     }
+
 }

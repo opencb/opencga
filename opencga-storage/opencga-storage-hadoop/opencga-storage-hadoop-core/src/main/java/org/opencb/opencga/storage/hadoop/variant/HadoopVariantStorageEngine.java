@@ -94,8 +94,9 @@ import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDeleteHBaseColumnTask;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexBuilder;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
+import org.opencb.opencga.storage.hadoop.variant.prune.VariantPruneManager;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreRemover;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchDataWriter;
@@ -389,7 +390,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     public void sampleIndex(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
         System.out.println("options.toJson() = " + options.toJson());
-        new SampleIndexLoader(getSampleIndexDBAdaptor(), study, getMRExecutor())
+        new SampleIndexBuilder(getSampleIndexDBAdaptor(), study, getMRExecutor())
                 .buildSampleIndex(samples, options);
     }
 
@@ -927,11 +928,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         // First, if the operation finished without errors, remove the phoenix columns.
         if (!error) {
             VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
-            VariantPhoenixSchemaManager schemaManager = new VariantPhoenixSchemaManager(dbAdaptor);
-
             StudyMetadata sm = getMetadataManager().getStudyMetadata(study);
 
-            try {
+            try (VariantPhoenixSchemaManager schemaManager = new VariantPhoenixSchemaManager(dbAdaptor)) {
                 schemaManager.dropFiles(sm.getId(), fileIds);
                 schemaManager.dropSamples(sm.getId(), sampleIds);
             } catch (SQLException e) {
@@ -947,6 +946,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         int studyId = getMetadataManager().getStudyId(studyName);
         removeFiles(studyName, getMetadataManager().getIndexedFiles(studyId).stream().map(Object::toString).collect(Collectors.toList()),
                 outdir);
+    }
+
+    @Override
+    public void variantsPrune(boolean dryMode, boolean resume, URI outdir) throws StorageEngineException {
+        new VariantPruneManager(this).prune(dryMode, resume, outdir);
     }
 
     @Override
@@ -1238,6 +1242,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 //                HBaseAdmin.checkHBaseAvailable(conf);
                 HBaseAdmin.class.getMethod("checkHBaseAvailable", Configuration.class).invoke(null, conf);
             }
+//            new PhoenixHelper(conf).newJdbcConnection().getMetaData().getTables(null, null, null, null);
         } catch (Exception e) {
             logger.error("Connection to database '" + dbName + "' failed", e);
             throw new StorageEngineException("HBase Database connection test failed", e);

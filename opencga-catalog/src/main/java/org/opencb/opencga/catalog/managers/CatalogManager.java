@@ -16,13 +16,13 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.migration.MigrationManager;
+import org.opencb.opencga.catalog.utils.JwtUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.UriUtils;
@@ -130,16 +131,15 @@ public class CatalogManager implements AutoCloseable {
             configuration.setAdmin(new Admin());
         }
 
+        String secretKey = ParamUtils.defaultString(configuration.getAdmin().getSecretKey(),
+                PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH));
+        String algorithm = ParamUtils.defaultString(configuration.getAdmin().getAlgorithm(), "HS256");
         if (existsCatalogDB()) {
-            String secretKey = catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readSecretKey();
-            String algorithm = catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readAlgorithm();
-
-            configuration.getAdmin().setAlgorithm(algorithm);
-            configuration.getAdmin().setSecretKey(secretKey);
-        } else {
-            configuration.getAdmin().setAlgorithm("HS256");
-            configuration.getAdmin().setSecretKey(RandomStringUtils.randomAlphanumeric(15));
+            secretKey = catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readSecretKey();
+            algorithm = catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readAlgorithm();
         }
+        configuration.getAdmin().setAlgorithm(algorithm);
+        configuration.getAdmin().setSecretKey(secretKey);
     }
 
     public void updateJWTParameters(ObjectMap params, String token) throws CatalogException {
@@ -187,10 +187,11 @@ public class CatalogManager implements AutoCloseable {
             throw new CatalogException("Nothing to install. There already exists a catalog database");
         }
         if (!PasswordUtils.isStrongPassword(password)) {
-            throw new CatalogException("Invalid password. Check password strength for user " + password);
+            throw new CatalogException("Invalid password. Check password strength for user ");
         }
         ParamUtils.checkParameter(secretKey, "secretKey");
         ParamUtils.checkParameter(password, "password");
+        JwtUtils.validateJWTKey(configuration.getAdmin().getAlgorithm(), secretKey);
 
         configuration.getAdmin().setSecretKey(secretKey);
 

@@ -139,7 +139,7 @@ public class CatalogUtils {
         } else {
             String studyFqn = getAnyStudy(query, sessionId);
             String project = catalogManager.getStudyManager().getProjectFqn(studyFqn);
-            return catalogManager.getProjectManager().get(new Query(ProjectDBAdaptor.QueryParams.FQN.key(), project), options, sessionId)
+            return catalogManager.getProjectManager().search(new Query(ProjectDBAdaptor.QueryParams.FQN.key(), project), options, sessionId)
                     .first();
         }
     }

@@ -12,6 +12,7 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
@@ -1264,17 +1265,17 @@ public class SampleIndexQueryParserTest {
 //        assertEquals(INTERGENIC_MASK | LOF_MASK | LOF_EXTENDED_MASK | LOF_EXTENDED_BASIC_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,stop_gained")
 //                .append(ANNOT_TRANSCRIPT_FLAG.key(), "basic")));
 
-        assertEquals(EMPTY_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL<0.01")));
-        assertEquals(POP_FREQ_ANY_001_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL<0.001")));
+        assertEquals(EMPTY_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), ParamConstants.POP_FREQ_1000G_CB_V4 + ":ALL<0.01")));
+        assertEquals(POP_FREQ_ANY_001_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), ParamConstants.POP_FREQ_1000G_CB_V4 + ":ALL<0.001")));
         assertEquals(POP_FREQ_ANY_001_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "GNOMAD_GENOMES:ALL<0.001")));
         assertEquals(POP_FREQ_ANY_001_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "GNOMAD_GENOMES:ALL<0.0005")));
-        assertEquals(POP_FREQ_ANY_001_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL<0.001,GNOMAD_GENOMES:ALL<0.001")));
-        assertEquals(POP_FREQ_ANY_001_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL<0.001;GNOMAD_GENOMES:ALL<0.001")));
+        assertEquals(POP_FREQ_ANY_001_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), ParamConstants.POP_FREQ_1000G_CB_V4 + ":ALL<0.001,GNOMAD_GENOMES:ALL<0.001")));
+        assertEquals(POP_FREQ_ANY_001_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), ParamConstants.POP_FREQ_1000G_CB_V4 + ":ALL<0.001;GNOMAD_GENOMES:ALL<0.001")));
 
         // Mix
-        assertEquals(POP_FREQ_ANY_001_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL<0.1;GNOMAD_GENOMES:ALL<0.001")));
-        assertEquals(EMPTY_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL<0.1,GNOMAD_GENOMES:ALL<0.001")));
-        assertEquals(EMPTY_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL<0.1;GNOMAD_GENOMES:ALL<0.1")));
+        assertEquals(POP_FREQ_ANY_001_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), ParamConstants.POP_FREQ_1000G_CB_V4 + ":ALL<0.1;GNOMAD_GENOMES:ALL<0.001")));
+        assertEquals(EMPTY_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), ParamConstants.POP_FREQ_1000G_CB_V4 + ":ALL<0.1,GNOMAD_GENOMES:ALL<0.001")));
+        assertEquals(EMPTY_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), ParamConstants.POP_FREQ_1000G_CB_V4 + ":ALL<0.1;GNOMAD_GENOMES:ALL<0.1")));
 
 
         assertEquals(EMPTY_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
@@ -1285,11 +1286,11 @@ public class SampleIndexQueryParserTest {
                 + "GNOMAD_EXOMES:NFE<0.01;"
                 + "GNOMAD_EXOMES:ASJ<0.01;"
                 + "GNOMAD_EXOMES:OTH<0.01;"
-                + "1kG_phase3:AFR<0.01;"
-                + "1kG_phase3:AMR<0.01;"
-                + "1kG_phase3:EAS<0.01;"
-                + "1kG_phase3:EUR<0.01;"
-                + "1kG_phase3:SAS<0.01")));
+                + ParamConstants.POP_FREQ_1000G_CB_V4 + ":AFR<0.01;"
+                + ParamConstants.POP_FREQ_1000G_CB_V4 + ":AMR<0.01;"
+                + ParamConstants.POP_FREQ_1000G_CB_V4 + ":EAS<0.01;"
+                + ParamConstants.POP_FREQ_1000G_CB_V4 + ":EUR<0.01;"
+                + ParamConstants.POP_FREQ_1000G_CB_V4 + ":SAS<0.01")));
 
         // Removing any populations should not use the filter
         assertEquals(EMPTY_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
@@ -1300,11 +1301,11 @@ public class SampleIndexQueryParserTest {
                 + "GNOMAD_EXOMES:NFE<0.01;"
                 + "GNOMAD_EXOMES:ASJ<0.01;"
                 + "GNOMAD_EXOMES:OTH<0.01;"
-                + "1kG_phase3:AFR<0.01;"
-                + "1kG_phase3:AMR<0.01;"
-                + "1kG_phase3:EAS<0.01;"
-                + "1kG_phase3:EUR<0.01;"
-                + "1kG_phase3:SAS<0.01")));
+                + ParamConstants.POP_FREQ_1000G_CB_V4 + ":AFR<0.01;"
+                + ParamConstants.POP_FREQ_1000G_CB_V4 + ":AMR<0.01;"
+                + ParamConstants.POP_FREQ_1000G_CB_V4 + ":EAS<0.01;"
+                + ParamConstants.POP_FREQ_1000G_CB_V4 + ":EUR<0.01;"
+                + ParamConstants.POP_FREQ_1000G_CB_V4 + ":SAS<0.01")));
 
         // With OR instead of AND should not use the filter
         assertEquals(EMPTY_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
@@ -1315,11 +1316,11 @@ public class SampleIndexQueryParserTest {
                 + "GNOMAD_EXOMES:NFE<0.01,"
                 + "GNOMAD_EXOMES:ASJ<0.01,"
                 + "GNOMAD_EXOMES:OTH<0.01,"
-                + "1kG_phase3:AFR<0.01,"
-                + "1kG_phase3:AMR<0.01,"
-                + "1kG_phase3:EAS<0.01,"
-                + "1kG_phase3:EUR<0.01,"
-                + "1kG_phase3:SAS<0.01")));
+                + ParamConstants.POP_FREQ_1000G_CB_V4 + ":AFR<0.01,"
+                + ParamConstants.POP_FREQ_1000G_CB_V4 + ":AMR<0.01,"
+                + ParamConstants.POP_FREQ_1000G_CB_V4 + ":EAS<0.01,"
+                + ParamConstants.POP_FREQ_1000G_CB_V4 + ":EUR<0.01,"
+                + ParamConstants.POP_FREQ_1000G_CB_V4 + ":SAS<0.01")));
 
         // With any filter greater than 0.1, should not use the filter
         assertEquals(EMPTY_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
@@ -1330,11 +1331,11 @@ public class SampleIndexQueryParserTest {
                 + "GNOMAD_EXOMES:NFE<0.01;"
                 + "GNOMAD_EXOMES:ASJ<0.01;"
                 + "GNOMAD_EXOMES:OTH<0.01;"
-                + "1kG_phase3:AFR<0.01;"
-                + "1kG_phase3:AMR<0.01;"
-                + "1kG_phase3:EAS<0.01;"
-                + "1kG_phase3:EUR<0.01;"
-                + "1kG_phase3:SAS<0.01")));
+                + ParamConstants.POP_FREQ_1000G_CB_V4 + ":AFR<0.01;"
+                + ParamConstants.POP_FREQ_1000G_CB_V4 + ":AMR<0.01;"
+                + ParamConstants.POP_FREQ_1000G_CB_V4 + ":EAS<0.01;"
+                + ParamConstants.POP_FREQ_1000G_CB_V4 + ":EUR<0.01;"
+                + ParamConstants.POP_FREQ_1000G_CB_V4 + ":SAS<0.01")));
 
     }
 

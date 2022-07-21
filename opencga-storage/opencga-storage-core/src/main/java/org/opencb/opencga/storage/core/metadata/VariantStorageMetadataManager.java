@@ -1252,13 +1252,13 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         taskDBAdaptor.updateTask(studyId, task, null);
     }
 
-    public <E extends Exception> TaskMetadata updateTask(int studyId, int taskId, UpdateFunction<TaskMetadata, E> update)
+    public <E extends Exception> TaskMetadata updateTask(int studyId, int taskId, UpdateConsumer<TaskMetadata, E> consumer)
             throws E, StorageEngineException {
         getTask(studyId, taskId); // Check task exists
         Lock lock = taskDBAdaptor.lock(studyId, taskId, lockDuration, lockTimeout);
         try {
             TaskMetadata task = getTask(studyId, taskId);
-            task = update.update(task);
+            consumer.update(task);
             lock.checkLocked();
             unsecureUpdateTask(studyId, task);
             return task;
@@ -1732,7 +1732,6 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         updateTask(studyId, taskId, task -> {
             previousStatus.set(task.currentStatus());
             task.addStatus(Calendar.getInstance().getTime(), status);
-            return task;
         });
         return previousStatus.get();
     }
@@ -1765,13 +1764,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return addRunningTask(studyId, jobOperationName, fileIds, resume, type, b -> false);
     }
     /**
-     * Adds a new {@link TaskMetadata} to the Study Metadata.
-     *
-     * Allow execute concurrent operations depending on the "allowConcurrent" predicate.
-     *  If any operation is in ERROR, is not the same operation, and concurrency is not allowed,
-     *      throw {@link StorageEngineException#otherOperationInProgressException}
-     *  If any operation is DONE, RUNNING, is same operation and resume=true, continue
-     *  If all operations are ready, continue
+     * Find out if the task attempt can be executed, and if it should be a new variant, of continue executing a previous task.
      *
      * @param studyId            Study id
      * @param jobOperationName   Job operation name used to create the jobName and as {@link TaskMetadata#getOperationName()}
@@ -1783,11 +1776,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
      * @return                   The current batchOperation
      * @throws StorageEngineException if the operation can't be executed
      */
-    public TaskMetadata addRunningTask(int studyId, String jobOperationName,
-                                       List<Integer> fileIds, boolean resume, TaskMetadata.Type type,
-                                       Predicate<TaskMetadata> allowConcurrent)
+    private TaskMetadata getRunningTaskCompatibleOrFail(int studyId, String jobOperationName, List<Integer> fileIds, boolean resume,
+                                                        TaskMetadata.Type type, Predicate<TaskMetadata> allowConcurrent)
             throws StorageEngineException {
-
         TaskMetadata resumeTask = null;
         Iterator<TaskMetadata> iterator = taskIterator(studyId, Arrays.asList(
                 TaskMetadata.Status.DONE,
@@ -1832,6 +1823,33 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                     throw new IllegalArgumentException("Unknown Status " + currentStatus);
             }
         }
+        return resumeTask;
+    }
+
+    /**
+     * Adds a new {@link TaskMetadata} to the Study Metadata.
+     *
+     * Allow execute concurrent operations depending on the "allowConcurrent" predicate.
+     *  If any operation is in ERROR, is not the same operation, and concurrency is not allowed,
+     *      throw {@link StorageEngineException#otherOperationInProgressException}
+     *  If any operation is DONE, RUNNING, is same operation and resume=true, continue
+     *  If all operations are ready, continue
+     *
+     * @param studyId            Study id
+     * @param jobOperationName   Job operation name used to create the jobName and as {@link TaskMetadata#getOperationName()}
+     * @param fileIds            Files to be processed in this batch.
+     * @param resume             Resume operation. Assume that previous operation went wrong.
+     * @param type               Operation type as {@link TaskMetadata.Type}
+     * @param allowConcurrent    Predicate to test if the new operation can be executed at the same time as a non ready operation.
+     *                           If not, throws {@link StorageEngineException#otherOperationInProgressException}
+     * @return                   The current batchOperation
+     * @throws StorageEngineException if the operation can't be executed
+     */
+    public TaskMetadata addRunningTask(int studyId, String jobOperationName,
+                                       List<Integer> fileIds, boolean resume, TaskMetadata.Type type,
+                                       Predicate<TaskMetadata> allowConcurrent)
+            throws StorageEngineException {
+        TaskMetadata resumeTask = getRunningTaskCompatibleOrFail(studyId, jobOperationName, fileIds, resume, type, allowConcurrent);
 
         TaskMetadata task;
         if (resumeTask == null) {
@@ -1848,13 +1866,33 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                         throw new StorageEngineException("Attempt to execute a concurrent modification of task " + thisTask.getName()
                                 + " (" + thisTask.getId() + ") ");
                     } else {
-                        return thisTask.addStatus(Calendar.getInstance().getTime(), TaskMetadata.Status.RUNNING);
+                        thisTask.addStatus(Calendar.getInstance().getTime(), TaskMetadata.Status.RUNNING);
                     }
                 });
             }
         }
         return task;
     }
+
+
+    /**
+     * Check if a task can be executed.
+     *
+     * @param studyId            Study id
+     * @param jobOperationName   Job operation name used to create the jobName and as {@link TaskMetadata#getOperationName()}
+     * @param fileIds            Files to be processed in this batch.
+     * @param resume             Resume operation. Assume that previous operation went wrong.
+     * @param type               Operation type as {@link TaskMetadata.Type}
+     * @param allowConcurrent    Predicate to test if the new operation can be executed at the same time as a non ready operation.
+     *                           If not, throws {@link StorageEngineException#otherOperationInProgressException}
+     * @throws StorageEngineException if the operation can't be executed
+     */
+    public void checkTaskCanRun(int studyId, String jobOperationName, List<Integer> fileIds, boolean resume,
+                                                        TaskMetadata.Type type, Predicate<TaskMetadata> allowConcurrent)
+            throws StorageEngineException {
+        getRunningTaskCompatibleOrFail(studyId, jobOperationName, fileIds, resume, type, allowConcurrent);
+    }
+
 
     protected void checkName(final String type, String name) {
         if (StringUtils.isEmpty(name)) {

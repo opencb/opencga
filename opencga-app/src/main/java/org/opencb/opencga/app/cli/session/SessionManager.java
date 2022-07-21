@@ -50,7 +50,7 @@ public class SessionManager {
     private ObjectReader objectReader;
     private Logger logger;
 
-    
+
     public SessionManager(ClientConfiguration clientConfiguration) throws ClientException {
         this(clientConfiguration, clientConfiguration.getCurrentHost().getName());
     }
@@ -76,7 +76,7 @@ public class SessionManager {
                 }
             }
         } else {
-            CommandLineUtils.error("The client configuration can not be null. Please check configuration file.", null);
+            CommandLineUtils.error("The client configuration can not be null. Please check configuration file.");
             System.exit(-1);
         }
 
@@ -125,12 +125,13 @@ public class SessionManager {
         Path sessionPath = sessionFolder.resolve(host + SESSION_FILENAME_SUFFIX);
         if (Files.exists(sessionPath)) {
             try {
+                logger.debug("Retrieving session from file " + sessionPath);
                 return objectReader.readValue(sessionPath.toFile());
             } catch (IOException e) {
                 logger.debug("Could not parse the session file properly");
             }
         }
-
+        logger.debug("Creating an empty session");
         Session session = createEmptySession();
         try {
             saveSession(session);
@@ -161,6 +162,13 @@ public class SessionManager {
         saveSession(session, host);
     }
 
+    public void refreshSession(String refreshToken, String host)
+            throws IOException {
+        Session session = getSession().setRefreshToken(refreshToken);
+
+        saveSession(session, host);
+    }
+
     public void saveSession() throws IOException {
         saveSession(getSession(), host);
     }
@@ -174,6 +182,8 @@ public class SessionManager {
         if (!Files.exists(sessionFolder)) {
             Files.createDirectory(sessionFolder);
         }
+        logger.debug("Saving '{}'", session);
+        logger.debug("Session file '{}'", host + SESSION_FILENAME_SUFFIX);
 
         Path sessionPath = sessionFolder.resolve(host + SESSION_FILENAME_SUFFIX);
         objectWriter.writeValue(sessionPath.toFile(), session);
@@ -195,4 +205,6 @@ public class SessionManager {
         sb.append('}');
         return sb.toString();
     }
+
+
 }

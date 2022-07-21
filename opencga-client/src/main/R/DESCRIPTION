@@ -1,7 +1,7 @@
 Package: opencgaR
 Type: Package
 Title: Querying Opencga Data
-Version: 2.2.0
+Version: ${opencgar.version}
 Author: Marta Bleda <martableda@gmail.com>
 Maintainer: Marta Bleda <martableda@gmail.com>
 Description: R client that contains classes and methods for working with

@@ -25,13 +25,13 @@ import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.cache.CacheManager;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,7 +130,7 @@ public abstract class StorageManager {
 
         studyInfo.setStudy(study);
         String projectFqn = catalogManager.getStudyManager().getProjectFqn(study.getFqn());
-        Project project = catalogManager.getProjectManager().get(new Query(ProjectDBAdaptor.QueryParams.FQN.key(), projectFqn),
+        Project project = catalogManager.getProjectManager().search(new Query(ProjectDBAdaptor.QueryParams.FQN.key(), projectFqn),
                 new QueryOptions(), sessionId).first();
         studyInfo.setProjectUid(project.getUid());
         studyInfo.setProjectId(project.getId());

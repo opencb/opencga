@@ -18,6 +18,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenix
 
 import java.io.IOException;
 import java.net.URI;
+import java.sql.SQLException;
 import java.util.concurrent.ExecutionException;
 
 public class HadoopVariantScoreLoader extends VariantScoreLoader {
@@ -55,8 +56,11 @@ public class HadoopVariantScoreLoader extends VariantScoreLoader {
     @Override
     protected VariantScoreMetadata postLoad(VariantScoreMetadata scoreMetadata, boolean success) throws StorageEngineException {
         if (success) {
-            VariantPhoenixSchemaManager schemaManager = new VariantPhoenixSchemaManager(dbAdaptor);
-            schemaManager.registerNewScore(scoreMetadata.getStudyId(), scoreMetadata.getId());
+            try (VariantPhoenixSchemaManager schemaManager = new VariantPhoenixSchemaManager(dbAdaptor)) {
+                schemaManager.registerNewScore(scoreMetadata.getStudyId(), scoreMetadata.getId());
+            } catch (SQLException e) {
+                throw new StorageEngineException("Error closing schema manager", e);
+            }
         }
 
         return super.postLoad(scoreMetadata, success);

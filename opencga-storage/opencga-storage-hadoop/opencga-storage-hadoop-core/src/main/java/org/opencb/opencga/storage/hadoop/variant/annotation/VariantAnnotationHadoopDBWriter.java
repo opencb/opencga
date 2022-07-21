@@ -11,6 +11,7 @@ import org.opencb.opencga.storage.hadoop.variant.annotation.pending.AnnotationPe
 import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsDBCleaner;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndexUtils;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,6 +67,11 @@ public class VariantAnnotationHadoopDBWriter extends HBaseDataWriter<Put> {
     @Override
     public boolean close() {
         super.close();
+        try {
+            schemaManager.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
         return pendingVariantsCleaner.close();
     }
 
@@ -75,7 +81,7 @@ public class VariantAnnotationHadoopDBWriter extends HBaseDataWriter<Put> {
             cleanPendingVariants();
         }
         for (Put put : puts) {
-            HadoopVariantSearchIndexUtils.addNotSyncStatus(put, columnFamily);
+            HadoopVariantSearchIndexUtils.addNotSyncStatus(put);
             loadedVariants.add(put.getRow());
         }
 

@@ -85,7 +85,7 @@ For changing particular settings during buildings you can create a profile in _~
                         <activeByDefault>true</activeByDefault>
                     </activation>
                     <properties>
-                        <opencga.war.name>opencga-${opencga.version}</opencga.war.name>
+                        <opencga.war.name>opencga-${project.version}</opencga.war.name>
 
                         <!-- General -->
                         <OPENCGA.INSTALLATION.DIR>/opt/opencga</OPENCGA.INSTALLATION.DIR>
@@ -171,7 +171,11 @@ Remember that **_develop_** branch dependencies are not ensured to be deployed a
     ├── conf
     ├── libs
     ├── LICENSE
+<<<<<<< HEAD
+    ├── opencga-2.0.0-rc3.war
+=======
     ├── opencga-2.0.0.war
+>>>>>>> release-2.0.0
     ├── README.md
     ├── misc
     └── test

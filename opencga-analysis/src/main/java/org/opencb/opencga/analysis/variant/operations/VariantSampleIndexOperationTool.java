@@ -17,10 +17,12 @@
 package org.opencb.opencga.analysis.variant.operations;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.tools.annotations.Tool;
-import org.opencb.opencga.core.models.operations.variant.VariantSampleIndexParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.operations.variant.VariantSampleIndexParams;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
 import java.util.ArrayList;
@@ -30,8 +32,8 @@ import java.util.List;
         type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
 public class VariantSampleIndexOperationTool extends OperationTool {
 
-    public static final String ID = "variant-sample-index";
-    public static final String DESCRIPTION = "Build and annotate the sample index";
+    public static final String ID = "variant-secondary-sample-index";
+    public static final String DESCRIPTION = "Build and annotate the sample index.";
     protected String study;
 
     @ToolParams
@@ -61,6 +63,9 @@ public class VariantSampleIndexOperationTool extends OperationTool {
         if (sampleIndexParams.isAnnotate()) {
             steps.add("annotate");
         }
+        if (sampleIndexParams.isFamilyIndex()) {
+            steps.add("familyIndex");
+        }
         return steps;
     }
 
@@ -71,6 +76,16 @@ public class VariantSampleIndexOperationTool extends OperationTool {
         }
         if (sampleIndexParams.isAnnotate()) {
             step("annotate", () -> variantStorageManager.sampleIndexAnnotate(study, sampleIndexParams.getSample(), params, token));
+        }
+        if (sampleIndexParams.isFamilyIndex()) {
+            step("familyIndex", () -> {
+                DataResult<List<String>> result = variantStorageManager.familyIndexBySamples(study, sampleIndexParams.getSample(), params, getToken());
+                if (result.getEvents() != null) {
+                    for (Event event : result.getEvents()) {
+                        addEvent(event.getType(), event.getMessage());
+                    }
+                }
+            });
         }
     }
 }

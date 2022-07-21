@@ -11,6 +11,11 @@ public class StudyVariantEngineConfiguration {
     public StudyVariantEngineConfiguration() {
     }
 
+    public StudyVariantEngineConfiguration(ObjectMap options, SampleIndexConfiguration sampleIndex) {
+        this.options = options;
+        this.sampleIndex = sampleIndex;
+    }
+
     public ObjectMap getOptions() {
         return options;
     }

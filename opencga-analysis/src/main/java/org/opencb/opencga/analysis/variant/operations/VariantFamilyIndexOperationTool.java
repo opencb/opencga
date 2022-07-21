@@ -25,14 +25,16 @@ import org.opencb.opencga.core.models.operations.variant.VariantFamilyIndexParam
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
+import java.util.Collections;
 import java.util.List;
 
+@Deprecated
 @Tool(id = VariantFamilyIndexOperationTool.ID, description = VariantFamilyIndexOperationTool.DESCRIPTION,
         type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
 public class VariantFamilyIndexOperationTool extends OperationTool {
 
     public static final String ID = "variant-family-index";
-    public static final String DESCRIPTION = "Build the family index";
+    public static final String DESCRIPTION = "DEPRECATED Build the family index";
 
     private String study;
 
@@ -46,6 +48,10 @@ public class VariantFamilyIndexOperationTool extends OperationTool {
         study = getStudyFqn();
 
         List<String> list = variantFamilyIndexParams.getFamily();
+        if (list == null) {
+            list = Collections.emptyList();
+            variantFamilyIndexParams.setFamily(Collections.emptyList());
+        }
         if (variantFamilyIndexParams.isUpdateIndex()) {
             if (list.size() > 1 || list.size() == 1 && !list.get(0).equals(ParamConstants.ALL)) {
                 throw new IllegalArgumentException("Unaccepted parameter \"family\" when updating index.");

@@ -6,23 +6,23 @@
 \usage{
 \S4method{individualClient}{OpencgaR}(
   OpencgaR,
-  members,
   individuals,
-  annotationSet,
+  members,
   individual,
+  annotationSet,
   endpointName,
   params = NULL,
   ...
 )
 }
 \arguments{
-\item{members}{Comma separated list of user or group ids.}
-
 \item{individuals}{Comma separated list of individual ids.}
 
-\item{annotationSet}{AnnotationSet ID to be updated.}
+\item{members}{Comma separated list of user or group ids.}
 
 \item{individual}{Individual ID, name or UUID.}
+
+\item{annotationSet}{AnnotationSet ID to be updated.}
 
 \item{propagate}{Propagate individual permissions to related samples.}
 
@@ -157,10 +157,10 @@ The following table summarises the available \emph{actions} for this client:\tab
    distinct \tab /{apiVersion}/individuals/distinct \tab study, id, uuid, name, familyIds, father, mother, samples, sex, ethnicity, dateOfBirth, disorders, phenotypes, populationName, populationSubpopulation, karyotypicSex, lifeStatus, internalStatus, status, deleted, creationDate, modificationDate, annotation, acl, release, snapshot, field\link{*} \cr
    search \tab /{apiVersion}/individuals/search \tab include, exclude, limit, skip, count, flattenAnnotations, study, id, uuid, name, father, mother, samples, familyIds, sex, dateOfBirth, ethnicity, disorders, phenotypes, populationName, populationSubpopulation, karyotypicSex, lifeStatus, internalStatus, status, deleted, creationDate, modificationDate, annotation, acl, release, snapshot \cr
    acl \tab /{apiVersion}/individuals/{individuals}/acl \tab individuals\link{*}, study, member, silent \cr
-   delete \tab /{apiVersion}/individuals/{individuals}/delete \tab force, study, individuals \cr
+   delete \tab /{apiVersion}/individuals/{individuals}/delete \tab force, study, individuals\link{*} \cr
    info \tab /{apiVersion}/individuals/{individuals}/info \tab include, exclude, flattenAnnotations, individuals\link{*}, study, version, deleted \cr
    update \tab /{apiVersion}/individuals/{individuals}/update \tab include, exclude, individuals\link{*}, study, samplesAction, phenotypesAction, disordersAction, annotationSetsAction, incVersion, includeResult, body \cr
-   updateAnnotations \tab /{apiVersion}/individuals/{individual}/annotationSets/{annotationSet}/annotations/update \tab individual\link{*}, study, annotationSet, action, incVersion, body \cr
+   updateAnnotationSetsAnnotations \tab /{apiVersion}/individuals/{individual}/annotationSets/{annotationSet}/annotations/update \tab individual\link{*}, study, annotationSet\link{*}, action, incVersion, body \cr
    relatives \tab /{apiVersion}/individuals/{individual}/relatives \tab include, exclude, flattenAnnotations, individual\link{*}, study, degree \cr
 }
 }

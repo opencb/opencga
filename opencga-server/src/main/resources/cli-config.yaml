@@ -145,6 +145,9 @@ apiConfig:
       commandName: panels
       ignore: False
       key: DiseasePanel
+      commands:
+        - name: import
+          rename: importPanels
     - name: analysisAlignment
       commandName: alignments
       ignore: False
@@ -185,6 +188,7 @@ apiConfig:
       key: VariantOperation
       operations: True
     - name: meta
+      commandName: meta
       ignore: False
       key: Meta
     - name: ga4gh

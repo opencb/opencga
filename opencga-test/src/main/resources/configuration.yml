@@ -1,0 +1,46 @@
+#There are some variables that we can include in both the caller and aligner instructions. These variables are:
+# ${PARAMS} It must be put in the place that the instruction requires the parameters
+# ${INDEX} Its value is the one that exists in the index field of the reference
+# ${OUTPUT} It is the output directory
+# ${BAM} It is the path of the sorted bam file
+# ${REFERENCE.PATH} Its value is the one that exists in the path field of the reference
+# ${FASTQNAME} Is the name of one of the input fastq files, with no extension
+# ${FASTQ1} Is the name of the first of the input fastq files of the pair
+# ${FASTQ2} Is the name of the second of the input fastq files of the pair
+
+execution:
+  id: "k8s Jobs"
+  queue: "queue1"
+  azureCredentials: ""
+  options:
+    - "option1"
+envs:
+  - id: "corpasome-1"
+    description: "generate son's vcf for corpasome-grch38"
+    dataset:
+      path: "/home/juanfe/trainning/"
+      paired: true
+    data:
+      path: "/home/juanfe/trainning/data/"
+    reference:
+      path: "/home/juanfe/trainning/index/Falbicolis.chr5.fa"
+      index: "/home/juanfe/trainning/index/"
+    aligner:
+      #skip: true
+      name: "BWA v0.7.17-r1188"
+      image: "opencb/opencga-ext-tools"
+      command: "bwa mem ${PARAMS} ${INDEX}Falbicolis.chr5.fa ${FASTQ1} ${FASTQ2} > ${OUTPUT}"
+      params:
+        - "-t 4"
+        - "-R '@RG\\tID:${FASTQNAME}\\tSM:${FASTQNAME}'"
+    callers:
+      - name: "GATK v4.2.6.1"
+        #skip: true
+        image: "broadinstitute/gatk:4.2.6.1"
+        command: "gatk HaplotypeCaller ${PARAMS} >/dev/null 2>&1"
+        params:
+          - "--input ${BAM}"
+          - "--output ${OUTPUT}"
+          - "--reference ${REFERENCE.PATH}"
+logger:
+  logLevel: "off"

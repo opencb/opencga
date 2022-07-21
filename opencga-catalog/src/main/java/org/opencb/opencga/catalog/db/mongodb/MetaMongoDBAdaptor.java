@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.JwtUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
@@ -51,7 +52,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
 
     private static final String OLD_ID = "_id";
     public static final Bson METADATA_QUERY = Filters.or(
-            Filters.eq(PRIVATE_ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID),
+            Filters.eq(ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID),
             Filters.eq(OLD_ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID));
     private final MongoDBCollection metaCollection;
     private static final String VERSION = GitRepositoryState.get().getBuildVersion();
@@ -90,16 +91,18 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
             try {
                 HashMap hashMap = objectMapper.readValue(s, HashMap.class);
 
-                String collection = (String) hashMap.get("collection");
-                if (!indexes.containsKey(collection)) {
-                    indexes.put(collection, new ArrayList<>());
-                }
-                Map<String, ObjectMap> myIndexes = new HashMap<>();
-                myIndexes.put("fields", new ObjectMap((Map) hashMap.get("fields")));
-                myIndexes.put("options", new ObjectMap((Map) hashMap.getOrDefault("options", Collections.emptyMap())));
+                List<String> collections = (List<String>) hashMap.get("collections");
+                for (String collection : collections) {
+                    if (!indexes.containsKey(collection)) {
+                        indexes.put(collection, new ArrayList<>());
+                    }
+                    Map<String, ObjectMap> myIndexes = new HashMap<>();
+                    myIndexes.put("fields", new ObjectMap((Map) hashMap.get("fields")));
+                    myIndexes.put("options", new ObjectMap((Map) hashMap.getOrDefault("options", Collections.emptyMap())));
 
-                if (!uniqueIndexesOnly || myIndexes.get("options").getBoolean("unique")) {
-                    indexes.get(collection).add(myIndexes);
+                    if (!uniqueIndexesOnly || myIndexes.get("options").getBoolean("unique")) {
+                        indexes.get(collection).add(myIndexes);
+                    }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -112,21 +115,31 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
             throw new UncheckedIOException(e);
         }
 
-        createIndexes(dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection(), indexes.get("user"));
-        createIndexes(dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection(), indexes.get("study"));
-        createIndexes(dbAdaptorFactory.getCatalogSampleDBAdaptor().getSampleCollection(), indexes.get("sample"));
-        createIndexes(dbAdaptorFactory.getCatalogIndividualDBAdaptor().getIndividualCollection(), indexes.get("individual"));
-        createIndexes(dbAdaptorFactory.getCatalogFileDBAdaptor().getCollection(), indexes.get("file"));
-        createIndexes(dbAdaptorFactory.getCatalogCohortDBAdaptor().getCohortCollection(), indexes.get("cohort"));
-        createIndexes(dbAdaptorFactory.getCatalogJobDBAdaptor().getJobCollection(), indexes.get("job"));
-        createIndexes(dbAdaptorFactory.getCatalogFamilyDBAdaptor().getFamilyCollection(), indexes.get("family"));
-        createIndexes(dbAdaptorFactory.getCatalogPanelDBAdaptor().getPanelCollection(), indexes.get("panel"));
-        createIndexes(dbAdaptorFactory.getClinicalAnalysisDBAdaptor().getClinicalCollection(), indexes.get("clinical"));
-        createIndexes(dbAdaptorFactory.getInterpretationDBAdaptor().getInterpretationCollection(), indexes.get("interpretation"));
-        createIndexes(dbAdaptorFactory.getCatalogAuditDbAdaptor().getAuditCollection(), indexes.get("audit"));
+        createIndexes(MongoDBAdaptorFactory.USER_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.STUDY_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.FILE_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.COHORT_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.JOB_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.CLINICAL_ANALYSIS_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.AUDIT_COLLECTION, indexes);
+
+        // Versioned collections
+        createIndexes(MongoDBAdaptorFactory.SAMPLE_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.SAMPLE_ARCHIVE_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.INDIVIDUAL_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.INDIVIDUAL_ARCHIVE_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.FAMILY_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.FAMILY_ARCHIVE_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.PANEL_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.PANEL_ARCHIVE_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.INTERPRETATION_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.INTERPRETATION_ARCHIVE_COLLECTION, indexes);
     }
 
-    private void createIndexes(MongoDBCollection mongoCollection, List<Map<String, ObjectMap>> indexes) {
+    private void createIndexes(String collection, Map<String, List<Map<String, ObjectMap>>> indexCollectionMap) {
+        MongoDBCollection mongoCollection = dbAdaptorFactory.getMongoDBCollectionMap().get(collection);
+        List<Map<String, ObjectMap>> indexes = indexCollectionMap.get(collection);
+
         DataResult<Document> index = mongoCollection.getIndex();
         // We store the existing indexes
         Set<String> existingIndexes = index.getResults()
@@ -169,8 +182,16 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     public void initializeMetaCollection(Configuration configuration) throws CatalogException {
         Metadata metadata = new Metadata().setIdCounter(0L).setVersion(VERSION);
 
+        // Ensure JWT secret key is long and secure
+        String secretKey = configuration.getAdmin().getSecretKey();
+        if (StringUtils.isEmpty(secretKey)) {
+            throw new CatalogDBException("Missing JWT secret key");
+        } else {
+            JwtUtils.validateJWTKey(configuration.getAdmin().getAlgorithm(), secretKey);
+        }
+
         Document metadataObject = getMongoDBDocument(metadata, "Metadata");
-        metadataObject.put(PRIVATE_ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID);
+        metadataObject.put(ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID);
         Document adminDocument = getMongoDBDocument(configuration.getAdmin(), "Admin");
         metadataObject.put("admin", adminDocument);
         metadataObject.put("_fullVersion", new Document()
@@ -209,19 +230,12 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
 
         Document adminDocument = new Document();
         if (StringUtils.isNotEmpty(params.getString(SECRET_KEY))) {
+            String algorithm = readAlgorithm();
+            String secretKey = params.getString(SECRET_KEY);
+
+            JwtUtils.validateJWTKey(algorithm, secretKey);
             adminDocument.append("admin.secretKey", params.getString(SECRET_KEY));
         }
-
-//        if (StringUtils.isNotEmpty(params.getString(ALGORITHM))) {
-//            String signature = params.getString(ALGORITHM);
-//            try {
-//                SignatureAlgorithm.valueOf(signature);
-//            } catch (Exception e) {
-//                logger.error("{}", e.getMessage(), e);
-//                throw new CatalogDBException("Unknown signature algorithm " + signature);
-//            }
-//            adminDocument.append("admin.algorithm", params.getString(ALGORITHM));
-//        }
 
         if (adminDocument.size() > 0) {
             Bson update = new Document("$set", adminDocument);

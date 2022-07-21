@@ -8,9 +8,11 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.TestParamConstants;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobReferenceParam;
 
@@ -110,7 +112,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
     public static class MigrationWithJobs extends MigrationTool {
         @Override
         protected void run() throws Exception {
-            String fqn = catalogManager.getProjectManager().get(new Query(), new QueryOptions(), token).first().getFqn();
+            String fqn = catalogManager.getProjectManager().search(new Query(), new QueryOptions(), token).first().getFqn();
             getMigrationRun().getJobs().clear();
 
             getMigrationRun().addJob(catalogManager.getJobManager().submitProject(fqn, "my-tool", null, Collections.emptyMap(), null, null, null, null, token).first());
@@ -143,7 +145,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
             assertTrue(Arrays.asList("test-1", "test-2").contains(annotation.id()));
         }
         // Run migrations up to 0.0.1
-        migrationManager.runMigration("0.0.1", Collections.emptySet(), Collections.emptySet(), "", token);
+        migrationManager.runMigration("0.0.1", Collections.emptySet(), Collections.emptySet(), false, "", token);
 
         pendingMigrations = migrationManager.getPendingMigrations("0.1.0", token);
         assertEquals(0, pendingMigrations.size());
@@ -153,16 +155,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
         for (int i = 0; i < pendingMigrations.size(); i++) {
             Class<? extends MigrationTool> pendingMigration = pendingMigrations.get(i);
             Migration annotation = pendingMigration.getAnnotation(Migration.class);
-            switch (i) {
-                case 0:
-                    assertEquals("test2-1", annotation.id());
-                    break;
-                case 1:
-                    assertEquals("test2-2", annotation.id());
-                    break;
-                default:
-                    fail();
-            }
+            assertTrue(Arrays.asList("test2-1", "test2-2").contains(annotation.id()));
         }
 
         pendingMigrations = migrationManager.getPendingMigrations("0.2.1", token);
@@ -172,10 +165,8 @@ public class MigrationManagerTest extends AbstractManagerTest {
             Migration annotation = pendingMigration.getAnnotation(Migration.class);
             switch (i) {
                 case 0:
-                    assertEquals("test2-1", annotation.id());
-                    break;
                 case 1:
-                    assertEquals("test2-2", annotation.id());
+                    assertTrue(Arrays.asList("test2-1", "test2-2").contains(annotation.id()));
                     break;
                 case 2:
                     assertEquals("test3-1", annotation.id());
@@ -187,7 +178,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
                     fail();
             }
         }
-        migrationManager.runMigration("0.2.0", Collections.emptySet(), Collections.emptySet(), "", token);
+        migrationManager.runMigration("0.2.0", Collections.emptySet(), Collections.emptySet(), false, "", token);
 
         pendingMigrations = migrationManager.getPendingMigrations("0.2.3", token);
         assertEquals(2, pendingMigrations.size());
@@ -208,7 +199,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
 
         thrown.expectMessage("manual");
         thrown.expect(MigrationException.class);
-        migrationManager.runMigration("0.2.2", Collections.emptySet(), Collections.emptySet(), "", token);
+        migrationManager.runMigration("0.2.2", Collections.emptySet(), Collections.emptySet(), false, "", token);
     }
 
     @Test
@@ -229,7 +220,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
         catalogManager.getMigrationManager().runManualMigration("0.2.1", "test4-1-manual", Paths.get(""), new ObjectMap("key", "value"), token);
 
         // RUN. New status ON_HOLD
-        catalogManager.getMigrationManager().runMigration("1.0.0", Collections.emptySet(), Collections.emptySet(), "", token);
+        catalogManager.getMigrationManager().runMigration("1.0.0", Collections.emptySet(), Collections.emptySet(), false, "", token);
 
         MigrationRun migrationRun = catalogManager.getMigrationManager().getMigrationRuns(token).stream().filter(p1 -> p1.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();
         assertEquals(MigrationRun.MigrationStatus.ON_HOLD, migrationRun.getStatus());
@@ -237,7 +228,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
         JobReferenceParam j = migrationRun.getJobs().get(0);
 
         // RUN. Migration run does not get triggered
-        catalogManager.getMigrationManager().runMigration("1.0.0", Collections.emptySet(), Collections.emptySet(), "", token);
+        catalogManager.getMigrationManager().runMigration("1.0.0", Collections.emptySet(), Collections.emptySet(), false, "", token);
         migrationRun = catalogManager.getMigrationManager().getMigrationRuns(token).stream().filter(p -> p.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();
         assertEquals(MigrationRun.MigrationStatus.ON_HOLD, migrationRun.getStatus());
         assertEquals(start, migrationRun.getStart());
@@ -245,14 +236,16 @@ public class MigrationManagerTest extends AbstractManagerTest {
 
         // Update job with ERROR. Migration gets updated to ERROR.
         Job job = catalogManager.getJobManager().get(j.getStudyId(), j.getId(), new QueryOptions(), token).first();
-        catalogManager.getJobManager().update(job.getStudy().getId(), job.getId(), new ObjectMap("internal.status.id", "ERROR"), new QueryOptions(), token);
+        Enums.ExecutionStatus status = new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Failed");
+        catalogManager.getJobManager().update(job.getStudy().getId(), job.getId(),
+                new ObjectMap(JobDBAdaptor.QueryParams.INTERNAL_STATUS.key(), status), new QueryOptions(), token);
 
         migrationRun = catalogManager.getMigrationManager().getMigrationRuns(token)
                 .stream().filter(p -> p.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();
         assertEquals(MigrationRun.MigrationStatus.ERROR, migrationRun.getStatus());
 
         // RUN. Migration run triggered. Status: ON_HOLD
-        catalogManager.getMigrationManager().runMigration("1.0.0", Collections.emptySet(), Collections.emptySet(), "", token);
+        catalogManager.getMigrationManager().runMigration("1.0.0", Collections.emptySet(), Collections.emptySet(), false, "", token);
         migrationRun = catalogManager.getMigrationManager().getMigrationRuns(token)
                 .stream().filter(p -> p.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();
         assertEquals(MigrationRun.MigrationStatus.ON_HOLD, migrationRun.getStatus());
@@ -260,7 +253,9 @@ public class MigrationManagerTest extends AbstractManagerTest {
         // Update job with DONE. Migration gets updated to DONE.
         j = migrationRun.getJobs().get(0);
         job = catalogManager.getJobManager().get(j.getStudyId(), j.getId(), new QueryOptions(), token).first();
-        catalogManager.getJobManager().update(job.getStudy().getId(), job.getId(), new ObjectMap("internal.status.id", "DONE"), new QueryOptions(), token);
+        status = new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE, "Done");
+        catalogManager.getJobManager().update(job.getStudy().getId(), job.getId(),
+                new ObjectMap(JobDBAdaptor.QueryParams.INTERNAL_STATUS.key(), status), new QueryOptions(), token);
 
         migrationRun = catalogManager.getMigrationManager().getMigrationRuns(token)
                 .stream().filter(p -> p.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();

@@ -22,12 +22,11 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>2.2.1-SNAPSHOT</version>
+        <version>2.5.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>opencga-analysis</artifactId>
-    <version>${opencga.version}</version>
     <packaging>jar</packaging>
 
     <dependencies>
@@ -47,40 +46,38 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-catalog</artifactId>
-            <version>${opencga.version}</version>
+            <version>${project.parent.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
-            <version>${opencga.version}</version>
+            <version>${project.parent.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-mongodb</artifactId>
-            <version>${opencga.version}</version>
+            <version>${project.parent.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-mongodb</artifactId>
-            <version>${opencga.version}</version>
+            <version>${project.parent.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-hadoop-core</artifactId>
-            <version>${opencga.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-hadoop-core</artifactId>
-            <version>${opencga.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -94,15 +91,15 @@
 
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}</artifactId>
-            <version>${opencga.version}</version>
+            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
+            <version>${project.parent.version}</version>
             <classifier>shaded</classifier>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}</artifactId>
-            <version>${opencga.version}</version>
+            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
+            <version>${project.parent.version}</version>
             <classifier>tests</classifier>
             <type>test-jar</type>
             <scope>test</scope>
@@ -119,7 +116,7 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-clinical</artifactId>
-            <version>${opencga.version}</version>
+            <version>${project.parent.version}</version>
             <scope>compile</scope>
         </dependency>
 <!--        RGA test dependencies -->

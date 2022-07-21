@@ -57,4 +57,9 @@ public class InterpretationStatus extends InternalStatus {
         return false;
     }
 
+    @Override
+    public InterpretationStatus setId(String id) {
+        super.setId(id);
+        return this;
+    }
 }

@@ -12,15 +12,22 @@ import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.session.Session;
 import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.catalog.utils.JwtUtils;
+import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import static org.opencb.commons.utils.PrintUtils.printWarn;
@@ -36,32 +43,40 @@ public class CommandProcessor {
                 //2. Parse params of options files
                 cliOptionsParser.parse(args);
                 if (!ArrayUtils.isEmpty(args)) {
-                    CommandLineUtils.debug("PARSED OPTIONS ::: " + CommandLineUtils.argsToString(args));
                     logger.debug("PARSED OPTIONS ::: " + CommandLineUtils.argsToString(args));
                     try {
                         // 3. Check if a command has been provided is valid
                         String parsedCommand = cliOptionsParser.getCommand();
-                        CommandLineUtils.debug("COMMAND TO EXECUTE ::: " + CommandLineUtils.argsToString(args));
                         logger.debug("COMMAND TO EXECUTE ::: " + CommandLineUtils.argsToString(args));
                         if (cliOptionsParser.isValid(parsedCommand)) {
                             // 4. Get command executor from ExecutorProvider
-                            CommandLineUtils.debug("COMMAND AND SUBCOMMAND ARE VALID");
                             logger.debug("COMMAND AND SUBCOMMAND ARE VALID");
                             String parsedSubCommand = cliOptionsParser.getSubCommand();
 
                             OpencgaCommandExecutor commandExecutor = ExecutorProvider.getOpencgaCommandExecutor(cliOptionsParser, parsedCommand);
                             // 5. Execute parsed command with executor provided using CommandProcessor Implementation
-                            CommandLineUtils.debug("EXECUTING ::: " + CommandLineUtils.argsToString(args));
                             logger.debug("EXECUTING ::: " + CommandLineUtils.argsToString(args));
 
                             if (commandExecutor != null) {
                                 try {
+                                    if (StringUtils.isNotEmpty(commandExecutor.getSessionManager().getSession().getRefreshToken())) {
+                                        Date expirationDate = JwtUtils.getExpirationDate(commandExecutor.getSessionManager().getSession().getRefreshToken());
+                                        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+                                        logger.debug("Token expiration date -> " + sdf.format(expirationDate));
+                                    }
+
+                                    if (checkAutoRefresh(commandExecutor)) {
+                                        logger.debug("Refreshing token..." + commandExecutor.getSessionManager().getSession().getRefreshToken());
+                                        refreshToken(commandExecutor);
+                                        logger.debug("New refresh token..." + commandExecutor.getSessionManager().getSession().getRefreshToken());
+
+                                    }
                                     commandExecutor.execute();
                                     commandExecutor.getSessionManager().saveSession();
                                     loadSessionStudies(commandExecutor);
                                 } catch (Exception ex) {
-                                    CommandLineUtils.error("Execution error: " + ex.getMessage(), ex);
-                                    logger.error("Execution error: " + ex.getMessage(), ex);
+                                    CommandLineUtils.error("Execution error", ex);
+                                    logger.error("Execution error", ex);
                                 }
                             } else {
                                 cliOptionsParser.printUsage();
@@ -92,12 +107,32 @@ public class CommandProcessor {
 
     }
 
+    private void refreshToken(OpencgaCommandExecutor commandExecutor) throws ClientException, IOException {
+        AuthenticationResponse response = commandExecutor.getOpenCGAClient().
+                refresh(commandExecutor.getSessionManager().getSession().getRefreshToken());
+        commandExecutor.refreshToken(response);
+
+    }
+
+    private boolean checkAutoRefresh(OpencgaCommandExecutor commandExecutor) {
+        if (StringUtils.isEmpty(commandExecutor.getSessionManager().getSession().getRefreshToken())) {
+            return false;
+        }
+        if (commandExecutor.getClientConfiguration().getRest().isTokenAutoRefresh()) {
+            Date expirationDate = JwtUtils.getExpirationDate(commandExecutor.getSessionManager().getSession().getRefreshToken());
+            Date now = new Date();
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(now);
+            cal.add(Calendar.MINUTE, 10);
+            Date refreshDate = cal.getTime();
+            return expirationDate.getTime() >= now.getTime() && expirationDate.getTime() <= refreshDate.getTime();
+        }
+        return false;
+    }
 
     public void loadSessionStudies(OpencgaCommandExecutor commandExecutor) {
         Session session = commandExecutor.getSessionManager().getSession();
         if (!StringUtils.isEmpty(session.getToken()) && !SessionManager.NO_TOKEN.equals(session.getToken())) {
-            CommandLineUtils.debug("Loading session studies using token: "
-                    + session.getToken());
             logger.debug("Loading session studies using token: "
                     + session.getToken());
 
@@ -117,12 +152,10 @@ public class CommandProcessor {
 
                 if (CollectionUtils.isNotEmpty(studies)) {
                     //Save all the user studies in session
-                    CommandLineUtils.debug("Retrieved studies: " + studies);
                     logger.debug("Retrieved studies: " + studies);
 
                     session.setStudies(studies);
 
-                    CommandLineUtils.debug("Session studies: " + session.getStudies());
                     logger.debug("Session studies: " + session.getStudies());
 
                     //If the List of studies retrieved doesn't contain the current study, must select the new one
@@ -138,7 +171,6 @@ public class CommandProcessor {
                                 break;
                             }
                         }
-                        CommandLineUtils.debug("Current study: " + session.getCurrentStudy());
                         logger.debug("Current study: " + session.getCurrentStudy());
 
                         // If none is found, save the first one as the current study
@@ -153,8 +185,6 @@ public class CommandProcessor {
                 CommandLineUtils.error("Failure reloading studies ", e);
                 logger.error("Failure reloading studies ", e);
             }
-            CommandLineUtils.debug("Session studies: " + commandExecutor.getSessionManager().getSession().getStudies().toString());
-            CommandLineUtils.debug("Current study: " + commandExecutor.getSessionManager().getSession().getCurrentStudy());
             logger.debug("Session studies: " + commandExecutor.getSessionManager().getSession().getStudies().toString());
             logger.debug("Current study: " + commandExecutor.getSessionManager().getSession().getCurrentStudy());
         }

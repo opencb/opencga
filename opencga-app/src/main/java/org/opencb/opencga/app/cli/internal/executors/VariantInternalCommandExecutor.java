@@ -500,6 +500,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.sample,
                 cliOptions.buildIndex,
                 cliOptions.annotate,
+                cliOptions.familyIndex,
                 cliOptions.overwrite
         );
 

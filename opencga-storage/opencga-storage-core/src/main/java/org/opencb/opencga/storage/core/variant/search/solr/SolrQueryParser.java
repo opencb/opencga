@@ -29,6 +29,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -259,29 +260,29 @@ public class SolrQueryParser {
         }
 
         // ALT population frequency
-        // in the query: 1kG_phase3:CEU<=0.0053191,1kG_phase3:CLM>0.0125319"
-        // in the search model: "popFreq__1kG_phase3__CEU":0.0053191,popFreq__1kG_phase3__CLM">0.0125319"
+        // in the query: 1000G:CEU<=0.0053191,1000G:CLM>0.0125319"
+        // in the search model: "popFreq__1000G__CEU":0.0053191,popFreq__1000G__CLM">0.0125319"
         key = ANNOT_POPULATION_ALTERNATE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parsePopFreqValue(ANNOT_POPULATION_ALTERNATE_FREQUENCY, "popFreq", query.getString(key), "ALT", null, null));
         }
 
         // MAF population frequency
-        // in the search model: "popFreq__1kG_phase3__CLM":0.005319148767739534
+        // in the search model: "popFreq__1000G__CLM":0.005319148767739534
         key = ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parsePopFreqValue(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, "popFreq", query.getString(key), "MAF", null, null));
         }
 
         // REF population frequency
-        // in the search model: "popFreq__1kG_phase3__CLM":0.005319148767739534
+        // in the search model: "popFreq__1000G__CLM":0.005319148767739534
         key = ANNOT_POPULATION_REFERENCE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parsePopFreqValue(ANNOT_POPULATION_REFERENCE_FREQUENCY, "popFreq", query.getString(key), "REF", null, null));
         }
 
         // Stats ALT
-        // In the model: "altStats__1kg_phase3__ALL"=0.02
+        // In the model: "altStats__1000G__ALL"=0.02
         key = STATS_ALT.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parsePopFreqValue(STATS_ALT, "altStats", query.getString(key), "ALT", defaultStudyName,
@@ -289,7 +290,7 @@ public class SolrQueryParser {
         }
 
         // Stats MAF
-        // In the model: "altStats__1kg_phase3__ALL"=0.02
+        // In the model: "altStats__1000G__ALL"=0.02
         key = STATS_MAF.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parsePopFreqValue(STATS_MAF, "altStats", query.getString(key), "MAF", defaultStudyName,
@@ -297,7 +298,7 @@ public class SolrQueryParser {
         }
 
         // Stats REF
-        // In the model: "altStats__1kg_phase3__ALL"=0.02
+        // In the model: "altStats__1000G__ALL"=0.02
         key = STATS_REF.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parsePopFreqValue(STATS_REF, "altStats", query.getString(key), "REF", defaultStudyName,
@@ -305,7 +306,7 @@ public class SolrQueryParser {
         }
 
         // Stats PASS filter
-        // In the model: "passStats__1kg_phase3__ALL">0.2
+        // In the model: "passStats__1000G__ALL">0.2
         key = STATS_PASS_FREQ.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parsePopFreqValue(STATS_PASS_FREQ, "passStats", query.getString(key), "", defaultStudyName,
@@ -313,9 +314,9 @@ public class SolrQueryParser {
         }
 
         // Variant score
-        // In the model: "score__1kg_phase3__gwas1>3.12"
-        //               "scorePValue__1kg_phase3__gwas1<=0.002"
-        // where "1kg_phase3" is the study ID, and "gwas1" is the score ID
+        // In the model: "score__1000G__gwas1>3.12"
+        //               "scorePValue__1000G__gwas1<=0.002"
+        // where "1000G" is the study ID, and "gwas1" is the score ID
         key = SCORE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.addAll(parseVariantScores(query.getString(key), defaultStudyName));
@@ -1098,7 +1099,7 @@ public class SolrQueryParser {
     }
 
     /**
-     * Parse population/altStats values, e.g.: 1000g:all>0.4 or 1Kg_phase3:JPN<0.00982. This function takes into account
+     * Parse population/altStats values, e.g.: 1000g:all>0.4 or 1000G:JPN<0.00982. This function takes into account
      * multiple values and the separator between them can be:
      *     "," to apply a "OR condition"
      *     ";" to apply a "AND condition"
@@ -1182,7 +1183,7 @@ public class SolrQueryParser {
                 }
 
                 if (name.equals("popFreq")) {
-                    if ((study.equals("1kG_phase3") || study.equals("GNOMAD_GENOMES")) && pop.equals("ALL")) {
+                    if ((study.equals(ParamConstants.POP_FREQ_1000G) || study.equals("GNOMAD_GENOMES")) && pop.equals("ALL")) {
                         addOr = false;
                     } else {
                         addOr = true;

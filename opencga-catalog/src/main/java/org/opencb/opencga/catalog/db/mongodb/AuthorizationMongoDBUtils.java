@@ -113,7 +113,7 @@ public class AuthorizationMongoDBUtils {
      */
     public static Document filterAnnotationSets(Document study, Document entry, String user, String studyPermission,
                                                 String entryPermission) {
-        if (study == null || entry == null) {
+        if (study == null || entry == null || user == null) {
             return entry;
         }
 

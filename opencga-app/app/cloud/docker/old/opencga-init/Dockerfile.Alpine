@@ -1,0 +1,40 @@
+FROM openjdk:8-jre-alpine3.9
+ARG TAG
+ARG ORG=opencb
+
+ARG BUILD_PATH="."
+FROM $ORG/opencga-base:$TAG
+
+ENV OPENCGA_HOME=/opt/opencga
+ENV OPENCGA_CONFIG_DIR=${OPENCGA_HOME}/conf
+ARG INIT_PATH=cloud/docker/opencga-init/
+
+RUN echo 'http://dl-cdn.alpinelinux.org/alpine/v3.9/main' >> /etc/apk/repositories && echo 'http://dl-cdn.alpinelinux.org/alpine/v3.9/community' >> /etc/apk/repositories
+COPY ${INIT_PATH} /opt/opencga/init/
+COPY ${BUILD_PATH}/conf/* /opt/opencga/init/test/
+
+RUN apk --no-cache --update add openssh-client sshpass ca-certificates curl docker jq ncurses vim && \
+    adduser -D -u 1001 opencga -h /home/opencga
+
+COPY ${BUILD_PATH} /opt/opencga
+RUN chown -R 1001 /opt/opencga/
+# Mount volume to copy config into
+VOLUME /opt/volume
+
+WORKDIR /opt/opencga/bin
+USER root
+# Install local dependencies
+RUN apt-get install python3 && \
+    apt-get install python3-pip -y && \
+    pip3 install --upgrade pip setuptools && \
+    pip3 install -r /opt/opencga/init/requirements.txt && \
+    chmod +x /opt/opencga/init/setup.sh /opt/opencga/init/setup-hadoop.sh && \
+    echo ">Running init container configuration tests" && \
+    cd /opt/opencga/init/test && python3 test_override_yaml.py -v && rm -r /opt/opencga/init/test
+ \
+
+USER opencga
+# It is the responsibility of the setup.sh
+# script to initialise the volume correctly
+# and apply any runtime config transforms.
+ENTRYPOINT [ "/bin/sh","/opt/opencga/init/setup.sh" ]

@@ -30,6 +30,7 @@ import org.opencb.opencga.analysis.clinical.ClinicalInterpretationAnalysisExecut
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.analysis.clinical.ClinicalUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -140,8 +141,8 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaToolExecutor impl
             // VUS filter
             //
             //   Pop. frequency:
-            //     1kG_phase3:EUR<0.01
-            //     1kG_phase3:IBS<0.01
+            //     1000G:EUR<0.01
+            //     1000G:IBS<0.01
             //     EXAC/gnomAD < 0.01 (ALL ??, GNOMAD_GENOMES and/or GNOMAD_EXOMES ??)
             //     MGP< 0.01, (ALL ?)
             //   Conservation:
@@ -156,10 +157,10 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaToolExecutor impl
 
             query.put(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), lof);
 
-            query.put(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:EUR<0.01"
-                    + VariantQueryUtils.OR + "1kG_phase3:IBS<0.01"
+            query.put(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), ParamConstants.POP_FREQ_1000G + ":EUR<0.01"
+                    + VariantQueryUtils.OR + ParamConstants.POP_FREQ_1000G + ":IBS<0.01"
                     + VariantQueryUtils.OR + "EXAC:ALL<0.01"
-                    + VariantQueryUtils.OR + "GNOMAD_GENOMES:ALL<0.01"
+                    + VariantQueryUtils.OR + ParamConstants.POP_FREQ_GNOMAD_GENOMES + ":ALL<0.01"
                     + VariantQueryUtils.OR + "GNOMAD_EXOMES:ALL<0.01"
                     + VariantQueryUtils.OR + "MGP:ALL<0.01");
             query.put(VariantQueryParam.ANNOT_CONSERVATION.key(), "gerp>2");

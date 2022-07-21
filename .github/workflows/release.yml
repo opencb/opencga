@@ -10,7 +10,7 @@ jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P storage-hadoop,hdp3.1 -Dopencga.war.name=opencga
+      maven_opts: -P storage-hadoop,hdp3.1,RClient -Dopencga.war.name=opencga
 
   sonar:
     uses: opencb/java-common-libs/.github/workflows/sonar-analysis-workflow.yml@develop
@@ -31,17 +31,12 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: '10'
-      - name: Set up JDK 1.8
-        uses: actions/setup-java@v2
+      - name: Set up JDK 8
+        uses: actions/setup-java@v3
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '8'
-      - name: Cache Maven packages
-        uses: actions/cache@v2
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-maven
+          cache: 'maven'
       - name: Start MongoDB v${{ matrix.mongodb }}
         uses: supercharge/mongodb-github-action@1.7.0
         with:
@@ -65,11 +60,26 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
     needs: test
     with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init,ext-tools
     secrets:
       DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
       DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
+  deploy-python:
+    uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
+    needs: test
+    with:
+      cli: ./clients/python/python-build.sh push
+      artifact: build-folder
+    secrets:
+      PYPI_TWINE_USER: ${{ secrets.PYPI_TWINE_USER }}
+      PYPI_TWINE_PASSWORD: ${{ secrets.PYPI_TWINE_PASSWORD }}
+
   release:
     uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop
-    needs: deploy-docker
+    needs: [build, test]
+    with:
+      artifact: build-folder
+      file: |
+        opencga-client-${{ needs.build.outputs.version }}.tar.gz
+        clients/R/opencgaR_${{ needs.build.outputs.version }}.tar.gz

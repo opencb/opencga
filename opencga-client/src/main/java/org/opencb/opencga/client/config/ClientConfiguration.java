@@ -39,6 +39,7 @@ public final class ClientConfiguration {
 
     private static final String DEFAULT_CONFIGURATION_FORMAT = "YAML";
     private static Logger logger;
+    @Deprecated
     private String logLevel;
     private RestConfig rest;
     private GrpcConfig grpc;
@@ -188,10 +189,12 @@ public final class ClientConfiguration {
         return sb.toString();
     }
 
+    @Deprecated
     public String getLogLevel() {
         return logLevel;
     }
 
+    @Deprecated
     public ClientConfiguration setLogLevel(String logLevel) {
         this.logLevel = logLevel;
         return this;

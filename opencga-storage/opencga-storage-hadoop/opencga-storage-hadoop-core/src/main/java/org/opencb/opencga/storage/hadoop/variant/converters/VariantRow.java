@@ -15,7 +15,6 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
@@ -158,7 +157,7 @@ public class VariantRow {
                 } else if (score && columnName.endsWith(VARIANT_SCORE_SUFIX)) {
                         walker.score(new BytesVariantScoreColumn(cell, extractStudyId(columnName), extractScoreId(columnName)));
                 } else if (columnName.endsWith(FILL_MISSING_SUFIX)) {
-                    int studyId = Integer.valueOf(columnName.split("_")[1]);
+                    int studyId = Integer.parseInt(columnName.split("_")[1]);
                     walker.fillMissing(studyId,
                             ((Integer) PInteger.INSTANCE.toObject(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength())));
                 } else if (annotation && columnName.equals(VariantColumn.FULL_ANNOTATION.column())) {

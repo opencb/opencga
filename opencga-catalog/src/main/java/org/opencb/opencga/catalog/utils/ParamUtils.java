@@ -74,13 +74,13 @@ public class ParamUtils {
 
     public static void checkObj(Object obj, String name) throws CatalogParameterException {
         if (obj == null) {
-            throw new CatalogParameterException("Parameter '" + name + "' is missing or null.");
+            throw CatalogParameterException.isNull(name);
         }
     }
 
     public static void checkNotEmptyArray(List<?> obj, String name) throws CatalogParameterException {
         if (CollectionUtils.isEmpty(obj)) {
-            throw new CatalogParameterException("Parameter '" + name + "' is null or empty.");
+            throw CatalogParameterException.isNull(name);
         }
     }
 
@@ -92,7 +92,7 @@ public class ParamUtils {
 
     public static void checkPath(String path, String paramName) throws CatalogParameterException {
         if (path == null) {
-            throw new CatalogParameterException("parameter '" + paramName + "' is null.");
+            throw CatalogParameterException.isNull(paramName);
         }
         checkPath(Paths.get(path), paramName);
     }
@@ -129,7 +129,7 @@ public class ParamUtils {
 
     public static void checkAlias(String alias, String name) throws CatalogParameterException {
         if (alias == null || alias.isEmpty()) {
-            throw new CatalogParameterException("Missing " + name);
+            throw CatalogParameterException.isNull(name);
         }
         if (!alias.matches("^[A-Za-z0-9]([-_.]?[A-Za-z0-9])*$")) {
             throw new CatalogParameterException("Invalid " + name + ". It needs to start by any character "
@@ -161,7 +161,7 @@ public class ParamUtils {
 
     public static void checkDateFormat(String creationDate, String param) throws CatalogParameterException {
         if (StringUtils.isEmpty(creationDate)) {
-            throw new CatalogParameterException("'" + param + "' is null or empty");
+            throw CatalogParameterException.isNull(param);
         } else {
             // Validate creationDate can be parsed and has the proper format
             Date date = TimeUtils.toDate(creationDate);

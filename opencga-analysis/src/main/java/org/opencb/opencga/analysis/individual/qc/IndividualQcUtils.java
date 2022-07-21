@@ -55,7 +55,7 @@ public class IndividualQcUtils {
                 "/data/output");
 
         // MAF parameter:
-        //    - For annotated population studies, e.g.: 1kG_phase3:CEU>0.3
+        //    - For annotated population studies, e.g.: 1000G:CEU>0.3
         //    - For cohort, e.g.: cohort:ALL>0.3
 
         // Apply filter: biallelic variants
@@ -132,7 +132,7 @@ public class IndividualQcUtils {
     public static String getAssembly(String study, CatalogManager catalogManager, String token) throws CatalogException {
         String assembly = "";
         OpenCGAResult<Project> projectQueryResult;
-        projectQueryResult = catalogManager.getProjectManager().get(new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), study),
+        projectQueryResult = catalogManager.getProjectManager().search(new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), study),
                 new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), token);
         if (CollectionUtils.isNotEmpty(projectQueryResult.getResults())) {
             assembly = projectQueryResult.first().getOrganism().getAssembly();

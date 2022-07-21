@@ -5,15 +5,17 @@ import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaMain;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
-import java.util.List;
-import java.util.logging.Level;
 
 import static org.opencb.commons.utils.PrintUtils.*;
 
 
 public class CommandLineUtils {
+
+    private static final Logger logger = LoggerFactory.getLogger(CommandLineUtils.class);
 
     public static String getVersionString() {
         String res = PrintUtils.getKeyValueAsFormattedString("\tOpenCGA CLI version: ", "\t" + GitRepositoryState.get().getBuildVersion() + "\n");
@@ -31,68 +33,32 @@ public class CommandLineUtils {
         return res;
     }
 
-    private static void printLevel(String message, Level level) {
-        if (checkLevel(level)) {
-            printLog(message);
-        }
-    }
-
     public static boolean isNotHelpCommand(String[] args) {
-        return !ArrayUtils.contains(args, "--help") && !ArrayUtils.contains(args, "-h");
+        return !isHelpCommand(args);
     }
 
-    private static void printLevel(String message, Exception e, Level level) {
-        if (checkLevel(level)) {
-            printLog(message, e);
-        }
-    }
-
-    public static void printLog(String message, Exception e) {
-        if (OpencgaMain.getLogLevel().equals(Level.FINE)) {
-            PrintUtils.printDebug(message);
-        } else if (OpencgaMain.getLogLevel().equals(Level.INFO)) {
-            PrintUtils.printInfo(message);
-        } else if (OpencgaMain.getLogLevel().equals(Level.WARNING)) {
-            printWarn(message);
-        } else if (OpencgaMain.getLogLevel().equals(Level.SEVERE)) {
-            PrintUtils.printError(message, e);
-        }
-    }
-
-    public static void printLog(String s) {
-        printLog(s, null);
+    public static boolean isHelpCommand(String[] args) {
+        return ArrayUtils.contains(args, "--help") || ArrayUtils.contains(args, "-h");
     }
 
     public static boolean isValidUser(String user) {
         return user.matches("^[A-Za-z][A-Za-z0-9_\\-ñÑ]{2,29}$");
     }
 
-    private static boolean checkLevel(Level level) {
-        if (Level.FINE.equals(level)) {
-            return true;
-        } else if (Level.INFO.equals(level) && (OpencgaMain.getLogLevel().equals(Level.INFO)
-                || OpencgaMain.getLogLevel().equals(Level.WARNING)
-                || OpencgaMain.getLogLevel().equals(Level.SEVERE))) {
-            return true;
-        } else if (Level.WARNING.equals(level) && (OpencgaMain.getLogLevel().equals(Level.SEVERE)
-                || OpencgaMain.getLogLevel().equals(Level.WARNING))) {
-            return true;
-        } else return Level.SEVERE.equals(level) && (OpencgaMain.getLogLevel().equals(Level.SEVERE));
-
+    public static void error(String message) {
+        printError(message);
     }
 
     public static void error(Exception e) {
         printError(e.getMessage());
-        CommandLineUtils.printLevel(e.getMessage(), e, Level.SEVERE);
     }
 
     public static void error(String message, Exception e) {
-        printError(message);
-        CommandLineUtils.printLevel(e.getMessage(), e, Level.SEVERE);
-    }
-
-    public static void debug(String s) {
-        CommandLineUtils.printLevel(s, Level.FINE);
+        if (e == null) {
+            printError(message);
+        } else {
+            printError(message + " : " + e.getMessage());
+        }
     }
 
     public static String[] processShortCuts(String[] args) {
@@ -131,10 +97,7 @@ public class CommandLineUtils {
             case "list":
                 if (OpencgaMain.isShellMode()) {
                     if (args.length > 1 && args[1].equals("studies")) {
-                        List<String> studies = OpencgaMain.getShell().getSessionManager().getSession().getStudies();
-                        for (String study : studies) {
-                            printGreen(study);
-                        }
+                        println(String.join(", ", OpencgaMain.getShell().getSessionManager().getSession().getStudies()), Color.GREEN);
                     } else {
                         printWarn("Opencga version " + GitRepositoryState.get().getBuildVersion() + " can only list studies");
                     }
@@ -159,7 +122,6 @@ public class CommandLineUtils {
     }
 
     public static void printArgs(String[] args) {
-
         PrintUtils.println(argsToString(args));
     }
 
@@ -169,11 +131,6 @@ public class CommandLineUtils {
         if (ArrayUtils.contains(res, "--password") && (ArrayUtils.indexOf(res, "--password") + 1) < res.length) {
             res[(ArrayUtils.indexOf(res, "--password") + 1)] = "********";
         }
-        String sArgs = ArrayUtils.toString(res);
-        sArgs = sArgs.replaceAll("\\{", "");
-        sArgs = sArgs.replaceAll("}", "");
-        sArgs = sArgs.replaceAll(",", " ");
-
-        return sArgs;
+        return String.join(" ", res);
     }
 }
