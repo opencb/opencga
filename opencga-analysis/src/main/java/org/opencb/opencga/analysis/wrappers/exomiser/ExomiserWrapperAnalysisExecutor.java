@@ -193,15 +193,22 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // If it is preparing, then wait for ready and then return
         if (preparingFile.exists()) {
+            long startTime = System.currentTimeMillis();
             logger.info("Exomiser data is downloading, waiting for it...");
             while (!readyFile.exists()) {
                 try {
                     Thread.sleep(10000);
                 } catch (InterruptedException e) {
                     // Nothing to do here
+                    throw new ToolException(e);
+                }
+                long elapsedTime = System.currentTimeMillis() - startTime;
+                if (elapsedTime > 18000000) {
+                    throw new ToolException("Unable to run the Exomiser analysis because of Exomiser data is not ready yet: maximum"
+                            + " waiting time exceeded");
                 }
             }
-            logger.info("Exomiser data is now downloaded, so Exomiser analysis is ready to be executed");
+            logger.info("Exomiser data is now downloaded: Exomiser analysis is ready to be executed");
             return exomiserDataPath;
         }
 
@@ -213,8 +220,14 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         }
 
         // Download and unzip files
-        downloadAndUnzip(exomiserDataPath, "2109_hg38.zip");
-        downloadAndUnzip(exomiserDataPath, "2109_phenotype.zip");
+        try {
+            downloadAndUnzip(exomiserDataPath, "2109_hg38.zip");
+            downloadAndUnzip(exomiserDataPath, "2109_phenotype.zip");
+        } catch (ToolException e) {
+            // If something wrong happened, the preparing file has to be deleted
+            preparingFile.delete();
+            throw new ToolException("Something wrong happened when preparing Exomiser data", e);
+        }
 
         // Mutex management, signal exomiser data is ready
         try {
