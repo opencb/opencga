@@ -9,6 +9,7 @@ parser.add_argument("--storage-config-path", help="path to the storage-configura
 parser.add_argument("--database-prefix", required=False)
 parser.add_argument("--search-hosts", required=True)
 parser.add_argument("--clinical-hosts", required=True)
+parser.add_argument("--rga-hosts", required=True)
 parser.add_argument("--cellbase-rest-url", required=False, help="Cellbase rest server hosting the cellbase service")
 parser.add_argument("--cellbase-version", required=False, help="Cellbase rest server version (v4, v5..)")
 parser.add_argument("--catalog-database-hosts", required=True)
@@ -73,6 +74,13 @@ for i, clinical_host in enumerate(clinical_hosts):
         # clear them only on the first iteration
         storage_config["clinical"]["hosts"].clear()
     storage_config["clinical"]["hosts"].insert(i, clinical_host.strip())
+
+# Inject RGA hosts
+rga_hosts = args.rga_hosts.replace('\"','').replace('[','').replace(']','').split(",")
+for i, rga_host in enumerate(rga_hosts):
+    if i == 0:
+        storage_config["rga"]["hosts"].clear()
+    storage_config["rga"]["hosts"].insert(i, rga_host.strip())
 
 # Inject cellbase rest host, if set
 if args.cellbase_rest_url is not None and args.cellbase_rest_url != "":
