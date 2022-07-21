@@ -363,7 +363,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         }
 
         boolean archiveIterator = options.getBoolean("archive", false);
-        boolean nativeSupportedQuery = VariantHBaseQueryParser.isSupportedQuery(variantQuery.getQuery());
+        Set<String> unsupportedParamsFromQuery = VariantHBaseQueryParser.unsupportedParamsFromQuery(variantQuery.getQuery());
+        boolean nativeSupportedQuery = unsupportedParamsFromQuery.isEmpty();
+        if (!nativeSupportedQuery) {
+            logger.info("Unsupported native query : " + unsupportedParamsFromQuery);
+        }
         boolean hbaseIterator = nativeSupportedQuery && options.getBoolean(NATIVE, nativeSupportedQuery);
         // || VariantHBaseQueryParser.fullySupportedQuery(query);
 

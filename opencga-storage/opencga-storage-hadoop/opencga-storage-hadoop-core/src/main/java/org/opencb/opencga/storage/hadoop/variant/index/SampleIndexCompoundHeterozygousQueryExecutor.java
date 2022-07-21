@@ -7,19 +7,23 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.MultiVariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.UnionMultiVariantKeyIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIteratorWithCounts;
-import org.opencb.opencga.storage.core.variant.query.executors.CompoundHeterozygousQueryExecutor;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.executors.CompoundHeterozygousQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.function.BiFunction;
 
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
@@ -29,6 +33,7 @@ import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
  */
 public class SampleIndexCompoundHeterozygousQueryExecutor extends CompoundHeterozygousQueryExecutor {
 
+    private static Logger logger = LoggerFactory.getLogger(SampleIndexCompoundHeterozygousQueryExecutor.class);
     private final SampleIndexDBAdaptor sampleIndexDBAdaptor;
     private final VariantHadoopDBAdaptor dbAdaptor;
 
@@ -43,11 +48,8 @@ public class SampleIndexCompoundHeterozygousQueryExecutor extends CompoundHetero
     @Override
     protected long primaryCount(Query query, QueryOptions options) {
         // Assume that filter from secondary index is good enough for the approximate count.
-        List<String> samples = query.getAsStringList(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS.key());
-        if (samples.size() != 3) {
-            throw VariantQueryException.malformedParam(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS, String.valueOf(samples));
-        }
-        return Iterators.size(getRawIterator(samples.get(0), samples.get(1), samples.get(2), query, new QueryOptions()
+        Trio trio = getCompHetTrio(query);
+        return Iterators.size(getRawIterator(trio.getChild(), trio.getFather(), trio.getMother(), query, new QueryOptions()
                 .append(QueryOptions.INCLUDE, VariantField.ID.fieldName()), sampleIndexDBAdaptor));
     }
 
@@ -111,15 +113,19 @@ public class SampleIndexCompoundHeterozygousQueryExecutor extends CompoundHetero
             VariantDBIterator iterator1 = sampleIndexDBAdaptor.iterator(query1, new QueryOptions(options).append(QueryOptions.SORT, true));
             VariantDBIterator iterator2 = sampleIndexDBAdaptor.iterator(query2, new QueryOptions(options).append(QueryOptions.SORT, true));
 
-            // Remove region filters that would be removed at SampleIndexQueryParser
-            Query variantsQuery = new Query(baseQuery)
-                    .append(VariantQueryParam.ID.key(), null)
-                    .append(VariantQueryParam.REGION.key(), null)
-                    .append(VariantQueryParam.ANNOT_XREF.key(), null)
-                    .append(VariantQueryParam.GENE.key(), null)
-                    .append(ANNOT_GENE_REGIONS.key(), null)
-                    .append(ANNOT_EXPRESSION_GENES.key(), null)
-                    .append(ANNOT_GO_GENES.key(), null);
+            Query variantsQuery;
+            if (!query1.equals(query2)) {
+                logger.warn("Unexpected : Different set of params from query1 and query2");
+                logger.info("proband: {}", proband);
+                logger.info("Query1: {}", query1.toJson());
+                logger.info("Query2: {}", query2.toJson());
+                variantsQuery = new Query(baseQuery)
+                        .append(VariantQueryParam.GENOTYPE.key(), proband + IS + HET + AND + father + IS + HET + AND + mother + IS + HET);
+                // Dummy query to remove covered filters
+                sampleIndexDBAdaptor.parseSampleIndexQuery(variantsQuery);
+            } else {
+                variantsQuery = new Query(query1);
+            }
 
             // Union of two iterators from the SampleIndex
             UnionMultiVariantKeyIterator multiParentIterator = new UnionMultiVariantKeyIterator(Arrays.asList(iterator1, iterator2));
