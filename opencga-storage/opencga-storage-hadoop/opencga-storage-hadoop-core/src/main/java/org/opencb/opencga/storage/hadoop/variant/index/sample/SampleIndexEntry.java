@@ -538,7 +538,8 @@ public class SampleIndexEntry {
                     .append(")");
             sb.append(", ctBtTfIndexLength=").append(ctBtTfIndexLength);
             sb.append(", populationFrequencyIndex=(")
-                    .append(IndexUtils.bytesToSummary(populationFrequencyIndex, populationFrequencyIndexOffset, populationFrequencyIndexLength))
+                    .append(IndexUtils.bytesToSummary(
+                            populationFrequencyIndex, populationFrequencyIndexOffset, populationFrequencyIndexLength))
                     .append(")");
             sb.append(", clinicalIndex=(")
                     .append(IndexUtils.bytesToSummary(clinicalIndex, clinicalIndexOffset, clinicalIndexLength))

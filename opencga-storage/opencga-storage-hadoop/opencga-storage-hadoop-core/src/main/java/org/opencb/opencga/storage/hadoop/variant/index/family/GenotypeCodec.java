@@ -51,7 +51,7 @@ public class GenotypeCodec {
             "./*",
             "?/?",
             "DISCREPANCY_SIMPLE",
-            "DISCREPANCY_ANY"
+            "DISCREPANCY_ANY",
     };
 
     // GT codes that refer to only one possible genotype
