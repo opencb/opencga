@@ -25,15 +25,17 @@ public class FileLinkToolParams extends ToolParams {
     private String path;
     private String description;
     private boolean parents;
+    private boolean skipPostLink;
 
     public FileLinkToolParams() {
     }
 
-    public FileLinkToolParams(List<String> uri, String path, String description, boolean parents) {
+    public FileLinkToolParams(List<String> uri, String path, String description, boolean parents, boolean skipPostLink) {
         this.uri = uri;
         this.path = path;
         this.description = description;
         this.parents = parents;
+        this.skipPostLink = skipPostLink;
     }
 
     public List<String> getUri() {
@@ -69,6 +71,15 @@ public class FileLinkToolParams extends ToolParams {
 
     public FileLinkToolParams setParents(boolean parents) {
         this.parents = parents;
+        return this;
+    }
+
+    public boolean isSkipPostLink() {
+        return skipPostLink;
+    }
+
+    public FileLinkToolParams setSkipPostLink(boolean skipPostLink) {
+        this.skipPostLink = skipPostLink;
         return this;
     }
 }
