@@ -135,7 +135,7 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
 
             result = userDBAdaptor.resetPassword(userId, email, newPassword);
         } catch (Exception e) {
-            throw new CatalogException("Failed sending email.");
+            e.printStackTrace();
         }
 
         return result;

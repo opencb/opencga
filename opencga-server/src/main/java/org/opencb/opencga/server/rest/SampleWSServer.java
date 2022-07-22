@@ -328,7 +328,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             actionMap.put(SampleDBAdaptor.QueryParams.PHENOTYPES.key(), phenotypesAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            return createOkResponse(sampleManager.update(studyStr, getIdList(sampleStr), parameters, true, queryOptions, token), "Sample update success");
+            return createOkResponse(sampleManager.update(studyStr, getIdList(sampleStr), parameters, true, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -432,7 +432,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true, defaultValue = "ADD") @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
             @ApiParam(value = "JSON containing the parameters to update the permissions. If propagate flag is set to true, it will "
                     + "propagate the permissions defined to the individuals that are associated to the matching samples", required = true)
-            SampleAclUpdateParams params) {
+                    SampleAclUpdateParams params) {
         try {
             params = ObjectUtils.defaultIfNull(params, new SampleAclUpdateParams());
             SampleAclParams sampleAclParams = new SampleAclParams(

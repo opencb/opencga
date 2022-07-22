@@ -164,12 +164,10 @@ public class RestResponse<T> {
         sb.append(", time=").append(time);
         sb.append(", events=").append(events);
         sb.append(", params=").append(params);
-        sb.append(", type=").append(type);
         sb.append(", responses=").append(responses);
         sb.append('}');
         return sb.toString();
     }
-
 
     public String getApiVersion() {
         return apiVersion;
