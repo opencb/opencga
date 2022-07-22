@@ -63,11 +63,11 @@ def hostOverride(hosts_var,server,component):
         if component == "":
             if i == 0:
                 storage_config[server]["hosts"].clear()
-            storage_config[server]["hosts"].insert(i, hosts.strip()) 
+            storage_config[server]["hosts"].insert(i, host.strip()) 
         else:
             if i == 0:
                 config[server][component]["hosts"].clear()
-            config[server][component]["hosts"].insert(i, hosts.strip()) 
+            config[server][component]["hosts"].insert(i, host.strip()) 
 
 #  Inject search/clinical/rga hosts
 hostOverride(args.search_hosts,"search","")
