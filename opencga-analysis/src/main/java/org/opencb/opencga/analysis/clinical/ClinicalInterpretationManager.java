@@ -328,12 +328,25 @@ public class ClinicalInterpretationManager extends StorageManager {
                     for (ClinicalVariant primaryFinding : interpretation.getPrimaryFindings()) {
                         for (ClinicalVariant clinicalVariant : clinicalVariants) {
                             if (clinicalVariant.toStringSimple().equals(primaryFinding.toStringSimple())) {
+                                // Only it's updated the following fields
+                                // Important to note that the results include the "new" clinical evidences
                                 clinicalVariant.setComments(primaryFinding.getComments())
                                         .setFilters(primaryFinding.getFilters())
                                         .setDiscussion(primaryFinding.getDiscussion())
                                         .setStatus(primaryFinding.getStatus())
-                                        .setAttributes(primaryFinding.getAttributes())
-                                        .setEvidences(primaryFinding.getEvidences());
+                                        .setAttributes(primaryFinding.getAttributes());
+
+                                // Update clinical evidence review if it is necessary
+                                if (CollectionUtils.isNotEmpty(primaryFinding.getEvidences())
+                                        && CollectionUtils.isNotEmpty(clinicalVariant.getEvidences())) {
+                                    for (ClinicalVariantEvidence primaryFindingEvidence : primaryFinding.getEvidences()) {
+                                        for (ClinicalVariantEvidence clinicalVariantEvidence : clinicalVariant.getEvidences()) {
+                                            if (matchEvidence(primaryFindingEvidence, clinicalVariantEvidence)) {
+                                                clinicalVariantEvidence.setReview(primaryFindingEvidence.getReview());
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -355,6 +368,27 @@ public class ClinicalInterpretationManager extends StorageManager {
         result.setResults(clinicalVariants);
 
         return result;
+    }
+
+    private boolean matchEvidence(ClinicalVariantEvidence ev1, ClinicalVariantEvidence ev2) {
+        // Check panel ID
+        if (ev1.getPanelId() != null && ev2.getPanelId() != null && !ev1.getPanelId().equals(ev2.getPanelId())) {
+            return false;
+        }
+        if (StringUtils.isNotEmpty(ev1.getPanelId()) || StringUtils.isNotEmpty(ev2.getPanelId())) {
+            return false;
+        }
+        if (ev1.getGenomicFeature() != null && ev2.getGenomicFeature() != null) {
+            if (ev1.getGenomicFeature().getTranscriptId() != null && ev2.getGenomicFeature().getTranscriptId() != null
+                    && ev1.getGenomicFeature().getTranscriptId().equals(ev2.getGenomicFeature().getTranscriptId())) {
+                return true;
+            }
+            if (ev1.getGenomicFeature().getId() != null && ev2.getGenomicFeature().getId() != null
+                    && ev1.getGenomicFeature().getId().equals(ev2.getGenomicFeature().getId())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /*--------------------------------------------------------------------------*/
