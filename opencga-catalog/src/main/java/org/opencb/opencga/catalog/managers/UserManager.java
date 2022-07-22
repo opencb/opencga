@@ -55,26 +55,21 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.catalog.utils.ParamUtils.checkEmail;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class UserManager extends AbstractManager {
 
-    private final CatalogIOManager catalogIOManager;
-
-    private String INTERNAL_AUTHORIZATION = CatalogAuthenticationManager.INTERNAL;
-    private Map<String, AuthenticationManager> authenticationManagerMap;
-
-    protected static final String EMAIL_PATTERN = "^['_A-Za-z0-9-\\+]+(\\.['_A-Za-z0-9-]+)*@"
-            + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
-    protected static final Pattern EMAILPATTERN = Pattern.compile(EMAIL_PATTERN);
-    protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
-
     static final QueryOptions INCLUDE_ACCOUNT = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             UserDBAdaptor.QueryParams.ID.key(), UserDBAdaptor.QueryParams.ACCOUNT.key()));
+    protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
+    private final CatalogIOManager catalogIOManager;
+    private final String INTERNAL_AUTHORIZATION = CatalogAuthenticationManager.INTERNAL;
+    private final Map<String, AuthenticationManager> authenticationManagerMap;
 
     UserManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                 DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager, Configuration configuration)
@@ -784,6 +779,7 @@ public class UserManager extends AbstractManager {
             authorizationManager.checkIsInstallationAdministrator(authenticatedUserId);
             String authOrigin = getAuthenticationOriginId(userId);
             OpenCGAResult writeResult = authenticationManagerMap.get(authOrigin).resetPassword(userId);
+
             auditManager.auditUser(userId, Enums.Action.RESET_USER_PASSWORD, userId,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return writeResult;
@@ -832,7 +828,7 @@ public class UserManager extends AbstractManager {
         if (response == null) {
             auditManager.auditUser(username, Enums.Action.LOGIN, username,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", "Incorrect user or password.")));
-             throw CatalogAuthenticationException.incorrectUserOrPassword();
+            throw CatalogAuthenticationException.incorrectUserOrPassword();
         }
 
         auditManager.auditUser(username, Enums.Action.LOGIN, username, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1318,12 +1314,6 @@ public class UserManager extends AbstractManager {
             throw new CatalogException(userId + " user not found");
         }
         return user.first().getAccount().getAuthentication().getId();
-    }
-
-    static void checkEmail(String email) throws CatalogParameterException {
-        if (email == null || !EMAILPATTERN.matcher(email).matches()) {
-            throw new CatalogParameterException("Email '" + email + "' not valid");
-        }
     }
 
     /**
