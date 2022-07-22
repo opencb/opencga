@@ -48,6 +48,16 @@ parser.add_argument("--health-check-interval", required=False)
 parser.add_argument("--save", help="save update to source configuration files (default: false)", default=False, action='store_true')
 args = parser.parse_args()
 
+def hostOverride(conf,hosts_var):
+    if not hosts_var is None:
+        hosts = hosts_var.replace('\"','').replace('[','').replace(']','').split(",")
+        for i, host in enumerate(hosts):
+            if i == 0:
+                # If we are overriding the default hosts,
+                # clear them only on the first iteration
+                conf["hosts"].clear()
+            conf["hosts"].insert(i, host.strip())
+
 # TODO: Add check for a job config.
 
 ##############################################################################################################
@@ -57,18 +67,14 @@ args = parser.parse_args()
 with open(args.storage_config_path) as f:
     storage_config = yaml.safe_load(f)
 
-def hostOverride(conf,hosts_var):
-    if not hosts_var is None:
-        hosts = hosts_var.replace('\"','').replace('[','').replace(']','').split(",")
-        for i, host in enumerate(hosts):
-            if i == 0:
-                conf["hosts"].clear()
-            conf["hosts"].insert(i, host.strip())
 
-
-#  Inject search/clinical/rga hosts
+#  Inject search hosts
 hostOverride(storage_config["search"],args.search_hosts)
+
+#  Inject clinical hosts
 hostOverride(storage_config["clinical"],args.clinical_hosts)
+
+#  Inject rga hosts
 hostOverride(storage_config["rga"],args.rga_hosts)
 
 # Inject cellbase rest host, if set
