@@ -1,4 +1,3 @@
-from distutils.log import set_verbosity
 import oyaml as yaml
 import sys
 import configargparse
