@@ -887,11 +887,10 @@ public class JobManager extends ResourceManager<Job> {
                 } else {
                     // The log file hasn't yet been registered
                     if (!Arrays.asList(Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED, Enums.ExecutionStatus.ABORTED)
-                            .contains(job.getInternal().getStatus().getId())) {
+                            .contains(job.getInternal().getStatus().getId()) && job.getOutDir() != null) {
                         logFile = Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".err");
                     } else {
-                        throw new CatalogException("Cannot see stderr log file of job with status '"
-                                + job.getInternal().getStatus().getId() + "'.");
+                        throw CatalogAuthorizationException.deny(userId, "see stderr log file of job '" + jobId + "'");
                     }
                 }
             } else {
@@ -900,11 +899,10 @@ public class JobManager extends ResourceManager<Job> {
                 } else {
                     // The log file hasn't yet been registered
                     if (!Arrays.asList(Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED, Enums.ExecutionStatus.ABORTED)
-                            .contains(job.getInternal().getStatus().getId())) {
+                            .contains(job.getInternal().getStatus().getId()) && job.getOutDir() != null) {
                         logFile = Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".log");
                     } else {
-                        throw new CatalogException("Cannot see stdout log file of job with status '"
-                                + job.getInternal().getStatus().getId() + "'.");
+                        throw CatalogAuthorizationException.deny(userId, "see stdout log file of job '" + jobId + "'");
                     }
                 }
             }
