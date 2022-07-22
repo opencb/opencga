@@ -17,15 +17,21 @@
 package org.opencb.opencga.core.common;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.avro.generic.GenericRecord;
+import org.opencb.biodata.models.variant.Genotype;
+import org.opencb.biodata.models.variant.avro.VariantStats;
 import org.opencb.opencga.core.models.PrivateUidMixin;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.cohort.Cohort;
-import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.core.models.common.mixins.GenotypeJsonMixin;
+import org.opencb.opencga.core.models.common.mixins.VariantStatsJsonMixin;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyMixin;
 import org.opencb.opencga.core.models.file.File;
@@ -47,16 +53,29 @@ public class JacksonUtils {
     private static ObjectMapper defaultNonNullObjectMapper;
     private static ObjectMapper externalOpencgaObjectMapper;
     private static ObjectMapper updateObjectMapper;
+    private static ObjectMapper defaultYamlObjectMapper;
+    private static ObjectMapper defaultNonNullYamlObjectMapper;
+    private static ObjectMapper externalOpencgaYamlObjectMapper;
+    private static ObjectMapper updateYamlObjectMapper;
 
     static {
         defaultObjectMapper = generateDefaultObjectMapper();
         defaultNonNullObjectMapper = generateDefaultNonNullObjectMapper();
         externalOpencgaObjectMapper = generateOpenCGAObjectMapper();
         updateObjectMapper = generateUpdateObjectMapper();
+
+        defaultYamlObjectMapper = generateDefaultObjectMapper(new YAMLFactory());
+        defaultNonNullYamlObjectMapper = generateDefaultNonNullObjectMapper(new YAMLFactory());
+        externalOpencgaYamlObjectMapper = generateOpenCGAObjectMapper(new YAMLFactory());
+        updateYamlObjectMapper = generateUpdateObjectMapper(new YAMLFactory());
     }
 
     private static ObjectMapper generateDefaultObjectMapper() {
-        ObjectMapper objectMapper = new ObjectMapper();
+        return generateDefaultObjectMapper(null);
+    }
+
+    private static ObjectMapper generateDefaultObjectMapper(JsonFactory jf) {
+        ObjectMapper objectMapper = new ObjectMapper(jf);
         objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -64,11 +83,17 @@ public class JacksonUtils {
         objectMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
 
         objectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+        objectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
+        objectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
         return objectMapper;
     }
 
     private static ObjectMapper generateUpdateObjectMapper() {
-        ObjectMapper objectMapper = generateDefaultObjectMapper();
+        return generateUpdateObjectMapper(null);
+    }
+
+    private static ObjectMapper generateUpdateObjectMapper(JsonFactory jf) {
+        ObjectMapper objectMapper = generateDefaultObjectMapper(jf);
         objectMapper.addMixIn(Individual.class, IndividualMixin.class);
         objectMapper.addMixIn(Family.class, FamilyMixin.class);
         objectMapper.addMixIn(File.class, FileMixin.class);
@@ -88,13 +113,21 @@ public class JacksonUtils {
     }
 
     private static ObjectMapper generateDefaultNonNullObjectMapper() {
-        ObjectMapper objectMapper = generateDefaultObjectMapper();
+        return generateDefaultNonNullObjectMapper(null);
+    }
+
+    private static ObjectMapper generateDefaultNonNullObjectMapper(JsonFactory jf) {
+        ObjectMapper objectMapper = generateDefaultObjectMapper(jf);
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         return objectMapper;
     }
 
     private static ObjectMapper generateOpenCGAObjectMapper() {
-        ObjectMapper objectMapper = generateDefaultObjectMapper();
+        return generateOpenCGAObjectMapper(null);
+    }
+
+    private static ObjectMapper generateOpenCGAObjectMapper(JsonFactory jf) {
+        ObjectMapper objectMapper = generateDefaultObjectMapper(jf);
         objectMapper.addMixIn(Individual.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Family.class, PrivateUidMixin.class);
         objectMapper.addMixIn(File.class, PrivateUidMixin.class);
@@ -126,6 +159,22 @@ public class JacksonUtils {
 
     public static ObjectMapper getUpdateObjectMapper() {
         return updateObjectMapper;
+    }
+
+    public static ObjectMapper getDefaultYamlObjectMapper() {
+        return defaultYamlObjectMapper;
+    }
+
+    public static ObjectMapper getDefaultNonNullYamlObjectMapper() {
+        return defaultNonNullYamlObjectMapper;
+    }
+
+    public static ObjectMapper getExternalOpencgaYamlObjectMapper() {
+        return externalOpencgaYamlObjectMapper;
+    }
+
+    public static ObjectMapper getUpdateYamlObjectMapper() {
+        return updateYamlObjectMapper;
     }
 
     public static class ObjectMapperProvider implements ContextResolver<ObjectMapper> {
