@@ -63,8 +63,8 @@ def hostOverride(hosts_var,server,component):
     for i, host in enumerate(hosts):
         if component == "":
             if i == 0:
-                storage_config[args.server]["hosts"].clear()
-            storage_config[args.server]["hosts"].insert(i, hosts.strip()) 
+                storage_config[server]["hosts"].clear()
+            storage_config[server]["hosts"].insert(i, hosts.strip()) 
         else:
             if i == 0:
                 storage_config[server][component]["hosts"].clear()
