@@ -242,7 +242,11 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                                 + "CommandOptions commandOptions = " + getAsVariableName(getAsCamelCase(restCategory.getName())) +
                                 "CommandOptions."
                                 + getAsCamelCase(commandName) + "CommandOptions;\n");
+<<<<<<< HEAD
                         sb.append(getQueryParams(restEndpoint, config, commandName));
+=======
+                        sb.append(getQueryParams(restEndpoint, config, getAsCamelCase(commandName)));
+>>>>>>> release-2.2.x
                         sb.append(getBodyParams(restCategory, restEndpoint, config, commandName));
                         sb.append(getReturn(restCategory, restEndpoint, config, commandName));
                     }
@@ -274,6 +278,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         return res;
     }
 
+<<<<<<< HEAD
     private String getJavaMethodName(CategoryConfig config, String commandName) {
         Command command = config.getCommand(commandName);
         String commandMethod = getAsCamelCase(commandName);
@@ -283,14 +288,21 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         return commandMethod;
     }
 
+=======
+>>>>>>> release-2.2.x
     private String getBodyParams(RestCategory restCategory, RestEndpoint restEndpoint, CategoryConfig config, String commandName) {
         StringBuilder sb = new StringBuilder();
         String bodyClassName = restEndpoint.getBodyClassName();
         if (StringUtils.isNotEmpty(bodyClassName)) {
 
             String variableName = getAsVariableName(bodyClassName);
+<<<<<<< HEAD
             sb.append("\n        " + bodyClassName + " " + variableName + " = new " + bodyClassName + "();");
+=======
+            sb.append("\n        " + bodyClassName + " " + variableName + "= null;");
+>>>>>>> release-2.2.x
             sb.append("\n        if (commandOptions.jsonDataModel) {");
+            sb.append("\n            " + variableName + " = new " + bodyClassName + "();");
             sb.append("\n            RestResponse<" + getValidResponseNames(restEndpoint.getResponse()) + "> res = new RestResponse<>();");
             sb.append("\n            res.setType(QueryType.VOID);");
             sb.append("\n            PrintUtils.println(getObjectAsJSON(" + variableName + "));");
@@ -301,6 +313,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
             sb.append("\n        }");
             if (hasParameters(restEndpoint.getParameters(), commandName, config)) {
                 sb.append(" else {\n");
+<<<<<<< HEAD
 
                 RestParameter body = restEndpoint.getParameters().stream().filter(r -> r.getName().equals("body")).findFirst().orElse(null);
                 if (body != null) {
@@ -336,6 +349,34 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                                 }
                             }
                         }
+=======
+                RestParameter body = restEndpoint.getParameters().stream().filter(r -> r.getName().equals("body")).findFirst().orElse(null);
+                if (body != null) {
+                    sb.append("            ObjectMap beanParams = new ObjectMap();\n");
+                    sb.append(getBodyParams(body));
+                    sb.append("\n            " + getAsVariableName(bodyClassName) + " = JacksonUtils.getDefaultObjectMapper()");
+                    sb.append("\n                    .readValue(beanParams.toJson(), " + bodyClassName + ".class);");
+                    sb.append("\n        }\n");
+                }
+            } else {
+                sb.append("\n");
+            }
+        }
+        return sb.toString();
+    }
+
+    private String getBodyParams(RestParameter body) {
+        StringBuilder sb = new StringBuilder();
+        for (RestParameter restParameter : body.getData()) {
+            if (CollectionUtils.isEmpty(restParameter.getData())) {
+                if (restParameter.isAvailableType()) {
+                    String javaCommandOptionsField = "commandOptions." + getJavaFieldName(restParameter);
+                    String label = StringUtils.isEmpty(restParameter.getParentParamName()) ? restParameter.getName() : restParameter.getParentParamName() + "." + restParameter.getName();
+                    if (restParameter.getTypeClass().equals("java.lang.String;")) {
+                        sb.append("            putNestedIfNotEmpty(beanParams, \"" + label + "\"," + javaCommandOptionsField + ", true);\n ");
+                    } else {
+                        sb.append("            putNestedIfNotNull(beanParams, \"" + label + "\"," + javaCommandOptionsField + ", true);\n ");
+>>>>>>> release-2.2.x
                     }
                     sb.append(appendBooleanParams(booleanParams, variableName));
                     sb.append("\n        }\n");
@@ -349,6 +390,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         return sb.toString();
     }
 
+<<<<<<< HEAD
     private String getJavaValueFromCommandOptions(RestParameter bodyParam, String javaCommandOptionsField) {
         String javaValue;
         if (!bodyParam.isComplex()) {
@@ -380,11 +422,17 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
     private String getJavaFieldName(RestParameter restParam) {
         if (restParam.getParentName() != null) {
             return normalizeNames(getAsCamelCase(restParam.getParentName() + " " + restParam.getName()));
+=======
+    private String getJavaFieldName(RestParameter restParam) {
+        if (restParam.getParentParamName() != null) {
+            return normalizeNames(getAsCamelCase(restParam.getParentParamName() + " " + restParam.getName()));
+>>>>>>> release-2.2.x
         } else {
             return normalizeNames(getAsCamelCase(restParam.getName()));
         }
     }
 
+<<<<<<< HEAD
     private String getJavaSetterName(RestParameter bodyParam) {
         // sometimes the name of the parameter has the prefix "body" so as not to coincide with another parameter
         // with the same name, but the setter does not have this prefix, so it must be removed
@@ -402,6 +450,8 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         return typeClass;
     }
 
+=======
+>>>>>>> release-2.2.x
     private StringBuilder appendBooleanParams(List<RestParameter> booleanParams, String variableName) {
         StringBuilder sb = new StringBuilder();
         for (RestParameter bodyParam : booleanParams) {
