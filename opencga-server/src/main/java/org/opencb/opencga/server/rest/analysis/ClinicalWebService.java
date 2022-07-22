@@ -58,6 +58,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.SAVED_FILTER_DESCR;
+import static org.opencb.opencga.core.api.ParamConstants.INCLUDE_INTERPRETATION;
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 import static org.opencb.opencga.server.rest.analysis.VariantWebService.getVariantQuery;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -1059,6 +1060,8 @@ public class ClinicalWebService extends AnalysisWebService {
 
             @ApiImplicitParam(name = "savedFilter", value = SAVED_FILTER_DESCR, dataType = "string", paramType = "query"),
 
+            // Interpretation ID to include fields related to
+            @ApiImplicitParam(name = ParamConstants.INCLUDE_INTERPRETATION, value = ParamConstants.INCLUDE_INTERPRETATION_DESCRIPTION, dataType = "string", paramType = "query"),
             // Variant filters
             @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
@@ -1127,6 +1130,14 @@ public class ClinicalWebService extends AnalysisWebService {
         return run(() -> {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
+
+            // Because of the parameter includeInterpretation is not a standard variant query parameter, it is added to the query
+            // after parsing the query parameters
+            if (uriInfo.getQueryParameters().containsKey(INCLUDE_INTERPRETATION)) {
+                String includeInterpretation = uriInfo.getQueryParameters().get(INCLUDE_INTERPRETATION).get(0);
+                logger.info("Adding the includeInterpretation ({}) to the variant query", includeInterpretation);
+                query.put(INCLUDE_INTERPRETATION, includeInterpretation);
+            }
 
             return clinicalInterpretationManager.get(query, queryOptions, token);
         });

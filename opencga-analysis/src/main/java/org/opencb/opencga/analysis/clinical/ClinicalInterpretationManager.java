@@ -55,6 +55,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -115,14 +116,14 @@ public class ClinicalInterpretationManager extends StorageManager {
     static {
         defaultDeNovoQuery = new Query()
                 .append(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
-                          ParamConstants.POP_FREQ_1000G + ":AFR<0.002;"
-                        + ParamConstants.POP_FREQ_1000G + ":AMR<0.002;"
-                        + ParamConstants.POP_FREQ_1000G + ":EAS<0.002;"
-                        + ParamConstants.POP_FREQ_1000G + ":EUR<0.002;"
-                        + ParamConstants.POP_FREQ_1000G + ":SAS<0.002;"
-                        + "GNOMAD_EXOMES:AFR<0.001;GNOMAD_EXOMES:AMR<0.001;"
-                        + "GNOMAD_EXOMES:EAS<0.001;GNOMAD_EXOMES:FIN<0.001;GNOMAD_EXOMES:NFE<0.001;GNOMAD_EXOMES:ASJ<0.001;"
-                        + "GNOMAD_EXOMES:OTH<0.002")
+                        ParamConstants.POP_FREQ_1000G + ":AFR<0.002;"
+                                + ParamConstants.POP_FREQ_1000G + ":AMR<0.002;"
+                                + ParamConstants.POP_FREQ_1000G + ":EAS<0.002;"
+                                + ParamConstants.POP_FREQ_1000G + ":EUR<0.002;"
+                                + ParamConstants.POP_FREQ_1000G + ":SAS<0.002;"
+                                + "GNOMAD_EXOMES:AFR<0.001;GNOMAD_EXOMES:AMR<0.001;"
+                                + "GNOMAD_EXOMES:EAS<0.001;GNOMAD_EXOMES:FIN<0.001;GNOMAD_EXOMES:NFE<0.001;GNOMAD_EXOMES:ASJ<0.001;"
+                                + "GNOMAD_EXOMES:OTH<0.002")
                 .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.001")
                 .append(VariantQueryParam.ANNOT_BIOTYPE.key(), ModeOfInheritance.proteinCoding)
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ModeOfInheritance.extendedLof)
@@ -250,7 +251,6 @@ public class ClinicalInterpretationManager extends StorageManager {
 
     public OpenCGAResult<ClinicalVariant> get(Query query, QueryOptions queryOptions, InterpretationAnalysisConfiguration config,
                                               String token) throws CatalogException, IOException, StorageEngineException {
-
         VariantQueryResult<Variant> variantQueryResult = variantStorageManager.get(query, queryOptions, token);
         List<Variant> variants = variantQueryResult.getResults();
 
@@ -308,11 +308,87 @@ public class ClinicalInterpretationManager extends StorageManager {
             }
         }
 
+        // Include interpretation management
+        String includeInterpretation = query.getString(ParamConstants.INCLUDE_INTERPRETATION);
+        logger.info("Checking the parameter {} with value = {} in query {}", ParamConstants.INCLUDE_INTERPRETATION, includeInterpretation,
+                query.toJson());
+        if (StringUtils.isNotEmpty(includeInterpretation)) {
+            OpenCGAResult<Interpretation> interpretationResult = catalogManager.getInterpretationManager().get(studyId,
+                    includeInterpretation, QueryOptions.empty(), token);
+            int numResults = interpretationResult.getNumResults();
+            logger.info("Checking number of results ({}) found for the interpretation ID {}, it should be 1, otherwise something wrong"
+                    + " happened", numResults, includeInterpretation);
+            if (numResults == 1) {
+                // Interpretation found, check if its primary findings are matching any retrieved variants, in that case set the
+                // fields: comments, filters, discussion, status and attributes
+                Interpretation interpretation = interpretationResult.first();
+                if (CollectionUtils.isNotEmpty(interpretation.getPrimaryFindings())) {
+                    logger.info("Checking the primary findings ({}) of the interpretation {}", interpretation.getPrimaryFindings().size(),
+                            query.getString(ParamConstants.INCLUDE_INTERPRETATION));
+                    for (ClinicalVariant primaryFinding : interpretation.getPrimaryFindings()) {
+                        for (ClinicalVariant clinicalVariant : clinicalVariants) {
+                            if (clinicalVariant.toStringSimple().equals(primaryFinding.toStringSimple())) {
+                                // Only it's updated the following fields
+                                // Important to note that the results include the "new" clinical evidences
+                                clinicalVariant.setComments(primaryFinding.getComments())
+                                        .setFilters(primaryFinding.getFilters())
+                                        .setDiscussion(primaryFinding.getDiscussion())
+                                        .setStatus(primaryFinding.getStatus())
+                                        .setAttributes(primaryFinding.getAttributes());
+
+                                // Update clinical evidence review if it is necessary
+                                if (CollectionUtils.isNotEmpty(primaryFinding.getEvidences())
+                                        && CollectionUtils.isNotEmpty(clinicalVariant.getEvidences())) {
+                                    for (ClinicalVariantEvidence primaryFindingEvidence : primaryFinding.getEvidences()) {
+                                        for (ClinicalVariantEvidence clinicalVariantEvidence : clinicalVariant.getEvidences()) {
+                                            if (matchEvidence(primaryFindingEvidence, clinicalVariantEvidence)) {
+                                                clinicalVariantEvidence.setReview(primaryFindingEvidence.getReview());
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    logger.warn("Interpretation {} does not have any primary finding", includeInterpretation);
+                }
+            } else {
+                if (interpretationResult.getNumResults() <= 0) {
+                    logger.warn("Interpretation {} not found when running the clinical variant query", includeInterpretation);
+                } else {
+                    logger.warn("Multiple interpretations {} were found for ID {} when running the clinical variant query",
+                            interpretationResult.getNumResults(), includeInterpretation);
+                }
+            }
+        }
+
         int dbTime = (int) watch.getTime(TimeUnit.MILLISECONDS);
         result.setTime(variantQueryResult.getTime() + dbTime);
         result.setResults(clinicalVariants);
 
         return result;
+    }
+
+    private boolean matchEvidence(ClinicalVariantEvidence ev1, ClinicalVariantEvidence ev2) {
+        // Check panel ID
+        if (ev1.getPanelId() != null && ev2.getPanelId() != null && !ev1.getPanelId().equals(ev2.getPanelId())) {
+            return false;
+        }
+        if (StringUtils.isNotEmpty(ev1.getPanelId()) || StringUtils.isNotEmpty(ev2.getPanelId())) {
+            return false;
+        }
+        if (ev1.getGenomicFeature() != null && ev2.getGenomicFeature() != null) {
+            if (ev1.getGenomicFeature().getTranscriptId() != null && ev2.getGenomicFeature().getTranscriptId() != null
+                    && ev1.getGenomicFeature().getTranscriptId().equals(ev2.getGenomicFeature().getTranscriptId())) {
+                return true;
+            }
+            if (ev1.getGenomicFeature().getId() != null && ev2.getGenomicFeature().getId() != null
+                    && ev1.getGenomicFeature().getId().equals(ev2.getGenomicFeature().getId())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /*--------------------------------------------------------------------------*/
