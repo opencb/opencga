@@ -1,7 +1,5 @@
 package org.opencb.opencga.analysis.wrappers.exomiser;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -20,20 +18,15 @@ import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLE;
 
@@ -192,75 +185,57 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         File readyFile = exomiserDataPath.resolve("READY").toFile();
         File preparingFile = exomiserDataPath.resolve("PREPARING").toFile();
 
-        if (!readyFile.exists()) {
-            if (preparingFile.exists()) {
-                // wait for ready
-                while (!readyFile.exists()) {
-                    try {
-                        Thread.sleep(10000);
-                    } catch (InterruptedException e) {
-                        // Nothing to do here
-                    }
-                }
-            } else {
+        // If all is ready, then return
+        if (readyFile.exists()) {
+            logger.info("Exomiser data is already downloaded, so Exomiser analysis is ready to be executed.");
+            return exomiserDataPath;
+        }
+
+        // If it is preparing, then wait for ready and then return
+        if (preparingFile.exists()) {
+            long startTime = System.currentTimeMillis();
+            logger.info("Exomiser data is downloading, waiting for it...");
+            while (!readyFile.exists()) {
                 try {
-                    if (!new File(preparingFile.getParent()).exists()) {
-                        new File(preparingFile.getParent()).mkdirs();
-                    }
-                    preparingFile.createNewFile();
-                } catch (IOException e) {
-                    throw new ToolException("Error creating the Exomiser data directory");
+                    Thread.sleep(10000);
+                } catch (InterruptedException e) {
+                    // Nothing to do here
+                    throw new ToolException(e);
+                }
+                long elapsedTime = System.currentTimeMillis() - startTime;
+                if (elapsedTime > 18000000) {
+                    throw new ToolException("Unable to run the Exomiser analysis because of Exomiser data is not ready yet: maximum"
+                            + " waiting time exceeded");
                 }
             }
+            logger.info("Exomiser data is now downloaded: Exomiser analysis is ready to be executed");
+            return exomiserDataPath;
         }
 
-        String genomeFilename = "2109_hg38.zip";
-        String phenotypeFilename = "2109_phenotype.zip";
+        // Mark as preparing
         try {
-            ResourceUtils.downloadThirdParty(new URL("http://resources.opencb.org/opencb/opencga/analysis/exomiser/" + genomeFilename),
-                    exomiserDataPath);
+            preparingFile.createNewFile();
         } catch (IOException e) {
-            throw new ToolException("Error downloading Exomiser hg38 data", e);
+            throw new ToolException("Error creating the Exomiser data directory");
         }
 
+        // Download and unzip files
         try {
-            ResourceUtils.downloadThirdParty(new URL("http://resources.opencb.org/opencb/opencga/analysis/exomiser/" + phenotypeFilename),
-                    exomiserDataPath);
-        } catch (IOException e) {
-            throw new ToolException("Error downloading Exomiser phenotype data", e);
-        }
-
-        // Unzip
-        try {
-            new Command("unzip -o -d " + exomiserDataPath + " " + exomiserDataPath + "/" + genomeFilename)
-                    .setOutputOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve("stdout_unzip_"
-                                    + genomeFilename + ".txt").toFile())))
-                    .setErrorOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve("stderr_unzip_"
-                            + genomeFilename + ".txt").toFile())))
-                    .run();
-        } catch (FileNotFoundException e) {
-            throw new ToolException("Error unzipping Exomiser genome data", e);
-        }
-        try {
-            new Command("unzip -o -d " + exomiserDataPath + " " + exomiserDataPath + "/" + phenotypeFilename)
-                    .setOutputOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve("stdout_unzip_"
-                            + phenotypeFilename + ".txt").toFile())))
-                    .setErrorOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve("stderr_unzip_"
-                            + phenotypeFilename + ".txt").toFile())))
-                    .run();
-        } catch (FileNotFoundException e) {
-            throw new ToolException("Error unzipping Exomiser phenotype data", e);
+            downloadAndUnzip(exomiserDataPath, "2109_hg38.zip");
+            downloadAndUnzip(exomiserDataPath, "2109_phenotype.zip");
+        } catch (ToolException e) {
+            // If something wrong happened, the preparing file has to be deleted
+            preparingFile.delete();
+            throw new ToolException("Something wrong happened when preparing Exomiser data", e);
         }
 
         // Mutex management, signal exomiser data is ready
-        if (preparingFile.exists()) {
-            try {
-                readyFile.createNewFile();
-            } catch (IOException e) {
-                throw new ToolException("Error preparing Exomiser data", e);
-            }
-            preparingFile.delete();
+        try {
+            readyFile.createNewFile();
+        } catch (IOException e) {
+            throw new ToolException("Error preparing Exomiser data", e);
         }
+        preparingFile.delete();
 
         return exomiserDataPath;
     }
@@ -282,6 +257,36 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     public ExomiserWrapperAnalysisExecutor setStudyId(String studyId) {
         this.studyId = studyId;
         return this;
+    }
+
+    private void downloadAndUnzip(Path exomiserDataPath, String filename) throws ToolException {
+        URL url = null;
+
+        // Download data
+        try {
+            url = new URL("http://resources.opencb.org/opencb/opencga/analysis/exomiser/" + filename);
+            logger.info("Downloading Exomiser data: {}", url);
+            ResourceUtils.downloadThirdParty(url, exomiserDataPath);
+        } catch (IOException e) {
+            throw new ToolException("Error downloading Exomiser data from " + url, e);
+        }
+
+        // Unzip
+        try {
+            logger.info("Decompressing Exomiser data: {}", filename);
+            new Command("unzip -o -d " + exomiserDataPath + " " + exomiserDataPath + "/" + filename)
+                    .setOutputOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve("stdout_unzip_"
+                            + filename + ".txt").toFile())))
+                    .setErrorOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve("stderr_unzip_"
+                            + filename + ".txt").toFile())))
+                    .run();
+        } catch (FileNotFoundException e) {
+            throw new ToolException("Error unzipping Exomiser data: " + filename, e);
+        }
+
+        // Free disk space
+        logger.info("Deleting Exomiser data: {}", filename);
+        exomiserDataPath.resolve(filename).toFile().delete();
     }
 
     public String getSampleId() {
