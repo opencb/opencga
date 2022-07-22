@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.avro.generic.GenericRecord;
 import org.opencb.commons.run.Task;
-import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
 import java.util.ArrayList;

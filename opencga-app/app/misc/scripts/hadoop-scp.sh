@@ -40,7 +40,7 @@ fi
 
 SSH="${SSHPASS_CMD}ssh ${SSH_OPTS} ${HADOOP_SSH_USER}@${HADOOP_SSH_HOST}"
 
-function printAndRun() {
+printAndRun() {
   CMD=$@
   echo " $ "$CMD 1>&2
   $CMD 1>&2
@@ -57,13 +57,13 @@ set -e
 echo "Check if source file exists" 1>&2
 printAndRun "${SSH} test -f ${SRC_FILE}" || (echo "Source file does not exist!" 1>&2 && exit 1)
 
-if [ -f ${TARGET_FILE} ]; then
-  target_inode=`ls -i ${TARGET_FILE} | cut -d " " -f 1`
-  src_inode=`${SSH} ls -i ${SRC_FILE} | cut -d " " -f 1`
-  if [ $target_inode == $src_inode ]; then
-    target_md5=`md5sum ${TARGET_FILE} | cut -d " " -f 1`
-    src_md5=`${SSH} md5sum ${SRC_FILE} | cut -d " " -f 1`
-    if [ $target_md5 == $src_md5 ]; then
+if [ -f "${TARGET_FILE}" ]; then
+  target_inode=$(ls -i "$TARGET_FILE" | cut -d " " -f 1)
+  src_inode=$(${SSH} ls -i "$SRC_FILE" | cut -d " " -f 1)
+  if [ "$target_inode" = "$src_inode" ]; then
+    target_md5=$(md5sum "$TARGET_FILE" | cut -d " " -f 1)
+    src_md5=$(${SSH} md5sum "$SRC_FILE" | cut -d " " -f 1)
+    if [ "$target_md5" = "$src_md5" ]; then
       echo "Files are in the same file system. Skip copy" 1>&2
       exit 0;
     fi

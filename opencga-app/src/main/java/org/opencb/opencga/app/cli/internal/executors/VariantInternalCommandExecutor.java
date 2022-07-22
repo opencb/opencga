@@ -60,7 +60,7 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.exceptions.AnalysisExecutionException;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.tools.ToolParams;

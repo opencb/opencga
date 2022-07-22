@@ -201,12 +201,12 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response resetPassword(@ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId) {
         try {
             OpenCGAResult<User> result = catalogManager.getUserManager().resetPassword(userId, token);
-            return createOkResponse(result);
+            return createOkResponse(result, "The new password has been sent to the user's email.");
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
- 
+
     @GET
     @Path("/{user}/projects")
     @ApiOperation(value = "Retrieve the projects of the user", notes = "Retrieve the list of projects and studies belonging to the user"
