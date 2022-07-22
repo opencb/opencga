@@ -5,14 +5,16 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.common.SolrException;
+import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
+import org.apache.solr.common.SolrInputDocument;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.analysis.rga.exceptions.RgaException;
 import org.opencb.opencga.analysis.rga.iterators.RgaIterator;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -24,7 +26,6 @@ import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.analysis.knockout.*;
 import org.opencb.opencga.core.models.common.RgaIndex;
@@ -34,22 +35,20 @@ import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.RecessiveGeneSummaryIndex;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
-import org.opencb.opencga.core.models.study.StudyUpdateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
+import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.SolrInputDocumentDataWriter;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -61,24 +60,24 @@ import static org.opencb.opencga.core.api.ParamConstants.ACL_PARAM;
 
 public class RgaManager implements AutoCloseable {
 
-    private CatalogManager catalogManager;
-    private StorageConfiguration storageConfiguration;
+    private final CatalogManager catalogManager;
+    private final StorageConfiguration storageConfiguration;
     private final RgaEngine rgaEngine;
     private final VariantStorageManager variantStorageManager;
 
-    private IndividualRgaConverter individualRgaConverter;
-    private GeneRgaConverter geneConverter;
-    private VariantRgaConverter variantConverter;
+    private final IndividualRgaConverter individualRgaConverter;
+    private final GeneRgaConverter geneConverter;
+    private final VariantRgaConverter variantConverter;
 
     private final Logger logger;
 
     private static final int KNOCKOUT_INSERT_BATCH_SIZE = 25;
 
-    public RgaManager(CatalogManager catalogManager, VariantStorageManager variantStorageManager,
-                      StorageEngineFactory storageEngineFactory) {
+
+    public RgaManager(CatalogManager catalogManager, VariantStorageManager variantStorageManager) {
         this.catalogManager = catalogManager;
-        this.storageConfiguration = storageEngineFactory.getStorageConfiguration();
-        this.rgaEngine = new RgaEngine(storageConfiguration);
+        this.storageConfiguration = variantStorageManager.getStorageConfiguration();
+        this.rgaEngine = new RgaEngine(this.storageConfiguration);
         this.variantStorageManager = variantStorageManager;
 
         this.individualRgaConverter = new IndividualRgaConverter();
@@ -88,24 +87,10 @@ public class RgaManager implements AutoCloseable {
         this.logger = LoggerFactory.getLogger(getClass());
     }
 
-    public RgaManager(Configuration configuration, StorageConfiguration storageConfiguration) throws CatalogException {
-        this.catalogManager = new CatalogManager(configuration);
-        this.storageConfiguration = storageConfiguration;
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
-        this.variantStorageManager = new VariantStorageManager(catalogManager, storageEngineFactory);
-        this.rgaEngine = new RgaEngine(storageConfiguration);
-
-        this.individualRgaConverter = new IndividualRgaConverter();
-        this.geneConverter = new GeneRgaConverter();
-        this.variantConverter = new VariantRgaConverter();
-
-        this.logger = LoggerFactory.getLogger(getClass());
-    }
-
-    public RgaManager(Configuration configuration, StorageConfiguration storageConfiguration, VariantStorageManager variantStorageManager,
-                      RgaEngine rgaEngine) throws CatalogException {
-        this.catalogManager = new CatalogManager(configuration);
-        this.storageConfiguration = storageConfiguration;
+    // Visible for testing
+    RgaManager(CatalogManager catalogManager, VariantStorageManager variantStorageManager, RgaEngine rgaEngine) {
+        this.catalogManager = catalogManager;
+        this.storageConfiguration = variantStorageManager.getStorageConfiguration();
         this.rgaEngine = rgaEngine;
         this.variantStorageManager = variantStorageManager;
 
@@ -124,100 +109,94 @@ public class RgaManager implements AutoCloseable {
         index(studyStr, filePath, token);
     }
 
-    public void index(String studyStr, Path file, String token) throws CatalogException, IOException, RgaException {
-        String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
-        try {
-            catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
-        } catch (CatalogException e) {
-            logger.error(e.getMessage(), e);
-            throw new CatalogException("Only owners or admins can index", e.getCause());
-        }
-
-        load(study.getFqn(), file, token);
-    }
 
     /**
      * Load a multi KnockoutByIndividual JSON file into the Solr core/collection.
      *
-     * @param path Path to the JSON file
-     * @param path Path to the JSON file
-     * @param path Path to the JSON file
-     * @param path Path to the JSON file
-     * @throws IOException
-     * @throws SolrException
+     * @param study Study id
+     * @param file  Path to the JSON file
+     * @param token User token
+     * @throws RgaException on loading issue
      */
-    private void load(String study, Path path, String token) throws IOException, RgaException {
-        String fileName = path.getFileName().toString();
-        if (fileName.endsWith("json") || fileName.endsWith("json.gz")) {
-            String collection = getMainCollectionName(study);
+    public void index(String study, Path file, String token) throws CatalogException, IOException, RgaException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study studyObject = catalogManager.getStudyManager().get(study, QueryOptions.empty(), token).first();
+        try {
+            catalogManager.getAuthorizationManager().isOwnerOrAdmin(studyObject.getUid(), userId);
+        } catch (CatalogException e) {
+            logger.error(e.getMessage(), e);
+            throw new CatalogException("Only owners or admins can index", e.getCause());
+        }
+        load(studyObject.getFqn(), file, token);
+    }
 
-            try {
-                if (!rgaEngine.exists(collection)) {
-                    rgaEngine.createMainCollection(collection);
-                }
-            } catch (RgaException e) {
-                logger.error("Could not perform RGA index in collection {}", collection, e);
-                throw new RgaException("Could not perform RGA index in collection '" + collection + "'.");
+    private void load(String study, Path file, String token) throws RgaException {
+        String fileName = file.getFileName().toString();
+        if (!fileName.endsWith("json") && !fileName.endsWith("json.gz")) {
+            throw new RgaException("File format " + file + " not supported. Please, use JSON file format.");
+        }
+        String collection = getMainCollectionName(study);
+
+        try {
+            if (!rgaEngine.exists(collection)) {
+                rgaEngine.createMainCollection(collection);
             }
+        } catch (RgaException e) {
+            logger.error("Could not perform RGA index in collection {}", collection, e);
+            throw new RgaException("Could not perform RGA index in collection '" + collection + "'.");
+        }
+        ObjectReader objectReader = new ObjectMapper().readerFor(KnockoutByIndividual.class);
+        DocumentObjectBinder binder = rgaEngine.getSolrManager().getSolrClient().getBinder();
+        List<String> samples = new ArrayList<>();
 
-            try {
-                IOConnectorProvider ioConnectorProvider = new IOConnectorProvider(storageConfiguration);
+        IOConnectorProvider ioConnectorProvider = new IOConnectorProvider(storageConfiguration);
 
-                // This opens json and json.gz files automatically
-                try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(
-                        ioConnectorProvider.newInputStream(path.toUri())))) {
 
-                    List<KnockoutByIndividual> knockoutByIndividualList = new ArrayList<>(KNOCKOUT_INSERT_BATCH_SIZE);
-                    int count = 0;
-                    String line;
-                    ObjectReader objectReader = new ObjectMapper().readerFor(KnockoutByIndividual.class);
-                    while ((line = bufferedReader.readLine()) != null) {
+        long fileSize = 0;
+        try {
+            fileSize = ioConnectorProvider.size(file.toUri());
+        } catch (IOException e) {
+            throw new RgaException("Error reading file", e);
+        }
+        ProgressLogger progressLogger = new ProgressLogger("Loading RGA", fileSize);
+        StringDataReader reader = new StringDataReader(file.toUri(), ioConnectorProvider)
+                .setReadBytesListener((totalRead, delta) -> progressLogger.increment(delta, "Bytes"));
+        SolrInputDocumentDataWriter writer = new SolrInputDocumentDataWriter(collection,
+                rgaEngine.getSolrManager().getSolrClient(),
+                storageConfiguration.getRga().getInsertBatchSize());
+
+        ParallelTaskRunner<String, SolrInputDocument> ptr = new ParallelTaskRunner<>(
+                reader,
+                (List<String> batch) -> {
+                    ArrayList<SolrInputDocument> list = new ArrayList<>();
+                    for (String line : batch) {
                         KnockoutByIndividual knockoutByIndividual = objectReader.readValue(line);
-                        knockoutByIndividualList.add(knockoutByIndividual);
-                        count++;
-                        if (count % KNOCKOUT_INSERT_BATCH_SIZE == 0) {
-                            List<RgaDataModel> rgaDataModelList = individualRgaConverter.convertToStorageType(knockoutByIndividualList);
-                            rgaEngine.insert(collection, rgaDataModelList);
-                            logger.debug("Loaded {} knockoutByIndividual entries from '{}'", count, path);
-
-                            // Update RGA Index status
-                            try {
-                                updateRgaInternalIndexStatus(study, knockoutByIndividualList.stream()
-                                                .map(KnockoutByIndividual::getSampleId).collect(Collectors.toList()),
-                                        RgaIndex.Status.INDEXED, token);
-                                logger.debug("Updated sample RGA index statuses");
-                            } catch (CatalogException e) {
-                                logger.warn("Sample RGA index status could not be updated: {}", e.getMessage(), e);
-                            }
-
-                            knockoutByIndividualList.clear();
+                        samples.add(knockoutByIndividual.getSampleId());
+                        for (RgaDataModel rgaDataModel : individualRgaConverter.convertToStorageType(knockoutByIndividual)) {
+                            list.add(binder.toSolrInputDocument(rgaDataModel));
                         }
                     }
+                    return list;
+                },
+                writer,
+                ParallelTaskRunner.Config.builder()
+                        .setBatchSize(1)
+                        .setNumTasks(2) // Write is definitely slower than process. More threads won't help much.
+                        .build()
+        );
 
-                    // Insert the remaining entries
-                    if (CollectionUtils.isNotEmpty(knockoutByIndividualList)) {
-                        List<RgaDataModel> rgaDataModelList = individualRgaConverter.convertToStorageType(knockoutByIndividualList);
-                        rgaEngine.insert(collection, rgaDataModelList);
-                        logger.debug("Loaded remaining {} knockoutByIndividual entries from '{}'", count, path);
+        try {
+            ptr.run();
+        } catch (ExecutionException e) {
+            throw new RgaException("Error loading KnockoutIndividual from JSON file.", e);
+        }
 
-                        // Update RGA Index status
-                        try {
-                            updateRgaInternalIndexStatus(study, knockoutByIndividualList.stream()
-                                            .map(KnockoutByIndividual::getSampleId).collect(Collectors.toList()),
-                                    RgaIndex.Status.INDEXED, token);
-                            logger.debug("Updated sample RGA index statuses");
-                        } catch (CatalogException e) {
-                            logger.warn("Sample RGA index status could not be updated: {}", e.getMessage(), e);
-                        }
-
-                    }
-                }
-            } catch (SolrServerException e) {
-                throw new RgaException("Error loading KnockoutIndividual from JSON file.", e);
-            }
-        } else {
-            throw new RgaException("File format " + path + " not supported. Please, use JSON file format.");
+        // Update RGA Index status
+        try {
+            updateRgaInternalIndexStatus(study, samples, RgaIndex.Status.INDEXED, token);
+            logger.debug("Updated sample RGA index statuses");
+        } catch (CatalogException e) {
+            throw new RgaException("Sample RGA index status could not be updated", e);
         }
     }
 
@@ -228,12 +207,12 @@ public class RgaManager implements AutoCloseable {
             catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
         } catch (CatalogException e) {
             logger.error(e.getMessage(), e);
-            throw new CatalogException("Only owners or admins can generate the auxiliar RGA collection", e.getCause());
+            throw new CatalogException("Only owners or admins can generate the auxiliary RGA collection", e.getCause());
         }
 
         String auxCollection = getAuxCollectionName(study.getFqn());
         if (rgaEngine.isAlive(auxCollection)) {
-            throw new RgaException("Auxiliar RGA collection already exists");
+            logger.info("Auxiliary RGA collection already exists");
         }
 
         String mainCollection = getMainCollectionName(study.getFqn());
@@ -247,8 +226,7 @@ public class RgaManager implements AutoCloseable {
                 rgaEngine.createAuxCollection(auxCollection);
             }
         } catch (RgaException e) {
-            logger.error("Could create auxiliar RGA collection '{}'", auxCollection, e);
-            throw new RgaException("Could not create auxiliar RGA collection '" + auxCollection + "'.");
+            throw new RgaException("Could not create auxiliary RGA collection '" + auxCollection + "'.", e);
         }
 
         // Get list of variants that will be inserted
@@ -257,44 +235,41 @@ public class RgaManager implements AutoCloseable {
         DataResult<FacetField> result = rgaEngine.facetedQuery(mainCollection, new Query(), facetOptions);
         logger.info("Took {} ms to get the complete list of variants", stopWatch.getTime(TimeUnit.MILLISECONDS));
 
+        rgaEngine.setQuiet(true);
+        SolrInputDocumentDataWriter dataWriter = new SolrInputDocumentDataWriter(auxCollection,
+                rgaEngine.getSolrManager().getSolrClient(),
+                storageConfiguration.getRga().getInsertBatchSize());
 
-        ExecutorService executor = Executors.newFixedThreadPool(4);
-        List<Future<AuxiliarRgaDataModel>> futureList = new ArrayList<>(result.first().getBuckets().size());
-        for (FacetField.Bucket bucket : result.first().getBuckets()) {
-            futureList.add(executor.submit(() -> getAuxiliarRgaDataModel(mainCollection, bucket.getValue())));
-        }
-
-        int count = 0;
-        List<AuxiliarRgaDataModel> auxiliarRgaDataModelList = new ArrayList<>(KNOCKOUT_INSERT_BATCH_SIZE * 4);
-        for (Future<AuxiliarRgaDataModel> future : futureList) {
-            try {
-                auxiliarRgaDataModelList.add(future.get());
-                if (auxiliarRgaDataModelList.size() == KNOCKOUT_INSERT_BATCH_SIZE * 4) {
-                    // Insert in solr
-                    rgaEngine.insert(auxCollection, auxiliarRgaDataModelList);
-
-                    count += auxiliarRgaDataModelList.size();
-                    logger.info("Loading batch {} in RGA auxiliar collection", count);
-
-                    // Empty array
-                    auxiliarRgaDataModelList = new ArrayList<>(KNOCKOUT_INSERT_BATCH_SIZE * 4);
-                }
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RgaException("Error reading from future: " + e.getMessage(), e);
-            } catch (SolrServerException e) {
-                throw new RgaException("Error inserting in Solr: " + e.getMessage(), e);
-            }
-        }
-
-        if (!auxiliarRgaDataModelList.isEmpty()) {
-            // Insert remaining documents in solr
-            try {
-                rgaEngine.insert(auxCollection, auxiliarRgaDataModelList);
-                count += auxiliarRgaDataModelList.size();
-                logger.info("Loading final batch {} in RGA auxiliar collection", count);
-            } catch (SolrServerException e) {
-                throw new RgaException("Error inserting in Solr: " + e.getMessage(), e);
-            }
+        Iterator<FacetField.Bucket> iterator = result.first().getBuckets().iterator();
+        DocumentObjectBinder binder = rgaEngine.getSolrManager().getSolrClient().getBinder();
+        ProgressLogger progressLogger = new ProgressLogger("Processing Aux RGA variants", result.first().getBuckets().size());
+        ParallelTaskRunner<String, SolrInputDocument> ptr = new ParallelTaskRunner<>(
+                (int batchSize) -> {
+                    List<String> batch = new ArrayList<>(batchSize);
+                    while (iterator.hasNext() && batch.size() < batchSize) {
+                        batch.add(iterator.next().getValue());
+                    }
+                    return batch;
+                },
+                (List<String> batch) -> {
+                    List<SolrInputDocument> inputDocuments = new ArrayList<>(batch.size());
+                    for (String variantId : batch) {
+                        AuxiliarRgaDataModel auxiliarRgaDataModel = getAuxiliarRgaDataModel(mainCollection, variantId);
+                        inputDocuments.add(binder.toSolrInputDocument(auxiliarRgaDataModel));
+                        progressLogger.increment(1, () -> "up to variant " + variantId);
+                    }
+                    return inputDocuments;
+                },
+                dataWriter,
+                ParallelTaskRunner.Config.builder()
+                        .setBatchSize(KNOCKOUT_INSERT_BATCH_SIZE)
+                        .setNumTasks(4)
+                        .build()
+        );
+        try {
+            ptr.run();
+        } catch (ExecutionException e) {
+            throw new RgaException("Error loading auxiliary collection", e);
         }
 
         // Update RGA Index status from Study
@@ -424,7 +399,7 @@ public class RgaManager implements AutoCloseable {
                 .map(String::valueOf)
                 .collect(Collectors.toSet()));
 
-        logger.info("Processing variant '{}' took {} milliseconds", variantId, stopWatch.getTime(TimeUnit.MILLISECONDS));
+        logger.debug("Processing variant '{}' took {} milliseconds", variantId, stopWatch.getTime(TimeUnit.MILLISECONDS));
 
         return new AuxiliarRgaDataModel(variantId, dbSnp, type, new ArrayList<>(knockoutTypes),
                 new ArrayList<>(consequenceTypes), populationFrequencyMap, new ArrayList<>(clinicalSignificances),
