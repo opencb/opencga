@@ -229,7 +229,6 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         return jsonInString;
     }
 
-<<<<<<< HEAD
     public RestResponse<AuthenticationResponse> saveSession(String user, AuthenticationResponse response) throws ClientException, IOException {
         RestResponse<AuthenticationResponse> res = new RestResponse<>();
         if (response != null) {
@@ -262,7 +261,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         }
         return res;
     }
-=======
+
     public Object putNestedIfNotNull(ObjectMap map, String key, Object value, boolean parents) {
         if (value != null) {
             map.putNested(key, value, parents);
@@ -277,5 +276,4 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         return null;
     }
 
->>>>>>> release-2.2.x
 }

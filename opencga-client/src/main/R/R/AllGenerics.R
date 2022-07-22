@@ -1,79 +1,51 @@
 # ##############################################################################
 ## UserClient
-<<<<<<< HEAD
-setGeneric("userClient", function(OpencgaR, user, users, filterId, endpointName, params=NULL, ...)
-=======
-setGeneric("userClient", function(OpencgaR, users, user, filterId, endpointName, params=NULL, ...)
->>>>>>> release-2.2.x
+setGeneric("userClient", function(OpencgaR, users, filterId, user, endpointName, params=NULL, ...)
     standardGeneric("userClient"))
 
 # ##############################################################################
 ## ProjectClient
-setGeneric("projectClient", function(OpencgaR, projects, project, endpointName, params=NULL, ...)
+setGeneric("projectClient", function(OpencgaR, project, projects, endpointName, params=NULL, ...)
     standardGeneric("projectClient"))
 
 # ##############################################################################
 ## StudyClient
-<<<<<<< HEAD
-setGeneric("studyClient", function(OpencgaR, variableSet, group, members, study, studies, templateId, endpointName, params=NULL, ...)
-=======
-setGeneric("studyClient", function(OpencgaR, templateId, studies, group, members, study, variableSet, endpointName, params=NULL, ...)
->>>>>>> release-2.2.x
+setGeneric("studyClient", function(OpencgaR, study, templateId, members, studies, variableSet, group, endpointName, params=NULL, ...)
     standardGeneric("studyClient"))
 
 # ##############################################################################
 ## FileClient
-<<<<<<< HEAD
-setGeneric("fileClient", function(OpencgaR, annotationSet, members, folder, files, file, endpointName, params=NULL, ...)
-=======
-setGeneric("fileClient", function(OpencgaR, files, folder, file, members, annotationSet, endpointName, params=NULL, ...)
->>>>>>> release-2.2.x
+setGeneric("fileClient", function(OpencgaR, folder, annotationSet, files, members, file, endpointName, params=NULL, ...)
     standardGeneric("fileClient"))
 
 # ##############################################################################
 ## JobClient
-<<<<<<< HEAD
-setGeneric("jobClient", function(OpencgaR, members, jobs, job, endpointName, params=NULL, ...)
-=======
-setGeneric("jobClient", function(OpencgaR, jobs, members, job, endpointName, params=NULL, ...)
->>>>>>> release-2.2.x
+setGeneric("jobClient", function(OpencgaR, job, jobs, members, endpointName, params=NULL, ...)
     standardGeneric("jobClient"))
 
 # ##############################################################################
 ## SampleClient
-setGeneric("sampleClient", function(OpencgaR, annotationSet, members, sample, samples, endpointName, params=NULL, ...)
+setGeneric("sampleClient", function(OpencgaR, sample, annotationSet, samples, members, endpointName, params=NULL, ...)
     standardGeneric("sampleClient"))
 
 # ##############################################################################
 ## IndividualClient
-<<<<<<< HEAD
-setGeneric("individualClient", function(OpencgaR, individuals, members, annotationSet, individual, endpointName, params=NULL, ...)
-=======
-setGeneric("individualClient", function(OpencgaR, individual, annotationSet, members, individuals, endpointName, params=NULL, ...)
->>>>>>> release-2.2.x
+setGeneric("individualClient", function(OpencgaR, individual, individuals, annotationSet, members, endpointName, params=NULL, ...)
     standardGeneric("individualClient"))
 
 # ##############################################################################
 ## FamilyClient
-<<<<<<< HEAD
-setGeneric("familyClient", function(OpencgaR, annotationSet, family, members, families, endpointName, params=NULL, ...)
-=======
-setGeneric("familyClient", function(OpencgaR, family, annotationSet, members, families, endpointName, params=NULL, ...)
->>>>>>> release-2.2.x
+setGeneric("familyClient", function(OpencgaR, family, annotationSet, families, members, endpointName, params=NULL, ...)
     standardGeneric("familyClient"))
 
 # ##############################################################################
 ## CohortClient
-<<<<<<< HEAD
-setGeneric("cohortClient", function(OpencgaR, cohorts, members, annotationSet, cohort, endpointName, params=NULL, ...)
-=======
-setGeneric("cohortClient", function(OpencgaR, cohorts, cohort, members, annotationSet, endpointName, params=NULL, ...)
->>>>>>> release-2.2.x
+setGeneric("cohortClient", function(OpencgaR, cohorts, cohort, annotationSet, members, endpointName, params=NULL, ...)
     standardGeneric("cohortClient"))
 
 # ##############################################################################
 ## PanelClient
-setGeneric("panelClient", function(OpencgaR, members, panels, endpointName, params=NULL, ...)
+setGeneric("panelClient", function(OpencgaR, panels, members, endpointName, params=NULL, ...)
     standardGeneric("panelClient"))
 
 # ##############################################################################
@@ -88,11 +60,7 @@ setGeneric("variantClient", function(OpencgaR, endpointName, params=NULL, ...)
 
 # ##############################################################################
 ## ClinicalClient
-<<<<<<< HEAD
-setGeneric("clinicalClient", function(OpencgaR, clinicalAnalyses, members, interpretation, clinicalAnalysis, interpretations, endpointName, params=NULL, ...)
-=======
-setGeneric("clinicalClient", function(OpencgaR, interpretations, interpretation, clinicalAnalysis, members, clinicalAnalyses, endpointName, params=NULL, ...)
->>>>>>> release-2.2.x
+setGeneric("clinicalClient", function(OpencgaR, clinicalAnalysis, members, interpretations, interpretation, clinicalAnalyses, endpointName, params=NULL, ...)
     standardGeneric("clinicalClient"))
 
 # ##############################################################################
@@ -107,7 +75,7 @@ setGeneric("metaClient", function(OpencgaR, endpointName, params=NULL, ...)
 
 # ##############################################################################
 ## GA4GHClient
-setGeneric("ga4ghClient", function(OpencgaR, file, study, endpointName, params=NULL, ...)
+setGeneric("ga4ghClient", function(OpencgaR, study, file, endpointName, params=NULL, ...)
     standardGeneric("ga4ghClient"))
 
 # ##############################################################################
