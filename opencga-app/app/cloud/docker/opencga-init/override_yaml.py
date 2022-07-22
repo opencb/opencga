@@ -1,3 +1,4 @@
+from distutils.log import set_verbosity
 import oyaml as yaml
 import sys
 import configargparse
@@ -57,22 +58,19 @@ args = parser.parse_args()
 with open(args.storage_config_path) as f:
     storage_config = yaml.safe_load(f)
 
-def hostOverride(hosts_var,server,component):
-    hosts = hosts_var.replace('\"','').replace('[','').replace(']','').split(",")
-    for i, host in enumerate(hosts):
-        if component == "":
+def hostOverride(conf,hosts_var):
+    if not hosts_var is None:
+        hosts = hosts_var.replace('\"','').replace('[','').replace(']','').split(",")
+        for i, host in enumerate(hosts):
             if i == 0:
-                storage_config[server]["hosts"].clear()
-            storage_config[server]["hosts"].insert(i, host.strip()) 
-        else:
-            if i == 0:
-                config[server][component]["hosts"].clear()
-            config[server][component]["hosts"].insert(i, host.strip()) 
+                conf["hosts"].clear()
+            conf["hosts"].insert(i, host.strip())
+
 
 #  Inject search/clinical/rga hosts
-hostOverride(args.search_hosts,"search","")
-hostOverride(args.clinical_hosts,"clinical","")
-hostOverride(args.rga_hosts,"rga","")
+hostOverride(storage_config["search"],args.search_hosts)
+hostOverride(storage_config["clinical"],args.clinical_hosts)
+hostOverride(storage_config["rga"],args.rga_hosts)
 
 # Inject cellbase rest host, if set
 if args.cellbase_rest_url is not None and args.cellbase_rest_url != "":
@@ -119,7 +117,7 @@ if args.database_prefix:
     config["databasePrefix"] = args.database_prefix
 
 # Inject catalog database
-hostOverride(args.catalog_database_hosts,"catalog","database")
+hostOverride(config["catalog"]["database"], args.catalog_database_hosts)
 
 config["catalog"]["database"]["user"] = args.catalog_database_user
 config["catalog"]["database"]["password"] = args.catalog_database_password
@@ -133,7 +131,7 @@ if args.catalog_database_authentication_mechanism is not None:
     config["catalog"]["database"]["options"]["authenticationMechanism"] = args.catalog_database_authentication_mechanism
 
 # Inject search database
-hostOverride(args.catalog_search_hosts,"catalog","searchEngine")
+hostOverride(config["catalog"]["searchEngine"], args.catalog_search_hosts)
 
 if args.catalog_search_user is not None:
     config["catalog"]["searchEngine"]["user"] = args.catalog_search_user
