@@ -1,4 +1,3 @@
-from gettext import Catalog
 import oyaml as yaml
 import sys
 import configargparse
