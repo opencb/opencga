@@ -24,6 +24,7 @@ import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
@@ -69,31 +70,27 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         String subCommandString = getParsedSubCommand(clinicalCommandOptions.jCommander);
         configure();
         switch (subCommandString) {
-
             case "run-interpreter-tiering":
                 tiering();
                 break;
-
             case "run-interpreter-team":
                 team();
                 break;
-
             case "run-interpreter-zetta":
                 zetta();
                 break;
-
             case "run-interpreter-cancer-tiering":
                 cancerTiering();
                 break;
-
             case RGA_INDEX_RUN_COMMAND:
                 rgaIndex();
                 break;
-
             case RGA_AUX_INDEX_RUN_COMMAND:
                 auxRgaIndex();
                 break;
-
+            case "run-interpreter-exomiser":
+                exomiserInterpretation();
+                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -296,5 +293,25 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
                 .setConfig(config);
         cancerTieringAnalysis.setPrimary(cliOptions.primary);
         cancerTieringAnalysis.start();
+    }
+
+    private void exomiserInterpretation() throws Exception {
+        ClinicalCommandOptions.ExomiserInterpretationCommandOptions cliOptions = clinicalCommandOptions.exomiserInterpretationCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+        // Prepare analysis parameters and config
+        String token = cliOptions.commonOptions.token;
+
+        Path outDir = Paths.get(cliOptions.outdir);
+        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
+
+        // Execute cancer tiering analysis
+        ExomiserInterpretationAnalysis exomiserInterpretationAnalysis = new ExomiserInterpretationAnalysis();
+        exomiserInterpretationAnalysis.setUp(opencgaHome.toString(), new ObjectMap(), outDir, token);
+        exomiserInterpretationAnalysis.setStudyId(cliOptions.study)
+                .setClinicalAnalysisId(cliOptions.clinicalAnalysis);
+//        exomiserInterpretationAnalysis.setPrimary(cliOptions.primary);
+        exomiserInterpretationAnalysis.start();
     }
 }

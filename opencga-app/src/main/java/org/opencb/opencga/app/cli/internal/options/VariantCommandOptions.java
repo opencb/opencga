@@ -37,6 +37,7 @@ import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
+import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
@@ -139,6 +140,7 @@ public class VariantCommandOptions {
     public final PlinkCommandOptions plinkCommandOptions;
     public final RvtestsCommandOptions rvtestsCommandOptions;
     public final GatkCommandOptions gatkCommandOptions;
+    public final ExomiserAnalysisCommandOptions exomiserAnalysisCommandOptions;
 
     public final JCommander jCommander;
     public final GeneralCliOptions.CommonCommandOptions commonCommandOptions;
@@ -204,6 +206,7 @@ public class VariantCommandOptions {
         this.plinkCommandOptions = new PlinkCommandOptions();
         this.rvtestsCommandOptions = new RvtestsCommandOptions();
         this.gatkCommandOptions = new GatkCommandOptions();
+        this.exomiserAnalysisCommandOptions = new ExomiserAnalysisCommandOptions();
     }
 
     @Parameters(commandNames = {VariantIndexCommandOptions.INDEX_RUN_COMMAND}, commandDescription = VariantIndexOperationTool.DESCRIPTION)
@@ -1641,7 +1644,6 @@ public class VariantCommandOptions {
     }
 
     // GATK
-
     @Parameters(commandNames = org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis.ID, commandDescription = org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis.DESCRIPTION)
     public class GatkCommandOptions {
         public static final String GATK_RUN_COMMAND = GatkWrapperAnalysis.ID + "-run";
@@ -1666,5 +1668,25 @@ public class VariantCommandOptions {
 
         @DynamicParameter(names = {"--gatk-params"}, description = "Gatk parameters e.g.:. --gatk-params I=test.bam")
         public Map<String, String> gatkParams = new HashMap<>();
+    }
+
+    @Parameters(commandNames = ExomiserAnalysisCommandOptions.EXOMISER_RUN_COMMAND, commandDescription = ExomiserWrapperAnalysis.DESCRIPTION)
+    public class ExomiserAnalysisCommandOptions {
+        public static final String EXOMISER_RUN_COMMAND = ExomiserWrapperAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
+        public String study;
+
+        @Parameter(names = {"--sample"}, description = "Sample ID.", required = true)
+        public String sample;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
     }
 }
