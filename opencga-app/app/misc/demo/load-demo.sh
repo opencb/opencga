@@ -1,7 +1,10 @@
 #!/bin/sh
 
 ADMIN_PASSWORD=$1
+OPENCGA_HOME=${2:-/opt/opencga}
 USER_PASSWORD='Demo_P4ss'
+
+cd "$OPENCGA_HOME/bin" || exit 1
 
 set -x
 
@@ -29,5 +32,5 @@ echo "Creating demo@family:corpasome ...."
 ./opencga.sh operations variant-secondary-index --project 'demo@family' \
      --job-id 'variant_secondary_index' --job-depends-on 'variant_stats,variant_annotation'
 
-TEMPLATE=$(./opencga.sh studies templates-upload -i /opt/opencga/misc/demo/corpasome/ --study 'demo@family:corpasome')
+TEMPLATE=$(./opencga.sh studies templates-upload -i ../misc/demo/corpasome/ --study 'demo@family:corpasome')
 ./opencga.sh studies templates-run --id "$TEMPLATE" --study 'demo@family:corpasome' --overwrite

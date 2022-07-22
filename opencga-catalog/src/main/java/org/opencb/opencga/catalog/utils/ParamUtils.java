@@ -40,6 +40,9 @@ import java.util.regex.Pattern;
  */
 public class ParamUtils {
 
+    protected static final Pattern EMAIL_PATTERN = Pattern.compile("^['_A-Za-z0-9-\\+]+(\\.['_A-Za-z0-9-]+)*@"
+            + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$");
+
     public static void checkAllParametersExist(Iterator<String> parameterIterator, Function<String, Boolean> exist)
             throws CatalogParameterException {
         while (parameterIterator.hasNext()) {
@@ -177,6 +180,12 @@ public class ParamUtils {
         } else {
             checkDateFormat(date, param);
             return date;
+        }
+    }
+
+    public static void checkEmail(String email) throws CatalogParameterException {
+        if (email == null || !EMAIL_PATTERN.matcher(email).matches()) {
+            throw new CatalogParameterException("Email '" + email + "' not valid");
         }
     }
 

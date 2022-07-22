@@ -7,6 +7,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
@@ -44,7 +45,9 @@ public class HadoopMRVariantStatisticsManager extends VariantStatisticsManager {
         }
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
         StudyMetadata sm = metadataManager.getStudyMetadata(study);
-
+        if (sm == null) {
+            throw VariantQueryException.studyNotFound(study);
+        }
         if (isAggregated(sm, options)) {
             Aggregation aggregation = getAggregation(sm, options);
             VariantStatsMapper.setAggregation(options, aggregation);

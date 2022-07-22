@@ -239,6 +239,19 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void createTxtFileNoExtensionTest() throws CatalogException {
+        String content = "This is my content";
+        FileCreateParams params = new FileCreateParams()
+                .setContent(content)
+                .setType(File.Type.FILE)
+                .setPath("/files/folder/file");
+
+        File file = fileManager.create(studyFqn, params, true, token).first();
+        FileContent fileContent = fileManager.head(studyFqn, file.getId(), 0, 1, token).first();
+        assertEquals(content, fileContent.getContent().trim());
+    }
+
+    @Test
     public void createTxtFileTest() throws CatalogException {
         String content = "This is my content";
         FileCreateParams params = new FileCreateParams()

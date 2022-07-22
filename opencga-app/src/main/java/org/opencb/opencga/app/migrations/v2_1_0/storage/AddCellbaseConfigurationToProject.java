@@ -28,7 +28,7 @@ public class AddCellbaseConfigurationToProject extends MigrationTool {
                 String userToken = catalogManager.getUserManager()
                         .getNonExpiringToken(project.getFqn().split(USER_PROJECT_SEPARATOR)[0], token);
                 catalogManager.getProjectManager()
-                        .setInternalCellbaseConfiguration(project.getFqn(), storageConfiguration.getCellbase(), userToken);
+                        .setCellbaseConfiguration(project.getFqn(), storageConfiguration.getCellbase(), userToken);
             }
         }
     }

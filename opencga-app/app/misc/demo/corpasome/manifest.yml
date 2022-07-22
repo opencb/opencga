@@ -9,7 +9,7 @@
 ##   Daughter: ISDBM322017
 
 configuration:
-  version: 2.2.2-SNAPSHOT
+  version: REPLACEME_OPENCGA_VERSION
   index: false
   projectId: family
 study:

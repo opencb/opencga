@@ -51,6 +51,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
@@ -113,8 +114,13 @@ public class ClinicalInterpretationManager extends StorageManager {
 
     static {
         defaultDeNovoQuery = new Query()
-                .append(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:AFR<0.002;1kG_phase3:AMR<0.002;"
-                        + "1kG_phase3:EAS<0.002;1kG_phase3:EUR<0.002;1kG_phase3:SAS<0.002;GNOMAD_EXOMES:AFR<0.001;GNOMAD_EXOMES:AMR<0.001;"
+                .append(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
+                          ParamConstants.POP_FREQ_1000G + ":AFR<0.002;"
+                        + ParamConstants.POP_FREQ_1000G + ":AMR<0.002;"
+                        + ParamConstants.POP_FREQ_1000G + ":EAS<0.002;"
+                        + ParamConstants.POP_FREQ_1000G + ":EUR<0.002;"
+                        + ParamConstants.POP_FREQ_1000G + ":SAS<0.002;"
+                        + "GNOMAD_EXOMES:AFR<0.001;GNOMAD_EXOMES:AMR<0.001;"
                         + "GNOMAD_EXOMES:EAS<0.001;GNOMAD_EXOMES:FIN<0.001;GNOMAD_EXOMES:NFE<0.001;GNOMAD_EXOMES:ASJ<0.001;"
                         + "GNOMAD_EXOMES:OTH<0.002")
                 .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.001")

@@ -14,7 +14,6 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
@@ -95,7 +94,7 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
             if (put == null) {
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put.null").increment(1);
             } else {
-                HadoopVariantSearchIndexUtils.addNotSyncStatus(put, GenomeHelper.COLUMN_FAMILY_BYTES);
+                HadoopVariantSearchIndexUtils.addNotSyncStatus(put);
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put").increment(1);
                 context.write(new ImmutableBytesWritable(helper.getVariantsTable()), put);
             }

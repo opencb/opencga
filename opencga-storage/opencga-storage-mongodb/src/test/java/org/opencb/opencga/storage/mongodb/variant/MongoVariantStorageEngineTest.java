@@ -107,7 +107,6 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
             t.addStatus(new Date(System.currentTimeMillis() - 100), TaskMetadata.Status.RUNNING);
             t.addStatus(new Date(System.currentTimeMillis() - 50), TaskMetadata.Status.ERROR);
             // Last status is ERROR
-            return t;
         });
 
         System.out.println("----------------");
@@ -136,7 +135,6 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
             operation.addStatus(new Date(System.currentTimeMillis() - 50), TaskMetadata.Status.ERROR);
             operation.addStatus(new Date(System.currentTimeMillis()), TaskMetadata.Status.RUNNING);
             // Last status is RUNNING
-            return operation;
         });
 
         try {
@@ -199,7 +197,6 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
             TreeMap<Date, TaskMetadata.Status> status = task.getStatus();
             status.remove(status.lastKey(), TaskMetadata.Status.READY);
             task.addStatus(TaskMetadata.Status.ERROR);
-            return task;
         });
 
         // 2) Remove from files collection

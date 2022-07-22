@@ -6,6 +6,7 @@ import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.PopulationFrequency;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.core.CombinationTripleIndexSchema;
@@ -21,9 +22,6 @@ import static org.opencb.opencga.core.models.variant.VariantAnnotationConstants.
  * Created by jacobo on 04/01/19.
  */
 public class AnnotationIndexConverter {
-
-    public static final String GNOMAD_GENOMES = "GNOMAD_GENOMES";
-    public static final String K_GENOMES = "1kG_phase3";
 
     public static final double POP_FREQ_THRESHOLD_001 = 0.001;
     public static final Set<String> BIOTYPE_SET;
@@ -55,8 +53,8 @@ public class AnnotationIndexConverter {
 //        BIOTYPE_SET.add(TR_J_GENE);
 //        BIOTYPE_SET.add(TR_V_GENE);
 
-        POP_FREQ_ANY_001_SET.add("1kG_phase3:ALL");
-        POP_FREQ_ANY_001_SET.add("GNOMAD_GENOMES:ALL");
+        POP_FREQ_ANY_001_SET.add(ParamConstants.POP_FREQ_1000G_CB_V4 + ":ALL");
+        POP_FREQ_ANY_001_SET.add(ParamConstants.POP_FREQ_GNOMAD_GENOMES + ":ALL");
 
         for (String s : POP_FREQ_ANY_001_SET) {
             POP_FREQ_ANY_001_FILTERS.add(s + "<" + POP_FREQ_THRESHOLD_001);
@@ -153,9 +151,9 @@ public class AnnotationIndexConverter {
             for (PopulationFrequency populationFrequency : variantAnnotation.getPopulationFrequencies()) {
                 addPopFreqIndex(popFreq, populationFrequency);
                 if (populationFrequency.getPopulation().equals(DEFAULT_COHORT)) {
-                    if (populationFrequency.getStudy().equals(GNOMAD_GENOMES)) {
+                    if (populationFrequency.getStudy().equals(ParamConstants.POP_FREQ_GNOMAD_GENOMES)) {
                         gnomadFreq = populationFrequency.getAltAlleleFreq();
-                    } else if (populationFrequency.getStudy().equals(K_GENOMES)) {
+                    } else if (populationFrequency.getStudy().equals(ParamConstants.POP_FREQ_1000G_CB_V4)) {
                         kgenomesFreq = populationFrequency.getAltAlleleFreq();
                     }
                 }
