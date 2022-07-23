@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>2.3.2-SNAPSHOT</version>
+    <version>2.3.2</version>
     <packaging>pom</packaging>
 
     <name>OpenCGA</name>
@@ -43,7 +43,7 @@
     </modules>
 
     <properties>
-        <opencga.version>2.3.2-SNAPSHOT</opencga.version>
+        <opencga.version>2.3.2</opencga.version>
         <pyopencga.version>${opencga.version}</pyopencga.version>
         <cellbase.version>5.1.0</cellbase.version>
         <biodata.version>2.3.0</biodata.version>
