@@ -38,6 +38,7 @@ public class RgaEngine implements Closeable {
     private static Map<String, SolrCollection> solrCollectionMap;
 
     private Logger logger;
+    private boolean quiet;
 
     static {
         solrCollectionMap = new HashMap<>();
@@ -54,6 +55,11 @@ public class RgaEngine implements Closeable {
                 storageConfiguration.getRga().getTimeout());
 
         logger = LoggerFactory.getLogger(RgaEngine.class);
+    }
+
+    public RgaEngine setQuiet(boolean quiet) {
+        this.quiet = quiet;
+        return this;
     }
 
     public boolean isAlive(String collection) {
@@ -294,7 +300,6 @@ public class RgaEngine implements Closeable {
      * @param solrQuery    SolrQuery object.
      * @param queryOptions Query options (contains the facet and facetRange options)
      * @return List of KnockoutByIndividual objects
-     * @throws RgaException RgaException
      * @throws IOException IOException
      */
     private DataResult<FacetField> facetedQuery(String collection, SolrQuery solrQuery, QueryOptions queryOptions) throws IOException {
@@ -313,7 +318,7 @@ public class RgaEngine implements Closeable {
                 solrQuery.setStart(0);
                 solrQuery.setFields();
 
-                logger.debug(">>>>>> Solr Facet: " + solrQuery.toString());
+                logger.debug(">>>>>> Solr Facet: {}", solrQuery);
             } catch (Exception e) {
                 throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Solr parse exception: " + e.getMessage(), e);
             }
@@ -326,7 +331,11 @@ public class RgaEngine implements Closeable {
         } catch (SolrServerException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }
-        logger.info("Facet '{}': {} milliseconds", solrQuery.toString(), stopWatch.getTime(TimeUnit.MILLISECONDS));
+        if (quiet) {
+            logger.debug("Facet '{}': {} milliseconds", solrQuery.toString(), stopWatch.getTime(TimeUnit.MILLISECONDS));
+        } else {
+            logger.info("Facet '{}': {} milliseconds", solrQuery.toString(), stopWatch.getTime(TimeUnit.MILLISECONDS));
+        }
 
         return facetResult;
     }

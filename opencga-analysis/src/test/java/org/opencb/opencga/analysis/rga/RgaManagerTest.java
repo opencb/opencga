@@ -148,7 +148,7 @@ public class RgaManagerTest {
 
         catalogManager = opencga.getCatalogManager();
         variantStorageManager = new VariantStorageManager(catalogManager, opencga.getStorageEngineFactory());
-        rgaManager = new RgaManager(catalogManager.getConfiguration(), opencga.getStorageConfiguration(), variantStorageManager, rgaEngine);
+        rgaManager = new RgaManager(catalogManager, variantStorageManager, rgaEngine);
 
         if (!indexed) {
             indexed = true;

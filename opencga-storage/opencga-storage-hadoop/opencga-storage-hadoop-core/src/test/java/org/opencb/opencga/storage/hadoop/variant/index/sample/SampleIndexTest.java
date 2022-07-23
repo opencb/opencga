@@ -18,6 +18,7 @@ import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.*;
@@ -961,6 +962,40 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         assertTrue(result.getApproximateCount());
         assertThat(result.getApproximateCountSamplingSize(), gte(200));
         assertEquals("hadoop + sample_index_table", result.getSource());
+    }
+
+    @Test
+    public void testFamilyIndexQueryCount() {
+        List<String> trio = trios.get(0);
+        String proband = trio.get(2);
+        VariantQueryResult<Variant> result = variantStorageEngine.get(
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME)
+                        .append(SAMPLE.key(), proband + ":compoundheterozygous")
+                        .append(INCLUDE_SAMPLE_ID.key(), "true")
+                        .append(INCLUDE_SAMPLE.key(), trio)
+//                        .append(GENE.key(), "BRCA2")
+//                        .append(REGION.key(), "1,2,3,4,5,6,7,8,9,10,11,12,14,15,16,17,18,19,20,21,22")
+                        .append(ANNOT_BIOTYPE.key(), "protein_coding"),
+                new QueryOptions()
+                        .append(QueryOptions.LIMIT, 10)
+                        .append(QueryOptions.COUNT, true));
+
+        System.out.println(result.getResults().stream().map(Variant::getAnnotation).flatMap(v -> v.getConsequenceTypes().stream()).map(ConsequenceType::getGeneName).collect(Collectors.toSet()));
+
+        result = variantStorageEngine.get(
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME)
+                        .append(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS.key(), proband)
+                        .append(INCLUDE_SAMPLE_ID.key(), "true")
+                        .append(INCLUDE_SAMPLE.key(), trio)
+                        .append(GENE.key(), "PANK4,MADCAM1")
+                        .append(ANNOT_BIOTYPE.key(), "protein_coding"),
+                new QueryOptions()
+                        .append(QueryOptions.LIMIT, 10)
+                        .append(QueryOptions.COUNT, true));
+
+        System.out.println(result.getResults().stream().map(Variant::getAnnotation).flatMap(v -> v.getConsequenceTypes().stream()).map(ConsequenceType::getGeneName).collect(Collectors.toSet()));
     }
 
 }

@@ -384,7 +384,7 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
 
         if (analysisParams.isIndex()) {
             step("index", () -> {
-                RgaManager rgaManager = new RgaManager(configuration, storageConfiguration);
+                RgaManager rgaManager = new RgaManager(getCatalogManager(), getVariantStorageManager());
                 rgaManager.index(study, getIndividualsOutputFile(), token);
             });
         }
