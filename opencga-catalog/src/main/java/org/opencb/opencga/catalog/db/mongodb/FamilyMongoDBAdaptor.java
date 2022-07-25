@@ -451,7 +451,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             }
 
             return endWrite(tmpStartTime, 1, 1, events);
-        }, this::iterator, (DBIterator<Family> iterator) -> updateReferencesAfterFamilyVersionIncrement(clientSession, iterator));
+        }, Arrays.asList(QueryParams.MEMBERS_ID.key(), QueryParams.MEMBERS_SAMPLES_ID.key()),
+                this::iterator, (DBIterator<Family> iterator) -> updateReferencesAfterFamilyVersionIncrement(clientSession, iterator));
     }
 
     private void updateReferencesAfterFamilyVersionIncrement(ClientSession clientSession, DBIterator<Family> iterator)
@@ -530,7 +531,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                         throw new CatalogDBException("Family '" + family.getId() + "' could not be updated to the latest member versions");
                     }
                     return result;
-                }, this::iterator, (DBIterator<Family> fIterator) -> updateReferencesAfterFamilyVersionIncrement(clientSession, fIterator));
+                }, Arrays.asList(QueryParams.MEMBERS_ID.key(), QueryParams.MEMBERS_SAMPLES_ID.key()),
+                        this::iterator,
+                        (DBIterator<Family> fIterator) -> updateReferencesAfterFamilyVersionIncrement(clientSession, fIterator));
             }
         }
     }
@@ -589,7 +592,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                         versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
                             Bson update = Updates.set(QueryParams.ROLES.key(), getMongoDBDocument(roles, QueryParams.ROLES.key()));
                             return familyCollection.update(clientSession, bsonQuery, update, QueryOptions.empty());
-                        }, this::iterator,
+                        }, Arrays.asList(QueryParams.MEMBERS_ID.key(), QueryParams.MEMBERS_SAMPLES_ID.key()),
+                                this::iterator,
                                 (DBIterator<Family> fIterator) -> updateReferencesAfterFamilyVersionIncrement(clientSession, fIterator));
                     }
                 }

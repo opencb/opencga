@@ -51,6 +51,7 @@ import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.common.FlagValue;
 import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.FamilyUpdateParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.file.FileReferenceParam;
@@ -2359,6 +2360,9 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         clinicalAnalysis.setFamily(dummyFamily.first());
         catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
 
+        catalogManager.getFamilyManager().update(STUDY, dummyFamily.first().getId(), new FamilyUpdateParams()
+                .setId("familyId"), QueryOptions.empty(), sessionIdUser);
+
         QueryOptions includeClinicalIds = ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS;
         // Query by members
         Query query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.INDIVIDUAL.key(), "child3");
@@ -2387,7 +2391,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         search = catalogManager.getClinicalAnalysisManager().search(STUDY, query, includeClinicalIds, sessionIdUser);
         assertEquals(0, search.getNumResults());
 
-        query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), "family");
+        query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), "familyId");
         search = catalogManager.getClinicalAnalysisManager().search(STUDY, query, includeClinicalIds, sessionIdUser);
         assertEquals(1, search.getNumResults());
     }
