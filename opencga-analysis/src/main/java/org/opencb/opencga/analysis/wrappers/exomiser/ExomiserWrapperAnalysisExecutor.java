@@ -29,6 +29,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 
 @ToolExecutor(id = ExomiserWrapperAnalysisExecutor.ID,
         tool = ExomiserWrapperAnalysis.ID,
@@ -52,15 +53,6 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
     @Override
     public void run() throws ToolException {
-        Path vcfPath = getOutDir().resolve(sampleId + ".vcf.gz");
-        Query query = new Query(SAMPLE.key(), sampleId);
-        try {
-            getVariantStorageManager().exportData(vcfPath.toString(), VariantWriterFactory.VariantOutputFormat.VCF_GZ, null, query,
-                    QueryOptions.empty(), getToken());
-        } catch (StorageEngineException | CatalogException e) {
-            throw new ToolException(e);
-        }
-
         // Check HPOs, it will use a set to avoid duplicate HPOs,
         // and it will check both phenotypes and disorders
         Set<String> hpos = new HashSet<>();
@@ -111,6 +103,20 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
             throw new ToolException("Error writing Exomiser sample file", e);
         }
 
+        // Export data into VCF file
+        Path vcfPath = getOutDir().resolve(sampleId + ".vcf.gz");
+        Query query = new Query()
+                .append(STUDY.key(), studyId)
+                .append(SAMPLE.key(), sampleId);
+        logger.info("Exomiser exports variants using the query: {}", query.toJson());
+        try {
+            getVariantStorageManager().exportData(vcfPath.toString(), VariantWriterFactory.VariantOutputFormat.VCF_GZ, null, query,
+                    QueryOptions.empty(), getToken());
+        } catch (StorageEngineException | CatalogException e) {
+            throw new ToolException(e);
+        }
+
+        // Get Exomiser (external) data
         Path openCgaHome = getOpencgaHomePath();
         Path exomiserDataPath = getAnalysisDataPath(ExomiserWrapperAnalysis.ID);
 
