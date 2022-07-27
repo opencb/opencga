@@ -1,0 +1,8 @@
+##fileformat=VCFv4.2
+##SAMPLE=<ID=TUMOR,SampleName=sample_tumor,Description="This is the tumor sample">
+##SAMPLE=<ID=NORMAL,SampleId=sample_normal,Description="This is the normal sample">
+##SAMPLE=<ID=OTHER,Name=sample_other,Description="This is the another sample">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	TUMOR	NORMAL	OTHER
+chr1	28494	.	T	C	100	PASS	.	GT:NAME	0|0:TUMOR	1|0:NORMAL	1|0:OTHER
+chr1	99166	.	C	T	100	PASS	.	GT:NAME	0|1:TUMOR	0|1:NORMAL	0|1:OTHER
+chr1	99580	.	T	C	100	PASS	.	GT:NAME	0|1:TUMOR	0|0:NORMAL	1|1:OTHER

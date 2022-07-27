@@ -378,7 +378,7 @@ public class SampleIndexQueryParser {
 
         // If not all genotypes are valid, query is not covered
         if (!negatedSamples.isEmpty()) {
-            logger.debug("NEG_SAMPLES - Set partialGtIndex to true. Prev value: {}", partialGtIndex);
+            logger.debug("NEG_SAMPLES - Set partialGtIndex to true. Prev value: {}, negSamples: {}", partialGtIndex, negatedSamples);
             partialGtIndex = true;
         }
         for (String negatedSample : negatedSamples) {

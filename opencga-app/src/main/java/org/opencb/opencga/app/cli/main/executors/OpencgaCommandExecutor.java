@@ -261,4 +261,19 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         }
         return res;
     }
+
+    public Object putNestedIfNotNull(ObjectMap map, String key, Object value, boolean parents) {
+        if (value != null) {
+            map.putNested(key, value, parents);
+        }
+        return null;
+    }
+
+    public Object putNestedIfNotEmpty(ObjectMap map, String key, String value, boolean parents) {
+        if (StringUtils.isNotEmpty(value)) {
+            map.putNested(key, value, parents);
+        }
+        return null;
+    }
+
 }
