@@ -55,10 +55,11 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     public void run() throws ToolException {
         // Check HPOs, it will use a set to avoid duplicate HPOs,
         // and it will check both phenotypes and disorders
+        logger.info("Checking individual for sample {} in study {}", sampleId, studyId);
         Set<String> hpos = new HashSet<>();
         Individual individual = IndividualQcUtils.getIndividualBySampleId(studyId, sampleId, getVariantStorageManager().getCatalogManager(),
                 getToken());
-
+        logger.info("Individual found: {}", individual.getId());
         if (CollectionUtils.isNotEmpty(individual.getPhenotypes())) {
             for (Phenotype phenotype : individual.getPhenotypes()) {
                 if (phenotype.getId().startsWith("HP:")) {
@@ -75,18 +76,11 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         }
 
         if (CollectionUtils.isEmpty(hpos)) {
-            throw new ToolException("Missing phenotype, i.e. HPO terms, for individual/sample (" + individual.getId() + "/" + sampleId
+            throw new ToolException("Missing phenotypes, i.e. HPO terms, for individual/sample (" + individual.getId() + "/" + sampleId
                     + ")");
         }
 
-        // Create Exomiser sample file from HPOs
-        StringBuilder hpoSb = new StringBuilder();
-        for (String hpo : hpos) {
-            if (hpoSb.length() > 0) {
-                hpoSb.append(", ");
-            }
-            hpoSb.append("'" + hpo + "'");
-        }
+        logger.info("Getting HPO for individual {}: {}", individual.getId(), StringUtils.join(hpos, ","));
         try {
             PrintWriter pw = new PrintWriter(getOutDir().resolve(sampleId + ".yml").toAbsolutePath().toString());
             pw.write("# a v1 phenopacket describing an individual https://phenopacket-schema.readthedocs.io/en/1.0.0/phenopacket.html\n");
