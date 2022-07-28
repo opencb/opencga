@@ -111,9 +111,9 @@ public class RecoverProbandSamplesInCases extends MigrationTool {
         // Fetch case from Audit collection
         try (MongoCursor<Document> iterator = audit.find(
                 Filters.and(
-                        Filters.eq("resource", Enums.Resource.CLINICAL_ANALYSIS),
+                        Filters.eq("resource", Enums.Resource.CLINICAL_ANALYSIS.name()),
                         Filters.eq("resourceUuid", uuid),
-                        Filters.eq("action", Enums.Action.CREATE)
+                        Filters.eq("action", Enums.Action.CREATE.name())
                 )
         ).iterator()) {
             if (iterator.hasNext()) {
@@ -139,9 +139,9 @@ public class RecoverProbandSamplesInCases extends MigrationTool {
         // Fetch case from Audit collection
         try (MongoCursor<Document> iterator = audit.find(
                 Filters.and(
-                        Filters.eq("resource", Enums.Resource.CLINICAL_ANALYSIS),
+                        Filters.eq("resource", Enums.Resource.CLINICAL_ANALYSIS.name()),
                         Filters.eq("resourceUuid", uuid),
-                        Filters.eq("action", Enums.Action.UPDATE)
+                        Filters.eq("action", Enums.Action.UPDATE.name())
                 )
         ).sort(Sorts.descending("date")).iterator()) {
             while (iterator.hasNext()) {
