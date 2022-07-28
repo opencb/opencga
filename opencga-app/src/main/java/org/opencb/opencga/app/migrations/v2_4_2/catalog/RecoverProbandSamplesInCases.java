@@ -21,10 +21,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Migration(id = "recover_proband_samples_in_cases_TASK-1470",
         description = "Recover lost samples in clinical collection #TASK-1470", version = "2.4.2",
@@ -74,7 +71,9 @@ public class RecoverProbandSamplesInCases extends MigrationTool {
                     Individual proband;
                     try {
                         proband = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(currentCase.getProband().getUid(),
-                                new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLES.key())).first();
+                                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
+                                        IndividualDBAdaptor.QueryParams.VERSION.key(), IndividualDBAdaptor.QueryParams.SAMPLES.key())))
+                                .first();
                     } catch (CatalogException e) {
                         throw new RuntimeException(e);
                     }
