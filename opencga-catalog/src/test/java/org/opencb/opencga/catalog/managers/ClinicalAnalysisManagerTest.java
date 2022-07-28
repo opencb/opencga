@@ -637,7 +637,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(3, (int) interpretation.getStats().getPrimaryFindings().getStatusCount().get(ClinicalVariant.Status.NOT_REVIEWED));
 
         // Add existing finding
-        cv3.setDiscussion(new ClinicalDiscussion(null, null, "My discussion"));
+        cv3.setDiscussion(new ClinicalDiscussion("author", "20220728", "My discussion"));
         try {
             catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(), clinicalAnalysis.getId() + ".1", updateParams, null,
                     options, sessionIdUser);
@@ -679,8 +679,9 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals("id2", interpretation.getPrimaryFindings().get(1).getId());
         assertEquals("method2", interpretation.getPrimaryFindings().get(2).getEvidences().get(0).getInterpretationMethodName());
         assertEquals("id3", interpretation.getPrimaryFindings().get(2).getId());
-        assertEquals("user", interpretation.getPrimaryFindings().get(2).getDiscussion().getAuthor());
-        assertEquals("My discussion", interpretation.getPrimaryFindings().get(2).getDiscussion().getMessage());
+        assertEquals("author", interpretation.getPrimaryFindings().get(2).getDiscussion().getAuthor());
+        assertEquals("20220728", interpretation.getPrimaryFindings().get(2).getDiscussion().getDate());
+        assertEquals("My discussion", interpretation.getPrimaryFindings().get(2).getDiscussion().getText());
         assertTrue(StringUtils.isNotEmpty(interpretation.getPrimaryFindings().get(2).getDiscussion().getDate()));
         assertEquals(3, interpretation.getStats().getPrimaryFindings().getNumVariants());
         assertEquals(3, (int) interpretation.getStats().getPrimaryFindings().getStatusCount().get(ClinicalVariant.Status.NOT_REVIEWED));

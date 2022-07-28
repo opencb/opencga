@@ -61,12 +61,12 @@ public class AddClinicalDiscussion extends MigrationTool {
                     List<Document> secondaryFindings = document.getList("secondaryFindings", Document.class);
                     if (CollectionUtils.isNotEmpty(primaryFindings)) {
                         for (Document primaryFinding : primaryFindings) {
-                            migrateDiscussion(primaryFinding, author);
+                            migrateClinicalVariant(primaryFinding, author);
                         }
                     }
                     if (CollectionUtils.isNotEmpty(secondaryFindings)) {
                         for (Document secondaryFinding : secondaryFindings) {
-                            migrateDiscussion(secondaryFinding, author);
+                            migrateClinicalVariant(secondaryFinding, author);
                         }
                     }
 
@@ -81,12 +81,31 @@ public class AddClinicalDiscussion extends MigrationTool {
         );
     }
 
+    private void migrateClinicalVariant(Document finding, String author) {
+        // Migrate discussion in root
+        migrateDiscussion(finding, author);
+
+        // Iterate over evidences
+        List<Document> evidences = finding.getList("evidences", Document.class);
+        if (CollectionUtils.isNotEmpty(evidences)) {
+            for (Document evidence : evidences) {
+                Document review = evidence.get("review", Document.class);
+                if (review != null) {
+                    migrateDiscussion(review, author);
+                }
+            }
+        }
+    }
+
     private Document migrateDiscussion(Document document, String author) {
         Object discussion = document.get("discussion");
         if (discussion == null || discussion instanceof String) {
             ClinicalDiscussion cDiscussion = new ClinicalDiscussion(author, TimeUtils.getTime(), String.valueOf(discussion));
-            return convertToDocument(cDiscussion);
+            discussion = convertToDocument(cDiscussion);
         }
+        // Replace discussion field
+        document.put("discussion", discussion);
+
         return (Document) discussion;
     }
 
