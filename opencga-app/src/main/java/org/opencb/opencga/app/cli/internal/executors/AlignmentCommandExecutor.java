@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.internal.executors;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.analysis.alignment.AlignmentCoverageAnalysis;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentGeneCoverageStatsAnalysis;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentQcAnalysis;
@@ -89,7 +90,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 //            case "hsmetrics-run":
 //                hsMetricsRun();
 //                break;
-            case "coverage-run":
+            case "coverage-index-run":
                 coverageRun();
                 break;
             case "delete":
@@ -236,18 +237,13 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
     private void coverageRun() throws ToolException {
         AlignmentCommandOptions.CoverageAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageAlignmentCommandOptions;
 
-        Map<String, String> deeptoolsParams = new HashMap<>();
-        deeptoolsParams.put("b", String.valueOf(cliOptions.file));
-        deeptoolsParams.put("o", new File(cliOptions.file).getName() + ".bw");
-        deeptoolsParams.put("binSize", String.valueOf(cliOptions.windowSize));
+        ObjectMap params = new CoverageIndexParams(
+                cliOptions.file,
+                cliOptions.windowSize,
+                cliOptions.overwrite
+        ).toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        ObjectMap params = new DeeptoolsWrapperParams(
-                "bamCoverage",
-                cliOptions.outdir,
-                deeptoolsParams)
-                .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
-
-        toolRunner.execute(DeeptoolsWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(AlignmentCoverageAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
     private void delete() {

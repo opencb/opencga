@@ -17,36 +17,31 @@
 package org.opencb.opencga.analysis.alignment;
 
 import org.apache.commons.io.FileUtils;
-import org.opencb.biodata.tools.alignment.BamManager;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.analysis.alignment.qc.AlignmentFlagStatsAnalysis;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
-import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.alignment.AlignmentFlagStatsParams;
-import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
 import org.opencb.opencga.core.models.alignment.CoverageIndexParams;
-import org.opencb.opencga.core.models.alignment.DeeptoolsWrapperParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.opencb.opencga.core.api.ParamConstants.COVERAGE_WINDOW_SIZE_DEFAULT;
+import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
 
 @Tool(id = AlignmentCoverageAnalysis.ID, resource = Enums.Resource.ALIGNMENT, description = "Alignment coverage analysis.")
 public class AlignmentCoverageAnalysis extends OpenCgaTool {
 
     public final static String ID = "coverage-index-run";
-    public final static String DESCRIPTION = "Compute the Index a given alignment file, e.g., create a .bai file from a .bam file";
+    public final static String DESCRIPTION = "Compute the coverage from a given alignment file, e.g., create a .bw file from a .bam file";
 
     @ToolParams
     protected final CoverageIndexParams coverageIndexParams = new CoverageIndexParams();
@@ -55,8 +50,10 @@ public class AlignmentCoverageAnalysis extends OpenCgaTool {
     private String inputFile;
     private boolean overwrite;
 
-    private File inputCatalogFile;
+    private File bamCatalogFile;
     private Path inputPath;
+
+    private Path bwCatalogPath;
     private Path outputPath;
 
     protected void check() throws Exception {
@@ -64,6 +61,7 @@ public class AlignmentCoverageAnalysis extends OpenCgaTool {
 
         OpenCGAResult<File> fileResult;
         try {
+            logger.info("CoverageIndexAnalysis: checking file {}", coverageIndexParams.getFile());
             fileResult = catalogManager.getFileManager().get(getStudy(), coverageIndexParams.getFile(), QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException("Error accessing file '" + inputFile + "' of the study " + study + "'", e);
@@ -72,8 +70,8 @@ public class AlignmentCoverageAnalysis extends OpenCgaTool {
             throw new ToolException("File '" + inputFile + "' not found in study '" + study + "'");
         }
 
-        inputCatalogFile = fileResult.getResults().get(0);
-        inputPath = Paths.get(inputCatalogFile.getUri());
+        bamCatalogFile = fileResult.getResults().get(0);
+        inputPath = Paths.get(bamCatalogFile.getUri());
         String filename = inputPath.getFileName().toString();
 
         // Check if the input file is .bam or .cram
@@ -81,14 +79,28 @@ public class AlignmentCoverageAnalysis extends OpenCgaTool {
             throw new ToolException("Invalid input alignment file '" + inputFile + "': it must be in BAM format");
         }
 
+        // Sanity check: window size
+        if (coverageIndexParams.getWindowSize() <= 0) {
+            coverageIndexParams.setWindowSize(Integer.parseInt(COVERAGE_WINDOW_SIZE_DEFAULT));
+        }
+
+        // Path where the BW file will be created
         outputPath = getOutDir().resolve(filename + ".bw");
+
+        // Check if BW exists already, and then check the flag 'overwrite'
+        bwCatalogPath = Paths.get(inputPath.toFile().getParent()).resolve(outputPath.getFileName());
+        if (bwCatalogPath.toFile().exists() && !coverageIndexParams.isOverwrite()) {
+            // Nothing to do
+            throw new ToolException("Nothing to do: coverage file (" + bwCatalogPath + ") already exists and you set the flag 'overwrite'"
+                    + " to false");
+        }
     }
 
     @Override
     protected void run() throws Exception {
+        setUpStorageEngineExecutor(study);
 
-        step(ID, () -> {
-            // Run the command deeptools/bamCoverage
+        step(() -> {
             Map<String, String> bamCoverageParams = new HashMap<>();
             bamCoverageParams.put("b", inputPath.toAbsolutePath().toString());
             bamCoverageParams.put("o", outputPath.toAbsolutePath().toString());
@@ -96,61 +108,43 @@ public class AlignmentCoverageAnalysis extends OpenCgaTool {
             bamCoverageParams.put("outFileFormat", "bigwig");
             bamCoverageParams.put("minMappingQuality", "20");
 
-            Map<String, Object> params = new DeeptoolsWrapperParams("bamCoverage", null, bamCoverageParams)
-                    .toParams(new ObjectMap(ParamConstants.STUDY_PARAM, study));
+            // Update executor parameters
+            executorParams.appendAll(bamCoverageParams);
+            executorParams.put(EXECUTOR_ID, DeeptoolsWrapperAnalysisExecutor.ID);
 
-            OpenCGAResult<Job> jobResult = catalogManager.getJobManager()
-                    .submit(study, DeeptoolsWrapperAnalysis.ID, Enums.Priority.MEDIUM, params, null, "Job generated by "
-                            + getId() + " - " + getJobId(), Collections.emptyList(), Collections.emptyList(), token);
-            addEvent(Event.Type.INFO, "Submit job " + jobResult.first().getId() + " to deeptools/bamCoverage ("
-                    + DeeptoolsWrapperAnalysis.ID + ")");
+            getToolExecutor(DeeptoolsWrapperAnalysisExecutor.class)
+                    .setStudy(study)
+                    .setCommand("bamCoverage")
+                    .execute();
 
-            // Wait for job
-            Job job;
-            String status;
-            Query query = new Query("id", jobResult.first().getId());
-            do {
-                Thread.sleep(3000);
-                OpenCGAResult<Job> result = catalogManager.getJobManager().search(study, query, QueryOptions.empty(), token);
-                job = result.first();
-                status = job.getInternal().getStatus().getId();
-            } while (status.equals(Enums.ExecutionStatus.PENDING) || status.equals(Enums.ExecutionStatus.RUNNING)
-                    || status.equals(Enums.ExecutionStatus.QUEUED) || status.equals(Enums.ExecutionStatus.READY)
-                    || status.equals(Enums.ExecutionStatus.REGISTERING));
+            // Check execution result
+            if (!outputPath.toFile().exists()) {
+                new ToolException("Something wrong happened running a coverage: BigWig file (" + outputPath.toFile().getName()
+                        + ") was not create, please, check log files.");
+            }
 
-//
-//            Path indexPath = Paths.get(inputPath.toFile().getParent()).resolve(outputPath.getFileName());
-//            if (overwrite || !indexPath.toFile().exists()) {
-//                // Compute index if necessary
-//                BamManager bamManager = new BamManager(inputPath);
-//                bamManager.createIndex(outputPath);
-//                bamManager.close();
-//
-//                if (!outputPath.toFile().exists()) {
-//                    throw new ToolException("Something wrong happened when computing index file for '" + inputFile + "'");
-//                }
-//
-//                if (indexPath.toFile().exists()) {
-//                    indexPath.toFile().delete();
-//                }
-//                FileUtils.moveFile(outputPath.toFile(), indexPath.toFile());
-//            }
-//
-//            boolean isLinked = true;
-//            Path outputCatalogPath = Paths.get(inputCatalogFile.getPath()).getParent().resolve(outputPath.getFileName());
-//            OpenCGAResult<File> fileResult;
-//            try {
-//                fileResult = catalogManager.getFileManager().get(getStudy(), outputCatalogPath.toString(), QueryOptions.empty(), token);
-//                if (fileResult.getNumResults() <= 0) {
-//                    isLinked = false;
-//                }
-//            } catch (CatalogException e) {
-//                isLinked = false;
-//            }
-//            if (!isLinked) {
-//                catalogManager.getFileManager().link(getStudy(), indexPath.toUri(), outputCatalogPath.getParent().toString(),
-//                        new ObjectMap("parents", true), token);
-//            }
+            // Move the BW file to the same directory where the BAM file is located
+            if (bwCatalogPath.toFile().exists()) {
+                bwCatalogPath.toFile().delete();
+            }
+            FileUtils.moveFile(outputPath.toFile(), bwCatalogPath.toFile());
+
+            // And finally, link the BW file is necessary
+            boolean isLinked = true;
+            Path outputCatalogPath = Paths.get(bamCatalogFile.getPath()).getParent().resolve(outputPath.getFileName());
+            OpenCGAResult<File> fileResult;
+            try {
+                fileResult = catalogManager.getFileManager().get(getStudy(), outputCatalogPath.toString(), QueryOptions.empty(), token);
+                if (fileResult.getNumResults() <= 0) {
+                    isLinked = false;
+                }
+            } catch (CatalogException e) {
+                isLinked = false;
+            }
+            if (!isLinked) {
+                catalogManager.getFileManager().link(getStudy(), bwCatalogPath.toUri(), outputCatalogPath.getParent().toString(),
+                        new ObjectMap("parents", true), token);
+            }
         });
     }
 
