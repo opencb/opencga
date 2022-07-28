@@ -79,7 +79,7 @@ public class OpencgaMain {
                 level = args[ArrayUtils.indexOf(args, "--log-level") + 1].toLowerCase(Locale.ROOT);
                 Level logLevel = getNormalizedLogLevel(level);
                 setLogLevel(logLevel);
-                
+
                 logger.debug("Console verbose mode: " + logLevel);
             } catch (Exception e) {
                 setLogLevel(Level.SEVERE);
@@ -126,6 +126,7 @@ public class OpencgaMain {
             if (ArrayUtils.contains(args, "--host")) {
                 options.host = args[ArrayUtils.indexOf(args, "--host") + 1];
             }
+            Shell.printShellHeaderMessage();
             // Create a shell executor instance
             shell = new Shell(options);
             logger.debug("Shell created ");

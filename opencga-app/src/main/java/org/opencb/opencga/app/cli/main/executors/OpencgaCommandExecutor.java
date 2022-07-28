@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.DataModelsUtils;
+import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.io.*;
@@ -163,8 +164,10 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 //                            }
                         } else {
                             privateLogger.debug("Session has expired '{}'. Logging out session", expirationDate);
-                            sessionManager.logoutSessionFile();
-                            openCGAClient = new OpenCGAClient(clientConfiguration);
+                            PrintUtils.println("Session has expired, you must log in again or log out to work as a guest user\n");
+                            //openCGAClient = new OpenCGAClient(clientConfiguration);
+                            //sessionManager.logoutSessionFile();
+                            //openCGAClient = new OpenCGAClient(clientConfiguration);
                         }
                     }
                 } else {
