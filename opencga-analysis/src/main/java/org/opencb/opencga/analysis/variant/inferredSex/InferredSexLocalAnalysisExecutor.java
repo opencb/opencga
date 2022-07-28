@@ -46,10 +46,19 @@ public class InferredSexLocalAnalysisExecutor extends InferredSexAnalysisExecuto
 
     @Override
     public void run() throws ToolException {
+        // IMPORTANT: we assume sample and individual have the same ID
         AlignmentStorageManager alignmentStorageManager = getAlignmentStorageManager();
         CatalogManager catalogManager = alignmentStorageManager.getCatalogManager();
         FileManager fileManager = catalogManager.getFileManager();
         String assembly;
+
+        // Get alignment file by individual
+        File inferredSexBamFile = AnalysisUtils.getBamFileBySampleId(getIndividualId(), getStudyId(), fileManager, getToken());
+        if (inferredSexBamFile == null) {
+            throw new ToolException("Alignment file not found for the individual/sample '" + getIndividualId() + "'");
+        }
+
+        // Ge assembly
         try {
             assembly = IndividualQcUtils.getAssembly(getStudyId(), alignmentStorageManager.getCatalogManager(), getToken());
         } catch (CatalogException e) {
@@ -57,8 +66,7 @@ public class InferredSexLocalAnalysisExecutor extends InferredSexAnalysisExecuto
         }
 
         // Compute ratios: X-chrom / autosomic-chroms and Y-chrom / autosomic-chroms
-        double[] ratios = InferredSexComputation.computeRatios(getStudyId(), getIndividualId(), assembly, fileManager,
-                alignmentStorageManager,
+        double[] ratios = InferredSexComputation.computeRatios(getStudyId(), inferredSexBamFile, assembly, alignmentStorageManager,
                 getToken());
 
         double xAuto = ratios[0];
@@ -80,12 +88,12 @@ public class InferredSexLocalAnalysisExecutor extends InferredSexAnalysisExecuto
             inferredKaryotypicSex = InferredSexComputation.inferKaryotypicSex(xAuto, yAuto, karyotypicSexThresholds);
         }
 
-        // Set inferred sex report (we assume sample and individual have the same ID)
+        // Set inferred sex report
         Map<String, Object> values = new HashMap<>();
         values.put("ratioX", xAuto);
         values.put("ratioY", yAuto);
 
         setInferredSexReport(new InferredSexReport(getIndividualId(), "CoverageRatio", inferredKaryotypicSex, values,
-                Collections.emptyList()));
+                Collections.singletonList(inferredSexBamFile.getName())));
     }
 }
