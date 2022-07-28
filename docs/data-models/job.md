@@ -31,7 +31,7 @@ Job data model hosts information about any job.
 ## Data Model
 
 ### Job
-You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/job/Job.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/job/Job.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -59,19 +59,8 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/release
 | **study**<br>*[JobStudyParam](https://docs.opencga.opencb.org/data-models/job#jobstudyparam)* <br> | <p>Job study.</p> |
 | **attributes**<br>*Map<String,Object>* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 
-### ToolInfo
-You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/job/ToolInfo.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br>*String* <br> | <p>Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.</p> |
-| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **scope**<br>*Scope* <br> | <p>Tool info scope can have the values GLOBAL, PROJECT and STUDY.</p> |
-| **type**<br>*Type* <br> | <p>Tool info type can have the values OPERATION and ANALYSIS.</p> |
-| **resource**<br>*Resource* <br> | <p>Tool info resource can have the values AUDIT, USER, PROJECT, STUDY, FILE, SAMPLE, JOB, INDIVIDUAL, COHORT, DISEASE_PANEL, FAMILY, CLINICAL_ANALYSIS, INTERPRETATION, VARIANT, ALIGNMENT, CLINICAL, EXPRESSION, RGA and FUNCTIONAL.</p> |
-
 ### JobInternal
-You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobInternal.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobInternal.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -83,7 +72,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/release
 | **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
 
 ### JobStudyParam
-You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobStudyParam.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobStudyParam.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -91,7 +80,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/release
 | **others**<br>*List<<em>String</em>>* <br> | <p>List of strings.</p> |
 
 ### ExecutionResult
-You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/tools/result/ExecutionResult.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/tools/result/ExecutionResult.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -105,31 +94,43 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/release
 | **events**<br>*List<<em>Event</em>>* <br> | <p>List of Event.</p> |
 | **attributes**<br>*ObjectMap* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 
-### ExecutorInfo
-You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/tools/result/ExecutorInfo.java).
+### ToolInfo
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/job/ToolInfo.java).
 
 | Field | Description |
 | :---  | :--- |
 | **id**<br>*String* <br> | <p>Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.</p> |
-| **clazz**<br>*String* <br> | <p>ExecutorInfo class.</p> |
-| **params**<br>*ObjectMap* <br> | <p>ExecutorInfo params.</p> |
-| **source**<br>*Source* <br> | <p>Executor info source can have the values FILE, PARQUET_FILE, MONGODB,  HBASE, STORAGE.</p> |
-| **framework**<br>*Framework* <br> | <p>Executor info framework can have the values LOCAL, MAP_REDUCE, SPARK.</p> |
-
-### URI
-You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/java/net/URI.java).
-
+| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **scope**<br>*Scope* <br> | <p>Tool info scope can have the values GLOBAL, PROJECT and STUDY.</p> |
+| **type**<br>*Type* <br> | <p>Tool info type can have the values OPERATION and ANALYSIS.</p> |
+| **resource**<br>*Resource* <br> | <p>Tool info resource can have the values AUDIT, USER, PROJECT, STUDY, FILE, SAMPLE, JOB, INDIVIDUAL, COHORT, DISEASE_PANEL, FAMILY, CLINICAL_ANALYSIS, INTERPRETATION, VARIANT, ALIGNMENT, CLINICAL, EXPRESSION, RGA and FUNCTIONAL.</p> |
 
 ### Date
-You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/java/util/Date.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/java/util/Date.java).
 
 
-### ExecutionStatus
-You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Enums/ExecutionStatus.java).
+### URI
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/java/net/URI.java).
 
+
+### InternalStatus
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/common/InternalStatus.java).
+
+
+### Status
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/tools/result/Status.java).
+
+
+### JobInternalWebhook
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobInternalWebhook.java).
+
+| Field | Description |
+| :---  | :--- |
+| **webhook**<br>*[URL](https://docs.opencga.opencb.org/data-models/job#url)* <br> | <p>Webhook URL.</p> |
+| **status**<br>*Map<String,Status>* <br> | <p>Webhook status map can have the values SUCCESS or ERROR.</p> |
 
 ### ToolStep
-You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/tools/result/ToolStep.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/tools/result/ToolStep.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -139,22 +140,21 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/release
 | **status**<br>*Type* <br> | <p>Executor status can have the values PENDING, RUNNING, DONE and ERROR.</p> |
 | **attributes**<br>*ObjectMap* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 
-### InternalStatus
-You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/common/InternalStatus.java).
+### ExecutionStatus
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Enums/ExecutionStatus.java).
 
 
-### JobInternalWebhook
-You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobInternalWebhook.java).
+### ExecutorInfo
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/tools/result/ExecutorInfo.java).
 
 | Field | Description |
 | :---  | :--- |
-| **webhook**<br>*[URL](https://docs.opencga.opencb.org/data-models/job#url)* <br> | <p>Webhook URL.</p> |
-| **status**<br>*Map<String,Status>* <br> | <p>Webhook status map can have the values SUCCESS or ERROR.</p> |
-
-### Status
-You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/tools/result/Status.java).
-
+| **id**<br>*String* <br> | <p>Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.</p> |
+| **clazz**<br>*String* <br> | <p>ExecutorInfo class.</p> |
+| **params**<br>*ObjectMap* <br> | <p>ExecutorInfo params.</p> |
+| **source**<br>*Source* <br> | <p>Executor info source can have the values FILE, PARQUET_FILE, MONGODB,  HBASE, STORAGE.</p> |
+| **framework**<br>*Framework* <br> | <p>Executor info framework can have the values LOCAL, MAP_REDUCE, SPARK.</p> |
 
 ### URL
-You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/java/net/URL.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/java/net/URL.java).
 

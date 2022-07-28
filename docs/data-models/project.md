@@ -20,7 +20,7 @@ Project data model hosts information about any project.
 ## Data Model
 
 ### Project
-You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/project/Project.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/project/Project.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -38,7 +38,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/release
 | **attributes**<br>*Map<String,Object>* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 
 ### ProjectInternal
-You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/project/ProjectInternal.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/project/ProjectInternal.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -49,9 +49,9 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/release
 | **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
 
 ### ProjectOrganism
-You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/project/ProjectOrganism.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/project/ProjectOrganism.java).
 
 
 ### InternalStatus
-You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/common/InternalStatus.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/common/InternalStatus.java).
 
