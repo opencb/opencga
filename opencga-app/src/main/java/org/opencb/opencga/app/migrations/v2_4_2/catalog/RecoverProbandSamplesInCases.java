@@ -149,7 +149,8 @@ public class RecoverProbandSamplesInCases extends MigrationTool {
                 Document auditParams = auditDoc.get("params", Document.class);
                 Document caseDoc = auditParams.get("clinicalAnalysis", Document.class);
                 ClinicalAnalysis clinicalAnalysis = converter.convertToDataModelType(caseDoc);
-                if (clinicalAnalysis.getProband() != null && probandId.equals(clinicalAnalysis.getProband().getId())
+                if (clinicalAnalysis != null && clinicalAnalysis.getProband() != null
+                        && probandId.equals(clinicalAnalysis.getProband().getId())
                         && CollectionUtils.isNotEmpty(clinicalAnalysis.getProband().getSamples())) {
                     logger.debug("Found case in Audit update");
                     return clinicalAnalysis;
