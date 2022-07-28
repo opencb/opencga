@@ -43,6 +43,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.audit.AuditRecord;
@@ -312,7 +313,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 // Validate and get panels
                 Set<String> panelIds = interpretation.getPanels().stream().map(Panel::getId).collect(Collectors.toSet());
                 Query query = new Query(PanelDBAdaptor.QueryParams.ID.key(), panelIds);
-                OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> panelResult =
+                OpenCGAResult<Panel> panelResult =
                         panelDBAdaptor.get(study.getUid(), query, PanelManager.INCLUDE_PANEL_IDS, userId);
                 if (panelResult.getNumResults() < panelIds.size()) {
                     throw new CatalogException("Some panels were not found or user doesn't have permissions to see them");
@@ -348,6 +349,12 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 throw new CatalogException("Primary finding ids should be unique. Found repeated id '" + primaryFinding.getId() + "'");
             }
             findings.add(primaryFinding.getId());
+
+            // Check for discussion and autocomplete
+            if (primaryFinding.getDiscussion() != null && StringUtils.isNotEmpty(primaryFinding.getDiscussion().getMessage())) {
+                primaryFinding.getDiscussion().setDate(TimeUtils.getTime());
+                primaryFinding.getDiscussion().setAuthor(userId);
+            }
         }
 
         findings = new HashSet<>();
@@ -359,6 +366,12 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 throw new CatalogException("Secondary finding ids should be unique. Found repeated id '" + secondaryFinding.getId() + "'");
             }
             findings.add(secondaryFinding.getId());
+
+            // Check for discussion and autocomplete
+            if (secondaryFinding.getDiscussion() != null && StringUtils.isNotEmpty(secondaryFinding.getDiscussion().getMessage())) {
+                secondaryFinding.getDiscussion().setDate(TimeUtils.getTime());
+                secondaryFinding.getDiscussion().setAuthor(userId);
+            }
         }
 
         if (!interpretation.getComments().isEmpty()) {
@@ -989,7 +1002,6 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             }
         }
 
-        // Check for repeated ids
         if (updateParams != null && updateParams.getPrimaryFindings() != null && !updateParams.getPrimaryFindings().isEmpty()) {
             ParamUtils.UpdateAction action = ParamUtils.UpdateAction.from(actionMap,
                     InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.ADD);
@@ -1008,8 +1020,26 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 if (findingIds.contains(primaryFinding.getId())) {
                     throw new CatalogException("Primary finding ids should be unique. Found repeated id '" + primaryFinding.getId() + "'");
                 }
+
+                // Check for repeated ids
                 findingIds.add(primaryFinding.getId());
+
+                // Check for discussion and autocomplete
+                if (primaryFinding.getDiscussion() != null && StringUtils.isNotEmpty(primaryFinding.getDiscussion().getMessage())) {
+                    primaryFinding.getDiscussion().setDate(TimeUtils.getTime());
+                    primaryFinding.getDiscussion().setAuthor(userId);
+                }
             }
+
+            List<ObjectMap> primaryFindings = new ArrayList<>(updateParams.getPrimaryFindings().size());
+            try {
+                for (ClinicalVariant secondaryFinding : updateParams.getPrimaryFindings()) {
+                    primaryFindings.add(new ObjectMap(JacksonUtils.getUpdateObjectMapper().writeValueAsString(secondaryFinding)));
+                }
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Could not parse secondary findings object", e);
+            }
+            parameters.put(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), primaryFindings);
         }
         if (updateParams != null && updateParams.getSecondaryFindings() != null && !updateParams.getSecondaryFindings().isEmpty()) {
             ParamUtils.UpdateAction action = ParamUtils.UpdateAction.from(actionMap,
@@ -1030,7 +1060,23 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                     throw new CatalogException("Secondary finding ids should be unique. Found repeated id '" + finding.getId() + "'");
                 }
                 findingIds.add(finding.getId());
+
+                // Check for discussion and autocomplete
+                if (finding.getDiscussion() != null && StringUtils.isNotEmpty(finding.getDiscussion().getMessage())) {
+                    finding.getDiscussion().setDate(TimeUtils.getTime());
+                    finding.getDiscussion().setAuthor(userId);
+                }
             }
+
+            List<ObjectMap> secondaryFindings = new ArrayList<>(updateParams.getSecondaryFindings().size());
+            try {
+                for (ClinicalVariant secondaryFinding : updateParams.getSecondaryFindings()) {
+                    secondaryFindings.add(new ObjectMap(JacksonUtils.getUpdateObjectMapper().writeValueAsString(secondaryFinding)));
+                }
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Could not parse secondary findings object", e);
+            }
+            parameters.put(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), secondaryFindings);
         }
 
         if (parameters.containsKey(InterpretationDBAdaptor.QueryParams.ID.key())) {
