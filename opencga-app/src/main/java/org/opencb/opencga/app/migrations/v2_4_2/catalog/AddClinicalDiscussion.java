@@ -100,7 +100,12 @@ public class AddClinicalDiscussion extends MigrationTool {
     private Document migrateDiscussion(Document document, String author) {
         Object discussion = document.get("discussion");
         if (discussion == null || discussion instanceof String) {
-            ClinicalDiscussion cDiscussion = new ClinicalDiscussion(author, TimeUtils.getTime(), String.valueOf(discussion));
+            ClinicalDiscussion cDiscussion;
+            if (discussion != null) {
+                cDiscussion = new ClinicalDiscussion(author, TimeUtils.getTime(), String.valueOf(discussion));
+            } else {
+                cDiscussion = new ClinicalDiscussion();
+            }
             discussion = convertToDocument(cDiscussion);
         }
         // Replace discussion field
