@@ -146,7 +146,7 @@ public class RecoverProbandSamplesInCases extends MigrationTool {
             while (iterator.hasNext()) {
                 Document auditDoc = iterator.next();
                 Document auditParams = auditDoc.get("params", Document.class);
-                Document caseDoc = auditParams.get("clinicalAnalysis", Document.class);
+                Document caseDoc = auditParams.get("updateParams", Document.class);
                 ClinicalAnalysis clinicalAnalysis = converter.convertToDataModelType(caseDoc);
                 if (clinicalAnalysis != null && clinicalAnalysis.getProband() != null
                         && probandId.equals(clinicalAnalysis.getProband().getId())
