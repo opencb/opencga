@@ -36,8 +36,9 @@ import org.opencb.opencga.core.tools.variant.InferredSexAnalysisExecutor;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @ToolExecutor(id = "opencga-local", tool = InferredSexAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
@@ -88,12 +89,15 @@ public class InferredSexLocalAnalysisExecutor extends InferredSexAnalysisExecuto
             inferredKaryotypicSex = InferredSexComputation.inferKaryotypicSex(xAuto, yAuto, karyotypicSexThresholds);
         }
 
-        // Set inferred sex report
+        // Set inferred sex report: ratios and files
         Map<String, Object> values = new HashMap<>();
         values.put("ratioX", xAuto);
         values.put("ratioY", yAuto);
 
-        setInferredSexReport(new InferredSexReport(getIndividualId(), "CoverageRatio", inferredKaryotypicSex, values,
-                Collections.singletonList(inferredSexBamFile.getName())));
+        List<String> reportedFiles = new ArrayList<>();
+        reportedFiles.add(inferredSexBamFile.getName());
+        reportedFiles.add(inferredSexBamFile.getName() + ".bw");
+
+        setInferredSexReport(new InferredSexReport(getIndividualId(), "CoverageRatio", inferredKaryotypicSex, values, reportedFiles));
     }
 }
