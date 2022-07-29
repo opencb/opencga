@@ -8,6 +8,7 @@ import com.mongodb.client.model.Sorts;
 import org.apache.commons.collections4.CollectionUtils;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
@@ -36,9 +37,7 @@ public class RecoverProbandSamplesInCases extends MigrationTool {
         ClinicalAnalysisConverter converter = new ClinicalAnalysisConverter();
 
         queryMongo(MongoDBAdaptorFactory.CLINICAL_ANALYSIS_COLLECTION,
-                new Document()
-                        .append("proband.samples", null)
-                        .append("locked", false),
+                new Document("proband.samples", null),
                 Projections.include("uid", "id", "uuid", "studyUid", "proband"), (doc) -> {
                     ClinicalAnalysis currentCase = converter.convertToDataModelType(doc);
                     logger.info("Trying to recover Clinical Analysis [id: {}, uid: {}, uuid: {}]", currentCase.getId(),
@@ -70,7 +69,10 @@ public class RecoverProbandSamplesInCases extends MigrationTool {
                     // The proband from the audit matches the one used in the case currently :)
                     Individual proband;
                     try {
-                        proband = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(currentCase.getProband().getUid(),
+                        Query query = new Query()
+                                .append(IndividualDBAdaptor.QueryParams.UID.key(), currentCase.getProband().getUid())
+                                .append(IndividualDBAdaptor.QueryParams.VERSION.key(), currentCase.getProband().getVersion());
+                        proband = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(query,
                                 new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
                                         IndividualDBAdaptor.QueryParams.VERSION.key(), IndividualDBAdaptor.QueryParams.SAMPLES.key())))
                                 .first();
