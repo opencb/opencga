@@ -79,7 +79,6 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
@@ -270,7 +269,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
         VariantCommandOptions.VariantQueryCommandOptions queryCliOptions = variantCommandOptions.queryVariantCommandOptions;
 
-        queryCliOptions.commonOptions.outputFormat = exportCliOptions.commonOptions.outputFormat.toLowerCase().replace("tsv", "stats");
+        queryCliOptions.outputFileFormat = exportCliOptions.outputFileFormat.toLowerCase().replace("tsv", "stats");
         queryCliOptions.project = exportCliOptions.project;
         queryCliOptions.study = exportCliOptions.study;
         queryCliOptions.genericVariantQueryOptions.includeStudy = exportCliOptions.study;
@@ -316,8 +315,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 }
             }
 
-        Map<Long, String> studyIds = getStudyIds(token);
-        Query query = VariantQueryCommandUtils.parseQuery(cliOptions, studyIds.values());
+        Query query = VariantQueryCommandUtils.parseQuery(cliOptions);
         QueryOptions queryOptions = VariantQueryCommandUtils.parseQueryOptions(cliOptions);
         queryOptions.put("summary", cliOptions.genericVariantQueryOptions.summary);
 
@@ -329,13 +327,12 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         } else {
             queryOptions.putIfNotEmpty("annotations", cliOptions.genericVariantQueryOptions.annotations);
 
-            ObjectMap params = new VariantExportParams(
+            VariantExportParams toolParams = new VariantExportParams(
                     query, outdir,
                     cliOptions.outputFileName,
-                    cliOptions.commonOptions.outputFormat,
-                    cliOptions.variantsFile)
-                    .toObjectMap(queryOptions);
-            toolRunner.execute(VariantExportTool.class, params, Paths.get(outdir), jobId, token);
+                    cliOptions.outputFileFormat,
+                    cliOptions.variantsFile);
+            toolRunner.execute(VariantExportTool.class, toolParams, queryOptions, Paths.get(outdir), jobId, token);
         }
     }
 
