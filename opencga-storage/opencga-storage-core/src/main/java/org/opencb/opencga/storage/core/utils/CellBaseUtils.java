@@ -88,7 +88,7 @@ public class CellBaseUtils {
         try {
             long ts = System.currentTimeMillis();
             QueryOptions options = new QueryOptions(GENE_QUERY_OPTIONS); // Copy options. DO NOT REUSE QUERY OPTIONS
-            CellBaseDataResponse<Gene> response = cellBaseClient.getGeneClient().get(geneStrs, options);
+            CellBaseDataResponse<Gene> response = checkNulls(cellBaseClient.getGeneClient().get(geneStrs, options));
             logger.info("Query genes from CellBase " + cellBaseClient.getSpecies() + ":" + assembly + " " + geneStrs + "  -> "
                     + (System.currentTimeMillis() - ts) / 1000.0 + "s ");
             List<String> missingGenes = null;
@@ -146,7 +146,11 @@ public class CellBaseUtils {
                 cache.put(geneStr, region);
             }
             if (!skipMissing && missingGenes != null) {
-                throw VariantQueryException.geneNotFound(String.join(",", missingGenes));
+                throw VariantQueryException.geneNotFound(String.join(",", missingGenes),
+                        cellBaseClient.getClientConfiguration().getRest().getHosts().get(0),
+                        cellBaseClient.getClientConfiguration().getVersion(),
+                        assembly
+                );
             }
             return regions;
         } catch (IOException e) {
@@ -158,7 +162,7 @@ public class CellBaseUtils {
         Set<String> genes = new HashSet<>();
         QueryOptions params = new QueryOptions(QueryOptions.INCLUDE, "name,chromosome,start,end");
         try {
-            List<CellBaseDataResult<Gene>> responses = cellBaseClient.getGeneClient().get(goValues, params)
+            List<CellBaseDataResult<Gene>> responses = checkNulls(cellBaseClient.getGeneClient().get(goValues, params))
                     .getResponses();
             for (CellBaseDataResult<Gene> response : responses) {
                 for (Gene gene : response.getResults()) {
@@ -183,7 +187,7 @@ public class CellBaseUtils {
                 Query cellbaseQuery = new Query(2)
                         .append(ParamConstants.ANNOTATION_EXPRESSION_TISSUE_PARAM, expressionValue)
                         .append(ParamConstants.ANNOTATION_EXPRESSION_VALUE_PARAM, "UP");
-                List<CellBaseDataResult<Gene>> responses = cellBaseClient.getGeneClient().search(cellbaseQuery, params)
+                List<CellBaseDataResult<Gene>> responses = checkNulls(cellBaseClient.getGeneClient().search(cellbaseQuery, params))
                         .getResponses();
                 for (CellBaseDataResult<Gene> response : responses) {
                     for (Gene gene : response.getResults()) {
@@ -209,7 +213,7 @@ public class CellBaseUtils {
         List<Variant> variants = new ArrayList<>(variantsStr.size());
         List<CellBaseDataResult<Variant>> response = null;
         try {
-            response = cellBaseClient.getVariantClient().get(variantsStr,
+            response = checkNulls(cellBaseClient.getVariantClient().get(variantsStr,
                     new QueryOptions(QueryOptions.INCLUDE,
                             VariantField.CHROMOSOME.fieldName() + ","
                                     + VariantField.START.fieldName() + ","
@@ -217,7 +221,7 @@ public class CellBaseUtils {
                                     + VariantField.TYPE.fieldName() + ","
                                     + VariantField.REFERENCE.fieldName() + ","
                                     + VariantField.ALTERNATE.fieldName()
-                    )).getResponses();
+                    ))).getResponses();
         } catch (IOException e) {
             throw VariantQueryException.internalException(e);
         }
@@ -238,5 +242,24 @@ public class CellBaseUtils {
             }
         }
         return variants;
+    }
+
+    private <T> CellBaseDataResponse<T> checkNulls(CellBaseDataResponse<T> response) {
+        if (response == null) {
+            response = new CellBaseDataResponse<>();
+        }
+        if (response.getResponses() == null) {
+            response.setResponses(Collections.emptyList());
+        } else {
+            for (CellBaseDataResult<T> respons : response.getResponses()) {
+                if (respons.getResults() == null) {
+                    respons.setResults(Collections.emptyList());
+                }
+            }
+        }
+        if (response.getEvents() == null) {
+            response.setEvents(Collections.emptyList());
+        }
+        return response;
     }
 }
