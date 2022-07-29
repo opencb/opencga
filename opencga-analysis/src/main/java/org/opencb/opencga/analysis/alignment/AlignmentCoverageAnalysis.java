@@ -17,8 +17,10 @@
 package org.opencb.opencga.analysis.alignment;
 
 import org.apache.commons.io.FileUtils;
-import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -38,17 +40,13 @@ import static org.opencb.opencga.core.api.ParamConstants.COVERAGE_WINDOW_SIZE_DE
 import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
 
 @Tool(id = AlignmentCoverageAnalysis.ID, resource = Enums.Resource.ALIGNMENT, description = "Alignment coverage analysis.")
-public class AlignmentCoverageAnalysis extends OpenCgaTool {
+public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
 
     public final static String ID = "coverage-index-run";
     public final static String DESCRIPTION = "Compute the coverage from a given alignment file, e.g., create a .bw file from a .bam file";
 
     @ToolParams
-    protected final CoverageIndexParams coverageIndexParams = new CoverageIndexParams();
-
-    private String study;
-    private String inputFile;
-    private boolean overwrite;
+    protected final CoverageIndexParams coverageParams = new CoverageIndexParams();
 
     private File bamCatalogFile;
     private Path inputPath;
@@ -59,29 +57,36 @@ public class AlignmentCoverageAnalysis extends OpenCgaTool {
     protected void check() throws Exception {
         super.check();
 
+        // Sanity check
+        if (StringUtils.isEmpty(getStudy())) {
+            throw new ToolException("Missing study when computing alignment coverage");
+        }
+
         OpenCGAResult<File> fileResult;
         try {
-            logger.info("CoverageIndexAnalysis: checking file {}", coverageIndexParams.getFile());
-            fileResult = catalogManager.getFileManager().get(getStudy(), coverageIndexParams.getFile(), QueryOptions.empty(), token);
+            logger.info("{}: checking file {}", ID, coverageParams.getFile());
+            fileResult = catalogManager.getFileManager().get(getStudy(), coverageParams.getFile(), QueryOptions.empty(), getToken());
         } catch (CatalogException e) {
-            throw new ToolException("Error accessing file '" + inputFile + "' of the study " + study + "'", e);
+            throw new ToolException("Error accessing file '" + coverageParams.getFile() + "' of the study " + getStudy() + "'", e);
         }
         if (fileResult.getNumResults() <= 0) {
-            throw new ToolException("File '" + inputFile + "' not found in study '" + study + "'");
+            throw new ToolException("File '" + coverageParams.getFile() + "' not found in study '" + getStudy() + "'");
         }
 
         bamCatalogFile = fileResult.getResults().get(0);
         inputPath = Paths.get(bamCatalogFile.getUri());
         String filename = inputPath.getFileName().toString();
 
-        // Check if the input file is .bam or .cram
+        // Check if the input file is .bam
         if (!filename.endsWith(".bam")) {
-            throw new ToolException("Invalid input alignment file '" + inputFile + "': it must be in BAM format");
+            throw new ToolException("Invalid input alignment file '" + coverageParams.getFile() + "': it must be in BAM format");
         }
 
         // Sanity check: window size
-        if (coverageIndexParams.getWindowSize() <= 0) {
-            coverageIndexParams.setWindowSize(Integer.parseInt(COVERAGE_WINDOW_SIZE_DEFAULT));
+        logger.info("{}: checking window size {}", ID, coverageParams.getWindowSize());
+        if (coverageParams.getWindowSize() <= 0) {
+            coverageParams.setWindowSize(Integer.parseInt(COVERAGE_WINDOW_SIZE_DEFAULT));
+            logger.info("{}: window size is set to {}", ID, coverageParams.getWindowSize());
         }
 
         // Path where the BW file will be created
@@ -89,7 +94,7 @@ public class AlignmentCoverageAnalysis extends OpenCgaTool {
 
         // Check if BW exists already, and then check the flag 'overwrite'
         bwCatalogPath = Paths.get(inputPath.toFile().getParent()).resolve(outputPath.getFileName());
-        if (bwCatalogPath.toFile().exists() && !coverageIndexParams.isOverwrite()) {
+        if (bwCatalogPath.toFile().exists() && !coverageParams.isOverwrite()) {
             // Nothing to do
             throw new ToolException("Nothing to do: coverage file (" + bwCatalogPath + ") already exists and you set the flag 'overwrite'"
                     + " to false");
@@ -100,11 +105,13 @@ public class AlignmentCoverageAnalysis extends OpenCgaTool {
     protected void run() throws Exception {
         setUpStorageEngineExecutor(study);
 
+        logger.info("{}: running with parameters {}", ID, coverageParams);
+
         step(() -> {
             Map<String, String> bamCoverageParams = new HashMap<>();
             bamCoverageParams.put("b", inputPath.toAbsolutePath().toString());
             bamCoverageParams.put("o", outputPath.toAbsolutePath().toString());
-            bamCoverageParams.put("binSize", String.valueOf(coverageIndexParams.getWindowSize()));
+            bamCoverageParams.put("binSize", String.valueOf(coverageParams.getWindowSize()));
             bamCoverageParams.put("outFileFormat", "bigwig");
             bamCoverageParams.put("minMappingQuality", "20");
 
@@ -113,7 +120,7 @@ public class AlignmentCoverageAnalysis extends OpenCgaTool {
             executorParams.put(EXECUTOR_ID, DeeptoolsWrapperAnalysisExecutor.ID);
 
             getToolExecutor(DeeptoolsWrapperAnalysisExecutor.class)
-                    .setStudy(study)
+                    .setStudy(getStudy())
                     .setCommand("bamCoverage")
                     .execute();
 
@@ -124,6 +131,8 @@ public class AlignmentCoverageAnalysis extends OpenCgaTool {
             }
 
             // Move the BW file to the same directory where the BAM file is located
+            logger.info("{}: moving coverage file {} to the same directory where the BAM file is located", ID,
+                    bwCatalogPath.toFile().getName());
             if (bwCatalogPath.toFile().exists()) {
                 bwCatalogPath.toFile().delete();
             }
@@ -134,7 +143,8 @@ public class AlignmentCoverageAnalysis extends OpenCgaTool {
             Path outputCatalogPath = Paths.get(bamCatalogFile.getPath()).getParent().resolve(outputPath.getFileName());
             OpenCGAResult<File> fileResult;
             try {
-                fileResult = catalogManager.getFileManager().get(getStudy(), outputCatalogPath.toString(), QueryOptions.empty(), token);
+                fileResult = catalogManager.getFileManager().get(getStudy(), outputCatalogPath.toString(), QueryOptions.empty(),
+                        getToken());
                 if (fileResult.getNumResults() <= 0) {
                     isLinked = false;
                 }
@@ -142,36 +152,10 @@ public class AlignmentCoverageAnalysis extends OpenCgaTool {
                 isLinked = false;
             }
             if (!isLinked) {
+                logger.info("{}: linking file {} in catalog", ID, bwCatalogPath.toFile().getName());
                 catalogManager.getFileManager().link(getStudy(), bwCatalogPath.toUri(), outputCatalogPath.getParent().toString(),
-                        new ObjectMap("parents", true), token);
+                        new ObjectMap("parents", true), getToken());
             }
         });
-    }
-
-    public String getStudy() {
-        return study;
-    }
-
-    public AlignmentCoverageAnalysis setStudy(String study) {
-        this.study = study;
-        return this;
-    }
-
-    public String getInputFile() {
-        return inputFile;
-    }
-
-    public AlignmentCoverageAnalysis setInputFile(String inputFile) {
-        this.inputFile = inputFile;
-        return this;
-    }
-
-    public boolean isOverwrite() {
-        return overwrite;
-    }
-
-    public AlignmentCoverageAnalysis setOverwrite(boolean overwrite) {
-        this.overwrite = overwrite;
-        return this;
     }
 }
