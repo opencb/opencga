@@ -421,10 +421,7 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--body_exclude"}, description = "The body web service exclude parameter", required = false, arity = 1)
         public String bodyExclude;
-    
-        @Parameter(names = {"--compress"}, description = "The body web service compress parameter", required = false, arity = 1)
-        public Boolean compress;
-    
+
         @Parameter(names = {"--limit"}, description = "The body web service limit parameter", required = false, arity = 1)
         public Integer limit;
     
