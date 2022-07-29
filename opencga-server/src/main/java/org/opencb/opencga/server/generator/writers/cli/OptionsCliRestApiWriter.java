@@ -209,9 +209,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                         sb.append("        public " + getValidValue(bodyRestParameter) + " "
                                                 + getVariableName(bodyRestParameter) + ";\n");
                                         sb.append("    \n");
-                                    } else if ((bodyRestParameter.getType().equals("Map") && bodyRestParameter.getData() == null)
-                                            || bodyRestParameter.getType().equals("ObjectMap")
-                                            || bodyRestParameter.getType().equals("Query")) {
+                                    } else if (bodyRestParameter.getType().equals("Query")) {
                                         String names = getShortCuts(bodyRestParameter, config);
                                         sb.append("        @DynamicParameter(names = {" + names + "}, " +
                                                 "description"

@@ -325,17 +325,15 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         StringBuilder sb = new StringBuilder();
         for (RestParameter restParameter : body.getData()) {
             if (CollectionUtils.isEmpty(restParameter.getData())) {
-                if (restParameter.isAvailableType()) {
+                if (restParameter.isAvailableType() || restParameter.isEnum()) {
                     String javaCommandOptionsField = "commandOptions." + getJavaFieldName(restParameter);
                     String label = StringUtils.isEmpty(restParameter.getParentName()) ? restParameter.getName() : restParameter.getParentName() + "." + restParameter.getName();
                     if (restParameter.getTypeClass().equals("java.lang.String;")) {
-                        sb.append("            putNestedIfNotEmpty(beanParams, \"" + label + "\"," + javaCommandOptionsField + ", true);\n ");
+                        sb.append("            putNestedIfNotEmpty(beanParams, \"" + label + "\"," + javaCommandOptionsField + ", true);\n");
                     } else {
-                        sb.append("            putNestedIfNotNull(beanParams, \"" + label + "\"," + javaCommandOptionsField + ", true);\n ");
+                        sb.append("            putNestedIfNotNull(beanParams, \"" + label + "\"," + javaCommandOptionsField + ", true);\n");
                     }
                 }
-            } else {
-                sb.append("\n");
             }
 
         }
