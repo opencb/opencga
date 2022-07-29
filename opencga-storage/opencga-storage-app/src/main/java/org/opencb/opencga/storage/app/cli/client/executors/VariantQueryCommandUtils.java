@@ -26,19 +26,14 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
-import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -84,8 +79,8 @@ public class VariantQueryCommandUtils {
         /*
          * Stats parameters
          */
-        addParam(query, STATS_ALT, options.rf);
-        addParam(query, STATS_REF, options.af);
+        addParam(query, STATS_ALT, options.af);
+        addParam(query, STATS_REF, options.rf);
         addParam(query, STATS_MAF, options.maf);
 
         return query;
@@ -99,16 +94,14 @@ public class VariantQueryCommandUtils {
         return query;
     }
 
-    public static Query parseQuery(StorageVariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions, List<String> studyNames)
+    public static Query parseQuery(StorageVariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions)
             throws Exception {
-        VariantWriterFactory.VariantOutputFormat of = VariantWriterFactory.toOutputFormat(queryVariantsOptions.outputFormat, (URI) null);
         return parseGenericVariantQuery(
-                queryVariantsOptions, queryVariantsOptions.study, studyNames, queryVariantsOptions.commonQueryOptions.count, of);
+                queryVariantsOptions, queryVariantsOptions.study);
     }
 
     protected static Query parseGenericVariantQuery(StorageVariantCommandOptions.GenericVariantQueryOptions queryVariantsOptions,
-                                                    String studiesFilter, Collection<String> allStudyNames, boolean count,
-                                                    VariantWriterFactory.VariantOutputFormat of)
+                                                    String studiesFilter)
             throws IOException {
 
         Query query = new Query();
@@ -158,16 +151,6 @@ public class VariantQueryCommandUtils {
         addParam(query, STATS_PASS_FREQ, queryVariantsOptions.cohortStatsPass);
         addParam(query, MISSING_ALLELES, queryVariantsOptions.missingAlleleCount);
         addParam(query, MISSING_GENOTYPES, queryVariantsOptions.missingGenotypeCount);
-
-        if (!of.isMultiStudyOutput()) {
-            if (VariantQueryUtils.isOutputMultiStudy(query, null, allStudyNames)) {
-                String availableStudies = allStudyNames == null || allStudyNames.isEmpty()
-                        ? ""
-                        : " Available studies: [ " + String.join(", ", allStudyNames) + " ]";
-                throw new VariantQueryException("Only one study is allowed when returning " + of + ", " +
-                        "please use '--include-study' to select the returned study. " + availableStudies);
-            }
-        }
 
         return query;
     }

@@ -23,6 +23,7 @@ import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.models.variant.VariantExportParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 
@@ -32,33 +33,14 @@ public class VariantExportTool extends OpenCgaTool {
     public static final String ID = "variant-export";
     public static final String DESCRIPTION = "Filter and export variants from the variant storage to a file";
 
-    private VariantExportParams toolParams = new VariantExportParams();
+    @ToolParams
+    protected VariantExportParams toolParams = new VariantExportParams();
+
     private VariantWriterFactory.VariantOutputFormat outputFormat;
-
-    public VariantExportTool setQuery(Query query) {
-        toolParams.appendQuery(query);
-        return this;
-    }
-
-    public VariantExportTool setOutputFormat(VariantWriterFactory.VariantOutputFormat outputFormat) {
-        toolParams.setOutputFileFormat(outputFormat.toString());
-        return this;
-    }
-
-    public VariantExportTool setVariantsFile(String variantsFile) {
-        toolParams.setVariantsFile(variantsFile);
-        return this;
-    }
-
-    public VariantExportTool setOutputFileName(String outputFile) {
-        toolParams.setOutputFileName(outputFile);
-        return this;
-    }
 
     @Override
     protected void check() throws Exception {
         super.check();
-        toolParams.updateParams(params);
 
         if (StringUtils.isEmpty(toolParams.getOutputFileFormat())) {
             toolParams.setOutputFileFormat(VariantWriterFactory.VariantOutputFormat.VCF.toString());

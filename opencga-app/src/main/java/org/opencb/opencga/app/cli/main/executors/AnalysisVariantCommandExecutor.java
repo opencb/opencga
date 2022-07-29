@@ -442,7 +442,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotEmpty(beanParams, "variantsFile",commandOptions.variantsFile, true);
              putNestedIfNotEmpty(beanParams, "include",commandOptions.bodyInclude, true);
              putNestedIfNotEmpty(beanParams, "exclude",commandOptions.bodyExclude, true);
-             putNestedIfNotNull(beanParams, "compress",commandOptions.compress, true);
              putNestedIfNotNull(beanParams, "limit",commandOptions.limit, true);
              putNestedIfNotNull(beanParams, "skip",commandOptions.skip, true);
              putNestedIfNotNull(beanParams, "summary",commandOptions.summary, true);
