@@ -137,10 +137,10 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
-             putNestedIfNotEmpty(beanParams, "family",commandOptions.family, true);
-             putNestedIfNotEmpty(beanParams, "individual",commandOptions.individual, true);
-             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
- 
+            putNestedIfNotEmpty(beanParams, "family",commandOptions.family, true);
+            putNestedIfNotEmpty(beanParams, "individual",commandOptions.individual, true);
+            putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
+
             familyAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), FamilyAclUpdateParams.class);
         }
@@ -203,7 +203,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "content",commandOptions.content, true);
- 
+
             tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), TsvAnnotationParams.class);
         }
@@ -240,17 +240,14 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "body_id",commandOptions.bodyId, true);
-             putNestedIfNotEmpty(beanParams, "body_name",commandOptions.bodyName, true);
-             putNestedIfNotEmpty(beanParams, "body_description",commandOptions.bodyDescription, true);
-             putNestedIfNotEmpty(beanParams, "body_creationDate",commandOptions.bodyCreationDate, true);
-             putNestedIfNotEmpty(beanParams, "body_modificationDate",commandOptions.bodyModificationDate, true);
- 
+            putNestedIfNotEmpty(beanParams, "body_name",commandOptions.bodyName, true);
+            putNestedIfNotEmpty(beanParams, "body_description",commandOptions.bodyDescription, true);
+            putNestedIfNotEmpty(beanParams, "body_creationDate",commandOptions.bodyCreationDate, true);
+            putNestedIfNotEmpty(beanParams, "body_modificationDate",commandOptions.bodyModificationDate, true);
             putNestedIfNotNull(beanParams, "body_expectedSize",commandOptions.bodyExpectedSize, true);
-             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
- 
-
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
             familyCreateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), FamilyCreateParams.class);
@@ -410,21 +407,15 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
- 
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
             putNestedIfNotNull(beanParams, "expectedSize",commandOptions.expectedSize, true);
- 
             putNestedIfNotNull(beanParams, "qualityControl.files",commandOptions.qualityControlFiles, true);
- 
-
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
- 
-
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
             familyUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), FamilyUpdateParams.class);

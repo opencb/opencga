@@ -144,12 +144,12 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
-             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
-             putNestedIfNotEmpty(beanParams, "individual",commandOptions.individual, true);
-             putNestedIfNotEmpty(beanParams, "family",commandOptions.family, true);
-             putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
-             putNestedIfNotEmpty(beanParams, "cohort",commandOptions.cohort, true);
- 
+            putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
+            putNestedIfNotEmpty(beanParams, "individual",commandOptions.individual, true);
+            putNestedIfNotEmpty(beanParams, "family",commandOptions.family, true);
+            putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
+            putNestedIfNotEmpty(beanParams, "cohort",commandOptions.cohort, true);
+
             sampleAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), SampleAclUpdateParams.class);
         }
@@ -213,7 +213,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "content",commandOptions.content, true);
- 
+
             tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), TsvAnnotationParams.class);
         }
@@ -249,36 +249,28 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotEmpty(beanParams, "individualId",commandOptions.individualId, true);
-             putNestedIfNotEmpty(beanParams, "source.id",commandOptions.sourceId, true);
-             putNestedIfNotEmpty(beanParams, "source.name",commandOptions.sourceName, true);
-             putNestedIfNotEmpty(beanParams, "source.description",commandOptions.sourceDescription, true);
-             putNestedIfNotEmpty(beanParams, "source.source",commandOptions.sourceSource, true);
-             putNestedIfNotEmpty(beanParams, "source.url",commandOptions.sourceUrl, true);
- 
-
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "individualId",commandOptions.individualId, true);
+            putNestedIfNotEmpty(beanParams, "source.id",commandOptions.sourceId, true);
+            putNestedIfNotEmpty(beanParams, "source.name",commandOptions.sourceName, true);
+            putNestedIfNotEmpty(beanParams, "source.description",commandOptions.sourceDescription, true);
+            putNestedIfNotEmpty(beanParams, "source.source",commandOptions.sourceSource, true);
+            putNestedIfNotEmpty(beanParams, "source.url",commandOptions.sourceUrl, true);
             putNestedIfNotEmpty(beanParams, "processing.preparationMethod",commandOptions.processingPreparationMethod, true);
-             putNestedIfNotEmpty(beanParams, "processing.extractionMethod",commandOptions.processingExtractionMethod, true);
-             putNestedIfNotEmpty(beanParams, "processing.labSampleId",commandOptions.processingLabSampleId, true);
-             putNestedIfNotEmpty(beanParams, "processing.quantity",commandOptions.processingQuantity, true);
-             putNestedIfNotEmpty(beanParams, "processing.date",commandOptions.processingDate, true);
- 
-
+            putNestedIfNotEmpty(beanParams, "processing.extractionMethod",commandOptions.processingExtractionMethod, true);
+            putNestedIfNotEmpty(beanParams, "processing.labSampleId",commandOptions.processingLabSampleId, true);
+            putNestedIfNotEmpty(beanParams, "processing.quantity",commandOptions.processingQuantity, true);
+            putNestedIfNotEmpty(beanParams, "processing.date",commandOptions.processingDate, true);
             putNestedIfNotEmpty(beanParams, "collection.type",commandOptions.collectionType, true);
-             putNestedIfNotEmpty(beanParams, "collection.quantity",commandOptions.collectionQuantity, true);
-             putNestedIfNotEmpty(beanParams, "collection.method",commandOptions.collectionMethod, true);
-             putNestedIfNotEmpty(beanParams, "collection.date",commandOptions.collectionDate, true);
- 
+            putNestedIfNotEmpty(beanParams, "collection.quantity",commandOptions.collectionQuantity, true);
+            putNestedIfNotEmpty(beanParams, "collection.method",commandOptions.collectionMethod, true);
+            putNestedIfNotEmpty(beanParams, "collection.date",commandOptions.collectionDate, true);
             putNestedIfNotNull(beanParams, "somatic",commandOptions.somatic, true);
- 
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
- 
-
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
             sampleCreateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), SampleCreateParams.class);
@@ -498,40 +490,29 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotEmpty(beanParams, "individualId",commandOptions.individualId, true);
-             putNestedIfNotEmpty(beanParams, "source.id",commandOptions.sourceId, true);
-             putNestedIfNotEmpty(beanParams, "source.name",commandOptions.sourceName, true);
-             putNestedIfNotEmpty(beanParams, "source.description",commandOptions.sourceDescription, true);
-             putNestedIfNotEmpty(beanParams, "source.source",commandOptions.sourceSource, true);
-             putNestedIfNotEmpty(beanParams, "source.url",commandOptions.sourceUrl, true);
- 
-
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "individualId",commandOptions.individualId, true);
+            putNestedIfNotEmpty(beanParams, "source.id",commandOptions.sourceId, true);
+            putNestedIfNotEmpty(beanParams, "source.name",commandOptions.sourceName, true);
+            putNestedIfNotEmpty(beanParams, "source.description",commandOptions.sourceDescription, true);
+            putNestedIfNotEmpty(beanParams, "source.source",commandOptions.sourceSource, true);
+            putNestedIfNotEmpty(beanParams, "source.url",commandOptions.sourceUrl, true);
             putNestedIfNotEmpty(beanParams, "processing.preparationMethod",commandOptions.processingPreparationMethod, true);
-             putNestedIfNotEmpty(beanParams, "processing.extractionMethod",commandOptions.processingExtractionMethod, true);
-             putNestedIfNotEmpty(beanParams, "processing.labSampleId",commandOptions.processingLabSampleId, true);
-             putNestedIfNotEmpty(beanParams, "processing.quantity",commandOptions.processingQuantity, true);
-             putNestedIfNotEmpty(beanParams, "processing.date",commandOptions.processingDate, true);
- 
-
+            putNestedIfNotEmpty(beanParams, "processing.extractionMethod",commandOptions.processingExtractionMethod, true);
+            putNestedIfNotEmpty(beanParams, "processing.labSampleId",commandOptions.processingLabSampleId, true);
+            putNestedIfNotEmpty(beanParams, "processing.quantity",commandOptions.processingQuantity, true);
+            putNestedIfNotEmpty(beanParams, "processing.date",commandOptions.processingDate, true);
             putNestedIfNotEmpty(beanParams, "collection.type",commandOptions.collectionType, true);
-             putNestedIfNotEmpty(beanParams, "collection.quantity",commandOptions.collectionQuantity, true);
-             putNestedIfNotEmpty(beanParams, "collection.method",commandOptions.collectionMethod, true);
-             putNestedIfNotEmpty(beanParams, "collection.date",commandOptions.collectionDate, true);
- 
+            putNestedIfNotEmpty(beanParams, "collection.quantity",commandOptions.collectionQuantity, true);
+            putNestedIfNotEmpty(beanParams, "collection.method",commandOptions.collectionMethod, true);
+            putNestedIfNotEmpty(beanParams, "collection.date",commandOptions.collectionDate, true);
             putNestedIfNotNull(beanParams, "qualityControl.files",commandOptions.qualityControlFiles, true);
- 
-
-
             putNestedIfNotNull(beanParams, "somatic",commandOptions.somatic, true);
- 
-
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
- 
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
             sampleUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), SampleUpdateParams.class);

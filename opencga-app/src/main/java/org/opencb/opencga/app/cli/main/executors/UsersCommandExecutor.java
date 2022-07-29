@@ -132,11 +132,11 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
-             putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
-             putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
- 
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
+            putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
+            putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
+
             userCreateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), UserCreateParams.class);
         }
@@ -170,10 +170,10 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "user",commandOptions.user, true);
-             putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
-             putNestedIfNotEmpty(beanParams, "newPassword",commandOptions.newPassword, true);
-             putNestedIfNotEmpty(beanParams, "reset",commandOptions.reset, true);
- 
+            putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
+            putNestedIfNotEmpty(beanParams, "newPassword",commandOptions.newPassword, true);
+            putNestedIfNotEmpty(beanParams, "reset",commandOptions.reset, true);
+
             passwordChangeParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), PasswordChangeParams.class);
         }
@@ -228,7 +228,7 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
- 
+
             configUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), ConfigUpdateParams.class);
         }
@@ -295,9 +295,9 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
-             putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
- 
+            putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
+            putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
+
             userUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), UserUpdateParams.class);
         }

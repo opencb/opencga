@@ -170,9 +170,6 @@ public class UsersCommandOptions extends ParentUsersCommandOptions {
         @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String id;
     
-        @DynamicParameter(names = {"--configuration"}, description = "The body web service configuration parameter. Use: --configuration key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> configuration = new HashMap<>(); //Dynamic parameters must be initialized;
-    
     }
 
     @Parameters(commandNames = {"filters"}, commandDescription ="Fetch user filters")
@@ -255,9 +252,6 @@ public class UsersCommandOptions extends ParentUsersCommandOptions {
     
         @Parameter(names = {"--organization"}, description = "The body web service organization parameter", required = false, arity = 1)
         public String organization;
-    
-        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 

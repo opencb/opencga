@@ -204,9 +204,9 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
-             putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
-             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
- 
+            putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
+            putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
+
             fileAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), FileAclUpdateParams.class);
         }
@@ -275,7 +275,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "content",commandOptions.content, true);
- 
+
             tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), TsvAnnotationParams.class);
         }
@@ -317,23 +317,24 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "content",commandOptions.content, true);
-             putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotNull(beanParams, "sampleIds",commandOptions.sampleIds, true);
-             putNestedIfNotEmpty(beanParams, "software.name",commandOptions.softwareName, true);
-             putNestedIfNotEmpty(beanParams, "software.version",commandOptions.softwareVersion, true);
-             putNestedIfNotEmpty(beanParams, "software.repository",commandOptions.softwareRepository, true);
-             putNestedIfNotEmpty(beanParams, "software.commit",commandOptions.softwareCommit, true);
-             putNestedIfNotEmpty(beanParams, "software.website",commandOptions.softwareWebsite, true);
- 
+            putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
+            putNestedIfNotNull(beanParams, "format",commandOptions.format, true);
+            putNestedIfNotNull(beanParams, "bioformat",commandOptions.bioformat, true);
+            putNestedIfNotNull(beanParams, "sampleIds",commandOptions.sampleIds, true);
+            putNestedIfNotEmpty(beanParams, "software.name",commandOptions.softwareName, true);
+            putNestedIfNotEmpty(beanParams, "software.version",commandOptions.softwareVersion, true);
+            putNestedIfNotEmpty(beanParams, "software.repository",commandOptions.softwareRepository, true);
+            putNestedIfNotEmpty(beanParams, "software.commit",commandOptions.softwareCommit, true);
+            putNestedIfNotEmpty(beanParams, "software.website",commandOptions.softwareWebsite, true);
             putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
-             putNestedIfNotEmpty(beanParams, "jobId",commandOptions.jobId, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
- 
+            putNestedIfNotEmpty(beanParams, "jobId",commandOptions.jobId, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
             fileCreateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), FileCreateParams.class);
@@ -411,8 +412,8 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "url",commandOptions.url, true);
-             putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
- 
+            putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
+
             fileFetch = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), FileFetch.class);
         }
@@ -454,16 +455,13 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "uri",commandOptions.uri, true);
-             putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
- 
+            putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
- 
-
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
             fileLinkParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), FileLinkParams.class);
@@ -501,10 +499,10 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "uri",commandOptions.uri, true);
-             putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotNull(beanParams, "parents",commandOptions.parents, true);
- 
+            putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotNull(beanParams, "parents",commandOptions.parents, true);
+
             fileLinkToolParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), FileLinkToolParams.class);
         }
@@ -541,8 +539,8 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "files",commandOptions.files, true);
-             putNestedIfNotNull(beanParams, "batchSize",commandOptions.batchSize, true);
- 
+            putNestedIfNotNull(beanParams, "batchSize",commandOptions.batchSize, true);
+
             postLinkToolParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), PostLinkToolParams.class);
         }
@@ -699,43 +697,35 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotNull(beanParams, "sampleIds",commandOptions.sampleIds, true);
-             putNestedIfNotEmpty(beanParams, "checksum",commandOptions.checksum, true);
-             putNestedIfNotEmpty(beanParams, "software.name",commandOptions.softwareName, true);
-             putNestedIfNotEmpty(beanParams, "software.version",commandOptions.softwareVersion, true);
-             putNestedIfNotEmpty(beanParams, "software.repository",commandOptions.softwareRepository, true);
-             putNestedIfNotEmpty(beanParams, "software.commit",commandOptions.softwareCommit, true);
-             putNestedIfNotEmpty(beanParams, "software.website",commandOptions.softwareWebsite, true);
- 
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotNull(beanParams, "sampleIds",commandOptions.sampleIds, true);
+            putNestedIfNotEmpty(beanParams, "checksum",commandOptions.checksum, true);
+            putNestedIfNotNull(beanParams, "format",commandOptions.format, true);
+            putNestedIfNotNull(beanParams, "bioformat",commandOptions.bioformat, true);
+            putNestedIfNotEmpty(beanParams, "software.name",commandOptions.softwareName, true);
+            putNestedIfNotEmpty(beanParams, "software.version",commandOptions.softwareVersion, true);
+            putNestedIfNotEmpty(beanParams, "software.repository",commandOptions.softwareRepository, true);
+            putNestedIfNotEmpty(beanParams, "software.commit",commandOptions.softwareCommit, true);
+            putNestedIfNotEmpty(beanParams, "software.website",commandOptions.softwareWebsite, true);
+            putNestedIfNotNull(beanParams, "experiment.technology",commandOptions.experimentTechnology, true);
+            putNestedIfNotNull(beanParams, "experiment.method",commandOptions.experimentMethod, true);
+            putNestedIfNotNull(beanParams, "experiment.nucleicAcidType",commandOptions.experimentNucleicAcidType, true);
             putNestedIfNotEmpty(beanParams, "experiment.manufacturer",commandOptions.experimentManufacturer, true);
-             putNestedIfNotEmpty(beanParams, "experiment.platform",commandOptions.experimentPlatform, true);
-             putNestedIfNotEmpty(beanParams, "experiment.library",commandOptions.experimentLibrary, true);
-             putNestedIfNotEmpty(beanParams, "experiment.date",commandOptions.experimentDate, true);
-             putNestedIfNotEmpty(beanParams, "experiment.center",commandOptions.experimentCenter, true);
-             putNestedIfNotEmpty(beanParams, "experiment.lab",commandOptions.experimentLab, true);
-             putNestedIfNotEmpty(beanParams, "experiment.responsible",commandOptions.experimentResponsible, true);
-             putNestedIfNotEmpty(beanParams, "experiment.description",commandOptions.experimentDescription, true);
- 
+            putNestedIfNotEmpty(beanParams, "experiment.platform",commandOptions.experimentPlatform, true);
+            putNestedIfNotEmpty(beanParams, "experiment.library",commandOptions.experimentLibrary, true);
+            putNestedIfNotEmpty(beanParams, "experiment.date",commandOptions.experimentDate, true);
+            putNestedIfNotEmpty(beanParams, "experiment.center",commandOptions.experimentCenter, true);
+            putNestedIfNotEmpty(beanParams, "experiment.lab",commandOptions.experimentLab, true);
+            putNestedIfNotEmpty(beanParams, "experiment.responsible",commandOptions.experimentResponsible, true);
+            putNestedIfNotEmpty(beanParams, "experiment.description",commandOptions.experimentDescription, true);
             putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
- 
-
-
-
             putNestedIfNotNull(beanParams, "size",commandOptions.size, true);
-             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
- 
-
-
-
-
-
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
             putNestedIfNotNull(beanParams, "qualityControl.files",commandOptions.qualityControlFiles, true);
- 
 
             fileUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), FileUpdateParams.class);

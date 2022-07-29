@@ -146,10 +146,10 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "secretKey",commandOptions.secretKey, true);
-             putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
-             putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
-             putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
- 
+            putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
+            putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
+            putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
+
             installationParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), InstallationParams.class);
         }
@@ -175,7 +175,7 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "secretKey",commandOptions.secretKey, true);
- 
+
             jWTParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), JWTParams.class);
         }
@@ -201,11 +201,12 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
-             putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
-             putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
- 
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
+            putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
+            putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
+            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
+
             userCreateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), UserCreateParams.class);
         }
@@ -231,10 +232,11 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "authenticationOriginId",commandOptions.authenticationOriginId, true);
-             putNestedIfNotNull(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "study",commandOptions.study, true);
-             putNestedIfNotEmpty(beanParams, "studyGroup",commandOptions.studyGroup, true);
- 
+            putNestedIfNotNull(beanParams, "id",commandOptions.id, true);
+            putNestedIfNotNull(beanParams, "resourceType",commandOptions.resourceType, true);
+            putNestedIfNotEmpty(beanParams, "study",commandOptions.study, true);
+            putNestedIfNotEmpty(beanParams, "studyGroup",commandOptions.studyGroup, true);
+
             userImportParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), UserImportParams.class);
         }
@@ -279,12 +281,13 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "authenticationOriginId",commandOptions.authenticationOriginId, true);
-             putNestedIfNotEmpty(beanParams, "from",commandOptions.from, true);
-             putNestedIfNotEmpty(beanParams, "to",commandOptions.to, true);
-             putNestedIfNotEmpty(beanParams, "study",commandOptions.study, true);
-             putNestedIfNotNull(beanParams, "syncAll",commandOptions.syncAll, true);
-             putNestedIfNotNull(beanParams, "force",commandOptions.force, true);
- 
+            putNestedIfNotEmpty(beanParams, "from",commandOptions.from, true);
+            putNestedIfNotEmpty(beanParams, "to",commandOptions.to, true);
+            putNestedIfNotEmpty(beanParams, "study",commandOptions.study, true);
+            putNestedIfNotNull(beanParams, "syncAll",commandOptions.syncAll, true);
+            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
+            putNestedIfNotNull(beanParams, "force",commandOptions.force, true);
+
             groupSyncParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), GroupSyncParams.class);
         }

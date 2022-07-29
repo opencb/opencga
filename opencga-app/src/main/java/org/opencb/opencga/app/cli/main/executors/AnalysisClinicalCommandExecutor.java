@@ -230,8 +230,8 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
-             putNestedIfNotEmpty(beanParams, "clinicalAnalysis",commandOptions.clinicalAnalysis, true);
- 
+            putNestedIfNotEmpty(beanParams, "clinicalAnalysis",commandOptions.clinicalAnalysis, true);
+
             clinicalAnalysisAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), ClinicalAnalysisAclUpdateParams.class);
         }
@@ -295,53 +295,31 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "disorder.id",commandOptions.disorderId, true);
- 
-
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
+            putNestedIfNotEmpty(beanParams, "disorder.id",commandOptions.disorderId, true);
             putNestedIfNotEmpty(beanParams, "proband.id",commandOptions.probandId, true);
- 
-
             putNestedIfNotEmpty(beanParams, "family.id",commandOptions.familyId, true);
- 
-
-
             putNestedIfNotNull(beanParams, "panelLock",commandOptions.panelLock, true);
-             putNestedIfNotEmpty(beanParams, "analyst.id",commandOptions.analystId, true);
- 
+            putNestedIfNotEmpty(beanParams, "analyst.id",commandOptions.analystId, true);
             putNestedIfNotEmpty(beanParams, "report.title",commandOptions.reportTitle, true);
-             putNestedIfNotEmpty(beanParams, "report.overview",commandOptions.reportOverview, true);
-             putNestedIfNotEmpty(beanParams, "report.discussion",commandOptions.reportDiscussion, true);
-             putNestedIfNotEmpty(beanParams, "report.logo",commandOptions.reportLogo, true);
-             putNestedIfNotEmpty(beanParams, "report.signedBy",commandOptions.reportSignedBy, true);
-             putNestedIfNotEmpty(beanParams, "report.signature",commandOptions.reportSignature, true);
-             putNestedIfNotEmpty(beanParams, "report.date",commandOptions.reportDate, true);
- 
+            putNestedIfNotEmpty(beanParams, "report.overview",commandOptions.reportOverview, true);
+            putNestedIfNotEmpty(beanParams, "report.discussion",commandOptions.reportDiscussion, true);
+            putNestedIfNotEmpty(beanParams, "report.logo",commandOptions.reportLogo, true);
+            putNestedIfNotEmpty(beanParams, "report.signedBy",commandOptions.reportSignedBy, true);
+            putNestedIfNotEmpty(beanParams, "report.signature",commandOptions.reportSignature, true);
+            putNestedIfNotEmpty(beanParams, "report.date",commandOptions.reportDate, true);
             putNestedIfNotEmpty(beanParams, "interpretation.description",commandOptions.interpretationDescription, true);
-             putNestedIfNotEmpty(beanParams, "interpretation.clinicalAnalysisId",commandOptions.interpretationClinicalAnalysisId, true);
-             putNestedIfNotEmpty(beanParams, "interpretation.creationDate",commandOptions.interpretationCreationDate, true);
-             putNestedIfNotEmpty(beanParams, "interpretation.modificationDate",commandOptions.interpretationModificationDate, true);
- 
-
-
-
-
-
+            putNestedIfNotEmpty(beanParams, "interpretation.clinicalAnalysisId",commandOptions.interpretationClinicalAnalysisId, true);
+            putNestedIfNotEmpty(beanParams, "interpretation.creationDate",commandOptions.interpretationCreationDate, true);
+            putNestedIfNotEmpty(beanParams, "interpretation.modificationDate",commandOptions.interpretationModificationDate, true);
             putNestedIfNotNull(beanParams, "interpretation.locked",commandOptions.interpretationLocked, true);
- 
-
-
-
-
+            putNestedIfNotNull(beanParams, "qualityControl.summary",commandOptions.qualityControlSummary, true);
             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotEmpty(beanParams, "dueDate",commandOptions.dueDate, true);
- 
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "dueDate",commandOptions.dueDate, true);
             putNestedIfNotEmpty(beanParams, "priority.id",commandOptions.priorityId, true);
- 
-
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
- 
 
             clinicalAnalysisCreateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), ClinicalAnalysisCreateParams.class);
@@ -499,9 +477,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "clinicalAnalysis",commandOptions.clinicalAnalysis, true);
-             putNestedIfNotNull(beanParams, "discardedVariants",commandOptions.discardedVariants, true);
-             putNestedIfNotNull(beanParams, "primary",commandOptions.primary, true);
- 
+            putNestedIfNotNull(beanParams, "discardedVariants",commandOptions.discardedVariants, true);
+            putNestedIfNotNull(beanParams, "primary",commandOptions.primary, true);
+
             cancerTieringInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), CancerTieringInterpretationAnalysisParams.class);
         }
@@ -538,7 +516,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "clinicalAnalysis",commandOptions.clinicalAnalysis, true);
- 
+
             exomiserInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), ExomiserInterpretationAnalysisParams.class);
         }
@@ -575,10 +553,10 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "clinicalAnalysis",commandOptions.clinicalAnalysis, true);
-             putNestedIfNotNull(beanParams, "panels",commandOptions.panels, true);
-             putNestedIfNotEmpty(beanParams, "familySegregation",commandOptions.familySegregation, true);
-             putNestedIfNotNull(beanParams, "primary",commandOptions.primary, true);
- 
+            putNestedIfNotNull(beanParams, "panels",commandOptions.panels, true);
+            putNestedIfNotEmpty(beanParams, "familySegregation",commandOptions.familySegregation, true);
+            putNestedIfNotNull(beanParams, "primary",commandOptions.primary, true);
+
             teamInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), TeamInterpretationAnalysisParams.class);
         }
@@ -615,9 +593,10 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "clinicalAnalysis",commandOptions.clinicalAnalysis, true);
-             putNestedIfNotNull(beanParams, "panels",commandOptions.panels, true);
-             putNestedIfNotNull(beanParams, "primary",commandOptions.primary, true);
- 
+            putNestedIfNotNull(beanParams, "panels",commandOptions.panels, true);
+            putNestedIfNotNull(beanParams, "penetrance",commandOptions.penetrance, true);
+            putNestedIfNotNull(beanParams, "primary",commandOptions.primary, true);
+
             tieringInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), TieringInterpretationAnalysisParams.class);
         }
@@ -654,57 +633,57 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "body_clinicalAnalysis",commandOptions.bodyClinicalAnalysis, true);
-             putNestedIfNotNull(beanParams, "body_id",commandOptions.bodyId, true);
-             putNestedIfNotEmpty(beanParams, "body_region",commandOptions.bodyRegion, true);
-             putNestedIfNotEmpty(beanParams, "body_type",commandOptions.bodyType, true);
-             putNestedIfNotEmpty(beanParams, "body_study",commandOptions.bodyStudy, true);
-             putNestedIfNotEmpty(beanParams, "body_file",commandOptions.bodyFile, true);
-             putNestedIfNotEmpty(beanParams, "body_filter",commandOptions.bodyFilter, true);
-             putNestedIfNotEmpty(beanParams, "body_qual",commandOptions.bodyQual, true);
-             putNestedIfNotEmpty(beanParams, "body_fileData",commandOptions.bodyFileData, true);
-             putNestedIfNotEmpty(beanParams, "body_sample",commandOptions.bodySample, true);
-             putNestedIfNotEmpty(beanParams, "body_sampleData",commandOptions.bodySampleData, true);
-             putNestedIfNotEmpty(beanParams, "body_sampleAnnotation",commandOptions.bodySampleAnnotation, true);
-             putNestedIfNotEmpty(beanParams, "body_sampleMetadata",commandOptions.bodySampleMetadata, true);
-             putNestedIfNotEmpty(beanParams, "body_cohort",commandOptions.bodyCohort, true);
-             putNestedIfNotEmpty(beanParams, "body_cohortStatsRef",commandOptions.bodyCohortStatsRef, true);
-             putNestedIfNotEmpty(beanParams, "body_cohortStatsAlt",commandOptions.bodyCohortStatsAlt, true);
-             putNestedIfNotEmpty(beanParams, "body_cohortStatsMaf",commandOptions.bodyCohortStatsMaf, true);
-             putNestedIfNotEmpty(beanParams, "body_cohortStatsMgf",commandOptions.bodyCohortStatsMgf, true);
-             putNestedIfNotEmpty(beanParams, "body_cohortStatsPass",commandOptions.bodyCohortStatsPass, true);
-             putNestedIfNotEmpty(beanParams, "body_score",commandOptions.bodyScore, true);
-             putNestedIfNotEmpty(beanParams, "body_family",commandOptions.bodyFamily, true);
-             putNestedIfNotEmpty(beanParams, "body_familyDisorder",commandOptions.bodyFamilyDisorder, true);
-             putNestedIfNotEmpty(beanParams, "body_familySegregation",commandOptions.bodyFamilySegregation, true);
-             putNestedIfNotEmpty(beanParams, "body_familyMembers",commandOptions.bodyFamilyMembers, true);
-             putNestedIfNotEmpty(beanParams, "body_familyProband",commandOptions.bodyFamilyProband, true);
-             putNestedIfNotEmpty(beanParams, "body_gene",commandOptions.bodyGene, true);
-             putNestedIfNotEmpty(beanParams, "body_ct",commandOptions.bodyCt, true);
-             putNestedIfNotEmpty(beanParams, "body_xref",commandOptions.bodyXref, true);
-             putNestedIfNotEmpty(beanParams, "body_biotype",commandOptions.bodyBiotype, true);
-             putNestedIfNotEmpty(beanParams, "body_proteinSubstitution",commandOptions.bodyProteinSubstitution, true);
-             putNestedIfNotEmpty(beanParams, "body_conservation",commandOptions.bodyConservation, true);
-             putNestedIfNotEmpty(beanParams, "body_populationFrequencyAlt",commandOptions.bodyPopulationFrequencyAlt, true);
-             putNestedIfNotEmpty(beanParams, "body_populationFrequencyRef",commandOptions.bodyPopulationFrequencyRef, true);
-             putNestedIfNotEmpty(beanParams, "body_populationFrequencyMaf",commandOptions.bodyPopulationFrequencyMaf, true);
-             putNestedIfNotEmpty(beanParams, "body_transcriptFlag",commandOptions.bodyTranscriptFlag, true);
-             putNestedIfNotEmpty(beanParams, "body_geneTraitId",commandOptions.bodyGeneTraitId, true);
-             putNestedIfNotEmpty(beanParams, "body_go",commandOptions.bodyGo, true);
-             putNestedIfNotEmpty(beanParams, "body_expression",commandOptions.bodyExpression, true);
-             putNestedIfNotEmpty(beanParams, "body_proteinKeyword",commandOptions.bodyProteinKeyword, true);
-             putNestedIfNotEmpty(beanParams, "body_drug",commandOptions.bodyDrug, true);
-             putNestedIfNotEmpty(beanParams, "body_functionalScore",commandOptions.bodyFunctionalScore, true);
-             putNestedIfNotEmpty(beanParams, "body_clinical",commandOptions.bodyClinical, true);
-             putNestedIfNotEmpty(beanParams, "body_clinicalSignificance",commandOptions.bodyClinicalSignificance, true);
-             putNestedIfNotNull(beanParams, "body_clinicalConfirmedStatus",commandOptions.bodyClinicalConfirmedStatus, true);
-             putNestedIfNotEmpty(beanParams, "body_customAnnotation",commandOptions.bodyCustomAnnotation, true);
-             putNestedIfNotEmpty(beanParams, "body_panel",commandOptions.bodyPanel, true);
-             putNestedIfNotEmpty(beanParams, "body_panelModeOfInheritance",commandOptions.bodyPanelModeOfInheritance, true);
-             putNestedIfNotEmpty(beanParams, "body_panelConfidence",commandOptions.bodyPanelConfidence, true);
-             putNestedIfNotEmpty(beanParams, "body_panelRoleInCancer",commandOptions.bodyPanelRoleInCancer, true);
-             putNestedIfNotEmpty(beanParams, "body_trait",commandOptions.bodyTrait, true);
-             putNestedIfNotNull(beanParams, "body_primary",commandOptions.bodyPrimary, true);
- 
+            putNestedIfNotNull(beanParams, "body_id",commandOptions.bodyId, true);
+            putNestedIfNotEmpty(beanParams, "body_region",commandOptions.bodyRegion, true);
+            putNestedIfNotEmpty(beanParams, "body_type",commandOptions.bodyType, true);
+            putNestedIfNotEmpty(beanParams, "body_study",commandOptions.bodyStudy, true);
+            putNestedIfNotEmpty(beanParams, "body_file",commandOptions.bodyFile, true);
+            putNestedIfNotEmpty(beanParams, "body_filter",commandOptions.bodyFilter, true);
+            putNestedIfNotEmpty(beanParams, "body_qual",commandOptions.bodyQual, true);
+            putNestedIfNotEmpty(beanParams, "body_fileData",commandOptions.bodyFileData, true);
+            putNestedIfNotEmpty(beanParams, "body_sample",commandOptions.bodySample, true);
+            putNestedIfNotEmpty(beanParams, "body_sampleData",commandOptions.bodySampleData, true);
+            putNestedIfNotEmpty(beanParams, "body_sampleAnnotation",commandOptions.bodySampleAnnotation, true);
+            putNestedIfNotEmpty(beanParams, "body_sampleMetadata",commandOptions.bodySampleMetadata, true);
+            putNestedIfNotEmpty(beanParams, "body_cohort",commandOptions.bodyCohort, true);
+            putNestedIfNotEmpty(beanParams, "body_cohortStatsRef",commandOptions.bodyCohortStatsRef, true);
+            putNestedIfNotEmpty(beanParams, "body_cohortStatsAlt",commandOptions.bodyCohortStatsAlt, true);
+            putNestedIfNotEmpty(beanParams, "body_cohortStatsMaf",commandOptions.bodyCohortStatsMaf, true);
+            putNestedIfNotEmpty(beanParams, "body_cohortStatsMgf",commandOptions.bodyCohortStatsMgf, true);
+            putNestedIfNotEmpty(beanParams, "body_cohortStatsPass",commandOptions.bodyCohortStatsPass, true);
+            putNestedIfNotEmpty(beanParams, "body_score",commandOptions.bodyScore, true);
+            putNestedIfNotEmpty(beanParams, "body_family",commandOptions.bodyFamily, true);
+            putNestedIfNotEmpty(beanParams, "body_familyDisorder",commandOptions.bodyFamilyDisorder, true);
+            putNestedIfNotEmpty(beanParams, "body_familySegregation",commandOptions.bodyFamilySegregation, true);
+            putNestedIfNotEmpty(beanParams, "body_familyMembers",commandOptions.bodyFamilyMembers, true);
+            putNestedIfNotEmpty(beanParams, "body_familyProband",commandOptions.bodyFamilyProband, true);
+            putNestedIfNotEmpty(beanParams, "body_gene",commandOptions.bodyGene, true);
+            putNestedIfNotEmpty(beanParams, "body_ct",commandOptions.bodyCt, true);
+            putNestedIfNotEmpty(beanParams, "body_xref",commandOptions.bodyXref, true);
+            putNestedIfNotEmpty(beanParams, "body_biotype",commandOptions.bodyBiotype, true);
+            putNestedIfNotEmpty(beanParams, "body_proteinSubstitution",commandOptions.bodyProteinSubstitution, true);
+            putNestedIfNotEmpty(beanParams, "body_conservation",commandOptions.bodyConservation, true);
+            putNestedIfNotEmpty(beanParams, "body_populationFrequencyAlt",commandOptions.bodyPopulationFrequencyAlt, true);
+            putNestedIfNotEmpty(beanParams, "body_populationFrequencyRef",commandOptions.bodyPopulationFrequencyRef, true);
+            putNestedIfNotEmpty(beanParams, "body_populationFrequencyMaf",commandOptions.bodyPopulationFrequencyMaf, true);
+            putNestedIfNotEmpty(beanParams, "body_transcriptFlag",commandOptions.bodyTranscriptFlag, true);
+            putNestedIfNotEmpty(beanParams, "body_geneTraitId",commandOptions.bodyGeneTraitId, true);
+            putNestedIfNotEmpty(beanParams, "body_go",commandOptions.bodyGo, true);
+            putNestedIfNotEmpty(beanParams, "body_expression",commandOptions.bodyExpression, true);
+            putNestedIfNotEmpty(beanParams, "body_proteinKeyword",commandOptions.bodyProteinKeyword, true);
+            putNestedIfNotEmpty(beanParams, "body_drug",commandOptions.bodyDrug, true);
+            putNestedIfNotEmpty(beanParams, "body_functionalScore",commandOptions.bodyFunctionalScore, true);
+            putNestedIfNotEmpty(beanParams, "body_clinical",commandOptions.bodyClinical, true);
+            putNestedIfNotEmpty(beanParams, "body_clinicalSignificance",commandOptions.bodyClinicalSignificance, true);
+            putNestedIfNotNull(beanParams, "body_clinicalConfirmedStatus",commandOptions.bodyClinicalConfirmedStatus, true);
+            putNestedIfNotEmpty(beanParams, "body_customAnnotation",commandOptions.bodyCustomAnnotation, true);
+            putNestedIfNotEmpty(beanParams, "body_panel",commandOptions.bodyPanel, true);
+            putNestedIfNotEmpty(beanParams, "body_panelModeOfInheritance",commandOptions.bodyPanelModeOfInheritance, true);
+            putNestedIfNotEmpty(beanParams, "body_panelConfidence",commandOptions.bodyPanelConfidence, true);
+            putNestedIfNotEmpty(beanParams, "body_panelRoleInCancer",commandOptions.bodyPanelRoleInCancer, true);
+            putNestedIfNotEmpty(beanParams, "body_trait",commandOptions.bodyTrait, true);
+            putNestedIfNotNull(beanParams, "body_primary",commandOptions.bodyPrimary, true);
+
             zettaInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), ZettaInterpretationAnalysisParams.class);
         }
@@ -860,7 +839,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
- 
+
             rgaAnalysisParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), RgaAnalysisParams.class);
         }
@@ -1224,41 +1203,27 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "disorder.id",commandOptions.disorderId, true);
- 
-
-
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
+            putNestedIfNotEmpty(beanParams, "disorder.id",commandOptions.disorderId, true);
             putNestedIfNotNull(beanParams, "panelLock",commandOptions.panelLock, true);
-             putNestedIfNotEmpty(beanParams, "proband.id",commandOptions.probandId, true);
- 
-
+            putNestedIfNotEmpty(beanParams, "proband.id",commandOptions.probandId, true);
             putNestedIfNotEmpty(beanParams, "family.id",commandOptions.familyId, true);
- 
-
             putNestedIfNotNull(beanParams, "locked",commandOptions.locked, true);
-             putNestedIfNotEmpty(beanParams, "analyst.id",commandOptions.analystId, true);
- 
+            putNestedIfNotEmpty(beanParams, "analyst.id",commandOptions.analystId, true);
             putNestedIfNotEmpty(beanParams, "report.title",commandOptions.reportTitle, true);
-             putNestedIfNotEmpty(beanParams, "report.overview",commandOptions.reportOverview, true);
-             putNestedIfNotEmpty(beanParams, "report.discussion",commandOptions.reportDiscussion, true);
-             putNestedIfNotEmpty(beanParams, "report.logo",commandOptions.reportLogo, true);
-             putNestedIfNotEmpty(beanParams, "report.signedBy",commandOptions.reportSignedBy, true);
-             putNestedIfNotEmpty(beanParams, "report.signature",commandOptions.reportSignature, true);
-             putNestedIfNotEmpty(beanParams, "report.date",commandOptions.reportDate, true);
- 
-
-
-
+            putNestedIfNotEmpty(beanParams, "report.overview",commandOptions.reportOverview, true);
+            putNestedIfNotEmpty(beanParams, "report.discussion",commandOptions.reportDiscussion, true);
+            putNestedIfNotEmpty(beanParams, "report.logo",commandOptions.reportLogo, true);
+            putNestedIfNotEmpty(beanParams, "report.signedBy",commandOptions.reportSignedBy, true);
+            putNestedIfNotEmpty(beanParams, "report.signature",commandOptions.reportSignature, true);
+            putNestedIfNotEmpty(beanParams, "report.date",commandOptions.reportDate, true);
+            putNestedIfNotNull(beanParams, "qualityControl.summary",commandOptions.qualityControlSummary, true);
             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotEmpty(beanParams, "dueDate",commandOptions.dueDate, true);
- 
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "dueDate",commandOptions.dueDate, true);
             putNestedIfNotEmpty(beanParams, "priority.id",commandOptions.priorityId, true);
- 
-
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
- 
 
             clinicalAnalysisUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), ClinicalAnalysisUpdateParams.class);
@@ -1314,23 +1279,15 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "clinicalAnalysisId",commandOptions.clinicalAnalysisId, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotEmpty(beanParams, "analyst.id",commandOptions.analystId, true);
- 
+            putNestedIfNotEmpty(beanParams, "clinicalAnalysisId",commandOptions.clinicalAnalysisId, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "analyst.id",commandOptions.analystId, true);
             putNestedIfNotEmpty(beanParams, "method.name",commandOptions.methodName, true);
-             putNestedIfNotEmpty(beanParams, "method.version",commandOptions.methodVersion, true);
-             putNestedIfNotEmpty(beanParams, "method.commit",commandOptions.methodCommit, true);
- 
-
-
-
-
-
+            putNestedIfNotEmpty(beanParams, "method.version",commandOptions.methodVersion, true);
+            putNestedIfNotEmpty(beanParams, "method.commit",commandOptions.methodCommit, true);
             putNestedIfNotNull(beanParams, "locked",commandOptions.locked, true);
-             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
- 
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
 
             interpretationCreateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), InterpretationCreateParams.class);
@@ -1414,23 +1371,15 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "analyst.id",commandOptions.analystId, true);
- 
+            putNestedIfNotEmpty(beanParams, "analyst.id",commandOptions.analystId, true);
             putNestedIfNotEmpty(beanParams, "method.name",commandOptions.methodName, true);
-             putNestedIfNotEmpty(beanParams, "method.version",commandOptions.methodVersion, true);
-             putNestedIfNotEmpty(beanParams, "method.commit",commandOptions.methodCommit, true);
- 
-
+            putNestedIfNotEmpty(beanParams, "method.version",commandOptions.methodVersion, true);
+            putNestedIfNotEmpty(beanParams, "method.commit",commandOptions.methodCommit, true);
             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
- 
-
-
-
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
- 
             putNestedIfNotNull(beanParams, "locked",commandOptions.locked, true);
- 
+
             interpretationUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(beanParams.toJson(), InterpretationUpdateParams.class);
         }
