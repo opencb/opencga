@@ -18,10 +18,10 @@ package org.opencb.opencga.app.cli.main.executors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.DataModelsUtils;
-import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.io.*;
@@ -163,11 +163,9 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 //                                options.token = sessionManager.getToken();
 //                            }
                         } else {
-                            privateLogger.debug("Session has expired '{}'. Logging out session", expirationDate);
-                            PrintUtils.println("Session has expired, you must log in again or log out to work as a guest user\n");
-                            //openCGAClient = new OpenCGAClient(clientConfiguration);
+                            privateLogger.debug("Session has expired '{}'.", expirationDate);
+                            openCGAClient = new OpenCGAClient(clientConfiguration);
                             //sessionManager.logoutSessionFile();
-                            //openCGAClient = new OpenCGAClient(clientConfiguration);
                         }
                     }
                 } else {
@@ -279,4 +277,15 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         return null;
     }
 
+    public boolean checkExpiredSession(String[] args) {
+        ObjectMap claimsMap = null;
+        try {
+            claimsMap = parseTokenClaims(sessionManager.getSession().getToken());
+        } catch (Exception e) {
+            return ArrayUtils.contains(args, "login") || ArrayUtils.contains(args, "logout") || "anonymous".equals(sessionManager.getSession().getUser());
+        }
+        Date expirationDate = new Date(claimsMap.getLong("exp") * 1000L);
+        Date currentDate = new Date();
+        return currentDate.before(expirationDate) || ArrayUtils.contains(args, "login") || ArrayUtils.contains(args, "logout") || "anonymous".equals(sessionManager.getSession().getUser());
+    }
 }
