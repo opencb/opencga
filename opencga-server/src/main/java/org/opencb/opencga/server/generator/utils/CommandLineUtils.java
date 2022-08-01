@@ -20,8 +20,6 @@ public class CommandLineUtils {
 
         primitiveTypes.add("String");
         primitiveTypes.add("string");
-        primitiveTypes.add("object");
-        primitiveTypes.add("Object");
         primitiveTypes.add("integer");
         primitiveTypes.add("int");
         primitiveTypes.add("boolean");
