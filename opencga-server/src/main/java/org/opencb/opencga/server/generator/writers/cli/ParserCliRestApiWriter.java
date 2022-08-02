@@ -38,7 +38,7 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
     @Override
     protected String getClassImports(String key) {
         StringBuilder sb = new StringBuilder();
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy");
         sb.append("/*\n");
         sb.append("* Copyright 2015-").append(sdf.format(new Date())).append(" OpenCB\n");
         sb.append("*\n");
