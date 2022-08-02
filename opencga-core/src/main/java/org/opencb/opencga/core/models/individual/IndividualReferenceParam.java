@@ -7,7 +7,7 @@ public class IndividualReferenceParam {
 
     @DataField(description = ParamConstants.INDIVIDUAL_REFERENCE_PARAM_ID_DESCRIPTION)
     private String id;
-    @DataField(description = ParamConstants.INDIVIDUAL_REFERENCE_PARAM_ID_DESCRIPTION)
+    @DataField(description = ParamConstants.INDIVIDUAL_REFERENCE_PARAM_ID_DESCRIPTION, managed = true)
     private String uuid;
 
     public IndividualReferenceParam() {

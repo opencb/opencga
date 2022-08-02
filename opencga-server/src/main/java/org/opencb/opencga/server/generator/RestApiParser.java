@@ -190,16 +190,16 @@ public class RestApiParser {
                     } else {
                         // 4.3.2 Process body parameters
                         type = "object";
-
+                        boolean post = restEndpoint.getMethod().equals("POST");
                         // Get all body properties using Jackson
-                        List<BeanPropertyDefinition> declaredFields = getPropertyDefinitions(typeClass);
+                        List<BeanPropertyDefinition> declaredFields = getPropertyDefinitions(typeClass, post);
                         List<RestParameter> bodyParams = new ArrayList<>(declaredFields.size());
 
                         for (BeanPropertyDefinition declaredField : declaredFields) {
-                            RestParameter bodyParam = getRestParameter(variablePrefix, declaredField);
+                            RestParameter bodyParam = getRestParameter(variablePrefix, declaredField, post);
                             // For CLI is necessary flatten parameters
                             if (flatten) {
-                                bodyParams.addAll(flattenInnerParams(variablePrefix, bodyParam));
+                                bodyParams.addAll(flattenInnerParams(variablePrefix, bodyParam, post));
                             }
                             bodyParams.add(bodyParam);
                         }
@@ -240,13 +240,8 @@ public class RestApiParser {
         return restCategory;
     }
 
-    private List<RestParameter> flattenInnerParams(String variablePrefix, RestParameter param) {
-        // FIXME: Should we remove this artificial "flattening" ? It's redundant
-        if (param.isComplex()
-                && !param.isList()
-                && !param.getType().equals("enum")
-            /*&& !param.getTypeClass().contains("$")*/) {
-            // FIXME: Why discarding params with "$" ?  Why discarding inner classes?
+    private List<RestParameter> flattenInnerParams(String variablePrefix, RestParameter param, boolean post) {
+        if (param.isComplex() && !param.isList() && !param.getType().equals("enum")) {
             String classAndPackageName = StringUtils.removeEnd(param.getTypeClass(), ";");
             Class<?> cls;
             try {
@@ -254,12 +249,10 @@ public class RestApiParser {
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
-            List<BeanPropertyDefinition> nestedProperties = getPropertyDefinitions(cls);
+            List<BeanPropertyDefinition> nestedProperties = getPropertyDefinitions(cls, post);
             List<RestParameter> innerParams = new ArrayList<>();
             for (BeanPropertyDefinition field : nestedProperties) {
-                RestParameter innerParam = getRestParameter(variablePrefix, field, param.getName());
-                // FIXME: Why? This is wrong. It's using the genericType field to specify the parent type
-//                innerParam.setGenericType(StringUtils.removeEnd(param.getTypeClass(), ";"));
+                RestParameter innerParam = getRestParameter(variablePrefix, field, param.getName(), post);
                 innerParam.setInnerParam(true);
                 innerParams.add(innerParam);
             }
@@ -268,7 +261,7 @@ public class RestApiParser {
         return Collections.emptyList();
     }
 
-    private List<BeanPropertyDefinition> getPropertyDefinitions(Class<?> aClass) {
+    private List<BeanPropertyDefinition> getPropertyDefinitions(Class<?> aClass, final boolean post) {
         JavaType javaType = objectMapper.constructType(aClass);
         BeanDescription beanDescription = objectMapper.getSerializationConfig().introspect(javaType);
         List<BeanPropertyDefinition> properties = beanDescription.findProperties();
@@ -276,19 +269,20 @@ public class RestApiParser {
         // For some reason, the ObjectMapper is not using the rule "require getters for setters"
         // I think that this only applies for the actual serialization, not for obtaining the bean descriptors.
         properties.removeIf(property -> property.getGetter() == null || property.getSetter() == null);
+        properties.removeIf(property -> isManagedProperty(property) && post);
         return properties;
     }
 
-    private RestParameter getRestParameter(String variablePrefix, BeanPropertyDefinition property) {
-        return getRestParameter(variablePrefix, property, "");
+    private RestParameter getRestParameter(String variablePrefix, BeanPropertyDefinition property, final boolean post) {
+        return getRestParameter(variablePrefix, property, "", post);
     }
 
-    private RestParameter getRestParameter(String variablePrefix, BeanPropertyDefinition property, String parentParamName) {
-        return getRestParameter(variablePrefix, property, parentParamName, new Stack<>());
+    private RestParameter getRestParameter(String variablePrefix, BeanPropertyDefinition property, String parentParamName, final boolean post) {
+        return getRestParameter(variablePrefix, property, parentParamName, new Stack<>(), post);
     }
 
     private RestParameter getRestParameter(String variablePrefix, BeanPropertyDefinition property, String parentParamName,
-                                           Stack<Class<?>> stackClasses) {
+                                           Stack<Class<?>> stackClasses, final boolean post) {
         Class<?> propertyClass = property.getRawPrimaryType();
 
         RestParameter param = new RestParameter();
@@ -328,19 +322,19 @@ public class RestApiParser {
                 param.setGenericType(property.getPrimaryType().toCanonical());
                 JavaType contentType = property.getPrimaryType().getContentType();
                 if (isBean(contentType.getRawClass())) {
-                    param.setData(getInnerParams(variablePrefix, property, stackClasses, contentType.getRawClass()));
+                    param.setData(getInnerParams(variablePrefix, property, stackClasses, contentType.getRawClass(), post));
                 }
             } else if (Map.class.isAssignableFrom(propertyClass)) {
 //                innerParam.setGenericType(property.getPrimaryType().getContentType().getRawClass().getName());
                 param.setGenericType(property.getPrimaryType().toCanonical());
                 JavaType contentType = property.getPrimaryType().getContentType();
                 if (isBean(contentType.getRawClass()) || Collection.class.isAssignableFrom(contentType.getRawClass())) {
-                    param.setData(getInnerParams(variablePrefix, property, stackClasses, contentType.getRawClass()));
+                    param.setData(getInnerParams(variablePrefix, property, stackClasses, contentType.getRawClass(), post));
                 }
             } else {
                 if (isBean(propertyClass)) {
 //                param.setType("object");
-                    param.setData(getInnerParams(variablePrefix, property, stackClasses, propertyClass));
+                    param.setData(getInnerParams(variablePrefix, property, stackClasses, propertyClass, post));
                 }
             }
         }
@@ -348,19 +342,27 @@ public class RestApiParser {
         return param;
     }
 
-    private List<RestParameter> getInnerParams(String variablePrefix, BeanPropertyDefinition property, Stack<Class<?>> stackClasses, Class<?> propertyClass) {
+    private List<RestParameter> getInnerParams(String variablePrefix, BeanPropertyDefinition property, Stack<Class<?>> stackClasses, Class<?> propertyClass, final boolean post) {
         List<RestParameter> data = null;
         // Fill nested "data"
         if (!stackClasses.contains(propertyClass)) {
-            List<BeanPropertyDefinition> properties = getPropertyDefinitions(propertyClass);
+            List<BeanPropertyDefinition> properties = getPropertyDefinitions(propertyClass, post);
             data = new ArrayList<>(properties.size());
             stackClasses.add(propertyClass);
             for (BeanPropertyDefinition propertyDefinition : properties) {
-                data.add(getRestParameter(variablePrefix + "." + property.getName(), propertyDefinition, property.getName(), stackClasses));
+                data.add(getRestParameter(variablePrefix + "." + property.getName(), propertyDefinition, property.getName(), stackClasses, post));
             }
             stackClasses.remove(propertyClass);
         } // Else : This field was already seen
         return data;
+    }
+
+    private boolean isManagedProperty(BeanPropertyDefinition propertyDefinition) {
+        //it is only important if it is a managed property if the method is POST
+        if (propertyDefinition.getField() != null && propertyDefinition.getField().getAnnotation(DataField.class) != null) {
+            return propertyDefinition.getField().getAnnotation(DataField.class).managed();
+        }
+        return false;
     }
 
     /**
