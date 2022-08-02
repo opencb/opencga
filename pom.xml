@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>2.4.2-SNAPSHOT</version>
+    <version>2.4.2</version>
     <packaging>pom</packaging>
 
     <name>OpenCGA</name>
@@ -43,10 +43,10 @@
     </modules>
 
     <properties>
-        <pyopencga.version>2.4.2_dev</pyopencga.version>
-        <opencgar.version>2.4.2_dev</opencgar.version>
+        <pyopencga.version>2.4.2</pyopencga.version>
+        <opencgar.version>2.4.2</opencgar.version>
         <cellbase.version>5.2.0</cellbase.version>
-        <biodata.version>2.4.1-SNAPSHOT</biodata.version>
+        <biodata.version>2.4.1</biodata.version>
         <java-common-libs.version>4.4.0</java-common-libs.version>
         <iva.version>2.4.1-dev</iva.version>
         <oskar.version>0.2.0</oskar.version>
