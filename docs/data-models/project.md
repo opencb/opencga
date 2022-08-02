@@ -22,9 +22,13 @@ Project data model hosts information about any project.
 
 ### Project
 <<<<<<< HEAD
+<<<<<<< HEAD
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/project/Project.java).
 =======
 You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/project/Project.java).
+>>>>>>> release-2.2.x
+=======
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/project/Project.java).
 >>>>>>> release-2.2.x
 
 | Field | Description |
@@ -44,6 +48,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/release
 | **attributes**<br>*Map<String,Object>* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 
 ### ProjectOrganism
+<<<<<<< HEAD
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/project/ProjectOrganism.java).
 
 
@@ -52,6 +57,13 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-52
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/project/ProjectInternal.java).
 =======
 You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/project/ProjectInternal.java).
+>>>>>>> release-2.2.x
+=======
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/project/ProjectOrganism.java).
+
+
+### ProjectInternal
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/project/ProjectInternal.java).
 >>>>>>> release-2.2.x
 
 | Field | Description |
@@ -66,6 +78,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/release
 | **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 ### InternalStatus
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/common/InternalStatus.java).
 =======
@@ -75,5 +88,9 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/release
 
 ### InternalStatus
 You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/common/InternalStatus.java).
+>>>>>>> release-2.2.x
+=======
+### InternalStatus
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/common/InternalStatus.java).
 >>>>>>> release-2.2.x
 

@@ -21,19 +21,11 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
-import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
-import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Collection;
-
-import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.VCF;
 
 /**
  * Created by imedina on 30/12/15.
@@ -42,19 +34,12 @@ public class VariantQueryCommandUtils extends org.opencb.opencga.storage.app.cli
 
     private static Logger logger = LoggerFactory.getLogger(VariantQueryCommandUtils.class);
 
-    public static Query parseQuery(VariantCommandOptions.AbstractVariantQueryCommandOptions queryVariantsOptions,
-                                   Collection<String> studies)
+    public static Query parseQuery(VariantCommandOptions.AbstractVariantQueryCommandOptions queryVariantsOptions)
             throws IOException {
 
-        if ("TEXT".equalsIgnoreCase(queryVariantsOptions.commonOptions.outputFormat)) {
-            queryVariantsOptions.commonOptions.outputFormat = VCF.name();
-        }
-
-        VariantOutputFormat of = VariantWriterFactory.toOutputFormat(queryVariantsOptions.commonOptions.outputFormat,
-                queryVariantsOptions.outputFileName);
         Query query = parseGenericVariantQuery(
-                queryVariantsOptions.genericVariantQueryOptions, queryVariantsOptions.study, studies,
-                queryVariantsOptions.numericOptions.count, of);
+                queryVariantsOptions.genericVariantQueryOptions, queryVariantsOptions.study
+        );
 
         addParam(query, VariantCatalogQueryUtils.SAMPLE_ANNOTATION, queryVariantsOptions.sampleAnnotation);
         addParam(query, VariantCatalogQueryUtils.PROJECT, queryVariantsOptions.project);
