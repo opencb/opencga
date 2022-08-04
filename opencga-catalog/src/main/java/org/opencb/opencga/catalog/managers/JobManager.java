@@ -67,16 +67,14 @@ import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorization
  */
 public class JobManager extends ResourceManager<Job> {
 
-    protected static Logger logger = LoggerFactory.getLogger(JobManager.class);
-    private UserManager userManager;
-    private StudyManager studyManager;
-    private IOManagerFactory ioManagerFactory;
-
-    private final String defaultFacet = "creationYear>>creationMonth;toolId>>executorId";
-
     public static final QueryOptions INCLUDE_JOB_IDS = new QueryOptions(QueryOptions.INCLUDE,
             Arrays.asList(JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.UUID.key(),
                     JobDBAdaptor.QueryParams.STUDY_UID.key(), JobDBAdaptor.QueryParams.INTERNAL.key()));
+    protected static Logger logger = LoggerFactory.getLogger(JobManager.class);
+    private final String defaultFacet = "creationYear>>creationMonth;toolId>>executorId";
+    private UserManager userManager;
+    private StudyManager studyManager;
+    private IOManagerFactory ioManagerFactory;
 
     JobManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, Configuration configuration) {
@@ -312,8 +310,9 @@ public class JobManager extends ResourceManager<Job> {
             OpenCGAResult<Job> insert = jobDBAdaptor.insert(study.getUid(), job, options);
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
                 // Fetch created job
-                OpenCGAResult<Job> queryResult = getJob(study.getUid(), job.getUuid(), options);
-                insert.setResults(queryResult.getResults());
+                OpenCGAResult<Job> result = getJob(study.getUid(), job.getUuid(), options);
+                insert.setResults(result.getResults());
+                insert.setResultType(result.getResultType());
             }
             auditManager.auditCreate(userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1194,6 +1193,7 @@ public class JobManager extends ResourceManager<Job> {
             OpenCGAResult<Job> result = jobDBAdaptor.get(study.getUid(), new Query(JobDBAdaptor.QueryParams.UID.key(), job.getUid()),
                     options, userId);
             update.setResults(result.getResults());
+            update.setResultType(result.getResultType());
         }
         return update;
     }

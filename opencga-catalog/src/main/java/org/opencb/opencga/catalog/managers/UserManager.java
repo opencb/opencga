@@ -63,18 +63,15 @@ import java.util.stream.Collectors;
  */
 public class UserManager extends AbstractManager {
 
-    private final CatalogIOManager catalogIOManager;
-
-    private String INTERNAL_AUTHORIZATION = CatalogAuthenticationManager.INTERNAL;
-    private Map<String, AuthenticationManager> authenticationManagerMap;
-
     protected static final String EMAIL_PATTERN = "^['_A-Za-z0-9-\\+]+(\\.['_A-Za-z0-9-]+)*@"
             + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
     protected static final Pattern EMAILPATTERN = Pattern.compile(EMAIL_PATTERN);
-    protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
-
     static final QueryOptions INCLUDE_ACCOUNT = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             UserDBAdaptor.QueryParams.ID.key(), UserDBAdaptor.QueryParams.ACCOUNT.key()));
+    protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
+    private final CatalogIOManager catalogIOManager;
+    private String INTERNAL_AUTHORIZATION = CatalogAuthenticationManager.INTERNAL;
+    private Map<String, AuthenticationManager> authenticationManagerMap;
 
     UserManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                 DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager, Configuration configuration)
@@ -126,6 +123,12 @@ public class UserManager extends AbstractManager {
                 linkedList.add(authenticationOrigin);
                 configuration.getAuthentication().setAuthenticationOrigins(linkedList);
             }
+        }
+    }
+
+    static void checkEmail(String email) throws CatalogParameterException {
+        if (email == null || !EMAILPATTERN.matcher(email).matches()) {
+            throw new CatalogParameterException("Email '" + email + "' not valid");
         }
     }
 
@@ -696,6 +699,7 @@ public class UserManager extends AbstractManager {
                 // Fetch updated user
                 OpenCGAResult<User> result = userDBAdaptor.get(userId, options);
                 updateResult.setResults(result.getResults());
+                updateResult.setResultType(result.getResultType());
             }
 
             return updateResult;
@@ -836,7 +840,7 @@ public class UserManager extends AbstractManager {
         if (response == null) {
             auditManager.auditUser(username, Enums.Action.LOGIN, username,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", "Incorrect user or password.")));
-             throw CatalogAuthenticationException.incorrectUserOrPassword();
+            throw CatalogAuthenticationException.incorrectUserOrPassword();
         }
 
         auditManager.auditUser(username, Enums.Action.LOGIN, username, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1322,12 +1326,6 @@ public class UserManager extends AbstractManager {
             throw new CatalogException(userId + " user not found");
         }
         return user.first().getAccount().getAuthentication().getId();
-    }
-
-    static void checkEmail(String email) throws CatalogParameterException {
-        if (email == null || !EMAILPATTERN.matcher(email).matches()) {
-            throw new CatalogParameterException("Email '" + email + "' not valid");
-        }
     }
 
     /**

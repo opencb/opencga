@@ -2223,6 +2223,7 @@ public class FileManager extends AnnotationSetManager<File> {
             OpenCGAResult<File> result = fileDBAdaptor.get(study.getUid(), new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()),
                     options, userId);
             update.setResults(result.getResults());
+            update.setResultType(result.getResultType());
         }
         return update;
     }

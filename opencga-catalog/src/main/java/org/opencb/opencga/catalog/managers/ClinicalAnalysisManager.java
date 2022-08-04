@@ -48,7 +48,6 @@ import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.common.FlagValue;
-import org.opencb.opencga.core.models.clinical.ClinicalStatusValue;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileReferenceParam;
@@ -571,9 +570,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
                 // Fetch updated clinical analysis
-                OpenCGAResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.get(study.getUid(), clinicalAnalysis.getId(),
+                OpenCGAResult<ClinicalAnalysis> result = clinicalDBAdaptor.get(study.getUid(), clinicalAnalysis.getId(),
                         QueryOptions.empty());
-                insert.setResults(queryResult.getResults());
+                insert.setResults(result.getResults());
+                insert.setResultType(result.getResultType());
+
             }
 
             return insert;
@@ -1439,6 +1440,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             OpenCGAResult<ClinicalAnalysis> result = clinicalDBAdaptor.get(study.getUid(),
                     new Query(ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), clinicalAnalysis.getUid()), options, userId);
             update.setResults(result.getResults());
+            update.setResultType(result.getResultType());
         }
         return update;
     }

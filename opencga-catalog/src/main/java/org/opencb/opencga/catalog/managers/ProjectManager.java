@@ -61,8 +61,6 @@ import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper
  */
 public class ProjectManager extends AbstractManager {
 
-    private final CatalogIOManager catalogIOManager;
-
     private static final Set<String> UPDATABLE_FIELDS = new HashSet<>(Arrays.asList(
             ProjectDBAdaptor.QueryParams.ID.key(),
             ProjectDBAdaptor.QueryParams.NAME.key(),
@@ -78,6 +76,7 @@ public class ProjectManager extends AbstractManager {
             ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_VARIANT.key(),
             ProjectDBAdaptor.QueryParams.CELLBASE.key()
     ));
+    private final CatalogIOManager catalogIOManager;
 
     ProjectManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                    DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager, Configuration configuration) {
@@ -273,6 +272,7 @@ public class ProjectManager extends AbstractManager {
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
                 // Fetch created project
                 queryResult.setResults(result.getResults());
+                queryResult.setResultType(result.getResultType());
             }
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Resource.PROJECT, projectCreateParams.getId(), "", "", "", auditParams,

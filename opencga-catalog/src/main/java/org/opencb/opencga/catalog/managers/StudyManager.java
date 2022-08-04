@@ -90,11 +90,15 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
  */
 public class StudyManager extends AbstractManager {
 
-    private final CatalogIOManager catalogIOManager;
-    private final IOManagerFactory ioManagerFactory;
-
     public static final String MEMBERS = ParamConstants.MEMBERS_GROUP;
     public static final String ADMINS = ParamConstants.ADMINS_GROUP;
+    public static final QueryOptions INCLUDE_STUDY_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+            StudyDBAdaptor.QueryParams.UID.key(), StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UUID.key(),
+            StudyDBAdaptor.QueryParams.FQN.key()));
+    static final QueryOptions INCLUDE_STUDY_UID = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.UID.key());
+    static final QueryOptions INCLUDE_VARIABLE_SET = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key());
+    static final QueryOptions INCLUDE_CONFIGURATION =
+            new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION.key());
     //[A-Za-z]([-_.]?[A-Za-z0-9]
     private static final String USER_PATTERN = "[A-Za-z][[-_.]?[A-Za-z0-9]?]*";
     private static final String PROJECT_PATTERN = "[A-Za-z0-9][[-_.]?[A-Za-z0-9]?]*";
@@ -102,15 +106,8 @@ public class StudyManager extends AbstractManager {
     private static final Pattern USER_PROJECT_STUDY_PATTERN = Pattern.compile("^(" + USER_PATTERN + ")@(" + PROJECT_PATTERN + "):("
             + STUDY_PATTERN + ")$");
     private static final Pattern PROJECT_STUDY_PATTERN = Pattern.compile("^(" + PROJECT_PATTERN + "):(" + STUDY_PATTERN + ")$");
-
-    static final QueryOptions INCLUDE_STUDY_UID = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.UID.key());
-    public static final QueryOptions INCLUDE_STUDY_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-            StudyDBAdaptor.QueryParams.UID.key(), StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UUID.key(),
-            StudyDBAdaptor.QueryParams.FQN.key()));
-    static final QueryOptions INCLUDE_VARIABLE_SET = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key());
-    static final QueryOptions INCLUDE_CONFIGURATION =
-            new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION.key());
-
+    private final CatalogIOManager catalogIOManager;
+    private final IOManagerFactory ioManagerFactory;
     protected Logger logger;
 
     StudyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
@@ -379,6 +376,7 @@ public class StudyManager extends AbstractManager {
 
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
                 result.setResults(Arrays.asList(study));
+                result.setResultType("Study");
             }
             return result;
         } catch (CatalogException e) {

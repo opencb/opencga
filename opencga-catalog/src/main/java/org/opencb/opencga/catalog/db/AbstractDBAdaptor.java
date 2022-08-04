@@ -69,6 +69,13 @@ public abstract class AbstractDBAdaptor {
         }
         int numResults = results.size();
         OpenCGAResult<T> result = new OpenCGAResult<>((int) (end - startTime), events, numResults, results, numMatches, new ObjectMap());
+        if (numResults > 0) {
+            result.setResultType(results.get(0).getClass().getSimpleName());
+            logger.info("ResultType {}", results.get(0).getClass().getSimpleName());
+        } else {
+            logger.info("NO RESULTS for ResultType ");
+
+        }
         logger.trace("DbTime: {}, numResults: {}, numMatches: {}", result.getTime(), result.getNumResults(), result.getNumMatches());
         return result;
     }

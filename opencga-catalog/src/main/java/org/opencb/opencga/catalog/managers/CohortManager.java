@@ -67,19 +67,16 @@ import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorization
  */
 public class CohortManager extends AnnotationSetManager<Cohort> {
 
-    protected static Logger logger = LoggerFactory.getLogger(CohortManager.class);
-
-    private UserManager userManager;
-    private StudyManager studyManager;
-
-    private final String defaultFacet = "creationYear>>creationMonth;status;numSamples[0..10]:1";
-
     public static final QueryOptions INCLUDE_COHORT_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             CohortDBAdaptor.QueryParams.STUDY_UID.key(), CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.UID.key(),
             CohortDBAdaptor.QueryParams.UUID.key()));
     public static final QueryOptions INCLUDE_COHORT_STATUS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             CohortDBAdaptor.QueryParams.STUDY_UID.key(), CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.UID.key(),
             CohortDBAdaptor.QueryParams.UUID.key(), CohortDBAdaptor.QueryParams.INTERNAL_STATUS.key()));
+    protected static Logger logger = LoggerFactory.getLogger(CohortManager.class);
+    private final String defaultFacet = "creationYear>>creationMonth;status;numSamples[0..10]:1";
+    private UserManager userManager;
+    private StudyManager studyManager;
 
 
     CohortManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
@@ -281,6 +278,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                             .collect(Collectors.toList()));
             OpenCGAResult<Cohort> result = cohortDBAdaptor.get(study.getUid(), query, options, userId);
             insertResult.setResults(result.getResults());
+            insertResult.setResultType(result.getResultType());
+
         }
 
         return insertResult;
@@ -365,6 +364,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             // Fetch created cohort
             OpenCGAResult<Cohort> result = getCohort(study.getUid(), cohort.getUuid(), options);
             insert.setResults(result.getResults());
+            insert.setResultType(result.getResultType());
         }
         return insert;
     }
@@ -1103,6 +1103,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             OpenCGAResult<Cohort> result = cohortDBAdaptor.get(study.getUid(),
                     new Query(CohortDBAdaptor.QueryParams.UID.key(), cohort.getUid()), options, userId);
             update.setResults(result.getResults());
+            update.setResultType(result.getResultType());
         }
         return update;
     }

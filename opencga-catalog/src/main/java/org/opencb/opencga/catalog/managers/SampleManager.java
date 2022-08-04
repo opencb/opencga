@@ -242,7 +242,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
                 // Fetch created sample
                 OpenCGAResult<Sample> result = getSample(study.getUid(), sample.getUuid(), options);
+
                 insert.setResults(result.getResults());
+                insert.setResultType(result.getResultType());
             }
             auditManager.auditCreate(userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1148,6 +1150,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             OpenCGAResult<Sample> queryResult = sampleDBAdaptor.get(study.getUid(),
                     new Query(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid()), options, userId);
             update.setResults(queryResult.getResults());
+            update.setResultType(queryResult.getResultType());
         }
         return update;
     }

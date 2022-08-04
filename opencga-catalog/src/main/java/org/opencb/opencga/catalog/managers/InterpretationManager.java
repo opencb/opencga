@@ -49,7 +49,6 @@ import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.StatusParam;
-import org.opencb.opencga.core.models.clinical.ClinicalStatusValue;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
@@ -66,11 +65,6 @@ import java.util.stream.Collectors;
 
 public class InterpretationManager extends ResourceManager<Interpretation> {
 
-    protected static Logger logger = LoggerFactory.getLogger(InterpretationManager.class);
-
-    private UserManager userManager;
-    private StudyManager studyManager;
-
     public static final QueryOptions INCLUDE_CLINICAL_ANALYSIS = keepFieldsInQueryOptions(ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS,
             Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCK.key()));
     public static final QueryOptions INCLUDE_INTERPRETATION_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
@@ -82,8 +76,11 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             InterpretationDBAdaptor.QueryParams.ID.key(), InterpretationDBAdaptor.QueryParams.UID.key(),
             InterpretationDBAdaptor.QueryParams.UUID.key(), InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS_ID.key(),
             InterpretationDBAdaptor.QueryParams.VERSION.key(), InterpretationDBAdaptor.QueryParams.STUDY_UID.key(),
-            InterpretationDBAdaptor.QueryParams.LOCKED.key(),  InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS_ID.key(),
+            InterpretationDBAdaptor.QueryParams.LOCKED.key(), InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS_ID.key(),
             InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS_ID.key()));
+    protected static Logger logger = LoggerFactory.getLogger(InterpretationManager.class);
+    private UserManager userManager;
+    private StudyManager studyManager;
 
 
     public InterpretationManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
@@ -236,6 +233,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 OpenCGAResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(),
                         QueryOptions.empty());
                 result.setResults(queryResult.getResults());
+                result.setResultType(queryResult.getResultType());
             }
 
             auditManager.auditCreate(userId, Enums.Resource.INTERPRETATION, interpretation.getId(), "", study.getId(),
@@ -1065,6 +1063,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             // Fetch updated interpretation
             OpenCGAResult<Interpretation> result = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(), options);
             update.setResults(result.getResults());
+            update.setResultType(result.getResultType());
         }
         return update;
     }

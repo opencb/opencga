@@ -69,13 +69,12 @@ import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorization
 
 public class PanelManager extends ResourceManager<Panel> {
 
-    protected static Logger logger = LoggerFactory.getLogger(PanelManager.class);
-    private UserManager userManager;
-    private StudyManager studyManager;
-
     public static final QueryOptions INCLUDE_PANEL_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             PanelDBAdaptor.QueryParams.ID.key(), PanelDBAdaptor.QueryParams.UID.key(), PanelDBAdaptor.QueryParams.UUID.key(),
             PanelDBAdaptor.QueryParams.VERSION.key(), PanelDBAdaptor.QueryParams.STUDY_UID.key()));
+    protected static Logger logger = LoggerFactory.getLogger(PanelManager.class);
+    private UserManager userManager;
+    private StudyManager studyManager;
 
     PanelManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                  DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
@@ -180,6 +179,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 // Fetch created panel
                 OpenCGAResult<Panel> result = getPanel(study.getUid(), panel.getUuid(), options);
                 insert.setResults(result.getResults());
+                insert.setResultType(result.getResultType());
             }
             auditManager.auditCreate(userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -557,6 +557,7 @@ public class PanelManager extends ResourceManager<Panel> {
             OpenCGAResult<Panel> result = panelDBAdaptor.get(study.getUid(),
                     new Query(PanelDBAdaptor.QueryParams.UID.key(), panel.getUid()), options, userId);
             update.setResults(result.getResults());
+            update.setResultType(result.getResultType());
         }
         return update;
     }
