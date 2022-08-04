@@ -196,7 +196,7 @@ public class RestApiParser {
                         List<RestParameter> bodyParams = new ArrayList<>(declaredFields.size());
 
                         for (BeanPropertyDefinition declaredField : declaredFields) {
-                            RestParameter bodyParam = getRestParameter(variablePrefix, declaredField, post);
+                            RestParameter bodyParam = getRestParameter(variablePrefix, declaredField, post, true);
                             // For CLI is necessary flatten parameters
                             if (flatten) {
                                 bodyParams.addAll(flattenInnerParams(variablePrefix, bodyParam, post));
@@ -252,7 +252,7 @@ public class RestApiParser {
             List<BeanPropertyDefinition> nestedProperties = getPropertyDefinitions(cls, post);
             List<RestParameter> innerParams = new ArrayList<>();
             for (BeanPropertyDefinition field : nestedProperties) {
-                RestParameter innerParam = getRestParameter(variablePrefix, field, param.getName(), post);
+                RestParameter innerParam = getRestParameter(variablePrefix, field, param.getName(), post, param.isRequired());
                 innerParam.setInnerParam(true);
                 innerParams.add(innerParam);
             }
@@ -273,16 +273,16 @@ public class RestApiParser {
         return properties;
     }
 
-    private RestParameter getRestParameter(String variablePrefix, BeanPropertyDefinition property, final boolean post) {
-        return getRestParameter(variablePrefix, property, "", post);
+    private RestParameter getRestParameter(String variablePrefix, BeanPropertyDefinition property, final boolean post, final boolean parentRequired) {
+        return getRestParameter(variablePrefix, property, "", post, parentRequired);
     }
 
-    private RestParameter getRestParameter(String variablePrefix, BeanPropertyDefinition property, String parentParamName, final boolean post) {
-        return getRestParameter(variablePrefix, property, parentParamName, new Stack<>(), post);
+    private RestParameter getRestParameter(String variablePrefix, BeanPropertyDefinition property, String parentParamName, final boolean post, final boolean parentRequired) {
+        return getRestParameter(variablePrefix, property, parentParamName, new Stack<>(), post, parentRequired);
     }
 
     private RestParameter getRestParameter(String variablePrefix, BeanPropertyDefinition property, String parentParamName,
-                                           Stack<Class<?>> stackClasses, final boolean post) {
+                                           Stack<Class<?>> stackClasses, final boolean post, final boolean parentRequired) {
         Class<?> propertyClass = property.getRawPrimaryType();
 
         RestParameter param = new RestParameter();
@@ -298,7 +298,7 @@ public class RestApiParser {
 
         if (property.getField() != null && property.getField().getAnnotation(DataField.class) != null) {
             param.setDefaultValue(property.getField().getAnnotation(DataField.class).defaultValue());
-            param.setRequired(property.getField().getAnnotation(DataField.class).required());
+            param.setRequired(property.getField().getAnnotation(DataField.class).required() && parentRequired);
             param.setDescription(property.getField().getAnnotation(DataField.class).description());
         } else {
             param.setDefaultValue("");
@@ -322,19 +322,19 @@ public class RestApiParser {
                 param.setGenericType(property.getPrimaryType().toCanonical());
                 JavaType contentType = property.getPrimaryType().getContentType();
                 if (isBean(contentType.getRawClass())) {
-                    param.setData(getInnerParams(variablePrefix, property, stackClasses, contentType.getRawClass(), post));
+                    param.setData(getInnerParams(variablePrefix, property, stackClasses, contentType.getRawClass(), post, parentRequired));
                 }
             } else if (Map.class.isAssignableFrom(propertyClass)) {
 //                innerParam.setGenericType(property.getPrimaryType().getContentType().getRawClass().getName());
                 param.setGenericType(property.getPrimaryType().toCanonical());
                 JavaType contentType = property.getPrimaryType().getContentType();
                 if (isBean(contentType.getRawClass()) || Collection.class.isAssignableFrom(contentType.getRawClass())) {
-                    param.setData(getInnerParams(variablePrefix, property, stackClasses, contentType.getRawClass(), post));
+                    param.setData(getInnerParams(variablePrefix, property, stackClasses, contentType.getRawClass(), post, parentRequired));
                 }
             } else {
                 if (isBean(propertyClass)) {
 //                param.setType("object");
-                    param.setData(getInnerParams(variablePrefix, property, stackClasses, propertyClass, post));
+                    param.setData(getInnerParams(variablePrefix, property, stackClasses, propertyClass, post, parentRequired));
                 }
             }
         }
@@ -342,7 +342,7 @@ public class RestApiParser {
         return param;
     }
 
-    private List<RestParameter> getInnerParams(String variablePrefix, BeanPropertyDefinition property, Stack<Class<?>> stackClasses, Class<?> propertyClass, final boolean post) {
+    private List<RestParameter> getInnerParams(String variablePrefix, BeanPropertyDefinition property, Stack<Class<?>> stackClasses, Class<?> propertyClass, final boolean post, final boolean parentRequired) {
         List<RestParameter> data = null;
         // Fill nested "data"
         if (!stackClasses.contains(propertyClass)) {
@@ -350,7 +350,7 @@ public class RestApiParser {
             data = new ArrayList<>(properties.size());
             stackClasses.add(propertyClass);
             for (BeanPropertyDefinition propertyDefinition : properties) {
-                data.add(getRestParameter(variablePrefix + "." + property.getName(), propertyDefinition, property.getName(), stackClasses, post));
+                data.add(getRestParameter(variablePrefix + "." + property.getName(), propertyDefinition, property.getName(), stackClasses, post, parentRequired));
             }
             stackClasses.remove(propertyClass);
         } // Else : This field was already seen

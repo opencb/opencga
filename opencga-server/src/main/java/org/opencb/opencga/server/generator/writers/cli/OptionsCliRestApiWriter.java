@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -170,23 +171,26 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                     sb.append("    \n");
                 }
 
-                Set<String> variable_names = new HashSet<>();
+                Set<String> variableNames = new HashSet<>();
                 for (RestParameter restParameter : restEndpoint.getParameters()) {
                     if (config.isAvailableSubCommand(restParameter.getName(), commandName)) {
-                        if (!"body".equals(normalizeNames(restParameter.getName()))) {
-                            if (restParameter.isAvailableType() && !variable_names.contains(normalizeNames(getAsCamelCase(restParameter.getName())))) {
+
+                        if (isProjectionField(restParameter.getName()) && isUpdateDataService(commandName)) {
+                            sb.append(getProjectionField(restParameter, config));
+                        } else if (!"body".equals(normalizeNames(restParameter.getName()))) {
+                            if (restParameter.isAvailableType() && !variableNames.contains(normalizeNames(getAsCamelCase(restParameter.getName())))) {
                                 sb.append("        @Parameter(names = {" + getShortCuts(restParameter, config) + "}, description = " +
                                         "\"" + restParameter.getDescription().replaceAll("\"", "'") + "\", required = " + restParameter.isRequired() + ", arity = 1)\n");
                                 sb.append("        public " + getValidValue(restParameter) + " " + getVariableName(restParameter) + ";" +
                                         " " +
                                         "\n");
                                 sb.append("    \n");
-                                variable_names.add(normalizeNames(getAsCamelCase(restParameter.getName())));
+                                variableNames.add(normalizeNames(getAsCamelCase(restParameter.getName())));
                             }
                         } else {
                             if (restParameter.getData() != null) {
                                 for (RestParameter bodyRestParameter : restParameter.getData()) {
-                                    if (config.isAvailableSubCommand(bodyRestParameter.getName(), commandName) && bodyRestParameter.isAvailableType() && !variable_names.contains(normalizeNames(getAsCamelCase(restParameter.getName())))) {
+                                    if (config.isAvailableSubCommand(bodyRestParameter.getName(), commandName) && bodyRestParameter.isAvailableType() && !variableNames.contains(normalizeNames(getAsCamelCase(restParameter.getName())))) {
                                         sb.append("        @Parameter(names = {" + getShortCuts(bodyRestParameter, config) + "}, " +
                                                 "description"
                                                 + " = \"" + bodyRestParameter.getDescription().replaceAll("\"", "'") + "\", required = "
@@ -196,7 +200,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                         sb.append("        public " + getValidValue(bodyRestParameter) + " "
                                                 + getVariableName(bodyRestParameter) + ";\n");
                                         sb.append("    \n");
-                                        variable_names.add(normalizeNames(getAsCamelCase(bodyRestParameter.getName())));
+                                        variableNames.add(normalizeNames(getAsCamelCase(bodyRestParameter.getName())));
                                     } else if (bodyRestParameter.getType().equals("enum")) {
 
                                         sb.append("        @Parameter(names = {" + getShortCuts(bodyRestParameter, config) + "}, " +
@@ -238,6 +242,34 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
         return sb.toString();
     }
 
+    private String getProjectionField(RestParameter restParameter, CategoryConfig config) {
+        StringBuilder sb = new StringBuilder();
+
+        if (restParameter.getName().equals("includeResult")) {
+            sb.append("        @Parameter(names = {" + getShortCuts(restParameter, config) + "}, description = " +
+                    "\"" + restParameter.getDescription().replaceAll("\"", "'") + "\", required = " + restParameter.isRequired() + ", arity = 1, hidden = true)\n");
+            sb.append("        public " + getValidValue(restParameter) + " " + getVariableName(restParameter) + "= true;" +
+                    " " +
+                    "\n");
+            sb.append("    \n");
+        } else {
+            sb.append("        @Parameter(names = {" + getShortCuts(restParameter, config) + "}, description = " +
+                    "\"" + restParameter.getDescription().replaceAll("\"", "'") + "\", required = " + restParameter.isRequired() + ", arity = 1, hidden = true)\n");
+            sb.append("        public " + getValidValue(restParameter) + " " + getVariableName(restParameter) + ";" +
+                    " " +
+                    "\n");
+            sb.append("    \n");
+        }
+        return sb.toString();
+    }
+
+    private boolean isUpdateDataService(String commandName) {
+        return Arrays.asList("create", "update").contains(commandName);
+    }
+
+    private boolean isProjectionField(String commandName) {
+        return Arrays.asList("include", "exclude", "includeResult").contains(commandName);
+    }
 
     private String getVariableName(RestParameter restParameter) {
         String res = "";
