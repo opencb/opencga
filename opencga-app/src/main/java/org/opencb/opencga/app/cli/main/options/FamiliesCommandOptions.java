@@ -196,10 +196,10 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
-        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1, hidden = true)
         public String include; 
     
-        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
+        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1, hidden = true)
         public String exclude; 
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
@@ -208,8 +208,8 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--members"}, description = "Comma separated list of member ids to be associated to the created family", required = false, arity = 1)
         public String members; 
     
-        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1)
-        public Boolean includeResult; 
+        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1, hidden = true)
+        public Boolean includeResult= true; 
     
         @Parameter(names = {"--body_id"}, description = "The body id FamilyCreateParams web service parameter", required = false, arity = 1)
         public String bodyId;
@@ -463,10 +463,10 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
-        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1, hidden = true)
         public String include; 
     
-        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
+        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1, hidden = true)
         public String exclude; 
     
         @Parameter(names = {"--families"}, description = "Comma separated list of family ids", required = true, arity = 1)
@@ -478,8 +478,8 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--update-roles"}, description = "Update the member roles within the family", required = false, arity = 1)
         public Boolean updateRoles; 
     
-        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1)
-        public Boolean includeResult; 
+        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1, hidden = true)
+        public Boolean includeResult= true; 
     
         @Parameter(names = {"--id"}, description = "The body id FamilyUpdateParams web service parameter", required = false, arity = 1)
         public String id;
