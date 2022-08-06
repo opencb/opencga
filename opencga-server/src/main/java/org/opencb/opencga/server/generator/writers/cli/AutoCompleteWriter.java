@@ -89,7 +89,6 @@ public class AutoCompleteWriter extends ParentClientRestApiWriter {
 
     @Override
     protected String getClassHeader(String key) {
-
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
         sb.append("public abstract class OpenCgaCompleter implements Completer {\n");
@@ -109,9 +108,7 @@ public class AutoCompleteWriter extends ParentClientRestApiWriter {
                 String commandName = getCommandName(restCategory, restEndpoint);
                 if (config.isAvailableCommand(commandName)) {
                     sb.append("\"" + reverseCommandName(commandName) + "\",");
-
                 }
-
             }
             sb.delete(sb.lastIndexOf(","), sb.length());
             sb.append(")\n            .stream()\n            .map(Candidate::new)\n            .collect(toList());\n\n");

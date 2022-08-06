@@ -1145,6 +1145,7 @@ public class SampleIndexQueryParserTest {
         assertEquals(1, indexQuery.getFatherFilterMap().size());
         assertEquals(1, indexQuery.getMotherFilterMap().size());
         assertEquals(true, indexQuery.getMotherFilter("fam1_child")[GenotypeCodec.HOM_REF_UNPHASED]);
+        assertEquals(true, indexQuery.getMotherFilter("fam1_child")[GenotypeCodec.HOM_REF_UNPHASED]);
         assertEquals(true, indexQuery.getMotherFilter("fam1_child")[GenotypeCodec.HET_REF_UNPHASED]);
         assertFalse(isValidParam(query, GENOTYPE));
 
@@ -1160,6 +1161,18 @@ public class SampleIndexQueryParserTest {
         assertTrue(indexQuery.isNegated("fam1_child"));
         assertFalse(indexQuery.isNegated("fam1_father"));
         assertFalse(indexQuery.isNegated("fam1_mother"));
+
+        query = new Query(GENOTYPE.key(), "fam1_child:0/1;fam1_father:0/1;fam1_mother:0/0")
+                .append(ANNOT_BIOTYPE.key(), "protein_coding")
+                .append(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,start_lost");
+        indexQuery = parse(query);
+        assertEquals(Collections.singleton("fam1_child"), indexQuery.getSamplesMap().keySet());
+        assertEquals(1, indexQuery.getFatherFilterMap().size());
+        assertEquals(1, indexQuery.getMotherFilterMap().size());
+        assertEquals(true, indexQuery.getMotherFilter("fam1_child")[GenotypeCodec.HOM_REF_UNPHASED]);
+        assertEquals(true, indexQuery.getFatherFilter("fam1_child")[GenotypeCodec.HET_REF_UNPHASED]);
+        assertFalse(isValidParam(query, GENOTYPE));
+        assertFalse(isValidParam(query, ANNOT_BIOTYPE));
     }
 
     @Test

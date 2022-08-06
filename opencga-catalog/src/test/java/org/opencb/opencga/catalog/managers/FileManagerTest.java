@@ -659,6 +659,30 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testLinkFileWithDifferentSampleNamesFromVCFHeader() throws CatalogException, URISyntaxException {
+        URI uri = getClass().getResource("/biofiles/variant-test-sample-mapping.vcf").toURI();
+
+
+        FileLinkParams params = new FileLinkParams()
+                .setUri(uri.toString());
+        DataResult<File> link = fileManager.link(studyFqn, params, false, token);
+
+        assertEquals(3, link.first().getSampleIds().size());
+        assertEquals(Arrays.asList("sample_tumor", "sample_normal", "sample_other"), link.first().getSampleIds());
+        assertEquals(Arrays.asList("TUMOR", "NORMAL", "OTHER"), new ObjectMap(link.first().getAttributes()).getAsStringList("variantFileMetadata.attributes.originalSamples"));
+
+        Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), link.first().getSampleIds());
+        DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().search(studyFqn, query, QueryOptions.empty(), token);
+
+        assertEquals(3, sampleDataResult.getNumResults());
+        List<String> sampleNames = sampleDataResult.getResults().stream().map(Sample::getId).collect(Collectors.toList());
+        assertTrue(sampleNames.contains("sample_tumor"));
+        assertTrue(sampleNames.contains("sample_normal"));
+        assertTrue(sampleNames.contains("sample_other"));
+
+    }
+
+    @Test
     public void testFileHooks() throws CatalogException, IOException, URISyntaxException {
         URI uri = getClass().getResource("/biofiles/variant-test-file-dot-names.vcf.gz").toURI();
         DataResult<File> link = fileManager.link(studyFqn, uri, ".", new ObjectMap(), token);

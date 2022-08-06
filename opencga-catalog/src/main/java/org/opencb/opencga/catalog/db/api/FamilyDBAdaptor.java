@@ -46,6 +46,8 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         UUID("uuid", TEXT, ""),
         NAME("name", TEXT, ""),
         MEMBERS("members", TEXT_ARRAY, ""),
+        MEMBERS_ID("members.id", TEXT_ARRAY, ""),
+        MEMBERS_SAMPLES_ID("members.samples.id", TEXT_ARRAY, ""),
         MEMBER_UID("members.uid", INTEGER, ""),
         MEMBER_VERSION("members.version", INTEGER, ""),
         MEMBERS_PARENTAL_CONSANGUINITY("members.parentalConsanguinity", BOOLEAN, ""),

@@ -25,18 +25,21 @@ import org.opencb.opencga.core.response.RestResponse;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.opencb.commons.utils.PrintUtils.*;
 
 public class Shell extends OpencgaCommandExecutor {
 
 
+    // Create a command processor to process all the shell commands
+    private final CommandProcessor processor = new CommandProcessor();
     private LineReader lineReader = null;
     private Terminal terminal = null;
     private String host = null;
-
-    // Create a command processor to process all the shell commands
-    private final CommandProcessor processor = new CommandProcessor();
 
     public Shell(GeneralCliOptions.CommonCommandOptions options) throws CatalogAuthenticationException {
         super(options);
@@ -112,7 +115,7 @@ public class Shell extends OpencgaCommandExecutor {
 
                 // Send the line read to the processor for process
                 if (!line.equals("")) {
-                    String[] args = line.split(" ");
+                    String[] args = splitLine(line);
                     logger.debug("Command: " + line);
 
                     args = parseParams(args);
@@ -130,6 +133,15 @@ public class Shell extends OpencgaCommandExecutor {
             logger.debug("getCliSession:" + sessionManager.getSession());
 
         }
+    }
+
+    private String[] splitLine(String line) {
+        List<String> list = new ArrayList<String>();
+        Matcher m = Pattern.compile("([^\"]\\S*|\".+?\")\\s*").matcher(line);
+        while (m.find()) {
+            list.add(m.group(1).replace("\"", ""));
+        }
+        return list.toArray(new String[list.size()]);
     }
 
     public String getPrompt() {

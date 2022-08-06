@@ -20,7 +20,7 @@ public class RgaAnalysis extends OperationTool {
     protected void check() throws Exception {
         super.check();
 
-        this.rgaManager = new RgaManager(configuration, storageConfiguration);
+        this.rgaManager = new RgaManager(getCatalogManager(), getVariantStorageManager());
         study = getStudyFqn();
         file = params.getString(RgaAnalysisParams.FILE);
     }
