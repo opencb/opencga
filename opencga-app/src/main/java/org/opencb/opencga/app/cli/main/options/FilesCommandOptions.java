@@ -289,9 +289,6 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--software-website"}, description = "Software website", required = false, arity = 1)
         public String softwareWebsite;
     
-        @DynamicParameter(names = {"--software-params"}, description = "Software params. Use: --software-params key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.String> softwareParams = new HashMap<>(); //Dynamic parameters must be initialized;
-    
         @Parameter(names = {"--tags"}, description = "The body tags FileCreateParams web service parameter", required = false, arity = 1)
         public String tags;
     
@@ -312,9 +309,6 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
     
         @Parameter(names = {"--status-description"}, description = "Field to store information of the item", required = false, arity = 1)
         public String statusDescription;
-    
-        @DynamicParameter(names = {"--attributes"}, description = "A map of customizable attributes. Use: --attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 
@@ -434,7 +428,7 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--url"}, description = "The body url FileFetch web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--url"}, description = "The body url FileFetch web service parameter", required = true, arity = 1)
         public String url;
     
         @Parameter(names = {"--path"}, description = "The body path FileFetch web service parameter", required = false, arity = 1)
@@ -492,9 +486,6 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--status-description"}, description = "Field to store information of the item", required = false, arity = 1)
         public String statusDescription;
     
-        @DynamicParameter(names = {"--internal-sample-map"}, description = "The body sampleMap FileLinkInternalParams web service parameter. Use: --internal-sample-map key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.String> internalSampleMap = new HashMap<>(); //Dynamic parameters must be initialized;
-    
     }
 
     @Parameters(commandNames = {"link-run"}, commandDescription ="Link an external file into catalog asynchronously.")
@@ -535,6 +526,9 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
     
         @Parameter(names = {"--parents"}, description = "The body parents FileLinkToolParams web service parameter", required = false, arity = 1)
         public Boolean parents;
+    
+        @Parameter(names = {"--skip-post-link"}, description = "The body web service skipPostLink parameter", required = false, arity = 1)
+        public Boolean skipPostLink;
     
     }
 
@@ -820,9 +814,6 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--software-website"}, description = "Software website", required = false, arity = 1)
         public String softwareWebsite;
     
-        @DynamicParameter(names = {"--software-params"}, description = "Software params. Use: --software-params key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.String> softwareParams = new HashMap<>(); //Dynamic parameters must be initialized;
-    
         @Parameter(names = {"--experiment-technology"}, description = "The body technology FileExperiment web service parameter", required = false, arity = 1)
         public String experimentTechnology;
     
@@ -856,9 +847,6 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--experiment-description"}, description = "Field to store information of the item", required = false, arity = 1)
         public String experimentDescription;
     
-        @DynamicParameter(names = {"--experiment-attributes"}, description = "A map of customizable attributes. Use: --experiment-attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> experimentAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
-    
         @Parameter(names = {"--tags"}, description = "The body tags FileUpdateParams web service parameter", required = false, arity = 1)
         public String tags;
     
@@ -876,12 +864,6 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
     
         @Parameter(names = {"--quality-control-files"}, description = "The body files FileQualityControl web service parameter", required = false, arity = 1)
         public String qualityControlFiles;
-    
-        @DynamicParameter(names = {"--stats"}, description = "The body stats FileUpdateParams web service parameter. Use: --stats key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> stats = new HashMap<>(); //Dynamic parameters must be initialized;
-    
-        @DynamicParameter(names = {"--attributes"}, description = "A map of customizable attributes. Use: --attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 

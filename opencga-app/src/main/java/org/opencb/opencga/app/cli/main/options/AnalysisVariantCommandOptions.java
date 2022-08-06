@@ -301,9 +301,6 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--density"}, description = "The body density CircosAnalysisParams web service parameter", required = false, arity = 1)
         public String density;
     
-        @DynamicParameter(names = {"--query"}, description = "The body query CircosAnalysisParams web service parameter. Use: --query key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.String> query = new HashMap<>(); //Dynamic parameters must be initialized;
-    
         @Parameter(names = {"--outdir"}, description = "The body outdir CircosAnalysisParams web service parameter", required = false, arity = 1)
         public String outdir;
     
@@ -840,9 +837,6 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--outdir"}, description = "The body outdir GatkWrapperParams web service parameter", required = false, arity = 1)
         public String outdir;
-    
-        @DynamicParameter(names = {"--gatk-params"}, description = "The body gatkParams GatkWrapperParams web service parameter. Use: --gatk-params key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.String> gatkParams = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 
@@ -1417,9 +1411,6 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--description"}, description = "Field to store information of the item", required = false, arity = 1)
         public String description;
     
-        @DynamicParameter(names = {"--query"}, description = "The body query MutationalSignatureAnalysisParams web service parameter. Use: --query key=value", required = false)
-        public Map<String, ?> query = new HashMap<>(); //Dynamic parameters must be initialized;
-    
         @Parameter(names = {"--release"}, description = "The body release MutationalSignatureAnalysisParams web service parameter", required = false, arity = 1)
         public String release;
     
@@ -1460,9 +1451,6 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--outdir"}, description = "The body outdir PlinkWrapperParams web service parameter", required = false, arity = 1)
         public String outdir;
-    
-        @DynamicParameter(names = {"--plink-params"}, description = "The body plinkParams PlinkWrapperParams web service parameter. Use: --plink-params key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.String> plinkParams = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 
@@ -1782,9 +1770,6 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--outdir"}, description = "The body outdir RvtestsWrapperParams web service parameter", required = false, arity = 1)
         public String outdir;
     
-        @DynamicParameter(names = {"--rvtests-params"}, description = "The body rvtestsParams RvtestsWrapperParams web service parameter. Use: --rvtests-params key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.String> rvtestsParams = new HashMap<>(); //Dynamic parameters must be initialized;
-    
     }
 
     @Parameters(commandNames = {"sample-aggregation-stats"}, commandDescription ="Calculate and fetch sample aggregation stats")
@@ -2015,9 +2000,6 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--signature-description"}, description = "The body signatureDescription SampleQcAnalysisParams web service parameter", required = false, arity = 1)
         public String signatureDescription;
-    
-        @DynamicParameter(names = {"--signature-query"}, description = "The body signatureQuery SampleQcAnalysisParams web service parameter. Use: --signature-query key=value", required = false)
-        public Map<String, ?> signatureQuery = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--signature-release"}, description = "The body signatureRelease SampleQcAnalysisParams web service parameter", required = false, arity = 1)
         public String signatureRelease;

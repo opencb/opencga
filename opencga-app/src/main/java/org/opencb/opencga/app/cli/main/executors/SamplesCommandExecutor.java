@@ -129,8 +129,9 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        SampleAclUpdateParams sampleAclUpdateParams = new SampleAclUpdateParams();
+        SampleAclUpdateParams sampleAclUpdateParams= null;
         if (commandOptions.jsonDataModel) {
+            sampleAclUpdateParams = new SampleAclUpdateParams();
             RestResponse<ObjectMap> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(sampleAclUpdateParams));
@@ -139,13 +140,16 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             sampleAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), SampleAclUpdateParams.class);
         } else {
-            sampleAclUpdateParams.setPermissions(commandOptions.permissions);
-            sampleAclUpdateParams.setSample(commandOptions.sample);
-            sampleAclUpdateParams.setIndividual(commandOptions.individual);
-            sampleAclUpdateParams.setFamily(commandOptions.family);
-            sampleAclUpdateParams.setFile(commandOptions.file);
-            sampleAclUpdateParams.setCohort(commandOptions.cohort);
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
+            putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
+            putNestedIfNotEmpty(beanParams, "individual",commandOptions.individual, true);
+            putNestedIfNotEmpty(beanParams, "family",commandOptions.family, true);
+            putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
+            putNestedIfNotEmpty(beanParams, "cohort",commandOptions.cohort, true);
 
+            sampleAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(beanParams.toJson(), SampleAclUpdateParams.class);
         }
         return openCGAClient.getSampleClient().updateAcl(commandOptions.members, commandOptions.action, sampleAclUpdateParams, queryParams);
     }
@@ -194,8 +198,9 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        TsvAnnotationParams tsvAnnotationParams = new TsvAnnotationParams();
+        TsvAnnotationParams tsvAnnotationParams= null;
         if (commandOptions.jsonDataModel) {
+            tsvAnnotationParams = new TsvAnnotationParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(tsvAnnotationParams));
@@ -204,8 +209,11 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), TsvAnnotationParams.class);
         } else {
-            tsvAnnotationParams.setContent(commandOptions.content);
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "content",commandOptions.content, true);
 
+            tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(beanParams.toJson(), TsvAnnotationParams.class);
         }
         return openCGAClient.getSampleClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
     }
@@ -226,8 +234,9 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        SampleCreateParams sampleCreateParams = new SampleCreateParams();
+        SampleCreateParams sampleCreateParams= null;
         if (commandOptions.jsonDataModel) {
+            sampleCreateParams = new SampleCreateParams();
             RestResponse<Sample> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(sampleCreateParams));
@@ -236,53 +245,33 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             sampleCreateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), SampleCreateParams.class);
         } else {
-            // Generate beans for nested objects
-            ExternalSource sourceParam = new ExternalSource();
-            sourceParam.setId(commandOptions.sourceId);
-            sourceParam.setName(commandOptions.sourceName);
-            sourceParam.setDescription(commandOptions.sourceDescription);
-            sourceParam.setSource(commandOptions.sourceSource);
-            sourceParam.setUrl(commandOptions.sourceUrl);
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "individualId",commandOptions.individualId, true);
+            putNestedIfNotEmpty(beanParams, "source.id",commandOptions.sourceId, true);
+            putNestedIfNotEmpty(beanParams, "source.name",commandOptions.sourceName, true);
+            putNestedIfNotEmpty(beanParams, "source.description",commandOptions.sourceDescription, true);
+            putNestedIfNotEmpty(beanParams, "source.source",commandOptions.sourceSource, true);
+            putNestedIfNotEmpty(beanParams, "source.url",commandOptions.sourceUrl, true);
+            putNestedIfNotEmpty(beanParams, "processing.preparationMethod",commandOptions.processingPreparationMethod, true);
+            putNestedIfNotEmpty(beanParams, "processing.extractionMethod",commandOptions.processingExtractionMethod, true);
+            putNestedIfNotEmpty(beanParams, "processing.labSampleId",commandOptions.processingLabSampleId, true);
+            putNestedIfNotEmpty(beanParams, "processing.quantity",commandOptions.processingQuantity, true);
+            putNestedIfNotEmpty(beanParams, "processing.date",commandOptions.processingDate, true);
+            putNestedIfNotEmpty(beanParams, "collection.type",commandOptions.collectionType, true);
+            putNestedIfNotEmpty(beanParams, "collection.quantity",commandOptions.collectionQuantity, true);
+            putNestedIfNotEmpty(beanParams, "collection.method",commandOptions.collectionMethod, true);
+            putNestedIfNotEmpty(beanParams, "collection.date",commandOptions.collectionDate, true);
+            putNestedIfNotNull(beanParams, "somatic",commandOptions.somatic, true);
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
-            SampleProcessing processingParam = new SampleProcessing();
-            //processingParam.setProduct(commandOptions.processingProduct);  // Unsupported param. FIXME
-            processingParam.setPreparationMethod(commandOptions.processingPreparationMethod);
-            processingParam.setExtractionMethod(commandOptions.processingExtractionMethod);
-            processingParam.setLabSampleId(commandOptions.processingLabSampleId);
-            processingParam.setQuantity(commandOptions.processingQuantity);
-            processingParam.setDate(commandOptions.processingDate);
-            processingParam.setAttributes(new HashMap<>(commandOptions.processingAttributes));
-
-            SampleCollection collectionParam = new SampleCollection();
-            //collectionParam.setFrom(commandOptions.collectionFrom);  // Unsupported param. FIXME
-            collectionParam.setType(commandOptions.collectionType);
-            collectionParam.setQuantity(commandOptions.collectionQuantity);
-            collectionParam.setMethod(commandOptions.collectionMethod);
-            collectionParam.setDate(commandOptions.collectionDate);
-            collectionParam.setAttributes(new HashMap<>(commandOptions.collectionAttributes));
-
-            StatusParams statusParam = new StatusParams();
-            statusParam.setId(commandOptions.statusId);
-            statusParam.setName(commandOptions.statusName);
-            statusParam.setDescription(commandOptions.statusDescription);
-
-            //Set main body params
-            sampleCreateParams.setId(commandOptions.id);
-            sampleCreateParams.setDescription(commandOptions.description);
-            sampleCreateParams.setCreationDate(commandOptions.creationDate);
-            sampleCreateParams.setModificationDate(commandOptions.modificationDate);
-            sampleCreateParams.setIndividualId(commandOptions.individualId);
-            sampleCreateParams.setSource(sourceParam);
-            sampleCreateParams.setProcessing(processingParam);
-            sampleCreateParams.setCollection(collectionParam);
-            //sampleCreateParams.setPhenotypes(commandOptions.phenotypes); // Unsupported param. FIXME 
-            sampleCreateParams.setStatus(statusParam);
-            //sampleCreateParams.setAnnotationSets(commandOptions.annotationSets); // Unsupported param. FIXME 
-            sampleCreateParams.setAttributes(new HashMap<>(commandOptions.attributes));
-
-            if (commandOptions.somatic != null) {
-                sampleCreateParams.setSomatic(commandOptions.somatic);
-            }
+            sampleCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(beanParams.toJson(), SampleCreateParams.class);
         }
         return openCGAClient.getSampleClient().create(sampleCreateParams, queryParams);
     }
@@ -486,8 +475,9 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        SampleUpdateParams sampleUpdateParams = new SampleUpdateParams();
+        SampleUpdateParams sampleUpdateParams= null;
         if (commandOptions.jsonDataModel) {
+            sampleUpdateParams = new SampleUpdateParams();
             RestResponse<Sample> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(sampleUpdateParams));
@@ -496,59 +486,34 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             sampleUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), SampleUpdateParams.class);
         } else {
-            // Generate beans for nested objects
-            ExternalSource sourceParam = new ExternalSource();
-            sourceParam.setId(commandOptions.sourceId);
-            sourceParam.setName(commandOptions.sourceName);
-            sourceParam.setDescription(commandOptions.sourceDescription);
-            sourceParam.setSource(commandOptions.sourceSource);
-            sourceParam.setUrl(commandOptions.sourceUrl);
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "individualId",commandOptions.individualId, true);
+            putNestedIfNotEmpty(beanParams, "source.id",commandOptions.sourceId, true);
+            putNestedIfNotEmpty(beanParams, "source.name",commandOptions.sourceName, true);
+            putNestedIfNotEmpty(beanParams, "source.description",commandOptions.sourceDescription, true);
+            putNestedIfNotEmpty(beanParams, "source.source",commandOptions.sourceSource, true);
+            putNestedIfNotEmpty(beanParams, "source.url",commandOptions.sourceUrl, true);
+            putNestedIfNotEmpty(beanParams, "processing.preparationMethod",commandOptions.processingPreparationMethod, true);
+            putNestedIfNotEmpty(beanParams, "processing.extractionMethod",commandOptions.processingExtractionMethod, true);
+            putNestedIfNotEmpty(beanParams, "processing.labSampleId",commandOptions.processingLabSampleId, true);
+            putNestedIfNotEmpty(beanParams, "processing.quantity",commandOptions.processingQuantity, true);
+            putNestedIfNotEmpty(beanParams, "processing.date",commandOptions.processingDate, true);
+            putNestedIfNotEmpty(beanParams, "collection.type",commandOptions.collectionType, true);
+            putNestedIfNotEmpty(beanParams, "collection.quantity",commandOptions.collectionQuantity, true);
+            putNestedIfNotEmpty(beanParams, "collection.method",commandOptions.collectionMethod, true);
+            putNestedIfNotEmpty(beanParams, "collection.date",commandOptions.collectionDate, true);
+            putNestedIfNotNull(beanParams, "qualityControl.files",commandOptions.qualityControlFiles, true);
+            putNestedIfNotNull(beanParams, "somatic",commandOptions.somatic, true);
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
-            SampleProcessing processingParam = new SampleProcessing();
-            //processingParam.setProduct(commandOptions.processingProduct);  // Unsupported param. FIXME
-            processingParam.setPreparationMethod(commandOptions.processingPreparationMethod);
-            processingParam.setExtractionMethod(commandOptions.processingExtractionMethod);
-            processingParam.setLabSampleId(commandOptions.processingLabSampleId);
-            processingParam.setQuantity(commandOptions.processingQuantity);
-            processingParam.setDate(commandOptions.processingDate);
-            processingParam.setAttributes(new HashMap<>(commandOptions.processingAttributes));
-
-            SampleCollection collectionParam = new SampleCollection();
-            //collectionParam.setFrom(commandOptions.collectionFrom);  // Unsupported param. FIXME
-            collectionParam.setType(commandOptions.collectionType);
-            collectionParam.setQuantity(commandOptions.collectionQuantity);
-            collectionParam.setMethod(commandOptions.collectionMethod);
-            collectionParam.setDate(commandOptions.collectionDate);
-            collectionParam.setAttributes(new HashMap<>(commandOptions.collectionAttributes));
-
-            SampleQualityControl qualityControlParam = new SampleQualityControl();
-            qualityControlParam.setFiles(splitWithTrim(commandOptions.qualityControlFiles));
-            //qualityControlParam.setComments(commandOptions.qualityControlComments);  // Unsupported param. FIXME
-            //qualityControlParam.setVariant(commandOptions.qualityControlVariant);  // Unsupported param. FIXME
-
-            StatusParams statusParam = new StatusParams();
-            statusParam.setId(commandOptions.statusId);
-            statusParam.setName(commandOptions.statusName);
-            statusParam.setDescription(commandOptions.statusDescription);
-
-            //Set main body params
-            sampleUpdateParams.setId(commandOptions.id);
-            sampleUpdateParams.setDescription(commandOptions.description);
-            sampleUpdateParams.setCreationDate(commandOptions.creationDate);
-            sampleUpdateParams.setModificationDate(commandOptions.modificationDate);
-            sampleUpdateParams.setIndividualId(commandOptions.individualId);
-            sampleUpdateParams.setSource(sourceParam);
-            sampleUpdateParams.setProcessing(processingParam);
-            sampleUpdateParams.setCollection(collectionParam);
-            sampleUpdateParams.setQualityControl(qualityControlParam);
-            //sampleUpdateParams.setPhenotypes(commandOptions.phenotypes); // Unsupported param. FIXME 
-            //sampleUpdateParams.setAnnotationSets(commandOptions.annotationSets); // Unsupported param. FIXME 
-            sampleUpdateParams.setAttributes(new HashMap<>(commandOptions.attributes));
-            sampleUpdateParams.setStatus(statusParam);
-
-            if (commandOptions.somatic != null) {
-                sampleUpdateParams.setSomatic(commandOptions.somatic);
-            }
+            sampleUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(beanParams.toJson(), SampleUpdateParams.class);
         }
         return openCGAClient.getSampleClient().update(commandOptions.samples, sampleUpdateParams, queryParams);
     }
@@ -567,8 +532,9 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        ObjectMap objectMap = new ObjectMap();
+        ObjectMap objectMap= null;
         if (commandOptions.jsonDataModel) {
+            objectMap = new ObjectMap();
             RestResponse<Sample> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(objectMap));

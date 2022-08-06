@@ -741,7 +741,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     }
 
                     return endWrite(tmpStartTime, update);
-                }, null);
+                }, null, null);
             }
 
             return endWrite(tmpStartTime, 1, 1, Collections.emptyList());

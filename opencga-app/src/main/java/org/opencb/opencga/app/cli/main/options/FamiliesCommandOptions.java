@@ -238,9 +238,6 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--status-description"}, description = "Field to store information of the item", required = false, arity = 1)
         public String statusDescription;
     
-        @DynamicParameter(names = {"--body_attributes"}, description = "A map of customizable attributes. Use: --body_attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> bodyAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
-    
     }
 
     @Parameters(commandNames = {"distinct"}, commandDescription ="Family distinct method")
@@ -510,9 +507,6 @@ public class FamiliesCommandOptions {
     
         @Parameter(names = {"--status-description"}, description = "Field to store information of the item", required = false, arity = 1)
         public String statusDescription;
-    
-        @DynamicParameter(names = {"--attributes"}, description = "A map of customizable attributes. Use: --attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 

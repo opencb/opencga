@@ -153,9 +153,6 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @DynamicParameter(names = {"--interpretation-default-filter"}, description = "The body defaultFilter InterpretationStudyConfiguration web service parameter. Use: --interpretation-default-filter key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> interpretationDefaultFilter = new HashMap<>(); //Dynamic parameters must be initialized;
-    
     }
 
     @Parameters(commandNames = {"create"}, commandDescription ="Create a new clinical analysis")
@@ -203,6 +200,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--family-id"}, description = "The body id FamilyParam web service parameter", required = false, arity = 1)
         public String familyId;
     
+        @Parameter(names = {"--panels"}, description = "The body panels ClinicalAnalysisCreateParams web service parameter", required = false, arity = 1)
+        public String panels;
+    
         @Parameter(names = {"--panel-lock"}, description = "The body panelLock ClinicalAnalysisCreateParams web service parameter", required = false, arity = 1)
         public Boolean panelLock;
     
@@ -214,9 +214,6 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--report-overview"}, description = "Report overview.", required = false, arity = 1)
         public String reportOverview;
-    
-        @Parameter(names = {"--report-discussion"}, description = "Report discussion.", required = false, arity = 1)
-        public String reportDiscussion;
     
         @Parameter(names = {"--report-logo"}, description = "Report logo.", required = false, arity = 1)
         public String reportLogo;
@@ -242,11 +239,11 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--interpretation-modification-date"}, description = "The last modification date of the item", required = false, arity = 1)
         public String interpretationModificationDate;
     
+        @Parameter(names = {"--interpretation-panels"}, description = "The body panels InterpretationCreateParams web service parameter", required = false, arity = 1)
+        public String interpretationPanels;
+    
         @Parameter(names = {"--interpretation-locked"}, description = "The body locked InterpretationCreateParams web service parameter", required = false, arity = 1)
         public Boolean interpretationLocked;
-    
-        @DynamicParameter(names = {"--interpretation-attributes"}, description = "A map of customizable attributes. Use: --interpretation-attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> interpretationAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--quality-control-summary"}, description = "The body summary ClinicalAnalysisQualityControlUpdateParam web service parameter", required = false, arity = 1)
         public String qualityControlSummary;
@@ -262,9 +259,6 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--priority-id"}, description = "The body id PriorityParam web service parameter", required = false, arity = 1)
         public String priorityId;
-    
-        @DynamicParameter(names = {"--attributes"}, description = "A map of customizable attributes. Use: --attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--status-id"}, description = "The body id StatusParam web service parameter", required = false, arity = 1)
         public String statusId;
@@ -1614,6 +1608,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--saved-filter"}, description = "Use a saved filter at User level", required = false, arity = 1)
         public String savedFilter; 
     
+        @Parameter(names = {"--include-interpretation"}, description = "Interpretation ID to include the fields related to this interpretation", required = false, arity = 1)
+        public String includeInterpretation; 
+    
         @Parameter(names = {"--id"}, description = "List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T", required = false, arity = 1)
         public String id; 
     
@@ -1848,6 +1845,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--disorder-id"}, description = "The body id DisorderReferenceParam web service parameter", required = false, arity = 1)
         public String disorderId;
     
+        @Parameter(names = {"--panels"}, description = "The body panels ClinicalAnalysisUpdateParams web service parameter", required = false, arity = 1)
+        public String panels;
+    
         @Parameter(names = {"--panel-lock"}, description = "The body panelLock ClinicalAnalysisUpdateParams web service parameter", required = false, arity = 1)
         public Boolean panelLock;
     
@@ -1868,9 +1868,6 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--report-overview"}, description = "Report overview.", required = false, arity = 1)
         public String reportOverview;
-    
-        @Parameter(names = {"--report-discussion"}, description = "Report discussion.", required = false, arity = 1)
-        public String reportDiscussion;
     
         @Parameter(names = {"--report-logo"}, description = "Report logo.", required = false, arity = 1)
         public String reportLogo;
@@ -1898,9 +1895,6 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--priority-id"}, description = "The body id PriorityParam web service parameter", required = false, arity = 1)
         public String priorityId;
-    
-        @DynamicParameter(names = {"--attributes"}, description = "A map of customizable attributes. Use: --attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--status-id"}, description = "The body id StatusParam web service parameter", required = false, arity = 1)
         public String statusId;
@@ -1984,14 +1978,14 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--method-commit"}, description = "The body web service commit parameter", required = false, arity = 1)
         public String methodCommit;
     
+        @Parameter(names = {"--panels"}, description = "The body panels InterpretationCreateParams web service parameter", required = false, arity = 1)
+        public String panels;
+    
         @Parameter(names = {"--locked"}, description = "The body locked InterpretationCreateParams web service parameter", required = false, arity = 1)
         public Boolean locked;
     
         @Parameter(names = {"--status-id"}, description = "The body id StatusParam web service parameter", required = false, arity = 1)
         public String statusId;
-    
-        @DynamicParameter(names = {"--attributes"}, description = "A map of customizable attributes. Use: --attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 
@@ -2118,14 +2112,14 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--modification-date", "--md"}, description = "The last modification date of the item", required = false, arity = 1)
         public String modificationDate;
     
+        @Parameter(names = {"--panels"}, description = "The body panels InterpretationUpdateParams web service parameter", required = false, arity = 1)
+        public String panels;
+    
         @Parameter(names = {"--status-id"}, description = "The body id StatusParam web service parameter", required = false, arity = 1)
         public String statusId;
     
         @Parameter(names = {"--locked"}, description = "The body locked InterpretationUpdateParams web service parameter", required = false, arity = 1)
         public Boolean locked;
-    
-        @DynamicParameter(names = {"--attributes"}, description = "A map of customizable attributes. Use: --attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 

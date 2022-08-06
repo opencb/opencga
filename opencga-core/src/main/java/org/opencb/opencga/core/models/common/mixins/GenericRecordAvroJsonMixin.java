@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.common;
+package org.opencb.opencga.core.models.common.mixins;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 

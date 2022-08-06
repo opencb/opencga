@@ -21,8 +21,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.common.ExternalSource;
+import org.opencb.opencga.core.models.common.StatusParams;
 
 import java.util.Collections;
 import java.util.List;

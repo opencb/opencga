@@ -96,7 +96,7 @@ public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysi
         PROBAND_ID("proband.id", TEXT, ""),
         PROBAND_UID("proband.uid", LONG, ""),
         PROBAND_SAMPLES_ID("proband.samples.id", TEXT_ARRAY, ""),
-        PROBAND_SAMPLES_UID("proband.samples.uid", INTEGER, ""),
+        PROBAND_SAMPLES_UID("proband.samples.uid", LONG_ARRAY, ""),
         INTERPRETATION("interpretation", TEXT, ""),
         INTERPRETATION_ID("interpretation.id", TEXT, ""),
         INTERPRETATION_UID("interpretation.uid", LONG, ""),

@@ -261,9 +261,6 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--processing-date"}, description = "Date when the sample was processed in the lab.", required = false, arity = 1)
         public String processingDate;
     
-        @DynamicParameter(names = {"--processing-attributes"}, description = "Attributes of the processing.. Use: --processing-attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> processingAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
-    
         @Parameter(names = {"--collection-type"}, description = "Type of the sample collection.", required = false, arity = 1)
         public String collectionType;
     
@@ -276,9 +273,6 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--collection-date"}, description = "Date when the sample was collected.", required = false, arity = 1)
         public String collectionDate;
     
-        @DynamicParameter(names = {"--collection-attributes"}, description = "Attributes of the sample collection.. Use: --collection-attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> collectionAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
-    
         @Parameter(names = {"--somatic"}, description = "The body somatic SampleCreateParams web service parameter", required = false, arity = 1)
         public Boolean somatic;
     
@@ -290,9 +284,6 @@ public class SamplesCommandOptions {
     
         @Parameter(names = {"--status-description"}, description = "Field to store information of the item", required = false, arity = 1)
         public String statusDescription;
-    
-        @DynamicParameter(names = {"--attributes"}, description = "A map of customizable attributes. Use: --attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 
@@ -728,9 +719,6 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--processing-date"}, description = "Date when the sample was processed in the lab.", required = false, arity = 1)
         public String processingDate;
     
-        @DynamicParameter(names = {"--processing-attributes"}, description = "Attributes of the processing.. Use: --processing-attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> processingAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
-    
         @Parameter(names = {"--collection-type"}, description = "Type of the sample collection.", required = false, arity = 1)
         public String collectionType;
     
@@ -743,17 +731,11 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--collection-date"}, description = "Date when the sample was collected.", required = false, arity = 1)
         public String collectionDate;
     
-        @DynamicParameter(names = {"--collection-attributes"}, description = "Attributes of the sample collection.. Use: --collection-attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> collectionAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
-    
         @Parameter(names = {"--quality-control-files"}, description = "Files used for the quality control of the sample.", required = false, arity = 1)
         public String qualityControlFiles;
     
         @Parameter(names = {"--somatic"}, description = "The body somatic SampleUpdateParams web service parameter", required = false, arity = 1)
         public Boolean somatic;
-    
-        @DynamicParameter(names = {"--attributes"}, description = "A map of customizable attributes. Use: --attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--status-id"}, description = "The body id StatusParams web service parameter", required = false, arity = 1)
         public String statusId;

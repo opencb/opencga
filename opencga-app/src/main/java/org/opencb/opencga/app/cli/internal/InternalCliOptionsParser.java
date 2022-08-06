@@ -38,6 +38,7 @@ import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions
 import static org.opencb.opencga.app.cli.internal.options.StudyCommandOptions.TemplateLoader.TEMPLATE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.ExomiserAnalysisCommandOptions.EXOMISER_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyQcCommandOptions.FAMILY_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
@@ -173,6 +174,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(PLINK_RUN_COMMAND, variantCommandOptions.plinkCommandOptions);
         variantSubCommands.addCommand(RVTESTS_RUN_COMMAND, variantCommandOptions.rvtestsCommandOptions);
         variantSubCommands.addCommand(GATK_RUN_COMMAND, variantCommandOptions.gatkCommandOptions);
+        variantSubCommands.addCommand(EXOMISER_RUN_COMMAND, variantCommandOptions.exomiserAnalysisCommandOptions);
 
         alignmentCommandOptions = new AlignmentCommandOptions(commonCommandOptions, jCommander, false);
         jCommander.addCommand("alignment", alignmentCommandOptions);
@@ -216,6 +218,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         clinicalSubCommands.addCommand("run-interpreter-cancer-tiering", clinicalCommandOptions.cancerTieringCommandOptions);
         clinicalSubCommands.addCommand(RGA_INDEX_RUN_COMMAND, clinicalCommandOptions.rgaSecondaryIndexCommandOptions);
         clinicalSubCommands.addCommand(RGA_AUX_INDEX_RUN_COMMAND, clinicalCommandOptions.rgaAuxiliarSecondaryIndexCommandOptions);
+        clinicalSubCommands.addCommand("run-interpreter-exomiser", clinicalCommandOptions.exomiserInterpretationCommandOptions);
 
         fileCommandOptions = new FileCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("files", fileCommandOptions);

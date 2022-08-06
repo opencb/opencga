@@ -102,8 +102,9 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
 
-        ProjectCreateParams projectCreateParams = new ProjectCreateParams();
+        ProjectCreateParams projectCreateParams= null;
         if (commandOptions.jsonDataModel) {
+            projectCreateParams = new ProjectCreateParams();
             RestResponse<Project> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(projectCreateParams));
@@ -112,28 +113,21 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
             projectCreateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), ProjectCreateParams.class);
         } else {
-            // Generate beans for nested objects
-            ProjectOrganism organismParam = new ProjectOrganism();
-            organismParam.setScientificName(commandOptions.organismScientificName);
-            organismParam.setCommonName(commandOptions.organismCommonName);
-            organismParam.setAssembly(commandOptions.organismAssembly);
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "organism.scientificName",commandOptions.organismScientificName, true);
+            putNestedIfNotEmpty(beanParams, "organism.commonName",commandOptions.organismCommonName, true);
+            putNestedIfNotEmpty(beanParams, "organism.assembly",commandOptions.organismAssembly, true);
+            putNestedIfNotEmpty(beanParams, "cellbase.url",commandOptions.cellbaseUrl, true);
+            putNestedIfNotEmpty(beanParams, "cellbase.version",commandOptions.cellbaseVersion, true);
+            putNestedIfNotEmpty(beanParams, "cellbase.preferred",commandOptions.cellbasePreferred, true);
 
-            CellBaseConfiguration cellbaseParam = new CellBaseConfiguration();
-            cellbaseParam.setUrl(commandOptions.cellbaseUrl);
-            cellbaseParam.setVersion(commandOptions.cellbaseVersion);
-            //cellbaseParam.setDatabase(commandOptions.cellbaseDatabase);  // Unsupported param. FIXME
-            cellbaseParam.setPreferred(commandOptions.cellbasePreferred);
-
-            //Set main body params
-            projectCreateParams.setId(commandOptions.id);
-            projectCreateParams.setName(commandOptions.name);
-            projectCreateParams.setDescription(commandOptions.description);
-            projectCreateParams.setCreationDate(commandOptions.creationDate);
-            projectCreateParams.setModificationDate(commandOptions.modificationDate);
-            projectCreateParams.setOrganism(organismParam);
-            projectCreateParams.setCellbase(cellbaseParam);
-            projectCreateParams.setAttributes(new HashMap<>(commandOptions.attributes));
-
+            projectCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(beanParams.toJson(), ProjectCreateParams.class);
         }
         return openCGAClient.getProjectClient().create(projectCreateParams, queryParams);
     }
@@ -233,8 +227,9 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
 
-        ProjectUpdateParams projectUpdateParams = new ProjectUpdateParams();
+        ProjectUpdateParams projectUpdateParams= null;
         if (commandOptions.jsonDataModel) {
+            projectUpdateParams = new ProjectUpdateParams();
             RestResponse<Project> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(projectUpdateParams));
@@ -243,20 +238,17 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
             projectUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), ProjectUpdateParams.class);
         } else {
-            // Generate beans for nested objects
-            ProjectOrganism organismParam = new ProjectOrganism();
-            organismParam.setScientificName(commandOptions.organismScientificName);
-            organismParam.setCommonName(commandOptions.organismCommonName);
-            organismParam.setAssembly(commandOptions.organismAssembly);
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "organism.scientificName",commandOptions.organismScientificName, true);
+            putNestedIfNotEmpty(beanParams, "organism.commonName",commandOptions.organismCommonName, true);
+            putNestedIfNotEmpty(beanParams, "organism.assembly",commandOptions.organismAssembly, true);
 
-            //Set main body params
-            projectUpdateParams.setName(commandOptions.name);
-            projectUpdateParams.setDescription(commandOptions.description);
-            projectUpdateParams.setCreationDate(commandOptions.creationDate);
-            projectUpdateParams.setModificationDate(commandOptions.modificationDate);
-            projectUpdateParams.setOrganism(organismParam);
-            projectUpdateParams.setAttributes(new HashMap<>(commandOptions.attributes));
-
+            projectUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(beanParams.toJson(), ProjectUpdateParams.class);
         }
         return openCGAClient.getProjectClient().update(commandOptions.project, projectUpdateParams, queryParams);
     }

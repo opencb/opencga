@@ -117,8 +117,9 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
 
         UsersCommandOptions.CreateCommandOptions commandOptions = usersCommandOptions.createCommandOptions;
 
-        UserCreateParams userCreateParams = new UserCreateParams();
+        UserCreateParams userCreateParams= null;
         if (commandOptions.jsonDataModel) {
+            userCreateParams = new UserCreateParams();
             RestResponse<User> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(userCreateParams));
@@ -127,12 +128,15 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
             userCreateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), UserCreateParams.class);
         } else {
-            userCreateParams.setId(commandOptions.id);
-            userCreateParams.setName(commandOptions.name);
-            userCreateParams.setEmail(commandOptions.email);
-            userCreateParams.setPassword(commandOptions.password);
-            userCreateParams.setOrganization(commandOptions.organization);
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
+            putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
+            putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
 
+            userCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(beanParams.toJson(), UserCreateParams.class);
         }
         return openCGAClient.getUserClient().create(userCreateParams);
     }
@@ -151,8 +155,9 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
 
         UsersCommandOptions.PasswordCommandOptions commandOptions = usersCommandOptions.passwordCommandOptions;
 
-        PasswordChangeParams passwordChangeParams = new PasswordChangeParams();
+        PasswordChangeParams passwordChangeParams= null;
         if (commandOptions.jsonDataModel) {
+            passwordChangeParams = new PasswordChangeParams();
             RestResponse<User> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(passwordChangeParams));
@@ -161,11 +166,14 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
             passwordChangeParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), PasswordChangeParams.class);
         } else {
-            passwordChangeParams.setUser(commandOptions.user);
-            passwordChangeParams.setPassword(commandOptions.password);
-            passwordChangeParams.setNewPassword(commandOptions.newPassword);
-            passwordChangeParams.setReset(commandOptions.reset);
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "user",commandOptions.user, true);
+            putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
+            putNestedIfNotEmpty(beanParams, "newPassword",commandOptions.newPassword, true);
+            putNestedIfNotEmpty(beanParams, "reset",commandOptions.reset, true);
 
+            passwordChangeParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(beanParams.toJson(), PasswordChangeParams.class);
         }
         return openCGAClient.getUserClient().password(passwordChangeParams);
     }
@@ -205,8 +213,9 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
-        ConfigUpdateParams configUpdateParams = new ConfigUpdateParams();
+        ConfigUpdateParams configUpdateParams= null;
         if (commandOptions.jsonDataModel) {
+            configUpdateParams = new ConfigUpdateParams();
             RestResponse<ObjectMap> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(configUpdateParams));
@@ -215,9 +224,11 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
             configUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), ConfigUpdateParams.class);
         } else {
-            configUpdateParams.setId(commandOptions.id);
-            configUpdateParams.setConfiguration(new HashMap<>(commandOptions.configuration));
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
 
+            configUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(beanParams.toJson(), ConfigUpdateParams.class);
         }
         return openCGAClient.getUserClient().updateConfigs(commandOptions.user, configUpdateParams, queryParams);
     }
@@ -269,8 +280,9 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
 
-        UserUpdateParams userUpdateParams = new UserUpdateParams();
+        UserUpdateParams userUpdateParams= null;
         if (commandOptions.jsonDataModel) {
+            userUpdateParams = new UserUpdateParams();
             RestResponse<User> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(userUpdateParams));
@@ -279,11 +291,13 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
             userUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), UserUpdateParams.class);
         } else {
-            userUpdateParams.setName(commandOptions.name);
-            userUpdateParams.setEmail(commandOptions.email);
-            userUpdateParams.setOrganization(commandOptions.organization);
-            userUpdateParams.setAttributes(new HashMap<>(commandOptions.attributes));
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
+            putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
 
+            userUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(beanParams.toJson(), UserUpdateParams.class);
         }
         return openCGAClient.getUserClient().update(commandOptions.user, userUpdateParams, queryParams);
     }

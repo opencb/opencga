@@ -461,7 +461,9 @@ public class ParamConstants {
     public static final String INTERPRETATION_PRIMARY_FINDINGS_IDS_DESCRIPTION = "Interpretation primary findings";
     public static final String INTERPRETATION_SECONDARY_FINDINGS_IDS_DESCRIPTION = "Interpretation secondary findings";
     public static final String INTERPRETATION_CREATION_DATE_DESCRIPTION = "Interpretation " + CREATION_DATE_DESCRIPTION;
-
+    public static final String INCLUDE_INTERPRETATION = "includeInterpretation";
+    public static final String INCLUDE_INTERPRETATION_DESCRIPTION = "Interpretation ID to include the fields related to this"
+        + " interpretation";
     // ---------------------------------------------
     public static final String INTERPRETATION_MODIFICATION_DATE_DESCRIPTION = "Interpretation " + MODIFICATION_DATE_DESCRIPTION;
     public static final String INTERPRETATION_STATUS_DESCRIPTION = STATUS_DESCRIPTION;

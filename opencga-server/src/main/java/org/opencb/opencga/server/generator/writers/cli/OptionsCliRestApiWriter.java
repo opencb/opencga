@@ -212,9 +212,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                         sb.append("        public " + getValidValue(bodyRestParameter) + " "
                                                 + getVariableName(bodyRestParameter) + ";\n");
                                         sb.append("    \n");
-                                    } else if ((bodyRestParameter.getType().equals("Map") && bodyRestParameter.getData() == null)
-                                            || bodyRestParameter.getType().equals("ObjectMap")
-                                            || bodyRestParameter.getType().equals("Query")) {
+                                    } else if (bodyRestParameter.getType().equals("Query")) {
                                         String names = getShortCuts(bodyRestParameter, config);
                                         sb.append("        @DynamicParameter(names = {" + names + "}, " +
                                                 "description"
@@ -224,6 +222,16 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
 
                                         sb.append("        public " + getValidValue(bodyRestParameter) + " "
                                                 + getVariableName(bodyRestParameter) + " = new HashMap<>(); //Dynamic parameters must be initialized;\n");
+                                        sb.append("    \n");
+                                    } else if (isReferenceParam(bodyRestParameter.getGenericType())) {
+                                        sb.append("        @Parameter(names = {" + getShortCuts(bodyRestParameter, config) + "}, " +
+                                                "description"
+                                                + " = \"" + bodyRestParameter.getDescription().replaceAll("\"", "'") + "\", required = "
+                                                + (bodyRestParameter.isRequired() || isMandatory(commandName,
+                                                getVariableName(bodyRestParameter))) + ", arity = 1)\n");
+
+                                        sb.append("        public " + getValidValue(bodyRestParameter) + " "
+                                                + getVariableName(bodyRestParameter) + ";\n");
                                         sb.append("    \n");
                                     } else {
                                         logger.warn("Skipping parameter '{}' type '{}' at command '{} {}'",
@@ -241,6 +249,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
         }
         return sb.toString();
     }
+
 
     private String getProjectionField(RestParameter restParameter, CategoryConfig config) {
         StringBuilder sb = new StringBuilder();

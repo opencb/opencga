@@ -16,23 +16,24 @@
 
 package org.opencb.opencga.core.models.study;
 
-import org.opencb.opencga.core.models.AclParams;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.ParamConstants;
 
-public class StudyAclUpdateParams extends AclParams {
+public class StudyAclUpdateParams {
+
 
     @DataField(description = ParamConstants.STUDY_ACL_UPDATE_PARAMS_STUDY_DESCRIPTION)
     private String study;
     @DataField(description = ParamConstants.STUDY_ACL_UPDATE_PARAMS_TEMPLATE_DESCRIPTION)
     private String template;
+    private String permissions;
 
     public StudyAclUpdateParams() {
     }
 
     public StudyAclUpdateParams(String permissions, String study, String template) {
-        super(permissions);
+        this.permissions = permissions;
         this.study = study;
         this.template = template;
     }
@@ -45,6 +46,15 @@ public class StudyAclUpdateParams extends AclParams {
         sb.append(", permissions='").append(permissions).append('\'');
         sb.append('}');
         return sb.toString();
+    }
+
+    public String getPermissions() {
+        return permissions;
+    }
+
+    public StudyAclUpdateParams setPermissions(String permissions) {
+        this.permissions = permissions;
+        return this;
     }
 
     public String getStudy() {
@@ -62,11 +72,6 @@ public class StudyAclUpdateParams extends AclParams {
 
     public StudyAclUpdateParams setTemplate(String template) {
         this.template = template;
-        return this;
-    }
-
-    public StudyAclUpdateParams setPermissions(String permissions) {
-        super.setPermissions(permissions);
         return this;
     }
 

@@ -28,6 +28,7 @@ import org.opencb.opencga.server.generator.utils.CommandLineUtils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -44,6 +45,112 @@ public abstract class ParentClientRestApiWriter {
         this.restApi = restApi;
         this.config = config;
         init();
+    }
+
+    protected static String reverseCommandName(String commandName) {
+        if (commandName.contains("-")) {
+            String[] phrase = commandName.split("-");
+            if (phrase.length == 2) {
+                commandName = getKebabCase(phrase[1]) + "-" + getKebabCase(phrase[0]);
+            } else if (phrase.length == 3) {
+                commandName = getKebabCase(phrase[1]) + "-" + getKebabCase(phrase[2]) + "-" + getKebabCase(phrase[0]);
+            }
+        }
+        return commandName.toLowerCase();
+    }
+
+    public static String getCommandName(RestCategory restCategory, RestEndpoint restEndpoint) {
+        return getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
+    }
+
+    protected static String getMethodName(RestCategory restCategory, RestEndpoint restEndpoint) {
+
+        String methodName = "";
+        String subpath = restEndpoint.getPath().replace(restCategory.getPath() + "/", "");
+        return getMethodName(subpath);
+    }
+
+    protected static String getMethodName(String subpath) {
+        String methodName = "";
+        // String subpath = restEndpoint.getPath().replace(restCategory.getPath() + "/", "");
+        String[] items = subpath.split("/");
+        if (items.length == 1) {
+            methodName = items[0];
+        } else if (items.length == 2) {
+            if (notAny(items)) {
+                methodName = items[1] + "_" + items[0];
+            } else if (items[0].contains("}") && (!items[1].contains("}"))) {
+                methodName = items[1];
+            }
+        } else if (items.length == 3) {
+            if (notAny(items)) {
+                methodName = items[2] + "_" + items[0] + "_" + items[1];
+            } else if (items[0].contains("}") && (!items[1].contains("}")) && (!items[2].contains("}"))) {
+                methodName = items[2] + "_" + items[1];
+            } else if (items[1].contains("}") && (!items[0].contains("}")) && (!items[2].contains("}"))) {
+                methodName = items[2] + "_" + items[0];
+            }
+        } else if (items.length == 4) {
+            if (notAny(items)) {
+                methodName = items[0] + "_" + items[1] + "_" + items[2] + "_" + items[3];
+//                 methodName = items[3] + "_" + items[1] + "_" + items[2];
+            } else if (items[0].contains("}") && items[2].contains("}") && (!items[1].contains("}")) && (!items[3].contains("}"))) {
+                methodName = items[3] + "_" + items[1];
+            }
+        } else if (items.length == 5) {
+            if (items[0].contains("}") && items[2].contains("}") && (!items[1].contains("}")) && (!items[3].contains("}"))
+                    && (!items[4].contains("}"))) {
+                //methodName = items[4] + "_" + items[3];
+                methodName = items[4] + "_" + items[1] + "_" + items[3];
+            } else if (!subpath.contains("{") && !subpath.contains("}")) {
+                methodName = items[4] + "_" + items[0] + "_" + items[1] + "_" + items[2] + "_" + items[3];
+            }
+        }
+
+        return methodName;
+    }
+
+    private static boolean notAny(String[] items) {
+        for (String item : items) {
+            if (item.contains("{")) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    protected static String getAsCamelCase(String s) {
+        if (s.contains("-")) {
+            s = s.replaceAll("-", "_");
+        }
+        if (s.contains(" ")) {
+            s = s.replaceAll(" ", "_");
+        }
+        return getAsCamelCase(s, "_");
+    }
+
+    protected static String getKebabCase(String camelStr) {
+        String ret = camelStr.replaceAll("([A-Z]+)([A-Z][a-z])", "$1-$2").replaceAll("([a-z])([A-Z])", "$1-$2");
+        return ret.toLowerCase();
+    }
+
+    protected static String getAsCamelCase(String s, String separator) {
+        String[] words = s.split(separator);
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < words.length; i++) {
+            String word = words[i].trim();
+            if (i == 0) {
+                word = word.isEmpty() ? word : Character.toLowerCase(word.charAt(0)) + word.substring(1);
+            } else {
+                word = word.isEmpty() ? word : Character.toUpperCase(word.charAt(0)) + word.substring(1);
+            }
+            builder.append(word);
+        }
+        return builder.toString();
+    }
+
+    protected boolean isReferenceParam(String type) {
+        return Arrays.asList("java.util.List<org.opencb.opencga.core.models.panel.PanelReferenceParam>").contains(type);
     }
 
     protected abstract String getClassImports(String key);
@@ -69,18 +176,6 @@ public abstract class ParentClientRestApiWriter {
                 e.printStackTrace();
             }
         }
-    }
-
-    protected static String reverseCommandName(String commandName) {
-        if (commandName.contains("-")) {
-            String[] phrase = commandName.split("-");
-            if (phrase.length == 2) {
-                commandName = getKebabCase(phrase[1]) + "-" + getKebabCase(phrase[0]);
-            } else if (phrase.length == 3) {
-                commandName = getKebabCase(phrase[1]) + "-" + getKebabCase(phrase[2]) + "-" + getKebabCase(phrase[0]);
-            }
-        }
-        return commandName.toLowerCase();
     }
 
     public String getCategoryCommandName(RestCategory restCategory, CategoryConfig categoryConfig) {
@@ -167,96 +262,6 @@ public abstract class ParentClientRestApiWriter {
 
     private String getCleanPath(String path) {
         return path.replace("/{apiVersion}/", "").replace("/", "_");
-    }
-
-    public static String getCommandName(RestCategory restCategory, RestEndpoint restEndpoint) {
-        return getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
-    }
-    
-    protected static String getMethodName(RestCategory restCategory, RestEndpoint restEndpoint) {
-
-        String methodName = "";
-        String subpath = restEndpoint.getPath().replace(restCategory.getPath() + "/", "");
-        return getMethodName(subpath);
-    }
-
-    protected static String getMethodName(String subpath) {
-        String methodName = "";
-        // String subpath = restEndpoint.getPath().replace(restCategory.getPath() + "/", "");
-        String[] items = subpath.split("/");
-        if (items.length == 1) {
-            methodName = items[0];
-        } else if (items.length == 2) {
-            if (notAny(items)) {
-                methodName = items[1] + "_" + items[0];
-            } else if (items[0].contains("}") && (!items[1].contains("}"))) {
-                methodName = items[1];
-            }
-        } else if (items.length == 3) {
-            if (notAny(items)) {
-                methodName = items[2] + "_" + items[0] + "_" + items[1];
-            } else if (items[0].contains("}") && (!items[1].contains("}")) && (!items[2].contains("}"))) {
-                methodName = items[2] + "_" + items[1];
-            } else if (items[1].contains("}") && (!items[0].contains("}")) && (!items[2].contains("}"))) {
-                methodName = items[2] + "_" + items[0];
-            }
-        } else if (items.length == 4) {
-            if (notAny(items)) {
-                methodName = items[0] + "_" + items[1] + "_" + items[2] + "_" + items[3];
-//                 methodName = items[3] + "_" + items[1] + "_" + items[2];
-            } else if (items[0].contains("}") && items[2].contains("}") && (!items[1].contains("}")) && (!items[3].contains("}"))) {
-                methodName = items[3] + "_" + items[1];
-            }
-        } else if (items.length == 5) {
-            if (items[0].contains("}") && items[2].contains("}") && (!items[1].contains("}")) && (!items[3].contains("}"))
-                    && (!items[4].contains("}"))) {
-                //methodName = items[4] + "_" + items[3];
-                methodName = items[4] + "_" + items[1] + "_" + items[3];
-            } else if (!subpath.contains("{") && !subpath.contains("}")) {
-                methodName = items[4] + "_" + items[0] + "_" + items[1] + "_" + items[2] + "_" + items[3];
-            }
-        }
-
-        return methodName;
-    }
-
-    private static boolean notAny(String[] items) {
-        for (String item : items) {
-            if (item.contains("{")) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    protected static String getAsCamelCase(String s) {
-        if (s.contains("-")) {
-            s = s.replaceAll("-", "_");
-        }
-        if (s.contains(" ")) {
-            s = s.replaceAll(" ", "_");
-        }
-        return getAsCamelCase(s, "_");
-    }
-
-    protected static String getKebabCase(String camelStr) {
-        String ret = camelStr.replaceAll("([A-Z]+)([A-Z][a-z])", "$1-$2").replaceAll("([a-z])([A-Z])", "$1-$2");
-        return ret.toLowerCase();
-    }
-
-    protected static String getAsCamelCase(String s, String separator) {
-        String[] words = s.split(separator);
-        StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < words.length; i++) {
-            String word = words[i].trim();
-            if (i == 0) {
-                word = word.isEmpty() ? word : Character.toLowerCase(word.charAt(0)) + word.substring(1);
-            } else {
-                word = word.isEmpty() ? word : Character.toUpperCase(word.charAt(0)) + word.substring(1);
-            }
-            builder.append(word);
-        }
-        return builder.toString();
     }
 
     public Map<String, RestCategory> getAvailableCategories() {

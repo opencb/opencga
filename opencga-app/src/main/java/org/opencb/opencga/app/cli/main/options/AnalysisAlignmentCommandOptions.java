@@ -110,9 +110,6 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--outdir"}, description = "The body outdir BwaWrapperParams web service parameter", required = false, arity = 1)
         public String outdir;
     
-        @DynamicParameter(names = {"--bwa-params"}, description = "The body bwaParams BwaWrapperParams web service parameter. Use: --bwa-params key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.String> bwaParams = new HashMap<>(); //Dynamic parameters must be initialized;
-    
     }
 
     @Parameters(commandNames = {"coverage-index-run"}, commandDescription ="Compute coverage for a list of alignment files")
@@ -317,9 +314,6 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--outdir"}, description = "The body outdir DeeptoolsWrapperParams web service parameter", required = false, arity = 1)
         public String outdir;
     
-        @DynamicParameter(names = {"--deeptools-params"}, description = "The body deeptoolsParams DeeptoolsWrapperParams web service parameter. Use: --deeptools-params key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.String> deeptoolsParams = new HashMap<>(); //Dynamic parameters must be initialized;
-    
     }
 
     @Parameters(commandNames = {"fastqc-run"}, commandDescription ="A high throughput sequence QC analysis tool")
@@ -354,9 +348,6 @@ public class AnalysisAlignmentCommandOptions {
     
         @Parameter(names = {"--outdir"}, description = "The body outdir FastqcWrapperParams web service parameter", required = false, arity = 1)
         public String outdir;
-    
-        @DynamicParameter(names = {"--fastqc-params"}, description = "The body fastqcParams FastqcWrapperParams web service parameter. Use: --fastqc-params key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.String> fastqcParams = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 
@@ -427,9 +418,6 @@ public class AnalysisAlignmentCommandOptions {
     
         @Parameter(names = {"--outdir"}, description = "The body outdir PicardWrapperParams web service parameter", required = false, arity = 1)
         public String outdir;
-    
-        @DynamicParameter(names = {"--picard-params"}, description = "The body picardParams PicardWrapperParams web service parameter. Use: --picard-params key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.String> picardParams = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 
@@ -583,9 +571,6 @@ public class AnalysisAlignmentCommandOptions {
     
         @Parameter(names = {"--outdir"}, description = "The body outdir SamtoolsWrapperParams web service parameter", required = false, arity = 1)
         public String outdir;
-    
-        @DynamicParameter(names = {"--samtools-params"}, description = "The body samtoolsParams SamtoolsWrapperParams web service parameter. Use: --samtools-params key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.String> samtoolsParams = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 

@@ -63,15 +63,16 @@ import java.util.stream.Collectors;
  */
 public class UserManager extends AbstractManager {
 
-    protected static final String EMAIL_PATTERN = "^['_A-Za-z0-9-\\+]+(\\.['_A-Za-z0-9-]+)*@"
+    protected static final String EMAIL_REGEX = "^['_A-Za-z0-9-\\+]+(\\.['_A-Za-z0-9-]+)*@"
             + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
-    protected static final Pattern EMAILPATTERN = Pattern.compile(EMAIL_PATTERN);
+    protected static final Pattern EMAIL_PATTERN = Pattern.compile(EMAIL_REGEX);
     static final QueryOptions INCLUDE_ACCOUNT = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             UserDBAdaptor.QueryParams.ID.key(), UserDBAdaptor.QueryParams.ACCOUNT.key()));
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
     private final CatalogIOManager catalogIOManager;
-    private String INTERNAL_AUTHORIZATION = CatalogAuthenticationManager.INTERNAL;
-    private Map<String, AuthenticationManager> authenticationManagerMap;
+    private final String INTERNAL_AUTHORIZATION = CatalogAuthenticationManager.INTERNAL;
+    private final Map<String, AuthenticationManager> authenticationManagerMap;
+
 
     UserManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                 DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager, Configuration configuration)
@@ -127,7 +128,7 @@ public class UserManager extends AbstractManager {
     }
 
     static void checkEmail(String email) throws CatalogParameterException {
-        if (email == null || !EMAILPATTERN.matcher(email).matches()) {
+        if (email == null || !EMAIL_PATTERN.matcher(email).matches()) {
             throw new CatalogParameterException("Email '" + email + "' not valid");
         }
     }
@@ -788,6 +789,7 @@ public class UserManager extends AbstractManager {
             authorizationManager.checkIsInstallationAdministrator(authenticatedUserId);
             String authOrigin = getAuthenticationOriginId(userId);
             OpenCGAResult writeResult = authenticationManagerMap.get(authOrigin).resetPassword(userId);
+
             auditManager.auditUser(userId, Enums.Action.RESET_USER_PASSWORD, userId,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return writeResult;

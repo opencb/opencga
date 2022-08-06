@@ -310,7 +310,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 // Validate and get panels
                 Set<String> panelIds = interpretation.getPanels().stream().map(Panel::getId).collect(Collectors.toSet());
                 Query query = new Query(PanelDBAdaptor.QueryParams.ID.key(), panelIds);
-                OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> panelResult =
+                OpenCGAResult<Panel> panelResult =
                         panelDBAdaptor.get(study.getUid(), query, PanelManager.INCLUDE_PANEL_IDS, userId);
                 if (panelResult.getNumResults() < panelIds.size()) {
                     throw new CatalogException("Some panels were not found or user doesn't have permissions to see them");

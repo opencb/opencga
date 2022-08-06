@@ -159,8 +159,9 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
 
         StudiesCommandOptions.UpdateAclCommandOptions commandOptions = studiesCommandOptions.updateAclCommandOptions;
 
-        StudyAclUpdateParams studyAclUpdateParams = new StudyAclUpdateParams();
+        StudyAclUpdateParams studyAclUpdateParams= null;
         if (commandOptions.jsonDataModel) {
+            studyAclUpdateParams = new StudyAclUpdateParams();
             RestResponse<ObjectMap> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(studyAclUpdateParams));
@@ -169,10 +170,13 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             studyAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), StudyAclUpdateParams.class);
         } else {
-            studyAclUpdateParams.setPermissions(commandOptions.permissions);
-            studyAclUpdateParams.setStudy(commandOptions.study);
-            studyAclUpdateParams.setTemplate(commandOptions.template);
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "study",commandOptions.study, true);
+            putNestedIfNotEmpty(beanParams, "template",commandOptions.template, true);
+            putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
 
+            studyAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(beanParams.toJson(), StudyAclUpdateParams.class);
         }
         return openCGAClient.getStudyClient().updateAcl(commandOptions.members, commandOptions.action, studyAclUpdateParams);
     }
@@ -190,8 +194,9 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
 
-        StudyCreateParams studyCreateParams = new StudyCreateParams();
+        StudyCreateParams studyCreateParams= null;
         if (commandOptions.jsonDataModel) {
+            studyCreateParams = new StudyCreateParams();
             RestResponse<Study> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(studyCreateParams));
@@ -200,33 +205,21 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             studyCreateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), StudyCreateParams.class);
         } else {
-            // Generate beans for nested objects
-            StudyType typeParam = new StudyType();
-            typeParam.setId(commandOptions.typeId);
-            typeParam.setDescription(commandOptions.typeDescription);
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "alias",commandOptions.alias, true);
+            putNestedIfNotEmpty(beanParams, "type.id",commandOptions.typeId, true);
+            putNestedIfNotEmpty(beanParams, "type.description",commandOptions.typeDescription, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
-            StudyNotification notificationParam = new StudyNotification();
-            //notificationParam.setWebhook(commandOptions.notificationWebhook);  // Unsupported param. FIXME
-
-            StatusParams statusParam = new StatusParams();
-            statusParam.setId(commandOptions.statusId);
-            statusParam.setName(commandOptions.statusName);
-            statusParam.setDescription(commandOptions.statusDescription);
-
-            //Set main body params
-            studyCreateParams.setId(commandOptions.id);
-            studyCreateParams.setName(commandOptions.name);
-            studyCreateParams.setAlias(commandOptions.alias);
-            studyCreateParams.setType(typeParam);
-            //studyCreateParams.setSources(commandOptions.sources); // Unsupported param. FIXME 
-            studyCreateParams.setDescription(commandOptions.description);
-            studyCreateParams.setCreationDate(commandOptions.creationDate);
-            studyCreateParams.setModificationDate(commandOptions.modificationDate);
-            studyCreateParams.setNotification(notificationParam);
-            studyCreateParams.setStatus(statusParam);
-            //studyCreateParams.setAdditionalInfo(commandOptions.additionalInfo); // Unsupported param. FIXME 
-            studyCreateParams.setAttributes(new HashMap<>(commandOptions.attributes));
-
+            studyCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(beanParams.toJson(), StudyCreateParams.class);
         }
         return openCGAClient.getStudyClient().create(studyCreateParams, queryParams);
     }
@@ -348,8 +341,9 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
-        GroupCreateParams groupCreateParams = new GroupCreateParams();
+        GroupCreateParams groupCreateParams= null;
         if (commandOptions.jsonDataModel) {
+            groupCreateParams = new GroupCreateParams();
             RestResponse<Group> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(groupCreateParams));
@@ -358,9 +352,12 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             groupCreateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), GroupCreateParams.class);
         } else {
-            groupCreateParams.setId(commandOptions.id);
-            groupCreateParams.setUsers(splitWithTrim(commandOptions.users));
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+            putNestedIfNotNull(beanParams, "users",commandOptions.users, true);
 
+            groupCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(beanParams.toJson(), GroupCreateParams.class);
         }
         return openCGAClient.getStudyClient().updateGroups(commandOptions.study, groupCreateParams, queryParams);
     }
@@ -375,8 +372,9 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
-        GroupUpdateParams groupUpdateParams = new GroupUpdateParams();
+        GroupUpdateParams groupUpdateParams= null;
         if (commandOptions.jsonDataModel) {
+            groupUpdateParams = new GroupUpdateParams();
             RestResponse<Group> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(groupUpdateParams));
@@ -385,8 +383,11 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             groupUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), GroupUpdateParams.class);
         } else {
-            groupUpdateParams.setUsers(splitWithTrim(commandOptions.users));
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotNull(beanParams, "users",commandOptions.users, true);
 
+            groupUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(beanParams.toJson(), GroupUpdateParams.class);
         }
         return openCGAClient.getStudyClient().updateGroupsUsers(commandOptions.study, commandOptions.group, groupUpdateParams, queryParams);
     }
@@ -409,8 +410,9 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
-        PermissionRule permissionRule = new PermissionRule();
+        PermissionRule permissionRule= null;
         if (commandOptions.jsonDataModel) {
+            permissionRule = new PermissionRule();
             RestResponse<PermissionRule> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(permissionRule));
@@ -419,11 +421,13 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             permissionRule = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), PermissionRule.class);
         } else {
-            permissionRule.setId(commandOptions.id);
-            permissionRule.setQuery(new Query(commandOptions.query));
-            permissionRule.setMembers(splitWithTrim(commandOptions.members));
-            permissionRule.setPermissions(splitWithTrim(commandOptions.permissions));
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+            putNestedIfNotNull(beanParams, "members",commandOptions.members, true);
+            putNestedIfNotNull(beanParams, "permissions",commandOptions.permissions, true);
 
+            permissionRule = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(beanParams.toJson(), PermissionRule.class);
         }
         return openCGAClient.getStudyClient().updatePermissionRules(commandOptions.study, commandOptions.entity, permissionRule, queryParams);
     }
@@ -471,8 +475,9 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
 
-        StudyUpdateParams studyUpdateParams = new StudyUpdateParams();
+        StudyUpdateParams studyUpdateParams= null;
         if (commandOptions.jsonDataModel) {
+            studyUpdateParams = new StudyUpdateParams();
             RestResponse<Study> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(studyUpdateParams));
@@ -481,32 +486,20 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             studyUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), StudyUpdateParams.class);
         } else {
-            // Generate beans for nested objects
-            StudyType typeParam = new StudyType();
-            typeParam.setId(commandOptions.typeId);
-            typeParam.setDescription(commandOptions.typeDescription);
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "alias",commandOptions.alias, true);
+            putNestedIfNotEmpty(beanParams, "type.id",commandOptions.typeId, true);
+            putNestedIfNotEmpty(beanParams, "type.description",commandOptions.typeDescription, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
-            StudyNotification notificationParam = new StudyNotification();
-            //notificationParam.setWebhook(commandOptions.notificationWebhook);  // Unsupported param. FIXME
-
-            StatusParams statusParam = new StatusParams();
-            statusParam.setId(commandOptions.statusId);
-            statusParam.setName(commandOptions.statusName);
-            statusParam.setDescription(commandOptions.statusDescription);
-
-            //Set main body params
-            studyUpdateParams.setName(commandOptions.name);
-            studyUpdateParams.setAlias(commandOptions.alias);
-            studyUpdateParams.setType(typeParam);
-            //studyUpdateParams.setSources(commandOptions.sources); // Unsupported param. FIXME 
-            studyUpdateParams.setDescription(commandOptions.description);
-            studyUpdateParams.setCreationDate(commandOptions.creationDate);
-            studyUpdateParams.setModificationDate(commandOptions.modificationDate);
-            studyUpdateParams.setNotification(notificationParam);
-            studyUpdateParams.setAttributes(new HashMap<>(commandOptions.attributes));
-            studyUpdateParams.setStatus(statusParam);
-            //studyUpdateParams.setAdditionalInfo(commandOptions.additionalInfo); // Unsupported param. FIXME 
-
+            studyUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(beanParams.toJson(), StudyUpdateParams.class);
         }
         return openCGAClient.getStudyClient().update(commandOptions.study, studyUpdateParams, queryParams);
     }
@@ -533,8 +526,9 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
-        VariableSetCreateParams variableSetCreateParams = new VariableSetCreateParams();
+        VariableSetCreateParams variableSetCreateParams= null;
         if (commandOptions.jsonDataModel) {
+            variableSetCreateParams = new VariableSetCreateParams();
             RestResponse<VariableSet> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(variableSetCreateParams));
@@ -543,18 +537,15 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             variableSetCreateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), VariableSetCreateParams.class);
         } else {
-            variableSetCreateParams.setId(commandOptions.id);
-            variableSetCreateParams.setName(commandOptions.name);
-            variableSetCreateParams.setDescription(commandOptions.description);
-            //variableSetCreateParams.setEntities(commandOptions.entities); // Unsupported param. FIXME 
-            //variableSetCreateParams.setVariables(commandOptions.variables); // Unsupported param. FIXME 
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotNull(beanParams, "unique",commandOptions.unique, true);
+            putNestedIfNotNull(beanParams, "confidential",commandOptions.confidential, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
 
-            if (commandOptions.unique != null) {
-                variableSetCreateParams.setUnique(commandOptions.unique);
-            }
-            if (commandOptions.confidential != null) {
-                variableSetCreateParams.setConfidential(commandOptions.confidential);
-            }
+            variableSetCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(beanParams.toJson(), VariableSetCreateParams.class);
         }
         return openCGAClient.getStudyClient().updateVariableSets(commandOptions.study, variableSetCreateParams, queryParams);
     }
@@ -569,8 +560,9 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
-        Variable variable = new Variable();
+        Variable variable= null;
         if (commandOptions.jsonDataModel) {
+            variable = new Variable();
             RestResponse<VariableSet> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(variable));
@@ -579,26 +571,21 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             variable = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), Variable.class);
         } else {
-            variable.setId(commandOptions.bodyId);
-            variable.setName(commandOptions.bodyName);
-            variable.setCategory(commandOptions.bodyCategory);
-            variable.setType(commandOptions.bodyType == null ? null : Variable.VariableType.valueOf(commandOptions.bodyType));
-            //variable.setDefaultValue(commandOptions.bodyDefaultValue); // Unsupported param. FIXME 
-            variable.setAllowedValues(splitWithTrim(commandOptions.bodyAllowedValues));
-            variable.setAllowedKeys(splitWithTrim(commandOptions.bodyAllowedKeys));
-            variable.setRank(commandOptions.bodyRank);
-            variable.setDependsOn(commandOptions.bodyDependsOn);
-            variable.setDescription(commandOptions.bodyDescription);
-            //variable.setVariableSet(commandOptions.bodyVariableSet); // Unsupported param. FIXME 
-            //variable.setVariables(commandOptions.bodyVariables); // Unsupported param. FIXME 
-            variable.setAttributes(new HashMap<>(commandOptions.bodyAttributes));
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.bodyId, true);
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.bodyName, true);
+            putNestedIfNotEmpty(beanParams, "category",commandOptions.bodyCategory, true);
+            putNestedIfNotNull(beanParams, "type",commandOptions.bodyType, true);
+            putNestedIfNotNull(beanParams, "required",commandOptions.bodyRequired, true);
+            putNestedIfNotNull(beanParams, "multiValue",commandOptions.bodyMultiValue, true);
+            putNestedIfNotNull(beanParams, "allowedValues",commandOptions.bodyAllowedValues, true);
+            putNestedIfNotNull(beanParams, "allowedKeys",commandOptions.bodyAllowedKeys, true);
+            putNestedIfNotNull(beanParams, "rank",commandOptions.bodyRank, true);
+            putNestedIfNotEmpty(beanParams, "dependsOn",commandOptions.bodyDependsOn, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.bodyDescription, true);
 
-            if (commandOptions.bodyRequired != null) {
-                variable.setRequired(commandOptions.bodyRequired);
-            }
-            if (commandOptions.bodyMultiValue != null) {
-                variable.setMultiValue(commandOptions.bodyMultiValue);
-            }
+            variable = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(beanParams.toJson(), Variable.class);
         }
         return openCGAClient.getStudyClient().updateVariableSetsVariables(commandOptions.study, commandOptions.variableSet, variable, queryParams);
     }

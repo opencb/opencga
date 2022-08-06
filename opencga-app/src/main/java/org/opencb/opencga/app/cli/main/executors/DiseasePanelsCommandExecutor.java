@@ -110,8 +110,9 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        PanelAclUpdateParams panelAclUpdateParams = new PanelAclUpdateParams();
+        PanelAclUpdateParams panelAclUpdateParams= null;
         if (commandOptions.jsonDataModel) {
+            panelAclUpdateParams = new PanelAclUpdateParams();
             RestResponse<ObjectMap> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(panelAclUpdateParams));
@@ -120,9 +121,12 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             panelAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), PanelAclUpdateParams.class);
         } else {
-            panelAclUpdateParams.setPermissions(commandOptions.permissions);
-            panelAclUpdateParams.setPanel(commandOptions.panel);
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
+            putNestedIfNotEmpty(beanParams, "panel",commandOptions.panel, true);
 
+            panelAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(beanParams.toJson(), PanelAclUpdateParams.class);
         }
         return openCGAClient.getDiseasePanelClient().updateAcl(commandOptions.members, commandOptions.action, panelAclUpdateParams, queryParams);
     }
@@ -143,8 +147,9 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        PanelCreateParams panelCreateParams = new PanelCreateParams();
+        PanelCreateParams panelCreateParams= null;
         if (commandOptions.jsonDataModel) {
+            panelCreateParams = new PanelCreateParams();
             RestResponse<Panel> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(panelCreateParams));
@@ -153,30 +158,20 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             panelCreateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), PanelCreateParams.class);
         } else {
-            // Generate beans for nested objects
-            DiseasePanel.SourcePanel sourceParam = new DiseasePanel.SourcePanel();
-            sourceParam.setId(commandOptions.sourceId);
-            sourceParam.setName(commandOptions.sourceName);
-            sourceParam.setVersion(commandOptions.sourceVersion);
-            sourceParam.setAuthor(commandOptions.sourceAuthor);
-            sourceParam.setProject(commandOptions.sourceProject);
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "author",commandOptions.author, true);
+            putNestedIfNotEmpty(beanParams, "source.id",commandOptions.sourceId, true);
+            putNestedIfNotEmpty(beanParams, "source.name",commandOptions.sourceName, true);
+            putNestedIfNotEmpty(beanParams, "source.version",commandOptions.sourceVersion, true);
+            putNestedIfNotEmpty(beanParams, "source.author",commandOptions.sourceAuthor, true);
+            putNestedIfNotEmpty(beanParams, "source.project",commandOptions.sourceProject, true);
+            putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
 
-            //Set main body params
-            panelCreateParams.setId(commandOptions.id);
-            panelCreateParams.setName(commandOptions.name);
-            panelCreateParams.setDescription(commandOptions.description);
-            panelCreateParams.setAuthor(commandOptions.author);
-            panelCreateParams.setSource(sourceParam);
-            //panelCreateParams.setCategories(commandOptions.categories); // Unsupported param. FIXME 
-            panelCreateParams.setTags(splitWithTrim(commandOptions.tags));
-            //panelCreateParams.setDisorders(commandOptions.disorders); // Unsupported param. FIXME 
-            //panelCreateParams.setVariants(commandOptions.variants); // Unsupported param. FIXME 
-            //panelCreateParams.setGenes(commandOptions.genes); // Unsupported param. FIXME 
-            //panelCreateParams.setRegions(commandOptions.regions); // Unsupported param. FIXME 
-            //panelCreateParams.setStrs(commandOptions.strs); // Unsupported param. FIXME 
-            panelCreateParams.setStats(new HashMap<>(commandOptions.stats));
-            panelCreateParams.setAttributes(new HashMap<>(commandOptions.attributes));
-
+            panelCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(beanParams.toJson(), PanelCreateParams.class);
         }
         return openCGAClient.getDiseasePanelClient().create(panelCreateParams, queryParams);
     }
@@ -231,8 +226,9 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        PanelImportParams panelImportParams = new PanelImportParams();
+        PanelImportParams panelImportParams= null;
         if (commandOptions.jsonDataModel) {
+            panelImportParams = new PanelImportParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(panelImportParams));
@@ -241,9 +237,12 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             panelImportParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), PanelImportParams.class);
         } else {
-            panelImportParams.setSource(commandOptions.source);
-            panelImportParams.setId(commandOptions.id);
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "source",commandOptions.source, true);
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
 
+            panelImportParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(beanParams.toJson(), PanelImportParams.class);
         }
         return openCGAClient.getDiseasePanelClient().importPanels(panelImportParams, queryParams);
     }
@@ -353,8 +352,9 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        PanelUpdateParams panelUpdateParams = new PanelUpdateParams();
+        PanelUpdateParams panelUpdateParams= null;
         if (commandOptions.jsonDataModel) {
+            panelUpdateParams = new PanelUpdateParams();
             RestResponse<Panel> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(panelUpdateParams));
@@ -363,30 +363,20 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             panelUpdateParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), PanelUpdateParams.class);
         } else {
-            // Generate beans for nested objects
-            DiseasePanel.SourcePanel sourceParam = new DiseasePanel.SourcePanel();
-            sourceParam.setId(commandOptions.sourceId);
-            sourceParam.setName(commandOptions.sourceName);
-            sourceParam.setVersion(commandOptions.sourceVersion);
-            sourceParam.setAuthor(commandOptions.sourceAuthor);
-            sourceParam.setProject(commandOptions.sourceProject);
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "author",commandOptions.author, true);
+            putNestedIfNotEmpty(beanParams, "source.id",commandOptions.sourceId, true);
+            putNestedIfNotEmpty(beanParams, "source.name",commandOptions.sourceName, true);
+            putNestedIfNotEmpty(beanParams, "source.version",commandOptions.sourceVersion, true);
+            putNestedIfNotEmpty(beanParams, "source.author",commandOptions.sourceAuthor, true);
+            putNestedIfNotEmpty(beanParams, "source.project",commandOptions.sourceProject, true);
+            putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
 
-            //Set main body params
-            panelUpdateParams.setId(commandOptions.id);
-            panelUpdateParams.setName(commandOptions.name);
-            panelUpdateParams.setDescription(commandOptions.description);
-            panelUpdateParams.setAuthor(commandOptions.author);
-            panelUpdateParams.setSource(sourceParam);
-            //panelUpdateParams.setCategories(commandOptions.categories); // Unsupported param. FIXME 
-            panelUpdateParams.setTags(splitWithTrim(commandOptions.tags));
-            //panelUpdateParams.setDisorders(commandOptions.disorders); // Unsupported param. FIXME 
-            //panelUpdateParams.setVariants(commandOptions.variants); // Unsupported param. FIXME 
-            //panelUpdateParams.setGenes(commandOptions.genes); // Unsupported param. FIXME 
-            //panelUpdateParams.setRegions(commandOptions.regions); // Unsupported param. FIXME 
-            //panelUpdateParams.setStrs(commandOptions.strs); // Unsupported param. FIXME 
-            panelUpdateParams.setStats(new HashMap<>(commandOptions.stats));
-            panelUpdateParams.setAttributes(new HashMap<>(commandOptions.attributes));
-
+            panelUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(beanParams.toJson(), PanelUpdateParams.class);
         }
         return openCGAClient.getDiseasePanelClient().update(commandOptions.panels, panelUpdateParams, queryParams);
     }
