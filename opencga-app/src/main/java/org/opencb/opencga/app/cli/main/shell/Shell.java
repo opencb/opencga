@@ -48,6 +48,39 @@ public class Shell extends OpencgaCommandExecutor {
         }
     }
 
+    public static void printShellHeaderMessage() {
+        System.out.print(eraseScreen());
+        println("     ███████                                    █████████    █████████    █████████  ", Color.GREEN);
+        println("   ███░░░░░███                                 ███░░░░░███  ███░░░░░███  ███░░░░░███ ", Color.GREEN);
+        println("  ███     ░░███ ████████   ██████  ████████   ███     ░░░  ███     ░░░  ░███    ░███ ", Color.GREEN);
+        println("  ███      ░███░░███░░███ ███░░███░░███░░███ ░███         ░███          ░███████████ ", Color.GREEN);
+        println("  ███      ░███ ░███ ░███░███████  ░███ ░███ ░███         ░███    █████ ░███░░░░░███ ", Color.GREEN);
+        println("  ░███     ███  ░███ ░███░███░░░   ░███ ░███ ░░███     ███░░███  ░░███  ░███    ░███ ", Color.GREEN);
+        println("  ░░░███████░   ░███████ ░░██████  ████ █████ ░░█████████  ░░█████████  █████   █████", Color.GREEN);
+        println("    ░░░░░░░     ░███░░░   ░░░░░░  ░░░░ ░░░░░   ░░░░░░░░░    ░░░░░░░░░  ░░░░░   ░░░░░ ", Color.GREEN);
+        println("                ░███                                                                 ", Color.GREEN);
+        println("                █████                                                                ", Color.GREEN);
+        println("               ░░░░░                                                                 ", Color.GREEN);
+
+        println("");
+        println(CommandLineUtils.getVersionString());
+        println("");
+        println("\nTo close the application type \"exit\"", Color.BLUE);
+        println("");
+        println("");
+        println("");
+        println("");
+        println("Opencga is running in " + OpencgaMain.getLogLevel() + " mode");
+        println("");
+        println("");
+        println("");
+        println("");
+        println("");
+        println("");
+        println("");
+        println("");
+    }
+
     private LineReader getTerminal() {
         LineReader reader = null;
         logger = LoggerFactory.getLogger(Shell.class);
@@ -56,9 +89,6 @@ public class Shell extends OpencgaCommandExecutor {
                 terminal = TerminalBuilder.builder()
                         .system(true).nativeSignals(true)
                         .build();
-
-                System.out.print(eraseScreen());
-                printShellHeaderMessage();
             }
             History defaultHistory = new DefaultHistory();
 
@@ -150,41 +180,6 @@ public class Shell extends OpencgaCommandExecutor {
         String user = format("<" + sessionManager.getSession().getUser() + "/>", PrintUtils.Color.YELLOW);
         return host + study + user;
     }
-
-
-    private void printShellHeaderMessage() {
-
-        println("     ███████                                    █████████    █████████    █████████  ", Color.GREEN);
-        println("   ███░░░░░███                                 ███░░░░░███  ███░░░░░███  ███░░░░░███ ", Color.GREEN);
-        println("  ███     ░░███ ████████   ██████  ████████   ███     ░░░  ███     ░░░  ░███    ░███ ", Color.GREEN);
-        println("  ███      ░███░░███░░███ ███░░███░░███░░███ ░███         ░███          ░███████████ ", Color.GREEN);
-        println("  ███      ░███ ░███ ░███░███████  ░███ ░███ ░███         ░███    █████ ░███░░░░░███ ", Color.GREEN);
-        println("  ░███     ███  ░███ ░███░███░░░   ░███ ░███ ░░███     ███░░███  ░░███  ░███    ░███ ", Color.GREEN);
-        println("  ░░░███████░   ░███████ ░░██████  ████ █████ ░░█████████  ░░█████████  █████   █████", Color.GREEN);
-        println("    ░░░░░░░     ░███░░░   ░░░░░░  ░░░░ ░░░░░   ░░░░░░░░░    ░░░░░░░░░  ░░░░░   ░░░░░ ", Color.GREEN);
-        println("                ░███                                                                 ", Color.GREEN);
-        println("                █████                                                                ", Color.GREEN);
-        println("               ░░░░░                                                                 ", Color.GREEN);
-
-        println("");
-        println(CommandLineUtils.getVersionString());
-        println("");
-        println("\nTo close the application type \"exit\"", Color.BLUE);
-        println("");
-        println("");
-        println("");
-        println("");
-        println("Opencga is running in " + OpencgaMain.getLogLevel() + " mode");
-        println("");
-        println("");
-        println("");
-        println("");
-        println("");
-        println("");
-        println("");
-        println("");
-    }
-
 
     public String[] parseParams(String[] args) throws CatalogAuthenticationException {
         logger.debug("Executing " + String.join(" ", args));
