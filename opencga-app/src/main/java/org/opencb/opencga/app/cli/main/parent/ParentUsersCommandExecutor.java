@@ -94,6 +94,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
         RestResponse<AuthenticationResponse> res = new RestResponse();
         try {
             sessionManager.logoutSessionFile();
+            getOpenCGAClient().logout();
             Event event = new Event();
             event.setMessage(LOGOUT);
             event.setType(Event.Type.INFO);
