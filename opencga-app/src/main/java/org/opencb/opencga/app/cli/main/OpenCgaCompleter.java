@@ -37,12 +37,12 @@ import static java.util.stream.Collectors.toList;
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
 *    Command line version: 2.4.3-SNAPSHOT
-*    Command line commit: 4765ba9e7d10df8d165cac8a1649b2d0d433b617
+*    Command line commit: 1b6dd3541cc3a22f584b5e6c22de8febedbca7cb
 */
 
 public abstract class OpenCgaCompleter implements Completer {
 
-    protected List<Candidate> commands = asList("login","logout","help","use","variant","projects","panels","clinical","jobs","individuals","families","users","samples","alignments","meta","studies","files","operations","cohorts")
+    protected List<Candidate> commands = asList("login","logout","help","use","variant","projects","panels","clinical","jobs","admin","individuals","families","users","samples","alignments","meta","studies","files","operations","cohorts")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -68,6 +68,11 @@ public abstract class OpenCgaCompleter implements Completer {
             .collect(toList());
 
     private List<Candidate> jobsList = asList( "acl-update","aggregationstats","create","distinct","retry","search","top","acl","delete","info","update","log-head","log-tail")
+            .stream()
+            .map(Candidate::new)
+            .collect(toList());
+
+    private List<Candidate> adminList = asList( "audit-group-by","catalog-index-stats","catalog-install","catalog-jwt","users-create","users-import","users-search","users-sync")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -135,6 +140,7 @@ public abstract class OpenCgaCompleter implements Completer {
         mapCandidates.put( "panels", panelsList);
         mapCandidates.put( "clinical", clinicalList);
         mapCandidates.put( "jobs", jobsList);
+        mapCandidates.put( "admin", adminList);
         mapCandidates.put( "individuals", individualsList);
         mapCandidates.put( "families", familiesList);
         mapCandidates.put( "users", usersList);
