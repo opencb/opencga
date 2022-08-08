@@ -555,7 +555,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         clinicalVariantEvidence.setClassification(new VariantClassification());
 
         // Variant classification: ACMG
-        List<String> acmgs = calculateAcmgClassification(consequenceType, annotation, mois);
+        List<ClinicalAcmg> acmgs = calculateAcmgClassification(consequenceType, annotation, mois);
         clinicalVariantEvidence.getClassification().setAcmg(acmgs);
 
         // Variant classification: clinical significance
