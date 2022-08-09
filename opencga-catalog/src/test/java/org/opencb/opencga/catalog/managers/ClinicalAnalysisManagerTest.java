@@ -531,12 +531,12 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         VariantAvro variantAvro = new VariantAvro("id1", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
         ClinicalVariant cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, null);
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
         findingList.add(cv);
         findingList.add(cv);
         variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(), ClinicalVariant.Status.NOT_REVIEWED,
-                null);
+                Collections.emptyList(), null);
         findingList.add(cv);
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
@@ -562,12 +562,12 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         VariantAvro variantAvro = new VariantAvro("id1", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
         ClinicalVariant cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, null);
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
         findingList.add(cv);
         findingList.add(cv);
         variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(), ClinicalVariant.Status.NOT_REVIEWED,
-                null);
+                Collections.emptyList(), null);
         findingList.add(cv);
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
@@ -593,11 +593,11 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         VariantAvro variantAvro = new VariantAvro("id1", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
         ClinicalVariant cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, null);
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
         findingList.add(cv1);
         variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariant cv2 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, null);
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
         findingList.add(cv2);
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
@@ -620,7 +620,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         variantAvro = new VariantAvro("id3", null, "chr3", 2, 3, "", "", "+", null, 1, null, null, null);
         evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method2");
         ClinicalVariant cv3 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, null);
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
         findingList.add(cv3);
 
         InterpretationUpdateParams updateParams = new InterpretationUpdateParams()
@@ -716,7 +716,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         variantAvro = new VariantAvro("", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
         cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(), ClinicalVariant.Status.NOT_REVIEWED,
-                null);
+                Collections.emptyList(), null);
 
         updateParams = new InterpretationUpdateParams()
                 .setPrimaryFindings(Collections.singletonList(cv1));
@@ -755,11 +755,11 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         VariantAvro variantAvro = new VariantAvro("id1", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
         ClinicalVariant cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, null);
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
         findingList.add(cv1);
         variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariant cv2 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, null);
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
         findingList.add(cv2);
 
         ClinicalAnalysis ca = new ClinicalAnalysis()
@@ -784,7 +784,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         variantAvro = new VariantAvro("id3", null, "chr3", 2, 3, "", "", "+", null, 1, null, null, null);
         evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method2");
         ClinicalVariant cv3 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, null);
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
         findingList.add(cv3);
 
         InterpretationUpdateParams updateParams = new InterpretationUpdateParams()
@@ -883,7 +883,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         variantAvro = new VariantAvro("", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
         cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(), ClinicalVariant.Status.NOT_REVIEWED,
-                null);
+                Collections.emptyList(), null);
 
         updateParams = new InterpretationUpdateParams()
                 .setSecondaryFindings(Collections.singletonList(cv1));
