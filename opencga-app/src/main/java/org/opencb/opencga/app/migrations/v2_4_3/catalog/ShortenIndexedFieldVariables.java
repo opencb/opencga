@@ -3,11 +3,17 @@ package org.opencb.opencga.app.migrations.v2_4_3.catalog;
 import com.mongodb.client.MongoCollection;
 import org.bson.Document;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationTool;
 
 import java.util.Arrays;
 import java.util.List;
 
+@Migration(id = "shorten_indexed_field_variables-1386",
+        description = "Shorten indexed field variables #TASK-1386", version = "2.4.3",
+        language = Migration.MigrationLanguage.JAVA,
+        domain = Migration.MigrationDomain.CATALOG,
+        date = 20220809)
 public class ShortenIndexedFieldVariables extends MigrationTool {
 
     @Override
