@@ -99,14 +99,14 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--action"}, description = "Action to be performed [ADD, SET, REMOVE or RESET].", required = true, arity = 1)
         public String action; 
     
-        @Parameter(names = {"--permissions"}, description = "The body web service permissions parameter", required = true, arity = 1)
-        public String permissions;
-    
         @Parameter(names = {"--study", "-s"}, description = "The body web service study parameter", required = false, arity = 1)
         public String study;
     
         @Parameter(names = {"--template"}, description = "The body web service template parameter", required = false, arity = 1)
         public String template;
+    
+        @Parameter(names = {"--permissions"}, description = "The body web service permissions parameter", required = false, arity = 1)
+        public String permissions;
     
     }
 
@@ -166,9 +166,6 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
     
         @Parameter(names = {"--status-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String statusDescription;
-    
-        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 
@@ -521,9 +518,6 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--modification-date", "--md"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
         public String modificationDate;
     
-        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
-    
         @Parameter(names = {"--status-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String statusId;
     
@@ -637,9 +631,6 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
     
         @Parameter(names = {"--body_description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String bodyDescription;
-    
-        @DynamicParameter(names = {"--body_attributes"}, description = "The body web service attributes parameter. Use: --body_attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> bodyAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 

@@ -569,7 +569,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 // Ensure path is a full path pointing to a file, not a folder
                 String[] split = path.split("/");
                 String fileName = split[split.length - 1];
-                if (StringUtils.isEmpty(fileName) || !fileName.contains(".")) {
+                if (StringUtils.isEmpty(fileName)) {
                     throw new CatalogException("Path must be a full OpenCGA Catalog path pointing to the file that must be generated. "
                             + "If, on the other hand, you want to create a directory, please set type to 'DIRECTORY' instead.");
                 }

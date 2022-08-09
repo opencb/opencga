@@ -50,6 +50,10 @@ public class CellBaseUtilsTest {
     public static List<Object[]> data() {
         return Arrays.asList(
                 new Object[]{"http://ws.opencb.org/cellbase-4.7.3/", "v4", "grch37"},
+                new Object[]{"http://ws.opencb.org/cellbase-4.8.2/", "v4", "grch37"},
+//                new Object[]{"http://ws.opencb.org/cellbase-4.8.3/", "v4", "grch37"},
+//                new Object[]{"http://ws.opencb.org/cellbase-4.9.0/", "v4", "grch37"},
+//                new Object[]{"http://ws.opencb.org/cellbase/", "v4", "grch37"},
                 new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5", "grch38"});
     }
 

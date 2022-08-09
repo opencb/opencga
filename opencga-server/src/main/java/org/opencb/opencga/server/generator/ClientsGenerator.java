@@ -101,7 +101,6 @@ public class ClientsGenerator {
         String binary = "opencga-app/app/misc/clients/" + language + "_client_generator.py";
 
         ProcessBuilder processBuilder = new ProcessBuilder("python3", binary, restFilePath, outDir);
-        processBuilder.redirectErrorStream(true);
         Process p;
         try {
             p = processBuilder.start();

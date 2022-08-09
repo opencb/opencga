@@ -33,6 +33,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
+import org.opencb.opencga.core.models.clinical.ExomiserWrapperParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
 import org.opencb.opencga.core.models.variant.AnnotationVariantQueryParams;
@@ -115,6 +116,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "cohort-stats-run":
                 queryResponse = runCohortStats();
+                break;
+            case "exomiser-run":
+                queryResponse = runExomiser();
                 break;
             case "export-run":
                 queryResponse = runExport();
@@ -323,8 +327,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "title",commandOptions.title, true);
-             putNestedIfNotEmpty(beanParams, "density",commandOptions.density, true);
- 
+            putNestedIfNotEmpty(beanParams, "density",commandOptions.density, true);
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
  
             circosAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
@@ -405,6 +408,44 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), CohortVariantStatsAnalysisParams.class);
         }
         return openCGAClient.getVariantClient().runCohortStats(cohortVariantStatsAnalysisParams, queryParams);
+    }
+
+    private RestResponse<Job> runExomiser() throws Exception {
+
+        logger.debug("Executing runExomiser in Analysis - Variant command line");
+
+        AnalysisVariantCommandOptions.RunExomiserCommandOptions commandOptions = analysisVariantCommandOptions.runExomiserCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        ExomiserWrapperParams exomiserWrapperParams= null;
+        if (commandOptions.jsonDataModel) {
+            exomiserWrapperParams = new ExomiserWrapperParams();
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(exomiserWrapperParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            exomiserWrapperParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ExomiserWrapperParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+
+            exomiserWrapperParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(beanParams.toJson(), ExomiserWrapperParams.class);
+        }
+        return openCGAClient.getVariantClient().runExomiser(exomiserWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runExport() throws Exception {
@@ -1423,34 +1464,33 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsId",commandOptions.variantStatsId, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsDescription",commandOptions.variantStatsDescription, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.id",commandOptions.variantStatsQueryId, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.region",commandOptions.variantStatsQueryRegion, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.gene",commandOptions.variantStatsQueryGene, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.type",commandOptions.variantStatsQueryType, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.panel",commandOptions.variantStatsQueryPanel, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.panelModeOfInheritance",commandOptions.variantStatsQueryPanelModeOfInheritance, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.panelConfidence",commandOptions.variantStatsQueryPanelConfidence, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.panelRoleInCancer",commandOptions.variantStatsQueryPanelRoleInCancer, true);
-             putNestedIfNotNull(beanParams, "variantStatsQuery.panelIntersection",commandOptions.variantStatsQueryPanelIntersection, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.cohortStatsRef",commandOptions.variantStatsQueryCohortStatsRef, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.cohortStatsAlt",commandOptions.variantStatsQueryCohortStatsAlt, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.cohortStatsMaf",commandOptions.variantStatsQueryCohortStatsMaf, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.ct",commandOptions.variantStatsQueryCt, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.xref",commandOptions.variantStatsQueryXref, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.biotype",commandOptions.variantStatsQueryBiotype, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.proteinSubstitution",commandOptions.variantStatsQueryProteinSubstitution, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.conservation",commandOptions.variantStatsQueryConservation, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.populationFrequencyMaf",commandOptions.variantStatsQueryPopulationFrequencyMaf, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.populationFrequencyAlt",commandOptions.variantStatsQueryPopulationFrequencyAlt, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.populationFrequencyRef",commandOptions.variantStatsQueryPopulationFrequencyRef, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.transcriptFlag",commandOptions.variantStatsQueryTranscriptFlag, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.functionalScore",commandOptions.variantStatsQueryFunctionalScore, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.clinical",commandOptions.variantStatsQueryClinical, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.clinicalSignificance",commandOptions.variantStatsQueryClinicalSignificance, true);
-             putNestedIfNotEmpty(beanParams, "variantStatsQuery.clinicalConfirmedStatus",commandOptions.variantStatsQueryClinicalConfirmedStatus, true);
- 
+            putNestedIfNotEmpty(beanParams, "variantStatsId",commandOptions.variantStatsId, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsDescription",commandOptions.variantStatsDescription, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.id",commandOptions.variantStatsQueryId, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.region",commandOptions.variantStatsQueryRegion, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.gene",commandOptions.variantStatsQueryGene, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.type",commandOptions.variantStatsQueryType, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.panel",commandOptions.variantStatsQueryPanel, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.panelModeOfInheritance",commandOptions.variantStatsQueryPanelModeOfInheritance, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.panelConfidence",commandOptions.variantStatsQueryPanelConfidence, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.panelRoleInCancer",commandOptions.variantStatsQueryPanelRoleInCancer, true);
+            putNestedIfNotNull(beanParams, "variantStatsQuery.panelIntersection",commandOptions.variantStatsQueryPanelIntersection, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.cohortStatsRef",commandOptions.variantStatsQueryCohortStatsRef, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.cohortStatsAlt",commandOptions.variantStatsQueryCohortStatsAlt, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.cohortStatsMaf",commandOptions.variantStatsQueryCohortStatsMaf, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.ct",commandOptions.variantStatsQueryCt, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.xref",commandOptions.variantStatsQueryXref, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.biotype",commandOptions.variantStatsQueryBiotype, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.proteinSubstitution",commandOptions.variantStatsQueryProteinSubstitution, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.conservation",commandOptions.variantStatsQueryConservation, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.populationFrequencyMaf",commandOptions.variantStatsQueryPopulationFrequencyMaf, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.populationFrequencyAlt",commandOptions.variantStatsQueryPopulationFrequencyAlt, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.populationFrequencyRef",commandOptions.variantStatsQueryPopulationFrequencyRef, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.transcriptFlag",commandOptions.variantStatsQueryTranscriptFlag, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.functionalScore",commandOptions.variantStatsQueryFunctionalScore, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.clinical",commandOptions.variantStatsQueryClinical, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.clinicalSignificance",commandOptions.variantStatsQueryClinicalSignificance, true);
+            putNestedIfNotEmpty(beanParams, "variantStatsQuery.clinicalConfirmedStatus",commandOptions.variantStatsQueryClinicalConfirmedStatus, true);
             putNestedIfNotEmpty(beanParams, "signatureId",commandOptions.signatureId, true);
              putNestedIfNotEmpty(beanParams, "signatureDescription",commandOptions.signatureDescription, true);
              putNestedIfNotEmpty(beanParams, "signatureRelease",commandOptions.signatureRelease, true);
@@ -1610,35 +1650,34 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
-             putNestedIfNotNull(beanParams, "individual",commandOptions.individual, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.id",commandOptions.variantQueryId, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.region",commandOptions.variantQueryRegion, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.gene",commandOptions.variantQueryGene, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.type",commandOptions.variantQueryType, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.panel",commandOptions.variantQueryPanel, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.panelModeOfInheritance",commandOptions.variantQueryPanelModeOfInheritance, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.panelConfidence",commandOptions.variantQueryPanelConfidence, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.panelRoleInCancer",commandOptions.variantQueryPanelRoleInCancer, true);
-             putNestedIfNotNull(beanParams, "variantQuery.panelIntersection",commandOptions.variantQueryPanelIntersection, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.cohortStatsRef",commandOptions.variantQueryCohortStatsRef, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.cohortStatsAlt",commandOptions.variantQueryCohortStatsAlt, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.cohortStatsMaf",commandOptions.variantQueryCohortStatsMaf, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.ct",commandOptions.variantQueryCt, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.xref",commandOptions.variantQueryXref, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.biotype",commandOptions.variantQueryBiotype, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.proteinSubstitution",commandOptions.variantQueryProteinSubstitution, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.conservation",commandOptions.variantQueryConservation, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.populationFrequencyMaf",commandOptions.variantQueryPopulationFrequencyMaf, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.populationFrequencyAlt",commandOptions.variantQueryPopulationFrequencyAlt, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.populationFrequencyRef",commandOptions.variantQueryPopulationFrequencyRef, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.transcriptFlag",commandOptions.variantQueryTranscriptFlag, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.functionalScore",commandOptions.variantQueryFunctionalScore, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.clinical",commandOptions.variantQueryClinical, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.clinicalSignificance",commandOptions.variantQueryClinicalSignificance, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.clinicalConfirmedStatus",commandOptions.variantQueryClinicalConfirmedStatus, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.sampleData",commandOptions.variantQuerySampleData, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.fileData",commandOptions.variantQueryFileData, true);
- 
+            putNestedIfNotNull(beanParams, "individual",commandOptions.individual, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.id",commandOptions.variantQueryId, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.region",commandOptions.variantQueryRegion, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.gene",commandOptions.variantQueryGene, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.type",commandOptions.variantQueryType, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.panel",commandOptions.variantQueryPanel, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.panelModeOfInheritance",commandOptions.variantQueryPanelModeOfInheritance, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.panelConfidence",commandOptions.variantQueryPanelConfidence, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.panelRoleInCancer",commandOptions.variantQueryPanelRoleInCancer, true);
+            putNestedIfNotNull(beanParams, "variantQuery.panelIntersection",commandOptions.variantQueryPanelIntersection, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.cohortStatsRef",commandOptions.variantQueryCohortStatsRef, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.cohortStatsAlt",commandOptions.variantQueryCohortStatsAlt, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.cohortStatsMaf",commandOptions.variantQueryCohortStatsMaf, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.ct",commandOptions.variantQueryCt, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.xref",commandOptions.variantQueryXref, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.biotype",commandOptions.variantQueryBiotype, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.proteinSubstitution",commandOptions.variantQueryProteinSubstitution, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.conservation",commandOptions.variantQueryConservation, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.populationFrequencyMaf",commandOptions.variantQueryPopulationFrequencyMaf, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.populationFrequencyAlt",commandOptions.variantQueryPopulationFrequencyAlt, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.populationFrequencyRef",commandOptions.variantQueryPopulationFrequencyRef, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.transcriptFlag",commandOptions.variantQueryTranscriptFlag, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.functionalScore",commandOptions.variantQueryFunctionalScore, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.clinical",commandOptions.variantQueryClinical, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.clinicalSignificance",commandOptions.variantQueryClinicalSignificance, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.clinicalConfirmedStatus",commandOptions.variantQueryClinicalConfirmedStatus, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.sampleData",commandOptions.variantQuerySampleData, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.fileData",commandOptions.variantQueryFileData, true);
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
              putNestedIfNotNull(beanParams, "index",commandOptions.index, true);
              putNestedIfNotNull(beanParams, "indexOverwrite",commandOptions.indexOverwrite, true);

@@ -212,30 +212,21 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "tool.id",commandOptions.toolId, true);
-             putNestedIfNotEmpty(beanParams, "tool.description",commandOptions.toolDescription, true);
- 
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "tool.id",commandOptions.toolId, true);
+            putNestedIfNotEmpty(beanParams, "tool.description",commandOptions.toolDescription, true);
+            putNestedIfNotNull(beanParams, "tool.scope",commandOptions.toolScope, true);
+            putNestedIfNotNull(beanParams, "tool.type",commandOptions.toolType, true);
+            putNestedIfNotNull(beanParams, "tool.resource",commandOptions.toolResource, true);
+            putNestedIfNotNull(beanParams, "priority",commandOptions.priority, true);
             putNestedIfNotEmpty(beanParams, "commandLine",commandOptions.commandLine, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
- 
-
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
             putNestedIfNotEmpty(beanParams, "outDir.path",commandOptions.outDirPath, true);
- 
-
-
             putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
-             putNestedIfNotEmpty(beanParams, "result.id",commandOptions.resultId, true);
- 
-
-
-
-
+            putNestedIfNotEmpty(beanParams, "result.id",commandOptions.resultId, true);
             putNestedIfNotEmpty(beanParams, "stdout.path",commandOptions.stdoutPath, true);
- 
             putNestedIfNotEmpty(beanParams, "stderr.path",commandOptions.stderrPath, true);
- 
 
             jobCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

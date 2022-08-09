@@ -27,8 +27,11 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.TestParamConstants;
+import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.file.File;
@@ -67,7 +70,8 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
             String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
             catalogManager.deleteCatalogDB(token);
         }
-        catalogManager.installCatalogDB("dummy", TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", "", true);
+        catalogManager.installCatalogDB(PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH),
+                TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", "", true);
         loader = new CatalogSampleAnnotationsLoader(catalogManager);
 
         String pedFileName = "20130606_g1k.ped";
@@ -78,8 +82,9 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         catalogManager.getUserManager().create(userId, userId, "asdasd@asd.asd", TestParamConstants.PASSWORD, "", -1L, Account.AccountType.FULL, null);
         sessionId = catalogManager.getUserManager().login(userId, TestParamConstants.PASSWORD).getToken();
         Project project = catalogManager.getProjectManager().create("def", "default", "", "Homo sapiens",
-                null, "GRCh38", new QueryOptions(), sessionId).getResults().get(0);
-        Study study = catalogManager.getStudyManager().create(project.getFqn(), "def", null, "default", "", null, null, null, null, null, sessionId).getResults().get(0);
+                null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).getResults().get(0);
+        Study study = catalogManager.getStudyManager().create(project.getFqn(), "def", null, "default", "", null, null, null, null,
+                new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).getResults().get(0);
         studyId = study.getFqn();
         pedFile = catalogManager.getFileManager().upload(studyId, new FileInputStream(new java.io.File(pedFileURL.toURI())),
                 new File().setPath("data/" + pedFileName), false, true, false, sessionId).first();

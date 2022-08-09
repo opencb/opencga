@@ -23,6 +23,7 @@
 #' | about | /{apiVersion}/meta/about |  |
 #' | api | /{apiVersion}/meta/api | category |
 #' | fail | /{apiVersion}/meta/fail |  |
+#' | model | /{apiVersion}/meta/model |  |
 #' | ping | /{apiVersion}/meta/ping |  |
 #' | status | /{apiVersion}/meta/status |  |
 #'
@@ -52,6 +53,12 @@ setMethod("metaClient", "OpencgaR", function(OpencgaR, endpointName, params=NULL
 
         fail=fetchOpenCGA(object=OpencgaR, category="meta", categoryId=NULL, subcategory=NULL, subcategoryId=NULL,
                 action="fail", params=params, httpMethod="GET", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/meta/model:
+        #' Opencga model webservices.
+
+        model=fetchOpenCGA(object=OpencgaR, category="meta", categoryId=NULL, subcategory=NULL, subcategoryId=NULL,
+                action="model", params=params, httpMethod="GET", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/meta/ping:
         #' Ping Opencga webservices.

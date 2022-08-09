@@ -35,17 +35,35 @@ public class MetaCommandOptions {
         public JCommander jCommander;
         public CommonCommandOptions commonCommandOptions;
 
+        public AboutCommandOptions aboutCommandOptions;
         public ApiCommandOptions apiCommandOptions;
+        public FailCommandOptions failCommandOptions;
+        public ModelCommandOptions modelCommandOptions;
+        public PingCommandOptions pingCommandOptions;
+        public StatusCommandOptions statusCommandOptions;
 
 
     public MetaCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
     
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
+        this.aboutCommandOptions = new AboutCommandOptions();
         this.apiCommandOptions = new ApiCommandOptions();
+        this.failCommandOptions = new FailCommandOptions();
+        this.modelCommandOptions = new ModelCommandOptions();
+        this.pingCommandOptions = new PingCommandOptions();
+        this.statusCommandOptions = new StatusCommandOptions();
     
     }
     
+    @Parameters(commandNames = {"about"}, commandDescription ="Returns info about current OpenCGA code.")
+    public class AboutCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+    }
+
     @Parameters(commandNames = {"api"}, commandDescription ="API")
     public class ApiCommandOptions {
     
@@ -54,6 +72,38 @@ public class MetaCommandOptions {
     
         @Parameter(names = {"--category"}, description = "List of categories to get API from", required = false, arity = 1)
         public String category; 
+    
+    }
+
+    @Parameters(commandNames = {"fail"}, commandDescription ="Ping Opencga webservices.")
+    public class FailCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+    }
+
+    @Parameters(commandNames = {"model"}, commandDescription ="Opencga model webservices.")
+    public class ModelCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+    }
+
+    @Parameters(commandNames = {"ping"}, commandDescription ="Ping Opencga webservices.")
+    public class PingCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+    }
+
+    @Parameters(commandNames = {"status"}, commandDescription ="Database status.")
+    public class StatusCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
     
     }
 

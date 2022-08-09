@@ -87,7 +87,7 @@ class User(_ParentRestClient):
             will be necessary. (REQUIRED)
         :param str user: User ID. (REQUIRED)
         :param str action: Action to be performed: ADD or REMOVE a group.
-            Allowed values: ['ADD', 'REMOVE']
+            Allowed values: ['ADD REMOVE']
         """
 
         return self._post(category='users', resource='update', query_id=user, subcategory='configs', data=data, **options)
@@ -113,7 +113,7 @@ class User(_ParentRestClient):
             the filter will be necessary. (REQUIRED)
         :param str user: User ID. (REQUIRED)
         :param str action: Action to be performed: ADD or REMOVE a group.
-            Allowed values: ['ADD', 'REMOVE']
+            Allowed values: ['ADD REMOVE']
         """
 
         return self._post(category='users', resource='update', query_id=user, subcategory='filters', data=data, **options)

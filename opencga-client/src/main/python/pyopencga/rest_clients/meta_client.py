@@ -47,6 +47,14 @@ class Meta(_ParentRestClient):
 
         return self._get(category='meta', resource='fail', **options)
 
+    def model(self, **options):
+        """
+        Opencga model webservices.
+        PATH: /{apiVersion}/meta/model
+        """
+
+        return self._get(category='meta', resource='model', **options)
+
     def ping(self, **options):
         """
         Ping Opencga webservices.

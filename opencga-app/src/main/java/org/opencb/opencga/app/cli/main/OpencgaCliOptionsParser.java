@@ -41,6 +41,7 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
     private final DiseasePanelsCommandOptions diseasePanelsCommandOptions;
     private final AnalysisClinicalCommandOptions analysisClinicalCommandOptions;
     private final JobsCommandOptions jobsCommandOptions;
+    private final AdminCommandOptions adminCommandOptions;
     private final IndividualsCommandOptions individualsCommandOptions;
     private final FamiliesCommandOptions familiesCommandOptions;
     private final UsersCommandOptions usersCommandOptions;
@@ -68,6 +69,7 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         analysisVariantSubCommands.addCommand("cohort-stats-delete", analysisVariantCommandOptions.deleteCohortStatsCommandOptions);
         analysisVariantSubCommands.addCommand("cohort-stats-info", analysisVariantCommandOptions.infoCohortStatsCommandOptions);
         analysisVariantSubCommands.addCommand("cohort-stats-run", analysisVariantCommandOptions.runCohortStatsCommandOptions);
+        analysisVariantSubCommands.addCommand("exomiser-run", analysisVariantCommandOptions.runExomiserCommandOptions);
         analysisVariantSubCommands.addCommand("export-run", analysisVariantCommandOptions.runExportCommandOptions);
         analysisVariantSubCommands.addCommand("family-genotypes", analysisVariantCommandOptions.genotypesFamilyCommandOptions);
         analysisVariantSubCommands.addCommand("family-qc-run", analysisVariantCommandOptions.runFamilyQcCommandOptions);
@@ -134,6 +136,7 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         analysisClinicalSubCommands.addCommand("interpretation-search", analysisClinicalCommandOptions.searchInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-info", analysisClinicalCommandOptions.infoInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpreter-cancer-tiering-run", analysisClinicalCommandOptions.runInterpreterCancerTieringCommandOptions);
+        analysisClinicalSubCommands.addCommand("interpreter-exomiser-run", analysisClinicalCommandOptions.runInterpreterExomiserCommandOptions);
         analysisClinicalSubCommands.addCommand("interpreter-team-run", analysisClinicalCommandOptions.runInterpreterTeamCommandOptions);
         analysisClinicalSubCommands.addCommand("interpreter-tiering-run", analysisClinicalCommandOptions.runInterpreterTieringCommandOptions);
         analysisClinicalSubCommands.addCommand("interpreter-zetta-run", analysisClinicalCommandOptions.runInterpreterZettaCommandOptions);
@@ -175,6 +178,18 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         jobsSubCommands.addCommand("log-head", jobsCommandOptions.headLogCommandOptions);
         jobsSubCommands.addCommand("log-tail", jobsCommandOptions.tailLogCommandOptions);
         jobsSubCommands.addCommand("log", jobsCommandOptions.logCommandOptions);
+
+        adminCommandOptions = new AdminCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("admin", adminCommandOptions);
+        JCommander adminSubCommands = jCommander.getCommands().get("admin");
+        adminSubCommands.addCommand("audit-group-by", adminCommandOptions.groupByAuditCommandOptions);
+        adminSubCommands.addCommand("catalog-index-stats", adminCommandOptions.indexStatsCatalogCommandOptions);
+        adminSubCommands.addCommand("catalog-install", adminCommandOptions.installCatalogCommandOptions);
+        adminSubCommands.addCommand("catalog-jwt", adminCommandOptions.jwtCatalogCommandOptions);
+        adminSubCommands.addCommand("users-create", adminCommandOptions.createUsersCommandOptions);
+        adminSubCommands.addCommand("users-import", adminCommandOptions.importUsersCommandOptions);
+        adminSubCommands.addCommand("users-search", adminCommandOptions.searchUsersCommandOptions);
+        adminSubCommands.addCommand("users-sync", adminCommandOptions.syncUsersCommandOptions);
 
         individualsCommandOptions = new IndividualsCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("individuals", individualsCommandOptions);
@@ -258,7 +273,12 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         metaCommandOptions = new MetaCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("meta", metaCommandOptions);
         JCommander metaSubCommands = jCommander.getCommands().get("meta");
+        metaSubCommands.addCommand("about", metaCommandOptions.aboutCommandOptions);
         metaSubCommands.addCommand("api", metaCommandOptions.apiCommandOptions);
+        metaSubCommands.addCommand("fail", metaCommandOptions.failCommandOptions);
+        metaSubCommands.addCommand("model", metaCommandOptions.modelCommandOptions);
+        metaSubCommands.addCommand("ping", metaCommandOptions.pingCommandOptions);
+        metaSubCommands.addCommand("status", metaCommandOptions.statusCommandOptions);
 
         studiesCommandOptions = new StudiesCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("studies", studiesCommandOptions);
@@ -289,9 +309,11 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         filesSubCommands.addCommand("acl-update", filesCommandOptions.updateAclCommandOptions);
         filesSubCommands.addCommand("aggregationstats", filesCommandOptions.aggregationStatsCommandOptions);
         filesSubCommands.addCommand("annotation-sets-load", filesCommandOptions.loadAnnotationSetsCommandOptions);
+        filesSubCommands.addCommand("bioformats", filesCommandOptions.bioformatsCommandOptions);
         filesSubCommands.addCommand("create", filesCommandOptions.createCommandOptions);
         filesSubCommands.addCommand("distinct", filesCommandOptions.distinctCommandOptions);
         filesSubCommands.addCommand("fetch", filesCommandOptions.fetchCommandOptions);
+        filesSubCommands.addCommand("formats", filesCommandOptions.formatsCommandOptions);
         filesSubCommands.addCommand("link", filesCommandOptions.linkCommandOptions);
         filesSubCommands.addCommand("link-run", filesCommandOptions.runLinkCommandOptions);
         filesSubCommands.addCommand("postlink-run", filesCommandOptions.runPostlinkCommandOptions);
@@ -383,6 +405,11 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
     
     public JobsCommandOptions getJobsCommandOptions() {
         return jobsCommandOptions;
+    }
+    
+    
+    public AdminCommandOptions getAdminCommandOptions() {
+        return adminCommandOptions;
     }
     
     

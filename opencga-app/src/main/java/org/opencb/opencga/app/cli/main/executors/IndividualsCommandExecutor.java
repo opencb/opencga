@@ -275,11 +275,10 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
  
 
             putNestedIfNotEmpty(beanParams, "sex.id",commandOptions.sexId, true);
-             putNestedIfNotEmpty(beanParams, "sex.name",commandOptions.sexName, true);
-             putNestedIfNotEmpty(beanParams, "sex.description",commandOptions.sexDescription, true);
-             putNestedIfNotEmpty(beanParams, "sex.source",commandOptions.sexSource, true);
-             putNestedIfNotEmpty(beanParams, "sex.url",commandOptions.sexUrl, true);
- 
+            putNestedIfNotEmpty(beanParams, "sex.name",commandOptions.sexName, true);
+            putNestedIfNotEmpty(beanParams, "sex.description",commandOptions.sexDescription, true);
+            putNestedIfNotEmpty(beanParams, "sex.source",commandOptions.sexSource, true);
+            putNestedIfNotEmpty(beanParams, "sex.url",commandOptions.sexUrl, true);
             putNestedIfNotEmpty(beanParams, "ethnicity.id",commandOptions.ethnicityId, true);
              putNestedIfNotEmpty(beanParams, "ethnicity.name",commandOptions.ethnicityName, true);
              putNestedIfNotEmpty(beanParams, "ethnicity.description",commandOptions.ethnicityDescription, true);
@@ -296,9 +295,8 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
 
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
- 
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
             individualCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -475,53 +473,39 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "father.id",commandOptions.fatherId, true);
-             putNestedIfNotEmpty(beanParams, "father.uuid",commandOptions.fatherUuid, true);
- 
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "father.id",commandOptions.fatherId, true);
+            putNestedIfNotEmpty(beanParams, "father.uuid",commandOptions.fatherUuid, true);
             putNestedIfNotEmpty(beanParams, "mother.id",commandOptions.motherId, true);
-             putNestedIfNotEmpty(beanParams, "mother.uuid",commandOptions.motherUuid, true);
- 
+            putNestedIfNotEmpty(beanParams, "mother.uuid",commandOptions.motherUuid, true);
             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotNull(beanParams, "parentalConsanguinity",commandOptions.parentalConsanguinity, true);
-             putNestedIfNotEmpty(beanParams, "location.address",commandOptions.locationAddress, true);
-             putNestedIfNotEmpty(beanParams, "location.postalCode",commandOptions.locationPostalCode, true);
-             putNestedIfNotEmpty(beanParams, "location.city",commandOptions.locationCity, true);
-             putNestedIfNotEmpty(beanParams, "location.state",commandOptions.locationState, true);
-             putNestedIfNotEmpty(beanParams, "location.country",commandOptions.locationCountry, true);
- 
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotNull(beanParams, "parentalConsanguinity",commandOptions.parentalConsanguinity, true);
+            putNestedIfNotEmpty(beanParams, "location.address",commandOptions.locationAddress, true);
+            putNestedIfNotEmpty(beanParams, "location.postalCode",commandOptions.locationPostalCode, true);
+            putNestedIfNotEmpty(beanParams, "location.city",commandOptions.locationCity, true);
+            putNestedIfNotEmpty(beanParams, "location.state",commandOptions.locationState, true);
+            putNestedIfNotEmpty(beanParams, "location.country",commandOptions.locationCountry, true);
             putNestedIfNotEmpty(beanParams, "sex.id",commandOptions.sexId, true);
-             putNestedIfNotEmpty(beanParams, "sex.name",commandOptions.sexName, true);
-             putNestedIfNotEmpty(beanParams, "sex.description",commandOptions.sexDescription, true);
-             putNestedIfNotEmpty(beanParams, "sex.source",commandOptions.sexSource, true);
-             putNestedIfNotEmpty(beanParams, "sex.url",commandOptions.sexUrl, true);
- 
+            putNestedIfNotEmpty(beanParams, "sex.name",commandOptions.sexName, true);
+            putNestedIfNotEmpty(beanParams, "sex.description",commandOptions.sexDescription, true);
+            putNestedIfNotEmpty(beanParams, "sex.source",commandOptions.sexSource, true);
+            putNestedIfNotEmpty(beanParams, "sex.url",commandOptions.sexUrl, true);
             putNestedIfNotEmpty(beanParams, "ethnicity.id",commandOptions.ethnicityId, true);
-             putNestedIfNotEmpty(beanParams, "ethnicity.name",commandOptions.ethnicityName, true);
-             putNestedIfNotEmpty(beanParams, "ethnicity.description",commandOptions.ethnicityDescription, true);
-             putNestedIfNotEmpty(beanParams, "ethnicity.source",commandOptions.ethnicitySource, true);
-             putNestedIfNotEmpty(beanParams, "ethnicity.url",commandOptions.ethnicityUrl, true);
- 
+            putNestedIfNotEmpty(beanParams, "ethnicity.name",commandOptions.ethnicityName, true);
+            putNestedIfNotEmpty(beanParams, "ethnicity.description",commandOptions.ethnicityDescription, true);
+            putNestedIfNotEmpty(beanParams, "ethnicity.source",commandOptions.ethnicitySource, true);
+            putNestedIfNotEmpty(beanParams, "ethnicity.url",commandOptions.ethnicityUrl, true);
             putNestedIfNotEmpty(beanParams, "population.name",commandOptions.populationName, true);
-             putNestedIfNotEmpty(beanParams, "population.subpopulation",commandOptions.populationSubpopulation, true);
-             putNestedIfNotEmpty(beanParams, "population.description",commandOptions.populationDescription, true);
- 
+            putNestedIfNotEmpty(beanParams, "population.subpopulation",commandOptions.populationSubpopulation, true);
+            putNestedIfNotEmpty(beanParams, "population.description",commandOptions.populationDescription, true);
             putNestedIfNotEmpty(beanParams, "dateOfBirth",commandOptions.dateOfBirth, true);
- 
-
-
-
+            putNestedIfNotNull(beanParams, "karyotypicSex",commandOptions.karyotypicSex, true);
+            putNestedIfNotNull(beanParams, "lifeStatus",commandOptions.lifeStatus, true);
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
- 
-
-
-
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
             putNestedIfNotNull(beanParams, "qualityControl.files",commandOptions.qualityControlFiles, true);
- 
-
 
             individualUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

@@ -49,7 +49,6 @@ import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.StatusParam;
-import org.opencb.opencga.core.models.common.StatusValue;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
@@ -312,7 +311,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 // Validate and get panels
                 Set<String> panelIds = interpretation.getPanels().stream().map(Panel::getId).collect(Collectors.toSet());
                 Query query = new Query(PanelDBAdaptor.QueryParams.ID.key(), panelIds);
-                OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> panelResult =
+                OpenCGAResult<Panel> panelResult =
                         panelDBAdaptor.get(study.getUid(), query, PanelManager.INCLUDE_PANEL_IDS, userId);
                 if (panelResult.getNumResults() < panelIds.size()) {
                     throw new CatalogException("Some panels were not found or user doesn't have permissions to see them");
@@ -324,6 +323,19 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         // Validate status
         validateStatusParameter(interpretation, clinicalAnalysis.getType(), interpretationConfiguration);
+        if (StringUtils.isNotEmpty(interpretation.getStatus().getId())) {
+            List<ClinicalStatusValue> clinicalStatusValues = interpretationConfiguration.getStatus().get(clinicalAnalysis.getType());
+            for (ClinicalStatusValue clinicalStatusValue : clinicalStatusValues) {
+                if (interpretation.getStatus().getId().equals(clinicalStatusValue.getId())
+                        && clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED) {
+                    String msg = "Interpretation '" + interpretation.getId() + "' created with status '"
+                            + interpretation.getStatus().getId() + "', which is of type CLOSED. Automatically locking "
+                            + "Interpretation.";
+                    logger.info(msg);
+                    interpretation.setLocked(true);
+                }
+            }
+        }
 
         // Check there are no duplicated findings
         Set<String> findings = new HashSet<>();
@@ -882,6 +894,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                     + " the Interpretation.");
         }
 
+        List<Event> events = new ArrayList<>();
+
         if (updateParams != null && StringUtils.isNotEmpty(updateParams.getCreationDate())) {
             ParamUtils.checkDateFormat(updateParams.getCreationDate(), InterpretationDBAdaptor.QueryParams.CREATION_DATE.key());
         }
@@ -1027,10 +1041,25 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             interpretation.setStatus(updateParams.getStatus().toStatus());
             validateStatusParameter(interpretation, clinicalAnalysis.getType(), interpretationConfiguration);
             parameters.put(InterpretationDBAdaptor.QueryParams.STATUS.key(), interpretation.getStatus());
+
+            if (StringUtils.isNotEmpty(interpretation.getStatus().getId())) {
+                List<ClinicalStatusValue> clinicalStatusValues = interpretationConfiguration.getStatus().get(clinicalAnalysis.getType());
+                for (ClinicalStatusValue clinicalStatusValue : clinicalStatusValues) {
+                    if (interpretation.getStatus().getId().equals(clinicalStatusValue.getId())
+                            && clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED) {
+                        String msg = "User '" + userId + "' changed case '" + interpretation.getId() + "' to status '"
+                                + updateParams.getStatus().getId() + "', which is of type CLOSED. Automatically locking Interpretation";
+                        logger.info(msg);
+                        parameters.put(InterpretationDBAdaptor.QueryParams.LOCKED.key(), true);
+                        events.add(new Event(Event.Type.INFO, clinicalAnalysis.getId(), msg));
+                    }
+                }
+            }
         }
 
         OpenCGAResult<Interpretation> update = interpretationDBAdaptor.update(interpretation.getUid(), parameters, clinicalAuditList, as,
                 options);
+        update.addEvents(events);
         if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
             // Fetch updated interpretation
             OpenCGAResult<Interpretation> result = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(), options);
@@ -1253,7 +1282,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         ClinicalAnalysis clinicalAnalysis;
         try {
             clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(), clinicalAnalysisId,
-                            INCLUDE_CLINICAL_ANALYSIS, userId).first();
+                    INCLUDE_CLINICAL_ANALYSIS, userId).first();
             if (clinicalAnalysis.isLocked()) {
                 throw new CatalogException("Could not delete the Interpretation. Case is locked so no further modifications can be made to"
                         + " the Interpretation.");
@@ -1451,16 +1480,16 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                     + "'. Please add a proper set of valid statuses.");
         }
         if (StringUtils.isNotEmpty(interpretation.getStatus().getId())) {
-            Map<String, StatusValue> statusMap = new HashMap<>();
-            for (StatusValue status : interpretationConfiguration.getStatus().get(type)) {
+            Map<String, ClinicalStatusValue> statusMap = new HashMap<>();
+            for (ClinicalStatusValue status : interpretationConfiguration.getStatus().get(type)) {
                 statusMap.put(status.getId(), status);
             }
             if (!statusMap.containsKey(interpretation.getStatus().getId())) {
-                throw new CatalogException("Unknown status '" + interpretation.getStatus().getId() + "'. The list of valid statuses is: '"
-                        + String.join(",", statusMap.keySet()) + "'");
+                throw new CatalogException("Unknown status '" + interpretation.getStatus().getId() + "'. The list of valid statuses are: '"
+                        + String.join(", ", statusMap.keySet()) + "'");
             }
-            StatusValue statusValue = statusMap.get(interpretation.getStatus().getId());
-            interpretation.getStatus().setDescription(statusValue.getDescription());
+            ClinicalStatusValue clinicalStatusValue = statusMap.get(interpretation.getStatus().getId());
+            interpretation.getStatus().setDescription(clinicalStatusValue.getDescription());
             interpretation.getStatus().setDate(TimeUtils.getTime());
         }
     }

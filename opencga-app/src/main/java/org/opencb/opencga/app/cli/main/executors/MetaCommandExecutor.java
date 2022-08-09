@@ -57,8 +57,23 @@ public class MetaCommandExecutor extends OpencgaCommandExecutor {
         RestResponse queryResponse = null;
 
         switch (subCommandString) {
+            case "about":
+                queryResponse = about();
+                break;
             case "api":
                 queryResponse = api();
+                break;
+            case "fail":
+                queryResponse = fail();
+                break;
+            case "model":
+                queryResponse = model();
+                break;
+            case "ping":
+                queryResponse = ping();
+                break;
+            case "status":
+                queryResponse = status();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -67,6 +82,14 @@ public class MetaCommandExecutor extends OpencgaCommandExecutor {
 
         createOutput(queryResponse);
 
+    }
+
+    private RestResponse<ObjectMap> about() throws Exception {
+
+        logger.debug("Executing about in Meta command line");
+
+        MetaCommandOptions.AboutCommandOptions commandOptions = metaCommandOptions.aboutCommandOptions;
+        return openCGAClient.getMetaClient().about();
     }
 
     private RestResponse<List> api() throws Exception {
@@ -79,5 +102,37 @@ public class MetaCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("category", commandOptions.category);
 
         return openCGAClient.getMetaClient().api(queryParams);
+    }
+
+    private RestResponse<ObjectMap> fail() throws Exception {
+
+        logger.debug("Executing fail in Meta command line");
+
+        MetaCommandOptions.FailCommandOptions commandOptions = metaCommandOptions.failCommandOptions;
+        return openCGAClient.getMetaClient().fail();
+    }
+
+    private RestResponse<String> model() throws Exception {
+
+        logger.debug("Executing model in Meta command line");
+
+        MetaCommandOptions.ModelCommandOptions commandOptions = metaCommandOptions.modelCommandOptions;
+        return openCGAClient.getMetaClient().model();
+    }
+
+    private RestResponse<String> ping() throws Exception {
+
+        logger.debug("Executing ping in Meta command line");
+
+        MetaCommandOptions.PingCommandOptions commandOptions = metaCommandOptions.pingCommandOptions;
+        return openCGAClient.getMetaClient().ping();
+    }
+
+    private RestResponse<ObjectMap> status() throws Exception {
+
+        logger.debug("Executing status in Meta command line");
+
+        MetaCommandOptions.StatusCommandOptions commandOptions = metaCommandOptions.statusCommandOptions;
+        return openCGAClient.getMetaClient().status();
     }
 }

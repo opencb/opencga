@@ -16,11 +16,11 @@
 
 package org.opencb.opencga.server.generator.writers.cli;
 
-import org.opencb.opencga.server.generator.models.RestCategory;
-import org.opencb.opencga.server.generator.models.RestEndpoint;
-import org.opencb.opencga.server.generator.models.RestApi;
 import org.opencb.opencga.server.generator.config.CategoryConfig;
 import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
+import org.opencb.opencga.server.generator.models.RestApi;
+import org.opencb.opencga.server.generator.models.RestCategory;
+import org.opencb.opencga.server.generator.models.RestEndpoint;
 import org.opencb.opencga.server.generator.writers.ParentClientRestApiWriter;
 
 import java.io.File;
@@ -89,7 +89,6 @@ public class AutoCompleteWriter extends ParentClientRestApiWriter {
 
     @Override
     protected String getClassHeader(String key) {
-
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
         sb.append("public abstract class OpenCgaCompleter implements Completer {\n");
@@ -107,10 +106,8 @@ public class AutoCompleteWriter extends ParentClientRestApiWriter {
             sb.append("    private List<Candidate> " + getCategoryCommandName(restCategory, config) + "List = asList( ");
             for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
                 String commandName = getCommandName(restCategory, restEndpoint);
-                if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
-                    if (config.isAvailableCommand(commandName)) {
-                        sb.append("\"" + commandName + "\",");
-                    }
+                if (config.isAvailableCommand(commandName)) {
+                    sb.append("\"" + reverseCommandName(commandName) + "\",");
                 }
             }
             sb.delete(sb.lastIndexOf(","), sb.length());

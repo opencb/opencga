@@ -145,12 +145,6 @@ public class DiseasePanelsCommandOptions {
         @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
         public String tags;
     
-        @DynamicParameter(names = {"--stats"}, description = "The body web service stats parameter. Use: --stats key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Integer> stats = new HashMap<>(); //Dynamic parameters must be initialized;
-    
-        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
-    
     }
 
     @Parameters(commandNames = {"distinct"}, commandDescription ="Panel distinct method")
@@ -182,6 +176,9 @@ public class DiseasePanelsCommandOptions {
     
         @Parameter(names = {"--genes"}, description = "Comma separated list of gene ids", required = false, arity = 1)
         public String genes; 
+    
+        @Parameter(names = {"--source"}, description = "Comma separated list of source ids or names.", required = false, arity = 1)
+        public String source; 
     
         @Parameter(names = {"--regions"}, description = "Comma separated list of regions", required = false, arity = 1)
         public String regions; 
@@ -297,6 +294,9 @@ public class DiseasePanelsCommandOptions {
     
         @Parameter(names = {"--genes"}, description = "Comma separated list of gene ids", required = false, arity = 1)
         public String genes; 
+    
+        @Parameter(names = {"--source"}, description = "Comma separated list of source ids or names.", required = false, arity = 1)
+        public String source; 
     
         @Parameter(names = {"--regions"}, description = "Comma separated list of regions", required = false, arity = 1)
         public String regions; 
@@ -446,12 +446,6 @@ public class DiseasePanelsCommandOptions {
     
         @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
         public String tags;
-    
-        @DynamicParameter(names = {"--stats"}, description = "The body web service stats parameter. Use: --stats key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Integer> stats = new HashMap<>(); //Dynamic parameters must be initialized;
-    
-        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 

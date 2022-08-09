@@ -373,14 +373,14 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                     logger.debug("Panel {} successfully updated", panel.getId());
 
                     return endWrite(tmpStartTime, 1, 1, events);
-                }, (MongoDBIterator<Document> iterator) -> updateReferencesAfterPanelVersionIncrement(clientSession, iterator)
+                }, this::iterator, (DBIterator<Panel> iterator) -> updateReferencesAfterPanelVersionIncrement(clientSession, iterator)
         );
     }
 
-    private void updateReferencesAfterPanelVersionIncrement(ClientSession clientSession, MongoDBIterator<Document> iterator)
+    private void updateReferencesAfterPanelVersionIncrement(ClientSession clientSession, DBIterator<Panel> iterator)
             throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
         while (iterator.hasNext()) {
-            Panel panel = panelConverter.convertToDataModelType(iterator.next());
+            Panel panel = iterator.next();
             dbAdaptorFactory.getClinicalAnalysisDBAdaptor().updateClinicalAnalysisPanelReferences(clientSession, panel);
         }
     }
@@ -761,6 +761,9 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                         addDefaultOrQueryFilter(queryParam.key(), queryParam.key(), queryCopy, andBsonList);
                         break;
                     case DISORDERS:
+                        addDefaultOrQueryFilter(queryParam.key(), queryParam.key(), queryCopy, andBsonList);
+                        break;
+                    case SOURCE:
                         addDefaultOrQueryFilter(queryParam.key(), queryParam.key(), queryCopy, andBsonList);
                         break;
                     case REGIONS:

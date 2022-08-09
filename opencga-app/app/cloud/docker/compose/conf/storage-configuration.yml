@@ -24,7 +24,7 @@ search:
   #    Example for Zookeeper connection:  opencga-zookeeper-01:2181               <-- Recommended for replicated installations
   hosts:
     - http://solr:8983/solr/
-  configSet: "opencga-variant-configset-2.3.0"
+  configSet: "opencga-variant-configset-2.4.0-SNAPSHOT"
   mode: "cloud"
   timeout: 30000
   insertBatchSize: 5000
@@ -48,7 +48,7 @@ rga:
   #    Example for Zookeeper connection:  opencga-zookeeper-01:2181               <-- Recommended for replicated installations
   hosts:
     - http://solr:8983/solr/    # URL containing host and port, e.g. http://localhost:8983/solr/
-  configSet: "opencga-rga-configset-2.3.0"
+  configSet: "opencga-rga-configset-2.4.0-SNAPSHOT"
   mode: "cloud"
   timeout: 30000
   insertBatchSize: 1000
@@ -60,7 +60,7 @@ benchmark:
   connectionType: REST         # Select between REST or DIRECT.
   mode: FIXED                  # Select between FIXED or RANDOM
   databaseName: "opencga"
-  rest: "http://localhost:8080/opencga-2.3.0"
+  rest: "http://localhost:8080/opencga-2.4.0-SNAPSHOT"
 
 io:
   connectors:
@@ -175,7 +175,7 @@ variant:
         storage.hadoop.bin: "hadoop"
 
         ## If undefined, it will be generated based on the build version.
-        #storage.hadoop.mr.jarWithDependencies: "opencga-storage-hadoop-core-2.3.0-jar-with-dependencies.jar"
+        #storage.hadoop.mr.jarWithDependencies: "opencga-storage-hadoop-core-2.4.0-SNAPSHOT-jar-with-dependencies.jar"
 
         # Define the MapReduce job executor.
         storage.hadoop.mr.executor: "system"  # Either "system" or "ssh".

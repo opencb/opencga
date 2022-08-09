@@ -20,6 +20,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -43,6 +44,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.clinical.*;
@@ -51,10 +53,13 @@ import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -70,6 +75,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     private final MongoDBCollection clinicalCollection;
     private final MongoDBCollection deletedClinicalCollection;
     private final ClinicalAnalysisConverter clinicalConverter;
+
+    private static final String PRIVATE_DUE_DATE = "_dueDate";
 
     public ClinicalAnalysisMongoDBAdaptor(MongoDBCollection clinicalCollection, MongoDBCollection deletedClinicalCollection,
                                           Configuration configuration, MongoDBAdaptorFactory dbAdaptorFactory) {
@@ -184,6 +191,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
                 if (parameters.getBoolean(LOCKED.key())) {
                     // Propagate locked value to Interpretations
+                    logger.debug("Propagating case lock to all the Interpretations");
                     dbAdaptorFactory.getInterpretationDBAdaptor().propagateLockedFromClinicalAnalysis(clientSession, clinical,
                             parameters.getBoolean(LOCKED.key()));
                 }
@@ -248,7 +256,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         String[] acceptedBooleanParams = {LOCKED.key(), PANEL_LOCK.key()};
         filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
 
-        String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.DUE_DATE.key()};
+        String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
@@ -262,6 +270,12 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             Date date = TimeUtils.toDate(time);
             document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
             document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+        }
+        if (StringUtils.isNotEmpty(parameters.getString(DUE_DATE.key()))) {
+            String time = parameters.getString(QueryParams.DUE_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(DUE_DATE.key(), time);
+            document.getSet().put(PRIVATE_DUE_DATE, date);
         }
 
         String[] acceptedObjectParams = {QueryParams.FAMILY.key(), QueryParams.DISORDER.key(), QUALITY_CONTROL.key(),
@@ -844,6 +858,10 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         clinicalDocument.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(clinicalAnalysis.getModificationDate())
                 ? TimeUtils.toDate(clinicalAnalysis.getModificationDate()) : TimeUtils.getDate());
         clinicalDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
+        if (StringUtils.isEmpty(clinicalAnalysis.getDueDate())) {
+            throw new CatalogDBException("Cannot create Clinical Analysis without a " + DUE_DATE.key());
+        }
+        clinicalDocument.put(PRIVATE_DUE_DATE, TimeUtils.toDate(clinicalAnalysis.getDueDate()));
 
         logger.debug("Inserting ClinicalAnalysis '{}' ({})...", clinicalAnalysis.getId(), clinicalAnalysis.getUid());
         clinicalCollection.insert(clientSession, clinicalDocument, null);
@@ -921,11 +939,52 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
             if (clinicalAnalysis.getFamily().getUid() == family.getUid()
                     && clinicalAnalysis.getFamily().getVersion() < family.getVersion()) {
-                Family newFamily = clinicalAnalysis.getFamily();
+                Family familyCopy;
+                try {
+                    familyCopy = JacksonUtils.copy(family, Family.class);
+                } catch (IOException e) {
+                    throw new CatalogDBException("Internal error copying the Family object", e);
+                }
 
-                // Increase family version
-                newFamily.setVersion(family.getVersion());
-                ObjectMap params = new ObjectMap(QueryParams.FAMILY.key(), newFamily);
+                // Extract from the Family object, the members and samples actually related to the case.
+                Set<Long> individualAndSampleUids = new HashSet<>();
+                if (CollectionUtils.isNotEmpty(clinicalAnalysis.getFamily().getMembers())) {
+                    for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
+                        individualAndSampleUids.add(member.getUid());
+                        if (CollectionUtils.isNotEmpty(member.getSamples())) {
+                            for (Sample sample : member.getSamples()) {
+                                individualAndSampleUids.add(sample.getUid());
+                            }
+                        }
+                    }
+                    if (CollectionUtils.isNotEmpty(family.getMembers())) {
+                        List<Individual> memberList = new ArrayList<>(clinicalAnalysis.getFamily().getMembers().size());
+                        for (Individual member : family.getMembers()) {
+                            if (individualAndSampleUids.contains(member.getUid())) {
+                                Individual individualCopy;
+                                try {
+                                    individualCopy = JacksonUtils.copy(member, Individual.class);
+                                } catch (IOException e) {
+                                    throw new CatalogDBException("Internal error copying the Individual object", e);
+                                }
+
+                                if (CollectionUtils.isNotEmpty(member.getSamples())) {
+                                    List<Sample> sampleList = new ArrayList<>();
+                                    for (Sample sample : member.getSamples()) {
+                                        if (individualAndSampleUids.contains(sample.getUid())) {
+                                            sampleList.add(sample);
+                                        }
+                                    }
+                                    individualCopy.setSamples(sampleList);
+                                }
+                                memberList.add(individualCopy);
+                            }
+                        }
+                        familyCopy.setMembers(memberList);
+                    }
+                }
+
+                ObjectMap params = new ObjectMap(QueryParams.FAMILY.key(), familyCopy);
                 OpenCGAResult<?> result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().update(clientSession, clinicalAnalysis, params,
                         null, QueryOptions.empty());
                 if (result.getNumUpdated() != 1) {
@@ -1052,6 +1111,9 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
+                    case DUE_DATE:
+                        addAutoOrQuery(PRIVATE_DUE_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
                     case INDIVIDUAL:
                         List<Bson> queryList = new ArrayList<>();
                         addAutoOrQuery(PROBAND_UID.key(), queryParam.key(), queryCopy, PROBAND_UID.type(), queryList);
@@ -1080,7 +1142,6 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case ID:
                     case UUID:
                     case TYPE:
-                    case DUE_DATE:
                     case PANEL_LOCK:
                     case LOCKED:
                     case FILES_UID:

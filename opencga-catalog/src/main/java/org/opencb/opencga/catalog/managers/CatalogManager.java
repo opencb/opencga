@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.migration.MigrationManager;
+import org.opencb.opencga.catalog.utils.JwtUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.UriUtils;
@@ -190,6 +191,7 @@ public class CatalogManager implements AutoCloseable {
         }
         ParamUtils.checkParameter(secretKey, "secretKey");
         ParamUtils.checkParameter(password, "password");
+        JwtUtils.validateJWTKey(configuration.getAdmin().getAlgorithm(), secretKey);
 
         configuration.getAdmin().setSecretKey(secretKey);
 

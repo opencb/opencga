@@ -189,13 +189,13 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("        switch (subCommandString) {\n");
         for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
             String commandName = getCommandName(restCategory, restEndpoint);
-            if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
-                if (config.isAvailableCommand(commandName)) {
-                    sb.append("            case \"" + reverseCommandName(commandName) + "\":\n");
-                    sb.append("                queryResponse = " + getJavaMethodName(config, commandName) + "();\n");
-                    sb.append("                break;\n");
-                }
+            //  if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
+            if (config.isAvailableCommand(commandName)) {
+                sb.append("            case \"" + reverseCommandName(commandName) + "\":\n");
+                sb.append("                queryResponse = " + getJavaMethodName(config, commandName) + "();\n");
+                sb.append("                break;\n");
             }
+            //    }
         }
         if (CollectionUtils.isNotEmpty(config.getAddedMethods())) {
             for (String methodName : config.getAddedMethods()) {
@@ -229,28 +229,28 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append(methodExecute(restCategory, config));
         for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
             String commandName = getCommandName(restCategory, restEndpoint);
-            if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
-                if (config.isAvailableCommand(commandName)) {
-                    sb.append("\n");
-                    sb.append("    " + (config.isExecutorExtendedCommand(commandName) ? "protected" :
-                            "private") + " RestResponse<" + getValidResponseNames(restEndpoint.getResponse()) + "> "
-                            + getJavaMethodName(config, commandName) + "() throws Exception {\n\n");
-                    sb.append("        logger.debug(\"Executing " + getAsCamelCase(commandName) + " in "
-                            + restCategory.getName() + " command line\");\n\n");
-                    if (config.isExecutorExtendedCommand(commandName)) {
-                        sb.append("        return super." + getAsCamelCase(commandName) + "();\n\n");
-                    } else {
-                        sb.append("        " + getAsClassName(restCategory.getName()) + "CommandOptions." + getAsClassName(getAsCamelCase(commandName))
-                                + "CommandOptions commandOptions = " + getAsVariableName(getAsCamelCase(restCategory.getName())) +
-                                "CommandOptions."
-                                + getAsCamelCase(commandName) + "CommandOptions;\n");
-                        sb.append(getQueryParams(restEndpoint, config, commandName));
-                        sb.append(getBodyParams(restCategory, restEndpoint, config, commandName));
-                        sb.append(getReturn(restCategory, restEndpoint, config, commandName));
-                    }
-                    sb.append("    }\n");
+            //  if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
+            if (config.isAvailableCommand(commandName)) {
+                sb.append("\n");
+                sb.append("    " + (config.isExecutorExtendedCommand(commandName) ? "protected" :
+                        "private") + " RestResponse<" + getValidResponseNames(restEndpoint.getResponse()) + "> "
+                        + getJavaMethodName(config, commandName) + "() throws Exception {\n\n");
+                sb.append("        logger.debug(\"Executing " + getAsCamelCase(commandName) + " in "
+                        + restCategory.getName() + " command line\");\n\n");
+                if (config.isExecutorExtendedCommand(commandName)) {
+                    sb.append("        return super." + getAsCamelCase(commandName) + "();\n\n");
+                } else {
+                    sb.append("        " + getAsClassName(restCategory.getName()) + "CommandOptions." + getAsClassName(getAsCamelCase(commandName))
+                            + "CommandOptions commandOptions = " + getAsVariableName(getAsCamelCase(restCategory.getName())) +
+                            "CommandOptions."
+                            + getAsCamelCase(commandName) + "CommandOptions;\n");
+                    sb.append(getQueryParams(restEndpoint, config, commandName));
+                    sb.append(getBodyParams(restCategory, restEndpoint, config, commandName));
+                    sb.append(getReturn(restCategory, restEndpoint, config, commandName));
                 }
+                sb.append("    }\n");
             }
+            //  }
         }
 
         return sb.toString();
@@ -328,7 +328,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         StringBuilder sb = new StringBuilder();
         for (RestParameter restParameter : body.getData()) {
             if (CollectionUtils.isEmpty(restParameter.getData())) {
-                if (restParameter.isAvailableType()) {
+                if (restParameter.isAvailableType() || restParameter.isEnum()) {
                     String javaCommandOptionsField = "commandOptions." + getJavaFieldName(restParameter);
                     String label = StringUtils.isEmpty(restParameter.getParentName()) ? restParameter.getName() : restParameter.getParentName() + "." + restParameter.getName();
                     if (restParameter.getTypeClass().equals("java.lang.String;")) {
@@ -337,8 +337,6 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                         sb.append("            putNestedIfNotNull(beanParams, \"" + label.replaceAll("body_", "") + "\"," + javaCommandOptionsField + ", true);\n ");
                     }
                 }
-            } else {
-                sb.append("\n");
             }
 
         }

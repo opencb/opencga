@@ -174,6 +174,8 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), StudyAclUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "study",commandOptions.study, true);
+            putNestedIfNotEmpty(beanParams, "template",commandOptions.template, true);
             putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
              putNestedIfNotEmpty(beanParams, "study",commandOptions.study, true);
              putNestedIfNotEmpty(beanParams, "template",commandOptions.template, true);
@@ -211,21 +213,16 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "alias",commandOptions.alias, true);
-             putNestedIfNotEmpty(beanParams, "type.id",commandOptions.typeId, true);
-             putNestedIfNotEmpty(beanParams, "type.description",commandOptions.typeDescription, true);
- 
-
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "alias",commandOptions.alias, true);
+            putNestedIfNotEmpty(beanParams, "type.id",commandOptions.typeId, true);
+            putNestedIfNotEmpty(beanParams, "type.description",commandOptions.typeDescription, true);
             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
- 
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
- 
-
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
             studyCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -501,20 +498,15 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "alias",commandOptions.alias, true);
-             putNestedIfNotEmpty(beanParams, "type.id",commandOptions.typeId, true);
-             putNestedIfNotEmpty(beanParams, "type.description",commandOptions.typeDescription, true);
- 
-
+            putNestedIfNotEmpty(beanParams, "alias",commandOptions.alias, true);
+            putNestedIfNotEmpty(beanParams, "type.id",commandOptions.typeId, true);
+            putNestedIfNotEmpty(beanParams, "type.description",commandOptions.typeDescription, true);
             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
- 
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
- 
-
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
             studyUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -558,11 +550,10 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotNull(beanParams, "unique",commandOptions.unique, true);
-             putNestedIfNotNull(beanParams, "confidential",commandOptions.confidential, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
- 
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotNull(beanParams, "unique",commandOptions.unique, true);
+            putNestedIfNotNull(beanParams, "confidential",commandOptions.confidential, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
 
             variableSetCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

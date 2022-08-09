@@ -109,13 +109,13 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
             for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
                 String commandName = getCommandName(restCategory, restEndpoint);
 //                if ((!"POST".equals(restEndpoint.getMethod()) || restEndpoint.hasPrimitiveBodyParams(config, commandName)) && restEndpoint.hasParameters()) {
-                if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
-                    if (config.isAvailableCommand(commandName)) {
-                        sb.append("        " + getAsVariableName(restCategory.getName()) + "SubCommands.addCommand(\"" + reverseCommandName(commandName) + "\", "
-                                + getAsVariableName(restCategory.getName()) + "CommandOptions." + getAsCamelCase(commandName) +
-                                "CommandOptions);\n");
-                    }
+                //  if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
+                if (config.isAvailableCommand(commandName)) {
+                    sb.append("        " + getAsVariableName(restCategory.getName()) + "SubCommands.addCommand(\"" + reverseCommandName(commandName) + "\", "
+                            + getAsVariableName(restCategory.getName()) + "CommandOptions." + getAsCamelCase(commandName) +
+                            "CommandOptions);\n");
                 }
+                //   }
             }
 
             if (CollectionUtils.isNotEmpty(config.getAddedMethods())) {

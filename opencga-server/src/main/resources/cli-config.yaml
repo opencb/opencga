@@ -188,11 +188,12 @@ apiConfig:
       key: VariantOperation
       operations: True
     - name: meta
+      commandName: meta
       ignore: False
       key: Meta
     - name: ga4gh
       ignore: True
       key: GA4GH
     - name: admin
-      ignore: True
+      ignore: false
       key: Admin

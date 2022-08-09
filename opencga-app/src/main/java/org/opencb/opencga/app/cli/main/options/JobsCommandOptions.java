@@ -199,9 +199,6 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         @Parameter(names = {"--command-line"}, description = "The body web service commandLine parameter", required = false, arity = 1)
         public String commandLine;
     
-        @DynamicParameter(names = {"--params"}, description = "The body web service params parameter. Use: --params key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> params = new HashMap<>(); //Dynamic parameters must be initialized;
-    
         @Parameter(names = {"--creation-date", "--cd"}, description = "The body web service creationDate parameter", required = false, arity = 1)
         public String creationDate;
     
@@ -217,17 +214,11 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         @Parameter(names = {"--result-id"}, description = "Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.", required = false, arity = 1)
         public String resultId;
     
-        @DynamicParameter(names = {"--result-attributes"}, description = "You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.. Use: --result-attributes key=value", required = false)
-        public Map<String, ?> resultAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
-    
         @Parameter(names = {"--stdout-path"}, description = "The body web service path parameter", required = false, arity = 1)
         public String stdoutPath;
     
         @Parameter(names = {"--stderr-path"}, description = "The body web service path parameter", required = false, arity = 1)
         public String stderrPath;
-    
-        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 
@@ -331,9 +322,6 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
     
         @Parameter(names = {"--force"}, description = "The body web service force parameter", required = false, arity = 1)
         public Boolean force;
-    
-        @DynamicParameter(names = {"--params"}, description = "The body web service params parameter. Use: --params key=value", required = false)
-        public Map<String, ?> params = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 
@@ -506,9 +494,6 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
     
         @Parameter(names = {"--visited"}, description = "The body web service visited parameter", required = false, arity = 1)
         public Boolean visited;
-    
-        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 

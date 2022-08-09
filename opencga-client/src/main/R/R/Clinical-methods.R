@@ -23,11 +23,12 @@
 #' | updateAcl | /{apiVersion}/analysis/clinical/acl/{members}/update | study, members[*], action[*], propagate, body[*] |
 #' | updateClinicalConfiguration | /{apiVersion}/analysis/clinical/clinical/configuration/update | study, body |
 #' | create | /{apiVersion}/analysis/clinical/create | include, exclude, study, skipCreateDefaultInterpretation, includeResult, body[*] |
-#' | distinct | /{apiVersion}/analysis/clinical/distinct | study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, qualityControlSummary, release, status, internalStatus, deleted, field[*] |
+#' | distinct | /{apiVersion}/analysis/clinical/distinct | study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, dueDate, qualityControlSummary, release, status, internalStatus, deleted, field[*] |
 #' | distinctInterpretation | /{apiVersion}/analysis/clinical/interpretation/distinct | study, id, uuid, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release, field[*] |
 #' | searchInterpretation | /{apiVersion}/analysis/clinical/interpretation/search | include, exclude, limit, skip, sort, study, id, uuid, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release |
 #' | infoInterpretation | /{apiVersion}/analysis/clinical/interpretation/{interpretations}/info | include, exclude, interpretations[*], study, version, deleted |
 #' | runInterpreterCancerTiering | /{apiVersion}/analysis/clinical/interpreter/cancerTiering/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
+#' | runInterpreterExomiser | /{apiVersion}/analysis/clinical/interpreter/exomiser/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
 #' | runInterpreterTeam | /{apiVersion}/analysis/clinical/interpreter/team/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
 #' | runInterpreterTiering | /{apiVersion}/analysis/clinical/interpreter/tiering/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
 #' | runInterpreterZetta | /{apiVersion}/analysis/clinical/interpreter/zetta/run | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
@@ -39,9 +40,9 @@
 #' | summaryRgaIndividual | /{apiVersion}/analysis/clinical/rga/individual/summary | limit, skip, count, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study |
 #' | queryRgaVariant | /{apiVersion}/analysis/clinical/rga/variant/query | include, exclude, limit, skip, count, includeIndividual, skipIndividual, limitIndividual, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study |
 #' | summaryRgaVariant | /{apiVersion}/analysis/clinical/rga/variant/summary | limit, skip, count, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study |
-#' | search | /{apiVersion}/analysis/clinical/search | include, exclude, limit, skip, count, study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, qualityControlSummary, release, status, internalStatus, deleted |
+#' | search | /{apiVersion}/analysis/clinical/search | include, exclude, limit, skip, count, study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, dueDate, qualityControlSummary, release, status, internalStatus, deleted |
 #' | actionableVariant | /{apiVersion}/analysis/clinical/variant/actionable | study, sample |
-#' | queryVariant | /{apiVersion}/analysis/clinical/variant/query | include, exclude, limit, skip, count, approximateCount, approximateCountSamplingSize, savedFilter, id, region, type, study, file, filter, qual, fileData, sample, sampleData, sampleAnnotation, cohort, cohortStatsRef, cohortStatsAlt, cohortStatsMaf, cohortStatsMgf, cohortStatsPass, missingAlleles, missingGenotypes, score, family, familyDisorder, familySegregation, familyMembers, familyProband, gene, ct, xref, biotype, proteinSubstitution, conservation, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, go, expression, proteinKeyword, drug, functionalScore, clinical, clinicalSignificance, clinicalConfirmedStatus, customAnnotation, panel, panelModeOfInheritance, panelConfidence, panelRoleInCancer, panelFeatureType, panelIntersection, trait |
+#' | queryVariant | /{apiVersion}/analysis/clinical/variant/query | include, exclude, limit, skip, count, approximateCount, approximateCountSamplingSize, savedFilter, includeInterpretation, id, region, type, study, file, filter, qual, fileData, sample, sampleData, sampleAnnotation, cohort, cohortStatsRef, cohortStatsAlt, cohortStatsMaf, cohortStatsMgf, cohortStatsPass, missingAlleles, missingGenotypes, score, family, familyDisorder, familySegregation, familyMembers, familyProband, gene, ct, xref, biotype, proteinSubstitution, conservation, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, go, expression, proteinKeyword, drug, functionalScore, clinical, clinicalSignificance, clinicalConfirmedStatus, customAnnotation, panel, panelModeOfInheritance, panelConfidence, panelRoleInCancer, panelFeatureType, panelIntersection, trait |
 #' | acl | /{apiVersion}/analysis/clinical/{clinicalAnalyses}/acl | clinicalAnalyses[*], study, member, silent |
 #' | delete | /{apiVersion}/analysis/clinical/{clinicalAnalyses}/delete | study, force, clinicalAnalyses[*] |
 #' | update | /{apiVersion}/analysis/clinical/{clinicalAnalyses}/update | include, exclude, clinicalAnalyses[*], study, commentsAction, flagsAction, filesAction, panelsAction, includeResult, body[*] |
@@ -65,7 +66,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, clinicalAnalyses, cli
         #' Update the set of permissions granted for the member.
         #' @param study Study [[user@]project:]study where study and project can be either the ID or UUID.
         #' @param members Comma separated list of user or group IDs.
-        #' @param action Action to be performed [ADD, SET, REMOVE or RESET].
+        #' @param action Action to be performed [ADD, SET, REMOVE or RESET]. Allowed values: ['SET ADD REMOVE RESET']
         #' @param propagate Propagate permissions to related families, individuals, samples and files.
         #' @param data JSON containing the parameters to add ACLs.
         updateAcl=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="clinical/acl",
@@ -113,6 +114,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, clinicalAnalyses, cli
         #' @param flags Clinical Analysis flags.
         #' @param creationDate Clinical Analysis Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param modificationDate Clinical Analysis Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param dueDate Clinical Analysis due date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param qualityControlSummary Clinical Analysis quality control summary.
         #' @param release Release when it was created.
         #' @param status Filter by status.
@@ -190,6 +192,18 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, clinicalAnalyses, cli
         #' @param data Cancer tiering interpretation analysis params.
         runInterpreterCancerTiering=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="clinical/interpreter/cancerTiering", subcategoryId=NULL, action="run", params=params,
+                httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/analysis/clinical/interpreter/exomiser/run:
+        #' Run exomiser interpretation analysis.
+        #' @param study Study [[user@]project:]study where study and project can be either the ID or UUID.
+        #' @param jobId Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.
+        #' @param jobDescription Job description.
+        #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
+        #' @param jobTags Job tags.
+        #' @param data Exomizer interpretation analysis params.
+        runInterpreterExomiser=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
+                subcategory="clinical/interpreter/exomiser", subcategoryId=NULL, action="run", params=params,
                 httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/analysis/clinical/interpreter/team/run:
@@ -490,6 +504,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, clinicalAnalyses, cli
         #' @param flags Clinical Analysis flags.
         #' @param creationDate Clinical Analysis Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param modificationDate Clinical Analysis Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param dueDate Clinical Analysis due date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param qualityControlSummary Clinical Analysis quality control summary.
         #' @param release Release when it was created.
         #' @param status Filter by status.
@@ -516,6 +531,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, clinicalAnalyses, cli
         #' @param approximateCount Get an approximate count, instead of an exact total count. Reduces execution time.
         #' @param approximateCountSamplingSize Sampling size to get the approximate count. Larger values increase accuracy but also increase execution time.
         #' @param savedFilter Use a saved filter at User level.
+        #' @param includeInterpretation Interpretation ID to include the fields related to this interpretation.
         #' @param id List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T.
         #' @param region List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000.
         #' @param type List of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL.
@@ -596,10 +612,10 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, clinicalAnalyses, cli
         #' @param exclude Fields excluded in the response, whole JSON path must be provided.
         #' @param clinicalAnalyses Comma separated list of clinical analysis IDs.
         #' @param study Study [[user@]project:]study where study and project can be either the ID or UUID.
-        #' @param commentsAction Action to be performed if the array of comments is being updated. Allowed values: ['ADD', 'REMOVE', 'REPLACE']
-        #' @param flagsAction Action to be performed if the array of flags is being updated. Allowed values: ['ADD', 'SET', 'REMOVE']
-        #' @param filesAction Action to be performed if the array of files is being updated. Allowed values: ['ADD', 'SET', 'REMOVE']
-        #' @param panelsAction Action to be performed if the array of panels is being updated. Allowed values: ['ADD', 'SET', 'REMOVE']
+        #' @param commentsAction Action to be performed if the array of comments is being updated. Allowed values: ['ADD REMOVE REPLACE']
+        #' @param flagsAction Action to be performed if the array of flags is being updated. Allowed values: ['ADD SET REMOVE']
+        #' @param filesAction Action to be performed if the array of files is being updated. Allowed values: ['ADD SET REMOVE']
+        #' @param panelsAction Action to be performed if the array of panels is being updated. Allowed values: ['ADD SET REMOVE']
         #' @param includeResult Flag indicating to include the created or updated document result in the response.
         #' @param data JSON containing clinical analysis information.
         update=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="clinical",
@@ -623,7 +639,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, clinicalAnalyses, cli
         #' @param exclude Fields excluded in the response, whole JSON path must be provided.
         #' @param clinicalAnalysis Clinical analysis ID.
         #' @param study [[user@]project:]study id.
-        #' @param setAs Set interpretation as. Allowed values: ['PRIMARY', 'SECONDARY']
+        #' @param setAs Set interpretation as. Allowed values: ['PRIMARY SECONDARY']
         #' @param includeResult Flag indicating to include the created or updated document result in the response.
         #' @param data JSON containing clinical interpretation information.
         createInterpretation=fetchOpenCGA(object=OpencgaR, category="analysis/clinical", categoryId=clinicalAnalysis,
@@ -664,12 +680,12 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, clinicalAnalyses, cli
         #' @param include Fields included in the response, whole JSON path must be provided.
         #' @param exclude Fields excluded in the response, whole JSON path must be provided.
         #' @param study [[user@]project:]study ID.
-        #' @param primaryFindingsAction Action to be performed if the array of primary findings is being updated. Allowed values: ['ADD', 'SET', 'REMOVE', 'REPLACE']
-        #' @param methodsAction Action to be performed if the array of methods is being updated. Allowed values: ['ADD', 'SET', 'REMOVE']
-        #' @param secondaryFindingsAction Action to be performed if the array of secondary findings is being updated. Allowed values: ['ADD', 'SET', 'REMOVE', 'REPLACE']
-        #' @param commentsAction Action to be performed if the array of comments is being updated. To REMOVE or REPLACE, the date will need to be provided to identify the comment. Allowed values: ['ADD', 'REMOVE', 'REPLACE']
-        #' @param panelsAction Action to be performed if the array of panels is being updated. Allowed values: ['ADD', 'SET', 'REMOVE']
-        #' @param setAs Set interpretation as. Allowed values: ['PRIMARY', 'SECONDARY']
+        #' @param primaryFindingsAction Action to be performed if the array of primary findings is being updated. Allowed values: ['ADD SET REMOVE REPLACE']
+        #' @param methodsAction Action to be performed if the array of methods is being updated. Allowed values: ['ADD SET REMOVE']
+        #' @param secondaryFindingsAction Action to be performed if the array of secondary findings is being updated. Allowed values: ['ADD SET REMOVE REPLACE']
+        #' @param commentsAction Action to be performed if the array of comments is being updated. To REMOVE or REPLACE, the date will need to be provided to identify the comment. Allowed values: ['ADD REMOVE REPLACE']
+        #' @param panelsAction Action to be performed if the array of panels is being updated. Allowed values: ['ADD SET REMOVE']
+        #' @param setAs Set interpretation as. Allowed values: ['PRIMARY SECONDARY']
         #' @param clinicalAnalysis Clinical analysis ID.
         #' @param interpretation Interpretation ID.
         #' @param includeResult Flag indicating to include the created or updated document result in the response.

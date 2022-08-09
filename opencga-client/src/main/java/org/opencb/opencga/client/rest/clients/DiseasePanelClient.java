@@ -99,6 +99,7 @@ public class DiseasePanelClient extends AbstractParentClient {
      *       disorders: Comma separated list of disorder ids or names.
      *       variants: Comma separated list of variant ids.
      *       genes: Comma separated list of gene ids.
+     *       source: Comma separated list of source ids or names.
      *       regions: Comma separated list of regions.
      *       categories: Comma separated list of category names.
      *       tags: Panel tags.
@@ -154,6 +155,7 @@ public class DiseasePanelClient extends AbstractParentClient {
      *       disorders: Comma separated list of disorder ids or names.
      *       variants: Comma separated list of variant ids.
      *       genes: Comma separated list of gene ids.
+     *       source: Comma separated list of source ids or names.
      *       regions: Comma separated list of regions.
      *       categories: Comma separated list of category names.
      *       tags: Panel tags.

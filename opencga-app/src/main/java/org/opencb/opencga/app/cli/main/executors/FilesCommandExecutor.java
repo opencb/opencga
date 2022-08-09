@@ -98,6 +98,9 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             case "annotation-sets-load":
                 queryResponse = loadAnnotationSets();
                 break;
+            case "bioformats":
+                queryResponse = bioformats();
+                break;
             case "create":
                 queryResponse = create();
                 break;
@@ -106,6 +109,9 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
                 break;
             case "fetch":
                 queryResponse = fetch();
+                break;
+            case "formats":
+                queryResponse = formats();
                 break;
             case "link":
                 queryResponse = link();
@@ -279,6 +285,14 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         return openCGAClient.getFileClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
     }
 
+    private RestResponse<File.Bioformat> bioformats() throws Exception {
+
+        logger.debug("Executing bioformats in Files command line");
+
+        FilesCommandOptions.BioformatsCommandOptions commandOptions = filesCommandOptions.bioformatsCommandOptions;
+        return openCGAClient.getFileClient().bioformats();
+    }
+
     private RestResponse<File> create() throws Exception {
 
         logger.debug("Executing create in Files command line");
@@ -306,23 +320,24 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "content",commandOptions.content, true);
-             putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotNull(beanParams, "sampleIds",commandOptions.sampleIds, true);
-             putNestedIfNotEmpty(beanParams, "software.name",commandOptions.softwareName, true);
-             putNestedIfNotEmpty(beanParams, "software.version",commandOptions.softwareVersion, true);
-             putNestedIfNotEmpty(beanParams, "software.repository",commandOptions.softwareRepository, true);
-             putNestedIfNotEmpty(beanParams, "software.commit",commandOptions.softwareCommit, true);
-             putNestedIfNotEmpty(beanParams, "software.website",commandOptions.softwareWebsite, true);
- 
+            putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
+            putNestedIfNotNull(beanParams, "format",commandOptions.format, true);
+            putNestedIfNotNull(beanParams, "bioformat",commandOptions.bioformat, true);
+            putNestedIfNotNull(beanParams, "sampleIds",commandOptions.sampleIds, true);
+            putNestedIfNotEmpty(beanParams, "software.name",commandOptions.softwareName, true);
+            putNestedIfNotEmpty(beanParams, "software.version",commandOptions.softwareVersion, true);
+            putNestedIfNotEmpty(beanParams, "software.repository",commandOptions.softwareRepository, true);
+            putNestedIfNotEmpty(beanParams, "software.commit",commandOptions.softwareCommit, true);
+            putNestedIfNotEmpty(beanParams, "software.website",commandOptions.softwareWebsite, true);
             putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
-             putNestedIfNotEmpty(beanParams, "jobId",commandOptions.jobId, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
- 
+            putNestedIfNotEmpty(beanParams, "jobId",commandOptions.jobId, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
             fileCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -410,6 +425,14 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         return openCGAClient.getFileClient().fetch(fileFetch, queryParams);
     }
 
+    private RestResponse<File.Format> formats() throws Exception {
+
+        logger.debug("Executing formats in Files command line");
+
+        FilesCommandOptions.FormatsCommandOptions commandOptions = filesCommandOptions.formatsCommandOptions;
+        return openCGAClient.getFileClient().formats();
+    }
+
     private RestResponse<File> link() throws Exception {
 
         logger.debug("Executing link in Files command line");
@@ -437,16 +460,13 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "uri",commandOptions.uri, true);
-             putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
- 
+            putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
- 
-
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
             fileLinkParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -685,43 +705,35 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotNull(beanParams, "sampleIds",commandOptions.sampleIds, true);
-             putNestedIfNotEmpty(beanParams, "checksum",commandOptions.checksum, true);
-             putNestedIfNotEmpty(beanParams, "software.name",commandOptions.softwareName, true);
-             putNestedIfNotEmpty(beanParams, "software.version",commandOptions.softwareVersion, true);
-             putNestedIfNotEmpty(beanParams, "software.repository",commandOptions.softwareRepository, true);
-             putNestedIfNotEmpty(beanParams, "software.commit",commandOptions.softwareCommit, true);
-             putNestedIfNotEmpty(beanParams, "software.website",commandOptions.softwareWebsite, true);
- 
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotNull(beanParams, "sampleIds",commandOptions.sampleIds, true);
+            putNestedIfNotEmpty(beanParams, "checksum",commandOptions.checksum, true);
+            putNestedIfNotNull(beanParams, "format",commandOptions.format, true);
+            putNestedIfNotNull(beanParams, "bioformat",commandOptions.bioformat, true);
+            putNestedIfNotEmpty(beanParams, "software.name",commandOptions.softwareName, true);
+            putNestedIfNotEmpty(beanParams, "software.version",commandOptions.softwareVersion, true);
+            putNestedIfNotEmpty(beanParams, "software.repository",commandOptions.softwareRepository, true);
+            putNestedIfNotEmpty(beanParams, "software.commit",commandOptions.softwareCommit, true);
+            putNestedIfNotEmpty(beanParams, "software.website",commandOptions.softwareWebsite, true);
+            putNestedIfNotNull(beanParams, "experiment.technology",commandOptions.experimentTechnology, true);
+            putNestedIfNotNull(beanParams, "experiment.method",commandOptions.experimentMethod, true);
+            putNestedIfNotNull(beanParams, "experiment.nucleicAcidType",commandOptions.experimentNucleicAcidType, true);
             putNestedIfNotEmpty(beanParams, "experiment.manufacturer",commandOptions.experimentManufacturer, true);
-             putNestedIfNotEmpty(beanParams, "experiment.platform",commandOptions.experimentPlatform, true);
-             putNestedIfNotEmpty(beanParams, "experiment.library",commandOptions.experimentLibrary, true);
-             putNestedIfNotEmpty(beanParams, "experiment.date",commandOptions.experimentDate, true);
-             putNestedIfNotEmpty(beanParams, "experiment.center",commandOptions.experimentCenter, true);
-             putNestedIfNotEmpty(beanParams, "experiment.lab",commandOptions.experimentLab, true);
-             putNestedIfNotEmpty(beanParams, "experiment.responsible",commandOptions.experimentResponsible, true);
-             putNestedIfNotEmpty(beanParams, "experiment.description",commandOptions.experimentDescription, true);
- 
+            putNestedIfNotEmpty(beanParams, "experiment.platform",commandOptions.experimentPlatform, true);
+            putNestedIfNotEmpty(beanParams, "experiment.library",commandOptions.experimentLibrary, true);
+            putNestedIfNotEmpty(beanParams, "experiment.date",commandOptions.experimentDate, true);
+            putNestedIfNotEmpty(beanParams, "experiment.center",commandOptions.experimentCenter, true);
+            putNestedIfNotEmpty(beanParams, "experiment.lab",commandOptions.experimentLab, true);
+            putNestedIfNotEmpty(beanParams, "experiment.responsible",commandOptions.experimentResponsible, true);
+            putNestedIfNotEmpty(beanParams, "experiment.description",commandOptions.experimentDescription, true);
             putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
- 
-
-
-
             putNestedIfNotNull(beanParams, "size",commandOptions.size, true);
-             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
- 
-
-
-
-
-
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
             putNestedIfNotNull(beanParams, "qualityControl.files",commandOptions.qualityControlFiles, true);
- 
 
             fileUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

@@ -35,7 +35,7 @@ export default class DiseasePanel extends OpenCGAParentClass {
     /** Update the set of permissions granted for the member
     * @param {String} members - Comma separated list of user or group ids.
     * @param {Object} data - JSON containing the parameters to update the permissions.
-    * @param {String} action = "ADD" - Action to be performed [ADD, SET, REMOVE or RESET]. The default value is ADD.
+    * @param {"SET ADD REMOVE RESET"} action = "ADD" - Action to be performed [ADD, SET, REMOVE or RESET]. The default value is ADD.
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.study] - Study [[user@]project:]study where study and project can be either the ID or UUID.
     * @returns {Promise} Promise object in the form of RestResponse instance.
@@ -69,6 +69,7 @@ export default class DiseasePanel extends OpenCGAParentClass {
     * @param {String} [params.disorders] - Comma separated list of disorder ids or names.
     * @param {String} [params.variants] - Comma separated list of variant ids.
     * @param {String} [params.genes] - Comma separated list of gene ids.
+    * @param {String} [params.source] - Comma separated list of source ids or names.
     * @param {String} [params.regions] - Comma separated list of regions.
     * @param {String} [params.categories] - Comma separated list of category names.
     * @param {String} [params.tags] - Panel tags.
@@ -118,6 +119,7 @@ export default class DiseasePanel extends OpenCGAParentClass {
     * @param {String} [params.disorders] - Comma separated list of disorder ids or names.
     * @param {String} [params.variants] - Comma separated list of variant ids.
     * @param {String} [params.genes] - Comma separated list of gene ids.
+    * @param {String} [params.source] - Comma separated list of source ids or names.
     * @param {String} [params.regions] - Comma separated list of regions.
     * @param {String} [params.categories] - Comma separated list of category names.
     * @param {String} [params.tags] - Panel tags.

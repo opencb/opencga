@@ -79,6 +79,16 @@ public class MetaClient extends AbstractParentClient {
     }
 
     /**
+     * Opencga model webservices.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<String> model() throws ClientException {
+        ObjectMap params = new ObjectMap();
+        return execute("meta", null, null, null, "model", params, GET, String.class);
+    }
+
+    /**
      * Ping Opencga webservices.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.

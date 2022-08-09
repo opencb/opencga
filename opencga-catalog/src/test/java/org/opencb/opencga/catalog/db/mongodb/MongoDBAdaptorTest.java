@@ -25,10 +25,10 @@ import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
@@ -37,7 +37,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileInternal;
@@ -97,13 +99,6 @@ public class MongoDBAdaptorTest extends GenericTest {
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
                 configuration.getCatalog().getDatabase().getHosts().get(0).split(":")[0], 27017);
 
-        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", configuration.getCatalog().getDatabase().getUser())
-                .add("password", configuration.getCatalog().getDatabase().getPassword())
-                .add("authenticationDatabase", configuration.getCatalog().getDatabase().getOptions().get("authenticationDatabase"))
-                .build();
-
-//        String database = catalogConfiguration.getDatabase().getDatabase();
         String database;
         if (StringUtils.isNotEmpty(configuration.getDatabasePrefix())) {
             if (!configuration.getDatabasePrefix().endsWith("_")) {
@@ -124,6 +119,10 @@ public class MongoDBAdaptorTest extends GenericTest {
         db.getDb().drop();
         mongoManager.close();
 
+        configuration.setAdmin(new Admin()
+                .setAlgorithm("HS256")
+                .setSecretKey(PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH))
+        );
         catalogDBAdaptor = new MongoDBAdaptorFactory(configuration);
         catalogUserDBAdaptor = catalogDBAdaptor.getCatalogUserDBAdaptor();
         catalogStudyDBAdaptor = catalogDBAdaptor.getCatalogStudyDBAdaptor();

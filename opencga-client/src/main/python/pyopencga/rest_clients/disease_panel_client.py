@@ -29,7 +29,7 @@ class DiseasePanel(_ParentRestClient):
         :param dict data: JSON containing the parameters to update the
             permissions. (REQUIRED)
         :param str action: Action to be performed [ADD, SET, REMOVE or RESET].
-            (REQUIRED)
+            Allowed values: ['SET ADD REMOVE RESET'] (REQUIRED)
         :param str members: Comma separated list of user or group ids.
             (REQUIRED)
         :param str study: Study [[user@]project:]study where study and project
@@ -76,6 +76,7 @@ class DiseasePanel(_ParentRestClient):
         :param str disorders: Comma separated list of disorder ids or names.
         :param str variants: Comma separated list of variant ids.
         :param str genes: Comma separated list of gene ids.
+        :param str source: Comma separated list of source ids or names.
         :param str regions: Comma separated list of regions.
         :param str categories: Comma separated list of category names.
         :param str tags: Panel tags.
@@ -141,6 +142,7 @@ class DiseasePanel(_ParentRestClient):
         :param str disorders: Comma separated list of disorder ids or names.
         :param str variants: Comma separated list of variant ids.
         :param str genes: Comma separated list of gene ids.
+        :param str source: Comma separated list of source ids or names.
         :param str regions: Comma separated list of regions.
         :param str categories: Comma separated list of category names.
         :param str tags: Panel tags.

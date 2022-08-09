@@ -29,13 +29,14 @@ class Family(_ParentRestClient):
         :param dict data: JSON containing the parameters to add ACLs.
             (REQUIRED)
         :param str action: Action to be performed [ADD, SET, REMOVE or RESET].
-            (REQUIRED)
+            Allowed values: ['SET ADD REMOVE RESET'] (REQUIRED)
         :param str members: Comma separated list of user or group ids.
             (REQUIRED)
         :param str study: Study [[user@]project:]study where study and project
             can be either the ID or UUID.
         :param str propagate: Propagate family permissions to related
-            individuals and samples.
+            individuals and samples. Allowed values: ['NO YES
+            YES_AND_VARIANT_VIEW']
         """
 
         options['action'] = action
@@ -271,8 +272,8 @@ class Family(_ParentRestClient):
             can be either the ID or UUID.
         :param bool update_roles: Update the member roles within the family.
         :param str annotation_sets_action: Action to be performed if the array
-            of annotationSets is being updated. Allowed values: ['ADD', 'SET',
-            'REMOVE']
+            of annotationSets is being updated. Allowed values: ['ADD SET
+            REMOVE']
         :param bool include_result: Flag indicating to include the created or
             updated document result in the response.
         :param dict data: body.
@@ -294,8 +295,8 @@ class Family(_ParentRestClient):
             to set the new list of annotations removing any possible old
             annotations; REMOVE to remove some annotations; RESET to set some
             annotations to the default value configured in the corresponding
-            variables of the VariableSet if any. Allowed values: ['ADD', 'SET',
-            'REMOVE', 'RESET', 'REPLACE']
+            variables of the VariableSet if any. Allowed values: ['ADD SET
+            REMOVE RESET REPLACE']
         :param dict data: Json containing the map of annotations when the
             action is ADD, SET or REPLACE, a json with only the key 'remove'
             containing the comma separated variables to be removed as a value

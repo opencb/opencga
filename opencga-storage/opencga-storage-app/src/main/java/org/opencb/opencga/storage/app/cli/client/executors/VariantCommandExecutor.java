@@ -55,7 +55,7 @@ import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotati
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
-import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.search.solr.SolrVariantDBIterator;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;

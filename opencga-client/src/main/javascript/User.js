@@ -82,7 +82,7 @@ export default class User extends OpenCGAParentClass {
     * @param {Object} data - JSON containing anything useful for the application such as user or default preferences. When removing, only
     *     the id will be necessary.
     * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {"ADD"|"REMOVE"} [params.action = "ADD"] - Action to be performed: ADD or REMOVE a group. The default value is ADD.
+    * @param {"ADD REMOVE"} [params.action = "ADD"] - Action to be performed: ADD or REMOVE a group. The default value is ADD.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     updateConfigs(user, data, params) {
@@ -103,7 +103,7 @@ export default class User extends OpenCGAParentClass {
     * @param {String} user - User ID.
     * @param {Object} data - Filter parameters. When removing, only the 'name' of the filter will be necessary.
     * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {"ADD"|"REMOVE"} [params.action = "ADD"] - Action to be performed: ADD or REMOVE a group. The default value is ADD.
+    * @param {"ADD REMOVE"} [params.action = "ADD"] - Action to be performed: ADD or REMOVE a group. The default value is ADD.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     updateFilters(user, data, params) {

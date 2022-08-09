@@ -22,9 +22,9 @@
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/panels/acl/{members}/update | study, members[*], action[*], body[*] |
 #' | create | /{apiVersion}/panels/create | include, exclude, study, includeResult, body |
-#' | distinct | /{apiVersion}/panels/distinct | study, id, uuid, name, internalStatus, disorders, variants, genes, regions, categories, tags, deleted, status, creationDate, modificationDate, acl, release, snapshot, field[*] |
+#' | distinct | /{apiVersion}/panels/distinct | study, id, uuid, name, internalStatus, disorders, variants, genes, source, regions, categories, tags, deleted, status, creationDate, modificationDate, acl, release, snapshot, field[*] |
 #' | importPanels | /{apiVersion}/panels/import | study, jobId, jobDependsOn, jobDescription, jobTags, body |
-#' | search | /{apiVersion}/panels/search | include, exclude, limit, skip, count, study, id, uuid, name, internalStatus, disorders, variants, genes, regions, categories, tags, deleted, status, creationDate, modificationDate, acl, release, snapshot |
+#' | search | /{apiVersion}/panels/search | include, exclude, limit, skip, count, study, id, uuid, name, internalStatus, disorders, variants, genes, source, regions, categories, tags, deleted, status, creationDate, modificationDate, acl, release, snapshot |
 #' | acl | /{apiVersion}/panels/{panels}/acl | panels[*], study, member, silent |
 #' | delete | /{apiVersion}/panels/{panels}/delete | study, panels[*] |
 #' | info | /{apiVersion}/panels/{panels}/info | include, exclude, panels[*], study, version, deleted |
@@ -36,14 +36,14 @@
 #' [*]: Required parameter
 #' @export
 
-setMethod("panelClient", "OpencgaR", function(OpencgaR, panels, members, endpointName, params=NULL, ...) {
+setMethod("panelClient", "OpencgaR", function(OpencgaR, members, panels, endpointName, params=NULL, ...) {
     switch(endpointName,
 
         #' @section Endpoint /{apiVersion}/panels/acl/{members}/update:
         #' Update the set of permissions granted for the member.
         #' @param study Study [[user@]project:]study where study and project can be either the ID or UUID.
         #' @param members Comma separated list of user or group ids.
-        #' @param action Action to be performed [ADD, SET, REMOVE or RESET].
+        #' @param action Action to be performed [ADD, SET, REMOVE or RESET]. Allowed values: ['SET ADD REMOVE RESET']
         #' @param data JSON containing the parameters to update the permissions.
         updateAcl=fetchOpenCGA(object=OpencgaR, category="panels", categoryId=NULL, subcategory="acl",
                 subcategoryId=members, action="update", params=params, httpMethod="POST", as.queryParam=c("action"),
@@ -69,6 +69,7 @@ setMethod("panelClient", "OpencgaR", function(OpencgaR, panels, members, endpoin
         #' @param disorders Comma separated list of disorder ids or names.
         #' @param variants Comma separated list of variant ids.
         #' @param genes Comma separated list of gene ids.
+        #' @param source Comma separated list of source ids or names.
         #' @param regions Comma separated list of regions.
         #' @param categories Comma separated list of category names.
         #' @param tags Panel tags.
@@ -109,6 +110,7 @@ setMethod("panelClient", "OpencgaR", function(OpencgaR, panels, members, endpoin
         #' @param disorders Comma separated list of disorder ids or names.
         #' @param variants Comma separated list of variant ids.
         #' @param genes Comma separated list of gene ids.
+        #' @param source Comma separated list of source ids or names.
         #' @param regions Comma separated list of regions.
         #' @param categories Comma separated list of category names.
         #' @param tags Panel tags.

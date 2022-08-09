@@ -34,7 +34,8 @@ export default class Admin extends OpenCGAParentClass {
 
     /** Group by operation
     * @param {String} fields - Comma separated list of fields by which to group by.
-    * @param {String} entity - Entity to be grouped by.
+    * @param {"AUDIT USER PROJECT STUDY FILE SAMPLE JOB INDIVIDUAL COHORT DISEASE_PANEL FAMILY CLINICAL_ANALYSIS INTERPRETATION VARIANT
+    *     ALIGNMENT CLINICAL EXPRESSION RGA FUNCTIONAL"} entity - Entity to be grouped by.
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {Boolean} [params.count] - Count the number of elements matching the group.
     * @param {Number} [params.limit = "50"] - Maximum number of documents (groups) to be returned. The default value is 50.

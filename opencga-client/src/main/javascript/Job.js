@@ -35,7 +35,7 @@ export default class Job extends OpenCGAParentClass {
     /** Update the set of permissions granted for the member
     * @param {String} members - Comma separated list of user or group ids.
     * @param {Object} data - JSON containing the parameters to add ACLs.
-    * @param {String} action = "ADD" - Action to be performed [ADD, SET, REMOVE or RESET]. The default value is ADD.
+    * @param {"SET ADD REMOVE RESET"} action = "ADD" - Action to be performed [ADD, SET, REMOVE or RESET]. The default value is ADD.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     updateAcl(members, action, data) {

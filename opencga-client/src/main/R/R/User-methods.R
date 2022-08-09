@@ -78,7 +78,7 @@ setMethod("userClient", "OpencgaR", function(OpencgaR, users, user, filterId, en
         #' @section Endpoint /{apiVersion}/users/{user}/configs/update:
         #' Add or remove a custom user configuration.
         #' @param user User ID.
-        #' @param action Action to be performed: ADD or REMOVE a group. Allowed values: ['ADD', 'REMOVE']
+        #' @param action Action to be performed: ADD or REMOVE a group. Allowed values: ['ADD REMOVE']
         #' @param data JSON containing anything useful for the application such as user or default preferences. When removing, only the id will be necessary.
         updateConfigs=fetchOpenCGA(object=OpencgaR, category="users", categoryId=user, subcategory="configs",
                 subcategoryId=NULL, action="update", params=params, httpMethod="POST", as.queryParam=NULL, ...),
@@ -93,7 +93,7 @@ setMethod("userClient", "OpencgaR", function(OpencgaR, users, user, filterId, en
         #' @section Endpoint /{apiVersion}/users/{user}/filters/update:
         #' Add or remove a custom user filter.
         #' @param user User ID.
-        #' @param action Action to be performed: ADD or REMOVE a group. Allowed values: ['ADD', 'REMOVE']
+        #' @param action Action to be performed: ADD or REMOVE a group. Allowed values: ['ADD REMOVE']
         #' @param data Filter parameters. When removing, only the 'name' of the filter will be necessary.
         updateFilters=fetchOpenCGA(object=OpencgaR, category="users", categoryId=user, subcategory="filters",
                 subcategoryId=NULL, action="update", params=params, httpMethod="POST", as.queryParam=NULL, ...),

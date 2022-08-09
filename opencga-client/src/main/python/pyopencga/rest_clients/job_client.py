@@ -29,7 +29,7 @@ class Job(_ParentRestClient):
         :param dict data: JSON containing the parameters to add ACLs.
             (REQUIRED)
         :param str action: Action to be performed [ADD, SET, REMOVE or RESET].
-            (REQUIRED)
+            Allowed values: ['SET ADD REMOVE RESET'] (REQUIRED)
         :param str members: Comma separated list of user or group ids.
             (REQUIRED)
         """

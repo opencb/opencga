@@ -29,7 +29,7 @@ class File(_ParentRestClient):
         :param dict data: JSON containing the parameters to add ACLs.
             (REQUIRED)
         :param str action: Action to be performed [ADD, SET, REMOVE or RESET].
-            (REQUIRED)
+            Allowed values: ['SET ADD REMOVE RESET'] (REQUIRED)
         :param str members: Comma separated list of user or group ids.
             (REQUIRED)
         :param str study: Study [[user@]project:]study where study and project
@@ -320,8 +320,20 @@ class File(_ParentRestClient):
 
         :param inputstream file: File to upload.
         :param str filename: File name to overwrite the input fileName.
-        :param str file_format: File format.
-        :param str bioformat: File bioformat.
+        :param str file_format: File format. Allowed values: ['VCF BCF GVCF
+            TBI BIGWIG SAM BAM BAI CRAM CRAI FASTQ FASTA PED
+            TAB_SEPARATED_VALUES COMMA_SEPARATED_VALUES XML PROTOCOL_BUFFER
+            JSON AVRO PARQUET IMAGE PLAIN BINARY NONE UNKNOWN']
+        :param str bioformat: File bioformat. Allowed values:
+            ['MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT
+            MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX
+            MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX
+            MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT
+            MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX DATAMATRIX_EXPRESSION
+            IDLIST IDLIST_RANKED ANNOTATION_GENEVSANNOTATION OTHER_NEWICK
+            OTHER_BLAST OTHER_INTERACTION OTHER_GENOTYPE OTHER_PLINK OTHER_VCF
+            OTHER_PED VCF4 VARIANT ALIGNMENT COVERAGE SEQUENCE PEDIGREE
+            REFERENCE_GENOME NONE UNKNOWN']
         :param str checksum: Expected MD5 file checksum.
         :param str study: Study [[user@]project:]study where study and project
             can be either the ID or UUID.
@@ -415,15 +427,15 @@ class File(_ParentRestClient):
         :param str study: Study [[user@]project:]study where study and project
             can be either the ID or UUID.
         :param str sample_ids_action: Action to be performed if the array of
-            samples is being updated. Allowed values: ['ADD', 'SET', 'REMOVE']
+            samples is being updated. Allowed values: ['ADD SET REMOVE']
         :param str annotation_sets_action: Action to be performed if the array
-            of annotationSets is being updated. Allowed values: ['ADD', 'SET',
-            'REMOVE']
+            of annotationSets is being updated. Allowed values: ['ADD SET
+            REMOVE']
         :param str related_files_action: Action to be performed if the array
-            of relatedFiles is being updated. Allowed values: ['ADD', 'SET',
-            'REMOVE']
+            of relatedFiles is being updated. Allowed values: ['ADD SET
+            REMOVE']
         :param str tags_action: Action to be performed if the array of tags is
-            being updated. Allowed values: ['ADD', 'SET', 'REMOVE']
+            being updated. Allowed values: ['ADD SET REMOVE']
         """
 
         return self._post(category='files', resource='update', query_id=files, data=data, **options)
@@ -443,8 +455,8 @@ class File(_ParentRestClient):
             to set the new list of annotations removing any possible old
             annotations; REMOVE to remove some annotations; RESET to set some
             annotations to the default value configured in the corresponding
-            variables of the VariableSet if any. Allowed values: ['ADD', 'SET',
-            'REMOVE']
+            variables of the VariableSet if any. Allowed values: ['ADD SET
+            REMOVE RESET REPLACE']
         :param dict data: Json containing the map of annotations when the
             action is ADD, SET or REPLACE, a json with only the key 'remove'
             containing the comma separated variables to be removed as a value

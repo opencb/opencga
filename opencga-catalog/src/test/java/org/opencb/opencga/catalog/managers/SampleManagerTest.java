@@ -404,6 +404,25 @@ public class SampleManagerTest extends AbstractManagerTest {
                         .getResults().stream().map(Sample::getId).collect(Collectors.toList())));
     }
 
+
+    @Test
+    public void testMultipleUpdate() throws CatalogException {
+        catalogManager.getSampleManager().update(studyFqn, Arrays.asList("s_1", "s_2", "s_3"),
+                new SampleUpdateParams()
+                        .setSomatic(true)
+                        .setQualityControl(new SampleQualityControl()),
+                QueryOptions.empty(), token);
+        OpenCGAResult<Sample> result = catalogManager.getSampleManager().get(studyFqn, Arrays.asList("s_1", "s_2", "s_3"),
+                QueryOptions.empty(), token);
+        assertEquals(3, result.getNumResults());
+        for (Sample sample : result.getResults()) {
+            assertTrue(sample.isSomatic());
+            assertTrue(sample.getQualityControl().getComments().isEmpty());
+            assertTrue(sample.getQualityControl().getFiles().isEmpty());
+            assertNotNull(sample.getQualityControl().getVariant());
+        }
+    }
+
     @Test
     public void updateQualityControlTest1() throws CatalogException {
         Sample sample = new Sample().setId("sample");

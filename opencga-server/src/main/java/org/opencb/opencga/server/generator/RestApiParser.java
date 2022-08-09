@@ -210,14 +210,26 @@ public class RestApiParser {
                     // 4.4 Set all collected vales and add REST parameter to endpoint
                     restParameter.setType(type);
                     restParameter.setTypeClass(typeClass.getName() + ";");
-                    restParameter.setAllowedValues(apiParam.allowableValues());
+                    if (typeClass.isEnum()) {
+                        // The param is an Enum
+                        restParameter.setType("enum");
+                        restParameter.setAllowedValues(Arrays.stream(typeClass.getEnumConstants())
+                                .map(Object::toString)
+                                .collect(Collectors.joining(" ")));
+                    } else {
+                        restParameter.setAllowedValues(apiParam.allowableValues());
+                    }
+
                     restParameter.setRequired(apiParam.required() || restParameter.getParam() == RestParamType.PATH);
                     restParameter.setDefaultValue(apiParam.defaultValue());
                     restParameter.setDescription(apiParam.value());
                     restParameters.add(restParameter);
                 }
             }
-
+            if (clazz.getName().contains("Meta")) {
+                System.out.println("Adding Meta method :::::::::::::: " + method.getName());
+                System.out.println(restEndpoint);
+            }
             // 5. Save all REST Parameters found: ApiImplicitParams and ApiParam
             restEndpoint.setParameters(restParameters);
             restEndpoints.add(restEndpoint);
@@ -233,7 +245,7 @@ public class RestApiParser {
         if (param.isComplex()
                 && !param.isList()
                 && !param.getType().equals("enum")
-                /*&& !param.getTypeClass().contains("$")*/) {
+            /*&& !param.getTypeClass().contains("$")*/) {
             // FIXME: Why discarding params with "$" ?  Why discarding inner classes?
             String classAndPackageName = StringUtils.removeEnd(param.getTypeClass(), ";");
             Class<?> cls;

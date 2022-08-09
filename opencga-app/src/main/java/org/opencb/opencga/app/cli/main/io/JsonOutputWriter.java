@@ -16,18 +16,10 @@
 
 package org.opencb.opencga.app.cli.main.io;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.apache.avro.generic.GenericRecord;
-import org.opencb.biodata.models.variant.Genotype;
-import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
-import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 
 import java.io.IOException;
 
@@ -36,26 +28,12 @@ import java.io.IOException;
  */
 public class JsonOutputWriter extends AbstractOutputWriter {
 
-    private ObjectMapper objectMapper;
-
     public JsonOutputWriter() {
         super();
-        initObjectMapper();
     }
 
     public JsonOutputWriter(WriterConfiguration writerConfiguration) {
         super(writerConfiguration);
-        initObjectMapper();
-    }
-
-    private void initObjectMapper() {
-        // Same options as in OpenCGAWSServer
-        objectMapper = new ObjectMapper();
-        objectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
-        objectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
-        objectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
-        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
     }
 
     @Override
@@ -66,9 +44,9 @@ public class JsonOutputWriter extends AbstractOutputWriter {
 
         ObjectWriter objectWriter;
         if (writerConfiguration.isPretty()) {
-            objectWriter = objectMapper.writerWithDefaultPrettyPrinter();
+            objectWriter = JacksonUtils.getExternalOpencgaObjectMapper().writerWithDefaultPrettyPrinter();
         } else {
-            objectWriter = objectMapper.writer();
+            objectWriter = JacksonUtils.getExternalOpencgaObjectMapper().writer();
         }
         Object toPrint = queryResponse;
         if (!writerConfiguration.isMetadata()) {

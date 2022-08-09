@@ -1,21 +1,21 @@
 package org.opencb.opencga.core.models.study.configuration;
 
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.common.StatusValue;
+import org.opencb.opencga.core.models.clinical.ClinicalStatusValue;
 
 import java.util.List;
 import java.util.Map;
 
 public class InterpretationStudyConfiguration {
 
-    private Map<ClinicalAnalysis.Type, List<StatusValue>> status;
+    private Map<ClinicalAnalysis.Type, List<ClinicalStatusValue>> status;
     private List<InterpretationVariantCallerConfiguration> variantCallers;
     private Map<String, Object> defaultFilter;
 
     public InterpretationStudyConfiguration() {
     }
 
-    public InterpretationStudyConfiguration(Map<ClinicalAnalysis.Type, List<StatusValue>> status,
+    public InterpretationStudyConfiguration(Map<ClinicalAnalysis.Type, List<ClinicalStatusValue>> status,
                                             List<InterpretationVariantCallerConfiguration> variantCallers,
                                             Map<String, Object> defaultFilter) {
         this.status = status;
@@ -33,11 +33,11 @@ public class InterpretationStudyConfiguration {
         return sb.toString();
     }
 
-    public Map<ClinicalAnalysis.Type, List<StatusValue>> getStatus() {
+    public Map<ClinicalAnalysis.Type, List<ClinicalStatusValue>> getStatus() {
         return status;
     }
 
-    public InterpretationStudyConfiguration setStatus(Map<ClinicalAnalysis.Type, List<StatusValue>> status) {
+    public InterpretationStudyConfiguration setStatus(Map<ClinicalAnalysis.Type, List<ClinicalStatusValue>> status) {
         this.status = status;
         return this;
     }

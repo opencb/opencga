@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public abstract class MigrationTool {
@@ -167,9 +168,15 @@ public abstract class MigrationTool {
         void accept(Document document);
     }
 
-    protected final void migrateCollection(String collection, Bson query, Bson projection,
-                                           MigrateCollectionFunc migrateFunc) {
+    protected final void migrateCollection(String collection, Bson query, Bson projection, MigrateCollectionFunc migrateFunc) {
         migrateCollection(collection, collection, query, projection, migrateFunc);
+    }
+
+    protected final void migrateCollection(List<String> collections, Bson query, Bson projection, MigrateCollectionFunc migrateFunc) {
+        for (String collection : collections) {
+            privateLogger.info("Starting migration in {}", collection);
+            migrateCollection(collection, collection, query, projection, migrateFunc);
+        }
     }
 
     protected final void migrateCollection(String inputCollection, String outputCollection, Bson query, Bson projection,
@@ -217,6 +224,18 @@ public abstract class MigrationTool {
 
     protected final void createIndex(String collection, Document index) {
         createIndex(getMongoCollection(collection), index, new IndexOptions().background(true));
+    }
+
+    protected final void createIndex(List<String> collections, Document index) {
+        createIndexes(collections, Collections.singletonList(index));
+    }
+
+    protected final void createIndexes(List<String> collections, List<Document> indexes) {
+        for (String collection : collections) {
+            for (Document index : indexes) {
+                createIndex(getMongoCollection(collection), index, new IndexOptions().background(true));
+            }
+        }
     }
 
     protected final void createIndex(String collection, Document index, IndexOptions options) {

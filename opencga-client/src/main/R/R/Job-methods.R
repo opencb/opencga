@@ -46,7 +46,7 @@ setMethod("jobClient", "OpencgaR", function(OpencgaR, jobs, job, members, endpoi
         #' @section Endpoint /{apiVersion}/jobs/acl/{members}/update:
         #' Update the set of permissions granted for the member.
         #' @param members Comma separated list of user or group ids.
-        #' @param action Action to be performed [ADD, SET, REMOVE or RESET].
+        #' @param action Action to be performed [ADD, SET, REMOVE or RESET]. Allowed values: ['SET ADD REMOVE RESET']
         #' @param data JSON containing the parameters to add ACLs.
         updateAcl=fetchOpenCGA(object=OpencgaR, category="jobs", categoryId=NULL, subcategory="acl",
                 subcategoryId=members, action="update", params=params, httpMethod="POST", as.queryParam=c("action"),

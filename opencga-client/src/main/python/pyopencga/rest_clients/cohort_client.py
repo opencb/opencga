@@ -29,7 +29,7 @@ class Cohort(_ParentRestClient):
         :param dict data: JSON containing the parameters to add ACLs.
             (REQUIRED)
         :param str action: Action to be performed [ADD, SET, REMOVE or RESET].
-            (REQUIRED)
+            Allowed values: ['SET ADD REMOVE RESET'] (REQUIRED)
         :param str members: Comma separated list of user or group ids.
             (REQUIRED)
         :param str study: Study [[user@]project:]study where study and project
@@ -126,7 +126,9 @@ class Cohort(_ParentRestClient):
             of 100.
         :param str uuid: Comma separated list of cohort IDs up to a maximum of
             100.
-        :param str type: Cohort type.
+        :param str type: Cohort type. Allowed values: ['CASE_CONTROL CASE_SET
+            CONTROL_SET PAIRED PAIRED_TUMOR AGGREGATE TIME_SERIES FAMILY TRIO
+            COLLECTION']
         :param str creation_date: creationDate.
         :param str modification_date: modificationDate.
         :param bool deleted: deleted.
@@ -205,7 +207,9 @@ class Cohort(_ParentRestClient):
             of 100.
         :param str uuid: Comma separated list of cohort IDs up to a maximum of
             100.
-        :param str type: Cohort type.
+        :param str type: Cohort type. Allowed values: ['CASE_CONTROL CASE_SET
+            CONTROL_SET PAIRED PAIRED_TUMOR AGGREGATE TIME_SERIES FAMILY TRIO
+            COLLECTION']
         :param str creation_date: creationDate.
         :param str modification_date: modificationDate.
         :param bool deleted: deleted.
@@ -282,10 +286,10 @@ class Cohort(_ParentRestClient):
         :param str study: Study [[user@]project:]study where study and project
             can be either the ID or UUID.
         :param str samples_action: Action to be performed if the array of
-            samples is being updated. Allowed values: ['ADD', 'SET', 'REMOVE']
+            samples is being updated. Allowed values: ['ADD SET REMOVE']
         :param str annotation_sets_action: Action to be performed if the array
-            of annotationSets is being updated. Allowed values: ['ADD', 'SET',
-            'REMOVE']
+            of annotationSets is being updated. Allowed values: ['ADD SET
+            REMOVE']
         :param bool include_result: Flag indicating to include the created or
             updated document result in the response.
         :param dict data: body.
@@ -307,8 +311,8 @@ class Cohort(_ParentRestClient):
             to set the new list of annotations removing any possible old
             annotations; REMOVE to remove some annotations; RESET to set some
             annotations to the default value configured in the corresponding
-            variables of the VariableSet if any. Allowed values: ['ADD', 'SET',
-            'REMOVE', 'RESET', 'REPLACE']
+            variables of the VariableSet if any. Allowed values: ['ADD SET
+            REMOVE RESET REPLACE']
         :param dict data: Json containing the map of annotations when the
             action is ADD, SET or REPLACE, a json with only the key 'remove'
             containing the comma separated variables to be removed as a value

@@ -38,9 +38,11 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         public UpdateAclCommandOptions updateAclCommandOptions;
         public AggregationStatsCommandOptions aggregationStatsCommandOptions;
         public LoadAnnotationSetsCommandOptions loadAnnotationSetsCommandOptions;
+        public BioformatsCommandOptions bioformatsCommandOptions;
         public CreateCommandOptions createCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
         public FetchCommandOptions fetchCommandOptions;
+        public FormatsCommandOptions formatsCommandOptions;
         public LinkCommandOptions linkCommandOptions;
         public RunLinkCommandOptions runLinkCommandOptions;
         public RunPostlinkCommandOptions runPostlinkCommandOptions;
@@ -68,9 +70,11 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         this.updateAclCommandOptions = new UpdateAclCommandOptions();
         this.aggregationStatsCommandOptions = new AggregationStatsCommandOptions();
         this.loadAnnotationSetsCommandOptions = new LoadAnnotationSetsCommandOptions();
+        this.bioformatsCommandOptions = new BioformatsCommandOptions();
         this.createCommandOptions = new CreateCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
         this.fetchCommandOptions = new FetchCommandOptions();
+        this.formatsCommandOptions = new FormatsCommandOptions();
         this.linkCommandOptions = new LinkCommandOptions();
         this.runLinkCommandOptions = new RunLinkCommandOptions();
         this.runPostlinkCommandOptions = new RunPostlinkCommandOptions();
@@ -225,6 +229,14 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
     
     }
 
+    @Parameters(commandNames = {"bioformats"}, commandDescription ="List of accepted file bioformats")
+    public class BioformatsCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+    }
+
     @Parameters(commandNames = {"create"}, commandDescription ="Create file or folder")
     public class CreateCommandOptions {
     
@@ -279,9 +291,6 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--software-website"}, description = "Software website", required = false, arity = 1)
         public String softwareWebsite;
     
-        @DynamicParameter(names = {"--software-params"}, description = "Software params. Use: --software-params key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.String> softwareParams = new HashMap<>(); //Dynamic parameters must be initialized;
-    
         @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
         public String tags;
     
@@ -302,9 +311,6 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
     
         @Parameter(names = {"--status-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String statusDescription;
-    
-        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 
@@ -424,11 +430,19 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--url"}, description = "The body web service url parameter", required = false, arity = 1)
+        @Parameter(names = {"--url"}, description = "The body web service url parameter", required = true, arity = 1)
         public String url;
     
         @Parameter(names = {"--path"}, description = "The body web service path parameter", required = false, arity = 1)
         public String path;
+    
+    }
+
+    @Parameters(commandNames = {"formats"}, commandDescription ="List of accepted file formats")
+    public class FormatsCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
     
     }
 
@@ -474,9 +488,6 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--status-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String statusDescription;
     
-        @DynamicParameter(names = {"--internal-sample-map"}, description = "The body web service sampleMap parameter. Use: --internal-sample-map key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.String> internalSampleMap = new HashMap<>(); //Dynamic parameters must be initialized;
-    
     }
 
     @Parameters(commandNames = {"link-run"}, commandDescription ="Link an external file into catalog asynchronously.")
@@ -517,6 +528,9 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
     
         @Parameter(names = {"--parents"}, description = "The body web service parents parameter", required = false, arity = 1)
         public Boolean parents;
+    
+        @Parameter(names = {"--skip-post-link"}, description = "The body web service skipPostLink parameter", required = false, arity = 1)
+        public Boolean skipPostLink;
     
     }
 
@@ -802,9 +816,6 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--software-website"}, description = "Software website", required = false, arity = 1)
         public String softwareWebsite;
     
-        @DynamicParameter(names = {"--software-params"}, description = "Software params. Use: --software-params key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.String> softwareParams = new HashMap<>(); //Dynamic parameters must be initialized;
-    
         @Parameter(names = {"--experiment-technology"}, description = "Enum param allowed values: SEQUENCING, MICROARRAY", required = false, arity = 1)
         public String experimentTechnology;
     
@@ -838,9 +849,6 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--experiment-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String experimentDescription;
     
-        @DynamicParameter(names = {"--experiment-attributes"}, description = "The body web service attributes parameter. Use: --experiment-attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> experimentAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
-    
         @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
         public String tags;
     
@@ -858,12 +866,6 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
     
         @Parameter(names = {"--quality-control-files"}, description = "The body web service files parameter", required = false, arity = 1)
         public String qualityControlFiles;
-    
-        @DynamicParameter(names = {"--stats"}, description = "The body web service stats parameter. Use: --stats key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> stats = new HashMap<>(); //Dynamic parameters must be initialized;
-    
-        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 

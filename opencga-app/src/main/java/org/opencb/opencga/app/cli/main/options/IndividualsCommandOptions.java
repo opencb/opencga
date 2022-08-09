@@ -287,9 +287,6 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--sex-url"}, description = "Ontology url", required = false, arity = 1)
         public String sexUrl;
     
-        @DynamicParameter(names = {"--sex-attributes"}, description = "Dictionary that can be customised by users to store any additional information users may require... Use: --sex-attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.String> sexAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
-    
         @Parameter(names = {"--ethnicity-id"}, description = "Id to identify the object", required = false, arity = 1)
         public String ethnicityId;
     
@@ -304,9 +301,6 @@ public class IndividualsCommandOptions {
     
         @Parameter(names = {"--ethnicity-url"}, description = "Ontology url", required = false, arity = 1)
         public String ethnicityUrl;
-    
-        @DynamicParameter(names = {"--ethnicity-attributes"}, description = "Dictionary that can be customised by users to store any additional information users may require... Use: --ethnicity-attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.String> ethnicityAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--body_parental-consanguinity"}, description = "The body web service parentalConsanguinity parameter", required = false, arity = 1)
         public Boolean bodyParentalConsanguinity;
@@ -337,9 +331,6 @@ public class IndividualsCommandOptions {
     
         @Parameter(names = {"--status-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String statusDescription;
-    
-        @DynamicParameter(names = {"--body_attributes"}, description = "The body web service attributes parameter. Use: --body_attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> bodyAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 
@@ -686,9 +677,6 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--sex-url"}, description = "Ontology url", required = false, arity = 1)
         public String sexUrl;
     
-        @DynamicParameter(names = {"--sex-attributes"}, description = "Dictionary that can be customised by users to store any additional information users may require... Use: --sex-attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.String> sexAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
-    
         @Parameter(names = {"--ethnicity-id"}, description = "Id to identify the object", required = false, arity = 1)
         public String ethnicityId;
     
@@ -703,9 +691,6 @@ public class IndividualsCommandOptions {
     
         @Parameter(names = {"--ethnicity-url"}, description = "Ontology url", required = false, arity = 1)
         public String ethnicityUrl;
-    
-        @DynamicParameter(names = {"--ethnicity-attributes"}, description = "Dictionary that can be customised by users to store any additional information users may require... Use: --ethnicity-attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.String> ethnicityAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--population-name"}, description = "Name of the individual population.", required = false, arity = 1)
         public String populationName;
@@ -736,9 +721,6 @@ public class IndividualsCommandOptions {
     
         @Parameter(names = {"--quality-control-files"}, description = "File IDs related to the quality control.", required = false, arity = 1)
         public String qualityControlFiles;
-    
-        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 

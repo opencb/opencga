@@ -164,22 +164,15 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "author",commandOptions.author, true);
-             putNestedIfNotEmpty(beanParams, "source.id",commandOptions.sourceId, true);
-             putNestedIfNotEmpty(beanParams, "source.name",commandOptions.sourceName, true);
-             putNestedIfNotEmpty(beanParams, "source.version",commandOptions.sourceVersion, true);
-             putNestedIfNotEmpty(beanParams, "source.author",commandOptions.sourceAuthor, true);
-             putNestedIfNotEmpty(beanParams, "source.project",commandOptions.sourceProject, true);
- 
-
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "author",commandOptions.author, true);
+            putNestedIfNotEmpty(beanParams, "source.id",commandOptions.sourceId, true);
+            putNestedIfNotEmpty(beanParams, "source.name",commandOptions.sourceName, true);
+            putNestedIfNotEmpty(beanParams, "source.version",commandOptions.sourceVersion, true);
+            putNestedIfNotEmpty(beanParams, "source.author",commandOptions.sourceAuthor, true);
+            putNestedIfNotEmpty(beanParams, "source.project",commandOptions.sourceProject, true);
             putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
- 
-
-
-
-
 
             panelCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -203,6 +196,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("disorders", commandOptions.disorders);
         queryParams.putIfNotEmpty("variants", commandOptions.variants);
         queryParams.putIfNotEmpty("genes", commandOptions.genes);
+        queryParams.putIfNotEmpty("source", commandOptions.source);
         queryParams.putIfNotEmpty("regions", commandOptions.regions);
         queryParams.putIfNotEmpty("categories", commandOptions.categories);
         queryParams.putIfNotEmpty("tags", commandOptions.tags);
@@ -279,6 +273,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("disorders", commandOptions.disorders);
         queryParams.putIfNotEmpty("variants", commandOptions.variants);
         queryParams.putIfNotEmpty("genes", commandOptions.genes);
+        queryParams.putIfNotEmpty("source", commandOptions.source);
         queryParams.putIfNotEmpty("regions", commandOptions.regions);
         queryParams.putIfNotEmpty("categories", commandOptions.categories);
         queryParams.putIfNotEmpty("tags", commandOptions.tags);
@@ -376,22 +371,15 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "author",commandOptions.author, true);
-             putNestedIfNotEmpty(beanParams, "source.id",commandOptions.sourceId, true);
-             putNestedIfNotEmpty(beanParams, "source.name",commandOptions.sourceName, true);
-             putNestedIfNotEmpty(beanParams, "source.version",commandOptions.sourceVersion, true);
-             putNestedIfNotEmpty(beanParams, "source.author",commandOptions.sourceAuthor, true);
-             putNestedIfNotEmpty(beanParams, "source.project",commandOptions.sourceProject, true);
- 
-
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "author",commandOptions.author, true);
+            putNestedIfNotEmpty(beanParams, "source.id",commandOptions.sourceId, true);
+            putNestedIfNotEmpty(beanParams, "source.name",commandOptions.sourceName, true);
+            putNestedIfNotEmpty(beanParams, "source.version",commandOptions.sourceVersion, true);
+            putNestedIfNotEmpty(beanParams, "source.author",commandOptions.sourceAuthor, true);
+            putNestedIfNotEmpty(beanParams, "source.project",commandOptions.sourceProject, true);
             putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
- 
-
-
-
-
 
             panelUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

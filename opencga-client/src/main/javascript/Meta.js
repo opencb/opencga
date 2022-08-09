@@ -57,6 +57,14 @@ export default class Meta extends OpenCGAParentClass {
         return this._get("meta", null, null, null, "fail");
     }
 
+    /** Opencga model webservices.
+    * 
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    model() {
+        return this._get("meta", null, null, null, "model");
+    }
+
     /** Ping Opencga webservices.
     * 
     * @returns {Promise} Promise object in the form of RestResponse instance.
