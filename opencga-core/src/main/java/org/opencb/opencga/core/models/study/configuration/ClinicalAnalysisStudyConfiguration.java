@@ -92,8 +92,8 @@ public class ClinicalAnalysisStudyConfiguration {
         clinicalConsentList.add(new ClinicalConsent("RESEARCH_FINDINGS", "Research findings", ""));
 
         return new ClinicalAnalysisStudyConfiguration(status,
-                new InterpretationStudyConfiguration(interpretationStatus, Collections.emptyList(), Collections.emptyMap()), priorities,
-                flags, new ClinicalConsentConfiguration(clinicalConsentList));
+                new InterpretationStudyConfiguration(interpretationStatus, Collections.emptyList(), Collections.emptyMap(),
+                        Collections.emptyList()), priorities, flags, new ClinicalConsentConfiguration(clinicalConsentList));
     }
 
     @Override
