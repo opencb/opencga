@@ -19,6 +19,7 @@ package org.opencb.opencga.analysis.clinical.tiering;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.ClinicalAcmg;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
@@ -226,7 +227,7 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
                                     ct.getTranscriptId(), ct.getGeneName(), somaticSOTerms, null));
                             VariantClassification classification = new VariantClassification();
                             classification.setTier(TIER_2);
-                            List<String> acmg = calculateAcmgClassification(variant);
+                            List<ClinicalAcmg> acmg = calculateAcmgClassification(variant);
                             classification.setAcmg(acmg);
                             classification.setClinicalSignificance(computeClinicalSignificance(acmg));
                             clinicalVariantEvidence.setClassification(classification);
