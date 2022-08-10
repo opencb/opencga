@@ -34,7 +34,7 @@
         <opencga-storage-hadoop-deps.artifactId>${artifactId}</opencga-storage-hadoop-deps.artifactId>
 
         <hadoop.version>3.2.1-amzn-1</hadoop.version>
-        <hbase.version>2.2.5</hbase.version>
+        <hbase.version>2.2.6-SNAPSHOT</hbase.version>
 
         <!--Despite using hbase v2.2.5, this EMR version uses the 2.2.1 thirdparty libraries-->
         <hbase-thirdparty.version>2.2.1</hbase-thirdparty.version>
