@@ -26,8 +26,8 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.file.FileFetch;
+import org.opencb.opencga.core.models.file.FilePermissions;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
@@ -88,7 +88,7 @@ public class FetchAndRegisterTask extends OpenCgaToolScopeStudy {
             String userId = catalogManager.getUserManager().getUserId(token);
             // Check write permissions over the path
             catalogManager.getAuthorizationManager()
-                    .checkFilePermission(study.getUid(), parents.first().getUid(), userId, FileAclEntry.FilePermissions.WRITE);
+                    .checkFilePermission(study.getUid(), parents.first().getUid(), userId, FilePermissions.WRITE);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }

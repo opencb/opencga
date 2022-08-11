@@ -39,6 +39,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.family.Family;
@@ -50,7 +51,7 @@ import org.opencb.opencga.core.models.individual.IndividualAclParams;
 import org.opencb.opencga.core.models.individual.IndividualReferenceParam;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -640,11 +641,11 @@ public class FamilyManagerTest extends GenericTest {
         }
         assertEquals(3, sampleList.size());
 
-        OpenCGAResult<Map<String, List<String>>> acls = catalogManager.getSampleManager().getAcls(STUDY,
+        OpenCGAResult<AclEntryList<SamplePermissions>> acls = catalogManager.getSampleManager().getAcls(STUDY,
                 sampleList.stream().map(Sample::getId).collect(Collectors.toList()), "user2", false, sessionIdUser);
-        for (Map<String, List<String>> result : acls.getResults()) {
-            assertTrue(result.get("user2").contains(SampleAclEntry.SamplePermissions.VIEW.name()));
-            assertFalse(result.get("user2").contains(SampleAclEntry.SamplePermissions.VIEW_VARIANTS.name()));
+        for (AclEntryList<SamplePermissions> result : acls.getResults()) {
+            assertTrue(result.get(0).getPermissions().contains(SamplePermissions.VIEW));
+            assertFalse(result.get(0).getPermissions().contains(SamplePermissions.VIEW_VARIANTS));
         }
 
         familyManager.updateAcl(STUDY, new FamilyAclParams("VIEW", "Martinez-Martinez", null, null,
@@ -660,9 +661,9 @@ public class FamilyManagerTest extends GenericTest {
 
         acls = catalogManager.getSampleManager().getAcls(STUDY, sampleList.stream().map(Sample::getId).collect(Collectors.toList()),
                 "user2", false, sessionIdUser);
-        for (Map<String, List<String>> result : acls.getResults()) {
-            assertTrue(result.get("user2").contains(SampleAclEntry.SamplePermissions.VIEW.name()));
-            assertTrue(result.get("user2").contains(SampleAclEntry.SamplePermissions.VIEW_VARIANTS.name()));
+        for (AclEntryList<SamplePermissions> result : acls.getResults()) {
+            assertTrue(result.get(0).getPermissions().contains(SamplePermissions.VIEW));
+            assertTrue(result.get(0).getPermissions().contains(SamplePermissions.VIEW_VARIANTS));
         }
     }
 

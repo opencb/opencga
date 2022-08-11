@@ -42,7 +42,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.panel.Panel;
-import org.opencb.opencga.core.models.panel.PanelAclEntry;
+import org.opencb.opencga.core.models.panel.PanelPermissions;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -712,7 +712,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                         configuration));
             } else {
                 // Get the document query needed to check the permissions as well
-                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, PanelAclEntry.PanelPermissions.VIEW.name(),
+                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, PanelPermissions.VIEW.name(),
                         Enums.Resource.DISEASE_PANEL, configuration));
             }
 

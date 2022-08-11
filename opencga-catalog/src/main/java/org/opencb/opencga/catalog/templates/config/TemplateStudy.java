@@ -1,9 +1,7 @@
 package org.opencb.opencga.catalog.templates.config;
 
-import org.opencb.opencga.core.models.study.GroupCreateParams;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
-import org.opencb.opencga.core.models.study.StudyUpdateParams;
-import org.opencb.opencga.core.models.study.VariableSetCreateParams;
+import org.opencb.opencga.core.models.AclEntryList;
+import org.opencb.opencga.core.models.study.*;
 
 import java.util.List;
 
@@ -13,7 +11,7 @@ public class TemplateStudy extends StudyUpdateParams {
     private List<GroupCreateParams> groups;
     private List<VariableSetCreateParams> variableSets;
 
-    private List<StudyAclEntry> acl;
+    private AclEntryList<StudyPermissions.Permissions> acl;
 
     public String getId() {
         return id;
@@ -42,11 +40,11 @@ public class TemplateStudy extends StudyUpdateParams {
         return this;
     }
 
-    public List<StudyAclEntry> getAcl() {
+    public AclEntryList<StudyPermissions.Permissions> getAcl() {
         return acl;
     }
 
-    public TemplateStudy setAcl(List<StudyAclEntry> acl) {
+    public TemplateStudy setAcl(AclEntryList<StudyPermissions.Permissions> acl) {
         this.acl = acl;
         return this;
     }
