@@ -768,28 +768,13 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             throw new CatalogException("Cannot obtain map of files if this is already provided");
         }
 
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), new ArrayList<>(sampleSet))
-                .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), Arrays.asList(File.Bioformat.ALIGNMENT, File.Bioformat.VARIANT));
-        OpenCGAResult<File> fileResults = fileDBAdaptor.get(study.getUid(), query, new QueryOptions(), userId);
-
-        Map<String, List<File>> fileMap = new HashMap<>();
-        for (File file : fileResults.getResults()) {
-            for (String sampleId : file.getSampleIds()) {
-                if (sampleSet.contains(sampleId)) {
-                    if (!fileMap.containsKey(sampleId)) {
-                        fileMap.put(sampleId, new LinkedList<>());
-                    }
-                    fileMap.get(sampleId).add(file);
-                }
-            }
+        if (!sampleSet.isEmpty()) {
+            Query query = new Query()
+                    .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), new ArrayList<>(sampleSet))
+                    .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), Arrays.asList(File.Bioformat.ALIGNMENT, File.Bioformat.VARIANT));
+            OpenCGAResult<File> fileResults = fileDBAdaptor.get(study.getUid(), query, FileManager.INCLUDE_FILE_URI_PATH, userId);
+            clinicalAnalysis.setFiles(fileResults.getResults());
         }
-
-        Set<File> caFiles = new HashSet<>();
-        for (Map.Entry<String, List<File>> entry : fileMap.entrySet()) {
-            caFiles.addAll(entry.getValue());
-        }
-        clinicalAnalysis.setFiles(new ArrayList<>(caFiles));
     }
 
     private void validateFiles(Study study, ClinicalAnalysis clinicalAnalysis, String userId) throws CatalogException {
@@ -815,7 +800,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         // Look for all the samples associated to the files
         Query query = new Query(FileDBAdaptor.QueryParams.ID.key(),
                 clinicalAnalysis.getFiles().stream().map(File::getId).collect(Collectors.toList()));
-        OpenCGAResult<File> fileResults = fileDBAdaptor.get(study.getUid(), query, new QueryOptions(), userId);
+        QueryOptions fileOptions = keepFieldInQueryOptions(FileManager.INCLUDE_FILE_URI_PATH, FileDBAdaptor.QueryParams.SAMPLE_IDS.key());
+        OpenCGAResult<File> fileResults = fileDBAdaptor.get(study.getUid(), query, fileOptions, userId);
 
         if (fileResults.getNumResults() != clinicalAnalysis.getFiles().size()) {
             Set<String> fileIds = clinicalAnalysis.getFiles().stream().map(File::getId).collect(Collectors.toSet());

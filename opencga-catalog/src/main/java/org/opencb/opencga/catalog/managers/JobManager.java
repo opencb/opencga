@@ -559,6 +559,7 @@ public class JobManager extends ResourceManager<Job> {
     private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
         super.fixQueryObject(query);
         changeQueryId(query, ParamConstants.JOB_TOOL_ID_PARAM, JobDBAdaptor.QueryParams.TOOL_ID.key());
+        changeQueryId(query, ParamConstants.JOB_TOOL_TYPE_PARAM, JobDBAdaptor.QueryParams.TOOL_TYPE.key());
         changeQueryId(query, ParamConstants.JOB_INTERNAL_STATUS_PARAM, JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key());
         changeQueryId(query, ParamConstants.JOB_STATUS_PARAM, JobDBAdaptor.QueryParams.STATUS_ID.key());
 
@@ -889,11 +890,10 @@ public class JobManager extends ResourceManager<Job> {
                 } else {
                     // The log file hasn't yet been registered
                     if (!Arrays.asList(Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED, Enums.ExecutionStatus.ABORTED)
-                            .contains(job.getInternal().getStatus().getId())) {
+                            .contains(job.getInternal().getStatus().getId()) && job.getOutDir() != null) {
                         logFile = Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".err");
                     } else {
-                        throw new CatalogException("Cannot see stderr log file of job with status '"
-                                + job.getInternal().getStatus().getId() + "'.");
+                        throw CatalogAuthorizationException.deny(userId, "see stderr log file of job '" + jobId + "'");
                     }
                 }
             } else {
@@ -902,11 +902,10 @@ public class JobManager extends ResourceManager<Job> {
                 } else {
                     // The log file hasn't yet been registered
                     if (!Arrays.asList(Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED, Enums.ExecutionStatus.ABORTED)
-                            .contains(job.getInternal().getStatus().getId())) {
+                            .contains(job.getInternal().getStatus().getId()) && job.getOutDir() != null) {
                         logFile = Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".log");
                     } else {
-                        throw new CatalogException("Cannot see stdout log file of job with status '"
-                                + job.getInternal().getStatus().getId() + "'.");
+                        throw CatalogAuthorizationException.deny(userId, "see stdout log file of job '" + jobId + "'");
                     }
                 }
             }

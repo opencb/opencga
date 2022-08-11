@@ -38,6 +38,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclEntryList;
@@ -62,6 +63,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -1079,13 +1081,19 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        fixQualityControlUpdateParams(updateParams, options);
+        SampleUpdateParams updateParamsClone;
+        try {
+            updateParamsClone = JacksonUtils.copy(updateParams, SampleUpdateParams.class);
+        } catch (IOException e) {
+            throw new CatalogException("Could not clone SampleUpdateParams object");
+        }
 
+        fixQualityControlUpdateParams(updateParamsClone, options);
         ObjectMap parameters = new ObjectMap();
 
-        if (updateParams != null) {
+        if (updateParamsClone != null) {
             try {
-                parameters = updateParams.getUpdateMap();
+                parameters = updateParamsClone.getUpdateMap();
             } catch (JsonProcessingException e) {
                 throw new CatalogException("Could not parse SampleUpdateParams object: " + e.getMessage(), e);
             }
@@ -1114,7 +1122,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         // Check permissions...
         // Only check write annotation permissions if the user wants to update the annotation sets
-        if (updateParams != null && updateParams.getAnnotationSets() != null) {
+        if (updateParamsClone != null && updateParamsClone.getAnnotationSets() != null) {
             authorizationManager.checkSamplePermission(study.getUid(), sample.getUid(), userId,
                     SamplePermissions.WRITE_ANNOTATIONS);
         }
@@ -1125,16 +1133,16 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     SamplePermissions.WRITE);
         }
 
-        if (updateParams != null && StringUtils.isNotEmpty(updateParams.getId())) {
-            ParamUtils.checkIdentifier(updateParams.getId(), SampleDBAdaptor.QueryParams.ID.key());
+        if (updateParamsClone != null && StringUtils.isNotEmpty(updateParamsClone.getId())) {
+            ParamUtils.checkIdentifier(updateParamsClone.getId(), SampleDBAdaptor.QueryParams.ID.key());
         }
 
-        if (updateParams != null && StringUtils.isNotEmpty(updateParams.getIndividualId())) {
+        if (updateParamsClone != null && StringUtils.isNotEmpty(updateParamsClone.getIndividualId())) {
             // Check individual id exists
             OpenCGAResult<Individual> individualDataResult = catalogManager.getIndividualManager().internalGet(study.getUid(),
-                    updateParams.getIndividualId(), IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId);
+                    updateParamsClone.getIndividualId(), IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId);
             if (individualDataResult.getNumResults() == 0) {
-                throw new CatalogException("Individual '" + updateParams.getIndividualId() + "' not found.");
+                throw new CatalogException("Individual '" + updateParamsClone.getIndividualId() + "' not found.");
             }
 
             // Overwrite individual id parameter just in case the user used a uuid or other individual identifier

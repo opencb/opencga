@@ -240,6 +240,19 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void createTxtFileNoExtensionTest() throws CatalogException {
+        String content = "This is my content";
+        FileCreateParams params = new FileCreateParams()
+                .setContent(content)
+                .setType(File.Type.FILE)
+                .setPath("/files/folder/file");
+
+        File file = fileManager.create(studyFqn, params, true, token).first();
+        FileContent fileContent = fileManager.head(studyFqn, file.getId(), 0, 1, token).first();
+        assertEquals(content, fileContent.getContent().trim());
+    }
+
+    @Test
     public void createTxtFileTest() throws CatalogException {
         String content = "This is my content";
         FileCreateParams params = new FileCreateParams()
@@ -644,6 +657,30 @@ public class FileManagerTest extends AbstractManagerTest {
         assertTrue(sampleNames.contains("sample4"));
 
         assertEquals(sampleIdNames, link.first().getInternal().getSampleMap());
+    }
+
+    @Test
+    public void testLinkFileWithDifferentSampleNamesFromVCFHeader() throws CatalogException, URISyntaxException {
+        URI uri = getClass().getResource("/biofiles/variant-test-sample-mapping.vcf").toURI();
+
+
+        FileLinkParams params = new FileLinkParams()
+                .setUri(uri.toString());
+        DataResult<File> link = fileManager.link(studyFqn, params, false, token);
+
+        assertEquals(3, link.first().getSampleIds().size());
+        assertEquals(Arrays.asList("sample_tumor", "sample_normal", "sample_other"), link.first().getSampleIds());
+        assertEquals(Arrays.asList("TUMOR", "NORMAL", "OTHER"), new ObjectMap(link.first().getAttributes()).getAsStringList("variantFileMetadata.attributes.originalSamples"));
+
+        Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), link.first().getSampleIds());
+        DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().search(studyFqn, query, QueryOptions.empty(), token);
+
+        assertEquals(3, sampleDataResult.getNumResults());
+        List<String> sampleNames = sampleDataResult.getResults().stream().map(Sample::getId).collect(Collectors.toList());
+        assertTrue(sampleNames.contains("sample_tumor"));
+        assertTrue(sampleNames.contains("sample_normal"));
+        assertTrue(sampleNames.contains("sample_other"));
+
     }
 
     @Test

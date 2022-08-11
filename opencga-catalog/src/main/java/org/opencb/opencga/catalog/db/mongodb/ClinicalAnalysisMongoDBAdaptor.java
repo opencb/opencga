@@ -20,6 +20,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -43,6 +44,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.clinical.*;
@@ -51,10 +53,13 @@ import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -934,11 +939,52 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
             if (clinicalAnalysis.getFamily().getUid() == family.getUid()
                     && clinicalAnalysis.getFamily().getVersion() < family.getVersion()) {
-                Family newFamily = clinicalAnalysis.getFamily();
+                Family familyCopy;
+                try {
+                    familyCopy = JacksonUtils.copy(family, Family.class);
+                } catch (IOException e) {
+                    throw new CatalogDBException("Internal error copying the Family object", e);
+                }
 
-                // Increase family version
-                newFamily.setVersion(family.getVersion());
-                ObjectMap params = new ObjectMap(QueryParams.FAMILY.key(), newFamily);
+                // Extract from the Family object, the members and samples actually related to the case.
+                Set<Long> individualAndSampleUids = new HashSet<>();
+                if (CollectionUtils.isNotEmpty(clinicalAnalysis.getFamily().getMembers())) {
+                    for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
+                        individualAndSampleUids.add(member.getUid());
+                        if (CollectionUtils.isNotEmpty(member.getSamples())) {
+                            for (Sample sample : member.getSamples()) {
+                                individualAndSampleUids.add(sample.getUid());
+                            }
+                        }
+                    }
+                    if (CollectionUtils.isNotEmpty(family.getMembers())) {
+                        List<Individual> memberList = new ArrayList<>(clinicalAnalysis.getFamily().getMembers().size());
+                        for (Individual member : family.getMembers()) {
+                            if (individualAndSampleUids.contains(member.getUid())) {
+                                Individual individualCopy;
+                                try {
+                                    individualCopy = JacksonUtils.copy(member, Individual.class);
+                                } catch (IOException e) {
+                                    throw new CatalogDBException("Internal error copying the Individual object", e);
+                                }
+
+                                if (CollectionUtils.isNotEmpty(member.getSamples())) {
+                                    List<Sample> sampleList = new ArrayList<>();
+                                    for (Sample sample : member.getSamples()) {
+                                        if (individualAndSampleUids.contains(sample.getUid())) {
+                                            sampleList.add(sample);
+                                        }
+                                    }
+                                    individualCopy.setSamples(sampleList);
+                                }
+                                memberList.add(individualCopy);
+                            }
+                        }
+                        familyCopy.setMembers(memberList);
+                    }
+                }
+
+                ObjectMap params = new ObjectMap(QueryParams.FAMILY.key(), familyCopy);
                 OpenCGAResult<?> result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().update(clientSession, clinicalAnalysis, params,
                         null, QueryOptions.empty());
                 if (result.getNumUpdated() != 1) {

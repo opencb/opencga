@@ -18,7 +18,7 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.apache.avro.generic.GenericRecord;
 import org.bson.Document;
-import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.study.Study;
 
 /**

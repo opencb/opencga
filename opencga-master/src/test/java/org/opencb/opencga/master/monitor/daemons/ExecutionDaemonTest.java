@@ -25,6 +25,7 @@ import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.analysis.variant.operations.VariantAnnotationIndexOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.catalog.managers.FileManager;
@@ -32,11 +33,13 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobInternal;
 import org.opencb.opencga.core.models.job.JobInternalWebhook;
+import org.opencb.opencga.core.models.job.JobPermissions;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.StudyNotification;
 import org.opencb.opencga.core.models.study.StudyUpdateParams;
@@ -362,6 +365,41 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         fileContentResult = catalogManager.getJobManager().log(studyFqn, jobId, 0, 1, "stdout", false, token);
         assertEquals("my log content\n", fileContentResult.first().getContent());
+    }
+
+    @Test
+    public void testCheckLogsNoPermissions() throws Exception {
+        HashMap<String, Object> params = new HashMap<>();
+        params.put(ExecutionDaemon.OUTDIR_PARAM, "outDir");
+        org.opencb.opencga.core.models.file.File inputFile = catalogManager.getFileManager().get(studyFqn, testFile1, null, token).first();
+        params.put("myFile", inputFile.getPath());
+        Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, params, token).first();
+        String jobId = job.getId();
+
+        catalogManager.getJobManager().updateAcl(studyFqn, Collections.singletonList(jobId), "user2",
+                new AclParams(JobPermissions.VIEW.name()), ParamUtils.AclAction.ADD, token);
+
+        daemon.checkJobs();
+
+        String[] cli = getJob(jobId).getCommandLine().split(" ");
+        int i = Arrays.asList(cli).indexOf("--my-file");
+        assertEquals("'" + inputFile.getPath() + "'", cli[i + 1]);
+        assertEquals(1, getJob(jobId).getInput().size());
+        assertEquals(inputFile.getPath(), getJob(jobId).getInput().get(0).getPath());
+        checkStatus(getJob(jobId), Enums.ExecutionStatus.QUEUED);
+        executor.jobStatus.put(jobId, Enums.ExecutionStatus.RUNNING);
+
+        job = catalogManager.getJobManager().get(studyFqn, jobId, null, token).first();
+
+        daemon.checkJobs();
+        checkStatus(getJob(jobId), Enums.ExecutionStatus.RUNNING);
+
+        InputStream inputStream = new ByteArrayInputStream("my log content\nlast line".getBytes(StandardCharsets.UTF_8));
+        catalogManager.getIoManagerFactory().getDefault().copy(inputStream,
+                Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".log").toUri());
+
+        thrown.expect(CatalogAuthorizationException.class);
+        catalogManager.getJobManager().log(studyFqn, jobId, 0, 1, "stdout", true, sessionIdUser2);
     }
 
     @Test

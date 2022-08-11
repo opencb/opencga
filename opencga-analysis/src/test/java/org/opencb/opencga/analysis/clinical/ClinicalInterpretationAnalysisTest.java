@@ -19,10 +19,15 @@ package org.opencb.opencga.analysis.clinical;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
+import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
+import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationConfiguration;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
@@ -30,10 +35,16 @@ import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationConfigu
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationConfiguration;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
+import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
+import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.clinical.InterpretationUpdateParams;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
@@ -42,8 +53,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import static org.junit.Assert.fail;
+import static org.opencb.opencga.core.api.ParamConstants.INCLUDE_INTERPRETATION;
 
 public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest implements MongoDBVariantStorageTest {
 
@@ -161,6 +176,52 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
         System.out.println(result);
 
         checkInterpretation(12, result);
+    }
+
+    @Test
+    public void testClinicalVariantQuery() throws Exception {
+        String study = "1000G:phase1";
+        String clinicalAnalysisId = "clinical-analysis-1";
+        String interpretationId = "clinical-analysis-1.1";
+        StorageEngineFactory engineFactory = StorageEngineFactory.get(getVariantStorageEngine().getConfiguration());
+
+        ClinicalInterpretationManager manager = new ClinicalInterpretationManager(clinicalTest.catalogManager, engineFactory,
+                opencga.getOpencgaHome());
+
+        // Add new finding
+        OpenCGAResult<org.opencb.opencga.core.models.clinical.Interpretation> interpretationResult = clinicalTest.catalogManager
+                .getInterpretationManager().get(study, interpretationId, QueryOptions.empty(), clinicalTest.token);
+        org.opencb.opencga.core.models.clinical.Interpretation interpretation = interpretationResult.first();
+        List<ClinicalVariant> findingList = new ArrayList<>();
+//        VariantAvro variant = new VariantAvro("1:1456330:C:A", null, "1", 1456330, 1456330, "C", "A", "+", null, 1, null, null, null);
+        VariantAvro variant = new VariantAvro("rs1212112", null, "1", 1456330, 1456330, "C", "A", "+", null, 1, null, null, null);
+        ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method2");
+        ClinicalVariant cv3 = new ClinicalVariant(variant, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(null, null, "helllooooo"),
+                ClinicalVariant.Status.REVIEWED, Collections.emptyList(), null);
+        findingList.add(cv3);
+        InterpretationUpdateParams updateParams = new InterpretationUpdateParams().setPrimaryFindings(findingList);
+        ObjectMap actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.ADD);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+        clinicalTest.catalogManager.getInterpretationManager().update(study, clinicalAnalysisId, interpretationId, updateParams, null,
+                options, clinicalTest.token);
+
+        Query query = new Query();
+        query.put("study", study);
+        query.put(INCLUDE_INTERPRETATION, interpretationId);
+        query.put("type", "SNV");
+        OpenCGAResult<ClinicalVariant> result = manager.get(query, QueryOptions.empty(), clinicalTest.token);
+        boolean success = false;
+        for (ClinicalVariant cv : result.getResults()) {
+            if (cv3.toStringSimple().equals(cv.toStringSimple())
+                    && cv3.getStatus() == cv.getStatus()
+                    && cv3.getDiscussion().equals(cv.getDiscussion())) {
+                System.out.println(cv.getId() + ", " + cv.toStringSimple() + ", " + cv.getDiscussion() + ", " + cv.getStatus());
+                success = true;
+            }
+        }
+        if (!success) {
+            fail();
+        }
     }
 
     private void checkInterpretation(int expected, ExecutionResult result) {

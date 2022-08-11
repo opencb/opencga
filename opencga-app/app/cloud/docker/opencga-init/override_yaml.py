@@ -9,6 +9,7 @@ parser.add_argument("--storage-config-path", help="path to the storage-configura
 parser.add_argument("--database-prefix", required=False)
 parser.add_argument("--search-hosts", required=True)
 parser.add_argument("--clinical-hosts", required=True)
+parser.add_argument("--rga-hosts", required=False)
 parser.add_argument("--cellbase-rest-url", required=False, help="Cellbase rest server hosting the cellbase service")
 parser.add_argument("--cellbase-version", required=False, help="Cellbase rest server version (v4, v5..)")
 parser.add_argument("--catalog-database-hosts", required=True)
@@ -47,6 +48,16 @@ parser.add_argument("--health-check-interval", required=False)
 parser.add_argument("--save", help="save update to source configuration files (default: false)", default=False, action='store_true')
 args = parser.parse_args()
 
+def hostOverride(conf,hosts_var):
+    if not hosts_var is None:
+        hosts = hosts_var.replace('\"','').replace('[','').replace(']','').split(",")
+        for i, host in enumerate(hosts):
+            if i == 0:
+                # If we are overriding the default hosts,
+                # clear them only on the first iteration
+                conf["hosts"].clear()
+            conf["hosts"].insert(i, host.strip())
+
 # TODO: Add check for a job config.
 
 ##############################################################################################################
@@ -56,23 +67,15 @@ args = parser.parse_args()
 with open(args.storage_config_path) as f:
     storage_config = yaml.safe_load(f)
 
-# Inject search hosts
-search_hosts = args.search_hosts.replace('\"','').replace('[','').replace(']','').split(",")
-for i, search_host in enumerate(search_hosts):
-    if i == 0:
-        # If we are overriding the default hosts,
-        # clear them only on the first iteration
-        storage_config["search"]["hosts"].clear()
-    storage_config["search"]["hosts"].insert(i, search_host.strip())
 
-# Inject clinical hosts
-clinical_hosts = args.clinical_hosts.replace('\"','').replace('[','').replace(']','').split(",")
-for i, clinical_host in enumerate(clinical_hosts):
-    if i == 0:
-        # If we are overriding the default hosts,
-        # clear them only on the first iteration
-        storage_config["clinical"]["hosts"].clear()
-    storage_config["clinical"]["hosts"].insert(i, clinical_host.strip())
+#  Inject search hosts
+hostOverride(storage_config["search"],args.search_hosts)
+
+#  Inject clinical hosts
+hostOverride(storage_config["clinical"],args.clinical_hosts)
+
+#  Inject rga hosts
+hostOverride(storage_config["rga"],args.rga_hosts)
 
 # Inject cellbase rest host, if set
 if args.cellbase_rest_url is not None and args.cellbase_rest_url != "":
@@ -119,13 +122,7 @@ if args.database_prefix:
     config["databasePrefix"] = args.database_prefix
 
 # Inject catalog database
-catalog_hosts = args.catalog_database_hosts.replace('\"','').replace('[','').replace(']','').split(",")
-for i, catalog_host in enumerate(catalog_hosts):
-    if i == 0:
-        # If we are overriding the default hosts,
-        # clear them only on the first iteration
-        config["catalog"]["database"]["hosts"].clear()
-    config["catalog"]["database"]["hosts"].insert(i, catalog_host.strip())
+hostOverride(config["catalog"]["database"], args.catalog_database_hosts)
 
 config["catalog"]["database"]["user"] = args.catalog_database_user
 config["catalog"]["database"]["password"] = args.catalog_database_password
@@ -139,13 +136,7 @@ if args.catalog_database_authentication_mechanism is not None:
     config["catalog"]["database"]["options"]["authenticationMechanism"] = args.catalog_database_authentication_mechanism
 
 # Inject search database
-catalog_search_hosts = args.catalog_search_hosts.replace('\"','').replace('[','').replace(']','').split(",")
-for i, catalog_search_host in enumerate(catalog_search_hosts):
-    if i == 0:
-        # If we are overriding the default hosts,
-        # clear them only on the first iteration
-        config["catalog"]["searchEngine"]["hosts"].clear()
-    config["catalog"]["searchEngine"]["hosts"].insert(i, catalog_search_host.strip())
+hostOverride(config["catalog"]["searchEngine"], args.catalog_search_hosts)
 
 if args.catalog_search_user is not None:
     config["catalog"]["searchEngine"]["user"] = args.catalog_search_user

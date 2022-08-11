@@ -20,7 +20,15 @@ Cohort data model hosts information about any cohort.
 ## Data Model
 
 ### Cohort
+<<<<<<< HEAD
+<<<<<<< HEAD
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/cohort/Cohort.java).
+=======
+You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/cohort/Cohort.java).
+>>>>>>> release-2.2.x
+=======
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/cohort/Cohort.java).
+>>>>>>> release-2.2.x
 
 | Field | Description |
 | :---  | :--- |
@@ -38,7 +46,15 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-52
 | **attributes**<br>*Map<String,Object>* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 
 ### CohortInternal
+<<<<<<< HEAD
+<<<<<<< HEAD
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/cohort/CohortInternal.java).
+=======
+You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/cohort/CohortInternal.java).
+>>>>>>> release-2.2.x
+=======
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/cohort/CohortInternal.java).
+>>>>>>> release-2.2.x
 
 | Field | Description |
 | :---  | :--- |
@@ -48,6 +64,10 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-52
 
 ### Status
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
+
+
+### InternalStatus
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/common/InternalStatus.java).
 
 
 ### InternalStatus

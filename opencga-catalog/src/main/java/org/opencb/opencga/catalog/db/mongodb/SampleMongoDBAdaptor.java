@@ -370,10 +370,10 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             }
 
             return endWrite(tmpStartTime, 1, 1, events);
-        }, (MongoDBIterator<Document> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
+        }, this::iterator, (DBIterator<Sample> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
     }
 
-    private void updateReferencesAfterSampleVersionIncrement(ClientSession clientSession, MongoDBIterator<Document> iterator)
+    private void updateReferencesAfterSampleVersionIncrement(ClientSession clientSession, DBIterator<Sample> iterator)
             throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
         while (iterator.hasNext()) {
             updateIndividualSampleReferences(clientSession, iterator.next());
@@ -395,7 +395,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         versionedMongoDBAdaptor.update(clientSession, query, () -> {
             QueryOptions options = new QueryOptions(MongoDBCollection.MULTI, true);
             return sampleCollection.update(clientSession, query, update, options);
-        }, (MongoDBIterator<Document> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
+        }, this::iterator, (DBIterator<Sample> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
     }
 
     void updateCohortReferences(ClientSession clientSession, long studyUid, List<Long> sampleUids, String cohortId,
@@ -427,7 +427,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 throw new CatalogDBException("Could not update cohort references in samples");
             }
             return update;
-        }, (MongoDBIterator<Document> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
+        }, this::iterator, (DBIterator<Sample> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
     }
 
     /**
@@ -436,16 +436,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
      * @param clientSession Client session.
      * @param sample        Sample object containing the latest version.
      */
-    private void updateIndividualSampleReferences(ClientSession clientSession, Document sample)
+    private void updateIndividualSampleReferences(ClientSession clientSession, Sample sample)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        String sampleId = sample.getString(QueryParams.ID.key());
-        long sampleUid = sample.getLong(QueryParams.UID.key());
-        int version = sample.getInteger(QueryParams.VERSION.key());
-        long studyUid = sample.getLong(QueryParams.STUDY_UID.key());
-
         Query query = new Query()
-                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleUid);
+                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), sample.getStudyUid())
+                .append(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sample.getUid());
 
         List<String> include = new ArrayList<>(IndividualManager.INCLUDE_INDIVIDUAL_IDS.getAsStringList(QueryOptions.INCLUDE));
         include.add(IndividualDBAdaptor.QueryParams.SAMPLES.key());
@@ -458,8 +453,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
             List<Sample> samples = new ArrayList<>(individual.getSamples().size());
             for (Sample individualSample : individual.getSamples()) {
-                if (individualSample.getUid() == sampleUid) {
-                    individualSample.setVersion(version);
+                if (individualSample.getUid() == sample.getUid()) {
+                    individualSample.setVersion(sample.getVersion());
                 }
                 samples.add(individualSample);
             }
@@ -474,7 +469,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                     options);
             if (result.getNumUpdated() != 1) {
                 throw new CatalogDBException("Individual '" + individual.getId() + "' could not be updated to the latest sample version"
-                        + " of '" + sampleId + "'");
+                        + " of '" + sample.getId() + "'");
             }
         }
     }
@@ -497,7 +492,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         versionedMongoDBAdaptor.update(clientSession, bsonQuery,
                 () -> sampleCollection.update(clientSession, bsonQuery, update, new QueryOptions(MongoDBCollection.MULTI, true)),
-                (MongoDBIterator<Document> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
+                this::iterator, (DBIterator<Sample> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
     }
 
     /**
@@ -781,7 +776,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         return runTransaction(
                 (ClientSession clientSession) -> versionedMongoDBAdaptor.update(clientSession, query,
                         () -> new OpenCGAResult<>(sampleCollection.update(query, bsonUpdate, new QueryOptions("multi", true))),
-                        (MongoDBIterator<Document> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator)));
+                        this::iterator,
+                        (DBIterator<Sample> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator)));
+
     }
 
     @Override
@@ -932,7 +929,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             DataResult<?> result = sampleCollection.update(clientSession, bsonQuery, updateDocument, new QueryOptions("multi", true));
             logger.debug("File '{}' removed from {} samples", fileId, result.getNumUpdated());
             return result;
-        }, (MongoDBIterator<Document> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
+        }, this::iterator, (DBIterator<Sample> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
     }
 
     // TODO: Check clean
