@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -44,10 +45,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
-import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.ExternalSource;
-import org.opencb.opencga.core.models.common.RgaIndex;
+import org.opencb.opencga.core.models.common.*;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileInternal;
@@ -223,37 +221,27 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     @Override
     public OpenCGAResult<Sample> create(String studyStr, Sample sample, QueryOptions options, String token) throws CatalogException {
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        String userId = userManager.getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
-
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("sample", sample)
                 .append("options", options)
                 .append("token", token);
-        try {
+        QueryOptions myOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+
+        return run(auditParams, Enums.Action.CREATE, Enums.Resource.SAMPLE, studyStr, token, (study, userId) -> {
             // 1. We check everything can be done
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
-
             validateNewSample(study, sample, userId);
 
             // We create the sample
-            OpenCGAResult<Sample> insert = sampleDBAdaptor.insert(study.getUid(), sample, study.getVariableSets(), options);
-            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            OpenCGAResult<Sample> insert = sampleDBAdaptor.insert(study.getUid(), sample, study.getVariableSets(), myOptions);
+            if (myOptions.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
                 // Fetch created sample
-                OpenCGAResult<Sample> result = getSample(study.getUid(), sample.getUuid(), options);
+                OpenCGAResult<Sample> result = getSample(study.getUid(), sample.getUuid(), myOptions);
                 insert.setResults(result.getResults());
             }
-            auditManager.auditCreate(userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(), study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return insert;
-        } catch (CatalogException e) {
-            auditManager.auditCreate(userId, Enums.Resource.SAMPLE, sample.getId(), "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
+            return Pair.of(insert, new ReferenceParam(sample.getId(), sample.getUuid()));
+        });
     }
 
     @Override

@@ -17,10 +17,12 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -29,16 +31,24 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
+import org.opencb.opencga.core.models.audit.AuditRecord;
+import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.ReferenceParam;
 import org.opencb.opencga.core.models.study.Group;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 /**
@@ -98,6 +108,93 @@ public abstract class AbstractManager {
         projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();
 
         logger = LoggerFactory.getLogger(this.getClass());
+    }
+
+    public interface ExecuteOperation<T> {
+        T execute(Study study, String userId, ReferenceParam rp, QueryOptions queryOptions) throws CatalogException;
+    }
+
+    public interface ExecuteBatchOperation<T> {
+        T execute(Study study, String userId, QueryOptions queryOptions, String auditOperationUuid) throws CatalogException;
+    }
+
+    protected <T> T run(ObjectMap params, Enums.Action action, Enums.Resource resource, String studyStr, String token, QueryOptions options,
+                                 ExecuteOperation<T> body) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+        return run(params, action, resource, operationUuid, study, userId, options, body);
+    }
+
+    protected <T> T run(ObjectMap params, Enums.Action action, Enums.Resource resource, String operationUuid, Study study, String userId,
+                        QueryOptions options, ExecuteOperation<T> body) throws CatalogException {
+        StopWatch totalStopWatch = StopWatch.createStarted();
+        Exception exception = null;
+        ReferenceParam referenceParam = new ReferenceParam();
+        try {
+            QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+            return body.execute(study, userId, referenceParam, queryOptions);
+        } catch (Exception e) {
+            exception = e;
+            throw e;
+        } finally {
+            try {
+                String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+                AuditRecord auditRecord = new AuditRecord(operationId, operationUuid, userId, GitRepositoryState.get().getBuildVersion(),
+                        action, resource, referenceParam.getId(), referenceParam.getUuid(), study.getId(), study.getUuid(), params,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), TimeUtils.getDate(),
+                        new ObjectMap("totalTimeMillis", totalStopWatch.getTime(TimeUnit.MILLISECONDS)));
+                if (exception != null) {
+                    auditRecord.setStatus(new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(1, exception.getMessage(), "")));
+                    auditRecord.getAttributes()
+                            .append("errorType", exception.getClass())
+                            .append("errorMessage", exception.getMessage());
+                }
+                auditManager.audit(auditRecord);
+            } catch (Exception e2) {
+                if (exception != null) {
+                    exception.addSuppressed(e2);
+                } else {
+                    throw e2;
+                }
+            }
+        }
+    }
+
+    protected <T> T runBatch(ObjectMap params, Enums.Action action, Enums.Resource resource, String studyStr, String token,
+                             QueryOptions options, ExecuteBatchOperation<T> body) throws CatalogException {
+        StopWatch totalStopWatch = StopWatch.createStarted();
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+        auditManager.initAuditBatch(operationUuid);
+        Exception exception = null;
+        try {
+            QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+            return body.execute(study, userId, queryOptions, operationUuid);
+        } catch (Exception e) {
+            exception = e;
+            ObjectMap auditAttributes = new ObjectMap()
+                    .append("totalTimeMillis", totalStopWatch.getTime(TimeUnit.MILLISECONDS))
+                    .append("errorType", e.getClass())
+                    .append("errorMessage", e.getMessage());
+            AuditRecord.Status status = new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", e.getMessage()));
+            AuditRecord auditRecord = new AuditRecord(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT), operationUuid, userId,
+                    GitRepositoryState.get().getBuildVersion(), action, resource, "", "", study.getId(), study.getUuid(), params,
+                    status, TimeUtils.getDate(), auditAttributes);
+            auditManager.audit(auditRecord);
+            throw e;
+        } finally {
+            try {
+                auditManager.finishAuditBatch(operationUuid);
+            } catch (Exception e2) {
+                if (exception != null) {
+                    exception.addSuppressed(e2);
+                } else {
+                    throw e2;
+                }
+            }
+        }
     }
 
     protected void fixQueryObject(Query query) {

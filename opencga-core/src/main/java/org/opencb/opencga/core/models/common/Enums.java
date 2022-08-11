@@ -115,6 +115,7 @@ public final class Enums {
         UPDATE_INTERNAL,
         MERGE,
         INFO,
+        ITERATE,
         SEARCH,
         COUNT,
         DISTINCT,
