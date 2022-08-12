@@ -816,6 +816,12 @@ public class VariantQueryParser {
         return xrefs;
     }
 
+    public static ParsedQuery<KeyOpValue<String, Float>> parseFreqFilter(Query query, QueryParam queryParam) {
+        return VariantQueryUtils.splitValue(query, queryParam)
+                .map(VariantQueryUtils::parseKeyOpValue)
+                .map(kov -> new KeyOpValue<>(kov.getKey(), kov.getOp(), Float.valueOf(kov.getValue())));
+    }
+
     @Deprecated
     public static StudyMetadata getDefaultStudy(Query query, VariantStorageMetadataManager metadataManager) {
         return new VariantQueryParser(null, metadataManager).getDefaultStudy(query);
