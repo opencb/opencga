@@ -89,9 +89,10 @@ public class VariantExporter {
      * @param query         Query with the variants to export
      * @throws IOException  If there is any IO error
      * @throws StorageEngineException  If there is any error exporting variants
+     * @return output file
      */
-    public void export(@Nullable URI outputFile, VariantOutputFormat outputFormat, URI variantsFile,
-                       ParsedVariantQuery query)
+    public URI export(@Nullable URI outputFile, VariantOutputFormat outputFormat, URI variantsFile,
+                      ParsedVariantQuery query)
             throws IOException, StorageEngineException {
 
         outputFile = VariantWriterFactory.checkOutput(outputFile, outputFormat);
@@ -111,6 +112,7 @@ public class VariantExporter {
             }
             writeMetadata(metadata, UriUtils.replacePath(outputFile, metaFilename));
         }
+        return outputFile;
     }
 
     protected void exportData(OutputStream outputStream, VariantOutputFormat outputFormat, URI variantsFile,
