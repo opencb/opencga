@@ -647,7 +647,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         VariantSearchManager variantSearchManager = getVariantSearchManager();
         // first, create the collection it it does not exist
         variantSearchManager.create(dbName);
-        if (!configuration.getSearch().isActive() || !variantSearchManager.isAlive(dbName)) {
+        if (!secondaryAnnotationIndexActiveAndAlive(variantSearchManager, dbName)) {
             throw new StorageEngineException("Solr is not alive!");
         }
 
@@ -720,7 +720,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         try {
             variantSearchManager.create(collectionName);
-            if (configuration.getSearch().isActive() && variantSearchManager.isAlive(collectionName)) {
+            if (secondaryAnnotationIndexActiveAndAlive(variantSearchManager, collectionName)) {
                 // then, load variants
                 QueryOptions queryOptions = new QueryOptions();
                 Query query = new Query(VariantQueryParam.STUDY.key(), study)
@@ -744,6 +744,18 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         metadataManager.updateCohortMetadata(studyMetadata.getId(), id,
                 cohortMetadata -> cohortMetadata.setSecondaryIndexStatus(TaskMetadata.Status.READY));
+    }
+
+    public boolean secondaryAnnotationIndexActiveAndAlive() throws StorageEngineException {
+        return secondaryAnnotationIndexActiveAndAlive(getVariantSearchManager(), dbName);
+    }
+
+    public boolean secondaryAnnotationIndexActiveAndAlive(VariantSearchManager variantSearchManager) {
+        return secondaryAnnotationIndexActiveAndAlive(variantSearchManager, dbName);
+    }
+
+    public boolean secondaryAnnotationIndexActiveAndAlive(VariantSearchManager variantSearchManager, String collectionName) {
+        return variantSearchManager != null && configuration.getSearch().isActive() && variantSearchManager.isAlive(collectionName);
     }
 
     public void removeSecondaryIndexSamples(String study, List<String> samples) throws StorageEngineException, VariantSearchException {
