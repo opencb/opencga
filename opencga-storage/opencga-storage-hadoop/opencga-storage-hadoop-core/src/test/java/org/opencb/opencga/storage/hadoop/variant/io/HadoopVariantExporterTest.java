@@ -225,6 +225,16 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         copyToLocal(fileName, uri);
     }
 
+    @Test
+    public void exportWithGenes() throws Exception {
+        String fileName = "brca2.vcf";
+        URI uri = getOutputUri(fileName);
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.VCF,
+                null, new Query(STUDY.key(), study1).append(GENE.key(), "BRCA2"), new QueryOptions());
+
+        copyToLocal(fileName, uri);
+    }
+
     protected void copyToLocal(String fileName, URI uri) throws IOException {
         if (!exportToLocal) {
             FileSystem.get(externalResource.getConf()).copyToLocalFile(true,
