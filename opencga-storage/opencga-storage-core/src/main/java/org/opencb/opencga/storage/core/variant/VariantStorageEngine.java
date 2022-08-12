@@ -232,10 +232,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @param queryOptions  Query options
      * @throws IOException  If there is any IO error
      * @throws StorageEngineException  If there is any error exporting variants
+     * @return output file, could be different from input
      */
-    public void exportData(URI outputFile, VariantOutputFormat outputFormat, URI variantsFile, Query query, QueryOptions queryOptions)
+    public URI exportData(URI outputFile, VariantOutputFormat outputFormat, URI variantsFile, Query query, QueryOptions queryOptions)
             throws IOException, StorageEngineException {
-        exportData(outputFile, outputFormat, variantsFile, query, queryOptions, null);
+        return exportData(outputFile, outputFormat, variantsFile, query, queryOptions, null);
     }
 
     /**
@@ -249,9 +250,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @param metadataFactory  Metadata factory. Metadata will only be generated if the outputFile is defined.
      * @throws IOException            If there is any IO error
      * @throws StorageEngineException If there is any error exporting variants
+     * @return outputFile could be different from input
      */
-    public void exportData(URI outputFile, VariantOutputFormat outputFormat, URI variantsFile, Query query, QueryOptions queryOptions,
-                           VariantMetadataFactory metadataFactory)
+    public URI exportData(URI outputFile, VariantOutputFormat outputFormat, URI variantsFile, Query query, QueryOptions queryOptions,
+                          VariantMetadataFactory metadataFactory)
             throws IOException, StorageEngineException {
         if (metadataFactory == null) {
             metadataFactory = new VariantMetadataFactory(getMetadataManager());
@@ -263,7 +265,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
         }
         ParsedVariantQuery parsedVariantQuery = parseQuery(query, queryOptions);
-        exporter.export(outputFile, outputFormat, variantsFile, parsedVariantQuery);
+        return exporter.export(outputFile, outputFormat, variantsFile, parsedVariantQuery);
     }
 
     /**
@@ -1114,7 +1116,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return getVariantQueryExecutor(query, options).iterator(query, options);
     }
 
-    protected final List<VariantQueryExecutor> getVariantQueryExecutors() throws StorageEngineException {
+    public final List<VariantQueryExecutor> getVariantQueryExecutors() throws StorageEngineException {
         if (lazyVariantQueryExecutorsList.isEmpty()) {
             synchronized (lazyVariantQueryExecutorsList) {
                 if (lazyVariantQueryExecutorsList.isEmpty()) {

@@ -52,8 +52,8 @@ public class HadoopVariantExporter extends VariantExporter {
     }
 
     @Override
-    public void export(@Nullable URI outputFileUri, VariantWriterFactory.VariantOutputFormat outputFormat, URI variantsFile,
-                       ParsedVariantQuery variantQuery)
+    public URI export(@Nullable URI outputFileUri, VariantWriterFactory.VariantOutputFormat outputFormat, URI variantsFile,
+                      ParsedVariantQuery variantQuery)
             throws IOException, StorageEngineException {
         VariantHadoopDBAdaptor dbAdaptor = ((VariantHadoopDBAdaptor) engine.getDBAdaptor());
         IOConnector ioConnector = ioConnectorProvider.get(outputFileUri);
@@ -84,12 +84,13 @@ public class HadoopVariantExporter extends VariantExporter {
                 || smallQuery
                 || queryOptions.getBoolean("skipMapReduce", false)
                 || (!(ioConnector instanceof HDFSIOConnector) && !(ioConnector instanceof LocalIOConnector))) {
-            super.export(outputFileUri, outputFormat, variantsFile, variantQuery);
+            return super.export(outputFileUri, outputFormat, variantsFile, variantQuery);
         } else {
+            outputFileUri = VariantWriterFactory.checkOutput(outputFileUri, outputFormat);
             Path outputPath = new Path(outputFileUri);
             FileSystem fileSystem = outputPath.getFileSystem(dbAdaptor.getConfiguration());
             if (fileSystem.exists(outputPath)) {
-                throw new IOException("Output directory " + outputFileUri + " already exists!");
+                throw new IOException("Output file " + outputFileUri + " already exists!");
             }
 
             String metaFilename = outputFileUri.toString() + METADATA_FILE_EXTENSION;
@@ -120,6 +121,7 @@ public class HadoopVariantExporter extends VariantExporter {
             logger.info("Output metadata file : " + metadataPath.toString());
         }
 
+        return outputFileUri;
     }
 
     protected void writeMetadataInHdfs(VariantMetadata metadata, Path metadataPath, FileSystem fileSystem) throws IOException {
