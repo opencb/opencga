@@ -103,6 +103,7 @@ public class HadoopVariantExporter extends VariantExporter {
                 throw new IOException("Output file " + metadataPath + " already exists!");
             }
 
+            query = engine.preProcessQuery(query, queryOptions);
             ObjectMap options = new ObjectMap(engine.getOptions())
                     .append(VariantExporterDriver.OUTPUT_PARAM, outputFileUri.toString())
                     .append(VariantExporterDriver.OUTPUT_FORMAT_PARAM, outputFormat.toString());
