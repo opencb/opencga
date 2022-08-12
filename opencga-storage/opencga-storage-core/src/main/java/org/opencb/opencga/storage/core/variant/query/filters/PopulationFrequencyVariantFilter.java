@@ -10,7 +10,7 @@ import java.util.function.Predicate;
 
 public class PopulationFrequencyVariantFilter implements Predicate<Variant> {
 
-    protected static abstract class PopulationFreqFilter {
+    protected abstract static class PopulationFreqFilter {
         private final String study;
         private final String population;
 
@@ -28,6 +28,7 @@ public class PopulationFrequencyVariantFilter implements Predicate<Variant> {
         }
 
         abstract boolean onMissing();
+
         abstract boolean testFreq(PopulationFrequency populationFrequency);
     }
 

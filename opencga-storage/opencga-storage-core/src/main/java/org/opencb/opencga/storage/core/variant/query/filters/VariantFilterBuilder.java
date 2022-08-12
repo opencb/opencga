@@ -156,7 +156,8 @@ public class VariantFilterBuilder {
         addClinicalFilters(query, filters);
 
         if (VariantQueryUtils.isValidParam(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY)) {
-            ParsedQuery<KeyOpValue<String, Float>> freqQuery = VariantQueryParser.parseFreqFilter(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY);
+            ParsedQuery<KeyOpValue<String, Float>> freqQuery
+                    = VariantQueryParser.parseFreqFilter(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY);
             List<PopulationFrequencyVariantFilter.AltFreqFilter> freqFilters = freqQuery.mapValues(popFreq -> {
                 String[] split = popFreq.getKey().split(VariantQueryUtils.STUDY_POP_FREQ_SEPARATOR);
                 return new PopulationFrequencyVariantFilter.AltFreqFilter(split[0], split[1], popFreq.getOp(), popFreq.getValue());
@@ -164,7 +165,8 @@ public class VariantFilterBuilder {
             filters.add(new PopulationFrequencyVariantFilter(freqQuery.getOperation(), freqFilters));
         }
         if (VariantQueryUtils.isValidParam(query, ANNOT_POPULATION_REFERENCE_FREQUENCY)) {
-            ParsedQuery<KeyOpValue<String, Float>> freqQuery = VariantQueryParser.parseFreqFilter(query, ANNOT_POPULATION_REFERENCE_FREQUENCY);
+            ParsedQuery<KeyOpValue<String, Float>> freqQuery
+                    = VariantQueryParser.parseFreqFilter(query, ANNOT_POPULATION_REFERENCE_FREQUENCY);
             List<PopulationFrequencyVariantFilter.RefFreqFilter> freqFilters = freqQuery.mapValues(popFreq -> {
                 String[] split = popFreq.getKey().split(VariantQueryUtils.STUDY_POP_FREQ_SEPARATOR);
                 return new PopulationFrequencyVariantFilter.RefFreqFilter(split[0], split[1], popFreq.getOp(), popFreq.getValue());
@@ -172,7 +174,8 @@ public class VariantFilterBuilder {
             filters.add(new PopulationFrequencyVariantFilter(freqQuery.getOperation(), freqFilters));
         }
         if (VariantQueryUtils.isValidParam(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY)) {
-            ParsedQuery<KeyOpValue<String, Float>> freqQuery = VariantQueryParser.parseFreqFilter(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY);
+            ParsedQuery<KeyOpValue<String, Float>> freqQuery
+                    = VariantQueryParser.parseFreqFilter(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY);
             List<PopulationFrequencyVariantFilter.MafFreqFilter> freqFilters = freqQuery.mapValues(popFreq -> {
                 String[] split = popFreq.getKey().split(VariantQueryUtils.STUDY_POP_FREQ_SEPARATOR);
                 return new PopulationFrequencyVariantFilter.MafFreqFilter(split[0], split[1], popFreq.getOp(), popFreq.getValue());
