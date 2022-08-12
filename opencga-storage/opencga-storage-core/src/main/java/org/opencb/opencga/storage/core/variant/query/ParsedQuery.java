@@ -4,6 +4,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class ParsedQuery<T> extends Values<T> {
@@ -28,6 +29,11 @@ public class ParsedQuery<T> extends Values<T> {
     public ParsedQuery<T> filter(Predicate<T> selector) {
         Values<T> values = super.filter(selector);
         return new ParsedQuery<>(key, values.operation, values.values);
+    }
+
+    @Override
+    public <R> ParsedQuery<R> map(Function<T, R> function) {
+        return new ParsedQuery<>(key, operation, mapValues(function));
     }
 
     @Override
