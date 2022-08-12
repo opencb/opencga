@@ -10,6 +10,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.io.managers.IOConnector;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.io.managers.LocalIOConnector;
@@ -20,10 +21,18 @@ import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.executors.BreakendVariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.query.executors.DBAdaptorVariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
+import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexCompoundHeterozygousQueryExecutor;
+import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexMendelianErrorQueryExecutor;
+import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +42,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.util.zip.GZIPOutputStream;
+
+import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.getSearchEngineQuery;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 
 /**
  * Created on 11/07/18.
@@ -64,6 +76,7 @@ public class HadoopVariantExporter extends VariantExporter {
         if (!queryOptions.getBoolean("skipSmallQuery", false)) {
             ParsedVariantQuery.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
             if (xrefs.getVariants().size() > 0 && xrefs.getVariants().size() < 2000) {
+                // FIXME: Is this scenario still needed?
                 if (!VariantQueryUtils.isValidParam(query, VariantQueryParam.REGION)
                         && xrefs.getGenes().isEmpty()
                         && xrefs.getIds().isEmpty()
@@ -72,10 +85,69 @@ public class HadoopVariantExporter extends VariantExporter {
                     smallQuery = true;
                 }
             }
-            if (SampleIndexQueryParser.validSampleIndexQuery(query) && variantQuery.getStudyQuery().countSamplesInFilter() < 25) {
-                logger.info("Query with {} samples. Consider small query. Skip MapReduce",
-                        variantQuery.getStudyQuery().countSamplesInFilter());
+
+            VariantQueryExecutor queryExecutor = engine.getVariantQueryExecutor(query, queryOptions);
+            if (queryExecutor instanceof SampleIndexCompoundHeterozygousQueryExecutor
+                    || queryExecutor instanceof BreakendVariantQueryExecutor
+                    || queryExecutor instanceof SampleIndexMendelianErrorQueryExecutor) {
+                logger.info("Query using special VariantQueryExecutor {}. Skip MapReduce", queryExecutor.getClass());
                 smallQuery = true;
+            } else if (queryExecutor instanceof SampleIndexVariantQueryExecutor) {
+                if (SampleIndexQueryParser.validSampleIndexQuery(query)) {
+                    int samplesThreshold = engine.getOptions().getInt(
+                            EXPORT_SMALL_QUERY_SAMPLE_INDEX_SAMPLES_THRESHOLD.key(),
+                            EXPORT_SMALL_QUERY_SAMPLE_INDEX_SAMPLES_THRESHOLD.defaultValue());
+                    if (variantQuery.getStudyQuery().countSamplesInFilter() < samplesThreshold) {
+                        logger.info("Query with {} samples. Consider small query. Skip MapReduce",
+                                variantQuery.getStudyQuery().countSamplesInFilter());
+                        smallQuery = true;
+                    }
+                }
+            } else if (queryExecutor instanceof DBAdaptorVariantQueryExecutor) {
+                if (VariantHBaseQueryParser.isSupportedQuery(query)) {
+                    int variantsThreshold = engine.getOptions().getInt(
+                            EXPORT_SMALL_QUERY_SCAN_VARIANTS_THRESHOLD.key(),
+                            EXPORT_SMALL_QUERY_SCAN_VARIANTS_THRESHOLD.defaultValue());
+                    if (engine.secondaryAnnotationIndexActiveAndAlive()) {
+                        try {
+                            long totalCount = engine.getVariantSearchManager().count(engine.getDBName(), new Query());
+                            long count = engine.getVariantSearchManager().count(engine.getDBName(), getSearchEngineQuery(query));
+                            if (count < variantsThreshold) {
+                                logger.info("Query for approximately {} of {} variants, using HBase native SCAN."
+                                                + " Consider small query."
+                                                + " Skip MapReduce",
+                                        count, totalCount);
+                                smallQuery = true;
+                            }
+                        } catch (VariantSearchException e) {
+                            logger.info("Unable to count variants from SearchEngine", e);
+                        }
+                    }
+                }
+            } else if (queryExecutor instanceof SearchIndexVariantQueryExecutor) {
+                // If the query can be resolved with the secondary annotation index (i.e. Solr), we can
+                // check how small the query is and get an estimation. If it's less than a threshold, we can skip the mapreduce.
+                int variantsThreshold = engine.getOptions().getInt(
+                        EXPORT_SMALL_QUERY_SEARCH_INDEX_VARIANTS_THRESHOLD.key(),
+                        EXPORT_SMALL_QUERY_SEARCH_INDEX_VARIANTS_THRESHOLD.defaultValue());
+                float matchRatioThreshold = engine.getOptions().getFloat(
+                        EXPORT_SMALL_QUERY_SEARCH_INDEX_MATCH_RATIO_THRESHOLD.key(),
+                        EXPORT_SMALL_QUERY_SEARCH_INDEX_MATCH_RATIO_THRESHOLD.defaultValue());
+                try {
+                    long totalCount = engine.getVariantSearchManager().count(engine.getDBName(), new Query());
+                    long count = engine.getVariantSearchManager().count(engine.getDBName(), getSearchEngineQuery(query));
+                    double matchRate = ((double) count) / ((double) totalCount);
+                    logger.info("Count {}/{} variants from query {}", count, totalCount, getSearchEngineQuery(query));
+                    if (count < variantsThreshold || matchRate < matchRatioThreshold) {
+                        logger.info("Query for approximately {} of {} variants, which is {}% of the total."
+                                        + " Consider small query."
+                                        + " Skip MapReduce",
+                                count, totalCount, matchRate * 100);
+                        smallQuery = true;
+                    }
+                } catch (VariantSearchException e) {
+                    logger.info("Unable to count variants from SearchEngine", e);
+                }
             }
         }
 
