@@ -14,6 +14,7 @@ import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.apache.parquet.hadoop.ParquetFileWriter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -379,6 +380,8 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             if (status.isFile()
                     && !path.getName().equals(FileOutputCommitter.SUCCEEDED_FILE_NAME)
                     && !path.getName().equals(FileOutputCommitter.PENDING_DIR_NAME)
+                    && !path.getName().equals(ParquetFileWriter.PARQUET_METADATA_FILE)
+                    && !path.getName().equals(ParquetFileWriter.PARQUET_COMMON_METADATA_FILE)
                     && status.getLen() > 0) {
                 paths.add(path);
             }
@@ -386,14 +389,19 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         if (paths.size() == 0) {
             LOGGER.warn("The MapReduce job didn't produce any output. This may not be expected.");
         } else if (paths.size() == 1) {
-            LOGGER.info("Copy to local file " + paths.get(0) + " to " + localOutput);
+            LOGGER.info("Copy to local file " + paths.get(0).toUri() + " to " + localOutput.toUri());
             fileSystem.copyToLocalFile(false, paths.get(0), localOutput);
             LOGGER.info("File size : " + humanReadableByteCount(Files.size(Paths.get(localOutput.toUri())), false));
         } else {
-            LOGGER.info("Concat and copy to local " + paths.size() + " files from " + mrOutdir + " to " + localOutput);
+            LOGGER.info("Concat and copy to local " + paths.size());
+            LOGGER.info(" Source : " + mrOutdir.toUri());
+            LOGGER.info(" Target : " + localOutput.toUri());
+            LOGGER.info(" ---- ");
             try (FSDataOutputStream os = localOutput.getFileSystem(getConf()).create(localOutput)) {
                 for (int i = 0; i < paths.size(); i++) {
                     Path path = paths.get(i);
+                    LOGGER.info("Concat file : '{}' {} ", path.toUri(),
+                            humanReadableByteCount(fileSystem.getFileStatus(path).getLen(), false));
                     try (FSDataInputStream fsIs = fileSystem.open(path)) {
                         BufferedReader br;
                         br = new BufferedReader(new InputStreamReader(fsIs));
