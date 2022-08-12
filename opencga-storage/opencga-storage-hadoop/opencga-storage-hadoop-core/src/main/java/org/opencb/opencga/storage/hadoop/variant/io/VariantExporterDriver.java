@@ -74,7 +74,7 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
     private Path localOutput;
     private Query query = new Query();
     private QueryOptions options = new QueryOptions();
-    private final static Logger logger = LoggerFactory.getLogger(VariantExporterDriver.class);
+    private static Logger logger = LoggerFactory.getLogger(VariantExporterDriver.class);
     private boolean useReduceStep;
 
     @Override
