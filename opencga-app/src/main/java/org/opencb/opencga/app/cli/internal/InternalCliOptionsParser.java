@@ -212,13 +212,13 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         clinicalCommandOptions = new ClinicalCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("clinical", clinicalCommandOptions);
         JCommander clinicalSubCommands = jCommander.getCommands().get("clinical");
-        clinicalSubCommands.addCommand("run-interpreter-tiering", clinicalCommandOptions.tieringCommandOptions);
+        clinicalSubCommands.addCommand("interpretation-tiering-run", clinicalCommandOptions.tieringCommandOptions);
         clinicalSubCommands.addCommand("run-interpreter-team", clinicalCommandOptions.teamCommandOptions);
         clinicalSubCommands.addCommand("run-interpreter-zetta", clinicalCommandOptions.zettaCommandOptions);
         clinicalSubCommands.addCommand("run-interpreter-cancer-tiering", clinicalCommandOptions.cancerTieringCommandOptions);
         clinicalSubCommands.addCommand(RGA_INDEX_RUN_COMMAND, clinicalCommandOptions.rgaSecondaryIndexCommandOptions);
         clinicalSubCommands.addCommand(RGA_AUX_INDEX_RUN_COMMAND, clinicalCommandOptions.rgaAuxiliarSecondaryIndexCommandOptions);
-        clinicalSubCommands.addCommand("run-interpreter-exomiser", clinicalCommandOptions.exomiserInterpretationCommandOptions);
+        clinicalSubCommands.addCommand("interpretation-exomiser-run", clinicalCommandOptions.exomiserInterpretationCommandOptions);
 
         fileCommandOptions = new FileCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("files", fileCommandOptions);
