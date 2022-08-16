@@ -5,12 +5,22 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
+import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.CancerTieringCommandOptions.CANCER_TIERING_INTERPRETATION_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.ExomiserInterpretationCommandOptions.EXOMISER_INTERPRETATION_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.TeamCommandOptions.TEAM_INTERPRETATION_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.TieringCommandOptions.TIERING_INTERPRETATION_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.ZettaCommandOptions.ZETTA_INTERPRETATION_RUN_COMMAND;
 
 
 /*
@@ -494,7 +504,8 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"interpreter-cancer-tiering-run"}, commandDescription ="Run cancer tiering interpretation analysis")
+    @Parameters(commandNames = {CANCER_TIERING_INTERPRETATION_RUN_COMMAND},
+            commandDescription = CancerTieringInterpretationAnalysis.DESCRIPTION)
     public class RunInterpreterCancerTieringCommandOptions {
     
         @ParametersDelegate
@@ -532,7 +543,7 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"interpreter-exomiser-run"}, commandDescription ="Run exomiser interpretation analysis")
+    @Parameters(commandNames = {EXOMISER_INTERPRETATION_RUN_COMMAND}, commandDescription = ExomiserInterpretationAnalysis.DESCRIPTION)
     public class RunInterpreterExomiserCommandOptions {
     
         @ParametersDelegate
@@ -564,7 +575,7 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"interpreter-team-run"}, commandDescription ="Run TEAM interpretation analysis")
+    @Parameters(commandNames = {TEAM_INTERPRETATION_RUN_COMMAND}, commandDescription = TeamInterpretationAnalysis.DESCRIPTION)
     public class RunInterpreterTeamCommandOptions {
     
         @ParametersDelegate
@@ -605,7 +616,7 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"interpreter-tiering-run"}, commandDescription ="Run tiering interpretation analysis")
+    @Parameters(commandNames = {TIERING_INTERPRETATION_RUN_COMMAND}, commandDescription = TieringInterpretationAnalysis.DESCRIPTION)
     public class RunInterpreterTieringCommandOptions {
     
         @ParametersDelegate
@@ -646,7 +657,7 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"interpreter-zetta-run"}, commandDescription ="Run Zetta interpretation analysis")
+    @Parameters(commandNames = {ZETTA_INTERPRETATION_RUN_COMMAND}, commandDescription = ZettaInterpretationAnalysis.DESCRIPTION)
     public class RunInterpreterZettaCommandOptions {
     
         @ParametersDelegate
