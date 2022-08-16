@@ -19,11 +19,11 @@ package org.opencb.opencga.analysis.clinical;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
+import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -40,7 +40,6 @@ import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.InterpretationUpdateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -197,8 +196,8 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
 //        VariantAvro variant = new VariantAvro("1:1456330:C:A", null, "1", 1456330, 1456330, "C", "A", "+", null, 1, null, null, null);
         VariantAvro variant = new VariantAvro("rs1212112", null, "1", 1456330, 1456330, "C", "A", "+", null, 1, null, null, null);
         ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method2");
-        ClinicalVariant cv3 = new ClinicalVariant(variant, Collections.singletonList(evidence), null, null, "helllooooo",
-                ClinicalVariant.Status.REVIEWED, null);
+        ClinicalVariant cv3 = new ClinicalVariant(variant, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(null, null, "helllooooo"),
+                ClinicalVariant.Status.REVIEWED, Collections.emptyList(), null);
         findingList.add(cv3);
         InterpretationUpdateParams updateParams = new InterpretationUpdateParams().setPrimaryFindings(findingList);
         ObjectMap actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.ADD);

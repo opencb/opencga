@@ -26,14 +26,15 @@ import org.opencb.opencga.catalog.stats.solr.converters.CatalogSampleToSolrSampl
 import org.opencb.opencga.catalog.stats.solr.converters.SolrConverterUtil;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.AclEntry;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualPopulation;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.sample.SampleInternal;
+import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.study.StudyPermissions;
 
 import java.util.*;
 
@@ -52,10 +53,10 @@ public class CatalogSampleToSolrSampleConverterTest {
         Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>())
                 .setVariableSets(Collections.singletonList(AnnotationHelper.createVariableSet()));
         List<Map<String, Object>> studyAclEntry = Arrays.asList(
-                objectMapper.readValue(objectMapper.writeValueAsString(new StudyAclEntry("user1", EnumSet.noneOf(StudyAclEntry.StudyPermissions.class))), Map.class),
-                objectMapper.readValue(objectMapper.writeValueAsString(new StudyAclEntry("user2", EnumSet.allOf(StudyAclEntry.StudyPermissions.class))), Map.class),
-                objectMapper.readValue(objectMapper.writeValueAsString(new StudyAclEntry("user3", EnumSet.allOf(StudyAclEntry.StudyPermissions.class))), Map.class),
-                objectMapper.readValue(objectMapper.writeValueAsString(new StudyAclEntry("user4", EnumSet.noneOf(StudyAclEntry.StudyPermissions.class))), Map.class)
+                objectMapper.readValue(objectMapper.writeValueAsString(new AclEntry<>("user1", EnumSet.noneOf(StudyPermissions.Permissions.class))), Map.class),
+                objectMapper.readValue(objectMapper.writeValueAsString(new AclEntry<>("user2", EnumSet.allOf(StudyPermissions.Permissions.class))), Map.class),
+                objectMapper.readValue(objectMapper.writeValueAsString(new AclEntry<>("user3", EnumSet.allOf(StudyPermissions.Permissions.class))), Map.class),
+                objectMapper.readValue(objectMapper.writeValueAsString(new AclEntry<>("user4", EnumSet.noneOf(StudyPermissions.Permissions.class))), Map.class)
         );
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("OPENCGA_ACL", SolrConverterUtil.parseInternalOpenCGAAcls(studyAclEntry));
@@ -73,8 +74,8 @@ public class CatalogSampleToSolrSampleConverterTest {
                 .setAnnotationSets(AnnotationHelper.createAnnotation());
 
         List<Map> sampleAclEntry = Arrays.asList(
-                objectMapper.readValue(objectMapper.writeValueAsString(new SampleAclEntry("user1", EnumSet.of(SampleAclEntry.SamplePermissions.VIEW, SampleAclEntry.SamplePermissions.WRITE))), Map.class),
-                objectMapper.readValue(objectMapper.writeValueAsString(new SampleAclEntry("user2", EnumSet.noneOf(SampleAclEntry.SamplePermissions.class))), Map.class)
+                objectMapper.readValue(objectMapper.writeValueAsString(new AclEntry<>("user1", EnumSet.of(SamplePermissions.VIEW, SamplePermissions.WRITE))), Map.class),
+                objectMapper.readValue(objectMapper.writeValueAsString(new AclEntry<>("user2", EnumSet.noneOf(SamplePermissions.class))), Map.class)
         );
         attributes = new HashMap<>();
         attributes.put("OPENCGA_ACL", sampleAclEntry);

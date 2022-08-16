@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
  * Created by sgallego on 6/30/16.
  */
 @Deprecated
-public class ToolAclEntry extends AbstractAclEntry<ToolAclEntry.ToolPermissions> {
+public class ToolAclEntry extends AclEntry<ToolAclEntry.ToolPermissions> {
 
     public enum ToolPermissions {
         EXECUTE,

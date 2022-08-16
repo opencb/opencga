@@ -12,6 +12,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
+import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
@@ -120,9 +121,14 @@ public class VersionedMongoDBAdaptor {
         T execute() throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
     }
 
-    public interface ReferenceModelExecution {
-        void execute(MongoDBIterator<Document> iterator) throws CatalogDBException, CatalogAuthorizationException,
-                CatalogParameterException;
+    public interface ReferenceModelExecution<T> {
+        void execute(DBIterator<T> iterator) throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
+    }
+
+    @FunctionalInterface
+    public interface PostVersionIncrementIterator<T> {
+        DBIterator<T> iterator(ClientSession session, Query query, QueryOptions options)
+                throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
     }
 
     protected void insert(ClientSession session, Document document) {
@@ -132,8 +138,16 @@ public class VersionedMongoDBAdaptor {
         archiveCollection.insert(session, document, QueryOptions.empty());
     }
 
-    protected <T> T update(ClientSession session, Bson sourceQuery, VersionedModelExecution<T> update,
-                           ReferenceModelExecution postVersionIncrementExecution)
+    protected <T, E> T update(ClientSession session, Bson sourceQuery, VersionedModelExecution<T> update,
+                              PostVersionIncrementIterator<E> postVersionIncrementIterator,
+                              ReferenceModelExecution<E> postVersionIncrementExecution)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return update(session, sourceQuery, update, Collections.emptyList(), postVersionIncrementIterator, postVersionIncrementExecution);
+    }
+
+    protected <T, E> T update(ClientSession session, Bson sourceQuery, VersionedModelExecution<T> update,
+                           List<String> postVersionIncrementAdditionalIncludeFields, PostVersionIncrementIterator<E> dbIterator,
+                           ReferenceModelExecution<E> postVersionIncrementExecution)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         String uuid = getClientSessionUuid(session);
 
@@ -185,12 +199,12 @@ public class VersionedMongoDBAdaptor {
         T executionResult = update.execute();
 
         // 3. Fetch document containing update and copy into the archive collection
-        Bson query = Filters.in(PRIVATE_UID, allUids);
+        Bson bsonQuery = Filters.in(PRIVATE_UID, allUids);
         options = new QueryOptions(MongoDBCollection.NO_CURSOR_TIMEOUT, true);
         QueryOptions upsertOptions = new QueryOptions()
                 .append(MongoDBCollection.REPLACE, true)
                 .append(MongoDBCollection.UPSERT, true);
-        try (MongoDBIterator<Document> iterator = collection.iterator(session, query, null, null, options)) {
+        try (MongoDBIterator<Document> iterator = collection.iterator(session, bsonQuery, null, null, options)) {
             while (iterator.hasNext()) {
                 Document result = iterator.next();
                 result.remove(PRIVATE_MONGO_ID);
@@ -212,16 +226,23 @@ public class VersionedMongoDBAdaptor {
 
         // 4. Perform any additional reference checks/updates over those that have increased its version in this call
         if (!uidsChanged.isEmpty()) {
-            query = Filters.in(PRIVATE_UID, uidsChanged);
+            Query query = new Query(PRIVATE_UID, uidsChanged);
             if (postVersionIncrementExecution != null) {
-                logger.debug("Executing react code after incrementing version: query : {}",
-                        query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                List<String> includeList = new ArrayList<>(Arrays.asList(PRIVATE_UID, PRIVATE_UUID, ID, PRIVATE_STUDY_UID, VERSION));
+                if (postVersionIncrementExecution != null) {
+                    includeList.addAll(postVersionIncrementAdditionalIncludeFields);
+                }
+
+                logger.debug("Executing react code after incrementing version: query : {}={}", PRIVATE_UID, uidsChanged);
                 options = new QueryOptions()
-                        .append(QueryOptions.INCLUDE, Arrays.asList(PRIVATE_UID, PRIVATE_UUID, ID, PRIVATE_STUDY_UID, VERSION))
+                        .append(QueryOptions.INCLUDE, includeList)
                         .append(MongoDBCollection.NO_CURSOR_TIMEOUT, true);
-                try (MongoDBIterator<Document> iterator = collection.iterator(session, query, null, null, options)) {
+                try (DBIterator<E> iterator = dbIterator.iterator(session, query, options)) {
                     postVersionIncrementExecution.execute(iterator);
                 }
+//                try (MongoDBIterator<Document> iterator = collection.iterator(session, query, null, null, options)) {
+//                    postVersionIncrementExecution.execute(iterator);
+//                }
             }
         }
 

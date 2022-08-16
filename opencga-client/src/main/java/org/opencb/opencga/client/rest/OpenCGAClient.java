@@ -113,6 +113,10 @@ public class OpenCGAClient {
         return getClient(SampleClient.class, () -> new SampleClient(token, clientConfiguration));
     }
 
+    public AdminClient getAdminClient() {
+        return getClient(AdminClient.class, () -> new AdminClient(token, clientConfiguration));
+    }
+
     public CohortClient getCohortClient() {
         return getClient(CohortClient.class, () -> new CohortClient(token, clientConfiguration));
     }

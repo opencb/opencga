@@ -49,6 +49,8 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         CategoryConfig categoryConfig = availableCategoryConfigs.get(key);
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         sb.append("package ").append(config.getOptions().getExecutorsPackage()).append(";\n\n");
+
+        sb.append("import com.fasterxml.jackson.databind.DeserializationFeature;\n");
         sb.append("import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;\n");
         sb.append("import org.opencb.opencga.app.cli.main.*;\n");
         sb.append("import org.opencb.opencga.core.response.RestResponse;\n");
@@ -310,7 +312,8 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                 if (body != null) {
                     sb.append("            ObjectMap beanParams = new ObjectMap();\n");
                     sb.append(getBodyParams(body));
-                    sb.append("\n            " + getAsVariableName(bodyClassName) + " = JacksonUtils.getDefaultObjectMapper()");
+                    sb.append("\n            " + getAsVariableName(bodyClassName) + " = JacksonUtils.getDefaultObjectMapper().copy()");
+                    sb.append("\n                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)");
                     sb.append("\n                    .readValue(beanParams.toJson(), " + bodyClassName + ".class);");
                     sb.append("\n        }\n");
                 }
@@ -325,17 +328,15 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         StringBuilder sb = new StringBuilder();
         for (RestParameter restParameter : body.getData()) {
             if (CollectionUtils.isEmpty(restParameter.getData())) {
-                if (restParameter.isAvailableType()) {
+                if (restParameter.isAvailableType() || restParameter.isEnum()) {
                     String javaCommandOptionsField = "commandOptions." + getJavaFieldName(restParameter);
                     String label = StringUtils.isEmpty(restParameter.getParentName()) ? restParameter.getName() : restParameter.getParentName() + "." + restParameter.getName();
                     if (restParameter.getTypeClass().equals("java.lang.String;")) {
-                        sb.append("            putNestedIfNotEmpty(beanParams, \"" + label + "\"," + javaCommandOptionsField + ", true);\n ");
+                        sb.append("            putNestedIfNotEmpty(beanParams, \"" + label.replaceAll("body_", "") + "\"," + javaCommandOptionsField + ", true);\n ");
                     } else {
-                        sb.append("            putNestedIfNotNull(beanParams, \"" + label + "\"," + javaCommandOptionsField + ", true);\n ");
+                        sb.append("            putNestedIfNotNull(beanParams, \"" + label.replaceAll("body_", "") + "\"," + javaCommandOptionsField + ", true);\n ");
                     }
                 }
-            } else {
-                sb.append("\n");
             }
 
         }

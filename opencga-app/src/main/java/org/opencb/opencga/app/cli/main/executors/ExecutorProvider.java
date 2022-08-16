@@ -59,6 +59,10 @@ public class ExecutorProvider {
             case "meta":
                 commandExecutor = new MetaCommandExecutor(cliOptionsParser.getMetaCommandOptions());
                 break;
+            case "admin":
+                commandExecutor = new AdminCommandExecutor(cliOptionsParser.getAdminCommandOptions());
+                break;
+
             default:
                 printError("Not valid command passed: '" + parsedCommand + "'");
                 break;
