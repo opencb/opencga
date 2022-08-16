@@ -115,9 +115,11 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
 
     // Max number of samples from the sampleIndex that a query could have in order to be considered a smallQuery
     EXPORT_SMALL_QUERY_SAMPLE_INDEX_SAMPLES_THRESHOLD("storage.hadoop.export.smallQuery.sampleIndex.samplesThreshold", 25),
+    // Max number of variants matching the sample index to be considered a smallQuery
+    EXPORT_SMALL_QUERY_SAMPLE_INDEX_VARIANTS_THRESHOLD("storage.hadoop.export.smallQuery.sampleIndex.variantsThreshold", 50000),
     // Max number of variants matching the search index to be considered a smallQuery when using the native hbase scan
     EXPORT_SMALL_QUERY_SCAN_VARIANTS_THRESHOLD("storage.hadoop.export.smallQuery.scan.variantsThreshold", 50000),
-    // Max number of variants hit ratio matching the search index to be considered a smallQuery
+    // Max number of variants matching the search index to be considered a smallQuery
     EXPORT_SMALL_QUERY_SEARCH_INDEX_VARIANTS_THRESHOLD("storage.hadoop.export.smallQuery.searchIndex.variantsThreshold", 50000),
     // Max number of variants match ratio matching the search index to be considered a smallQuery
     EXPORT_SMALL_QUERY_SEARCH_INDEX_MATCH_RATIO_THRESHOLD("storage.hadoop.export.smallQuery.searchIndex.matchRatioThreshold", 0.01),
