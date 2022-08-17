@@ -61,6 +61,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.executors.*;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.SamplesSearchIndexVariantQueryExecutor;
@@ -1014,6 +1015,18 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             hBaseManager = new HBaseManager(configuration);
         }
         return hBaseManager;
+    }
+
+    @Override
+    public ParsedVariantQuery parseQuery(Query originalQuery, QueryOptions options) {
+        try {
+            Query query = preProcessQuery(originalQuery, options);
+            ParsedVariantQuery parsedVariantQuery = getVariantQueryParser().parseQuery(query, options, true);
+            parsedVariantQuery.setInputQuery(originalQuery);
+            return parsedVariantQuery;
+        } catch (StorageEngineException e) {
+            throw VariantQueryException.internalException(e).setQuery(originalQuery);
+        }
     }
 
     @Override

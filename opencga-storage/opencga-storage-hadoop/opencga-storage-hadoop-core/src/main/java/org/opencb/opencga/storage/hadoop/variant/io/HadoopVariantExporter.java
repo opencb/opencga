@@ -70,7 +70,8 @@ public class HadoopVariantExporter extends VariantExporter {
         VariantHadoopDBAdaptor dbAdaptor = ((VariantHadoopDBAdaptor) engine.getDBAdaptor());
         IOConnector ioConnector = ioConnectorProvider.get(outputFileUri);
 
-        Query query = variantQuery.getInputQuery();
+        // Use pre-processed query instead of input query
+        Query query = variantQuery.getQuery();
         QueryOptions queryOptions = variantQuery.getInputOptions();
         boolean smallQuery = false;
         if (!queryOptions.getBoolean("skipSmallQuery", false)) {
@@ -207,7 +208,6 @@ public class HadoopVariantExporter extends VariantExporter {
                 throw new IOException("Output file " + metadataPath + " already exists!");
             }
 
-            query = engine.preProcessQuery(query, queryOptions);
             ObjectMap options = new ObjectMap(engine.getOptions())
                     .append(VariantExporterDriver.OUTPUT_PARAM, outputFileUri.toString())
                     .append(VariantExporterDriver.OUTPUT_FORMAT_PARAM, outputFormat.toString());
