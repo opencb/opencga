@@ -92,15 +92,37 @@ public class HadoopVariantExporter extends VariantExporter {
                     || queryExecutor instanceof SampleIndexMendelianErrorQueryExecutor) {
                 logger.info("Query using special VariantQueryExecutor {}. Skip MapReduce", queryExecutor.getClass());
                 smallQuery = true;
+            } else if (queryOptions.getInt(QueryOptions.LIMIT, -1) > 0 || queryOptions.getInt(QueryOptions.SKIP, -1) > 0) {
+                logger.info("Do not use MapReduce when exporting a paginated result.");
+                smallQuery = true;
             } else if (queryExecutor instanceof SampleIndexVariantQueryExecutor) {
                 if (SampleIndexQueryParser.validSampleIndexQuery(query)) {
                     int samplesThreshold = engine.getOptions().getInt(
                             EXPORT_SMALL_QUERY_SAMPLE_INDEX_SAMPLES_THRESHOLD.key(),
                             EXPORT_SMALL_QUERY_SAMPLE_INDEX_SAMPLES_THRESHOLD.defaultValue());
                     if (variantQuery.getStudyQuery().countSamplesInFilter() < samplesThreshold) {
-                        logger.info("Query with {} samples. Consider small query. Skip MapReduce",
-                                variantQuery.getStudyQuery().countSamplesInFilter());
-                        smallQuery = true;
+                        int variantsThreshold = engine.getOptions().getInt(
+                                EXPORT_SMALL_QUERY_SAMPLE_INDEX_VARIANTS_THRESHOLD.key(),
+                                EXPORT_SMALL_QUERY_SAMPLE_INDEX_VARIANTS_THRESHOLD.defaultValue());
+                        try {
+                            long numMatches = engine.get(new Query(query), new QueryOptions(queryOptions)
+                                    .append(QueryOptions.LIMIT, 1)
+                                    .append(QueryOptions.SKIP, 0)
+                                    .append(QueryOptions.COUNT, true)
+                            ).getNumMatches();
+
+                            if (numMatches < variantsThreshold) {
+                                logger.info("Query with {} samples matching {} variants. Consider small query. Skip MapReduce",
+                                        variantQuery.getStudyQuery().countSamplesInFilter(), numMatches);
+                                smallQuery = true;
+                            } else {
+                                logger.info("Query with {} samples matching {} variants. Current variants threshold is {}."
+                                                + " Not a small query.",
+                                        variantQuery.getStudyQuery().countSamplesInFilter(), numMatches, variantsThreshold);
+                            }
+                        } catch (Exception e) {
+                            logger.info("Unable to count variants from SampleIndex", e);
+                        }
                     }
                 }
             } else if (queryExecutor instanceof DBAdaptorVariantQueryExecutor) {
@@ -118,6 +140,11 @@ public class HadoopVariantExporter extends VariantExporter {
                                                 + " Skip MapReduce",
                                         count, totalCount);
                                 smallQuery = true;
+                            } else {
+                                logger.info("Query for approximately {} of {} variants, using HBase native SCAN."
+                                                + " Current variants threshold is {}."
+                                                + " Not a small query",
+                                        count, totalCount, variantsThreshold);
                             }
                         } catch (VariantSearchException e) {
                             logger.info("Unable to count variants from SearchEngine", e);
@@ -144,6 +171,11 @@ public class HadoopVariantExporter extends VariantExporter {
                                         + " Skip MapReduce",
                                 count, totalCount, matchRate * 100);
                         smallQuery = true;
+                    } else {
+                        logger.info("Query for approximately {} of {} variants, which is {}% of the total."
+                                        + " Current variants threshold is {}, and matchRatioThreshold is {}% ."
+                                        + " Not a small query",
+                                count, totalCount, matchRate * 100, variantsThreshold, matchRatioThreshold);
                     }
                 } catch (VariantSearchException e) {
                     logger.info("Unable to count variants from SearchEngine", e);
