@@ -55,9 +55,9 @@ import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.common.RgaIndex;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.individual.IndividualAclEntry;
+import org.opencb.opencga.core.models.individual.IndividualPermissions;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -1149,8 +1149,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
         UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
-                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
-                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
+                StudyPermissions.Permissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
+                IndividualPermissions.VIEW_ANNOTATIONS.name());
 
         return new IndividualCatalogMongoDBIterator<>(mongoCursor, clientSession, individualConverter, iteratorFilter, dbAdaptorFactory,
                 studyUid, user, options);
@@ -1171,8 +1171,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
         UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
-                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
-                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
+                StudyPermissions.Permissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
+                IndividualPermissions.VIEW_ANNOTATIONS.name());
 
         return new IndividualCatalogMongoDBIterator<>(mongoCursor, clientSession, null, iteratorFilter, dbAdaptorFactory, studyUid, user,
                 options);
@@ -1285,9 +1285,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             } else {
                 if (containsAnnotationQuery(query)) {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                            IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.INDIVIDUAL, configuration));
+                            IndividualPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.INDIVIDUAL, configuration));
                 } else {
-                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, IndividualAclEntry.IndividualPermissions.VIEW.name(),
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, IndividualPermissions.VIEW.name(),
                             Enums.Resource.INDIVIDUAL, configuration));
                 }
             }

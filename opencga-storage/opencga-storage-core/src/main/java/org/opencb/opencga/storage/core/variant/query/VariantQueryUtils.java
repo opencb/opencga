@@ -97,6 +97,7 @@ public final class VariantQueryUtils {
             ANNOT_EXPRESSION_GENES,
             ANNOT_GO_GENES,
             ANNOT_GENE_REGIONS,
+            ANNOT_GENE_REGIONS_MAP,
             VARIANTS_TO_INDEX,
             SAMPLE_MENDELIAN_ERROR,
             SAMPLE_DE_NOVO,

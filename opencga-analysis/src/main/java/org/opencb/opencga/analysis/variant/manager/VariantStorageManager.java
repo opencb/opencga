@@ -62,9 +62,9 @@ import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.models.variant.VariantPruneParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.VariantQueryResult;
@@ -809,7 +809,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                             List<String> validSamples = catalogManager.getSampleManager()
                                     .search(study,
                                             new Query(SampleDBAdaptor.QueryParams.ID.key(), samplesInResult)
-                                                    .append(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW_VARIANTS),
+                                                    .append(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS),
                                             new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), token)
                                     .getResults()
                                     .stream()
@@ -1314,7 +1314,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 //                            new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), token);
                     long numMatches = catalogManager.getSampleManager()
                             .count(studyId, new Query(SampleDBAdaptor.QueryParams.ID.key(), entry.getValue())
-                                    .append(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW_VARIANTS), token)
+                                    .append(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS), token)
                             .getNumMatches();
                     if (numMatches != entry.getValue().size()) {
                         throw new CatalogAuthorizationException("Permission denied. User "
@@ -1352,7 +1352,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     DBIterator<Sample> iterator = catalogManager.getSampleManager().iterator(
                             study,
                             new Query()
-                                    .append(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW_VARIANTS),
+                                    .append(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS),
                             new QueryOptions()
                                     .append(INCLUDE, SampleDBAdaptor.QueryParams.ID.key())
 //                                    .append(SORT, "id")
@@ -1411,7 +1411,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         // Check VIEW_AGGREGATED_VARIANTS
         try {
             catalogManager.getAuthorizationManager()
-                    .checkStudyPermission(studyUid, userId, StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS);
+                    .checkStudyPermission(studyUid, userId, StudyPermissions.Permissions.VIEW_AGGREGATED_VARIANTS);
             return;
         } catch (CatalogAuthorizationException e) {
             exception = e;
@@ -1420,7 +1420,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         // Check VIEW_SAMPLE_VARIANTS
         try {
             catalogManager.getAuthorizationManager()
-                    .checkStudyPermission(studyUid, userId, StudyAclEntry.StudyPermissions.VIEW_SAMPLE_VARIANTS);
+                    .checkStudyPermission(studyUid, userId, StudyPermissions.Permissions.VIEW_SAMPLE_VARIANTS);
             return;
         } catch (CatalogAuthorizationException e) {
             // Ignore this exception. Throw exception of missing VIEW_AGGREGATED_VARIANTS
@@ -1429,7 +1429,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
         // Check VIEW_VARIANTS on any sample
         long count = catalogManager.getSampleManager()
-                .count(study, new Query(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW_VARIANTS), token).getNumMatches();
+                .count(study, new Query(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS), token).getNumMatches();
         if (count != 0) {
             return;
         }

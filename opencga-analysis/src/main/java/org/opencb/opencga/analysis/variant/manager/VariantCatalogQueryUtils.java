@@ -52,7 +52,7 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.UserFilter;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -1504,7 +1504,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 //                        SampleManager.INCLUDE_SAMPLE_IDS, sessionId);
                 long numMatches = catalogManager.getSampleManager()
                         .count(defaultStudyStr, new Query(SampleDBAdaptor.QueryParams.ID.key(), values)
-                                        .append(ParamConstants.ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW_VARIANTS),
+                                        .append(ParamConstants.ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS),
                                 sessionId).getNumMatches();
                 if (numMatches != values.size()) {
                     OpenCGAResult<Sample> samples = catalogManager.getSampleManager()

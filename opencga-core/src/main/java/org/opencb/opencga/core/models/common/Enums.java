@@ -16,15 +16,15 @@
 
 package org.opencb.opencga.core.models.common;
 
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
-import org.opencb.opencga.core.models.cohort.CohortAclEntry;
-import org.opencb.opencga.core.models.family.FamilyAclEntry;
-import org.opencb.opencga.core.models.file.FileAclEntry;
-import org.opencb.opencga.core.models.individual.IndividualAclEntry;
-import org.opencb.opencga.core.models.job.JobAclEntry;
-import org.opencb.opencga.core.models.panel.PanelAclEntry;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisPermissions;
+import org.opencb.opencga.core.models.cohort.CohortPermissions;
+import org.opencb.opencga.core.models.family.FamilyPermissions;
+import org.opencb.opencga.core.models.file.FilePermissions;
+import org.opencb.opencga.core.models.individual.IndividualPermissions;
+import org.opencb.opencga.core.models.job.JobPermissions;
+import org.opencb.opencga.core.models.panel.PanelPermissions;
+import org.opencb.opencga.core.models.sample.SamplePermissions;
+import org.opencb.opencga.core.models.study.StudyPermissions;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -82,24 +82,24 @@ public final class Enums {
         public List<String> getFullPermissionList() {
             switch (this) {
                 case STUDY:
-                    return EnumSet.allOf(StudyAclEntry.StudyPermissions.class).stream().map(String::valueOf).collect(Collectors.toList());
+                    return EnumSet.allOf(StudyPermissions.Permissions.class).stream().map(String::valueOf).collect(Collectors.toList());
                 case SAMPLE:
-                    return EnumSet.allOf(SampleAclEntry.SamplePermissions.class).stream().map(String::valueOf).collect(Collectors.toList());
+                    return EnumSet.allOf(SamplePermissions.class).stream().map(String::valueOf).collect(Collectors.toList());
                 case FILE:
-                    return EnumSet.allOf(FileAclEntry.FilePermissions.class).stream().map(String::valueOf).collect(Collectors.toList());
+                    return EnumSet.allOf(FilePermissions.class).stream().map(String::valueOf).collect(Collectors.toList());
                 case COHORT:
-                    return EnumSet.allOf(CohortAclEntry.CohortPermissions.class).stream().map(String::valueOf).collect(Collectors.toList());
+                    return EnumSet.allOf(CohortPermissions.class).stream().map(String::valueOf).collect(Collectors.toList());
                 case INDIVIDUAL:
-                    return EnumSet.allOf(IndividualAclEntry.IndividualPermissions.class).stream().map(String::valueOf)
+                    return EnumSet.allOf(IndividualPermissions.class).stream().map(String::valueOf)
                             .collect(Collectors.toList());
                 case FAMILY:
-                    return EnumSet.allOf(FamilyAclEntry.FamilyPermissions.class).stream().map(String::valueOf).collect(Collectors.toList());
+                    return EnumSet.allOf(FamilyPermissions.class).stream().map(String::valueOf).collect(Collectors.toList());
                 case JOB:
-                    return EnumSet.allOf(JobAclEntry.JobPermissions.class).stream().map(String::valueOf).collect(Collectors.toList());
+                    return EnumSet.allOf(JobPermissions.class).stream().map(String::valueOf).collect(Collectors.toList());
                 case DISEASE_PANEL:
-                    return EnumSet.allOf(PanelAclEntry.PanelPermissions.class).stream().map(String::valueOf).collect(Collectors.toList());
+                    return EnumSet.allOf(PanelPermissions.class).stream().map(String::valueOf).collect(Collectors.toList());
                 case CLINICAL_ANALYSIS:
-                    return EnumSet.allOf(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.class).stream().map(String::valueOf)
+                    return EnumSet.allOf(ClinicalAnalysisPermissions.class).stream().map(String::valueOf)
                             .collect(Collectors.toList());
                 default:
                     return Collections.emptyList();

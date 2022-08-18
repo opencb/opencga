@@ -39,6 +39,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.*;
@@ -47,7 +48,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -61,8 +62,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
-import static org.opencb.opencga.core.models.common.Enums.Action.DELETE;
-import static org.opencb.opencga.core.models.common.Enums.Action.UPDATE;
+import static org.opencb.opencga.core.models.common.Enums.Action.*;
 import static org.opencb.opencga.core.models.common.Enums.Resource.COHORT;
 
 /**
@@ -164,7 +164,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 .append("token", token);
         return runBatch(auditParams, Enums.Action.CREATE, COHORT, studyStr, token, options, (study, user, myOptions, operationUuid) -> {
             ParamUtils.checkObj(cohortParams, "CohortCreateParams");
-            authorizationManager.checkStudyPermission(study.getUid(), user, StudyAclEntry.StudyPermissions.WRITE_COHORTS);
+            authorizationManager.checkStudyPermission(study.getUid(), user, StudyPermissions.Permissions.WRITE_COHORTS);
 
             // Generate list of cohorts to create
             List<Cohort> cohorts = new LinkedList<>();
@@ -287,7 +287,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 .append("options", options)
                 .append("token", token);
         return run(auditParams, Enums.Action.GENERATE, COHORT, studyStr, token, options, (study, userId, rp, qOptions) -> {
-            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_COHORTS);
+            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyPermissions.Permissions.WRITE_COHORTS);
 
             // Fix sample query object and search for samples
             catalogManager.getSampleManager().fixQueryObject(study, sampleQuery, userId);
@@ -313,7 +313,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 .append("options", options)
                 .append("token", token);
         return run(auditParams, Enums.Action.CREATE, COHORT, studyStr, token, options, (study, userId, rp, queryOptions) -> {
-            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_COHORTS);
+            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyPermissions.Permissions.WRITE_COHORTS);
 
             if (CollectionUtils.isNotEmpty(cohort.getSamples())) {
                 // Look for the samples
@@ -331,7 +331,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     OpenCGAResult<Cohort> privateCreate(Study study, Cohort cohort, QueryOptions options, String userId) throws CatalogException {
-        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_COHORTS);
+        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyPermissions.Permissions.WRITE_COHORTS);
         validateNewCohort(study, cohort);
 
         OpenCGAResult<Cohort> insert = cohortDBAdaptor.insert(study.getUid(), cohort, study.getVariableSets(), options);
@@ -547,8 +547,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                         rp.setUuid(internalResult.first().getUuid());
 
                         if (checkPermissions) {
-                            authorizationManager.checkCohortPermission(study.getUid(), internalResult.first().getUid(),
-                                    userId, CohortAclEntry.CohortPermissions.DELETE);
+                            authorizationManager.checkCohortPermission(study.getUid(), internalResult.first().getUid(), userId,
+                                    CohortPermissions.DELETE);
                         }
                         OpenCGAResult<?> deleteResult = cohortDBAdaptor.delete(internalResult.first());
                         result.append(deleteResult);
@@ -604,7 +604,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
                             if (checkPermissions) {
                                 authorizationManager.checkCohortPermission(study.getUid(), cohort.getUid(), userId,
-                                        CohortAclEntry.CohortPermissions.DELETE);
+                                        CohortPermissions.DELETE);
                             }
                             OpenCGAResult<Cohort> tmpResult = cohortDBAdaptor.delete(cohort);
                             result.append(tmpResult);
@@ -614,7 +614,6 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                         Event event = new Event(Event.Type.ERROR, cohort.getId(), e.getMessage());
                         result.getEvents().add(event);
                         result.setNumErrors(result.getNumErrors() + 1);
-
                         logger.warn("Could not delete cohort {}", cohort.getId(), e);
                     }
                 }
@@ -879,13 +878,13 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         // Only check write annotation permissions if the user wants to update the annotation sets
         if (updateParams != null && updateParams.getAnnotationSets() != null) {
             authorizationManager.checkCohortPermission(study.getUid(), cohort.getUid(), userId,
-                    CohortAclEntry.CohortPermissions.WRITE_ANNOTATIONS);
+                    CohortPermissions.WRITE_ANNOTATIONS);
         }
         // Only check update permissions if the user wants to update anything apart from the annotation sets
         if ((parameters.size() == 1 && !parameters.containsKey(CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
                 || parameters.size() > 1) {
             authorizationManager.checkCohortPermission(study.getUid(), cohort.getUid(), userId,
-                    CohortAclEntry.CohortPermissions.WRITE);
+                    CohortPermissions.WRITE);
         }
 
         if (!allowModifyCohortAll) {
@@ -988,7 +987,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         }
 
         try {
-            authorizationManager.checkCohortPermission(study.getUid(), cohort.getUid(), userId, CohortAclEntry.CohortPermissions.WRITE);
+            authorizationManager.checkCohortPermission(study.getUid(), cohort.getUid(), userId, CohortPermissions.WRITE);
 
             if (status != null && !CohortStatus.isValid(status)) {
                 throw new CatalogException("The status " + status + " is not valid cohort status.");
@@ -1017,7 +1016,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         String userId = userManager.getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.VIEW_COHORTS);
+        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyPermissions.Permissions.VIEW_COHORTS);
 
         // Fix query if it contains any annotation
         AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
@@ -1034,82 +1033,68 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     // **************************   ACLs  ******************************** //
-    public OpenCGAResult<Map<String, List<String>>> getAcls(String studyId, List<String> cohortList, String member, boolean ignoreException,
-                                                            String token) throws CatalogException {
-        String user = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyId, user);
+    public OpenCGAResult<AclEntryList<CohortPermissions>> getAcls(String studyId, List<String> cohortList, String member,
+                                                                  boolean ignoreException, String token) throws CatalogException {
+        return getAcls(studyId, cohortList, Collections.singletonList(member), ignoreException, token);
+    }
 
-        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+    public OpenCGAResult<AclEntryList<CohortPermissions>> getAcls(String studyId, List<String> cohortList, List<String> members,
+                                                                  boolean ignoreException, String token) throws CatalogException {
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
                 .append("cohortList", cohortList)
-                .append("member", member)
+                .append("members", members)
                 .append("ignoreException", ignoreException)
                 .append("token", token);
-        try {
-            OpenCGAResult<Map<String, List<String>>> cohortAclList = OpenCGAResult.empty();
-
-            InternalGetDataResult<Cohort> cohortDataResult = internalGet(study.getUid(), cohortList, INCLUDE_COHORT_IDS, user,
-                    ignoreException);
-
+        return runBatch(auditParams, FETCH_ACLS, COHORT, studyId, token, null, (study, userId, qOptions, operationUuid) -> {
+            OpenCGAResult<AclEntryList<CohortPermissions>> cohortAcls = OpenCGAResult.empty();
             Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
-            if (cohortDataResult.getMissing() != null) {
-                missingMap = cohortDataResult.getMissing().stream()
+            InternalGetDataResult<Cohort> queryResult = internalGet(study.getUid(), cohortList, INCLUDE_COHORT_IDS, userId,
+                    ignoreException);
+            if (queryResult.getMissing() != null) {
+                missingMap = queryResult.getMissing().stream()
                         .collect(Collectors.toMap(InternalGetDataResult.Missing::getId, Function.identity()));
             }
+
+            List<Long> cohortUids = queryResult.getResults().stream().map(Cohort::getUid).collect(Collectors.toList());
+            if (CollectionUtils.isNotEmpty(members)) {
+                cohortAcls = authorizationManager.getAcl(userId, study.getUid(), cohortUids, members, COHORT, CohortPermissions.class);
+            } else {
+                cohortAcls = authorizationManager.getAcl(userId, study.getUid(), cohortUids, COHORT, CohortPermissions.class);
+            }
+
+            // Include non-existing cohorts to the result list
+            List<AclEntryList<CohortPermissions>> resultList = new ArrayList<>(cohortList.size());
+            List<Event> eventList = new ArrayList<>(missingMap.size());
             int counter = 0;
             for (String cohortId : cohortList) {
                 if (!missingMap.containsKey(cohortId)) {
-                    Cohort cohort = cohortDataResult.getResults().get(counter);
-                    try {
-                        OpenCGAResult<Map<String, List<String>>> allCohortAcls;
-                        if (StringUtils.isNotEmpty(member)) {
-                            allCohortAcls = authorizationManager.getCohortAcl(study.getUid(), cohort.getUid(), user, member);
-                        } else {
-                            allCohortAcls = authorizationManager.getAllCohortAcls(study.getUid(), cohort.getUid(), user);
-                        }
-                        cohortAclList.append(allCohortAcls);
-
-                        auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, COHORT, cohort.getId(),
-                                cohort.getUuid(), study.getId(), study.getUuid(), auditParams,
-                                new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
-                    } catch (CatalogException e) {
-                        auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, COHORT, cohort.getId(),
-                                cohort.getUuid(), study.getId(), study.getUuid(), auditParams,
-                                new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
-
-                        if (!ignoreException) {
-                            throw e;
-                        } else {
-                            Event event = new Event(Event.Type.ERROR, cohortId, missingMap.get(cohortId).getErrorMsg());
-                            cohortAclList.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0,
-                                    Collections.singletonList(Collections.emptyMap()), 0));
-                        }
-                    }
-                    counter += 1;
+                    Cohort cohort = queryResult.getResults().get(counter);
+                    run(auditParams, FETCH_ACLS, COHORT, operationUuid, study, userId, qOptions, (s, u, rp, qo) -> {
+                        rp.setId(cohort.getId());
+                        rp.setUuid(cohort.getUuid());
+                        return null;
+                    });
+                    resultList.add(cohortAcls.getResults().get(counter));
+                    counter++;
                 } else {
-                    Event event = new Event(Event.Type.ERROR, cohortId, missingMap.get(cohortId).getErrorMsg());
-                    cohortAclList.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0,
-                            Collections.singletonList(Collections.emptyMap()), 0));
-
-                    auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, COHORT, cohortId, "",
-                            study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
-                                    new Error(0, "", missingMap.get(cohortId).getErrorMsg())), new ObjectMap());
+                    if (!ignoreException) {
+                        throw new CatalogException(missingMap.get(cohortId).getErrorMsg());
+                    }
+                    eventList.add(new Event(Event.Type.ERROR, cohortId, missingMap.get(cohortId).getErrorMsg()));
+                    resultList.add(new AclEntryList<>());
                 }
             }
-            return cohortAclList;
-        } catch (CatalogException e) {
-            for (String cohortId : cohortList) {
-                auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, COHORT, cohortId, "",
-                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
-                        new ObjectMap());
-            }
-            throw e;
-        }
+            cohortAcls.setResults(resultList);
+            cohortAcls.setEvents(eventList);
+
+            return cohortAcls;
+        });
     }
 
-    public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, List<String> cohortStrList, String memberList,
-                                                              AclParams aclParams, ParamUtils.AclAction action, String token)
+    public OpenCGAResult<AclEntryList<CohortPermissions>> updateAcl(String studyId, List<String> cohortStrList,
+                                                                    String memberList, AclParams aclParams,
+                                                                    ParamUtils.AclAction action, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId, StudyManager.INCLUDE_STUDY_UID);
@@ -1124,6 +1109,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         try {
+            auditManager.initAuditBatch(operationId);
+
             if (cohortStrList == null || cohortStrList.isEmpty()) {
                 throw new CatalogException("Missing cohort parameter");
             }
@@ -1135,7 +1122,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             List<String> permissions = Collections.emptyList();
             if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
                 permissions = Arrays.asList(aclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
-                checkPermissions(permissions, CohortAclEntry.CohortPermissions::valueOf);
+                checkPermissions(permissions, CohortPermissions::valueOf);
             }
 
             List<Cohort> cohortList = internalGet(study.getUid(), cohortStrList, INCLUDE_COHORT_IDS, userId, false).getResults();
@@ -1157,27 +1144,30 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             AuthorizationManager.CatalogAclParams catalogAclParams = new AuthorizationManager.CatalogAclParams(cohortUids, permissions,
                     COHORT);
 
-            OpenCGAResult<Map<String, List<String>>> queryResultList;
+            OpenCGAResult<AclEntryList<CohortPermissions>> queryResultList;
             switch (action) {
                 case SET:
-                    queryResultList = authorizationManager.setAcls(study.getUid(), members, catalogAclParams);
+                    authorizationManager.setAcls(study.getUid(), members, catalogAclParams);
                     break;
                 case ADD:
-                    queryResultList = authorizationManager.addAcls(study.getUid(), members, catalogAclParams);
+                    authorizationManager.addAcls(study.getUid(), members, catalogAclParams);
                     break;
                 case REMOVE:
-                    queryResultList = authorizationManager.removeAcls(members, catalogAclParams);
+                    authorizationManager.removeAcls(members, catalogAclParams);
                     break;
                 case RESET:
                     catalogAclParams.setPermissions(null);
-                    queryResultList = authorizationManager.removeAcls(members, catalogAclParams);
+                    authorizationManager.removeAcls(members, catalogAclParams);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");
             }
 
+            queryResultList = authorizationManager.getAcls(study.getUid(), cohortUids, members, COHORT,
+                    CohortPermissions.class);
+
             for (Cohort cohort : cohortList) {
-                auditManager.audit(operationId, userId, Enums.Action.UPDATE_ACLS, COHORT, cohort.getId(),
+                auditManager.audit(operationId, userId, UPDATE_ACLS, COHORT, cohort.getId(),
                         cohort.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
             }
@@ -1185,12 +1175,14 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         } catch (CatalogException e) {
             if (cohortStrList != null) {
                 for (String cohortId : cohortStrList) {
-                    auditManager.audit(operationId, userId, Enums.Action.UPDATE_ACLS, COHORT, cohortId, "",
+                    auditManager.audit(operationId, userId, UPDATE_ACLS, COHORT, cohortId, "",
                             study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 }
             }
             throw e;
+        } finally {
+            auditManager.finishAuditBatch(operationId);
         }
     }
 

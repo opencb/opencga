@@ -145,7 +145,8 @@ public abstract class AbstractManager {
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), TimeUtils.getDate(),
                         new ObjectMap("totalTimeMillis", totalStopWatch.getTime(TimeUnit.MILLISECONDS)));
                 if (exception != null) {
-                    auditRecord.setStatus(new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(1, exception.getMessage(), "")));
+                    auditRecord.setStatus(new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(1, exception.getMessage(),
+                            "")));
                     auditRecord.getAttributes()
                             .append("errorType", exception.getClass())
                             .append("errorMessage", exception.getMessage());

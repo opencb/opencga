@@ -22,6 +22,7 @@ import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Paths;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
@@ -140,11 +141,11 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
 
     @Test
     public void exportTped() throws Exception {
-        String fileName = "variants" + VariantExporter.TPED_FILE_EXTENSION;
+        String fileName = "variants";
         URI uri = getOutputUri(fileName);
-        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.TPED, null, new Query(STUDY.key(), study1), new QueryOptions());
+        uri = variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.TPED, null, new Query(STUDY.key(), study1), new QueryOptions());
 
-        copyToLocal(fileName, uri);
+        copyToLocal(Paths.get(uri).getFileName().toString(), uri);
     }
 
     @Test
@@ -221,6 +222,16 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         URI uri = getOutputUri(fileName);
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.VCF,
                 null, new Query(STUDY.key(), study1).append(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift<0.2"), new QueryOptions());
+
+        copyToLocal(fileName, uri);
+    }
+
+    @Test
+    public void exportWithGenes() throws Exception {
+        String fileName = "brca2.vcf";
+        URI uri = getOutputUri(fileName);
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.VCF,
+                null, new Query(STUDY.key(), study1).append(GENE.key(), "BRCA2"), new QueryOptions());
 
         copyToLocal(fileName, uri);
     }
