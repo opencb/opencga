@@ -2,6 +2,7 @@ package org.opencb.opencga.analysis.rga;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -67,11 +68,20 @@ public class RgaManager implements AutoCloseable {
 
     private final IndividualRgaConverter individualRgaConverter;
     private final GeneRgaConverter geneConverter;
+
     private final VariantRgaConverter variantConverter;
 
     private final Logger logger;
 
     private static final int KNOCKOUT_INSERT_BATCH_SIZE = 25;
+
+    private static Map<String, OpenCGAResult<?>> cacheMap;
+    private final int CACHE_SIZE;
+    private static final int DEFAULT_CACHE_SIZE = 1000;
+
+    static {
+        cacheMap = new HashMap<>();
+    }
 
 
     public RgaManager(CatalogManager catalogManager, VariantStorageManager variantStorageManager) {
@@ -85,6 +95,9 @@ public class RgaManager implements AutoCloseable {
         this.variantConverter = new VariantRgaConverter();
 
         this.logger = LoggerFactory.getLogger(getClass());
+        this.CACHE_SIZE = storageConfiguration.getRga().getCacheSize() > 0
+                ? storageConfiguration.getRga().getCacheSize()
+                : DEFAULT_CACHE_SIZE;
     }
 
     // Visible for testing
@@ -99,10 +112,13 @@ public class RgaManager implements AutoCloseable {
         this.variantConverter = new VariantRgaConverter();
 
         this.logger = LoggerFactory.getLogger(getClass());
+
+        this.CACHE_SIZE = storageConfiguration.getRga().getCacheSize() > 0
+                ? storageConfiguration.getRga().getCacheSize()
+                : DEFAULT_CACHE_SIZE;
     }
 
     // Data load
-
     public void index(String studyStr, String fileStr, String token) throws CatalogException, RgaException, IOException {
         File file = catalogManager.getFileManager().get(studyStr, fileStr, FileManager.INCLUDE_FILE_URI_PATH, token).first();
         Path filePath = Paths.get(file.getUri());
@@ -852,30 +868,36 @@ public class RgaManager implements AutoCloseable {
     // Added to improve performance issues. Need to be addressed properly and add this information in study internal.rga.stats field
     @Deprecated
     private Integer getTotalIndividuals(Study study) {
-        // In the future, this will need to be fetched from study internal.
-        // Atm, it will be fetched from study.attributes.rga.stats.totalIndividuals
-        if (study.getAttributes() == null) {
-            return null;
-        }
-        Object rga = study.getAttributes().get("RGA");
-        if (rga == null) {
-            return null;
-        }
-        Object stats = ((Map) rga).get("stats");
-        if (stats == null) {
-            return null;
-        }
-        Object totalIndividuals = ((Map) stats).get("totalIndividuals");
-        if (totalIndividuals != null) {
-            return Integer.parseInt(String.valueOf(totalIndividuals));
-        } else {
-            return null;
-        }
+        return null;
+//        // In the future, this will need to be fetched from study internal.
+//        // Atm, it will be fetched from study.attributes.rga.stats.totalIndividuals
+//        if (study.getAttributes() == null) {
+//            return null;
+//        }
+//        Object rga = study.getAttributes().get("RGA");
+//        if (rga == null) {
+//            return null;
+//        }
+//        Object stats = ((Map) rga).get("stats");
+//        if (stats == null) {
+//            return null;
+//        }
+//        Object totalIndividuals = ((Map) stats).get("totalIndividuals");
+//        if (totalIndividuals != null) {
+//            return Integer.parseInt(String.valueOf(totalIndividuals));
+//        } else {
+//            return null;
+//        }
     }
 
     public OpenCGAResult<KnockoutByIndividualSummary> individualSummary(String studyStr, Query query, QueryOptions options, String token)
             throws RgaException, CatalogException, IOException {
         StopWatch stopWatch = StopWatch.createStarted();
+
+        OpenCGAResult<KnockoutByIndividualSummary> cacheResults = getCacheResults("individualSummary", studyStr, query, options, stopWatch);
+        if (cacheResults != null) {
+            return cacheResults;
+        }
 
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
         String collection = getMainCollectionName(study.getFqn());
@@ -991,12 +1013,19 @@ public class RgaManager implements AutoCloseable {
             result.setEvents(Collections.singletonList(preprocess.getEvent()));
         }
 
+        cacheResults("individualSummary", studyStr, query, options, result);
         return result;
     }
 
     public OpenCGAResult<KnockoutByGeneSummary> geneSummary(String studyStr, Query query, QueryOptions options, String token)
             throws CatalogException, IOException, RgaException {
         StopWatch stopWatch = StopWatch.createStarted();
+
+        OpenCGAResult<KnockoutByGeneSummary> cacheResults = getCacheResults("geneSummary", studyStr, query, options, stopWatch);
+        if (cacheResults != null) {
+            return cacheResults;
+        }
+
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
         String userId = catalogManager.getUserManager().getUserId(token);
         String collection = getMainCollectionName(study.getFqn());
@@ -1066,12 +1095,20 @@ public class RgaManager implements AutoCloseable {
         }
 
         int time = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
-        return new OpenCGAResult<>(time, Collections.emptyList(), knockoutByGeneSummaryList.size(), knockoutByGeneSummaryList, numMatches);
+        OpenCGAResult<KnockoutByGeneSummary> result = new OpenCGAResult<>(time, Collections.emptyList(), knockoutByGeneSummaryList.size(),
+                knockoutByGeneSummaryList, numMatches);
+        cacheResults("geneSummary", studyStr, query, options, result);
+        return result;
     }
 
     public OpenCGAResult<KnockoutByVariantSummary> variantSummary(String studyStr, Query query, QueryOptions options, String token)
             throws CatalogException, IOException, RgaException {
         StopWatch stopWatch = StopWatch.createStarted();
+
+        OpenCGAResult<KnockoutByVariantSummary> cacheResults = getCacheResults("variantSummary", studyStr, query, options, stopWatch);
+        if (cacheResults != null) {
+            return cacheResults;
+        }
 
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
         String userId = catalogManager.getUserManager().getUserId(token);
@@ -1172,6 +1209,8 @@ public class RgaManager implements AutoCloseable {
         if (CollectionUtils.isNotEmpty(resourceIds.getEvents())) {
             result.setEvents(resourceIds.getEvents());
         }
+
+        cacheResults("variantSummary", studyStr, query, options, result);
         return result;
     }
 
@@ -1951,5 +1990,58 @@ public class RgaManager implements AutoCloseable {
             this.event = event;
             return this;
         }
+    }
+
+    /*
+    CACHE METHODS
+     */
+    private String generateCacheKey(String method, String studyStr, Query query, QueryOptions options) {
+        ObjectMap map = new ObjectMap()
+                .append("method", method)
+                .append("study", studyStr);
+        if (query != null) {
+            map.putAll(query);
+        }
+        if (options != null) {
+            map.putAll(options);
+        }
+        // Sort the keys
+        List<String> sortedKeys = map.keySet().stream().sorted().collect(Collectors.toList());
+        List<String> queryList = new ArrayList<>(map.size());
+        for (String key : sortedKeys) {
+            queryList.add(key + "=" + map.get(key));
+        }
+        return DigestUtils.sha256Hex(StringUtils.join(queryList, ";"));
+    }
+
+    private void cacheResults(String method, String studyStr, Query query, QueryOptions options, OpenCGAResult<?> result) {
+        if (!storageConfiguration.getRga().isCache()) {
+            // Cache is disabled
+            return;
+        }
+
+        if (cacheMap.size() > CACHE_SIZE) {
+            // Cache is already full
+            logger.warn("Query not cached. Cache is already full (size: {}).", CACHE_SIZE);
+            return;
+        }
+
+        String cacheKey = generateCacheKey(method, studyStr, query, options);
+        cacheMap.put(cacheKey, result);
+    }
+
+    private <T> OpenCGAResult<T> getCacheResults(String method, String studyStr, Query query, QueryOptions options, StopWatch stopWatch) {
+        if (!storageConfiguration.getRga().isCache()) {
+            // Cache is disabled
+            return null;
+        }
+        String cacheKey = generateCacheKey(method, studyStr, query, options);
+        OpenCGAResult<?> result = cacheMap.get(cacheKey);
+        if (result != null) {
+            result.addEvent(new Event(Event.Type.INFO, "Results obtained from cache"));
+            result.setTime((int) stopWatch.getTime(TimeUnit.MILLISECONDS));
+            return (OpenCGAResult<T>) result;
+        }
+        return null;
     }
 }
