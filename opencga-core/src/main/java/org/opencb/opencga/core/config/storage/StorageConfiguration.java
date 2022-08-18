@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.config.RgaSearchConfiguration;
 import org.opencb.opencga.core.config.SearchConfiguration;
 import org.opencb.opencga.core.config.ServerConfiguration;
 import org.slf4j.Logger;
@@ -43,7 +44,7 @@ public class StorageConfiguration {
     private CacheConfiguration cache;
     private SearchConfiguration search;
     private SearchConfiguration clinical;
-    private SearchConfiguration rga;
+    private RgaSearchConfiguration rga;
     private ObjectMap alignment;
     private StorageEnginesConfiguration variant;
     private IOConfiguration io;
@@ -61,7 +62,7 @@ public class StorageConfiguration {
         this.cache = new CacheConfiguration();
         this.search = new SearchConfiguration();
         this.clinical = new SearchConfiguration();
-        this.rga = new SearchConfiguration();
+        this.rga = new RgaSearchConfiguration();
     }
 
 
@@ -192,11 +193,11 @@ public class StorageConfiguration {
         return this;
     }
 
-    public SearchConfiguration getRga() {
+    public RgaSearchConfiguration getRga() {
         return rga;
     }
 
-    public StorageConfiguration setRga(SearchConfiguration rga) {
+    public StorageConfiguration setRga(RgaSearchConfiguration rga) {
         this.rga = rga;
         return this;
     }
