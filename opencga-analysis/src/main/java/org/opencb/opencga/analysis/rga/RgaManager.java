@@ -80,7 +80,7 @@ public class RgaManager implements AutoCloseable {
     private static final int DEFAULT_CACHE_SIZE = 1000;
 
     static {
-        cacheMap = new HashMap<>();
+        cacheMap = new ConcurrentHashMap<>();
     }
 
 
