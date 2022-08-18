@@ -86,8 +86,8 @@ public class VariantQuery extends Query {
         return getString(VariantQueryParam.INCLUDE_STUDY.key());
     }
 
-    public VariantQuery sample(String value) {
-        put(VariantQueryParam.SAMPLE.key(), value);
+    public VariantQuery sample(String... value) {
+        put(VariantQueryParam.SAMPLE.key(), Arrays.asList(value));
         return this;
     }
     public String sample() {
@@ -161,7 +161,7 @@ public class VariantQuery extends Query {
         return getString(VariantQueryParam.INCLUDE_SAMPLE_DATA.key());
     }
 
-    public VariantQuery includeGenotype(String value) {
+    public VariantQuery includeGenotype(Boolean value) {
         put(VariantQueryParam.INCLUDE_GENOTYPE.key(), value);
         return this;
     }

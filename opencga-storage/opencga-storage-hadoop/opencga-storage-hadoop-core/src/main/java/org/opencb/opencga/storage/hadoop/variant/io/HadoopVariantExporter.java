@@ -32,6 +32,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexCompoundHeterozygousQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexMendelianErrorQueryExecutor;
+import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexOnlyVariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 import org.slf4j.Logger;
@@ -90,7 +91,8 @@ public class HadoopVariantExporter extends VariantExporter {
             VariantQueryExecutor queryExecutor = engine.getVariantQueryExecutor(query, queryOptions);
             if (queryExecutor instanceof SampleIndexCompoundHeterozygousQueryExecutor
                     || queryExecutor instanceof BreakendVariantQueryExecutor
-                    || queryExecutor instanceof SampleIndexMendelianErrorQueryExecutor) {
+                    || queryExecutor instanceof SampleIndexMendelianErrorQueryExecutor
+                    || queryExecutor instanceof SampleIndexOnlyVariantQueryExecutor) {
                 logger.info("Query using special VariantQueryExecutor {}. Skip MapReduce", queryExecutor.getClass());
                 smallQuery = true;
             } else if (queryOptions.getInt(QueryOptions.LIMIT, -1) > 0 || queryOptions.getInt(QueryOptions.SKIP, -1) > 0) {

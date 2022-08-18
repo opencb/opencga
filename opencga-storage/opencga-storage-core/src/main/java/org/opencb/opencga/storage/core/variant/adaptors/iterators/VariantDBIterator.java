@@ -118,7 +118,7 @@ public abstract class VariantDBIterator extends CloseableIterator<Variant> {
     public abstract int getCount();
 
     @Override
-    public void forEachRemaining(Consumer<? super Variant> action) {
+    public final void forEachRemaining(Consumer<? super Variant> action) {
         Objects.requireNonNull(action);
         while (hasNext()) {
             action.accept(next());
@@ -130,7 +130,7 @@ public abstract class VariantDBIterator extends CloseableIterator<Variant> {
         }
     }
 
-    public DataResult<Variant> toDataResult() {
+    public final DataResult<Variant> toDataResult() {
         List<Variant> result = new ArrayList<>();
         this.forEachRemaining(result::add);
 
@@ -140,7 +140,7 @@ public abstract class VariantDBIterator extends CloseableIterator<Variant> {
         return new DataResult<>((int) getTimeFetching(TimeUnit.MILLISECONDS), Collections.emptyList(), numResults, result, numTotalResults);
     }
 
-    public VariantQueryResult<Variant> toDataResult(Map<String, List<String>> samples) {
+    public final VariantQueryResult<Variant> toDataResult(Map<String, List<String>> samples) {
         return new VariantQueryResult<>(toDataResult(), samples);
     }
 
@@ -149,7 +149,7 @@ public abstract class VariantDBIterator extends CloseableIterator<Variant> {
         R call() throws E;
     }
 
-    protected <R, E extends Exception> R convert(TimeFunction<R, E> converter) throws E {
+    protected final <R, E extends Exception> R convert(TimeFunction<R, E> converter) throws E {
         long start = System.nanoTime();
         try {
             return converter.call();
@@ -158,7 +158,7 @@ public abstract class VariantDBIterator extends CloseableIterator<Variant> {
         }
     }
 
-    protected <R, E extends Exception> R fetch(TimeFunction<R, E> fetcher) throws E {
+    protected final <R, E extends Exception> R fetch(TimeFunction<R, E> fetcher) throws E {
         long start = System.nanoTime();
         try {
             return fetcher.call();
