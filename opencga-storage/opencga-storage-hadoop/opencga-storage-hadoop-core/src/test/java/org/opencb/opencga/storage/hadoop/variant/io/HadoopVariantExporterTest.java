@@ -171,7 +171,7 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         String fileName = "some_variants.sample_index.avro";
         URI uri = getOutputUri(fileName);
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO,
-                null, new Query(STUDY.key(), study1).append(GENOTYPE.key(), "NA12877:0/1;NA12878:1/1"),
+                null, new Query(STUDY.key(), study1).append(SAMPLE.key(), "NA12877:0/1;NA12878:1/1"),
                 new QueryOptions());
 
         copyToLocal(fileName, uri);

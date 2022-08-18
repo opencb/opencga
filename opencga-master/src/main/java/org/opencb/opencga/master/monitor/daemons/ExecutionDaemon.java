@@ -88,6 +88,7 @@ import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Execution;
@@ -483,7 +484,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             tool = new ToolFactory().getTool(job.getTool().getId());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
-            return abortJob(job, "Tool " + job.getTool().getId() + " not found");
+            return abortJob(job, "Tool " + job.getTool().getId() + " not found", e);
         }
 
         try {
@@ -518,8 +519,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         try {
             userToken = catalogManager.getUserManager().getNonExpiringToken(job.getUserId(), token);
         } catch (CatalogException e) {
-            logger.error(e.getMessage(), e);
-            return abortJob(job, "Internal error. Could not obtain token for user '" + job.getUserId() + "'");
+            return abortJob(job, "Internal error. Could not obtain token for user '" + job.getUserId() + "'", e);
         }
 
         if (CollectionUtils.isNotEmpty(job.getDependsOn())) {
@@ -541,15 +541,14 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 updateParams.setOutDir(getValidInternalOutDir(job.getStudy().getId(), job, outDirPathParam, userToken));
             } catch (CatalogException e) {
                 logger.error("Cannot create output directory. {}", e.getMessage(), e);
-                return abortJob(job, "Cannot create output directory. " + e.getMessage());
+                return abortJob(job, "Cannot create output directory.", e);
             }
         } else {
             try {
                 // JOBS/user/job_id/
                 updateParams.setOutDir(getValidDefaultOutDir(job));
             } catch (CatalogException e) {
-                logger.error("Cannot create output directory. {}", e.getMessage(), e);
-                return abortJob(job, "Cannot create output directory. " + e.getMessage());
+                return abortJob(job, "Cannot create output directory.", e);
             }
         }
 
@@ -582,8 +581,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             logger.info("Queue job '{}' on queue '{}'", job.getId(), queue);
             batchExecutor.execute(job.getId(), queue, authenticatedCommandLine, stdout, stderr);
         } catch (Exception e) {
-            logger.error("Error executing job {}.", job.getId(), e);
-            return abortJob(job, "Error executing job. " + e.getMessage());
+            return abortJob(job, "Error executing job.", e);
         }
 
         job.getInternal().setStatus(updateParams.getInternal().getStatus());
@@ -871,8 +869,15 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private int abortJob(Job job, Exception e) {
-        logger.error(e.getMessage(), e);
-        return abortJob(job, e.getMessage());
+        return abortJob(job, e.getMessage(), e);
+    }
+
+    private int abortJob(Job job, String message, Exception e) {
+        logger.error(message, e);
+        if (!message.endsWith(" ")) {
+            message += " ";
+        }
+        return abortJob(job, message + ExceptionUtils.prettyExceptionMessage(e));
     }
 
     private int abortJob(Job job, String description) {
