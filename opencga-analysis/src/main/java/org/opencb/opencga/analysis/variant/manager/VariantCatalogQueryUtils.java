@@ -388,7 +388,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             }
         }
 
-
+        ParsedVariantQuery.VariantQueryXref xrefs = VariantQueryParser.preProcessXrefs(query);
+        Region segregationChromosome = null;
         if (isValidParam(query, FAMILY)) {
             String familyId = query.getString(FAMILY.key());
             if (StringUtils.isEmpty(defaultStudyStr)) {
@@ -597,6 +598,65 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, segregationMode.toString(),
                                 "Invalid segregation mode for the family '" + family.getId() + "'");
                     }
+                    switch (segregationMode) {
+                        case X_LINKED_DOMINANT:
+                        case X_LINKED_RECESSIVE:
+                            segregationChromosome = new Region("X");
+                            break;
+                        case Y_LINKED:
+                            segregationChromosome = new Region("Y");
+                            break;
+                        case MITOCHONDRIAL:
+                            segregationChromosome = new Region("MT");
+                            break;
+                        default:
+                            break;
+                    }
+                    if (segregationChromosome != null) {
+                        if (isValidParam(query, REGION.key())) {
+                            List<Region> invalidRegions = new ArrayList<>();
+                            for (Region region : Region.parseRegions(query.getString(REGION.key()))) {
+                                if (VariantQueryUtils.intersectRegions(segregationChromosome, region) == null) {
+                                    invalidRegions.add(region);
+                                }
+                            }
+                            if (!invalidRegions.isEmpty()) {
+                                throw VariantQueryException.unsupportedParamsCombination(
+                                        REGION, invalidRegions.toString(),
+                                        FAMILY_SEGREGATION, query.getString(FAMILY_SEGREGATION.key()));
+                            }
+                        } else {
+                            query.put(REGION.key(), segregationChromosome);
+                            query.put(PANEL_INTERSECTION.key(), true);
+                        }
+                        if (!xrefs.getVariants().isEmpty()) {
+                            List<Variant> invalidVariants = new ArrayList<>();
+                            for (Variant variant : xrefs.getVariants()) {
+                                if (!variant.getChromosome().equals(segregationChromosome.getChromosome())) {
+                                    invalidVariants.add(variant);
+                                }
+                            }
+                            if (!invalidVariants.isEmpty()) {
+                                throw VariantQueryException.unsupportedParamsCombination(
+                                        ID, invalidVariants.toString(),
+                                        FAMILY_SEGREGATION, query.getString(FAMILY_SEGREGATION.key()));
+                            }
+                        }
+                        if (!xrefs.getGenes().isEmpty()) {
+                            List<String> invalidGenes = new ArrayList<>();
+                            Map<String, Region> geneRegionMap = cellBaseUtils.getGeneRegionMap(xrefs.getGenes(), false);
+                            for (Map.Entry<String, Region> entry : geneRegionMap.entrySet()) {
+                                if (VariantQueryUtils.intersectRegions(segregationChromosome, entry.getValue()) == null) {
+                                    invalidGenes.add(entry.getKey());
+                                }
+                            }
+                            if (!invalidGenes.isEmpty()) {
+                                throw VariantQueryException.unsupportedParamsCombination(
+                                        GENE, invalidGenes.toString(),
+                                        FAMILY_SEGREGATION, query.getString(FAMILY_SEGREGATION.key()));
+                            }
+                        }
+                    }
                     query.put(GENOTYPE.key(), gtFilter);
                 }
             } else {
@@ -687,11 +747,6 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             Set<Region> queryRegions = isValidParam(query, REGION)
                     ? new HashSet<>(mergeRegions(Region.parseRegions(query.getString(REGION.key()), true)))
                     : Collections.emptySet();
-
-            ParsedVariantQuery.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
-            // Extract GENEs from XRefs
-            query.put(GENE.key(), xrefs.getGenes());
-            query.put(ANNOT_XREF.key(), xrefs.getOtherXrefs());
 
             if (queryRegions.isEmpty() && xrefs.getGenes().isEmpty() && xrefs.getVariants().isEmpty()) {
                 // Nothing to intersect
@@ -809,7 +864,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 } else {
                     query.put(REGION.key(), regionsFinal);
                 }
-                if (genesFinal.isEmpty() && variantsFinal.isEmpty() && regionsFinal.isEmpty()) {
+                if (genesFinal.isEmpty() && geneRegionsFinal.isEmpty() && variantsFinal.isEmpty() && regionsFinal.isEmpty()) {
                     query.put(REGION.key(), VariantQueryUtils.NON_EXISTING_REGION);
                 }
             }
