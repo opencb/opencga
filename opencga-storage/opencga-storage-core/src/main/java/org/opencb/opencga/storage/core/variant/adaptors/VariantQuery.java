@@ -313,6 +313,11 @@ public class VariantQuery extends Query {
         return getString(VariantQueryParam.ANNOT_XREF.key());
     }
 
+    public VariantQuery gene(String... value) {
+        put(VariantQueryParam.GENE.key(), Arrays.asList(value));
+        return this;
+    }
+
     public VariantQuery gene(String value) {
         put(VariantQueryParam.GENE.key(), value);
         return this;
@@ -549,5 +554,8 @@ public class VariantQuery extends Query {
         return getString(VariantQueryParam.RELEASE.key());
     }
 
-
+    @Override
+    public VariantQuery append(String key, Object value) {
+        return (VariantQuery) super.append(key, value);
+    }
 }
