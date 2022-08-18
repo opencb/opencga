@@ -169,6 +169,10 @@ public class VariantCatalogQueryUtilsTest {
                                 .setName("CTBP2P1")
                                 .setModeOfInheritance(ClinicalProperty.ModeOfInheritance.AUTOSOMAL_DOMINANT)
                                 .setConfidence(ClinicalProperty.Confidence.HIGH),
+                        (GenePanel) new GenePanel()
+                                .setName("BEX2")
+                                .setModeOfInheritance(ClinicalProperty.ModeOfInheritance.AUTOSOMAL_DOMINANT)
+                                .setCancer(new CancerPanel().setRole(ClinicalProperty.RoleInCancer.UNKNOWN)),
                         new GenePanel()
                                 .setName("ADSL")
                 ));
@@ -199,7 +203,10 @@ public class VariantCatalogQueryUtilsTest {
                                 new DiseasePanel.Coordinate(assembly, "1:1000-2000", null)))),
                         ((DiseasePanel.RegionPanel) new DiseasePanel.RegionPanel().setCoordinates(Arrays.asList(
                                 new DiseasePanel.Coordinate(assembly,
-                                        new Region(cadm1.toString()).setEnd(cadm1.getEnd() - 3000).toString(), null))))
+                                        new Region(cadm1.toString()).setEnd(cadm1.getEnd() - 3000).toString(), null)))),
+                        ((DiseasePanel.RegionPanel) new DiseasePanel.RegionPanel().setCoordinates(Arrays.asList(
+                                new DiseasePanel.Coordinate(assembly,
+                                        "X:1-1000", null))))
                 ))
         ;
         catalog.getPanelManager().create("s1", myPanelWithRegions, null, sessionId);
@@ -407,13 +414,40 @@ public class VariantCatalogQueryUtilsTest {
     public void queryByFamilySegregationChromosomal() throws Exception {
         Query query = queryUtils.parseQuery(new VariantQuery()
                 .study("s1")
-                .region("X")
+                .region("X:1-1000")
                 .id("X:1:C:T")
                 .gene("BEX2")
                 .append(FAMILY.key(), "f1")
                 .append(FAMILY_SEGREGATION.key(), "X_LINKED_RECESSIVE"), null, cellBaseUtils, sessionId);
+        // Region untouched
+        assertEquals("X:1-1000", query.getString(REGION.key()));
 
-        assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
+        query = queryUtils.parseQuery(new VariantQuery()
+                .study("s1")
+                .id("X:1:C:T")
+                .append(FAMILY.key(), "f1")
+                .append(FAMILY_SEGREGATION.key(), "X_LINKED_RECESSIVE"), null, cellBaseUtils, sessionId);
+        // Region untouched, as filtering by variant IDs
+        assertEquals(null, query.get(REGION.key()));
+
+        query = queryUtils.parseQuery(new VariantQuery()
+                .study("s1")
+                .append(PANEL.key(), myPanel.getId())
+                .append(FAMILY.key(), "f1")
+                .append(FAMILY_SEGREGATION.key(), "X_LINKED_RECESSIVE"), null, cellBaseUtils, sessionId);
+        // Region untouched, as filtering by gene
+        assertEquals(null, query.get(REGION.key()));
+        assertEquals("BEX2", query.getString(GENE.key()));
+
+        query = queryUtils.parseQuery(new VariantQuery()
+                .study("s1")
+                .append(PANEL.key(), myPanelWithRegions.getId())
+                .append(FAMILY.key(), "f1")
+                .append(FAMILY_SEGREGATION.key(), "X_LINKED_RECESSIVE"), null, cellBaseUtils, sessionId);
+        // Region untouched, as filtering by gene
+        System.out.println("query = " + query.toJson());
+        assertEquals("X:1-1000", query.getString(REGION.key()));
+        assertEquals("", query.getString(GENE.key()));
     }
 
     @Test
@@ -536,9 +570,9 @@ public class VariantCatalogQueryUtilsTest {
     @Test
     public void queryByPanel() throws Exception {
         Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel"), null, cellBaseUtils, sessionId);
-        assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL"), set(query, GENE));
+        assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL", "BEX2"), set(query, GENE));
         query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel").append(GENE.key(), "ASDF"), null, sessionId);
-        assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL", "ASDF"), set(query, GENE));
+        assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL", "ASDF", "BEX2"), set(query, GENE));
         assertEquals(true, query.getBoolean(SKIP_MISSING_GENES, false));
         assertNull(query.get(ANNOT_GENE_REGIONS.key()));
     }
@@ -746,7 +780,7 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void testPanels() {
-        assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL"),
+        assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL", "BEX2"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(), myPanel));
         assertEquals(set("BRCA2", "CTBP2P1", "ADSL"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_ROLE_IN_CANCER.key(), "TUMOR_SUPPRESSOR_GENE"), myPanel));

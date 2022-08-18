@@ -613,7 +613,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                             break;
                     }
                     if (segregationChromosome != null) {
+                        boolean mightAddRegionFilter = true;
                         if (isValidParam(query, REGION.key())) {
+                            mightAddRegionFilter = false;
                             List<Region> invalidRegions = new ArrayList<>();
                             for (Region region : Region.parseRegions(query.getString(REGION.key()))) {
                                 if (VariantQueryUtils.intersectRegions(segregationChromosome, region) == null) {
@@ -625,11 +627,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                                         REGION, invalidRegions.toString(),
                                         FAMILY_SEGREGATION, query.getString(FAMILY_SEGREGATION.key()));
                             }
-                        } else {
-                            query.put(REGION.key(), segregationChromosome);
-                            query.put(PANEL_INTERSECTION.key(), true);
                         }
                         if (!xrefs.getVariants().isEmpty()) {
+                            mightAddRegionFilter = false;
                             List<Variant> invalidVariants = new ArrayList<>();
                             for (Variant variant : xrefs.getVariants()) {
                                 if (!variant.getChromosome().equals(segregationChromosome.getChromosome())) {
@@ -643,6 +643,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                             }
                         }
                         if (!xrefs.getGenes().isEmpty()) {
+                            mightAddRegionFilter = false;
                             List<String> invalidGenes = new ArrayList<>();
                             Map<String, Region> geneRegionMap = cellBaseUtils.getGeneRegionMap(xrefs.getGenes(), false);
                             for (Map.Entry<String, Region> entry : geneRegionMap.entrySet()) {
@@ -655,6 +656,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                                         GENE, invalidGenes.toString(),
                                         FAMILY_SEGREGATION, query.getString(FAMILY_SEGREGATION.key()));
                             }
+                        }
+                        if (mightAddRegionFilter) {
+                            query.put(REGION.key(), segregationChromosome);
                         }
                     }
                     query.put(GENOTYPE.key(), gtFilter);
@@ -744,6 +748,18 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 //                    }
                 }
             }
+            if (segregationChromosome != null) {
+                // Remove panel elements that are out of the segregationChromosome (if any)
+                Map<String, Region> panelGeneRegionMap = cellBaseUtils.getGeneRegionMap(new ArrayList<>(panelGenes), true);
+                for (Map.Entry<String, Region> entry : panelGeneRegionMap.entrySet()) {
+                    if (VariantQueryUtils.intersectRegions(entry.getValue(), segregationChromosome) == null) {
+                        panelGenes.remove(entry.getKey());
+                    }
+                }
+                Region finalSegregationChromosome = segregationChromosome;
+                panelRegions.removeIf(region -> VariantQueryUtils.intersectRegions(region, finalSegregationChromosome) == null);
+            }
+
             Set<Region> queryRegions = isValidParam(query, REGION)
                     ? new HashSet<>(mergeRegions(Region.parseRegions(query.getString(REGION.key()), true)))
                     : Collections.emptySet();
