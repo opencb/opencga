@@ -124,6 +124,7 @@ public class RecoverProbandSamplesInCases extends MigrationTool {
                     Document caseDoc = auditParams.get("clinicalAnalysis", Document.class);
                     if (caseDoc != null) {
                         Document caseProbandOnly = new Document("proband", caseDoc.get("proband"));
+                        converter.validateProbandToUpdate(caseProbandOnly);
                         ClinicalAnalysis clinicalAnalysis = converter.convertToDataModelType(caseProbandOnly);
                         if (!probandId.equals(clinicalAnalysis.getProband().getId())) {
                             logger.error("Proband '{}' from case '{}' does not match the proband '{}' used on create.", probandId, uuid,
@@ -157,6 +158,7 @@ public class RecoverProbandSamplesInCases extends MigrationTool {
                     Document caseDoc = auditParams.get("updateParams", Document.class);
                     if (caseDoc != null) {
                         Document caseProbandOnly = new Document("proband", caseDoc.get("proband"));
+                        converter.validateProbandToUpdate(caseProbandOnly);
                         ClinicalAnalysis clinicalAnalysis = converter.convertToDataModelType(caseProbandOnly);
                         if (clinicalAnalysis != null && clinicalAnalysis.getProband() != null
                                 && probandId.equals(clinicalAnalysis.getProband().getId())
