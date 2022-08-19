@@ -2,8 +2,9 @@ package org.opencb.opencga.core.models.alignment;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.opencb.opencga.core.tools.ToolParams;
 
-public class CoverageIndexParams {
+public class CoverageIndexParams extends ToolParams {
     public static final String DESCRIPTION = "Coverage computation parameters";
 
     private String file;
