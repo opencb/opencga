@@ -120,15 +120,19 @@ public class RecoverProbandSamplesInCases extends MigrationTool {
             if (iterator.hasNext()) {
                 Document auditDoc = iterator.next();
                 Document auditParams = auditDoc.get("params", Document.class);
-                Document caseDoc = auditParams.get("clinicalAnalysis", Document.class);
-                Document caseProbandOnly = new Document("proband", caseDoc.get("proband"));
-                ClinicalAnalysis clinicalAnalysis = converter.convertToDataModelType(caseProbandOnly);
-                if (!probandId.equals(clinicalAnalysis.getProband().getId())) {
-                    logger.error("Proband '{}' from case '{}' does not match the proband '{}' used on create.", probandId, uuid,
-                            clinicalAnalysis.getProband().getId());
-                } else {
-                    logger.debug("Found case in Audit create");
-                    return clinicalAnalysis;
+                if (auditParams != null) {
+                    Document caseDoc = auditParams.get("clinicalAnalysis", Document.class);
+                    if (caseDoc != null) {
+                        Document caseProbandOnly = new Document("proband", caseDoc.get("proband"));
+                        ClinicalAnalysis clinicalAnalysis = converter.convertToDataModelType(caseProbandOnly);
+                        if (!probandId.equals(clinicalAnalysis.getProband().getId())) {
+                            logger.error("Proband '{}' from case '{}' does not match the proband '{}' used on create.", probandId, uuid,
+                                    clinicalAnalysis.getProband().getId());
+                        } else {
+                            logger.debug("Found case in Audit create");
+                            return clinicalAnalysis;
+                        }
+                    }
                 }
             }
         }
@@ -149,14 +153,18 @@ public class RecoverProbandSamplesInCases extends MigrationTool {
             while (iterator.hasNext()) {
                 Document auditDoc = iterator.next();
                 Document auditParams = auditDoc.get("params", Document.class);
-                Document caseDoc = auditParams.get("updateParams", Document.class);
-                Document caseProbandOnly = new Document("proband", caseDoc.get("proband"));
-                ClinicalAnalysis clinicalAnalysis = converter.convertToDataModelType(caseProbandOnly);
-                if (clinicalAnalysis != null && clinicalAnalysis.getProband() != null
-                        && probandId.equals(clinicalAnalysis.getProband().getId())
-                        && CollectionUtils.isNotEmpty(clinicalAnalysis.getProband().getSamples())) {
-                    logger.debug("Found case in Audit update");
-                    return clinicalAnalysis;
+                if (auditParams != null) {
+                    Document caseDoc = auditParams.get("updateParams", Document.class);
+                    if (caseDoc != null) {
+                        Document caseProbandOnly = new Document("proband", caseDoc.get("proband"));
+                        ClinicalAnalysis clinicalAnalysis = converter.convertToDataModelType(caseProbandOnly);
+                        if (clinicalAnalysis != null && clinicalAnalysis.getProband() != null
+                                && probandId.equals(clinicalAnalysis.getProband().getId())
+                                && CollectionUtils.isNotEmpty(clinicalAnalysis.getProband().getSamples())) {
+                            logger.debug("Found case in Audit update");
+                            return clinicalAnalysis;
+                        }
+                    }
                 }
             }
         }
