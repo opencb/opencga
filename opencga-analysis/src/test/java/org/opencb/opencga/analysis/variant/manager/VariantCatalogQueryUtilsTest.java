@@ -412,38 +412,41 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void queryByFamilySegregationChromosomal() throws Exception {
-        Query query = queryUtils.parseQuery(new VariantQuery()
+        queryBySegregationChromosomal(new Query()
+                .append(FAMILY.key(), "f1")
+                .append(FAMILY_SEGREGATION.key(), "X_LINKED_RECESSIVE"));
+    }
+
+    @Test
+    public void queryBySampleSegregationChromosomal() throws Exception {
+        queryBySegregationChromosomal(new Query(SAMPLE.key(), "sample3:X_LINKED_RECESSIVE"));
+    }
+
+    public void queryBySegregationChromosomal(Query baseQuery) throws Exception {
+        Query query = queryUtils.parseQuery(new VariantQuery(baseQuery)
                 .study("s1")
                 .region("X:1-1000")
                 .id("X:1:C:T")
-                .gene("BEX2")
-                .append(FAMILY.key(), "f1")
-                .append(FAMILY_SEGREGATION.key(), "X_LINKED_RECESSIVE"), null, cellBaseUtils, sessionId);
+                .gene("BEX2"), null, cellBaseUtils, sessionId);
         // Region untouched
         assertEquals("X:1-1000", query.getString(REGION.key()));
 
-        query = queryUtils.parseQuery(new VariantQuery()
+        query = queryUtils.parseQuery(new VariantQuery(baseQuery)
                 .study("s1")
-                .id("X:1:C:T")
-                .append(FAMILY.key(), "f1")
-                .append(FAMILY_SEGREGATION.key(), "X_LINKED_RECESSIVE"), null, cellBaseUtils, sessionId);
+                .id("X:1:C:T"), null, cellBaseUtils, sessionId);
         // Region untouched, as filtering by variant IDs
         assertEquals(null, query.get(REGION.key()));
 
-        query = queryUtils.parseQuery(new VariantQuery()
+        query = queryUtils.parseQuery(new VariantQuery(baseQuery)
                 .study("s1")
-                .append(PANEL.key(), myPanel.getId())
-                .append(FAMILY.key(), "f1")
-                .append(FAMILY_SEGREGATION.key(), "X_LINKED_RECESSIVE"), null, cellBaseUtils, sessionId);
+                .append(PANEL.key(), myPanel.getId()), null, cellBaseUtils, sessionId);
         // Region untouched, as filtering by gene
         assertEquals(null, query.get(REGION.key()));
         assertEquals("BEX2", query.getString(GENE.key()));
 
-        query = queryUtils.parseQuery(new VariantQuery()
+        query = queryUtils.parseQuery(new VariantQuery(baseQuery)
                 .study("s1")
-                .append(PANEL.key(), myPanelWithRegions.getId())
-                .append(FAMILY.key(), "f1")
-                .append(FAMILY_SEGREGATION.key(), "X_LINKED_RECESSIVE"), null, cellBaseUtils, sessionId);
+                .append(PANEL.key(), myPanelWithRegions.getId()), null, cellBaseUtils, sessionId);
         // Region untouched, as filtering by gene
         System.out.println("query = " + query.toJson());
         assertEquals("X:1-1000", query.getString(REGION.key()));

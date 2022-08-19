@@ -7,8 +7,15 @@ import org.opencb.opencga.core.api.ParamConstants;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public class VariantQuery extends Query {
+    public VariantQuery() {
+    }
+
+    public VariantQuery(Map<String, Object> map) {
+        super(map);
+    }
 
     public VariantQuery id(String value) {
         put(VariantQueryParam.ID.key(), value);
@@ -557,5 +564,10 @@ public class VariantQuery extends Query {
     @Override
     public VariantQuery append(String key, Object value) {
         return (VariantQuery) super.append(key, value);
+    }
+
+    @Override
+    public VariantQuery appendAll(Map<String, ?> m) {
+        return (VariantQuery) super.appendAll(m);
     }
 }
