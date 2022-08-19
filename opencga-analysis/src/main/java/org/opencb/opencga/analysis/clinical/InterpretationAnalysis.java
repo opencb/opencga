@@ -48,7 +48,6 @@ import static org.opencb.opencga.analysis.clinical.ClinicalUtils.readClinicalVar
 
 public abstract class InterpretationAnalysis extends OpenCgaTool {
 
-
     public static String PRIMARY_FINDINGS_FILENAME = "primary-findings.json";
     public static String SECONDARY_FINDINGS_FILENAME = "secondary-findings.json";
     public static String INTERPRETATION_FILENAME = "interpretation.json";

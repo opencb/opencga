@@ -40,6 +40,7 @@ import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.cellbase.core.result.CellBaseDataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -51,6 +52,8 @@ import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -156,7 +159,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                     evidence.setInterpretationMethodName(method.getName());
                 }
             }
-        } catch (InterpretationAnalysisException | IOException e) {
+        } catch (InterpretationAnalysisException | IOException | StorageEngineException | CatalogException e) {
             throw new ToolException("Error retrieving primary findings", e);
         }
 
@@ -186,11 +189,14 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         }
     }
 
-    private List<ClinicalVariant> getPrimaryFindings() throws InterpretationAnalysisException, IOException {
+    private List<ClinicalVariant> getPrimaryFindings() throws InterpretationAnalysisException, IOException, StorageEngineException,
+            CatalogException {
         Map<String, ClinicalVariant> cvMap = new HashMap<>();
 
         VariantNormalizer normalizer = new VariantNormalizer();
-        CellBaseClient cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
+        CellBaseClient cellBaseClient = getVariantStorageManager().getCellBaseUtils(studyId, token).getCellBaseClient();
+        logger.info("{}: Annotating with Cellbase REST: {}", ID, cellBaseClient.getClientConfiguration());
+
         VariantClient variantClient = cellBaseClient.getVariantClient();
 
         for (File file : getOutDir().toFile().listFiles()) {
