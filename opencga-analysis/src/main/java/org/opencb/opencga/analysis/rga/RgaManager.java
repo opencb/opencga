@@ -520,11 +520,15 @@ public class RgaManager implements AutoCloseable {
 
     public OpenCGAResult<KnockoutByIndividual> individualQuery(String studyStr, Query query, QueryOptions options, String token)
             throws CatalogException, IOException, RgaException {
+        StopWatch stopWatch = StopWatch.createStarted();
+        OpenCGAResult<KnockoutByIndividual> cacheResults = getCacheResults("individualQuery", studyStr, query, options, stopWatch);
+        if (cacheResults != null) {
+            return cacheResults;
+        }
+
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
         String collection = getMainCollectionName(study.getFqn());
 
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
         Preprocess preprocess;
         try {
             preprocess = individualQueryPreprocess(study, query, options, token);
@@ -593,20 +597,24 @@ public class RgaManager implements AutoCloseable {
             result.setEvents(Collections.singletonList(preprocess.getEvent()));
         }
 
+        cacheResults("individualQuery", studyStr, query, options, stopWatch, result);
         return result;
     }
 
     public OpenCGAResult<RgaKnockoutByGene> geneQuery(String studyStr, Query query, QueryOptions options, String token)
             throws CatalogException, IOException, RgaException {
+        StopWatch stopWatch = StopWatch.createStarted();
+        OpenCGAResult<RgaKnockoutByGene> cacheResults = getCacheResults("geneQuery", studyStr, query, options, stopWatch);
+        if (cacheResults != null) {
+            return cacheResults;
+        }
+
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
         String userId = catalogManager.getUserManager().getUserId(token);
         String collection = getMainCollectionName(study.getFqn());
         if (!rgaEngine.isAlive(collection)) {
             throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
         }
-
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
 
         ExecutorService executor = Executors.newFixedThreadPool(4);
 
@@ -708,6 +716,7 @@ public class RgaManager implements AutoCloseable {
             knockoutResult.setNumMatches(-1);
         }
         if (isOwnerOrAdmin && includeSampleIds.isEmpty()) {
+            cacheResults("geneQuery", studyStr, query, options, stopWatch, knockoutResult);
             return knockoutResult;
         } else {
             // 5. Filter out individual or samples for which user does not have permissions
@@ -721,12 +730,19 @@ public class RgaManager implements AutoCloseable {
                 knockout.setIndividuals(individualList);
             }
 
+            cacheResults("geneQuery", studyStr, query, options, stopWatch, knockoutResult);
             return knockoutResult;
         }
     }
 
     public OpenCGAResult<KnockoutByVariant> variantQuery(String studyStr, Query query, QueryOptions options, String token)
             throws CatalogException, IOException, RgaException {
+        StopWatch stopWatch = StopWatch.createStarted();
+        OpenCGAResult<KnockoutByVariant> cacheResults = getCacheResults("variantQuery", studyStr, query, options, stopWatch);
+        if (cacheResults != null) {
+            return cacheResults;
+        }
+
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
         String userId = catalogManager.getUserManager().getUserId(token);
         String collection = getMainCollectionName(study.getFqn());
@@ -738,13 +754,8 @@ public class RgaManager implements AutoCloseable {
             throw new RgaException("Missing auxiliar RGA collection for study '" + study.getFqn() + "'");
         }
 
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-
         ExecutorService executor = Executors.newFixedThreadPool(4);
-
         QueryOptions queryOptions = setDefaultLimit(options);
-
         List<String> includeIndividuals = queryOptions.getAsStringList(RgaQueryParams.INCLUDE_INDIVIDUAL);
 
         Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
@@ -847,6 +858,7 @@ public class RgaManager implements AutoCloseable {
             knockoutResult.setNumMatches(-1);
         }
         if (isOwnerOrAdmin && includeSampleIds.isEmpty()) {
+            cacheResults("variantQuery", studyStr, query, options, stopWatch, knockoutResult);
             return knockoutResult;
         } else {
             // 5. Filter out individual or samples for which user does not have permissions
@@ -860,6 +872,7 @@ public class RgaManager implements AutoCloseable {
                 knockout.setIndividuals(individualList);
             }
 
+            cacheResults("variantQuery", studyStr, query, options, stopWatch, knockoutResult);
             return knockoutResult;
         }
     }
@@ -1012,7 +1025,7 @@ public class RgaManager implements AutoCloseable {
             result.setEvents(Collections.singletonList(preprocess.getEvent()));
         }
 
-        cacheResults("individualSummary", studyStr, query, options, result);
+        cacheResults("individualSummary", studyStr, query, options, stopWatch, result);
         return result;
     }
 
@@ -1096,7 +1109,7 @@ public class RgaManager implements AutoCloseable {
         int time = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
         OpenCGAResult<KnockoutByGeneSummary> result = new OpenCGAResult<>(time, Collections.emptyList(), knockoutByGeneSummaryList.size(),
                 knockoutByGeneSummaryList, numMatches);
-        cacheResults("geneSummary", studyStr, query, options, result);
+        cacheResults("geneSummary", studyStr, query, options, stopWatch, result);
         return result;
     }
 
@@ -1209,7 +1222,7 @@ public class RgaManager implements AutoCloseable {
             result.setEvents(resourceIds.getEvents());
         }
 
-        cacheResults("variantSummary", studyStr, query, options, result);
+        cacheResults("variantSummary", studyStr, query, options, stopWatch, result);
         return result;
     }
 
@@ -2013,7 +2026,8 @@ public class RgaManager implements AutoCloseable {
         return DigestUtils.sha256Hex(StringUtils.join(queryList, ";"));
     }
 
-    private void cacheResults(String method, String studyStr, Query query, QueryOptions options, OpenCGAResult<?> result) {
+    private void cacheResults(String method, String studyStr, Query query, QueryOptions options, StopWatch stopWatch,
+                              OpenCGAResult<?> result) {
         if (!storageConfiguration.getRga().isCache()) {
             // Cache is disabled
             return;
@@ -2023,6 +2037,10 @@ public class RgaManager implements AutoCloseable {
             // Cache is already full
             logger.warn("Query not cached. Cache is already full (size: {}).", CACHE_SIZE);
             return;
+        }
+
+        if (stopWatch.getTime(TimeUnit.SECONDS) < 4) {
+            logger.debug("Query not cached. It took less than 4 seconds: {} ms.", stopWatch.getTime(TimeUnit.MILLISECONDS));
         }
 
         String cacheKey = generateCacheKey(method, studyStr, query, options);
