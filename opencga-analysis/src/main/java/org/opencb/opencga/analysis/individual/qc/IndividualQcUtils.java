@@ -356,7 +356,7 @@ public class IndividualQcUtils {
 
     private static void pruneVariants(String basename, AbstractMap.SimpleEntry<String, String> outputBinding) throws ToolException {
         // Variant pruning using PLINK in docker
-        String plinkParams = "plink --tfile /data/output/" + basename + " --indep 50 5 2 --out /data/output/" + basename;
+        String plinkParams = "plink1.9 --tfile /data/output/" + basename + " --indep 50 5 2 --out /data/output/" + basename;
         try {
             PlinkWrapperAnalysisExecutor plinkExecutor = new PlinkWrapperAnalysisExecutor();
             DockerUtils.run(plinkExecutor.getDockerImageName(), null, outputBinding, plinkParams, null);
