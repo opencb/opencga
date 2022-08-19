@@ -86,8 +86,8 @@ public class VariantQuery extends Query {
         return getString(VariantQueryParam.INCLUDE_STUDY.key());
     }
 
-    public VariantQuery sample(String value) {
-        put(VariantQueryParam.SAMPLE.key(), value);
+    public VariantQuery sample(String... value) {
+        put(VariantQueryParam.SAMPLE.key(), Arrays.asList(value));
         return this;
     }
     public String sample() {
@@ -161,7 +161,7 @@ public class VariantQuery extends Query {
         return getString(VariantQueryParam.INCLUDE_SAMPLE_DATA.key());
     }
 
-    public VariantQuery includeGenotype(String value) {
+    public VariantQuery includeGenotype(Boolean value) {
         put(VariantQueryParam.INCLUDE_GENOTYPE.key(), value);
         return this;
     }
@@ -311,6 +311,11 @@ public class VariantQuery extends Query {
     }
     public String xref() {
         return getString(VariantQueryParam.ANNOT_XREF.key());
+    }
+
+    public VariantQuery gene(String... value) {
+        put(VariantQueryParam.GENE.key(), Arrays.asList(value));
+        return this;
     }
 
     public VariantQuery gene(String value) {
@@ -549,5 +554,8 @@ public class VariantQuery extends Query {
         return getString(VariantQueryParam.RELEASE.key());
     }
 
-
+    @Override
+    public VariantQuery append(String key, Object value) {
+        return (VariantQuery) super.append(key, value);
+    }
 }
