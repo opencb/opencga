@@ -46,8 +46,13 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.CancerTieringCommandOptions.CANCER_TIERING_INTERPRETATION_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.ExomiserInterpretationCommandOptions.EXOMISER_INTERPRETATION_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.RgaAuxiliarSecondaryIndexCommandOptions.RGA_AUX_INDEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.RgaSecondaryIndexCommandOptions.RGA_INDEX_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.TeamCommandOptions.TEAM_INTERPRETATION_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.TieringCommandOptions.TIERING_INTERPRETATION_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.ZettaCommandOptions.ZETTA_INTERPRETATION_RUN_COMMAND;
 
 /**
  * Created on 01/04/20
@@ -70,16 +75,16 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         String subCommandString = getParsedSubCommand(clinicalCommandOptions.jCommander);
         configure();
         switch (subCommandString) {
-            case "run-interpreter-tiering":
+            case TIERING_INTERPRETATION_RUN_COMMAND:
                 tiering();
                 break;
-            case "run-interpreter-team":
+            case TEAM_INTERPRETATION_RUN_COMMAND:
                 team();
                 break;
-            case "run-interpreter-zetta":
+            case ZETTA_INTERPRETATION_RUN_COMMAND:
                 zetta();
                 break;
-            case "run-interpreter-cancer-tiering":
+            case CANCER_TIERING_INTERPRETATION_RUN_COMMAND:
                 cancerTiering();
                 break;
             case RGA_INDEX_RUN_COMMAND:
@@ -88,7 +93,7 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
             case RGA_AUX_INDEX_RUN_COMMAND:
                 auxRgaIndex();
                 break;
-            case "run-interpreter-exomiser":
+            case EXOMISER_INTERPRETATION_RUN_COMMAND:
                 exomiserInterpretation();
                 break;
             default:
