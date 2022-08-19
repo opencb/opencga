@@ -77,13 +77,9 @@ public class RgaManager implements AutoCloseable {
 
     private static final int KNOCKOUT_INSERT_BATCH_SIZE = 25;
 
-    private static Map<String, OpenCGAResult<?>> cacheMap;
+    private Map<String, OpenCGAResult<?>> cacheMap;
     private final int CACHE_SIZE;
     private static final int DEFAULT_CACHE_SIZE = 1000;
-
-    static {
-        cacheMap = new ConcurrentHashMap<>();
-    }
 
 
     public RgaManager(CatalogManager catalogManager, VariantStorageManager variantStorageManager) {
@@ -98,6 +94,8 @@ public class RgaManager implements AutoCloseable {
         this.variantConverter = new VariantRgaConverter();
 
         this.logger = LoggerFactory.getLogger(getClass());
+
+        this.cacheMap = new ConcurrentHashMap<>();
         this.CACHE_SIZE = storageConfiguration.getRga().getCacheSize() > 0
                 ? storageConfiguration.getRga().getCacheSize()
                 : DEFAULT_CACHE_SIZE;
@@ -116,6 +114,7 @@ public class RgaManager implements AutoCloseable {
 
         this.logger = LoggerFactory.getLogger(getClass());
 
+        this.cacheMap = new ConcurrentHashMap<>();
         this.CACHE_SIZE = storageConfiguration.getRga().getCacheSize() > 0
                 ? storageConfiguration.getRga().getCacheSize()
                 : DEFAULT_CACHE_SIZE;
