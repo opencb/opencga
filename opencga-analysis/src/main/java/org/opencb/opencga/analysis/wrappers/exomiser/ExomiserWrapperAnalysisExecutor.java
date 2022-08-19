@@ -109,7 +109,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         logger.info("{}: Exomiser exports variants using the query: {}", ID, query.toJson());
         try {
             getVariantStorageManager().exportData(vcfPath.toString(), VariantWriterFactory.VariantOutputFormat.VCF_GZ, null, query,
-                    QueryOptions.empty(), getToken());
+                    new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(VariantField.ID, VariantField.STUDIES_SAMPLES)), getToken());
         } catch (StorageEngineException | CatalogException e) {
             throw new ToolException(e);
         }
