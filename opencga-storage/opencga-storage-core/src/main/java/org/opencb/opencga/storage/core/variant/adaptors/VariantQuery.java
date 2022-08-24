@@ -7,8 +7,15 @@ import org.opencb.opencga.core.api.ParamConstants;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public class VariantQuery extends Query {
+    public VariantQuery() {
+    }
+
+    public VariantQuery(Map<String, Object> map) {
+        super(map);
+    }
 
     public VariantQuery id(String value) {
         put(VariantQueryParam.ID.key(), value);
@@ -86,8 +93,8 @@ public class VariantQuery extends Query {
         return getString(VariantQueryParam.INCLUDE_STUDY.key());
     }
 
-    public VariantQuery sample(String value) {
-        put(VariantQueryParam.SAMPLE.key(), value);
+    public VariantQuery sample(String... value) {
+        put(VariantQueryParam.SAMPLE.key(), Arrays.asList(value));
         return this;
     }
     public String sample() {
@@ -161,7 +168,7 @@ public class VariantQuery extends Query {
         return getString(VariantQueryParam.INCLUDE_SAMPLE_DATA.key());
     }
 
-    public VariantQuery includeGenotype(String value) {
+    public VariantQuery includeGenotype(Boolean value) {
         put(VariantQueryParam.INCLUDE_GENOTYPE.key(), value);
         return this;
     }
@@ -311,6 +318,11 @@ public class VariantQuery extends Query {
     }
     public String xref() {
         return getString(VariantQueryParam.ANNOT_XREF.key());
+    }
+
+    public VariantQuery gene(String... value) {
+        put(VariantQueryParam.GENE.key(), Arrays.asList(value));
+        return this;
     }
 
     public VariantQuery gene(String value) {
@@ -549,5 +561,13 @@ public class VariantQuery extends Query {
         return getString(VariantQueryParam.RELEASE.key());
     }
 
+    @Override
+    public VariantQuery append(String key, Object value) {
+        return (VariantQuery) super.append(key, value);
+    }
 
+    @Override
+    public VariantQuery appendAll(Map<String, ?> m) {
+        return (VariantQuery) super.appendAll(m);
+    }
 }

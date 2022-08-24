@@ -51,10 +51,10 @@ import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.family.FamilyAclEntry;
+import org.opencb.opencga.core.models.family.FamilyPermissions;
 import org.opencb.opencga.core.models.family.FamilyStatus;
 import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -451,13 +451,14 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             }
 
             return endWrite(tmpStartTime, 1, 1, events);
-        }, (MongoDBIterator<Document> iterator) -> updateReferencesAfterFamilyVersionIncrement(clientSession, iterator));
+        }, Arrays.asList(QueryParams.MEMBERS_ID.key(), QueryParams.MEMBERS_SAMPLES_ID.key()),
+                this::iterator, (DBIterator<Family> iterator) -> updateReferencesAfterFamilyVersionIncrement(clientSession, iterator));
     }
 
-    private void updateReferencesAfterFamilyVersionIncrement(ClientSession clientSession, MongoDBIterator<Document> iterator)
+    private void updateReferencesAfterFamilyVersionIncrement(ClientSession clientSession, DBIterator<Family> iterator)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         while (iterator.hasNext()) {
-            Family f = familyConverter.convertToDataModelType(iterator.next());
+            Family f = iterator.next();
             dbAdaptorFactory.getClinicalAnalysisDBAdaptor().updateClinicalAnalysisFamilyReferences(clientSession, f);
         }
     }
@@ -530,7 +531,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                         throw new CatalogDBException("Family '" + family.getId() + "' could not be updated to the latest member versions");
                     }
                     return result;
-                }, (MongoDBIterator<Document> fIterator) -> updateReferencesAfterFamilyVersionIncrement(clientSession, fIterator));
+                }, Arrays.asList(QueryParams.MEMBERS_ID.key(), QueryParams.MEMBERS_SAMPLES_ID.key()),
+                        this::iterator,
+                        (DBIterator<Family> fIterator) -> updateReferencesAfterFamilyVersionIncrement(clientSession, fIterator));
             }
         }
     }
@@ -589,7 +592,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                         versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
                             Bson update = Updates.set(QueryParams.ROLES.key(), getMongoDBDocument(roles, QueryParams.ROLES.key()));
                             return familyCollection.update(clientSession, bsonQuery, update, QueryOptions.empty());
-                        }, (MongoDBIterator<Document> fIterator) -> updateReferencesAfterFamilyVersionIncrement(clientSession, fIterator));
+                        }, Arrays.asList(QueryParams.MEMBERS_ID.key(), QueryParams.MEMBERS_SAMPLES_ID.key()),
+                                this::iterator,
+                                (DBIterator<Family> fIterator) -> updateReferencesAfterFamilyVersionIncrement(clientSession, fIterator));
                     }
                 }
             }
@@ -869,7 +874,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
         UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
-                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(), FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
+                StudyPermissions.Permissions.VIEW_FAMILY_ANNOTATIONS.name(), FamilyPermissions.VIEW_ANNOTATIONS.name());
 
         return new FamilyCatalogMongoDBIterator<>(mongoCursor, null, familyConverter, iteratorFilter,
                 dbAdaptorFactory.getCatalogIndividualDBAdaptor(), studyUid, user, options);
@@ -890,7 +895,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
         UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
-                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(), FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
+                StudyPermissions.Permissions.VIEW_FAMILY_ANNOTATIONS.name(), FamilyPermissions.VIEW_ANNOTATIONS.name());
 
         return new FamilyCatalogMongoDBIterator(mongoCursor, clientSession, null, iteratorFilter,
                 dbAdaptorFactory.getCatalogIndividualDBAdaptor(), studyUid, user, options);
@@ -1082,9 +1087,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             } else {
                 if (containsAnnotationQuery(query)) {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                            FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.FAMILY, configuration));
+                            FamilyPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.FAMILY, configuration));
                 } else {
-                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FamilyAclEntry.FamilyPermissions.VIEW.name(),
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FamilyPermissions.VIEW.name(),
                             Enums.Resource.FAMILY, configuration));
                 }
             }

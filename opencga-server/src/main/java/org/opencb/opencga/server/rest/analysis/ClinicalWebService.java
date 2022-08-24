@@ -17,6 +17,7 @@
 package org.opencb.opencga.server.rest.analysis;
 
 import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -58,6 +59,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.SAVED_FILTER_DESCR;
+import static org.opencb.opencga.core.api.ParamConstants.INCLUDE_INTERPRETATION;
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 import static org.opencb.opencga.server.rest.analysis.VariantWebService.getVariantQuery;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -89,7 +91,7 @@ public class ClinicalWebService extends AnalysisWebService {
                 rgaManager = rgaManagerAtomicRef.get();
                 if (rgaManager == null) {
                     VariantStorageManager variantStorageManager = getVariantStorageManager();
-                    rgaManager = new RgaManager(catalogManager, variantStorageManager, storageEngineFactory);
+                    rgaManager = new RgaManager(catalogManager, variantStorageManager);
                     rgaManagerAtomicRef.set(rgaManager);
                 }
             }
@@ -369,7 +371,7 @@ public class ClinicalWebService extends AnalysisWebService {
     @GET
     @Path("/{clinicalAnalyses}/acl")
     @ApiOperation(value = "Returns the acl of the clinical analyses. If member is provided, it will only return the acl for the member.",
-            response = Map.class)
+            response = AclEntryList.class)
     public Response getAcls(
             @ApiParam(value = ParamConstants.CLINICAL_ANALYSES_DESCRIPTION, required = true)
             @PathParam("clinicalAnalyses") String clinicalAnalysis,
@@ -387,7 +389,7 @@ public class ClinicalWebService extends AnalysisWebService {
 
     @POST
     @Path("/acl/{members}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
+    @ApiOperation(value = "Update the set of permissions granted for the member", response = AclEntryList.class)
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group IDs", required = true) @PathParam("members") String memberId,
@@ -1059,6 +1061,8 @@ public class ClinicalWebService extends AnalysisWebService {
 
             @ApiImplicitParam(name = "savedFilter", value = SAVED_FILTER_DESCR, dataType = "string", paramType = "query"),
 
+            // Interpretation ID to include fields related to
+            @ApiImplicitParam(name = ParamConstants.INCLUDE_INTERPRETATION, value = ParamConstants.INCLUDE_INTERPRETATION_DESCRIPTION, dataType = "string", paramType = "query"),
             // Variant filters
             @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
@@ -1127,6 +1131,14 @@ public class ClinicalWebService extends AnalysisWebService {
         return run(() -> {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
+
+            // Because of the parameter includeInterpretation is not a standard variant query parameter, it is added to the query
+            // after parsing the query parameters
+            if (uriInfo.getQueryParameters().containsKey(INCLUDE_INTERPRETATION)) {
+                String includeInterpretation = uriInfo.getQueryParameters().get(INCLUDE_INTERPRETATION).get(0);
+                logger.info("Adding the includeInterpretation ({}) to the variant query", includeInterpretation);
+                query.put(INCLUDE_INTERPRETATION, includeInterpretation);
+            }
 
             return clinicalInterpretationManager.get(query, queryOptions, token);
         });

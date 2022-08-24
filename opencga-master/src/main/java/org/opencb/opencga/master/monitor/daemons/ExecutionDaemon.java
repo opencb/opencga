@@ -26,7 +26,6 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
@@ -89,13 +88,15 @@ import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Execution;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.file.FileAclParams;
+import org.opencb.opencga.core.models.file.FilePermissions;
 import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
@@ -193,7 +194,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(JobIndexTask.ID, "jobs secondary-index");
 
             put("alignment-index-run", "alignment index-run");
-            put("alignment-coverage-run", "alignment coverage-run");
+            put("coverage-index-run", "alignment coverage-index-run");
             put("alignment-stats-run", "alignment stats-run");
             put(BwaWrapperAnalysis.ID, "alignment " + BwaWrapperAnalysis.ID + "-run");
             put(SamtoolsWrapperAnalysis.ID, "alignment " + SamtoolsWrapperAnalysis.ID + "-run");
@@ -483,7 +484,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             tool = new ToolFactory().getTool(job.getTool().getId());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
-            return abortJob(job, "Tool " + job.getTool().getId() + " not found");
+            return abortJob(job, "Tool " + job.getTool().getId() + " not found", e);
         }
 
         try {
@@ -518,8 +519,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         try {
             userToken = catalogManager.getUserManager().getNonExpiringToken(job.getUserId(), token);
         } catch (CatalogException e) {
-            logger.error(e.getMessage(), e);
-            return abortJob(job, "Internal error. Could not obtain token for user '" + job.getUserId() + "'");
+            return abortJob(job, "Internal error. Could not obtain token for user '" + job.getUserId() + "'", e);
         }
 
         if (CollectionUtils.isNotEmpty(job.getDependsOn())) {
@@ -541,15 +541,14 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 updateParams.setOutDir(getValidInternalOutDir(job.getStudy().getId(), job, outDirPathParam, userToken));
             } catch (CatalogException e) {
                 logger.error("Cannot create output directory. {}", e.getMessage(), e);
-                return abortJob(job, "Cannot create output directory. " + e.getMessage());
+                return abortJob(job, "Cannot create output directory.", e);
             }
         } else {
             try {
                 // JOBS/user/job_id/
                 updateParams.setOutDir(getValidDefaultOutDir(job));
             } catch (CatalogException e) {
-                logger.error("Cannot create output directory. {}", e.getMessage(), e);
-                return abortJob(job, "Cannot create output directory. " + e.getMessage());
+                return abortJob(job, "Cannot create output directory.", e);
             }
         }
 
@@ -582,8 +581,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             logger.info("Queue job '{}' on queue '{}'", job.getId(), queue);
             batchExecutor.execute(job.getId(), queue, authenticatedCommandLine, stdout, stderr);
         } catch (Exception e) {
-            logger.error("Error executing job {}.", job.getId(), e);
-            return abortJob(job, "Error executing job. " + e.getMessage());
+            return abortJob(job, "Error executing job.", e);
         }
 
         job.getInternal().setStatus(updateParams.getInternal().getStatus());
@@ -727,13 +725,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
 
         // Check if the user already has permissions set in his folder
-        OpenCGAResult<Map<String, List<String>>> result = fileManager.getAcls(job.getStudy().getId(),
+        OpenCGAResult<AclEntryList<FilePermissions>> result = fileManager.getAcls(job.getStudy().getId(),
                 Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(), true, token);
-        if (result.getNumResults() == 0 || result.first().isEmpty() || ListUtils.isEmpty(result.first().get(job.getUserId()))) {
+        if (result.getNumResults() == 0 || result.first().isEmpty() || CollectionUtils.isEmpty(result.first().get(0).getPermissions())) {
             // Add permissions to do anything under that path to the user launching the job
-            String allFilePermissions = EnumSet.allOf(FileAclEntry.FilePermissions.class)
+            String allFilePermissions = EnumSet.allOf(FilePermissions.class)
                     .stream()
-                    .map(FileAclEntry.FilePermissions::toString)
+                    .map(FilePermissions::toString)
                     .collect(Collectors.joining(","));
             fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(),
                     new FileAclParams(null, allFilePermissions), SET, token);
@@ -871,8 +869,15 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private int abortJob(Job job, Exception e) {
-        logger.error(e.getMessage(), e);
-        return abortJob(job, e.getMessage());
+        return abortJob(job, e.getMessage(), e);
+    }
+
+    private int abortJob(Job job, String message, Exception e) {
+        logger.error(message, e);
+        if (!message.endsWith(" ")) {
+            message += " ";
+        }
+        return abortJob(job, message + ExceptionUtils.prettyExceptionMessage(e));
     }
 
     private int abortJob(Job job, String description) {

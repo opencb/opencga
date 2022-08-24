@@ -133,6 +133,16 @@ public class ParentCliOptionsParser extends CliOptionsParser {
                 }
             }
         }
+        System.err.println();
+        PrintUtils.println(PrintUtils.format("Administrator commands:", PrintUtils.Color.GREEN));
+        String[] superuser = {"admin"};
+        for (int i = 0; i < superuser.length; i++) {
+            for (String command : jCommander.getCommands().keySet()) {
+                if (command.equals(superuser[i])) {
+                    PrintUtils.printCommandHelpFormattedString(command, jCommander.getCommandDescription(command));
+                }
+            }
+        }
 
         System.err.println();
         if (!OpencgaMain.isShellMode()) {

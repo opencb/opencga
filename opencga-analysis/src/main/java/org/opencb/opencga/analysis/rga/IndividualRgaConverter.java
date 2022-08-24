@@ -171,7 +171,7 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
         return result;
     }
 
-    private List<RgaDataModel> convertToStorageType(KnockoutByIndividual knockoutByIndividual)
+    public List<RgaDataModel> convertToStorageType(KnockoutByIndividual knockoutByIndividual)
             throws RgaException, JsonProcessingException {
         if (StringUtils.isEmpty(knockoutByIndividual.getId())) {
             throw new RgaException("Missing mandatory field 'id'");

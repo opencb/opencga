@@ -461,7 +461,9 @@ public class ParamConstants {
     public static final String INTERPRETATION_PRIMARY_FINDINGS_IDS_DESCRIPTION = "Interpretation primary findings";
     public static final String INTERPRETATION_SECONDARY_FINDINGS_IDS_DESCRIPTION = "Interpretation secondary findings";
     public static final String INTERPRETATION_CREATION_DATE_DESCRIPTION = "Interpretation " + CREATION_DATE_DESCRIPTION;
-
+    public static final String INCLUDE_INTERPRETATION = "includeInterpretation";
+    public static final String INCLUDE_INTERPRETATION_DESCRIPTION = "Interpretation ID to include the fields related to this"
+        + " interpretation";
     // ---------------------------------------------
     public static final String INTERPRETATION_MODIFICATION_DATE_DESCRIPTION = "Interpretation " + MODIFICATION_DATE_DESCRIPTION;
     public static final String INTERPRETATION_STATUS_DESCRIPTION = STATUS_DESCRIPTION;
@@ -629,7 +631,7 @@ public class ParamConstants {
     public static final String COVERAGE_WINDOW_SIZE_DESCRIPTION = "Window size for the region coverage (if a coverage range is provided, " +
             "window size must be 1)";
     public static final String COVERAGE_WINDOW_SIZE_PARAM = "windowSize";
-    public static final String COVERAGE_WINDOW_SIZE_DEFAULT = "1";
+    public static final String COVERAGE_WINDOW_SIZE_DEFAULT = "50";
     public static final String ALIGNMENT_COVERAGE_STATS_DESCRIPTION = "Compute coverage stats per transcript for a list of genes.";
     public static final String LOW_COVERAGE_REGION_THRESHOLD_DESCRIPTION = "Only regions whose coverage depth is under this threshold " +
             "will be reported.";

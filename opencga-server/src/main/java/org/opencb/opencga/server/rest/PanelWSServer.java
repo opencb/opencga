@@ -25,6 +25,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.panel.*;
@@ -35,7 +36,6 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 
@@ -253,7 +253,7 @@ public class PanelWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{panels}/acl")
-    @ApiOperation(value = "Returns the acl of the panels. If member is provided, it will only return the acl for the member.", response = Map.class)
+    @ApiOperation(value = "Returns the acl of the panels. If member is provided, it will only return the acl for the member.", response = AclEntryList.class)
     public Response getAcls(
             @ApiParam(value = ParamConstants.PANELS_DESCRIPTION, required = true) @PathParam("panels")
                     String sampleIdsStr,
@@ -271,7 +271,7 @@ public class PanelWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/acl/{members}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
+    @ApiOperation(value = "Update the set of permissions granted for the member", response = AclEntryList.class)
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,

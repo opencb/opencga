@@ -35,9 +35,11 @@ import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
@@ -58,6 +60,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
@@ -105,9 +108,9 @@ public class VariantCatalogQueryUtilsTest {
     public static void setUp() throws Exception {
         catalog = catalogManagerExternalResource.getCatalogManager();
 
-        User user = catalog.getUserManager().create("user", "user", "my@email.org", "1234", "ACME", 1000L, Account.AccountType.FULL, null).first();
+        User user = catalog.getUserManager().create("user", "user", "my@email.org", TestParamConstants.PASSWORD, "ACME", 1000L, Account.AccountType.FULL, null).first();
 
-        sessionId = catalog.getUserManager().login("user", "1234").getToken();
+        sessionId = catalog.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
         String assembly = "GRCh38";
         catalog.getProjectManager().create("p1", "p1", "", "hsapiens", "Homo Sapiens", assembly, null, sessionId);
         catalog.getStudyManager().create("p1", "s1", "s1", "s1", null, null, null, null, null, null, sessionId);
@@ -120,13 +123,13 @@ public class VariantCatalogQueryUtilsTest {
         Phenotype phenotype = new Phenotype("phenotype", "phenotype", "");
         Disorder disorder = new Disorder("disorder", "disorder", "", "", Collections.singletonList(phenotype), Collections.emptyMap());
         individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual1", "individual1", new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
-                Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), null, sessionId).first());
+                Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first());
         individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual2", "individual2", new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
-                Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), null, sessionId).first());
+                Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first());
         individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual3", "individual3", new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
-                Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setDisorders(Collections.singletonList(disorder)), null, sessionId).first());
+                Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setDisorders(Collections.singletonList(disorder)), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first());
         individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual4", "individual4", new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
-                Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), null, sessionId).first());
+                Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first());
         catalog.getFamilyManager().create(
                 "s1",
                 new Family("f1", "f1", Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 3, null, null),
@@ -166,6 +169,10 @@ public class VariantCatalogQueryUtilsTest {
                                 .setName("CTBP2P1")
                                 .setModeOfInheritance(ClinicalProperty.ModeOfInheritance.AUTOSOMAL_DOMINANT)
                                 .setConfidence(ClinicalProperty.Confidence.HIGH),
+                        (GenePanel) new GenePanel()
+                                .setName("BEX2")
+                                .setModeOfInheritance(ClinicalProperty.ModeOfInheritance.AUTOSOMAL_DOMINANT)
+                                .setCancer(new CancerPanel().setRole(ClinicalProperty.RoleInCancer.UNKNOWN)),
                         new GenePanel()
                                 .setName("ADSL")
                 ));
@@ -196,7 +203,10 @@ public class VariantCatalogQueryUtilsTest {
                                 new DiseasePanel.Coordinate(assembly, "1:1000-2000", null)))),
                         ((DiseasePanel.RegionPanel) new DiseasePanel.RegionPanel().setCoordinates(Arrays.asList(
                                 new DiseasePanel.Coordinate(assembly,
-                                        new Region(cadm1.toString()).setEnd(cadm1.getEnd() - 3000).toString(), null))))
+                                        new Region(cadm1.toString()).setEnd(cadm1.getEnd() - 3000).toString(), null)))),
+                        ((DiseasePanel.RegionPanel) new DiseasePanel.RegionPanel().setCoordinates(Arrays.asList(
+                                new DiseasePanel.Coordinate(assembly,
+                                        "X:1-1000", null))))
                 ))
         ;
         catalog.getPanelManager().create("s1", myPanelWithRegions, null, sessionId);
@@ -205,7 +215,7 @@ public class VariantCatalogQueryUtilsTest {
     }
 
     public static void createSample(String name, String individualName) throws CatalogException {
-        samples.add(catalog.getSampleManager().create("s1", new Sample().setId(name).setIndividualId(individualName), null, sessionId).first());
+        samples.add(catalog.getSampleManager().create("s1", new Sample().setId(name).setIndividualId(individualName), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first());
     }
 
     public static File createFile(String path) throws CatalogException {
@@ -401,6 +411,79 @@ public class VariantCatalogQueryUtilsTest {
     }
 
     @Test
+    public void queryByFamilySegregationChromosomal() throws Exception {
+        queryBySegregationChromosomal(new Query()
+                .append(FAMILY.key(), "f1")
+                .append(FAMILY_SEGREGATION.key(), "X_LINKED_RECESSIVE"));
+    }
+
+    @Test
+    public void queryBySampleSegregationChromosomal() throws Exception {
+        queryBySegregationChromosomal(new Query(SAMPLE.key(), "sample3:X_LINKED_RECESSIVE"));
+    }
+
+    public void queryBySegregationChromosomal(Query baseQuery) throws Exception {
+        Query query = queryUtils.parseQuery(new VariantQuery(baseQuery)
+                .study("s1")
+                .region("X:1-1000")
+                .id("X:1:C:T")
+                .gene("BEX2"), null, cellBaseUtils, sessionId);
+        // Region untouched
+        assertEquals("X:1-1000", query.getString(REGION.key()));
+
+        query = queryUtils.parseQuery(new VariantQuery(baseQuery)
+                .study("s1")
+                .id("X:1:C:T"), null, cellBaseUtils, sessionId);
+        // Region untouched, as filtering by variant IDs
+        assertEquals(null, query.get(REGION.key()));
+
+        query = queryUtils.parseQuery(new VariantQuery(baseQuery)
+                .study("s1")
+                .append(PANEL.key(), myPanel.getId()), null, cellBaseUtils, sessionId);
+        // Region untouched, as filtering by gene
+        assertEquals(null, query.get(REGION.key()));
+        assertEquals("BEX2", query.getString(GENE.key()));
+
+        query = queryUtils.parseQuery(new VariantQuery(baseQuery)
+                .study("s1")
+                .append(PANEL.key(), myPanelWithRegions.getId()), null, cellBaseUtils, sessionId);
+        // Region untouched, as filtering by gene
+        System.out.println("query = " + query.toJson());
+        assertEquals("X:1-1000", query.getString(REGION.key()));
+        assertEquals("", query.getString(GENE.key()));
+    }
+
+    @Test
+    public void queryByFamilySegregationChromosomalWrongRegion() throws Exception {
+        thrown.expectMessage("Unsupported combination");
+        queryUtils.parseQuery(new VariantQuery()
+                .study("s1")
+                .region("13:2314-35546")
+                .append(FAMILY.key(), "f1")
+                .append(FAMILY_SEGREGATION.key(), "X_LINKED_RECESSIVE"), null, sessionId);
+    }
+
+    @Test
+    public void queryByFamilySegregationChromosomalWrongVariant() throws Exception {
+        thrown.expectMessage("Unsupported combination");
+        queryUtils.parseQuery(new VariantQuery()
+                .study("s1")
+                .id("13:2314:A:C")
+                .append(FAMILY.key(), "f1")
+                .append(FAMILY_SEGREGATION.key(), "X_LINKED_RECESSIVE"), null, sessionId);
+    }
+
+    @Test
+    public void queryByFamilySegregationChromosomalWrongGene() throws Exception {
+        thrown.expectMessage("Unsupported combination");
+        queryUtils.parseQuery(new VariantQuery()
+                .study("s1")
+                .gene("BRCA2", "BEX2")
+                .append(FAMILY.key(), "f1")
+                .append(FAMILY_SEGREGATION.key(), "X_LINKED_RECESSIVE"), null, cellBaseUtils, sessionId);
+    }
+
+    @Test
     public void queryBySampleSegregation() throws Exception {
         Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAMPLE.key(), "sample3:biallelic"), null, sessionId);
         assertEquals("sample1:0/1,0|1,1|0;sample2:0/1,0|1,1|0;sample3:1/1,1|1", query.getString(GENOTYPE.key()));
@@ -490,9 +573,9 @@ public class VariantCatalogQueryUtilsTest {
     @Test
     public void queryByPanel() throws Exception {
         Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel"), null, cellBaseUtils, sessionId);
-        assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL"), set(query, GENE));
+        assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL", "BEX2"), set(query, GENE));
         query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel").append(GENE.key(), "ASDF"), null, sessionId);
-        assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL", "ASDF"), set(query, GENE));
+        assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL", "ASDF", "BEX2"), set(query, GENE));
         assertEquals(true, query.getBoolean(SKIP_MISSING_GENES, false));
         assertNull(query.get(ANNOT_GENE_REGIONS.key()));
     }
@@ -700,7 +783,7 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void testPanels() {
-        assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL"),
+        assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL", "BEX2"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(), myPanel));
         assertEquals(set("BRCA2", "CTBP2P1", "ADSL"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_ROLE_IN_CANCER.key(), "TUMOR_SUPPRESSOR_GENE"), myPanel));

@@ -27,10 +27,7 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
-import org.opencb.opencga.core.models.study.Variable;
-import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.core.models.study.*;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -800,7 +797,7 @@ public class AnnotationUtils {
                     if (authorizationManager != null && !confidentialPermissionChecked && variableSet.isConfidential()) {
                         // We only check the confidential permission if needed once
                         authorizationManager.checkStudyPermission(study.getUid(), user,
-                                StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS);
+                                StudyPermissions.Permissions.CONFIDENTIAL_VARIABLE_SET_ACCESS);
                         confidentialPermissionChecked = true;
                     }
                     annotationList.add(Constants.VARIABLE_SET + operator + variableSet.getUid());
@@ -862,7 +859,7 @@ public class AnnotationUtils {
                         .isConfidential()) {
                     // We only check the confidential permission if needed once
                     authorizationManager.checkStudyPermission(study.getUid(), user,
-                            StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS);
+                            StudyPermissions.Permissions.CONFIDENTIAL_VARIABLE_SET_ACCESS);
                     confidentialPermissionChecked = true;
                 }
 

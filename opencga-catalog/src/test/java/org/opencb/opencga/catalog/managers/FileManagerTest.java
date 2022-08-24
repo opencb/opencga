@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -236,6 +237,19 @@ public class FileManagerTest extends AbstractManagerTest {
             assertEquals(2, sample.getFileIds().size());
             assertEquals(file.getId(), sample.getFileIds().get(1));
         }
+    }
+
+    @Test
+    public void createTxtFileNoExtensionTest() throws CatalogException {
+        String content = "This is my content";
+        FileCreateParams params = new FileCreateParams()
+                .setContent(content)
+                .setType(File.Type.FILE)
+                .setPath("/files/folder/file");
+
+        File file = fileManager.create(studyFqn, params, true, token).first();
+        FileContent fileContent = fileManager.head(studyFqn, file.getId(), 0, 1, token).first();
+        assertEquals(content, fileContent.getContent().trim());
     }
 
     @Test
@@ -643,6 +657,30 @@ public class FileManagerTest extends AbstractManagerTest {
         assertTrue(sampleNames.contains("sample4"));
 
         assertEquals(sampleIdNames, link.first().getInternal().getSampleMap());
+    }
+
+    @Test
+    public void testLinkFileWithDifferentSampleNamesFromVCFHeader() throws CatalogException, URISyntaxException {
+        URI uri = getClass().getResource("/biofiles/variant-test-sample-mapping.vcf").toURI();
+
+
+        FileLinkParams params = new FileLinkParams()
+                .setUri(uri.toString());
+        DataResult<File> link = fileManager.link(studyFqn, params, false, token);
+
+        assertEquals(3, link.first().getSampleIds().size());
+        assertEquals(Arrays.asList("sample_tumor", "sample_normal", "sample_other"), link.first().getSampleIds());
+        assertEquals(Arrays.asList("TUMOR", "NORMAL", "OTHER"), new ObjectMap(link.first().getAttributes()).getAsStringList("variantFileMetadata.attributes.originalSamples"));
+
+        Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), link.first().getSampleIds());
+        DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().search(studyFqn, query, QueryOptions.empty(), token);
+
+        assertEquals(3, sampleDataResult.getNumResults());
+        List<String> sampleNames = sampleDataResult.getResults().stream().map(Sample::getId).collect(Collectors.toList());
+        assertTrue(sampleNames.contains("sample_tumor"));
+        assertTrue(sampleNames.contains("sample_normal"));
+        assertTrue(sampleNames.contains("sample_other"));
+
     }
 
     @Test
@@ -2107,13 +2145,15 @@ public class FileManagerTest extends AbstractManagerTest {
                         .setContent("My content"),
                 true, token);
 
-        DataResult<Map<String, List<String>>> dataResult = fileManager.updateAcl(studyFqn, Arrays.asList("data/new/",
+        OpenCGAResult<AclEntryList<FilePermissions>> dataResult = fileManager.updateAcl(studyFqn, Arrays.asList("data/new/",
                 filePath.toString()), "user2", new FileAclParams(null, "VIEW"), ParamUtils.AclAction.SET, token);
 
         assertEquals(3, dataResult.getNumResults());
-        for (Map<String, List<String>> result : dataResult.getResults()) {
-            assertEquals(1, result.get("user2").size());
-            assertEquals(FileAclEntry.FilePermissions.VIEW.name(), result.get("user2").iterator().next());
+        for (AclEntryList<FilePermissions> result : dataResult.getResults()) {
+            assertEquals(1, result.size());
+            assertEquals("user2", result.get(0).getMember());
+            assertEquals(1, result.get(0).getPermissions().size());
+            assertTrue(result.get(0).getPermissions().contains(FilePermissions.VIEW));
         }
     }
 

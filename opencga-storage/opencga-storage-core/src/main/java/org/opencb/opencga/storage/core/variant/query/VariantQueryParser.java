@@ -234,17 +234,7 @@ public class VariantQueryParser {
         convertGoToGeneQuery(query, cellBaseUtils);
         convertExpressionToGeneQuery(query, cellBaseUtils);
 
-        ParsedVariantQuery.VariantQueryXref xrefs = parseXrefs(query);
-        List<String> allIds = new ArrayList<>(xrefs.getIds().size() + xrefs.getVariants().size());
-        allIds.addAll(xrefs.getIds());
-        for (Variant variant : xrefs.getVariants()) {
-            allIds.add(variant.toString());
-        }
-        query.put(ID.key(), allIds);
-        query.put(GENE.key(), xrefs.getGenes());
-        query.put(ANNOT_XREF.key(), xrefs.getOtherXrefs());
-        query.remove(ANNOT_CLINVAR.key());
-        query.remove(ANNOT_COSMIC.key());
+        preProcessXrefs(query);
 
         if (VariantQueryUtils.isValidParam(query, TYPE)) {
             Set<VariantType> types = new HashSet<>();
@@ -761,6 +751,33 @@ public class VariantQueryParser {
         return genotypes;
     }
 
+    public static ParsedVariantQuery.VariantQueryXref preProcessXrefs(Query query) {
+        ParsedVariantQuery.VariantQueryXref xrefs = parseXrefs(query);
+        List<String> allIds = new ArrayList<>(xrefs.getIds().size() + xrefs.getVariants().size());
+        allIds.addAll(xrefs.getIds());
+        for (Variant variant : xrefs.getVariants()) {
+            allIds.add(variant.toString());
+        }
+        if (allIds.isEmpty()) {
+            query.remove(ID.key());
+        } else {
+            query.put(ID.key(), allIds);
+        }
+        if (xrefs.getGenes().isEmpty()) {
+            query.remove(GENE.key());
+        } else {
+            query.put(GENE.key(), xrefs.getGenes());
+        }
+        if (xrefs.getOtherXrefs().isEmpty()) {
+            query.remove(ANNOT_XREF.key());
+        } else {
+            query.put(ANNOT_XREF.key(), xrefs.getOtherXrefs());
+        }
+        query.remove(ANNOT_CLINVAR.key());
+        query.remove(ANNOT_COSMIC.key());
+        return xrefs;
+    }
+
     /**
      * Parses XREFS related filters, and sorts in different lists.
      *
@@ -814,6 +831,12 @@ public class VariantQueryParser {
         xrefs.getOtherXrefs().addAll(query.getAsStringList(ANNOT_CLINVAR.key(), OR));
 
         return xrefs;
+    }
+
+    public static ParsedQuery<KeyOpValue<String, Float>> parseFreqFilter(Query query, QueryParam queryParam) {
+        return VariantQueryUtils.splitValue(query, queryParam)
+                .map(VariantQueryUtils::parseKeyOpValue)
+                .map(kov -> new KeyOpValue<>(kov.getKey(), kov.getOp(), Float.valueOf(kov.getValue())));
     }
 
     @Deprecated

@@ -5,6 +5,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
+import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
@@ -25,12 +26,13 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 @Parameters(commandNames = {"clinical"}, commandDescription = "Clinical analysis commands")
 public class ClinicalCommandOptions {
 
-    public TieringCommandOptions tieringCommandOptions;
-    public TeamCommandOptions teamCommandOptions;
-    public ZettaCommandOptions zettaCommandOptions;
-    public CancerTieringCommandOptions cancerTieringCommandOptions;
-    public RgaSecondaryIndexCommandOptions rgaSecondaryIndexCommandOptions;
-    public RgaAuxiliarSecondaryIndexCommandOptions rgaAuxiliarSecondaryIndexCommandOptions;
+    public final TieringCommandOptions tieringCommandOptions;
+    public final TeamCommandOptions teamCommandOptions;
+    public final ZettaCommandOptions zettaCommandOptions;
+    public final CancerTieringCommandOptions cancerTieringCommandOptions;
+    public final RgaSecondaryIndexCommandOptions rgaSecondaryIndexCommandOptions;
+    public final RgaAuxiliarSecondaryIndexCommandOptions rgaAuxiliarSecondaryIndexCommandOptions;
+    public final ExomiserInterpretationCommandOptions exomiserInterpretationCommandOptions;
 
     public JCommander jCommander;
     public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
@@ -44,17 +46,20 @@ public class ClinicalCommandOptions {
         internalJobOptions = new InternalCliOptionsParser.JobOptions();
         this.jCommander = jCommander;
 
-        tieringCommandOptions = new TieringCommandOptions();
-        teamCommandOptions = new TeamCommandOptions();
-        zettaCommandOptions = new ZettaCommandOptions();
-        cancerTieringCommandOptions = new CancerTieringCommandOptions();
-        rgaSecondaryIndexCommandOptions = new RgaSecondaryIndexCommandOptions();
-        rgaAuxiliarSecondaryIndexCommandOptions = new RgaAuxiliarSecondaryIndexCommandOptions();
+        this.tieringCommandOptions = new TieringCommandOptions();
+        this.teamCommandOptions = new TeamCommandOptions();
+        this.zettaCommandOptions = new ZettaCommandOptions();
+        this.cancerTieringCommandOptions = new CancerTieringCommandOptions();
+        this.rgaSecondaryIndexCommandOptions = new RgaSecondaryIndexCommandOptions();
+        this.rgaAuxiliarSecondaryIndexCommandOptions = new RgaAuxiliarSecondaryIndexCommandOptions();
+        this.exomiserInterpretationCommandOptions = new ExomiserInterpretationCommandOptions();
     }
 
-    @Parameters(commandNames = {"run-interpreter-tiering"}, commandDescription =
+    @Parameters(commandNames = {TieringCommandOptions.TIERING_INTERPRETATION_RUN_COMMAND}, commandDescription =
             TieringInterpretationAnalysis.DESCRIPTION)
     public class TieringCommandOptions extends GeneralCliOptions.StudyOption {
+
+        public static final String TIERING_INTERPRETATION_RUN_COMMAND = TieringInterpretationAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -82,8 +87,11 @@ public class ClinicalCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = {"run-interpreter-team"}, commandDescription = TeamInterpretationAnalysis.DESCRIPTION)
+    @Parameters(commandNames = {TeamCommandOptions.TEAM_INTERPRETATION_RUN_COMMAND},
+            commandDescription = TeamInterpretationAnalysis.DESCRIPTION)
     public class TeamCommandOptions extends GeneralCliOptions.StudyOption {
+
+        public static final String TEAM_INTERPRETATION_RUN_COMMAND = TeamInterpretationAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -111,8 +119,11 @@ public class ClinicalCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = {"run-interpreter-zetta"}, commandDescription = ZettaInterpretationAnalysis.DESCRIPTION)
+    @Parameters(commandNames = {ZettaCommandOptions.ZETTA_INTERPRETATION_RUN_COMMAND},
+            commandDescription = ZettaInterpretationAnalysis.DESCRIPTION)
     public class ZettaCommandOptions extends GeneralCliOptions.StudyOption {
+
+        public static final String ZETTA_INTERPRETATION_RUN_COMMAND = ZettaInterpretationAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -241,12 +252,15 @@ public class ClinicalCommandOptions {
 ////        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
 ////        public boolean includeUntieredVariants;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
+        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", arity = 1)
         public String outdir;
     }
 
-    @Parameters(commandNames = {""}, commandDescription = CancerTieringInterpretationAnalysis.DESCRIPTION)
+    @Parameters(commandNames =  {CancerTieringCommandOptions.CANCER_TIERING_INTERPRETATION_RUN_COMMAND},
+            commandDescription = CancerTieringInterpretationAnalysis.DESCRIPTION)
     public class CancerTieringCommandOptions extends GeneralCliOptions.StudyOption {
+
+        public static final String CANCER_TIERING_INTERPRETATION_RUN_COMMAND = CancerTieringInterpretationAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -264,7 +278,7 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--" + PRIMARY_INTERPRETATION_PARAM_NAME}, description = "Primary interpretation", arity = 0)
         public boolean primary;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
+        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", arity = 1)
         public String outdir;
     }
 
@@ -283,12 +297,12 @@ public class ClinicalCommandOptions {
                 required = true, arity = 1)
         public String file;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
+        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", arity = 1)
         public String outdir;
     }
 
-    @Parameters(commandNames = {RgaSecondaryIndexCommandOptions.RGA_INDEX_RUN_COMMAND}, commandDescription =
-            AuxiliarRgaAnalysis.DESCRIPTION)
+    @Parameters(commandNames = {RgaSecondaryIndexCommandOptions.RGA_INDEX_RUN_COMMAND},
+            commandDescription = AuxiliarRgaAnalysis.DESCRIPTION)
     public class RgaAuxiliarSecondaryIndexCommandOptions extends GeneralCliOptions.StudyOption {
 
         public static final String RGA_AUX_INDEX_RUN_COMMAND = AuxiliarRgaAnalysis.ID + "-run";
@@ -299,7 +313,26 @@ public class ClinicalCommandOptions {
         @ParametersDelegate
         public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
+        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", arity = 1)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = {ExomiserInterpretationCommandOptions.EXOMISER_INTERPRETATION_RUN_COMMAND},
+            commandDescription = ExomiserInterpretationAnalysis.DESCRIPTION)
+    public class ExomiserInterpretationCommandOptions extends GeneralCliOptions.StudyOption {
+
+        public static final String EXOMISER_INTERPRETATION_RUN_COMMAND = ExomiserInterpretationAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
+
+        @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical analysis", required = true, arity = 1)
+        public String clinicalAnalysis;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", arity = 1)
         public String outdir;
     }
 }

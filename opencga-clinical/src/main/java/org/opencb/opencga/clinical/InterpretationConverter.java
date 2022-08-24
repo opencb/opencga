@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
+import org.opencb.biodata.models.clinical.ClinicalAcmg;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
@@ -402,8 +403,8 @@ public class InterpretationConverter {
                         list = null;
                         if (ListUtils.isNotEmpty(clinicalVariantEvidence.getClassification().getAcmg())) {
                             list = new ArrayList<>();
-                            for (String acmg : clinicalVariantEvidence.getClassification().getAcmg()) {
-                                list.add(acmg);
+                            for (ClinicalAcmg acmg : clinicalVariantEvidence.getClassification().getAcmg()) {
+                                list.add(acmg.getClassification());
                             }
                             setAcmg.addAll(list);
                         }

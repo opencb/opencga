@@ -27,7 +27,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.study.StudyPermissions;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -139,7 +139,7 @@ public class AuthorizationMongoDBUtils {
         } else {
             // Check if the user has the CONFIDENTIAL PERMISSION
             boolean confidential =
-                    checkStudyPermission(study, user, StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS.toString());
+                    checkStudyPermission(study, user, StudyPermissions.Permissions.CONFIDENTIAL_VARIABLE_SET_ACCESS.toString());
             if (!confidential) {
                 // If the user does not have the confidential permission, we will have to remove those annotation sets coming from
                 // confidential variable sets
@@ -171,21 +171,21 @@ public class AuthorizationMongoDBUtils {
     private static int getPermissionType(Enums.Resource resource) throws CatalogParameterException {
         switch (resource) {
             case FILE:
-                return StudyAclEntry.FILE;
+                return StudyPermissions.FILE;
             case SAMPLE:
-                return StudyAclEntry.SAMPLE;
+                return StudyPermissions.SAMPLE;
             case JOB:
-                return StudyAclEntry.JOB;
+                return StudyPermissions.JOB;
             case INDIVIDUAL:
-                return StudyAclEntry.INDIVIDUAL;
+                return StudyPermissions.INDIVIDUAL;
             case COHORT:
-                return StudyAclEntry.COHORT;
+                return StudyPermissions.COHORT;
             case DISEASE_PANEL:
-                return StudyAclEntry.DISEASE_PANEL;
+                return StudyPermissions.DISEASE_PANEL;
             case FAMILY:
-                return StudyAclEntry.FAMILY;
+                return StudyPermissions.FAMILY;
             case CLINICAL_ANALYSIS:
-                return StudyAclEntry.CLINICAL_ANALYSIS;
+                return StudyPermissions.CLINICAL_ANALYSIS;
             default:
                 throw new CatalogParameterException("Unexpected resource '" + resource + "'.");
         }
@@ -285,7 +285,7 @@ public class AuthorizationMongoDBUtils {
         }
 
         for (String permission : permissions) {
-            String studyPermission = StudyAclEntry.StudyPermissions.getStudyPermission(permission, getPermissionType(resource)).name();
+            String studyPermission = StudyPermissions.Permissions.getStudyPermission(permission, getPermissionType(resource)).name();
 
             if (!affectedUser.equals(ANONYMOUS)) {
                 // We check if the study contains the studies expected for the user
@@ -349,7 +349,7 @@ public class AuthorizationMongoDBUtils {
             simplifyPermissionCheck = configuration.getOptimizations().isSimplifyPermissions();
         }
 
-        String studyPermission = StudyAclEntry.StudyPermissions.getStudyPermission(permission, getPermissionType(resource)).name();
+        String studyPermission = StudyPermissions.Permissions.getStudyPermission(permission, getPermissionType(resource)).name();
 
         // 0. Check if anonymous has any permission defined (just for performance)
         boolean isAnonymousPresent = isAnonymousInMembers(study);

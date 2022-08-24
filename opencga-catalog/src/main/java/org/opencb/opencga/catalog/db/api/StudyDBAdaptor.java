@@ -50,7 +50,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
 
     OpenCGAResult<Long> count(Query query) throws CatalogDBException;
 
-    OpenCGAResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+    OpenCGAResult<Long> count(Query query, String user, StudyPermissions.Permissions studyPermission)
             throws CatalogDBException, CatalogAuthorizationException;
 
     default OpenCGAResult distinct(String field) throws CatalogDBException {
@@ -200,7 +200,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
 
     OpenCGAResult<Study> insert(Project project, Study study, QueryOptions options) throws CatalogDBException;
 
-    boolean hasStudyPermission(long studyId, String user, StudyAclEntry.StudyPermissions permission) throws CatalogDBException;
+    boolean hasStudyPermission(long studyId, String user, StudyPermissions.Permissions permission) throws CatalogDBException;
 
     OpenCGAResult<Study> getAllStudiesInProject(long projectId, QueryOptions options) throws CatalogDBException;
 

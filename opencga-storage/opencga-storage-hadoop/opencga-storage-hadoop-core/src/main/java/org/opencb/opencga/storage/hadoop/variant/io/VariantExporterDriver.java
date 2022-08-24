@@ -9,16 +9,21 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.compress.CompressionCodec;
+import org.apache.hadoop.io.compress.DeflateCodec;
 import org.apache.hadoop.io.compress.GzipCodec;
 import org.apache.hadoop.io.compress.SnappyCodec;
+import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.parquet.Log;
 import org.apache.parquet.avro.AvroParquetOutputFormat;
 import org.apache.parquet.hadoop.ParquetOutputFormat;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.GeneCancerAssociation;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -42,6 +47,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 
@@ -71,7 +77,7 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
     private Path localOutput;
     private Query query = new Query();
     private QueryOptions options = new QueryOptions();
-    private final Logger logger = LoggerFactory.getLogger(VariantExporterDriver.class);
+    private static Logger logger = LoggerFactory.getLogger(VariantExporterDriver.class);
     private boolean useReduceStep;
 
     @Override
@@ -112,7 +118,8 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
     protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
         Class<? extends VariantMapper> mapperClass;
         Class<? extends Reducer> reducerClass;
-
+        job.getConfiguration().setBoolean(JobContext.MAP_OUTPUT_COMPRESS, true);
+        job.getConfiguration().setClass(JobContext.MAP_OUTPUT_COMPRESS_CODEC, DeflateCodec.class, CompressionCodec.class);
         switch (outputFormat) {
             case AVRO_GZ:
                 FileOutputFormat.setCompressOutput(job, true);
@@ -293,6 +300,7 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
         @Override
         protected void map(Object key, Variant value, Context context) throws IOException, InterruptedException {
             context.getCounter(COUNTER_GROUP_NAME, "variants").increment(1);
+            removeNullsFromAvro(value.getImpl(), context);
             context.write(NullWritable.get(), new AvroValue<>(value.getImpl()));
         }
     }
@@ -347,6 +355,7 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
         @Override
         protected void map(Object key, Variant value, Context context) throws IOException, InterruptedException {
             context.getCounter(COUNTER_GROUP_NAME, "variants").increment(1);
+            removeNullsFromAvro(value.getImpl(), context);
             context.write(null, value.getImpl());
         }
     }
@@ -368,6 +377,7 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
         @Override
         protected void map(Object key, Variant value, Context context) throws IOException, InterruptedException {
             context.getCounter(COUNTER_GROUP_NAME, "variants").increment(1);
+            removeNullsFromAvro(value.getImpl(), context);
             context.write(NullWritable.get(), new AvroValue<>(value.getImpl()));
         }
     }
@@ -407,6 +417,29 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
             }
         }
     }
+
+
+    private static VariantAvro removeNullsFromAvro(VariantAvro avro, TaskAttemptContext context) {
+        if (avro.getAnnotation() != null) {
+            List<GeneCancerAssociation> geneCancerAssociations = avro.getAnnotation().getGeneCancerAssociations();
+            if (geneCancerAssociations != null) {
+                for (GeneCancerAssociation geneCancerAssociation : geneCancerAssociations) {
+                    if (geneCancerAssociation.getMutationTypes() != null) {
+                        if (geneCancerAssociation.getMutationTypes().removeIf(Objects::isNull)) {
+                            context.getCounter(COUNTER_GROUP_NAME, "annotation.gca.mutationType_null").increment(1);
+                        }
+                    }
+                    if (geneCancerAssociation.getTissues() != null) {
+                        if (geneCancerAssociation.getTissues().removeIf(Objects::isNull)) {
+                            context.getCounter(COUNTER_GROUP_NAME, "annotation.gca.tissues_null").increment(1);
+                        }
+                    }
+                }
+            }
+        }
+        return avro;
+    }
+
 
     @SuppressWarnings("unchecked")
     public static void main(String[] args) {

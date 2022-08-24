@@ -9,15 +9,13 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.*;
 
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 public class VariantFilterBuilder {
 
@@ -155,6 +153,39 @@ public class VariantFilterBuilder {
 
     private void addAnnotationFilters(Query query, List<Predicate<Variant>> filters) {
 //        ParsedVariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
+        addClinicalFilters(query, filters);
+
+        if (VariantQueryUtils.isValidParam(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY)) {
+            ParsedQuery<KeyOpValue<String, Float>> freqQuery
+                    = VariantQueryParser.parseFreqFilter(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY);
+            List<PopulationFrequencyVariantFilter.AltFreqFilter> freqFilters = freqQuery.mapValues(popFreq -> {
+                String[] split = popFreq.getKey().split(VariantQueryUtils.STUDY_POP_FREQ_SEPARATOR);
+                return new PopulationFrequencyVariantFilter.AltFreqFilter(split[0], split[1], popFreq.getOp(), popFreq.getValue());
+            });
+            filters.add(new PopulationFrequencyVariantFilter(freqQuery.getOperation(), freqFilters));
+        }
+        if (VariantQueryUtils.isValidParam(query, ANNOT_POPULATION_REFERENCE_FREQUENCY)) {
+            ParsedQuery<KeyOpValue<String, Float>> freqQuery
+                    = VariantQueryParser.parseFreqFilter(query, ANNOT_POPULATION_REFERENCE_FREQUENCY);
+            List<PopulationFrequencyVariantFilter.RefFreqFilter> freqFilters = freqQuery.mapValues(popFreq -> {
+                String[] split = popFreq.getKey().split(VariantQueryUtils.STUDY_POP_FREQ_SEPARATOR);
+                return new PopulationFrequencyVariantFilter.RefFreqFilter(split[0], split[1], popFreq.getOp(), popFreq.getValue());
+            });
+            filters.add(new PopulationFrequencyVariantFilter(freqQuery.getOperation(), freqFilters));
+        }
+        if (VariantQueryUtils.isValidParam(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY)) {
+            ParsedQuery<KeyOpValue<String, Float>> freqQuery
+                    = VariantQueryParser.parseFreqFilter(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY);
+            List<PopulationFrequencyVariantFilter.MafFreqFilter> freqFilters = freqQuery.mapValues(popFreq -> {
+                String[] split = popFreq.getKey().split(VariantQueryUtils.STUDY_POP_FREQ_SEPARATOR);
+                return new PopulationFrequencyVariantFilter.MafFreqFilter(split[0], split[1], popFreq.getOp(), popFreq.getValue());
+            });
+            filters.add(new PopulationFrequencyVariantFilter(freqQuery.getOperation(), freqFilters));
+        }
+
+    }
+
+    private void addClinicalFilters(Query query, List<Predicate<Variant>> filters) {
         List<Set<String>> clinicalCombinations = VariantQueryParser.parseClinicalCombination(query)
                 .stream().map(HashSet::new).collect(Collectors.toList());
         if (clinicalCombinations.isEmpty()) {

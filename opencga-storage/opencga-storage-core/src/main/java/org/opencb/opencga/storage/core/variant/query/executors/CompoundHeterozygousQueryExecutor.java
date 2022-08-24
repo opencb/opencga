@@ -11,6 +11,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.UnionMultiVariantKeyIterator;
@@ -70,21 +72,15 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
 
     @Override
     protected Object getOrIterator(Query query, QueryOptions options, boolean iterator) {
-        List<String> samples = query.getAsStringList(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS.key());
-        if (samples.size() != 3) {
-            throw VariantQueryException.malformedParam(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS, String.valueOf(samples));
-        }
-        return getOrIterator(query.getString(VariantQueryParam.STUDY.key()), samples.get(0), samples.get(1), samples.get(2),
+        Trio trio = getCompHetTrio(query);
+        return getOrIterator(query.getString(VariantQueryParam.STUDY.key()), trio.getChild(), trio.getFather(), trio.getMother(),
                 query, options, iterator);
     }
 
     @Override
     protected long primaryCount(Query query, QueryOptions options) {
-        List<String> samples = query.getAsStringList(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS.key());
-        if (samples.size() != 3) {
-            throw VariantQueryException.malformedParam(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS, String.valueOf(samples));
-        }
-        return Iterators.size(getRawIterator(samples.get(0), samples.get(1), samples.get(2), query, new QueryOptions()
+        Trio trio = getCompHetTrio(query);
+        return Iterators.size(getRawIterator(trio.getChild(), trio.getFather(), trio.getMother(), query, new QueryOptions()
                 .append(QueryOptions.INCLUDE, VariantField.ID.fieldName())));
     }
 
@@ -265,6 +261,23 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
 
             return new UnionMultiVariantKeyIterator(Arrays.asList(iterator1, iterator2));
 //            return Iterators.concat(iterator1, iterator2);
+        }
+    }
+
+    protected Trio getCompHetTrio(Query query) {
+        List<String> samples = query.getAsStringList(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS.key());
+        if (samples.size() == 3) {
+            return new Trio(null, samples.get(2), samples.get(0), samples.get(1));
+        } else if (samples.size() == 1) {
+            int studyId = metadataManager.getStudyId(query.getString(VariantQueryParam.STUDY.key()));
+            String sample = samples.get(0);
+            SampleMetadata sm = metadataManager.getSampleMetadata(studyId, metadataManager.getSampleId(studyId, sample));
+            return new Trio(null,
+                    metadataManager.getSampleName(studyId, sm.getFather()),
+                    metadataManager.getSampleName(studyId, sm.getMother()),
+                    sample);
+        } else {
+            throw VariantQueryException.malformedParam(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS, String.valueOf(samples));
         }
     }
 }

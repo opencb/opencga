@@ -97,6 +97,7 @@ public final class VariantQueryUtils {
             ANNOT_EXPRESSION_GENES,
             ANNOT_GO_GENES,
             ANNOT_GENE_REGIONS,
+            ANNOT_GENE_REGIONS_MAP,
             VARIANTS_TO_INDEX,
             SAMPLE_MENDELIAN_ERROR,
             SAMPLE_DE_NOVO,
@@ -276,7 +277,25 @@ public final class VariantQueryUtils {
      * @return If is valid or not
      */
     public static boolean isValidParam(Query query, QueryParam param) {
-        Object value = query == null ? null : query.getOrDefault(param.key(), null);
+        return isValidParam(query, param.key());
+    }
+
+    /**
+     * Check if the object query contains the value param, is not null and, if is an string or a list, is not empty.
+     * <p>
+     * isValidParam(new Query(), PARAM) == false
+     * isValidParam(new Query(PARAM, null), PARAM) == false
+     * isValidParam(new Query(PARAM, ""), PARAM) == false
+     * isValidParam(new Query(PARAM, Collections.emptyList()), PARAM) == false
+     * isValidParam(new Query(PARAM, 5), PARAM) == true
+     * isValidParam(new Query(PARAM, "sdfas"), PARAM) == true
+     *
+     * @param query Query to parse
+     * @param param Param to check
+     * @return If is valid or not
+     */
+    public static boolean isValidParam(Query query, String param) {
+        Object value = query == null ? null : query.getOrDefault(param, null);
         return (value != null)
                 && !(value instanceof String && ((String) value).isEmpty()
                 || value instanceof Collection && ((Collection) value).isEmpty());

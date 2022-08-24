@@ -323,7 +323,7 @@ public class AlignmentCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = {"coverage-run"}, commandDescription = ALIGNMENT_COVERAGE_DESCRIPTION)
+    @Parameters(commandNames = {"coverage-index-run"}, commandDescription = ALIGNMENT_COVERAGE_DESCRIPTION)
     public class CoverageAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate

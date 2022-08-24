@@ -45,6 +45,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -52,10 +53,7 @@ import org.opencb.opencga.core.models.common.IndexStatus;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.individual.IndividualAclEntry;
-import org.opencb.opencga.core.models.individual.IndividualAclParams;
-import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
+import org.opencb.opencga.core.models.individual.*;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.study.*;
@@ -402,6 +400,25 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertTrue(Arrays.asList("sample", "sample2")
                 .containsAll(catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token)
                         .getResults().stream().map(Sample::getId).collect(Collectors.toList())));
+    }
+
+
+    @Test
+    public void testMultipleUpdate() throws CatalogException {
+        catalogManager.getSampleManager().update(studyFqn, Arrays.asList("s_1", "s_2", "s_3"),
+                new SampleUpdateParams()
+                        .setSomatic(true)
+                        .setQualityControl(new SampleQualityControl()),
+                QueryOptions.empty(), token);
+        OpenCGAResult<Sample> result = catalogManager.getSampleManager().get(studyFqn, Arrays.asList("s_1", "s_2", "s_3"),
+                QueryOptions.empty(), token);
+        assertEquals(3, result.getNumResults());
+        for (Sample sample : result.getResults()) {
+            assertTrue(sample.isSomatic());
+            assertTrue(sample.getQualityControl().getComments().isEmpty());
+            assertTrue(sample.getQualityControl().getFiles().isEmpty());
+            assertNotNull(sample.getQualityControl().getVariant());
+        }
     }
 
     @Test
@@ -2105,13 +2122,13 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(individualId, sample.getIndividualId());
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("SAMPLE_1"), "user2",
-                new SampleAclParams(null, null, null, null, SampleAclEntry.SamplePermissions.VIEW.name()), SET, token);
+                new SampleAclParams(null, null, null, null, SamplePermissions.VIEW.name()), SET, token);
 
         sample = catalogManager.getSampleManager().get(studyFqn, "SAMPLE_1", new QueryOptions(SAMPLE_INCLUDE_INDIVIDUAL_PARAM, true), sessionIdUser2).first();
         assertEquals(null, sample.getAttributes().get("OPENCGA_INDIVIDUAL"));
 
         catalogManager.getIndividualManager().updateAcl(studyFqn, Collections.emptyList(), "user2",
-                new IndividualAclParams(sampleId1, IndividualAclEntry.IndividualPermissions.VIEW.name()), SET, false, token);
+                new IndividualAclParams(sampleId1, IndividualPermissions.VIEW.name()), SET, false, token);
         sample = catalogManager.getSampleManager().get(studyFqn, "SAMPLE_1", new QueryOptions(SAMPLE_INCLUDE_INDIVIDUAL_PARAM, true), sessionIdUser2).first();
         assertEquals(individualId, ((Individual) sample.getAttributes().get("OPENCGA_INDIVIDUAL")).getId());
         assertEquals(sampleId1, sample.getId());
@@ -2412,12 +2429,12 @@ public class SampleManagerTest extends AbstractManagerTest {
         Sample sample = new Sample().setId("sample");
         catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token);
 
-        DataResult<Map<String, List<String>>> dataResult = catalogManager.getSampleManager().updateAcl(studyFqn,
-                Arrays.asList("sample"), "user2", new SampleAclParams(null, null, null, null, "VIEW"), SET, token);
+        OpenCGAResult<AclEntryList<SamplePermissions>> dataResult = catalogManager.getSampleManager().updateAcl(studyFqn,
+                Collections.singletonList("sample"), "user2", new SampleAclParams(null, null, null, null, "VIEW"), SET, token);
         assertEquals(1, dataResult.getNumResults());
         assertEquals(1, dataResult.first().size());
-        assertEquals(1, dataResult.first().get("user2").size());
-        assertTrue(dataResult.first().get("user2").contains(SampleAclEntry.SamplePermissions.VIEW.name()));
+        assertEquals("user2", dataResult.first().get(0).getMember());
+        assertTrue(dataResult.first().get(0).getPermissions().contains(SamplePermissions.VIEW));
     }
 
     @Test
@@ -2442,24 +2459,28 @@ public class SampleManagerTest extends AbstractManagerTest {
         Family family2 = new Family().setId("family2");
         catalogManager.getFamilyManager().create(studyFqn, family2, Collections.singletonList(individual2.getId()), QueryOptions.empty(), token);
 
-        OpenCGAResult<Map<String, List<String>>> permissions = catalogManager.getSampleManager().getAcls(studyFqn,
+        OpenCGAResult<AclEntryList<SamplePermissions>> permissions = catalogManager.getSampleManager().getAcls(studyFqn,
                 Arrays.asList(sample.getId(), sample2.getId()), "user2", false, token);
-        assertEquals(0, permissions.getNumResults());
-//        for (Map<String, List<String>> result : permissions.getResults()) {
-//            assertTrue(result.get("user2").isEmpty());
-//        }
+        assertEquals(2, permissions.getNumResults());
+        for (AclEntryList<SamplePermissions> result : permissions.getResults()) {
+            assertEquals(1, result.size());
+            assertEquals("user2", result.get(0).getMember());
+            assertNull(result.get(0).getPermissions());
+        }
 
         // Assign permissions to both families
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.emptyList(), "user2",
                 new SampleAclParams()
                         .setFamily(family.getId() + "," + family2.getId())
-                        .setPermissions(SampleAclEntry.SamplePermissions.VIEW.name()), ADD, token);
+                        .setPermissions(SamplePermissions.VIEW.name()), ADD, token);
 
         permissions = catalogManager.getSampleManager().getAcls(studyFqn,
                 Arrays.asList(sample.getId(), sample2.getId()), "user2", false, token);
         assertEquals(2, permissions.getNumResults());
-        for (Map<String, List<String>> result : permissions.getResults()) {
-            assertTrue(result.get("user2").contains(SampleAclEntry.SamplePermissions.VIEW.name()));
+        for (AclEntryList<SamplePermissions> result : permissions.getResults()) {
+            assertEquals(1, result.size());
+            assertEquals(1, result.get(0).getGroups().size()); // Group @members
+            assertTrue(result.get(0).getPermissions().contains(SamplePermissions.VIEW));
         }
     }
 

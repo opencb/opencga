@@ -62,6 +62,10 @@ public class Values<V> implements QueryElement, Iterable<V> {
         return new Values<V>(values.size() <= 1 ? null : operation, values);
     }
 
+    public <R> Values<R> map(Function<V, R> function) {
+        return new Values<>(operation, mapValues(function));
+    }
+
     public <R> List<R> mapValues(Function<V, R> function) {
         return values.stream().map(function).collect(Collectors.toList());
     }
