@@ -47,9 +47,10 @@ public class VariantSampleIndexOperationTool extends OperationTool {
         if (CollectionUtils.isEmpty(sampleIndexParams.getSample())) {
             throw new IllegalArgumentException("Empty list of samples");
         }
-        if (!sampleIndexParams.isBuildIndex() && !sampleIndexParams.isAnnotate()) {
+        if (!sampleIndexParams.isBuildIndex() && !sampleIndexParams.isAnnotate() && !sampleIndexParams.isFamilyIndex()) {
             sampleIndexParams.setBuildIndex(true);
             sampleIndexParams.setAnnotate(true);
+            sampleIndexParams.setFamilyIndex(true);
         }
         params.put(ParamConstants.OVERWRITE, sampleIndexParams.isOverwrite());
     }
