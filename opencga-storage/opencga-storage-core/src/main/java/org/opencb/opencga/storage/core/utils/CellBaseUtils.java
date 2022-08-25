@@ -22,6 +22,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleField;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.cellbase.client.rest.ParentRestClient;
 import org.opencb.cellbase.core.ParamConstants;
 import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.cellbase.core.result.CellBaseDataResult;
@@ -71,6 +72,13 @@ public class CellBaseUtils {
     }
 
     public Map<String, Region> getGeneRegionMap(List<String> geneStrs, boolean skipMissing) {
+        if (geneStrs.size() > ParentRestClient.REST_CALL_BATCH_SIZE) {
+            List<String> l1 = geneStrs.subList(0, geneStrs.size() / 2);
+            List<String> l2 = geneStrs.subList(geneStrs.size() / 2, geneStrs.size());
+            Map<String, Region> regions = getGeneRegionMap(l1, skipMissing);
+            regions.putAll(getGeneRegionMap(l2, skipMissing));
+            return regions;
+        }
         geneStrs = new LinkedList<>(geneStrs);
         Map<String, Region> regions = new HashMap<>(geneStrs.size());
         Iterator<String> iterator = geneStrs.iterator();
@@ -88,6 +96,8 @@ public class CellBaseUtils {
         try {
             long ts = System.currentTimeMillis();
             QueryOptions options = new QueryOptions(GENE_QUERY_OPTIONS); // Copy options. DO NOT REUSE QUERY OPTIONS
+            options.append(QueryOptions.LIMIT, ParentRestClient.REST_CALL_BATCH_SIZE * 2);
+
             CellBaseDataResponse<Gene> response = checkNulls(cellBaseClient.getGeneClient().get(geneStrs, options));
             logger.info("Query genes from CellBase " + cellBaseClient.getSpecies() + ":" + assembly + " " + geneStrs + "  -> "
                     + (System.currentTimeMillis() - ts) / 1000.0 + "s ");
@@ -141,8 +151,12 @@ public class CellBaseUtils {
                 int end = gene.getEnd() + GENE_EXTRA_REGION;
                 Region region = new Region(gene.getChromosome(), start, end);
                 regions.put(geneStr, region);
-                cache.put(gene.getName(), region);
-                cache.put(gene.getId(), region);
+                if (gene.getName() != null) {
+                    cache.put(gene.getName(), region);
+                }
+                if (gene.getId() != null) {
+                    cache.put(gene.getId(), region);
+                }
                 cache.put(geneStr, region);
             }
             if (!skipMissing && missingGenes != null) {
@@ -261,5 +275,13 @@ public class CellBaseUtils {
             response.setEvents(Collections.emptyList());
         }
         return response;
+    }
+
+    public String getAssembly() {
+        return assembly;
+    }
+
+    public String getSpecies() {
+        return cellBaseClient.getSpecies();
     }
 }
