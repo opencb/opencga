@@ -1323,8 +1323,16 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     }
                 }
             }
-            if (individual.getFather() != null && membersMap.containsKey(individual.getFather().getUid())) {
-                Individual father = membersMap.get(individual.getFather().getUid());
+            if (individual.getFather() != null && individual.getFather().getUid() > 0) {
+                long uid = individual.getFather().getUid();
+                Individual father = membersMap.get(uid);
+                if (father == null) {
+                    father = catalogManager.getIndividualManager()
+                            .search(studyFqn,
+                                    new Query(IndividualDBAdaptor.QueryParams.UID.key(), uid),
+                                    new QueryOptions(INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key()), sessionId).first();
+                    membersMap.put(uid, father);
+                }
                 if (CollectionUtils.isNotEmpty(father.getSamples())) {
                     for (Sample sample : father.getSamples()) {
                         sample = catalogManager.getSampleManager().search(studyFqn,
@@ -1338,8 +1346,16 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     }
                 }
             }
-            if (individual.getMother() != null && membersMap.containsKey(individual.getMother().getUid())) {
-                Individual mother = membersMap.get(individual.getMother().getUid());
+            if (individual.getMother() != null && individual.getMother().getUid() > 0) {
+                long uid = individual.getMother().getUid();
+                Individual mother = membersMap.get(uid);
+                if (mother == null) {
+                    mother = catalogManager.getIndividualManager()
+                            .search(studyFqn,
+                                    new Query(IndividualDBAdaptor.QueryParams.UID.key(), uid),
+                                    new QueryOptions(INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key()), sessionId).first();
+                    membersMap.put(uid, mother);
+                }
                 if (CollectionUtils.isNotEmpty(mother.getSamples())) {
                     for (Sample sample : mother.getSamples()) {
                         sample = catalogManager.getSampleManager().search(studyFqn,
