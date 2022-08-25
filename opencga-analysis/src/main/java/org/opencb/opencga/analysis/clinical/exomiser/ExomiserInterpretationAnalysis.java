@@ -218,7 +218,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                     // Annotate variants
                     List<Variant> annotatedVariants = new ArrayList<>();
                     CellBaseDataResponse<Variant> cellBaseResponse = variantClient.annotate(variants, new QueryOptions("exclude",
-                            "expression"));
+                            "expression"), true);
                     if (cellBaseResponse != null && CollectionUtils.isNotEmpty(cellBaseResponse.getResponses())) {
                         for (CellBaseDataResult<Variant> response : cellBaseResponse.getResponses()) {
                             annotatedVariants.addAll(response.getResults());
