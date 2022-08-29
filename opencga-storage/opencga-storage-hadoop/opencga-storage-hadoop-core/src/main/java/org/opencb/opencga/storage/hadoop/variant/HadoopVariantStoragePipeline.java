@@ -168,10 +168,10 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         super.preLoad(input, output);
 
         try {
-            if (YesNoAuto.parse(getOptions(), LOAD_ARCHIVE.key()) == YesNoAuto.NO) {
-                logger.info("Skip archive table");
-            } else {
+            if (YesNoAuto.parse(getOptions(), LOAD_ARCHIVE.key()).orYes().booleanValue()) {
                 ArchiveTableHelper.createArchiveTableIfNeeded(getOptions(), getArchiveTable(), dbAdaptor.getConnection());
+            } else {
+                logger.info("Skip archive table");
             }
         } catch (IOException e) {
             throw new StorageHadoopException("Issue creating table " + getArchiveTable(), e);
@@ -222,6 +222,8 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         super.securePostLoad(fileIds, studyMetadata);
         studyMetadata.getAttributes().put(MISSING_GENOTYPES_UPDATED, false);
     }
+
+
 
     @Override
     public URI load(URI input, URI outdir) throws StorageEngineException {

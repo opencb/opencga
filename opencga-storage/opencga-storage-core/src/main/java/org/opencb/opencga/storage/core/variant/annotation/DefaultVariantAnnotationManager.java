@@ -543,7 +543,6 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                 for (Integer file : fileIds) {
                     metadataManager.updateFileMetadata(studyId, file, fileMetadata -> {
                         fileMetadata.setAnnotationStatus(TaskMetadata.Status.READY);
-                        return fileMetadata;
                     });
                 }
             }

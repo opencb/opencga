@@ -504,7 +504,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public <E extends Exception> VariantScoreMetadata updateVariantScoreMetadata(int studyId, int scoreId,
-                                                                                 UpdateFunction<VariantScoreMetadata, E> updater)
+                                                                                 UpdateConsumer<VariantScoreMetadata, E> updater)
             throws StorageEngineException, E {
         updateStudyMetadata(studyId, studyMetadata -> {
             VariantScoreMetadata scoreMetadata = studyMetadata.getVariantScores()
@@ -648,13 +648,13 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         fileDBAdaptor.updateFileMetadata(studyId, file, null);
     }
 
-    public <E extends Exception> FileMetadata updateFileMetadata(int studyId, int fileId, UpdateFunction<FileMetadata, E> update)
+    public <E extends Exception> FileMetadata updateFileMetadata(int studyId, int fileId, UpdateConsumer<FileMetadata, E> update)
             throws E, StorageEngineException {
         getFileName(studyId, fileId); // Check file exists
         Lock lock = fileDBAdaptor.lock(studyId, fileId, lockDuration, lockTimeout);
         try {
             FileMetadata fileMetadata = getFileMetadata(studyId, fileId);
-            fileMetadata = update.update(fileMetadata);
+            update.update(fileMetadata);
             lock.checkLocked();
             unsecureUpdateFileMetadata(studyId, fileMetadata);
             return fileMetadata;
@@ -791,7 +791,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         for (Integer fileId : fileIds) {
             updateFileMetadata(studyId, fileId, fileMetadata -> {
                 samples.addAll(fileMetadata.getSamples());
-                return fileMetadata.setIndexStatus(TaskMetadata.Status.NONE);
+                fileMetadata.setIndexStatus(TaskMetadata.Status.NONE);
             });
 //            deleteVariantFileMetadata(studyId, fileId);
         }
@@ -1005,13 +1005,13 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         cohortDBAdaptor.updateCohortMetadata(studyId, cohort, null);
     }
 
-    public <E extends Exception> CohortMetadata updateCohortMetadata(int studyId, int cohortId, UpdateFunction<CohortMetadata, E> update)
+    public <E extends Exception> CohortMetadata updateCohortMetadata(int studyId, int cohortId, UpdateConsumer<CohortMetadata, E> update)
             throws E, StorageEngineException {
         getCohortName(studyId, cohortId); // Check cohort exists
         Lock lock = cohortDBAdaptor.lock(studyId, cohortId, lockDuration, lockTimeout);
         try {
             CohortMetadata cohortMetadata = getCohortMetadata(studyId, cohortId);
-            cohortMetadata = update.update(cohortMetadata);
+            update.update(cohortMetadata);
             lock.checkLocked();
             unsecureUpdateCohortMetadata(studyId, cohortMetadata);
             return cohortMetadata;
@@ -1201,7 +1201,6 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                             cohort.setStatsStatus(TaskMetadata.Status.ERROR);
                         }
                     }
-                    return cohort;
                 }
         );
     }
@@ -1379,7 +1378,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 if (study.equals(studyName)
                         || StringUtils.isNumeric(study) && Integer.valueOf(study).equals(studyId)) {
                     if (StringUtils.isNumeric(str)) {
-                        int aux = Integer.valueOf(str);
+                        int aux = Integer.parseInt(str);
                         if (validId.test(aux)) {
                             id = aux;
                         } else {
@@ -1454,7 +1453,6 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         updateFileMetadata(studyId, fileId, fileMetadata -> {
             //Assign new sampleIds
             fileMetadata.setSamples(samples);
-            return fileMetadata;
         });
 
     }
@@ -1641,7 +1639,6 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                                 fileMetadata.getId(), fileName);
                     }
                 }
-                return fileMetadata;
             });
         } else {
             fileId = newFileId(studyId);

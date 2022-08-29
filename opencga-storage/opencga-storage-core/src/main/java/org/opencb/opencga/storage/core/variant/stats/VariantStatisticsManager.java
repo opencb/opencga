@@ -133,7 +133,6 @@ public abstract class VariantStatisticsManager {
                     }
                 }
                 cohort.setStatsStatus(TaskMetadata.Status.RUNNING);
-                return cohort;
             });
         }
     }
