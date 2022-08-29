@@ -90,7 +90,7 @@ public class VariantHadoopDBWriter extends AbstractHBaseDataWriter<Variant, Put>
 
     public static List<Variant> filterVariantsNotFromThisSlice(long sliceStart, List<Variant> inputVariants) {
         List<Variant> variants = new ArrayList<>(inputVariants);
-        variants.removeIf(variant -> variant.getStart() < sliceStart);
+        variants.removeIf(variant -> variant.getStart() < sliceStart || variant.getEnd() < sliceStart);
         return variants;
     }
 }
