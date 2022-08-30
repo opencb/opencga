@@ -18,6 +18,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.junit.Assert.assertEquals;
+
 /**
  * Created on 26/06/18.
  *
@@ -54,4 +56,9 @@ public class HadoopVariantStorageEngineSVTest extends VariantStorageEngineSVTest
         }
     }
 
+    @Test
+    public void checkPipelineResult() {
+        assertEquals(pipelineResult1.getLoadStats().getInt("expectedVariants"), pipelineResult1.getLoadStats().getInt("loadedVariants"));
+        assertEquals(pipelineResult2.getLoadStats().getInt("expectedVariants"), pipelineResult2.getLoadStats().getInt("loadedVariants"));
+    }
 }

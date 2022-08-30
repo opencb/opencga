@@ -456,6 +456,9 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         getLoadStats().put("duplicatedVariants", duplicatedVariants);
         getLoadStats().put("duplicatedLocus", duplicatedLocus);
         getLoadStats().put("discardedVariants", discardedVariants);
+        getLoadStats().put("skippedRefVariants", skippedRefVariants);
+        getLoadStats().put("loadedVariants", loadedVariants);
+        getLoadStats().put("skipped", skipped);
 
         // TODO: Check if the expectedCount matches with the count from HBase?
         // @see this.checkLoadedVariants
@@ -466,6 +469,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         }
         expectedCount -= discardedVariants;
         expectedCount -= skippedRefVariants;
+        getLoadStats().put("expectedVariants", expectedCount);
         if (expectedCount == loadedVariants) {
             logger.info("Number of loaded variants: " + loadedVariants);
         } else {
