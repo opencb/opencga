@@ -50,6 +50,7 @@ public class VariantPruneManagerTest extends VariantStorageBaseTest implements H
     public void before() throws Exception {
         engine = getVariantStorageEngine();
         dbAdaptor = engine.getDBAdaptor();
+        clearDB(DB_NAME);
 //        if (!loaded) {
 //            load();
 //            loaded = true;

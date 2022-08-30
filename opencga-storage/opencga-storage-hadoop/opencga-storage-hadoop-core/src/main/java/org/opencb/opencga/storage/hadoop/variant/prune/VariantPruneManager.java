@@ -23,8 +23,10 @@ import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
+import org.opencb.opencga.storage.hadoop.variant.annotation.pending.AnnotationPendingVariantsDescriptor;
 import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsDBCleaner;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchDataDeleter;
+import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,9 +90,11 @@ public class VariantPruneManager {
         try {
             if (!dryMode) {
                 // Do not create table in dry-mode.
-                String pruneTableName = engine.getDBAdaptor().getTableNameGenerator().getPendingSecondaryIndexPruneTableName();
+                HBaseVariantTableNameGenerator generator = engine.getDBAdaptor().getTableNameGenerator();
                 new SecondaryIndexPrunePendingVariantsDescriptor()
-                        .createTableIfNeeded(pruneTableName, engine.getDBAdaptor().getHBaseManager());
+                        .createTableIfNeeded(generator, engine.getDBAdaptor().getHBaseManager());
+                new AnnotationPendingVariantsDescriptor()
+                        .createTableIfNeeded(generator, engine.getDBAdaptor().getHBaseManager());
             }
         } catch (IOException e) {
             throw StorageEngineException.ioException(e);
@@ -128,9 +132,11 @@ public class VariantPruneManager {
                 logger.info("Found {} variants to prune, {}", totalCount, countByType);
                 checkReportedVariants(report, totalCount);
             } else {
-                logger.info("Pruned {} variants, {}", totalCount, countByType);
-                pruneFromSecondaryIndex(countByType.getOrDefault(VariantPruneReportRecord.Type.FULL, 0L));
-                updateSecondaryIndex(countByType.getOrDefault(VariantPruneReportRecord.Type.PARTIAL, 0L));
+                if (engine.getVariantSearchManager().isAlive(engine.getDBName())) {
+                    logger.info("Pruned {} variants, {}", totalCount, countByType);
+                    pruneFromSecondaryIndex(countByType.getOrDefault(VariantPruneReportRecord.Type.FULL, 0L));
+                    updateSecondaryIndex(countByType.getOrDefault(VariantPruneReportRecord.Type.PARTIAL, 0L));
+                }
             }
             return countByType;
         } catch (IOException e) {
@@ -141,7 +147,14 @@ public class VariantPruneManager {
     private void checkReportedVariants(Path report, long count) throws IOException, StorageEngineException {
 
         logger.info("Check dry-run report. Found {} variants to prune", count);
-
+        if (report == null || !report.toFile().exists()) {
+            if (count == 0) {
+                logger.info("Nothing to check");
+                return;
+            } else {
+                throw new StorageEngineException("Missing variant_prune_report");
+            }
+        }
         int batchSize = 100;
         int variantsToSkip;
         long variantsToCheck;

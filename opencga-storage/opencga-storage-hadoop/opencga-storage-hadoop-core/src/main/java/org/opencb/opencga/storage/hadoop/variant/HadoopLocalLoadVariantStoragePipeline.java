@@ -332,10 +332,10 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
     protected void loadFromAvro(URI input, URI outdir, ArchiveTableHelper helper, ProgressLogger progressLogger)
             throws StorageEngineException {
-        if (YesNoAuto.parse(getOptions(), LOAD_ARCHIVE.key()) == YesNoAuto.NO) {
-            loadFromAvroWithoutArchive(input, outdir, helper, progressLogger);
-        } else {
+        if (YesNoAuto.parse(getOptions(), LOAD_ARCHIVE.key()).orYes().booleanValue()) {
             loadFromAvroWithArchive(input, outdir, helper, progressLogger);
+        } else {
+            loadFromAvroWithoutArchive(input, outdir, helper, progressLogger);
         }
     }
 
@@ -513,6 +513,14 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                 }
             }
         }
+        boolean loadArchive = YesNoAuto.parse(getOptions(), LOAD_ARCHIVE.key()).orYes().booleanValue();
+        if (loadArchive) {
+            metadataManager.updateFileMetadata(getStudyId(), getFileId(), fileMetadata -> {
+                fileMetadata.getAttributes().put(LOAD_ARCHIVE.key(), true);
+                fileMetadata.getAttributes().remove("TASK-633"); // most likely this field doesn't exist.
+            });
+        }
+
         return uri;
     }
 
@@ -527,10 +535,10 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     }
 
     private VariantHBaseArchiveDataWriter newArchiveDBWriter(String table, ArchiveTableHelper helper) {
-        if (YesNoAuto.parse(getOptions(), LOAD_ARCHIVE.key()) == YesNoAuto.NO) {
-            return null;
-        } else {
+        if (YesNoAuto.parse(getOptions(), LOAD_ARCHIVE.key()).orYes().booleanValue()) {
             return new VariantHBaseArchiveDataWriter(helper, table, dbAdaptor.getHBaseManager());
+        } else {
+            return null;
         }
     }
 

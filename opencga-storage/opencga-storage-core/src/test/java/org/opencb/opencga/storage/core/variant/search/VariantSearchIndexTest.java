@@ -188,6 +188,10 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
 
             //////////////////////
             storageEngine.removeFiles(studyMetadata.getName(), Collections.singletonList(fileNames.get(0)), outputUri);
+            try {
+                storageEngine.calculateStats(studyMetadata.getName(), Collections.singletonList(StudyEntry.DEFAULT_COHORT), new QueryOptions());
+                storageEngine.variantsPrune(false, false, outputUri);
+            } catch (UnsupportedOperationException ignored) {}
             expected = 0;
 
         } else {
