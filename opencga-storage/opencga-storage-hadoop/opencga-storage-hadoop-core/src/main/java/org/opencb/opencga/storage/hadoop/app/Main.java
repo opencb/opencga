@@ -33,6 +33,11 @@ public abstract class Main {
             case "pv":
                 new PendingVariantsMain().run(args);
                 break;
+            case "ph":
+            case "phoenix":
+            case "phoenixmain":
+                new PhoenixMain().run(args);
+                break;
             case "help":
                 printHelp();
                 break;
@@ -46,6 +51,7 @@ public abstract class Main {
         System.out.println("Commands:");
         System.out.println("  help             Print this help ");
         System.out.println("  hbase            Run hbase utility commands");
+        System.out.println("  phoenix          Run phoenix utility commands");
         System.out.println("  metadata         Interact with HBase metadata manager");
         System.out.println("  sample-index     Debug options for scanning the SampleIndex");
         System.out.println("  pending-variants Debug options for scanning the PendingVariants tables");
