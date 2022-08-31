@@ -175,7 +175,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         // Store interpretation analysis in DB
         try {
             catalogManager.getInterpretationManager().create(studyId, clinicalAnalysis.getId(), new Interpretation(interpretation),
-                    ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), token);
+                    ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException("Error saving interpretation into database", e);
         }
@@ -218,7 +218,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                     // Annotate variants
                     List<Variant> annotatedVariants = new ArrayList<>();
                     CellBaseDataResponse<Variant> cellBaseResponse = variantClient.annotate(variants, new QueryOptions("exclude",
-                            "expression"));
+                            "expression"), true);
                     if (cellBaseResponse != null && CollectionUtils.isNotEmpty(cellBaseResponse.getResponses())) {
                         for (CellBaseDataResult<Variant> response : cellBaseResponse.getResponses()) {
                             annotatedVariants.addAll(response.getResults());
