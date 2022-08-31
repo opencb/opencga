@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.analysis.individual.qc;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import org.apache.commons.collections4.MapUtils;
 import org.opencb.biodata.models.clinical.qc.InferredSexReport;
 import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
@@ -23,12 +25,15 @@ import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -117,9 +122,12 @@ public class IndividualQcLocalAnalysisExecutor extends IndividualQcAnalysisExecu
             MendelianErrorReport mendelianErrorReport = MendelianInconsistenciesComputation.compute(studyId, sampleId, motherSampleId,
                     fatherSampleId, variantStorageManager, getToken());
 
+            JacksonUtils.getDefaultObjectMapper().writer().writeValue(getOutDir().resolve(MendelianErrorAnalysis.ID + ".report.json")
+                    .toFile(), mendelianErrorReport);
+
             // Set relatedness report
             qualityControl.setMendelianErrorReports(Collections.singletonList(mendelianErrorReport));
-        } catch (ToolException e) {
+        } catch (ToolException | IOException e) {
             addWarning("Skipping mendelian errors: " + e.getMessage());
             return;
         }
