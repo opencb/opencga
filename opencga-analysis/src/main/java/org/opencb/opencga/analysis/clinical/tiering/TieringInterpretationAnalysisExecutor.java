@@ -243,15 +243,16 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
         ClinicalUtils.writeClinicalVariants(primaryFindings, Paths.get(getOutDir() + "/primary-findings.json"));
 
         // Secondary findings, if clinical consent is TRUE
-        List<ClinicalVariant> secondaryFindings = null;
-        try {
-            secondaryFindings = clinicalInterpretationManager.getSecondaryFindings(clinicalAnalysis,
-                    new ArrayList<>(sampleMap.keySet()), studyId, creator, sessionId);
-        } catch (CatalogException | IOException | StorageEngineException e) {
-            throw new ToolException("Error retrieving secondary findings variants", e);
-        }
+        logger.info("Secondary findings are not supported yet");
+        List<ClinicalVariant> secondaryFindings = new ArrayList<>();
+//        try {
+//            secondaryFindings = clinicalInterpretationManager.getSecondaryFindings(clinicalAnalysis,
+//                    new ArrayList<>(sampleMap.keySet()), studyId, creator, sessionId);
+//        } catch (CatalogException | IOException | StorageEngineException e) {
+//            throw new ToolException("Error retrieving secondary findings variants", e);
+//        }
 
-        // Write primary findings
+        // Write secondary findings
         ClinicalUtils.writeClinicalVariants(secondaryFindings, Paths.get(getOutDir() + "/secondary-findings.json"));
     }
 
