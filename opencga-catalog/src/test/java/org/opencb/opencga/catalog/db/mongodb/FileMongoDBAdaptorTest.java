@@ -215,17 +215,17 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void testDistinct() throws Exception {
         long studyUid = user3.getProjects().get(0).getStudies().get(0).getUid();
 
-        List<String> distinctTypes = catalogFileDBAdaptor.distinct(studyUid, FileDBAdaptor.QueryParams.TYPE.key(), null, user3.getId(),
-                String.class).getResults();
+        List distinctTypes = catalogFileDBAdaptor.distinct(studyUid, FileDBAdaptor.QueryParams.TYPE.key(), null, user3.getId()
+              ).getResults();
         assertEquals(Arrays.asList("DIRECTORY", "FILE"), distinctTypes);
 
-        List<String> distinctFormats = catalogFileDBAdaptor.distinct(studyUid, FileDBAdaptor.QueryParams.FORMAT.key(), null, user3.getId(),
-                String.class).getResults();
+        List distinctFormats = catalogFileDBAdaptor.distinct(studyUid, FileDBAdaptor.QueryParams.FORMAT.key(), null, user3.getId()
+                ).getResults();
         assertTrue(Arrays.asList("PLAIN").containsAll(distinctFormats));
 
         studyUid = user4.getProjects().get(0).getStudies().get(0).getUid();
-        distinctFormats = catalogFileDBAdaptor.distinct(studyUid, FileDBAdaptor.QueryParams.FORMAT.key(), null, user4.getId(),
-                String.class).getResults();
+        distinctFormats = catalogFileDBAdaptor.distinct(studyUid, FileDBAdaptor.QueryParams.FORMAT.key(), null, user4.getId()
+                ).getResults();
         assertTrue(Arrays.asList("BAM", "COMMA_SEPARATED_VALUES", "UNKNOWN").containsAll(distinctFormats));
     }
 
