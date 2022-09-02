@@ -47,7 +47,7 @@
         <opencgar.version>2.4.4_dev</opencgar.version>
         <cellbase.version>5.2.0</cellbase.version>
         <biodata.version>2.4.2</biodata.version>
-        <java-common-libs.version>4.4.1</java-common-libs.version>
+        <java-common-libs.version>4.4.2-SNAPSHOT</java-common-libs.version>
         <iva.version>2.4.9</iva.version>
         <oskar.version>0.2.0</oskar.version>
 
@@ -67,9 +67,12 @@
         <opencga.war.name>opencga</opencga.war.name>
         <opencga.env.file>opencga-env.sh</opencga.env.file>
         <opencga-storage-hadoop-deps.id-default>hdp3.1</opencga-storage-hadoop-deps.id-default>
-        <opencga-storage-hadoop-deps.artifactId-default>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}</opencga-storage-hadoop-deps.artifactId-default>
+        <opencga-storage-hadoop-deps.artifactId-default>
+            opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}
+        </opencga-storage-hadoop-deps.artifactId-default>
         <opencga-storage-hadoop-deps.id>${opencga-storage-hadoop-deps.id-default}</opencga-storage-hadoop-deps.id>
-        <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}</opencga-storage-hadoop-deps.artifactId>
+        <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}
+        </opencga-storage-hadoop-deps.artifactId>
 
         <sonar.organization>opencb</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -800,21 +803,24 @@
             <id>hdp3.1</id>
             <properties>
                 <opencga-storage-hadoop-deps.id>hdp3.1</opencga-storage-hadoop-deps.id>
-                <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}</opencga-storage-hadoop-deps.artifactId>
+                <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}
+                </opencga-storage-hadoop-deps.artifactId>
             </properties>
         </profile>
         <profile>
             <id>emr6.1</id>
             <properties>
                 <opencga-storage-hadoop-deps.id>emr6.1</opencga-storage-hadoop-deps.id>
-                <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}</opencga-storage-hadoop-deps.artifactId>
+                <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}
+                </opencga-storage-hadoop-deps.artifactId>
             </properties>
         </profile>
         <profile>
             <id>hdp2.6</id>
             <properties>
                 <opencga-storage-hadoop-deps.id>hdp2.6</opencga-storage-hadoop-deps.id>
-                <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}</opencga-storage-hadoop-deps.artifactId>
+                <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}
+                </opencga-storage-hadoop-deps.artifactId>
             </properties>
         </profile>
     </profiles>
