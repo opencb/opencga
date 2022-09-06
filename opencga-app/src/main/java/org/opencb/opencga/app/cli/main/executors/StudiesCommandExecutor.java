@@ -1,5 +1,6 @@
 package org.opencb.opencga.app.cli.main.executors;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
@@ -22,7 +23,6 @@ import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
 import java.io.InputStream;
 import java.lang.Object;
 import java.net.URL;
-import java.util.Map;
 import java.util.Set;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveForceRemoveAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.audit.AuditRecord.Status.Result;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums.Entity;
@@ -153,7 +154,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
 
     }
 
-    private RestResponse<ObjectMap> updateAcl() throws Exception {
+    private RestResponse<AclEntryList> updateAcl() throws Exception {
 
         logger.debug("Executing updateAcl in Studies command line");
 
@@ -162,7 +163,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         StudyAclUpdateParams studyAclUpdateParams= null;
         if (commandOptions.jsonDataModel) {
             studyAclUpdateParams = new StudyAclUpdateParams();
-            RestResponse<ObjectMap> res = new RestResponse<>();
+            RestResponse<AclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(studyAclUpdateParams));
             return res;
@@ -175,7 +176,8 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             putNestedIfNotEmpty(beanParams, "template",commandOptions.template, true);
             putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
 
-            studyAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
+            studyAclUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), StudyAclUpdateParams.class);
         }
         return openCGAClient.getStudyClient().updateAcl(commandOptions.members, commandOptions.action, studyAclUpdateParams);
@@ -218,7 +220,8 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
-            studyCreateParams = JacksonUtils.getDefaultObjectMapper()
+            studyCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), StudyCreateParams.class);
         }
         return openCGAClient.getStudyClient().create(studyCreateParams, queryParams);
@@ -250,7 +253,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         return openCGAClient.getStudyClient().search(commandOptions.project, queryParams);
     }
 
-    private RestResponse<ObjectMap> acl() throws Exception {
+    private RestResponse<AclEntryList> acl() throws Exception {
 
         logger.debug("Executing acl in Studies command line");
 
@@ -356,7 +359,8 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
             putNestedIfNotNull(beanParams, "users",commandOptions.users, true);
 
-            groupCreateParams = JacksonUtils.getDefaultObjectMapper()
+            groupCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), GroupCreateParams.class);
         }
         return openCGAClient.getStudyClient().updateGroups(commandOptions.study, groupCreateParams, queryParams);
@@ -386,7 +390,8 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "users",commandOptions.users, true);
 
-            groupUpdateParams = JacksonUtils.getDefaultObjectMapper()
+            groupUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), GroupUpdateParams.class);
         }
         return openCGAClient.getStudyClient().updateGroupsUsers(commandOptions.study, commandOptions.group, groupUpdateParams, queryParams);
@@ -426,7 +431,8 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             putNestedIfNotNull(beanParams, "members",commandOptions.members, true);
             putNestedIfNotNull(beanParams, "permissions",commandOptions.permissions, true);
 
-            permissionRule = JacksonUtils.getDefaultObjectMapper()
+            permissionRule = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PermissionRule.class);
         }
         return openCGAClient.getStudyClient().updatePermissionRules(commandOptions.study, commandOptions.entity, permissionRule, queryParams);
@@ -498,7 +504,8 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
-            studyUpdateParams = JacksonUtils.getDefaultObjectMapper()
+            studyUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), StudyUpdateParams.class);
         }
         return openCGAClient.getStudyClient().update(commandOptions.study, studyUpdateParams, queryParams);
@@ -544,7 +551,8 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             putNestedIfNotNull(beanParams, "confidential",commandOptions.confidential, true);
             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
 
-            variableSetCreateParams = JacksonUtils.getDefaultObjectMapper()
+            variableSetCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariableSetCreateParams.class);
         }
         return openCGAClient.getStudyClient().updateVariableSets(commandOptions.study, variableSetCreateParams, queryParams);
@@ -584,7 +592,8 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             putNestedIfNotEmpty(beanParams, "dependsOn",commandOptions.bodyDependsOn, true);
             putNestedIfNotEmpty(beanParams, "description",commandOptions.bodyDescription, true);
 
-            variable = JacksonUtils.getDefaultObjectMapper()
+            variable = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), Variable.class);
         }
         return openCGAClient.getStudyClient().updateVariableSetsVariables(commandOptions.study, commandOptions.variableSet, variable, queryParams);

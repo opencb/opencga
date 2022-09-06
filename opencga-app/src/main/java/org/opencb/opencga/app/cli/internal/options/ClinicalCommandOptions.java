@@ -55,9 +55,11 @@ public class ClinicalCommandOptions {
         this.exomiserInterpretationCommandOptions = new ExomiserInterpretationCommandOptions();
     }
 
-    @Parameters(commandNames = {"run-interpreter-tiering"}, commandDescription =
+    @Parameters(commandNames = {TieringCommandOptions.TIERING_INTERPRETATION_RUN_COMMAND}, commandDescription =
             TieringInterpretationAnalysis.DESCRIPTION)
     public class TieringCommandOptions extends GeneralCliOptions.StudyOption {
+
+        public static final String TIERING_INTERPRETATION_RUN_COMMAND = TieringInterpretationAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -85,8 +87,11 @@ public class ClinicalCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = {"run-interpreter-team"}, commandDescription = TeamInterpretationAnalysis.DESCRIPTION)
+    @Parameters(commandNames = {TeamCommandOptions.TEAM_INTERPRETATION_RUN_COMMAND},
+            commandDescription = TeamInterpretationAnalysis.DESCRIPTION)
     public class TeamCommandOptions extends GeneralCliOptions.StudyOption {
+
+        public static final String TEAM_INTERPRETATION_RUN_COMMAND = TeamInterpretationAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -114,8 +119,11 @@ public class ClinicalCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = {"run-interpreter-zetta"}, commandDescription = ZettaInterpretationAnalysis.DESCRIPTION)
+    @Parameters(commandNames = {ZettaCommandOptions.ZETTA_INTERPRETATION_RUN_COMMAND},
+            commandDescription = ZettaInterpretationAnalysis.DESCRIPTION)
     public class ZettaCommandOptions extends GeneralCliOptions.StudyOption {
+
+        public static final String ZETTA_INTERPRETATION_RUN_COMMAND = ZettaInterpretationAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -248,8 +256,11 @@ public class ClinicalCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = {""}, commandDescription = CancerTieringInterpretationAnalysis.DESCRIPTION)
+    @Parameters(commandNames =  {CancerTieringCommandOptions.CANCER_TIERING_INTERPRETATION_RUN_COMMAND},
+            commandDescription = CancerTieringInterpretationAnalysis.DESCRIPTION)
     public class CancerTieringCommandOptions extends GeneralCliOptions.StudyOption {
+
+        public static final String CANCER_TIERING_INTERPRETATION_RUN_COMMAND = CancerTieringInterpretationAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -290,8 +301,8 @@ public class ClinicalCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = {RgaSecondaryIndexCommandOptions.RGA_INDEX_RUN_COMMAND}, commandDescription =
-            AuxiliarRgaAnalysis.DESCRIPTION)
+    @Parameters(commandNames = {RgaSecondaryIndexCommandOptions.RGA_INDEX_RUN_COMMAND},
+            commandDescription = AuxiliarRgaAnalysis.DESCRIPTION)
     public class RgaAuxiliarSecondaryIndexCommandOptions extends GeneralCliOptions.StudyOption {
 
         public static final String RGA_AUX_INDEX_RUN_COMMAND = AuxiliarRgaAnalysis.ID + "-run";
@@ -306,8 +317,13 @@ public class ClinicalCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = {"run-interpreter-exomiser"}, commandDescription = ExomiserInterpretationAnalysis.DESCRIPTION)
+
+    @Parameters(commandNames = {ExomiserInterpretationCommandOptions.EXOMISER_INTERPRETATION_RUN_COMMAND},
+            commandDescription = ExomiserInterpretationAnalysis.DESCRIPTION)
     public class ExomiserInterpretationCommandOptions extends GeneralCliOptions.StudyOption {
+
+        public static final String EXOMISER_INTERPRETATION_RUN_COMMAND = ExomiserInterpretationAnalysis.ID + "-run";
+
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;

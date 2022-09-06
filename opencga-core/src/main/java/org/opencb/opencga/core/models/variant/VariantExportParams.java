@@ -16,31 +16,39 @@
 
 package org.opencb.opencga.core.models.variant;
 
-import org.opencb.commons.datastore.core.Query;
-
 import org.opencb.commons.annotations.DataField;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.api.ParamConstants;
 
 public class VariantExportParams extends VariantQueryParams {
     public static final String DESCRIPTION = "Variant export params";
     @DataField(description = ParamConstants.VARIANT_EXPORT_PARAMS_OUTDIR_DESCRIPTION)
     private String outdir;
+
     @DataField(description = ParamConstants.VARIANT_EXPORT_PARAMS_OUTPUT_FILE_NAME_DESCRIPTION)
     private String outputFileName;
+
     @DataField(description = ParamConstants.VARIANT_EXPORT_PARAMS_OUTPUT_FILE_FORMAT_DESCRIPTION)
     private String outputFileFormat; //<<<<< CAMBIAR
+
     @DataField(description = ParamConstants.VARIANT_EXPORT_PARAMS_VARIANTS_FILE_DESCRIPTION)
     private String variantsFile;
+
     @DataField(description = ParamConstants.VARIANT_EXPORT_PARAMS_INCLUDE_DESCRIPTION)
     private String include;
+
     @DataField(description = ParamConstants.VARIANT_EXPORT_PARAMS_EXCLUDE_DESCRIPTION)
     private String exclude;
+
     @DataField(description = ParamConstants.VARIANT_EXPORT_PARAMS_COMPRESS_DESCRIPTION)
     private boolean compress;
+
     @DataField(description = ParamConstants.VARIANT_EXPORT_PARAMS_LIMIT_DESCRIPTION)
     private Integer limit;
+
     @DataField(description = ParamConstants.VARIANT_EXPORT_PARAMS_SKIP_DESCRIPTION)
     private Integer skip;
+
     @DataField(description = ParamConstants.VARIANT_EXPORT_PARAMS_SUMMARY_DESCRIPTION)
     private boolean summary;
 
@@ -80,15 +88,6 @@ public class VariantExportParams extends VariantQueryParams {
 
     public VariantExportParams setOutputFileFormat(String outputFileFormat) {
         this.outputFileFormat = outputFileFormat;
-        return this;
-    }
-
-    public boolean isCompress() {
-        return compress;
-    }
-
-    public VariantExportParams setCompress(boolean compress) {
-        this.compress = compress;
         return this;
     }
 

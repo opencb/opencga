@@ -30,10 +30,11 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.models.AclEntry;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.file.FileInternal;
+import org.opencb.opencga.core.models.file.FilePermissions;
 import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleInternal;
@@ -56,11 +57,10 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         File file;
         file = new File("jobs/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "jobs/", null, "",
                 FileInternal.init(), 1000, 1);
-        LinkedList<FileAclEntry> acl = new LinkedList<>();
-        acl.push(new FileAclEntry("jcoll", Arrays.asList(FileAclEntry.FilePermissions.VIEW.name(),
-                FileAclEntry.FilePermissions.VIEW_CONTENT.name(), FileAclEntry.FilePermissions.VIEW_HEADER.name(),
-                FileAclEntry.FilePermissions.DELETE.name())));
-        acl.push(new FileAclEntry("jmmut", Collections.emptyList()));
+        LinkedList<AclEntry<FilePermissions>> acl = new LinkedList<>();
+        acl.push(new AclEntry<>("jcoll", EnumSet.of(FilePermissions.VIEW, FilePermissions.VIEW_CONTENT, FilePermissions.VIEW_HEADER,
+                FilePermissions.DELETE)));
+        acl.push(new AclEntry<>("jmmut", EnumSet.noneOf(FilePermissions.class)));
         System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null, null, null));
         file = new File("file.sam", File.Type.FILE, File.Format.PLAIN, File.Bioformat.ALIGNMENT, "data/file.sam", null, "",
                 FileInternal.init(), 1000, 1);

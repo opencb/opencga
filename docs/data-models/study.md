@@ -38,10 +38,20 @@ Study data model hosts information about any study.
 
 ### Study
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> release-2.4.x
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/study/Study.java).
 =======
 You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/study/Study.java).
 >>>>>>> release-2.2.x
+<<<<<<< HEAD
+=======
+=======
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/study/Study.java).
+>>>>>>> release-2.2.x
+>>>>>>> release-2.4.x
 
 | Field | Description |
 | :---  | :--- |
@@ -76,6 +86,10 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/release
 | **attributes**<br>*Map<String,Object>* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> release-2.4.x
 ### Group
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/study/Group.java).
 
@@ -127,8 +141,15 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/release
 ### StudyType
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyType.java).
 =======
+<<<<<<< HEAD
 ### Panel
 You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/panel/Panel.java).
+=======
+=======
+>>>>>>> release-2.2.x
+### Panel
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/panel/Panel.java).
+>>>>>>> release-2.4.x
 
 | Field | Description |
 | :---  | :--- |
@@ -140,6 +161,10 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/release
 | **studyUid**<br>*long* <br> | <p>Panel reference to study.</p> |
 | **uid**<br>*long* <br> | <p>Panel reference to study.</p> |
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> release-2.4.x
 ### URI
 You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/java/net/URI.java).
 >>>>>>> release-2.2.x
@@ -151,6 +176,17 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-52
 =======
 You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyInternal.java).
 >>>>>>> release-2.2.x
+<<<<<<< HEAD
+=======
+=======
+### Group
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/study/Group.java).
+
+
+### StudyInternal
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyInternal.java).
+>>>>>>> release-2.2.x
+>>>>>>> release-2.4.x
 
 | Field | Description |
 | :---  | :--- |
@@ -162,6 +198,10 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/release
 | **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> release-2.4.x
 ### StudyNotification
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyNotification.java).
 
@@ -188,6 +228,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-52
 =======
 ### Status
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
+<<<<<<< HEAD
 
 
 ### ExternalSource
@@ -220,6 +261,19 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/release
 ### PermissionRule
 You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/study/PermissionRule.java).
 >>>>>>> release-2.2.x
+=======
+=======
+### StudyNotification
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyNotification.java).
+>>>>>>> release-2.2.x
+
+| Field | Description |
+| :---  | :--- |
+| **webhook**<br>*[URL](https://docs.opencga.opencb.org/data-models/study#url)* <br> | <p>Url of the study notification.</p> |
+
+### PermissionRule
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/study/PermissionRule.java).
+>>>>>>> release-2.4.x
 
 | Field | Description |
 | :---  | :--- |
@@ -229,6 +283,50 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/release
 | **permissions**<br>*List<<em>String</em>>* <br> | <p>List of permissions of the permission rule.</p> |
 
 <<<<<<< HEAD
+=======
+### Status
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
+
+
+### Enum Entity
+_Enumeration class._
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Enums/Entity.java).
+
+
+### AdditionalInfo
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/common/AdditionalInfo.java).
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br>*String* <br> | <p>Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.</p> |
+| **name**<br>*String* <br> | <p>Name of the .</p> |
+| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **type**<br>*String* <br> | <p>Type of the additional info.</p> |
+| **attributes**<br>*Map<String,Object>* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
+
+<<<<<<< HEAD
+### PermissionRule
+You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/study/PermissionRule.java).
+>>>>>>> release-2.2.x
+=======
+### ExternalSource
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/common/ExternalSource.java).
+>>>>>>> release-2.2.x
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br>*String* <br> | <p>Source ID...</p> |
+| **name**<br>*String* <br> | <p>Source name...</p> |
+| **description**<br>*String* <br> | <p>Source description...</p> |
+| **source**<br>*String* <br> | <p>Source ...</p> |
+| **url**<br>*String* <br> | <p>Source ID</p> |
+
+### URI
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/java/net/URI.java).
+
+
+>>>>>>> release-2.4.x
+<<<<<<< HEAD
 ### URL
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/java/net/URL.java).
 
@@ -237,11 +335,19 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-52
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/panel/PanelInternal.java).
 =======
 ### VariableSet
+<<<<<<< HEAD
 You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/study/VariableSet.java).
 
 
 ### StudyType
 You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyType.java).
+=======
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/study/VariableSet.java).
+
+
+### StudyType
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyType.java).
+>>>>>>> release-2.4.x
 
 | Field | Description |
 | :---  | :--- |
@@ -249,8 +355,17 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/release
 | **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
 
 ### StudyIndex
+<<<<<<< HEAD
 You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyIndex.java).
 >>>>>>> release-2.2.x
+=======
+<<<<<<< HEAD
+You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyIndex.java).
+>>>>>>> release-2.2.x
+=======
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyIndex.java).
+>>>>>>> release-2.2.x
+>>>>>>> release-2.4.x
 
 | Field | Description |
 | :---  | :--- |
@@ -260,6 +375,10 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/release
 
 ### InternalStatus
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> release-2.4.x
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/common/InternalStatus.java).
 
 
@@ -272,4 +391,14 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/release
 ### URL
 You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/java/net/URL.java).
 >>>>>>> release-2.2.x
+<<<<<<< HEAD
+=======
+=======
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/common/InternalStatus.java).
+
+
+### URL
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/java/net/URL.java).
+>>>>>>> release-2.2.x
+>>>>>>> release-2.4.x
 

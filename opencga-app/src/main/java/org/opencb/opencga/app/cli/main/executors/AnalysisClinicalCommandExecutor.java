@@ -1,5 +1,6 @@
 package org.opencb.opencga.app.cli.main.executors;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
@@ -17,7 +18,6 @@ import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.AnalysisClinicalCommandOptions;
 
-import java.util.Map;
 import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveReplaceAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.SaveInterpretationAs;
 import org.opencb.opencga.catalog.utils.ParamUtils.UpdateAction;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGeneSummary;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividualSummary;
@@ -202,7 +203,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private RestResponse<ObjectMap> updateAcl() throws Exception {
+    private RestResponse<AclEntryList> updateAcl() throws Exception {
 
         logger.debug("Executing updateAcl in Analysis - Clinical command line");
 
@@ -219,7 +220,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         ClinicalAnalysisAclUpdateParams clinicalAnalysisAclUpdateParams= null;
         if (commandOptions.jsonDataModel) {
             clinicalAnalysisAclUpdateParams = new ClinicalAnalysisAclUpdateParams();
-            RestResponse<ObjectMap> res = new RestResponse<>();
+            RestResponse<AclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(clinicalAnalysisAclUpdateParams));
             return res;
@@ -231,7 +232,8 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
             putNestedIfNotEmpty(beanParams, "clinicalAnalysis",commandOptions.clinicalAnalysis, true);
 
-            clinicalAnalysisAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
+            clinicalAnalysisAclUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ClinicalAnalysisAclUpdateParams.class);
         }
         return openCGAClient.getClinicalAnalysisClient().updateAcl(commandOptions.members, commandOptions.action, clinicalAnalysisAclUpdateParams, queryParams);
@@ -319,7 +321,8 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "priority.id",commandOptions.priorityId, true);
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
 
-            clinicalAnalysisCreateParams = JacksonUtils.getDefaultObjectMapper()
+            clinicalAnalysisCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ClinicalAnalysisCreateParams.class);
         }
         return openCGAClient.getClinicalAnalysisClient().create(clinicalAnalysisCreateParams, queryParams);
@@ -478,7 +481,8 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotNull(beanParams, "discardedVariants",commandOptions.discardedVariants, true);
             putNestedIfNotNull(beanParams, "primary",commandOptions.primary, true);
 
-            cancerTieringInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+            cancerTieringInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CancerTieringInterpretationAnalysisParams.class);
         }
         return openCGAClient.getClinicalAnalysisClient().runInterpreterCancerTiering(cancerTieringInterpretationAnalysisParams, queryParams);
@@ -515,7 +519,8 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "clinicalAnalysis",commandOptions.clinicalAnalysis, true);
 
-            exomiserInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+            exomiserInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ExomiserInterpretationAnalysisParams.class);
         }
         return openCGAClient.getClinicalAnalysisClient().runInterpreterExomiser(exomiserInterpretationAnalysisParams, queryParams);
@@ -555,7 +560,8 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "familySegregation",commandOptions.familySegregation, true);
             putNestedIfNotNull(beanParams, "primary",commandOptions.primary, true);
 
-            teamInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+            teamInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), TeamInterpretationAnalysisParams.class);
         }
         return openCGAClient.getClinicalAnalysisClient().runInterpreterTeam(teamInterpretationAnalysisParams, queryParams);
@@ -595,7 +601,8 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotNull(beanParams, "penetrance",commandOptions.penetrance, true);
             putNestedIfNotNull(beanParams, "primary",commandOptions.primary, true);
 
-            tieringInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+            tieringInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), TieringInterpretationAnalysisParams.class);
         }
         return openCGAClient.getClinicalAnalysisClient().runInterpreterTiering(tieringInterpretationAnalysisParams, queryParams);
@@ -682,7 +689,8 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "trait",commandOptions.bodyTrait, true);
             putNestedIfNotNull(beanParams, "primary",commandOptions.bodyPrimary, true);
 
-            zettaInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+            zettaInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ZettaInterpretationAnalysisParams.class);
         }
         return openCGAClient.getClinicalAnalysisClient().runInterpreterZetta(zettaInterpretationAnalysisParams, queryParams);
@@ -838,7 +846,8 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
 
-            rgaAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+            rgaAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), RgaAnalysisParams.class);
         }
         return openCGAClient.getClinicalAnalysisClient().runRgaIndex(rgaAnalysisParams, queryParams);
@@ -1139,7 +1148,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getClinicalAnalysisClient().queryVariant(queryParams);
     }
 
-    private RestResponse<ObjectMap> acl() throws Exception {
+    private RestResponse<AclEntryList> acl() throws Exception {
 
         logger.debug("Executing acl in Analysis - Clinical command line");
 
@@ -1222,7 +1231,8 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "priority.id",commandOptions.priorityId, true);
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
 
-            clinicalAnalysisUpdateParams = JacksonUtils.getDefaultObjectMapper()
+            clinicalAnalysisUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ClinicalAnalysisUpdateParams.class);
         }
         return openCGAClient.getClinicalAnalysisClient().update(commandOptions.clinicalAnalyses, clinicalAnalysisUpdateParams, queryParams);
@@ -1286,7 +1296,8 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotNull(beanParams, "locked",commandOptions.locked, true);
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
 
-            interpretationCreateParams = JacksonUtils.getDefaultObjectMapper()
+            interpretationCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), InterpretationCreateParams.class);
         }
         return openCGAClient.getClinicalAnalysisClient().createInterpretation(commandOptions.clinicalAnalysis, interpretationCreateParams, queryParams);
@@ -1377,7 +1388,8 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
             putNestedIfNotNull(beanParams, "locked",commandOptions.locked, true);
 
-            interpretationUpdateParams = JacksonUtils.getDefaultObjectMapper()
+            interpretationUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), InterpretationUpdateParams.class);
         }
         return openCGAClient.getClinicalAnalysisClient().updateInterpretation(commandOptions.clinicalAnalysis, commandOptions.interpretation, interpretationUpdateParams, queryParams);

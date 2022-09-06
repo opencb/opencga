@@ -1,5 +1,6 @@
 package org.opencb.opencga.app.cli.main.executors;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
@@ -327,7 +328,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "density",commandOptions.density, true);
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
 
-            circosAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+            circosAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CircosAnalysisParams.class);
         }
         return openCGAClient.getVariantClient().runCircos(circosAnalysisParams, queryParams);
@@ -399,7 +401,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "sampleAnnotation",commandOptions.sampleAnnotation, true);
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
 
-            cohortVariantStatsAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+            cohortVariantStatsAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CohortVariantStatsAnalysisParams.class);
         }
         return openCGAClient.getVariantClient().runCohortStats(cohortVariantStatsAnalysisParams, queryParams);
@@ -437,7 +440,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
 
-            exomiserWrapperParams = JacksonUtils.getDefaultObjectMapper()
+            exomiserWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ExomiserWrapperParams.class);
         }
         return openCGAClient.getVariantClient().runExomiser(exomiserWrapperParams, queryParams);
@@ -557,12 +561,12 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "variantsFile",commandOptions.bodyVariantsFile, true);
             putNestedIfNotEmpty(beanParams, "include",commandOptions.bodyInclude, true);
             putNestedIfNotEmpty(beanParams, "exclude",commandOptions.bodyExclude, true);
-            putNestedIfNotNull(beanParams, "compress",commandOptions.bodyCompress, true);
             putNestedIfNotNull(beanParams, "limit",commandOptions.bodyLimit, true);
             putNestedIfNotNull(beanParams, "skip",commandOptions.bodySkip, true);
             putNestedIfNotNull(beanParams, "summary",commandOptions.bodySummary, true);
 
-            variantExportParams = JacksonUtils.getDefaultObjectMapper()
+            variantExportParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantExportParams.class);
         }
         return openCGAClient.getVariantClient().runExport(variantExportParams, queryParams);
@@ -621,7 +625,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "relatednessMaf",commandOptions.relatednessMaf, true);
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
 
-            familyQcAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+            familyQcAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FamilyQcAnalysisParams.class);
         }
         return openCGAClient.getVariantClient().runFamilyQc(familyQcAnalysisParams, queryParams);
@@ -680,7 +685,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "command",commandOptions.command, true);
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
 
-            gatkWrapperParams = JacksonUtils.getDefaultObjectMapper()
+            gatkWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), GatkWrapperParams.class);
         }
         return openCGAClient.getVariantClient().runGatk(gatkWrapperParams, queryParams);
@@ -721,7 +727,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "configFile",commandOptions.configFile, true);
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
 
-            genomePlotAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+            genomePlotAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), GenomePlotAnalysisParams.class);
         }
         return openCGAClient.getVariantClient().runGenomePlot(genomePlotAnalysisParams, queryParams);
@@ -769,7 +776,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotNull(beanParams, "controlCohortSamples",commandOptions.controlCohortSamples, true);
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
 
-            gwasAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+            gwasAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), GwasAnalysisParams.class);
         }
         return openCGAClient.getVariantClient().runGwas(gwasAnalysisParams, queryParams);
@@ -834,7 +842,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotNull(beanParams, "indexSearch",commandOptions.indexSearch, true);
             putNestedIfNotNull(beanParams, "skipIndexedFiles",commandOptions.skipIndexedFiles, true);
 
-            variantIndexParams = JacksonUtils.getDefaultObjectMapper()
+            variantIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantIndexParams.class);
         }
         return openCGAClient.getVariantClient().runIndex(variantIndexParams, queryParams);
@@ -874,7 +883,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "inferredSexMethod",commandOptions.inferredSexMethod, true);
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
 
-            individualQcAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+            individualQcAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), IndividualQcAnalysisParams.class);
         }
         return openCGAClient.getVariantClient().runIndividualQc(individualQcAnalysisParams, queryParams);
@@ -913,7 +923,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
 
-            inferredSexAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+            inferredSexAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), InferredSexAnalysisParams.class);
         }
         return openCGAClient.getVariantClient().runInferredSex(inferredSexAnalysisParams, queryParams);
@@ -995,7 +1006,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
             putNestedIfNotNull(beanParams, "index",commandOptions.index, true);
 
-            knockoutAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+            knockoutAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), KnockoutAnalysisParams.class);
         }
         return openCGAClient.getVariantClient().runKnockout(knockoutAnalysisParams, queryParams);
@@ -1035,7 +1047,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
 
-            mendelianErrorAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+            mendelianErrorAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), MendelianErrorAnalysisParams.class);
         }
         return openCGAClient.getVariantClient().runMendelianError(mendelianErrorAnalysisParams, queryParams);
@@ -1130,7 +1143,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotNull(beanParams, "fitting",commandOptions.fitting, true);
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
 
-            mutationalSignatureAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+            mutationalSignatureAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), MutationalSignatureAnalysisParams.class);
         }
         return openCGAClient.getVariantClient().runMutationalSignature(mutationalSignatureAnalysisParams, queryParams);
@@ -1167,7 +1181,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
 
-            plinkWrapperParams = JacksonUtils.getDefaultObjectMapper()
+            plinkWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PlinkWrapperParams.class);
         }
         return openCGAClient.getVariantClient().runPlink(plinkWrapperParams, queryParams);
@@ -1299,7 +1314,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "method",commandOptions.method, true);
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
 
-            relatednessAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+            relatednessAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), RelatednessAnalysisParams.class);
         }
         return openCGAClient.getVariantClient().runRelatedness(relatednessAnalysisParams, queryParams);
@@ -1337,7 +1353,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "command",commandOptions.command, true);
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
 
-            rvtestsWrapperParams = JacksonUtils.getDefaultObjectMapper()
+            rvtestsWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), RvtestsWrapperParams.class);
         }
         return openCGAClient.getVariantClient().runRvtests(rvtestsWrapperParams, queryParams);
@@ -1412,7 +1429,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotNull(beanParams, "index",commandOptions.index, true);
             putNestedIfNotEmpty(beanParams, "cohortId",commandOptions.cohortId, true);
 
-            sampleEligibilityAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+            sampleEligibilityAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SampleEligibilityAnalysisParams.class);
         }
         return openCGAClient.getVariantClient().runSampleEligibility(sampleEligibilityAnalysisParams, queryParams);
@@ -1483,7 +1501,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "genomePlotConfigFile",commandOptions.genomePlotConfigFile, true);
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
 
-            sampleQcAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+            sampleQcAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SampleQcAnalysisParams.class);
         }
         return openCGAClient.getVariantClient().runSampleQc(sampleQcAnalysisParams, queryParams);
@@ -1567,7 +1586,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotNull(beanParams, "samplesInAllVariants",commandOptions.samplesInAllVariants, true);
             putNestedIfNotNull(beanParams, "maxVariants",commandOptions.maxVariants, true);
 
-            sampleVariantFilterParams = JacksonUtils.getDefaultObjectMapper()
+            sampleVariantFilterParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SampleVariantFilterParams.class);
         }
         return openCGAClient.getVariantClient().runSample(sampleVariantFilterParams, queryParams);
@@ -1667,7 +1687,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "indexDescription",commandOptions.indexDescription, true);
             putNestedIfNotNull(beanParams, "batchSize",commandOptions.batchSize, true);
 
-            sampleVariantStatsAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+            sampleVariantStatsAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SampleVariantStatsAnalysisParams.class);
         }
         return openCGAClient.getVariantClient().runSampleStats(sampleVariantStatsAnalysisParams, queryParams);
@@ -1709,7 +1730,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "gene",commandOptions.gene, true);
             putNestedIfNotEmpty(beanParams, "outputFileFormat",commandOptions.outputFileFormat, true);
 
-            variantStatsExportParams = JacksonUtils.getDefaultObjectMapper()
+            variantStatsExportParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantStatsExportParams.class);
         }
         return openCGAClient.getVariantClient().runStatsExport(variantStatsExportParams, queryParams);
@@ -1753,7 +1775,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotNull(beanParams, "aggregated",commandOptions.aggregated, true);
             putNestedIfNotEmpty(beanParams, "aggregationMappingFile",commandOptions.aggregationMappingFile, true);
 
-            variantStatsAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+            variantStatsAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantStatsAnalysisParams.class);
         }
         return openCGAClient.getVariantClient().runStats(variantStatsAnalysisParams, queryParams);

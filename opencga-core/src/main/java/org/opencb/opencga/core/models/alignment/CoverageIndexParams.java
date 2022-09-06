@@ -2,11 +2,12 @@ package org.opencb.opencga.core.models.alignment;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.tools.ToolParams;
 
-public class CoverageIndexParams {
+public class CoverageIndexParams extends ToolParams {
+
     public static final String DESCRIPTION = "Coverage computation parameters";
 
     @DataField(description = ParamConstants.COVERAGE_INDEX_PARAMS_FILE_DESCRIPTION)

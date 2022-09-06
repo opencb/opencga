@@ -1,5 +1,6 @@
 package org.opencb.opencga.app.cli.main.executors;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
@@ -17,9 +18,9 @@ import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.DiseasePanelsCommandOptions;
 
-import java.util.Map;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelAclUpdateParams;
@@ -97,7 +98,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private RestResponse<ObjectMap> updateAcl() throws Exception {
+    private RestResponse<AclEntryList> updateAcl() throws Exception {
 
         logger.debug("Executing updateAcl in Disease Panels command line");
 
@@ -113,7 +114,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         PanelAclUpdateParams panelAclUpdateParams= null;
         if (commandOptions.jsonDataModel) {
             panelAclUpdateParams = new PanelAclUpdateParams();
-            RestResponse<ObjectMap> res = new RestResponse<>();
+            RestResponse<AclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(panelAclUpdateParams));
             return res;
@@ -125,7 +126,8 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
             putNestedIfNotEmpty(beanParams, "panel",commandOptions.panel, true);
 
-            panelAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
+            panelAclUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PanelAclUpdateParams.class);
         }
         return openCGAClient.getDiseasePanelClient().updateAcl(commandOptions.members, commandOptions.action, panelAclUpdateParams, queryParams);
@@ -170,7 +172,8 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "source.project",commandOptions.sourceProject, true);
             putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
 
-            panelCreateParams = JacksonUtils.getDefaultObjectMapper()
+            panelCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PanelCreateParams.class);
         }
         return openCGAClient.getDiseasePanelClient().create(panelCreateParams, queryParams);
@@ -241,7 +244,8 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "source",commandOptions.source, true);
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
 
-            panelImportParams = JacksonUtils.getDefaultObjectMapper()
+            panelImportParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PanelImportParams.class);
         }
         return openCGAClient.getDiseasePanelClient().importPanels(panelImportParams, queryParams);
@@ -285,7 +289,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getDiseasePanelClient().search(queryParams);
     }
 
-    private RestResponse<ObjectMap> acl() throws Exception {
+    private RestResponse<AclEntryList> acl() throws Exception {
 
         logger.debug("Executing acl in Disease Panels command line");
 
@@ -375,7 +379,8 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "source.project",commandOptions.sourceProject, true);
             putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
 
-            panelUpdateParams = JacksonUtils.getDefaultObjectMapper()
+            panelUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PanelUpdateParams.class);
         }
         return openCGAClient.getDiseasePanelClient().update(commandOptions.panels, panelUpdateParams, queryParams);

@@ -145,7 +145,7 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                 if (!biotypes.isEmpty()) {
                     Query query = new Query(org.opencb.cellbase.core.ParamConstants.TRANSCRIPT_BIOTYPES_PARAM, String.join(",", biotypes));
                     for (Gene gene : cellBaseUtils.getCellBaseClient().getGeneClient().search(query, queryOptions).allResults()) {
-                        otherGenes.add(gene.getName());
+                        otherGenes.add(getGeneName(gene));
                     }
                 }
             } else {
@@ -176,10 +176,10 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                             .filter(biotypeFilter)
                             .collect(Collectors.toSet());
                     if (biotypes.contains(VariantAnnotationConstants.PROTEIN_CODING)) {
-                        proteinCodingGenes.add(gene.getName());
+                        proteinCodingGenes.add(getGeneName(gene));
                     }
                     if (biotypes.size() == 1 && !biotypes.contains(VariantAnnotationConstants.PROTEIN_CODING) || biotypes.size() > 1) {
-                        otherGenes.add(gene.getName());
+                        otherGenes.add(getGeneName(gene));
                     }
                 }
             }
@@ -387,6 +387,14 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                 RgaManager rgaManager = new RgaManager(getCatalogManager(), getVariantStorageManager());
                 rgaManager.index(study, getIndividualsOutputFile(), token);
             });
+        }
+    }
+
+    private String getGeneName(Gene gene) {
+        if (gene.getName() == null) {
+            return gene.getId();
+        } else {
+            return gene.getName();
         }
     }
 

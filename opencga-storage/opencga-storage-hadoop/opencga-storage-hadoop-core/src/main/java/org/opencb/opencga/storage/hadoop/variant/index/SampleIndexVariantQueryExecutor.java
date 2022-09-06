@@ -10,11 +10,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.MultiVariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIteratorWithCounts;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.AbstractTwoPhasedVariantQueryExecutor;
@@ -96,33 +94,8 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
         return getOrIterator(query, options, iterator, sampleIndexQuery);
     }
 
-    protected Object getOrIterator(Query query, QueryOptions options, boolean iterator, SampleIndexQuery sampleIndexQuery) {
-        if (isFullyCoveredQuery(query, options)) {
-            logger.info("HBase SampleIndex, skip variants table");
-            return getOrIteratorFullyCovered(options, iterator, query, sampleIndexQuery);
-        } else {
-            logger.info("HBase SampleIndex intersect");
-            return getOrIteratorIntersect(sampleIndexQuery, query, options, iterator);
-        }
-    }
-
-    private Object getOrIteratorFullyCovered(QueryOptions options, boolean iterator, Query query, SampleIndexQuery sampleIndexQuery) {
-        VariantDBIterator variantIterator = sampleIndexDBAdaptor.iterator(sampleIndexQuery, options);
-        variantIterator = variantIterator.map(v -> v.setId(v.toString()));
-        if (iterator) {
-            return variantIterator;
-        } else {
-            VariantQueryResult<Variant> result =
-                    addSamplesMetadataIfRequested(variantIterator.toDataResult(), query, options, getMetadataManager());
-//                if (!options.getBoolean(QueryOptions.SKIP_COUNT, true) || options.getBoolean(APPROXIMATE_COUNT.key(), false)) {
-//
-//                }
-            result.setSource(SAMPLE_INDEX_TABLE_SOURCE);
-            return result;
-        }
-    }
-
-    private Object getOrIteratorIntersect(SampleIndexQuery sampleIndexQuery, Query query, QueryOptions inputOptions, boolean iterator) {
+    protected Object getOrIterator(Query query, QueryOptions inputOptions, boolean iterator, SampleIndexQuery sampleIndexQuery) {
+        logger.info("HBase SampleIndex intersect");
         Future<Long> asyncCountFuture;
         boolean asyncCount;
         if (shouldGetApproximateCount(inputOptions, iterator) && queryFiltersCovered(query)) {
@@ -216,17 +189,6 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
         query.put(REGION.key(), sampleIndexQuery.getAllRegions());
         query.put(ID.key(), sampleIndexQuery.getAllVariants());
         setNumTotalResults(variants, result, query, options, variantDBIterator.getNumVariantsFromPrimary(), result.getNumResults());
-    }
-
-    private boolean isFullyCoveredQuery(Query query, QueryOptions options) {
-
-        // Check if the included files are fully covered
-        Set<VariantField> includeFields = VariantField.getIncludeFields(options);
-        if (includeFields.contains(VariantField.ANNOTATION) || includeFields.contains(VariantField.STUDIES)) {
-            return false;
-        }
-        return queryFiltersCovered(query);
-
     }
 
     private boolean queryFiltersCovered(Query query) {

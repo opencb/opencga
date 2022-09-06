@@ -666,7 +666,6 @@ public class OpenCGAWSServer {
         return createOkResponse(obj, Collections.singletonList(event));
     }
 
-
     // TODO: Change signature
     //    protected <T> Response createOkResponse(OpenCGAResult<T> result)
     //    protected <T> Response createOkResponse(List<OpenCGAResult<T>> results)

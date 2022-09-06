@@ -555,7 +555,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         clinicalVariantEvidence.setClassification(new VariantClassification());
 
         // Variant classification: ACMG
-        List<String> acmgs = calculateAcmgClassification(consequenceType, annotation, mois);
+        List<ClinicalAcmg> acmgs = calculateAcmgClassification(consequenceType, annotation, mois);
         clinicalVariantEvidence.getClassification().setAcmg(acmgs);
 
         // Variant classification: clinical significance
@@ -1025,8 +1025,7 @@ public class ClinicalInterpretationManager extends StorageManager {
     public List<ClinicalVariant> getSecondaryFindings(ClinicalAnalysis clinicalAnalysis,  List<String> sampleNames,
                                                       String studyId, ClinicalVariantCreator creator, String sessionId)
             throws StorageEngineException, ToolException, CatalogException, IOException {
-        throw new NotImplementedException("Secondary findings does not exist");
-//        List<ClinicalVariant> secondaryFindings = null;
+        List<ClinicalVariant> secondaryFindings = new ArrayList<>();
 //        if (clinicalAnalysis.getConsent() != null
 //                && clinicalAnalysis.getConsent().getSecondaryFindings() == ClinicalConsent.ConsentStatus.YES) {
 //            List<Variant> variants = getSecondaryFindings(sampleNames.get(0), clinicalAnalysis.getId(), studyId,
@@ -1035,7 +1034,7 @@ public class ClinicalInterpretationManager extends StorageManager {
 //                secondaryFindings = creator.createSecondaryFindings(variants);
 //            }
 //        }
-//        return secondaryFindings;
+        return secondaryFindings;
     }
 
 //    public List<ReportedLowCoverage> getReportedLowCoverage(int maxCoverage, ClinicalAnalysis clinicalAnalysis,

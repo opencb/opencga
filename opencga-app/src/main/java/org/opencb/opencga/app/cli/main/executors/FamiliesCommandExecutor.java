@@ -1,5 +1,6 @@
 package org.opencb.opencga.app.cli.main.executors;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
@@ -22,6 +23,7 @@ import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.family.Family;
@@ -108,7 +110,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private RestResponse<ObjectMap> updateAcl() throws Exception {
+    private RestResponse<AclEntryList> updateAcl() throws Exception {
 
         logger.debug("Executing updateAcl in Families command line");
 
@@ -125,7 +127,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         FamilyAclUpdateParams familyAclUpdateParams= null;
         if (commandOptions.jsonDataModel) {
             familyAclUpdateParams = new FamilyAclUpdateParams();
-            RestResponse<ObjectMap> res = new RestResponse<>();
+            RestResponse<AclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(familyAclUpdateParams));
             return res;
@@ -139,7 +141,8 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "individual",commandOptions.individual, true);
             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
 
-            familyAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
+            familyAclUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FamilyAclUpdateParams.class);
         }
         return openCGAClient.getFamilyClient().updateAcl(commandOptions.members, commandOptions.action, familyAclUpdateParams, queryParams);
@@ -202,7 +205,8 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "content",commandOptions.content, true);
 
-            tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper()
+            tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), TsvAnnotationParams.class);
         }
         return openCGAClient.getFamilyClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
@@ -247,7 +251,8 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
-            familyCreateParams = JacksonUtils.getDefaultObjectMapper()
+            familyCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FamilyCreateParams.class);
         }
         return openCGAClient.getFamilyClient().create(familyCreateParams, queryParams);
@@ -323,7 +328,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getFamilyClient().search(queryParams);
     }
 
-    private RestResponse<ObjectMap> acl() throws Exception {
+    private RestResponse<AclEntryList> acl() throws Exception {
 
         logger.debug("Executing acl in Families command line");
 
@@ -415,7 +420,8 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
-            familyUpdateParams = JacksonUtils.getDefaultObjectMapper()
+            familyUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FamilyUpdateParams.class);
         }
         return openCGAClient.getFamilyClient().update(commandOptions.families, familyUpdateParams, queryParams);

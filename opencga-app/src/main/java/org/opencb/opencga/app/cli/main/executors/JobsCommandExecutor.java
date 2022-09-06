@@ -1,5 +1,6 @@
 package org.opencb.opencga.app.cli.main.executors;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
@@ -20,10 +21,10 @@ import org.opencb.opencga.app.cli.main.options.JobsCommandOptions;
 import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
 
 import java.util.Date;
-import java.util.Map;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.core.models.job.Job;
@@ -123,7 +124,7 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
 
     }
 
-    private RestResponse<ObjectMap> updateAcl() throws Exception {
+    private RestResponse<AclEntryList> updateAcl() throws Exception {
 
         logger.debug("Executing updateAcl in Jobs command line");
 
@@ -132,7 +133,7 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
         JobAclUpdateParams jobAclUpdateParams= null;
         if (commandOptions.jsonDataModel) {
             jobAclUpdateParams = new JobAclUpdateParams();
-            RestResponse<ObjectMap> res = new RestResponse<>();
+            RestResponse<AclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(jobAclUpdateParams));
             return res;
@@ -144,7 +145,8 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
             putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
             putNestedIfNotEmpty(beanParams, "job",commandOptions.job, true);
 
-            jobAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
+            jobAclUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JobAclUpdateParams.class);
         }
         return openCGAClient.getJobClient().updateAcl(commandOptions.members, commandOptions.action, jobAclUpdateParams);
@@ -224,7 +226,8 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
             putNestedIfNotEmpty(beanParams, "stdout.path",commandOptions.stdoutPath, true);
             putNestedIfNotEmpty(beanParams, "stderr.path",commandOptions.stderrPath, true);
 
-            jobCreateParams = JacksonUtils.getDefaultObjectMapper()
+            jobCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JobCreateParams.class);
         }
         return openCGAClient.getJobClient().create(jobCreateParams, queryParams);
@@ -295,7 +298,8 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
             putNestedIfNotEmpty(beanParams, "job",commandOptions.job, true);
             putNestedIfNotNull(beanParams, "force",commandOptions.force, true);
 
-            jobRetryParams = JacksonUtils.getDefaultObjectMapper()
+            jobRetryParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JobRetryParams.class);
         }
         return openCGAClient.getJobClient().retry(jobRetryParams, queryParams);
@@ -347,7 +351,7 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
 
     }
 
-    private RestResponse<ObjectMap> acl() throws Exception {
+    private RestResponse<AclEntryList> acl() throws Exception {
 
         logger.debug("Executing acl in Jobs command line");
 
@@ -425,7 +429,8 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
             putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
             putNestedIfNotNull(beanParams, "visited",commandOptions.visited, true);
 
-            jobUpdateParams = JacksonUtils.getDefaultObjectMapper()
+            jobUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JobUpdateParams.class);
         }
         return openCGAClient.getJobClient().update(commandOptions.jobs, jobUpdateParams, queryParams);

@@ -220,7 +220,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                     clinicalOptions, userId).first();
 
             authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(),
-                    userId, ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
+                    userId, ClinicalAnalysisPermissions.WRITE);
 
             validateNewInterpretation(study, interpretation, clinicalAnalysis, userId);
 
@@ -886,7 +886,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
                 interpretation.getClinicalAnalysisId(), INCLUDE_CLINICAL_ANALYSIS, userId).first();
         authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
-                ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
+                ClinicalAnalysisPermissions.WRITE);
 
         if (clinicalAnalysis.isLocked()) {
             throw new CatalogException("Could not update the Interpretation. Case is locked so no further modifications can be made to"
@@ -1089,7 +1089,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             }
             ClinicalAnalysis clinicalAnalysis = clinicalResult.first();
             authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
-                    ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
+                    ClinicalAnalysisPermissions.WRITE);
             if (clinicalAnalysis.isLocked()) {
                 throw new CatalogException("Could not revert the Interpretation. Case is locked so no further modifications can be made to"
                         + " the Interpretation.");
@@ -1289,7 +1289,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             }
             if (checkPermissions) {
                 authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(),
-                        userId, ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
+                        userId, ClinicalAnalysisPermissions.WRITE);
             }
         } catch (CatalogException e) {
             auditManager.auditDelete(operationId, userId, Enums.Resource.INTERPRETATION, "", "", study.getId(), study.getUuid(),

@@ -139,7 +139,7 @@ public class VariantFileIndexJobLauncherTool extends OpenCgaToolScopeStudy {
         if (fileName.length() > 30) {
             fileName = fileName.substring(0, 30);
         }
-        return "index_" + fileName + "_" + TimeUtils.getTime();
+        return "index_" + fileName + "_" + TimeUtils.getTimeMillis();
     }
 
     public static String getVariantIndexStatus(File file) {

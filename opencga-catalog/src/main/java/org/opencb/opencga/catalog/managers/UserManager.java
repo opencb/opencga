@@ -63,9 +63,11 @@ import java.util.stream.Collectors;
  */
 public class UserManager extends AbstractManager {
 
+
     protected static final String EMAIL_REGEX = "^['_A-Za-z0-9-\\+]+(\\.['_A-Za-z0-9-]+)*@"
             + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
     protected static final Pattern EMAIL_PATTERN = Pattern.compile(EMAIL_REGEX);
+
     static final QueryOptions INCLUDE_ACCOUNT = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             UserDBAdaptor.QueryParams.ID.key(), UserDBAdaptor.QueryParams.ACCOUNT.key()));
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);

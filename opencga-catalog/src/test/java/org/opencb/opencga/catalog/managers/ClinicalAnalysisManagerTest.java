@@ -46,21 +46,25 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.common.FlagValue;
 import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.FamilyPermissions;
 import org.opencb.opencga.core.models.family.FamilyUpdateParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.file.FileReferenceParam;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualPermissions;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsent;
@@ -531,12 +535,15 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         VariantAvro variantAvro = new VariantAvro("id1", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
         ClinicalVariant cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, null);
+
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+
         findingList.add(cv);
         findingList.add(cv);
         variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(), ClinicalVariant.Status.NOT_REVIEWED,
-                null);
+                Collections.emptyList(), null);
+
         findingList.add(cv);
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
@@ -562,12 +569,14 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         VariantAvro variantAvro = new VariantAvro("id1", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
         ClinicalVariant cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, null);
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+
         findingList.add(cv);
         findingList.add(cv);
         variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(), ClinicalVariant.Status.NOT_REVIEWED,
-                null);
+                Collections.emptyList(), null);
+
         findingList.add(cv);
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
@@ -593,11 +602,12 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         VariantAvro variantAvro = new VariantAvro("id1", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
         ClinicalVariant cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, null);
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
         findingList.add(cv1);
         variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariant cv2 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, null);
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+
         findingList.add(cv2);
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
@@ -620,7 +630,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         variantAvro = new VariantAvro("id3", null, "chr3", 2, 3, "", "", "+", null, 1, null, null, null);
         evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method2");
         ClinicalVariant cv3 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, null);
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
         findingList.add(cv3);
 
         InterpretationUpdateParams updateParams = new InterpretationUpdateParams()
@@ -716,7 +726,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         variantAvro = new VariantAvro("", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
         cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(), ClinicalVariant.Status.NOT_REVIEWED,
-                null);
+                Collections.emptyList(), null);
 
         updateParams = new InterpretationUpdateParams()
                 .setPrimaryFindings(Collections.singletonList(cv1));
@@ -755,11 +765,12 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         VariantAvro variantAvro = new VariantAvro("id1", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
         ClinicalVariant cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, null);
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
         findingList.add(cv1);
         variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariant cv2 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, null);
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+
         findingList.add(cv2);
 
         ClinicalAnalysis ca = new ClinicalAnalysis()
@@ -784,7 +795,8 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         variantAvro = new VariantAvro("id3", null, "chr3", 2, 3, "", "", "+", null, 1, null, null, null);
         evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method2");
         ClinicalVariant cv3 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, null);
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+
         findingList.add(cv3);
 
         InterpretationUpdateParams updateParams = new InterpretationUpdateParams()
@@ -883,7 +895,8 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         variantAvro = new VariantAvro("", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
         cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(), ClinicalVariant.Status.NOT_REVIEWED,
-                null);
+                Collections.emptyList(), null);
+
 
         updateParams = new InterpretationUpdateParams()
                 .setSecondaryFindings(Collections.singletonList(cv1));
@@ -1047,68 +1060,89 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         catalogManager.getUserManager().create("external", "User Name", "external@mail.com", TestParamConstants.PASSWORD, "", null,
                 Account.AccountType.GUEST, null);
 
-        OpenCGAResult<Map<String, List<String>>> aclResult = catalogManager.getClinicalAnalysisManager().getAcls(STUDY,
-                Collections.singletonList(clinicalAnalysis.getId()), "external", false, sessionIdUser);
-        assertEquals(0, aclResult.getNumResults());
+        OpenCGAResult<AclEntryList<ClinicalAnalysisPermissions>> aclResult =
+                catalogManager.getClinicalAnalysisManager().getAcls(STUDY, Collections.singletonList(clinicalAnalysis.getId()), "external",
+                        false, sessionIdUser);
+        assertEquals(1, aclResult.getNumResults());
+        assertEquals(1, aclResult.first().size());
+        assertEquals("external", aclResult.first().get(0).getMember());
+        assertNull(aclResult.first().get(0).getPermissions());
 
-        aclResult = catalogManager.getFamilyManager().getAcls(STUDY,
+        OpenCGAResult<AclEntryList<FamilyPermissions>> fAclResult = catalogManager.getFamilyManager().getAcls(STUDY,
                 Collections.singletonList(clinicalAnalysis.getFamily().getId()), "external", false, sessionIdUser);
-        assertEquals(0, aclResult.getNumResults());
+        assertEquals(1, fAclResult.getNumResults());
+        assertEquals(1, fAclResult.first().size());
+        assertEquals("external", fAclResult.first().get(0).getMember());
+        assertNull(fAclResult.first().get(0).getPermissions());
 
-        aclResult = catalogManager.getIndividualManager().getAcls(STUDY,
+        OpenCGAResult<AclEntryList<IndividualPermissions>> iAclResult = catalogManager.getIndividualManager().getAcls(STUDY,
                 Collections.singletonList(clinicalAnalysis.getProband().getId()), "external", false, sessionIdUser);
-        assertEquals(0, aclResult.getNumResults());
+        assertEquals(1, iAclResult.getNumResults());
+        assertEquals(1, iAclResult.first().size());
+        assertEquals("external", iAclResult.first().get(0).getMember());
+        assertNull(iAclResult.first().get(0).getPermissions());
 
-        aclResult = catalogManager.getSampleManager().getAcls(STUDY,
+        OpenCGAResult<AclEntryList<SamplePermissions>> sAclResult = catalogManager.getSampleManager().getAcls(STUDY,
                 Collections.singletonList(clinicalAnalysis.getProband().getSamples().get(0).getId()), "external", false, sessionIdUser);
-        assertEquals(0, aclResult.getNumResults());
+        assertEquals(1, sAclResult.getNumResults());
+        assertEquals(1, sAclResult.first().size());
+        assertEquals("external", sAclResult.first().get(0).getMember());
+        assertNull(sAclResult.first().get(0).getPermissions());
 
         // Assign permissions to clinical analysis without propagating the permissions
         catalogManager.getClinicalAnalysisManager().updateAcl(STUDY, Collections.singletonList(clinicalAnalysis.getId()), "external",
-                new AclParams(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.DELETE.name()), ParamUtils.AclAction.ADD, false,
-                sessionIdUser);
+                new AclParams(ClinicalAnalysisPermissions.DELETE.name()), ParamUtils.AclAction.ADD, false, sessionIdUser);
 
         aclResult = catalogManager.getClinicalAnalysisManager().getAcls(STUDY,
                 Collections.singletonList(clinicalAnalysis.getId()), "external", false, sessionIdUser);
         assertEquals(1, aclResult.getNumResults());
-        assertEquals(3, aclResult.first().get("external").size());
+        assertEquals(3, aclResult.first().get(0).getPermissions().size());
 
-        aclResult = catalogManager.getFamilyManager().getAcls(STUDY,
+        fAclResult = catalogManager.getFamilyManager().getAcls(STUDY,
                 Collections.singletonList(clinicalAnalysis.getFamily().getId()), "external", false, sessionIdUser);
-        assertEquals(0, aclResult.getNumResults());
+        assertEquals(1, fAclResult.getNumResults());
+        assertEquals(1, fAclResult.first().size());
+        assertEquals("external", fAclResult.first().get(0).getMember());
+        assertNull(fAclResult.first().get(0).getPermissions());
 
-        aclResult = catalogManager.getIndividualManager().getAcls(STUDY,
+        iAclResult = catalogManager.getIndividualManager().getAcls(STUDY,
                 Collections.singletonList(clinicalAnalysis.getProband().getId()), "external", false, sessionIdUser);
-        assertEquals(0, aclResult.getNumResults());
+        assertEquals(1, iAclResult.getNumResults());
+        assertEquals(1, iAclResult.first().size());
+        assertEquals("external", iAclResult.first().get(0).getMember());
+        assertNull(iAclResult.first().get(0).getPermissions());
 
-        aclResult = catalogManager.getSampleManager().getAcls(STUDY,
+        sAclResult = catalogManager.getSampleManager().getAcls(STUDY,
                 Collections.singletonList(clinicalAnalysis.getProband().getSamples().get(0).getId()), "external", false, sessionIdUser);
-        assertEquals(0, aclResult.getNumResults());
+        assertEquals(1, sAclResult.getNumResults());
+        assertEquals(1, sAclResult.first().size());
+        assertEquals("external", sAclResult.first().get(0).getMember());
+        assertNull(sAclResult.first().get(0).getPermissions());
 
         // Assign permissions to clinical analysis PROPAGATING the permissions
         catalogManager.getClinicalAnalysisManager().updateAcl(STUDY, Collections.singletonList(clinicalAnalysis.getId()), "external",
-                new AclParams(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.DELETE.name()), ParamUtils.AclAction.ADD, true,
+                new AclParams(ClinicalAnalysisPermissions.DELETE.name()), ParamUtils.AclAction.ADD, true,
                 sessionIdUser);
 
         aclResult = catalogManager.getClinicalAnalysisManager().getAcls(STUDY,
                 Collections.singletonList(clinicalAnalysis.getId()), "external", false, sessionIdUser);
         assertEquals(1, aclResult.getNumResults());
-        assertEquals(3, aclResult.first().get("external").size());
+        assertEquals(3, aclResult.first().get(0).getPermissions().size());
 
-        aclResult = catalogManager.getFamilyManager().getAcls(STUDY,
+        fAclResult = catalogManager.getFamilyManager().getAcls(STUDY,
                 Collections.singletonList(clinicalAnalysis.getFamily().getId()), "external", false, sessionIdUser);
-        assertEquals(1, aclResult.getNumResults());
-        assertEquals(2, aclResult.first().get("external").size());
+        assertEquals(1, fAclResult.getNumResults());
+        assertEquals(2, fAclResult.first().get(0).getPermissions().size());
 
-        aclResult = catalogManager.getIndividualManager().getAcls(STUDY,
+        iAclResult = catalogManager.getIndividualManager().getAcls(STUDY,
                 Collections.singletonList(clinicalAnalysis.getProband().getId()), "external", false, sessionIdUser);
-        assertEquals(1, aclResult.getNumResults());
-        assertEquals(2, aclResult.first().get("external").size());
+        assertEquals(1, iAclResult.getNumResults());
+        assertEquals(2, iAclResult.first().get(0).getPermissions().size());
 
-        aclResult = catalogManager.getSampleManager().getAcls(STUDY,
+        sAclResult = catalogManager.getSampleManager().getAcls(STUDY,
                 Collections.singletonList(clinicalAnalysis.getProband().getSamples().get(0).getId()), "external", false, sessionIdUser);
-        assertEquals(1, aclResult.getNumResults());
-        assertEquals(2, aclResult.first().get("external").size());
+        assertEquals(1, sAclResult.getNumResults());
+        assertEquals(2, sAclResult.first().get(0).getPermissions().size());
     }
 
     @Test

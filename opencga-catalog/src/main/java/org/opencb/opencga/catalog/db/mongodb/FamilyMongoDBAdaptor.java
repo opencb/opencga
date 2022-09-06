@@ -51,10 +51,10 @@ import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.family.FamilyAclEntry;
+import org.opencb.opencga.core.models.family.FamilyPermissions;
 import org.opencb.opencga.core.models.family.FamilyStatus;
 import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -874,7 +874,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
         UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
-                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(), FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
+                StudyPermissions.Permissions.VIEW_FAMILY_ANNOTATIONS.name(), FamilyPermissions.VIEW_ANNOTATIONS.name());
 
         return new FamilyCatalogMongoDBIterator<>(mongoCursor, null, familyConverter, iteratorFilter,
                 dbAdaptorFactory.getCatalogIndividualDBAdaptor(), studyUid, user, options);
@@ -895,7 +895,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
         UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
-                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(), FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
+                StudyPermissions.Permissions.VIEW_FAMILY_ANNOTATIONS.name(), FamilyPermissions.VIEW_ANNOTATIONS.name());
 
         return new FamilyCatalogMongoDBIterator(mongoCursor, clientSession, null, iteratorFilter,
                 dbAdaptorFactory.getCatalogIndividualDBAdaptor(), studyUid, user, options);
@@ -1087,9 +1087,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             } else {
                 if (containsAnnotationQuery(query)) {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                            FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.FAMILY, configuration));
+                            FamilyPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.FAMILY, configuration));
                 } else {
-                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FamilyAclEntry.FamilyPermissions.VIEW.name(),
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FamilyPermissions.VIEW.name(),
                             Enums.Resource.FAMILY, configuration));
                 }
             }

@@ -30,8 +30,8 @@ import org.opencb.opencga.app.cli.main.parent.ParentCliOptionsParser;
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
-*    Command line version: 2.4.3-SNAPSHOT
-*    Command line commit: cc50328574edad431d449cee146a2723a6da24ce
+*    Command line version: 2.4.4-SNAPSHOT
+*    Command line commit: be415c35bf5285c3c51298b7747cab450f3e2a0f
 */
 
 public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
@@ -41,6 +41,7 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
     private final DiseasePanelsCommandOptions diseasePanelsCommandOptions;
     private final AnalysisClinicalCommandOptions analysisClinicalCommandOptions;
     private final JobsCommandOptions jobsCommandOptions;
+    private final AdminCommandOptions adminCommandOptions;
     private final IndividualsCommandOptions individualsCommandOptions;
     private final FamiliesCommandOptions familiesCommandOptions;
     private final UsersCommandOptions usersCommandOptions;
@@ -177,6 +178,18 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         jobsSubCommands.addCommand("log-head", jobsCommandOptions.headLogCommandOptions);
         jobsSubCommands.addCommand("log-tail", jobsCommandOptions.tailLogCommandOptions);
         jobsSubCommands.addCommand("log", jobsCommandOptions.logCommandOptions);
+
+        adminCommandOptions = new AdminCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("admin", adminCommandOptions);
+        JCommander adminSubCommands = jCommander.getCommands().get("admin");
+        adminSubCommands.addCommand("audit-group-by", adminCommandOptions.groupByAuditCommandOptions);
+        adminSubCommands.addCommand("catalog-index-stats", adminCommandOptions.indexStatsCatalogCommandOptions);
+        adminSubCommands.addCommand("catalog-install", adminCommandOptions.installCatalogCommandOptions);
+        adminSubCommands.addCommand("catalog-jwt", adminCommandOptions.jwtCatalogCommandOptions);
+        adminSubCommands.addCommand("users-create", adminCommandOptions.createUsersCommandOptions);
+        adminSubCommands.addCommand("users-import", adminCommandOptions.importUsersCommandOptions);
+        adminSubCommands.addCommand("users-search", adminCommandOptions.searchUsersCommandOptions);
+        adminSubCommands.addCommand("users-sync", adminCommandOptions.syncUsersCommandOptions);
 
         individualsCommandOptions = new IndividualsCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("individuals", individualsCommandOptions);
@@ -392,6 +405,11 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
     
     public JobsCommandOptions getJobsCommandOptions() {
         return jobsCommandOptions;
+    }
+    
+    
+    public AdminCommandOptions getAdminCommandOptions() {
+        return adminCommandOptions;
     }
     
     

@@ -254,6 +254,16 @@ public abstract class MigrationTool {
         dropIndex(getMongoCollection(collection), index);
     }
 
+    protected final void dropIndex(List<String> collections, Document index) {
+        for (String collection : collections) {
+            try {
+                getMongoCollection(collection).dropIndex(index);
+            } catch (Exception e) {
+                logger.warn("Could not drop index: {}", e.getMessage());
+            }
+        }
+    }
+
     protected final void dropIndex(MongoCollection<Document> collection, Document index) {
         try {
             collection.dropIndex(index);

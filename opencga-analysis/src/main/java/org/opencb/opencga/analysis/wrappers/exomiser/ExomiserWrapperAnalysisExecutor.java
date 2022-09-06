@@ -5,7 +5,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.analysis.ResourceUtils;
@@ -18,6 +17,8 @@ import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,9 +27,9 @@ import java.io.*;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
-
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLE;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 @ToolExecutor(id = ExomiserWrapperAnalysisExecutor.ID,
         tool = ExomiserWrapperAnalysis.ID,
@@ -52,21 +53,13 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
     @Override
     public void run() throws ToolException {
-        Path vcfPath = getOutDir().resolve(sampleId + ".vcf.gz");
-        Query query = new Query(SAMPLE.key(), sampleId);
-        try {
-            getVariantStorageManager().exportData(vcfPath.toString(), VariantWriterFactory.VariantOutputFormat.VCF_GZ, null, query,
-                    QueryOptions.empty(), getToken());
-        } catch (StorageEngineException | CatalogException e) {
-            throw new ToolException(e);
-        }
-
         // Check HPOs, it will use a set to avoid duplicate HPOs,
         // and it will check both phenotypes and disorders
+        logger.info("{}: Checking individual for sample {} in study {}", ID, sampleId, studyId);
         Set<String> hpos = new HashSet<>();
         Individual individual = IndividualQcUtils.getIndividualBySampleId(studyId, sampleId, getVariantStorageManager().getCatalogManager(),
                 getToken());
-
+        logger.info("{}: Individual found: {}", ID, individual.getId());
         if (CollectionUtils.isNotEmpty(individual.getPhenotypes())) {
             for (Phenotype phenotype : individual.getPhenotypes()) {
                 if (phenotype.getId().startsWith("HP:")) {
@@ -83,18 +76,11 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         }
 
         if (CollectionUtils.isEmpty(hpos)) {
-            throw new ToolException("Missing phenotype, i.e. HPO terms, for individual/sample (" + individual.getId() + "/" + sampleId
+            throw new ToolException("Missing phenotypes, i.e. HPO terms, for individual/sample (" + individual.getId() + "/" + sampleId
                     + ")");
         }
 
-        // Create Exomiser sample file from HPOs
-        StringBuilder hpoSb = new StringBuilder();
-        for (String hpo : hpos) {
-            if (hpoSb.length() > 0) {
-                hpoSb.append(", ");
-            }
-            hpoSb.append("'" + hpo + "'");
-        }
+        logger.info("{}: Getting HPO for individual {}: {}", ID, individual.getId(), StringUtils.join(hpos, ","));
         try {
             PrintWriter pw = new PrintWriter(getOutDir().resolve(sampleId + ".yml").toAbsolutePath().toString());
             pw.write("# a v1 phenopacket describing an individual https://phenopacket-schema.readthedocs.io/en/1.0.0/phenopacket.html\n");
@@ -111,6 +97,22 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
             throw new ToolException("Error writing Exomiser sample file", e);
         }
 
+        // Export data into VCF file
+        Path vcfPath = getOutDir().resolve(sampleId + ".vcf.gz");
+        VariantQuery query = new VariantQuery()
+                .study(studyId)
+                .sample(sampleId)
+                .includeSampleId(true)
+                .includeGenotype(true);
+        logger.info("{}: Exomiser exports variants using the query: {}", ID, query.toJson());
+        try {
+            getVariantStorageManager().exportData(vcfPath.toString(), VariantWriterFactory.VariantOutputFormat.VCF_GZ, null, query,
+                    new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(VariantField.ID, VariantField.STUDIES_SAMPLES)), getToken());
+        } catch (StorageEngineException | CatalogException e) {
+            throw new ToolException(e);
+        }
+
+        // Get Exomiser (external) data
         Path openCgaHome = getOpencgaHomePath();
         Path exomiserDataPath = getAnalysisDataPath(ExomiserWrapperAnalysis.ID);
 
@@ -148,7 +150,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
                 .append(" --spring.config.location=/jobdir/").append(EXOMISER_PROPERTIES_TEMPLATE_FILENAME);
 
         // Execute command and redirect stdout and stderr to the files
-        logger.info("Docker command line: " + sb);
+        logger.info("{}: Docker command line: {}", ID, sb);
         runCommandLine(sb.toString());
     }
 
@@ -187,14 +189,16 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // If all is ready, then return
         if (readyFile.exists()) {
-            logger.info("Exomiser data is already downloaded, so Exomiser analysis is ready to be executed.");
+            logger.info("{}: Exomiser data is already downloaded, so Exomiser analysis is ready to be executed.", ID);
             return exomiserDataPath;
         }
 
         // If it is preparing, then wait for ready and then return
         if (preparingFile.exists()) {
             long startTime = System.currentTimeMillis();
-            logger.info("Exomiser data is downloading, waiting for it...");
+
+            logger.info("{}: Exomiser data is downloading, waiting for it...", ID);
+
             while (!readyFile.exists()) {
                 try {
                     Thread.sleep(10000);
@@ -208,7 +212,9 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
                             + " waiting time exceeded");
                 }
             }
-            logger.info("Exomiser data is now downloaded: Exomiser analysis is ready to be executed");
+
+            logger.info("{}: Exomiser data is now downloaded: Exomiser analysis is ready to be executed", ID);
+
             return exomiserDataPath;
         }
 
@@ -265,7 +271,8 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         // Download data
         try {
             url = new URL("http://resources.opencb.org/opencb/opencga/analysis/exomiser/" + filename);
-            logger.info("Downloading Exomiser data: {}", url);
+            logger.info("{}: Downloading Exomiser data: {}", ID, url);
+
             ResourceUtils.downloadThirdParty(url, exomiserDataPath);
         } catch (IOException e) {
             throw new ToolException("Error downloading Exomiser data from " + url, e);
@@ -273,7 +280,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Unzip
         try {
-            logger.info("Decompressing Exomiser data: {}", filename);
+            logger.info("{}: Decompressing Exomiser data: {}", ID, filename);
             new Command("unzip -o -d " + exomiserDataPath + " " + exomiserDataPath + "/" + filename)
                     .setOutputOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve("stdout_unzip_"
                             + filename + ".txt").toFile())))
@@ -285,7 +292,9 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         }
 
         // Free disk space
-        logger.info("Deleting Exomiser data: {}", filename);
+
+        logger.info("{}: Deleting Exomiser data: {}", ID, filename);
+
         exomiserDataPath.resolve(filename).toFile().delete();
     }
 

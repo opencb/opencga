@@ -1,5 +1,6 @@
 package org.opencb.opencga.app.cli.main.executors;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
@@ -135,7 +136,8 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
             putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
             putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
 
-            userCreateParams = JacksonUtils.getDefaultObjectMapper()
+            userCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), UserCreateParams.class);
         }
         return openCGAClient.getUserClient().create(userCreateParams);
@@ -172,7 +174,8 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
             putNestedIfNotEmpty(beanParams, "newPassword",commandOptions.newPassword, true);
             putNestedIfNotEmpty(beanParams, "reset",commandOptions.reset, true);
 
-            passwordChangeParams = JacksonUtils.getDefaultObjectMapper()
+            passwordChangeParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PasswordChangeParams.class);
         }
         return openCGAClient.getUserClient().password(passwordChangeParams);
@@ -227,7 +230,8 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
 
-            configUpdateParams = JacksonUtils.getDefaultObjectMapper()
+            configUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ConfigUpdateParams.class);
         }
         return openCGAClient.getUserClient().updateConfigs(commandOptions.user, configUpdateParams, queryParams);
@@ -296,7 +300,8 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
             putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
             putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
 
-            userUpdateParams = JacksonUtils.getDefaultObjectMapper()
+            userUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), UserUpdateParams.class);
         }
         return openCGAClient.getUserClient().update(commandOptions.user, userUpdateParams, queryParams);

@@ -9,6 +9,7 @@ import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.*;
 
 @ToolExecutor(id = DeeptoolsWrapperAnalysisExecutor.ID,
@@ -66,6 +67,7 @@ public class DeeptoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecu
             if (StringUtils.isEmpty(value)) {
                 value = String.valueOf(getExecutorParams().get("outFileName"));
             }
+            value = new File(value).getName();
             if (StringUtils.isNotEmpty(value)) {
                 List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("o", value)));
                 appendOutputFiles(outputFilenames, sb);

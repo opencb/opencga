@@ -37,9 +37,9 @@ import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.job.JobAclEntry;
 import org.opencb.opencga.core.models.job.JobInternal;
 import org.opencb.opencga.core.models.job.JobInternalWebhook;
+import org.opencb.opencga.core.models.job.JobPermissions;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.StudyNotification;
 import org.opencb.opencga.core.models.study.StudyUpdateParams;
@@ -377,7 +377,8 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         String jobId = job.getId();
 
         catalogManager.getJobManager().updateAcl(studyFqn, Collections.singletonList(jobId), "user2",
-                new AclParams(JobAclEntry.JobPermissions.VIEW.name()), ParamUtils.AclAction.ADD, token);
+                new AclParams(JobPermissions.VIEW.name()), ParamUtils.AclAction.ADD, token);
+
 
         daemon.checkJobs();
 

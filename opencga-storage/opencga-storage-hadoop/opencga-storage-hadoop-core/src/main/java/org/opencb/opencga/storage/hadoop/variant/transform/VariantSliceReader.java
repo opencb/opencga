@@ -37,18 +37,21 @@ import java.util.*;
  */
 public class VariantSliceReader implements DataReader<ImmutablePair<Long, List<Variant>>> {
 
-    private final int sliceBufferSize;
-    private int numSlices;
-    protected final Logger logger = LoggerFactory.getLogger(VariantSliceReader.class);
+    private final Logger logger = LoggerFactory.getLogger(VariantSliceReader.class);
+    private final ProgressLogger progressLogger;
     private final int chunkSize;
     private final String studyId;
     private final String fileId;
     private final DataReader<Variant> reader;
+    private final int sliceOffset;
+
     // chromosome -> slice -> variants
     // LinkedHashMap will preserve the reading order for the chromosomes
     private final LinkedHashMap<String, TreeMap<Long, List<Variant>>> bufferTree;
+    private Variant lastVariant = null;
+    private long firstSlicePosition = 0;
     private String currentChromosome = null;
-    private final ProgressLogger progressLogger;
+    private int numSlices;
 
     public VariantSliceReader(int chunkSize, DataReader<Variant> reader, int studyId, int fileId, int sliceBufferSize) {
         this(chunkSize, reader, studyId, fileId, sliceBufferSize, null);
@@ -56,7 +59,7 @@ public class VariantSliceReader implements DataReader<ImmutablePair<Long, List<V
 
     public VariantSliceReader(int chunkSize, DataReader<Variant> reader, int studyId, int fileId, int sliceBufferSize,
                               ProgressLogger progressLogger) {
-        this.sliceBufferSize = sliceBufferSize;
+        this.sliceOffset = sliceBufferSize * chunkSize;
         this.chunkSize = chunkSize;
         this.studyId = String.valueOf(studyId);
         this.fileId = String.valueOf(fileId);
@@ -93,23 +96,21 @@ public class VariantSliceReader implements DataReader<ImmutablePair<Long, List<V
 
     @Override
     public List<ImmutablePair<Long, List<Variant>>> read(int batchSize) {
-
         List<ImmutablePair<Long, List<Variant>>> slices = new ArrayList<>(batchSize);
 
         while (slices.size() < batchSize) {
-
-            List<Variant> read;
-            while (numSlices < sliceBufferSize) {
-                read = reader.read(10);
+            // Keep reading while slice is not ready
+            while (!isSliceReady()) {
+                List<Variant> read = reader.read(10);
                 if (read == null || read.isEmpty()) {
+                    // Stop looping when the reader is drained.
                     break;
                 }
                 if (progressLogger != null) {
                     progressLogger.increment(read.size());
                 }
-                for (Variant variant : read) {
-                    addVariant(variant);
-                }
+                // Add batch of variants to the bufferTree
+                addVariants(read);
             }
 
             // Nothing to read! Empty reader.
@@ -117,26 +118,64 @@ public class VariantSliceReader implements DataReader<ImmutablePair<Long, List<V
                 return slices;
             }
 
-            // Get current chromosome
-            if (bufferTree.get(currentChromosome).isEmpty()) {
-                for (Map.Entry<String, TreeMap<Long, List<Variant>>> entry : bufferTree.entrySet()) {
-                    if (!entry.getValue().isEmpty()) {
-                        currentChromosome = entry.getKey();
-                        break;
-                    }
-                }
-            }
-
-            TreeMap<Long, List<Variant>> map = bufferTree.get(currentChromosome);
-
-            Long slicePosition = map.firstKey();
-            List<Variant> variants = map.remove(slicePosition);
-            numSlices--;
-
-            slices.add(new ImmutablePair<>(slicePosition, variants));
+            // Take one slice from the bufferTree
+            slices.add(takeSlice());
         }
 
         return slices;
+    }
+
+    private boolean isSliceReady() {
+        boolean initialRead = lastVariant == null || currentChromosome == null;
+        if (initialRead) {
+            // Nothing read yet. Slice not ready
+            return false;
+        }
+        boolean sameChromosome = lastVariant.getChromosome().equals(currentChromosome);
+        if (sameChromosome) {
+            long firstSliceOffset = lastVariant.getStart() - firstSlicePosition;
+            if (firstSliceOffset < sliceOffset) {
+                // Same chromosome, and sliceOffset not met. Slice not ready.
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private ImmutablePair<Long, List<Variant>> takeSlice() {
+        TreeMap<Long, List<Variant>> map = bufferTree.get(currentChromosome);
+
+        Long slicePosition = map.firstKey();
+        List<Variant> variants = map.remove(slicePosition);
+        numSlices--;
+
+        // update current chromosome
+        if (bufferTree.get(currentChromosome).isEmpty()) {
+            for (Map.Entry<String, TreeMap<Long, List<Variant>>> entry : bufferTree.entrySet()) {
+                if (!entry.getValue().isEmpty()) {
+                    currentChromosome = entry.getKey();
+                    break;
+                }
+            }
+        }
+
+        updateFirstSlicePosition();
+        return ImmutablePair.of(slicePosition, variants);
+    }
+
+    private void updateFirstSlicePosition() {
+        if (lastVariant != null && numSlices > 0) {
+            TreeMap<Long, List<Variant>> map = bufferTree.get(currentChromosome);
+            Map.Entry<Long, List<Variant>> entry = map.firstEntry();
+            firstSlicePosition = entry.getKey();
+        }
+    }
+
+    private void addVariants(List<Variant> read) {
+        for (Variant variant : read) {
+            addVariant(variant);
+        }
+        updateFirstSlicePosition();
     }
 
     private void addVariant(Variant variant) {
@@ -151,13 +190,12 @@ public class VariantSliceReader implements DataReader<ImmutablePair<Long, List<V
         for (long slicePos : coveredSlicePositions) {
             addVariant(variant, chromosome, slicePos);
         }
+        lastVariant = variant;
     }
 
     private void addVariant(Variant variant, String chromosome, long slicePos) {
-        List<Variant> list;
-        TreeMap<Long, List<Variant>> positionMap = bufferTree.compute(chromosome,
-                (s, map) -> map == null ? new TreeMap<>(Long::compareTo) : map);
-        list = positionMap.compute(slicePos, (pos, variants) -> variants == null ? new LinkedList<>() : variants);
+        TreeMap<Long, List<Variant>> positionMap = bufferTree.computeIfAbsent(chromosome, (key) -> new TreeMap<>(Long::compareTo));
+        List<Variant> list = positionMap.computeIfAbsent(slicePos, (key) -> new LinkedList<>());
         if (list.isEmpty()) {
             // New list, new slice
             numSlices++;

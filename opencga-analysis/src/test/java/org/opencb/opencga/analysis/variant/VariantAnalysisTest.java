@@ -18,9 +18,11 @@ package org.opencb.opencga.analysis.variant;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.logging.log4j.core.config.Configurator;
 import org.hamcrest.CoreMatchers;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.opencb.biodata.models.clinical.Disorder;
@@ -39,6 +41,7 @@ import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
+import org.opencb.opencga.analysis.variant.operations.VariantSampleIndexOperationTool;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
@@ -63,6 +66,7 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.Location;
+import org.opencb.opencga.core.models.operations.variant.VariantSampleIndexParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
@@ -103,6 +107,10 @@ public class VariantAnalysisTest {
             .setStatus(Phenotype.Status.OBSERVED);
     public static final String DB_NAME = "opencga_test_" + USER + "_" + PROJECT;
     private ToolRunner toolRunner;
+    private static String father = "NA19661";
+    private static String mother = "NA19660";
+    private static String son = "NA19685";
+    private static String daughter = "NA19600";
 
     @Parameterized.Parameters(name = "{0}")
     public static Object[][] parameters() {
@@ -184,10 +192,6 @@ public class VariantAnalysisTest {
             Disorder disorder = new Disorder("disorder", "disorder", "", "", Collections.singletonList(phenotype), Collections.emptyMap());
             List<Individual> individuals = new ArrayList<>(4);
 
-            String father = "NA19661";
-            String mother = "NA19660";
-            String son = "NA19685";
-            String daughter = "NA19600";
             // Father
             individuals.add(catalogManager.getIndividualManager()
                     .create(STUDY, new Individual(father, father, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
@@ -238,7 +242,7 @@ public class VariantAnalysisTest {
         token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
 
         String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "Homo sapiens",
-                null, "GRCh37", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first().getId();
+                null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first().getId();
         catalogManager.getStudyManager().create(projectId, STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
 
         // Create 10 samples not indexed
@@ -692,6 +696,18 @@ public class VariantAnalysisTest {
         params.setQuery("(biotype=protein_coding AND ct=missense_variant AND gene=BRCA2) OR (gene=BTN3A2)");
 
         ExecutionResult er = toolRunner.execute(SampleEligibilityAnalysis.class, params.toObjectMap(), outDir, null, token);
+//        checkExecutionResult(er, false);
+    }
+
+    @Test
+    public void testVariantSecondarySampleIndex() throws Exception {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_VariantSecondarySampleIndex"));
+        System.out.println("outDir = " + outDir);
+        VariantSampleIndexParams params = new VariantSampleIndexParams();
+        params.setFamilyIndex(true);
+        params.setSample(Arrays.asList(son, daughter));
+
+        ExecutionResult er = toolRunner.execute(VariantSampleIndexOperationTool.class, params.toObjectMap(), outDir, null, token);
 //        checkExecutionResult(er, false);
     }
 

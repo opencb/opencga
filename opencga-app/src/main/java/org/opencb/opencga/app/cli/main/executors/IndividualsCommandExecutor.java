@@ -1,5 +1,6 @@
 package org.opencb.opencga.app.cli.main.executors;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
@@ -26,6 +27,7 @@ import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -117,7 +119,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private RestResponse<ObjectMap> updateAcl() throws Exception {
+    private RestResponse<AclEntryList> updateAcl() throws Exception {
 
         logger.debug("Executing updateAcl in Individuals command line");
 
@@ -134,7 +136,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         IndividualAclUpdateParams individualAclUpdateParams= null;
         if (commandOptions.jsonDataModel) {
             individualAclUpdateParams = new IndividualAclUpdateParams();
-            RestResponse<ObjectMap> res = new RestResponse<>();
+            RestResponse<AclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(individualAclUpdateParams));
             return res;
@@ -147,7 +149,8 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "individual",commandOptions.individual, true);
             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
 
-            individualAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
+            individualAclUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), IndividualAclUpdateParams.class);
         }
         return openCGAClient.getIndividualClient().updateAcl(commandOptions.members, commandOptions.action, individualAclUpdateParams, queryParams);
@@ -217,7 +220,8 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "content",commandOptions.content, true);
 
-            tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper()
+            tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), TsvAnnotationParams.class);
         }
         return openCGAClient.getIndividualClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
@@ -284,7 +288,8 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
-            individualCreateParams = JacksonUtils.getDefaultObjectMapper()
+            individualCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), IndividualCreateParams.class);
         }
         return openCGAClient.getIndividualClient().create(individualCreateParams, queryParams);
@@ -376,7 +381,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getIndividualClient().search(queryParams);
     }
 
-    private RestResponse<ObjectMap> acl() throws Exception {
+    private RestResponse<AclEntryList> acl() throws Exception {
 
         logger.debug("Executing acl in Individuals command line");
 
@@ -490,7 +495,8 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
             putNestedIfNotNull(beanParams, "qualityControl.files",commandOptions.qualityControlFiles, true);
 
-            individualUpdateParams = JacksonUtils.getDefaultObjectMapper()
+            individualUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), IndividualUpdateParams.class);
         }
         return openCGAClient.getIndividualClient().update(commandOptions.individuals, individualUpdateParams, queryParams);

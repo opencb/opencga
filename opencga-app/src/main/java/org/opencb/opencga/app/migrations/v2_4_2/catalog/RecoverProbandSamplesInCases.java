@@ -28,7 +28,10 @@ import java.util.*;
         description = "Recover lost samples in clinical collection #TASK-1470", version = "2.4.2",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
-        date = 20220725)
+
+        date = 20220725,
+        patch = 2)
+
 public class RecoverProbandSamplesInCases extends MigrationTool {
 
     @Override
@@ -37,7 +40,11 @@ public class RecoverProbandSamplesInCases extends MigrationTool {
         ClinicalAnalysisConverter converter = new ClinicalAnalysisConverter();
 
         queryMongo(MongoDBAdaptorFactory.CLINICAL_ANALYSIS_COLLECTION,
-                new Document("proband.samples", null),
+
+                new Document("$or", Arrays.asList(
+                        new Document("proband.samples", null),
+                        new Document("proband.samples", Collections.emptyList())
+                )),
                 Projections.include("uid", "id", "uuid", "studyUid", "proband"), (doc) -> {
                     ClinicalAnalysis currentCase = converter.convertToDataModelType(doc);
                     logger.info("Trying to recover Clinical Analysis [id: {}, uid: {}, uuid: {}]", currentCase.getId(),
@@ -73,8 +80,8 @@ public class RecoverProbandSamplesInCases extends MigrationTool {
                                 .append(IndividualDBAdaptor.QueryParams.UID.key(), currentCase.getProband().getUid())
                                 .append(IndividualDBAdaptor.QueryParams.VERSION.key(), currentCase.getProband().getVersion());
                         proband = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(query,
-                                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
-                                        IndividualDBAdaptor.QueryParams.VERSION.key(), IndividualDBAdaptor.QueryParams.SAMPLES.key())))
+                                        new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
+                                                IndividualDBAdaptor.QueryParams.VERSION.key(), IndividualDBAdaptor.QueryParams.SAMPLES.key())))
                                 .first();
                     } catch (CatalogException e) {
                         throw new RuntimeException(e);
@@ -120,14 +127,20 @@ public class RecoverProbandSamplesInCases extends MigrationTool {
             if (iterator.hasNext()) {
                 Document auditDoc = iterator.next();
                 Document auditParams = auditDoc.get("params", Document.class);
-                Document caseDoc = auditParams.get("clinicalAnalysis", Document.class);
-                ClinicalAnalysis clinicalAnalysis = converter.convertToDataModelType(caseDoc);
-                if (!probandId.equals(clinicalAnalysis.getProband().getId())) {
-                    logger.error("Proband '{}' from case '{}' does not match the proband '{}' used on create.", probandId, uuid,
-                            clinicalAnalysis.getProband().getId());
-                } else {
-                    logger.debug("Found case in Audit create");
-                    return clinicalAnalysis;
+                if (auditParams != null) {
+                    Document caseDoc = auditParams.get("clinicalAnalysis", Document.class);
+                    if (caseDoc != null) {
+                        Document caseProbandOnly = new Document("proband", caseDoc.get("proband"));
+                        converter.validateProbandToUpdate(caseProbandOnly);
+                        ClinicalAnalysis clinicalAnalysis = converter.convertToDataModelType(caseProbandOnly);
+                        if (!probandId.equals(clinicalAnalysis.getProband().getId())) {
+                            logger.error("Proband '{}' from case '{}' does not match the proband '{}' used on create.", probandId, uuid,
+                                    clinicalAnalysis.getProband().getId());
+                        } else {
+                            logger.debug("Found case in Audit create");
+                            return clinicalAnalysis;
+                        }
+                    }
                 }
             }
         }
@@ -148,13 +161,19 @@ public class RecoverProbandSamplesInCases extends MigrationTool {
             while (iterator.hasNext()) {
                 Document auditDoc = iterator.next();
                 Document auditParams = auditDoc.get("params", Document.class);
-                Document caseDoc = auditParams.get("updateParams", Document.class);
-                ClinicalAnalysis clinicalAnalysis = converter.convertToDataModelType(caseDoc);
-                if (clinicalAnalysis != null && clinicalAnalysis.getProband() != null
-                        && probandId.equals(clinicalAnalysis.getProband().getId())
-                        && CollectionUtils.isNotEmpty(clinicalAnalysis.getProband().getSamples())) {
-                    logger.debug("Found case in Audit update");
-                    return clinicalAnalysis;
+                if (auditParams != null) {
+                    Document caseDoc = auditParams.get("updateParams", Document.class);
+                    if (caseDoc != null) {
+                        Document caseProbandOnly = new Document("proband", caseDoc.get("proband"));
+                        converter.validateProbandToUpdate(caseProbandOnly);
+                        ClinicalAnalysis clinicalAnalysis = converter.convertToDataModelType(caseProbandOnly);
+                        if (clinicalAnalysis != null && clinicalAnalysis.getProband() != null
+                                && probandId.equals(clinicalAnalysis.getProband().getId())
+                                && CollectionUtils.isNotEmpty(clinicalAnalysis.getProband().getSamples())) {
+                            logger.debug("Found case in Audit update");
+                            return clinicalAnalysis;
+                        }
+                    }
                 }
             }
         }

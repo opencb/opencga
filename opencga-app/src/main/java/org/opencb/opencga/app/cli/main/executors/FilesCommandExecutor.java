@@ -1,5 +1,6 @@
 package org.opencb.opencga.app.cli.main.executors;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
@@ -27,6 +28,7 @@ import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.alignment.AlignmentFileQualityControl;
 import org.opencb.opencga.core.models.alignment.CoverageFileQualityControl;
 import org.opencb.opencga.core.models.common.StatusParams;
@@ -176,7 +178,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
 
     }
 
-    private RestResponse<ObjectMap> updateAcl() throws Exception {
+    private RestResponse<AclEntryList> updateAcl() throws Exception {
 
         logger.debug("Executing updateAcl in Files command line");
 
@@ -192,7 +194,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         FileAclUpdateParams fileAclUpdateParams= null;
         if (commandOptions.jsonDataModel) {
             fileAclUpdateParams = new FileAclUpdateParams();
-            RestResponse<ObjectMap> res = new RestResponse<>();
+            RestResponse<AclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(fileAclUpdateParams));
             return res;
@@ -205,7 +207,8 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
 
-            fileAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
+            fileAclUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FileAclUpdateParams.class);
         }
         return openCGAClient.getFileClient().updateAcl(commandOptions.members, commandOptions.action, fileAclUpdateParams, queryParams);
@@ -274,7 +277,8 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "content",commandOptions.content, true);
 
-            tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper()
+            tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), TsvAnnotationParams.class);
         }
         return openCGAClient.getFileClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
@@ -334,7 +338,8 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
-            fileCreateParams = JacksonUtils.getDefaultObjectMapper()
+            fileCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FileCreateParams.class);
         }
         return openCGAClient.getFileClient().create(fileCreateParams, queryParams);
@@ -412,7 +417,8 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             putNestedIfNotEmpty(beanParams, "url",commandOptions.url, true);
             putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
 
-            fileFetch = JacksonUtils.getDefaultObjectMapper()
+            fileFetch = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FileFetch.class);
         }
         return openCGAClient.getFileClient().fetch(fileFetch, queryParams);
@@ -461,7 +467,8 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
-            fileLinkParams = JacksonUtils.getDefaultObjectMapper()
+            fileLinkParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FileLinkParams.class);
         }
         return openCGAClient.getFileClient().link(fileLinkParams, queryParams);
@@ -502,7 +509,8 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             putNestedIfNotNull(beanParams, "parents",commandOptions.parents, true);
             putNestedIfNotNull(beanParams, "skipPostLink",commandOptions.skipPostLink, true);
 
-            fileLinkToolParams = JacksonUtils.getDefaultObjectMapper()
+            fileLinkToolParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FileLinkToolParams.class);
         }
         return openCGAClient.getFileClient().runLink(fileLinkToolParams, queryParams);
@@ -540,7 +548,8 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             putNestedIfNotNull(beanParams, "files",commandOptions.files, true);
             putNestedIfNotNull(beanParams, "batchSize",commandOptions.batchSize, true);
 
-            postLinkToolParams = JacksonUtils.getDefaultObjectMapper()
+            postLinkToolParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PostLinkToolParams.class);
         }
         return openCGAClient.getFileClient().runPostlink(postLinkToolParams, queryParams);
@@ -600,7 +609,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
 
     }
 
-    private RestResponse<ObjectMap> acl() throws Exception {
+    private RestResponse<AclEntryList> acl() throws Exception {
 
         logger.debug("Executing acl in Files command line");
 
@@ -726,7 +735,8 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
             putNestedIfNotNull(beanParams, "qualityControl.files",commandOptions.qualityControlFiles, true);
 
-            fileUpdateParams = JacksonUtils.getDefaultObjectMapper()
+            fileUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FileUpdateParams.class);
         }
         return openCGAClient.getFileClient().update(commandOptions.files, fileUpdateParams, queryParams);

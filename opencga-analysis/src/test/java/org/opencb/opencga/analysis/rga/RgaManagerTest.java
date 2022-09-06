@@ -134,10 +134,10 @@ public class RgaManagerTest {
 
             // Share father, mother and daughter with USER but not son
             catalogManager.getIndividualManager().updateAcl(STUDY, Arrays.asList(FATHER, MOTHER, DAUGHTER), USER,
-                    new IndividualAclParams().setPermissions(IndividualAclEntry.IndividualPermissions.VIEW.name()),
+                    new IndividualAclParams().setPermissions(IndividualPermissions.VIEW.name()),
                     ParamUtils.AclAction.SET, false, ownerToken);
             catalogManager.getSampleManager().updateAcl(STUDY, Arrays.asList(FATHER, MOTHER, DAUGHTER), USER,
-                    new SampleAclParams().setPermissions(SampleAclEntry.SamplePermissions.VIEW_VARIANTS.name()), ParamUtils.AclAction.SET,
+                    new SampleAclParams().setPermissions(SamplePermissions.VIEW_VARIANTS.name()), ParamUtils.AclAction.SET,
                     ownerToken);
 
             solr.after();

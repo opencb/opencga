@@ -41,7 +41,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS;
+import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_INDIVIDUALS;
 import static org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD;
 
 @Tool(id = IndividualQcAnalysis.ID, resource = Enums.Resource.SAMPLE, description = IndividualQcAnalysis.DESCRIPTION)
@@ -235,7 +235,7 @@ public class IndividualQcAnalysis extends OpenCgaTool {
     }
 
     private void runMendelianError() throws ToolException {
-        if (qualityControl.getMendelianErrorReports() != null) {
+        if (CollectionUtils.isNotEmpty(qualityControl.getMendelianErrorReports())) {
             addWarning("Skipping mendelian error: it was already computed");
             return;
         }
@@ -245,6 +245,7 @@ public class IndividualQcAnalysis extends OpenCgaTool {
             addWarning("Skipping mendelian error: missing child sample ID.");
             return;
         }
+
         if (StringUtils.isEmpty(motherSampleId) && StringUtils.isEmpty(fatherSampleId)) {
             addWarning("Skipping mendelian error: both mother and father sample IDs are empty but in order to compute mendelian"
                     + " errors at least one of them has to be not empty.");

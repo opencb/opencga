@@ -1,5 +1,6 @@
 package org.opencb.opencga.app.cli.main.executors;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
@@ -22,6 +23,7 @@ import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortAclUpdateParams;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
@@ -112,7 +114,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private RestResponse<ObjectMap> updateAcl() throws Exception {
+    private RestResponse<AclEntryList> updateAcl() throws Exception {
 
         logger.debug("Executing updateAcl in Cohorts command line");
 
@@ -128,7 +130,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         CohortAclUpdateParams cohortAclUpdateParams= null;
         if (commandOptions.jsonDataModel) {
             cohortAclUpdateParams = new CohortAclUpdateParams();
-            RestResponse<ObjectMap> res = new RestResponse<>();
+            RestResponse<AclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(cohortAclUpdateParams));
             return res;
@@ -140,7 +142,8 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
             putNestedIfNotEmpty(beanParams, "cohort",commandOptions.cohort, true);
 
-            cohortAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
+            cohortAclUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CohortAclUpdateParams.class);
         }
         return openCGAClient.getCohortClient().updateAcl(commandOptions.members, commandOptions.action, cohortAclUpdateParams, queryParams);
@@ -201,7 +204,8 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "content",commandOptions.content, true);
 
-            tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper()
+            tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), TsvAnnotationParams.class);
         }
         return openCGAClient.getCohortClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
@@ -247,7 +251,8 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
-            cohortCreateParams = JacksonUtils.getDefaultObjectMapper()
+            cohortCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CohortCreateParams.class);
         }
         return openCGAClient.getCohortClient().create(cohortCreateParams, queryParams);
@@ -333,7 +338,8 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
-            cohortGenerateParams = JacksonUtils.getDefaultObjectMapper()
+            cohortGenerateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CohortGenerateParams.class);
         }
         return openCGAClient.getCohortClient().generate(cohortGenerateParams, queryParams);
@@ -374,7 +380,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getCohortClient().search(queryParams);
     }
 
-    private RestResponse<ObjectMap> acl() throws Exception {
+    private RestResponse<AclEntryList> acl() throws Exception {
 
         logger.debug("Executing acl in Cohorts command line");
 
@@ -463,7 +469,8 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
-            cohortUpdateParams = JacksonUtils.getDefaultObjectMapper()
+            cohortUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CohortUpdateParams.class);
         }
         return openCGAClient.getCohortClient().update(commandOptions.cohorts, cohortUpdateParams, queryParams);

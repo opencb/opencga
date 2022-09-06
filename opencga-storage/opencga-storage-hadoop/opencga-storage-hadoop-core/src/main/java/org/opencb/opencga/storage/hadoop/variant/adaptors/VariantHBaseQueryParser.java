@@ -669,7 +669,14 @@ public class VariantHBaseQueryParser {
             // +1 because the stop row is exclusive
             scan.setStopRow(Bytes.toBytes(keyFactory.generateBlockIdFromSlice(
                     fileId, region.getChromosome(), endSlice)));
+        } else {
+            addArchiveFilter(scan, fileId, keyFactory);
         }
+    }
+
+    public static void addArchiveFilter(Scan scan, int fileId, ArchiveRowKeyFactory keyFactory) {
+        byte[] row = Bytes.toBytes(keyFactory.generateBlockId(fileId));
+        scan.setRowPrefixFilter(row);
     }
 
     public static void addVariantIdFilter(Scan scan, Variant variant) {

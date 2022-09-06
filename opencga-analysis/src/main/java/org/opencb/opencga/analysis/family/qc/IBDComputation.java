@@ -69,7 +69,7 @@ public class IBDComputation {
         if (pruneOutFile.exists() && pruneOutFile.length() > 0) {
             exclude = " --exclude /data/output/" + basename + ".prune.out";
         }
-        String plinkParams = "plink --tfile /data/output/" + basename + " --genome rel-check " + readFreq + exclude + " --out /data/output/"
+        String plinkParams = "plink1.9 --tfile /data/output/" + basename + " --genome rel-check " + readFreq + exclude + " --out /data/output/"
                 + basename;
         try {
             PlinkWrapperAnalysisExecutor plinkExecutor = new PlinkWrapperAnalysisExecutor();

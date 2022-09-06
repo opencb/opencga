@@ -631,7 +631,7 @@ public class ParamConstants {
     public static final String COVERAGE_WINDOW_SIZE_DESCRIPTION = "Window size for the region coverage (if a coverage range is provided, " +
             "window size must be 1)";
     public static final String COVERAGE_WINDOW_SIZE_PARAM = "windowSize";
-    public static final String COVERAGE_WINDOW_SIZE_DEFAULT = "1";
+    public static final String COVERAGE_WINDOW_SIZE_DEFAULT = "50";
     public static final String ALIGNMENT_COVERAGE_STATS_DESCRIPTION = "Compute coverage stats per transcript for a list of genes.";
     public static final String LOW_COVERAGE_REGION_THRESHOLD_DESCRIPTION = "Only regions whose coverage depth is under this threshold " +
             "will be reported.";

@@ -1,5 +1,6 @@
 package org.opencb.opencga.app.cli.main.executors;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
@@ -126,7 +127,8 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "cellbase.version",commandOptions.cellbaseVersion, true);
             putNestedIfNotEmpty(beanParams, "cellbase.preferred",commandOptions.cellbasePreferred, true);
 
-            projectCreateParams = JacksonUtils.getDefaultObjectMapper()
+            projectCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ProjectCreateParams.class);
         }
         return openCGAClient.getProjectClient().create(projectCreateParams, queryParams);
@@ -247,7 +249,8 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "organism.commonName",commandOptions.organismCommonName, true);
             putNestedIfNotEmpty(beanParams, "organism.assembly",commandOptions.organismAssembly, true);
 
-            projectUpdateParams = JacksonUtils.getDefaultObjectMapper()
+            projectUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ProjectUpdateParams.class);
         }
         return openCGAClient.getProjectClient().update(commandOptions.project, projectUpdateParams, queryParams);

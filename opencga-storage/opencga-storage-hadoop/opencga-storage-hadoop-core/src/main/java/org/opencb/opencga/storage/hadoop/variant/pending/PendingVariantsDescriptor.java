@@ -29,6 +29,10 @@ public interface PendingVariantsDescriptor {
 
     String getTableName(HBaseVariantTableNameGenerator generator);
 
+    default boolean createTableIfNeeded(HBaseVariantTableNameGenerator generator, HBaseManager hBaseManager) throws IOException {
+        return createTableIfNeeded(getTableName(generator), hBaseManager);
+    }
+
     boolean createTableIfNeeded(String tableName, HBaseManager hBaseManager) throws IOException;
 
     Scan configureScan(Scan scan, VariantStorageMetadataManager metadataManager);

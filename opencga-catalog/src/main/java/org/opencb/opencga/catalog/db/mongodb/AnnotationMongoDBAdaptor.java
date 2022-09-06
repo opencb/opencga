@@ -71,8 +71,8 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
     protected abstract MongoDBCollection getCollection();
 
     public enum AnnotationSetParams implements QueryParam {
-        INTERNAL_ANNOTATION_SETS("customInternalAnnotationSets", TEXT_ARRAY, ""),
-        ANNOTATION_SETS("customAnnotationSets", TEXT_ARRAY, ""),
+        INTERNAL_ANNOTATION_SETS("_ias", TEXT_ARRAY, ""),
+        ANNOTATION_SETS("_as", TEXT_ARRAY, ""),
         PRIVATE_VARIABLE_SET_MAP("_vsMap", TEXT_ARRAY, ""),
         PRIVATE_INTERNAL_VARIABLE_SET_MAP("_ivsMap", TEXT_ARRAY, ""),
 

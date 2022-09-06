@@ -33,8 +33,13 @@ import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOption
 import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.FastqcCommandOptions.FASTQC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.PicardCommandOptions.PICARD_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.SamtoolsCommandOptions.SAMTOOLS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.CancerTieringCommandOptions.CANCER_TIERING_INTERPRETATION_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.ExomiserInterpretationCommandOptions.EXOMISER_INTERPRETATION_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.RgaAuxiliarSecondaryIndexCommandOptions.RGA_AUX_INDEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.RgaSecondaryIndexCommandOptions.RGA_INDEX_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.TeamCommandOptions.TEAM_INTERPRETATION_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.TieringCommandOptions.TIERING_INTERPRETATION_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.ZettaCommandOptions.ZETTA_INTERPRETATION_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.StudyCommandOptions.TemplateLoader.TEMPLATE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND;
@@ -187,7 +192,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
 //        alignmentSubCommands.addCommand("flagstats-run", alignmentCommandOptions.flagStatsAlignmentCommandOptions);
 //        alignmentSubCommands.addCommand("fastqcmetrics-run", alignmentCommandOptions.fastQcMetricsAlignmentCommandOptions);
 //        alignmentSubCommands.addCommand("hsmetrics-run", alignmentCommandOptions.hsMetricsAlignmentCommandOptions);
-        alignmentSubCommands.addCommand("coverage-run", alignmentCommandOptions.coverageAlignmentCommandOptions);
+        alignmentSubCommands.addCommand("coverage-index-run", alignmentCommandOptions.coverageAlignmentCommandOptions);
 //        alignmentSubCommands.addCommand("annotate", alignmentCommandOptions.annotateVariantCommandOptions);
         alignmentSubCommands.addCommand(BWA_RUN_COMMAND, alignmentCommandOptions.bwaCommandOptions);
         alignmentSubCommands.addCommand(SAMTOOLS_RUN_COMMAND, alignmentCommandOptions.samtoolsCommandOptions);
@@ -212,13 +217,13 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         clinicalCommandOptions = new ClinicalCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("clinical", clinicalCommandOptions);
         JCommander clinicalSubCommands = jCommander.getCommands().get("clinical");
-        clinicalSubCommands.addCommand("run-interpreter-tiering", clinicalCommandOptions.tieringCommandOptions);
-        clinicalSubCommands.addCommand("run-interpreter-team", clinicalCommandOptions.teamCommandOptions);
-        clinicalSubCommands.addCommand("run-interpreter-zetta", clinicalCommandOptions.zettaCommandOptions);
-        clinicalSubCommands.addCommand("run-interpreter-cancer-tiering", clinicalCommandOptions.cancerTieringCommandOptions);
+        clinicalSubCommands.addCommand(TIERING_INTERPRETATION_RUN_COMMAND, clinicalCommandOptions.tieringCommandOptions);
+        clinicalSubCommands.addCommand(TEAM_INTERPRETATION_RUN_COMMAND, clinicalCommandOptions.teamCommandOptions);
+        clinicalSubCommands.addCommand(ZETTA_INTERPRETATION_RUN_COMMAND, clinicalCommandOptions.zettaCommandOptions);
+        clinicalSubCommands.addCommand(CANCER_TIERING_INTERPRETATION_RUN_COMMAND, clinicalCommandOptions.cancerTieringCommandOptions);
         clinicalSubCommands.addCommand(RGA_INDEX_RUN_COMMAND, clinicalCommandOptions.rgaSecondaryIndexCommandOptions);
         clinicalSubCommands.addCommand(RGA_AUX_INDEX_RUN_COMMAND, clinicalCommandOptions.rgaAuxiliarSecondaryIndexCommandOptions);
-        clinicalSubCommands.addCommand("run-interpreter-exomiser", clinicalCommandOptions.exomiserInterpretationCommandOptions);
+        clinicalSubCommands.addCommand(EXOMISER_INTERPRETATION_RUN_COMMAND, clinicalCommandOptions.exomiserInterpretationCommandOptions);
 
         fileCommandOptions = new FileCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("files", fileCommandOptions);

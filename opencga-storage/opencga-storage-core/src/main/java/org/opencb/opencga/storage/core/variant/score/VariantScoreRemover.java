@@ -83,7 +83,6 @@ public abstract class VariantScoreRemover {
                     break;
             }
             variantScoreMetadata.setIndexStatus(TaskMetadata.Status.ERROR);
-            return variantScoreMetadata;
         });
     }
 
@@ -94,7 +93,6 @@ public abstract class VariantScoreRemover {
             metadataManager.updateVariantScoreMetadata(scoreMetadata.getStudyId(), scoreMetadata.getId(), variantScoreMetadata -> {
                 variantScoreMetadata.setRemoveStatus(TaskMetadata.Status.ERROR);
                 variantScoreMetadata.setIndexStatus(TaskMetadata.Status.ERROR);
-                return variantScoreMetadata;
             });
         }
     }

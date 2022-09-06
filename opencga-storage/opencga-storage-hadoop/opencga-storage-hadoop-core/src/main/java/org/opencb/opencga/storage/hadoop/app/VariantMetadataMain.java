@@ -36,6 +36,7 @@ public class VariantMetadataMain extends AbstractMain {
             new VariantMetadataMain().run(args);
         } catch (Exception e) {
             e.printStackTrace();
+            System.exit(1);
         }
     }
 

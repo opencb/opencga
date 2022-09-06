@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.server.rest;
 
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -304,7 +305,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{studies}/acl")
     @ApiOperation(value = "Return the acl of the study. If member is provided, it will only return the acl for the member.", response =
-            Map.class)
+            AclEntryList.class)
     public Response getAcls(
             @ApiParam(value = ParamConstants.STUDIES_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDIES_PARAM) String studiesStr,
             @ApiParam(value = "User or group id") @QueryParam("member") String member,
@@ -318,7 +319,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/acl/{members}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
+    @ApiOperation(value = "Update the set of permissions granted for the member", response = AclEntryList.class)
     public Response updateAcl(
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true, defaultValue = "ADD") @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,

@@ -341,7 +341,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 
         List<String> studyNames = variantStorageEngine.getMetadataManager().getStudyNames();
 
-        Query query = VariantQueryCommandUtils.parseQuery(variantQueryCommandOptions, studyNames);
+        Query query = VariantQueryCommandUtils.parseQuery(variantQueryCommandOptions);
         QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(variantQueryCommandOptions);
 
         if (variantQueryCommandOptions.commonQueryOptions.count) {
@@ -676,12 +676,10 @@ public class VariantCommandExecutor extends CommandExecutor {
 //        storageConfiguration.getOptions().putAll(exportVariantsCommandOptions.commonOptions.params);
 
 
-        List<String> studyNames = variantStorageEngine.getMetadataManager().getStudyNames();
-
 
         // TODO: JT
         try {
-            Query query = VariantQueryCommandUtils.parseQuery(exportVariantsCommandOptions.queryOptions, studyNames);
+            Query query = VariantQueryCommandUtils.parseQuery(exportVariantsCommandOptions.queryOptions);
             QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(exportVariantsCommandOptions.queryOptions);
 
             // create VCF header by getting information from metadata or study configuration

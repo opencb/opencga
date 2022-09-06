@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.server.rest;
 
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -939,8 +940,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{files}/acl")
     @ApiOperation(value = "Return the acl defined for the file or folder. If member is provided, it will only return the acl for the " +
-            "member.",
-            response = Map.class)
+            "member.", response = AclEntryList.class)
     public Response getAcls(@ApiParam(value = ParamConstants.FILES_DESCRIPTION, required = true) @PathParam("files") String fileIdStr,
                             @ApiParam(value = ParamConstants.STUDIES_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
                             @ApiParam(value = "User or group id") @QueryParam("member") String member,
@@ -956,7 +956,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/acl/{members}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
+    @ApiOperation(value = "Update the set of permissions granted for the member", response = AclEntryList.class)
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
                     String studyStr,

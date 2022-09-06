@@ -17,16 +17,18 @@ public class InterpretationStudyConfiguration {
     private List<InterpretationVariantCallerConfiguration> variantCallers;
     @DataField(description = ParamConstants.INTERPRETATION_STUDY_CONFIGURATION_DEFAULT_FILTER_DESCRIPTION)
     private Map<String, Object> defaultFilter;
+    private List<VariantInclusionQueryConfiguration> inclusion;
 
     public InterpretationStudyConfiguration() {
     }
 
     public InterpretationStudyConfiguration(Map<ClinicalAnalysis.Type, List<ClinicalStatusValue>> status,
                                             List<InterpretationVariantCallerConfiguration> variantCallers,
-                                            Map<String, Object> defaultFilter) {
+                                            Map<String, Object> defaultFilter, List<VariantInclusionQueryConfiguration> inclusion) {
         this.status = status;
         this.variantCallers = variantCallers;
         this.defaultFilter = defaultFilter;
+        this.inclusion = inclusion;
     }
 
     @Override
@@ -35,6 +37,7 @@ public class InterpretationStudyConfiguration {
         sb.append("status=").append(status);
         sb.append(", variantCallers=").append(variantCallers);
         sb.append(", defaultFilter=").append(defaultFilter);
+        sb.append(", inclusion=").append(inclusion);
         sb.append('}');
         return sb.toString();
     }
@@ -63,6 +66,15 @@ public class InterpretationStudyConfiguration {
 
     public InterpretationStudyConfiguration setDefaultFilter(Map<String, Object> defaultFilter) {
         this.defaultFilter = defaultFilter;
+        return this;
+    }
+
+    public List<VariantInclusionQueryConfiguration> getInclusion() {
+        return inclusion;
+    }
+
+    public InterpretationStudyConfiguration setInclusion(List<VariantInclusionQueryConfiguration> inclusion) {
+        this.inclusion = inclusion;
         return this;
     }
 }

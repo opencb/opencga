@@ -491,10 +491,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     public VariantDBIterator archiveIterator(String study, String file, Query query, QueryOptions options) {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
 
-        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
-        int studyId = studyMetadata.getId();
-
-        Integer fileId = metadataManager.getFileId(studyMetadata.getId(), file, true);
+        int studyId = metadataManager.getStudyId(study);
+        Integer fileId = metadataManager.getFileId(studyId, file, true);
         if (fileId == null) {
             throw VariantQueryException.fileNotFound(file, study);
         }

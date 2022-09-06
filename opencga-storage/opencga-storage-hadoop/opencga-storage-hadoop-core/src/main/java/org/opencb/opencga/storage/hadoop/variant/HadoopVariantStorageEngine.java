@@ -61,6 +61,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.executors.*;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.SamplesSearchIndexVariantQueryExecutor;
@@ -86,15 +87,12 @@ import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromArchiveMapper;
 import org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.write.FillMissingHBaseWriterDriver;
-import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexCompoundHeterozygousQueryExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexMendelianErrorQueryExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantAggregationExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantQueryExecutor;
+import org.opencb.opencga.storage.hadoop.variant.index.*;
 import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexBuilder;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDeleteHBaseColumnTask;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexBuilder;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.prune.VariantPruneManager;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
@@ -378,7 +376,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             for (Integer cohortId : cohortIds) {
                 metadataManager.updateCohortMetadata(studyId, cohortId, c -> {
                     c.setStatsStatus(TaskMetadata.Status.NONE);
-                    return c;
                 });
             }
         } catch (Exception e) {
@@ -505,6 +502,25 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         int studyId = studyMetadata.getId();
+
+        List<String> filesAffected633 = new ArrayList<>();
+        List<String> filesWithoutArchive = new ArrayList<>();
+        for (Integer fileId : fileIds) {
+            FileMetadata fileMetadata = metadataManager.getFileMetadata(studyId, fileId);
+            if ("AFFECTED".equals(fileMetadata.getAttributes().getString("TASK-633"))) {
+                filesAffected633.add(fileMetadata.getName());
+            }
+            if (!fileMetadata.getAttributes().getBoolean(LOAD_ARCHIVE.key(), false)) {
+                filesWithoutArchive.add(fileMetadata.getName());
+            }
+        }
+        if (!filesAffected633.isEmpty()) {
+            throw new StorageEngineException("Unable to execute operation on files affected by TASK-633 : " + filesAffected633);
+        }
+        if (!filesWithoutArchive.isEmpty()) {
+            throw new StorageEngineException("Unable to execute operation on files without archive data : " + filesAffected633);
+        }
+
 
         String jobOperationName = fillGaps ? FILL_GAPS_OPERATION_NAME : FILL_MISSING_OPERATION_NAME;
         List<Integer> fileIdsList = new ArrayList<>(fileIds);
@@ -1017,6 +1033,18 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
+    public ParsedVariantQuery parseQuery(Query originalQuery, QueryOptions options) {
+        try {
+            Query query = preProcessQuery(originalQuery, options);
+            ParsedVariantQuery parsedVariantQuery = getVariantQueryParser().parseQuery(query, options, true);
+            parsedVariantQuery.setInputQuery(originalQuery);
+            return parsedVariantQuery;
+        } catch (StorageEngineException e) {
+            throw VariantQueryException.internalException(e).setQuery(originalQuery);
+        }
+    }
+
+    @Override
     public Query preProcessQuery(Query originalQuery, QueryOptions options) {
         Query query = super.preProcessQuery(originalQuery, options);
 
@@ -1156,6 +1184,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         executors.add(new SamplesSearchIndexVariantQueryExecutor(
                 getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), dbName, getConfiguration(), getOptions()));
         executors.add(new SampleIndexMendelianErrorQueryExecutor(
+                getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()));
+        executors.add(new SampleIndexOnlyVariantQueryExecutor(
                 getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()));
         executors.add(new SampleIndexVariantQueryExecutor(
                 getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()));

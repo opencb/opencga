@@ -18,11 +18,13 @@ package org.opencb.opencga.analysis.variant.inferredSex;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.InferredSexReport;
+import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.InferredSexAnalysisExecutor;
 
@@ -77,6 +79,15 @@ public class InferredSexAnalysis extends OpenCgaTool {
         // Check individual and sample
         if (StringUtils.isEmpty(individualId)) {
             throw new ToolException("Missing individual ID.");
+        }
+
+        // Check BAM and BW files for that individual/sample
+        File bamFile = AnalysisUtils.getBamFileBySampleId(individualId, studyId, getCatalogManager().getFileManager(), getToken());
+        if (bamFile == null) {
+            throw new ToolException("BAM file not found for individual/sample '" + individualId + "'");
+        }
+        if (!new java.io.File(bamFile.getUri().getPath() + ".bw").exists()) {
+            throw new ToolException("BigWig (BW) file not found for individual/sample '" + individualId + "'");
         }
     }
 

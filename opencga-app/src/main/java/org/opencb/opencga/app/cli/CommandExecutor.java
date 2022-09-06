@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -70,6 +71,15 @@ public abstract class CommandExecutor {
         return CliOptionsParser.getSubCommand(jCommander);
     }
 
+    private static void configureLogger(String logLevel) throws IOException {
+        // Command line parameters have preference over anything
+        if (StringUtils.isNotBlank(logLevel)) {
+            Level level = Level.toLevel(logLevel);
+            System.setProperty("opencga.log.level", level.name());
+            Configurator.reconfigure();
+        }
+    }
+
     protected void init(String logLevel, String conf, boolean loadClientConfiguration) {
         this.logLevel = logLevel;
         this.conf = conf;
@@ -103,7 +113,12 @@ public abstract class CommandExecutor {
             // Then set the host and make it the default
             if (StringUtils.isNotEmpty(options.host)) {
                 this.host = options.host;
-                clientConfiguration.setDefaultIndexByName(this.host);
+                try {
+                    clientConfiguration.setDefaultIndexByName(this.host);
+                } catch (Exception e) {
+                    PrintUtils.printError("Invalid host " + host);
+                    System.exit(-1);
+                }
             } else {
                 this.host = clientConfiguration.getCurrentHost().getName();
             }
@@ -137,15 +152,6 @@ public abstract class CommandExecutor {
 //                e.printStackTrace();
 //            }
 //        }));
-    }
-
-    private static void configureLogger(String logLevel) throws IOException {
-        // Command line parameters have preference over anything
-        if (StringUtils.isNotBlank(logLevel)) {
-            Level level = Level.toLevel(logLevel);
-            System.setProperty("opencga.log.level", level.name());
-            Configurator.reconfigure();
-        }
     }
 
     public abstract void execute() throws Exception;

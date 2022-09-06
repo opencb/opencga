@@ -39,7 +39,7 @@ import static java.util.stream.Collectors.toList;
 
 public abstract class OpenCgaCompleter implements Completer {
 
-    protected List<Candidate> commands = asList("login","logout","help","use","variant","projects","panels","clinical","jobs","individuals","families","users","samples","alignments","meta","studies","files","operations","cohorts")
+    protected List<Candidate> commands = asList("login","logout","help","use","variant","projects","panels","clinical","jobs","admin","individuals","families","users","samples","alignments","meta","studies","files","operations","cohorts")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -65,6 +65,11 @@ public abstract class OpenCgaCompleter implements Completer {
             .collect(toList());
 
     private List<Candidate> jobsList = asList( "acl-update","aggregationstats","create","distinct","retry","search","top","acl","delete","info","update","log-head","log-tail")
+            .stream()
+            .map(Candidate::new)
+            .collect(toList());
+
+    private List<Candidate> adminList = asList( "audit-group-by","catalog-index-stats","catalog-install","catalog-jwt","users-create","users-import","users-search","users-sync")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -132,6 +137,7 @@ public abstract class OpenCgaCompleter implements Completer {
         mapCandidates.put( "panels", panelsList);
         mapCandidates.put( "clinical", clinicalList);
         mapCandidates.put( "jobs", jobsList);
+        mapCandidates.put( "admin", adminList);
         mapCandidates.put( "individuals", individualsList);
         mapCandidates.put( "families", familiesList);
         mapCandidates.put( "users", usersList);

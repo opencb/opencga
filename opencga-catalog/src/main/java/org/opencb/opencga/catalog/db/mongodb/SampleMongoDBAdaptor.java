@@ -55,8 +55,8 @@ import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.common.RgaIndex;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.sample.SamplePermissions;
+import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -1032,8 +1032,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, options, user);
         Document studyDocument = getStudyDocument(null, studyUid);
         UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
-                StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(),
-                SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
+                StudyPermissions.Permissions.VIEW_SAMPLE_ANNOTATIONS.name(),
+                SamplePermissions.VIEW_ANNOTATIONS.name());
         return new SampleCatalogMongoDBIterator<>(mongoCursor, null, sampleConverter, iteratorFilter, individualDBAdaptor, studyUid, user,
                 options);
     }
@@ -1053,8 +1053,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
         UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
-                StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(),
-                SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
+                StudyPermissions.Permissions.VIEW_SAMPLE_ANNOTATIONS.name(),
+                SamplePermissions.VIEW_ANNOTATIONS.name());
         return new SampleCatalogMongoDBIterator<>(mongoCursor, clientSession, null, iteratorFilter, individualDBAdaptor, studyUid, user,
                 options);
     }
@@ -1225,9 +1225,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             } else {
                 if (containsAnnotationQuery(query)) {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                            SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.SAMPLE, configuration));
+                            SamplePermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.SAMPLE, configuration));
                 } else {
-                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, SampleAclEntry.SamplePermissions.VIEW.name(),
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, SamplePermissions.VIEW.name(),
                             Enums.Resource.SAMPLE, configuration));
                 }
             }

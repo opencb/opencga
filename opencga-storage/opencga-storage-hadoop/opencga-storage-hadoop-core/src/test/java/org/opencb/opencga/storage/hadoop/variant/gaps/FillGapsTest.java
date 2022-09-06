@@ -305,6 +305,34 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
         checkSampleIndexTable(dbAdaptor);
     }
 
+    @Test
+    public void testFillGapsCorpasome() throws Exception {
+        StudyMetadata study = load(new ObjectMap(), Collections.singletonList(getResourceUri("quartet.variants.annotated.partial.vcf.gz")));
+        printVariants((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
+
+        variantStorageEngine.aggregateFamily(study.getName(), new VariantAggregateFamilyParams()
+                .setSamples(Arrays.asList("ISDBM322015", "ISDBM322016", "ISDBM322017", "ISDBM322018")), new ObjectMap());
+        printVariants((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
+
+    }
+
+    @Test
+    public void testFillGapsImpact() throws Exception {
+        URI uri = newOutputUri();
+        ObjectMap extraParams = new ObjectMap(VariantStorageOptions.LOAD_HOM_REF.key(), true);
+//        extraParams.append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "proto");
+//        extraParams.append(VariantStorageOptions.GVCF.key(), true);
+        StudyMetadata study = load(extraParams, Collections.singletonList(getResourceUri("impact/HG005_GRCh38_1_22_v4.2.1_benchmark.tuned.chr6-31.vcf.gz")), uri, false);
+        load(extraParams, Collections.singletonList(getResourceUri("impact/HG006_GRCh38_1_22_v4.2.1_benchmark.tuned.chr6-31.vcf.gz")), uri, false);
+        load(extraParams, Collections.singletonList(getResourceUri("impact/HG007_GRCh38_1_22_v4.2.1_benchmark.tuned.chr6-31.vcf.gz")), uri, false);
+        printVariants((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
+
+        variantStorageEngine.aggregateFamily(study.getName(), new VariantAggregateFamilyParams()
+                .setSamples(Arrays.asList("HG005", "HG006", "HG007")), new ObjectMap());
+        printVariants((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
+
+    }
+
     public void checkNewMultiAllelicVariants(VariantHadoopDBAdaptor dbAdaptor) {
         Variant v = dbAdaptor.get(new VariantQuery().id("1:10297:C:G").unknownGenotype("?").includeSample(ALL), null).first();
         assertEquals(1, v.getStudies().get(0).getSecondaryAlternates().size());
@@ -350,6 +378,10 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
     }
 
     private StudyMetadata load(ObjectMap extraParams, List<URI> inputFiles, URI outputUri) throws Exception {
+        return load(extraParams, inputFiles, outputUri, true);
+    }
+
+    private StudyMetadata load(ObjectMap extraParams, List<URI> inputFiles, URI outputUri, boolean printVariants) throws Exception {
         StudyMetadata studyMetadata = VariantStorageBaseTest.newStudyMetadata();
         HadoopVariantStorageEngine engine = getVariantStorageEngine();
         VariantHadoopDBAdaptor dbAdaptor = engine.getDBAdaptor();
@@ -368,7 +400,9 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
         }
 
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
-        printVariants(studyMetadata, dbAdaptor, outputUri);
+        if (printVariants) {
+            printVariants(studyMetadata, dbAdaptor, outputUri);
+        }
 
         return studyMetadata;
     }

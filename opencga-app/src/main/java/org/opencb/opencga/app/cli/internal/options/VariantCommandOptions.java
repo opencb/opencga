@@ -356,6 +356,9 @@ public class VariantCommandOptions {
         @Parameter(names = {"--output-file-name"}, description = "Output file name.", arity = 1)
         public String outputFileName;
 
+        @Parameter(names = {"--output-file-format"}, description = "Output file format.", arity = 1)
+        public String outputFileFormat;
+
         @ParametersDelegate
         public DataModelOptions dataModelOptions = commonDataModelOptions;
 
@@ -737,6 +740,9 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--output-file-name"}, description = "Output file name.", arity = 1)
         public String outputFileName;
+
+        @Parameter(names = {"--output-file-format"}, description = "Output file format.", arity = 1)
+        public String outputFileFormat;
     }
 
     @Parameters(commandNames = {"import"}, commandDescription = "Import a variants dataset into an empty study")

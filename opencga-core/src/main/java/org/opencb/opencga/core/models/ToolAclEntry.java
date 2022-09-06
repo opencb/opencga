@@ -30,7 +30,7 @@ import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.ParamConstants;
 
 @Deprecated
-public class ToolAclEntry extends AbstractAclEntry<ToolAclEntry.ToolPermissions> {
+public class ToolAclEntry extends AclEntry<ToolAclEntry.ToolPermissions> {
 
     public enum ToolPermissions {
         EXECUTE,

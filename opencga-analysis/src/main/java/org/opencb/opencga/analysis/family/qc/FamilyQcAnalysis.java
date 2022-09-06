@@ -20,8 +20,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
@@ -34,8 +34,7 @@ import org.opencb.opencga.core.tools.variant.FamilyQcAnalysisExecutor;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermissions.WRITE_FAMILIES;
-import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermissions.WRITE_SAMPLES;
+import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_FAMILIES;
 
 @Tool(id = FamilyQcAnalysis.ID, resource = Enums.Resource.FAMILY, description = FamilyQcAnalysis.DESCRIPTION)
 public class FamilyQcAnalysis extends OpenCgaTool {
@@ -86,7 +85,7 @@ public class FamilyQcAnalysis extends OpenCgaTool {
             relatednessMethod = "PLINK/IBD";
         }
         if (StringUtils.isEmpty(relatednessMaf)) {
-            relatednessMaf = "cohort:ALL>0.05";
+            relatednessMaf = RelatednessAnalysis.MAF_DEFAULT_VALUE;
         }
     }
 

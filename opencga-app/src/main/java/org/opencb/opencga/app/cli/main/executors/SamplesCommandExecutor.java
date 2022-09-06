@@ -1,5 +1,6 @@
 package org.opencb.opencga.app.cli.main.executors;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
@@ -23,6 +24,7 @@ import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.common.ExternalSource;
 import org.opencb.opencga.core.models.common.RgaIndex.Status;
 import org.opencb.opencga.core.models.common.StatusParams;
@@ -116,7 +118,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private RestResponse<ObjectMap> updateAcl() throws Exception {
+    private RestResponse<AclEntryList> updateAcl() throws Exception {
 
         logger.debug("Executing updateAcl in Samples command line");
 
@@ -132,7 +134,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         SampleAclUpdateParams sampleAclUpdateParams= null;
         if (commandOptions.jsonDataModel) {
             sampleAclUpdateParams = new SampleAclUpdateParams();
-            RestResponse<ObjectMap> res = new RestResponse<>();
+            RestResponse<AclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(sampleAclUpdateParams));
             return res;
@@ -148,7 +150,8 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
             putNestedIfNotEmpty(beanParams, "cohort",commandOptions.cohort, true);
 
-            sampleAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
+            sampleAclUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SampleAclUpdateParams.class);
         }
         return openCGAClient.getSampleClient().updateAcl(commandOptions.members, commandOptions.action, sampleAclUpdateParams, queryParams);
@@ -212,7 +215,8 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "content",commandOptions.content, true);
 
-            tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper()
+            tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), TsvAnnotationParams.class);
         }
         return openCGAClient.getSampleClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
@@ -270,7 +274,8 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
-            sampleCreateParams = JacksonUtils.getDefaultObjectMapper()
+            sampleCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SampleCreateParams.class);
         }
         return openCGAClient.getSampleClient().create(sampleCreateParams, queryParams);
@@ -403,7 +408,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getSampleClient().search(queryParams);
     }
 
-    private RestResponse<ObjectMap> acl() throws Exception {
+    private RestResponse<AclEntryList> acl() throws Exception {
 
         logger.debug("Executing acl in Samples command line");
 
@@ -512,7 +517,8 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
 
-            sampleUpdateParams = JacksonUtils.getDefaultObjectMapper()
+            sampleUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SampleUpdateParams.class);
         }
         return openCGAClient.getSampleClient().update(commandOptions.samples, sampleUpdateParams, queryParams);

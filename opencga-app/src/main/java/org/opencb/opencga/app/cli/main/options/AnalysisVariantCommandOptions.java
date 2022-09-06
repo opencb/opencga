@@ -695,9 +695,6 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--body_exclude"}, description = "The body exclude VariantExportParams web service parameter", required = false, arity = 1)
         public String bodyExclude;
     
-        @Parameter(names = {"--body_compress"}, description = "The body compress VariantExportParams web service parameter", required = false, arity = 1)
-        public Boolean bodyCompress;
-    
         @Parameter(names = {"--body_limit"}, description = "The body limit VariantExportParams web service parameter", required = false, arity = 1)
         public Integer bodyLimit;
     
