@@ -11,8 +11,7 @@ WORKDIR /opt/opencga/signature.tools.lib
 
 # run update and install necessary packages
 RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt-get install -y \
-#    libcurl4 libssl-dev libcurl4-openssl-dev git \
-    git libgmp-dev libcurl4-openssl-dev libgit2-dev libssl-dev libssh-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev \
+    libcurl4 git libgmp-dev libcurl4-openssl-dev libgit2-dev libssl-dev libssh-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev \
     libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
     gnuplot pandoc samtools bcftools fastqc plink1.9 bwa r-base && \
     ## Installation dependencies using R install.packages() is slower than apt-get but final size is 400GB smaller.
@@ -25,7 +24,7 @@ RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt
     sed -i '/BSgenome/d' DESCRIPTION && \
     R -e 'devtools::install(repos="https://www.stats.bris.ac.uk/R/")' && \
     ## Clean up
-    rm -rf /var/lib/apt/lists/* /tmp/* && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /opt/opencga/signature.tools.lib/.git && \
     strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
 
 WORKDIR /opt/opencga
