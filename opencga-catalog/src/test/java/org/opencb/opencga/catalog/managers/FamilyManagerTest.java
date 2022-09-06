@@ -1373,4 +1373,27 @@ public class FamilyManagerTest extends GenericTest {
         }
     }
 
+    @Test
+    public void updateFamilyMembers() throws CatalogException {
+        Individual child = DummyModelUtils.getDummyIndividual("child", null, null, null);
+        Individual father = DummyModelUtils.getDummyIndividual("father", null, null, null);
+        Individual mother = DummyModelUtils.getDummyIndividual("mother", null, null, null);
+        child.setFather(father);
+        child.setMother(mother);
+
+        catalogManager.getIndividualManager().create(STUDY, father, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getIndividualManager().create(STUDY, mother, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getIndividualManager().create(STUDY, child, QueryOptions.empty(), sessionIdUser);
+
+        Family family = DummyModelUtils.getDummyFamily("family");
+        family.setMembers(null);
+        catalogManager.getFamilyManager().create(STUDY, family, Collections.singletonList(child.getId()), QueryOptions.empty(), sessionIdUser);
+
+        FamilyUpdateParams updateParams = new FamilyUpdateParams().setMembers(Arrays.asList(
+                new IndividualReferenceParam(child.getId(), child.getUuid()),
+                new IndividualReferenceParam(father.getId(), child.getUuid())
+        ));
+        catalogManager.getFamilyManager().update(STUDY, family.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
+    }
+
 }
