@@ -45,6 +45,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.AclParams;
@@ -3205,5 +3206,35 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(2, ca.getFiles().size());
         assertTrue(files.subList(2, 4).stream().map(File::getPath).collect(Collectors.toSet())
                 .containsAll(ca.getFiles().stream().map(File::getPath).collect(Collectors.toSet())));
+    }
+
+    @Test
+    public void fetchCasesWithSameProbandAndDifferentSample() throws CatalogException, IOException {
+        Sample sample1 = DummyModelUtils.getDummySample("sample1");
+        Sample sample2 = DummyModelUtils.getDummySample("sample2");
+
+        Individual proband = DummyModelUtils.getDummyIndividual("proband", Arrays.asList(sample1, sample2), null, null);
+        catalogManager.getIndividualManager().create(STUDY, proband, QueryOptions.empty(), sessionIdUser);
+
+        Individual probandCopy = JacksonUtils.copy(proband, Individual.class);
+        probandCopy.setSamples(Collections.singletonList(proband.getSamples().get(0)));
+        ClinicalAnalysis case1 = DummyModelUtils.getDummyClinicalAnalysis("case1", probandCopy, null, null);
+        catalogManager.getClinicalAnalysisManager().create(STUDY, case1, QueryOptions.empty(), sessionIdUser);
+
+        probandCopy.setSamples(Collections.singletonList(proband.getSamples().get(1)));
+        ClinicalAnalysis case2 = DummyModelUtils.getDummyClinicalAnalysis("case2", probandCopy, null, null);
+        catalogManager.getClinicalAnalysisManager().create(STUDY, case2, QueryOptions.empty(), sessionIdUser);
+
+        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().search(STUDY, new Query(),
+                QueryOptions.empty(), sessionIdUser);
+        assertEquals(2, result.getNumResults());
+        assertEquals(case1.getId(), result.getResults().get(0).getId());
+        assertEquals(proband.getId(), result.getResults().get(0).getProband().getId());
+        assertEquals(1, result.getResults().get(0).getProband().getSamples().size());
+        assertEquals(proband.getSamples().get(0).getId(), result.getResults().get(0).getProband().getSamples().get(0).getId());
+        assertEquals(case2.getId(), result.getResults().get(1).getId());
+        assertEquals(proband.getId(), result.getResults().get(1).getProband().getId());
+        assertEquals(1, result.getResults().get(1).getProband().getSamples().size());
+        assertEquals(proband.getSamples().get(1).getId(), result.getResults().get(1).getProband().getSamples().get(0).getId());
     }
 }
