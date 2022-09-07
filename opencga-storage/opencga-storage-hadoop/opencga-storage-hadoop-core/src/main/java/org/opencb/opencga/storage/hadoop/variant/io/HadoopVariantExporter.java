@@ -75,7 +75,9 @@ public class HadoopVariantExporter extends VariantExporter {
         Query query = variantQuery.getQuery();
         QueryOptions queryOptions = variantQuery.getInputOptions();
         boolean smallQuery = false;
-        if (!queryOptions.getBoolean("skipSmallQuery", false)) {
+        boolean parquet = outputFormat == VariantWriterFactory.VariantOutputFormat.PARQUET_GZ
+                || outputFormat == VariantWriterFactory.VariantOutputFormat.PARQUET;
+        if (!queryOptions.getBoolean("skipSmallQuery", false) && !parquet) {
             ParsedVariantQuery.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
             if (xrefs.getVariants().size() > 0 && xrefs.getVariants().size() < 2000) {
                 // FIXME: Is this scenario still needed?
