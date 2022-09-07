@@ -30,15 +30,15 @@ import static org.opencb.commons.utils.FileUtils.newBufferedReader;
 public class RoleInCancerManager {
     private final String ROLE_IN_CANCER_PATH = "analysis/cancer-gene-census/cancer-gene-census.tsv";
     private final String ROLE_IN_CANCER_URL = "http://resources.opencb.org/opencb/opencga/analysis/cancer-gene-census/cancer-gene-census.tsv";
-    private static Map<String, ClinicalProperty.RoleInCancer> roleInCancer = null;
-    
+    private static Map<String, List<ClinicalProperty.RoleInCancer>> roleInCancer = null;
+
     private Path openCgaHome;
 
     public RoleInCancerManager(Path openCgaHome) {
         this.openCgaHome = openCgaHome;
     }
 
-    public Map<String, ClinicalProperty.RoleInCancer> getRoleInCancer() throws IOException {
+    public Map<String, List<ClinicalProperty.RoleInCancer>> getRoleInCancer() throws IOException {
         // Lazy loading
         if (roleInCancer == null) {
             synchronized (ROLE_IN_CANCER_URL) {
@@ -50,7 +50,7 @@ public class RoleInCancerManager {
         return roleInCancer;
     }
 
-    private Map<String, ClinicalProperty.RoleInCancer> loadRoleInCancer() throws IOException {
+    private Map<String, List<ClinicalProperty.RoleInCancer>> loadRoleInCancer() throws IOException {
         // Read 'role in cancer' file
         Path path = openCgaHome.resolve(ROLE_IN_CANCER_PATH);
         if (path.toFile().exists()) {
@@ -68,10 +68,10 @@ public class RoleInCancerManager {
         }
     }
 
-    private Map<String, ClinicalProperty.RoleInCancer> loadRoleInCancer(InputStream in) {
+    private Map<String, List<ClinicalProperty.RoleInCancer>> loadRoleInCancer(InputStream in) {
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in));
 
-        Map<String, ClinicalProperty.RoleInCancer> roleInCancer = new HashMap<>();
+        Map<String, List<ClinicalProperty.RoleInCancer>> roleInCancer = new HashMap<>();
 
         List<String> lines = bufferedReader.lines().collect(Collectors.toList());
         Set<ClinicalProperty.RoleInCancer> set = new HashSet<>();
@@ -96,6 +96,9 @@ public class RoleInCancerManager {
                         case "tsg":
                             set.add(ClinicalProperty.RoleInCancer.TUMOR_SUPPRESSOR_GENE);
                             break;
+                        case "fusion":
+                            set.add(ClinicalProperty.RoleInCancer.FUSION);
+                            break;
                         default:
                             break;
                     }
@@ -104,16 +107,9 @@ public class RoleInCancerManager {
 
             // Update set
             if (set.size() > 0) {
-                if (set.size() == 2) {
-                    roleInCancer.put(split[0], ClinicalProperty.RoleInCancer.BOTH);
-                } else {
-                    roleInCancer.put(split[0], set.iterator().next());
-                }
+                roleInCancer.put(split[0], new ArrayList<>(set));
             }
         }
-
-//        System.out.println("---------- RoleInCancer: size = " + roleInCancer.size());
-
         return roleInCancer;
     }
 }

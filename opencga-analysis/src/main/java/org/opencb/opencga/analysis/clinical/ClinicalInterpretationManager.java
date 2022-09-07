@@ -296,7 +296,7 @@ public class ClinicalInterpretationManager extends StorageManager {
             }
         }
 
-        Map<String, ClinicalProperty.RoleInCancer> roleInCancer = roleInCancerManager.getRoleInCancer();
+        Map<String, List<ClinicalProperty.RoleInCancer>> roleInCancer = roleInCancerManager.getRoleInCancer();
         Map<String, List<String>> actionableVariants = actionableVariantManager.getActionableVariants(assembly);
 
         List<ClinicalVariant> clinicalVariants = new ArrayList<>();
@@ -450,7 +450,7 @@ public class ClinicalInterpretationManager extends StorageManager {
     /*--------------------------------------------------------------------------*/
 
     private ClinicalVariant createClinicalVariant(Variant variant, Map<String, Set<String>> genePanelMap,
-                                                  Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
+                                                  Map<String, List<ClinicalProperty.RoleInCancer>> roleInCancer,
                                                   Map<String, List<String>> actionableVariants,
                                                   InterpretationAnalysisConfiguration config) {
         List<String> panelIds;
@@ -511,7 +511,7 @@ public class ClinicalInterpretationManager extends StorageManager {
     protected ClinicalVariantEvidence createEvidence(String variantId, ConsequenceType consequenceType, GenomicFeature genomicFeature,
                                                      String panelId, List<ClinicalProperty.ModeOfInheritance> mois,
                                                      ClinicalProperty.Penetrance penetrance, VariantAnnotation annotation,
-                                                     Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
+                                                     Map<String, List<ClinicalProperty.RoleInCancer>> roleInCancer,
                                                      Map<String, List<String>> actionableVariants,
                                                      InterpretationAnalysisConfiguration config) {
 

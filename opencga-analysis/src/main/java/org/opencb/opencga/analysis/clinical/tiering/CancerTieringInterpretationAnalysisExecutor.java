@@ -212,7 +212,7 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
                 .get(query, QueryOptions.empty(), sessionId);
 
         if (CollectionUtils.isNotEmpty(variantVariantQueryResult.getResults())) {
-            Map<String, ClinicalProperty.RoleInCancer> roleInCancer = clinicalInterpretationManager.getRoleInCancerManager()
+            Map<String, List<ClinicalProperty.RoleInCancer>> roleInCancer = clinicalInterpretationManager.getRoleInCancerManager()
                     .getRoleInCancer();
             for (Variant variant : variantVariantQueryResult.getResults()) {
                 if (variant.getAnnotation() != null && CollectionUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
