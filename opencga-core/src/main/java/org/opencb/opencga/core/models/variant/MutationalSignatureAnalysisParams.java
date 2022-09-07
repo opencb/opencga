@@ -26,22 +26,38 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
     private String id;
     private String description;
     private ObjectMap query;
-    private String release;
-    private boolean fitting;
+
+    // For fitting method
+    private String catalogues;        // a file path
+    private String cataloguesContent; // or the content of the catalogues file
+
+    private int nBoot;
+    private String sigVersion;
+    private String organ;
+    private float thresholdPerc;
+    private float thresholdPVal;
+    private int maxRareSigs;
 
     private String outdir;
 
     public MutationalSignatureAnalysisParams() {
     }
 
-    public MutationalSignatureAnalysisParams(String sample, String id, String description, ObjectMap query, String release,
-                                             boolean fitting, String outdir) {
+    public MutationalSignatureAnalysisParams(String sample, String id, String description, ObjectMap query, String catalogues,
+                                             String cataloguesContent, int nBoot, String sigVersion, String organ, float thresholdPerc,
+                                             float thresholdPVal, int maxRareSigs, String outdir) {
         this.sample = sample;
         this.id = id;
         this.description = description;
         this.query = query;
-        this.release = release;
-        this.fitting = fitting;
+        this.catalogues = catalogues;
+        this.cataloguesContent = cataloguesContent;
+        this.nBoot = nBoot;
+        this.sigVersion = sigVersion;
+        this.organ = organ;
+        this.thresholdPerc = thresholdPerc;
+        this.thresholdPVal = thresholdPVal;
+        this.maxRareSigs = maxRareSigs;
         this.outdir = outdir;
     }
 
@@ -52,8 +68,14 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
         sb.append(", id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", query=").append(query);
-        sb.append(", release='").append(release).append('\'');
-        sb.append(", fitting=").append(fitting);
+        sb.append(", catalogues='").append(catalogues).append('\'');
+        sb.append(", cataloguesContent='").append(cataloguesContent).append('\'');
+        sb.append(", nBoot=").append(nBoot);
+        sb.append(", sigversion='").append(sigVersion).append('\'');
+        sb.append(", organ='").append(organ).append('\'');
+        sb.append(", thresholdPerc=").append(thresholdPerc);
+        sb.append(", thresholdPVal=").append(thresholdPVal);
+        sb.append(", maxRareSigs=").append(maxRareSigs);
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -95,21 +117,75 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
         return this;
     }
 
-    public String getRelease() {
-        return release;
+    public String getCatalogues() {
+        return catalogues;
     }
 
-    public MutationalSignatureAnalysisParams setRelease(String release) {
-        this.release = release;
+    public MutationalSignatureAnalysisParams setCatalogues(String catalogues) {
+        this.catalogues = catalogues;
         return this;
     }
 
-    public boolean isFitting() {
-        return fitting;
+    public String getCataloguesContent() {
+        return cataloguesContent;
     }
 
-    public MutationalSignatureAnalysisParams setFitting(boolean fitting) {
-        this.fitting = fitting;
+    public MutationalSignatureAnalysisParams setCataloguesContent(String cataloguesContent) {
+        this.cataloguesContent = cataloguesContent;
+        return this;
+    }
+
+    public int getnBoot() {
+        return nBoot;
+    }
+
+    public MutationalSignatureAnalysisParams setnBoot(int nBoot) {
+        this.nBoot = nBoot;
+        return this;
+    }
+
+    public String getSigVersion() {
+        return sigVersion;
+    }
+
+    public MutationalSignatureAnalysisParams setSigVersion(String sigVersion) {
+        this.sigVersion = sigVersion;
+        return this;
+    }
+
+    public String getOrgan() {
+        return organ;
+    }
+
+    public MutationalSignatureAnalysisParams setOrgan(String organ) {
+        this.organ = organ;
+        return this;
+    }
+
+    public float getThresholdPerc() {
+        return thresholdPerc;
+    }
+
+    public MutationalSignatureAnalysisParams setThresholdPerc(float thresholdPerc) {
+        this.thresholdPerc = thresholdPerc;
+        return this;
+    }
+
+    public float getThresholdPVal() {
+        return thresholdPVal;
+    }
+
+    public MutationalSignatureAnalysisParams setThresholdPVal(float thresholdPVal) {
+        this.thresholdPVal = thresholdPVal;
+        return this;
+    }
+
+    public int getMaxRareSigs() {
+        return maxRareSigs;
+    }
+
+    public MutationalSignatureAnalysisParams setMaxRareSigs(int maxRareSigs) {
+        this.maxRareSigs = maxRareSigs;
         return this;
     }
 

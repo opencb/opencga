@@ -1313,11 +1313,31 @@ public class VariantCommandOptions {
         @DynamicParameter(names = {"-q", "--query"}, description = "Signature query, e.g.:. -q type=\"SNV\" -q ct=\"missense_variant\"")
         public Map<String, String> query = new HashMap<>();
 
-        @Parameter(names = {"--release"}, description = "Release of COSMIC mutational signatures. Valid values: 2, 3, 3.1 and 3.2.")
-        public String release = "2";
+        // For fitting method
 
-        @Parameter(names = {"--fitting"}, description = "Compute the relative proportions of the different mutational signatures demonstrated by the tumour.")
-        public boolean fitting;
+        @Parameter(names = {"--catalogues"}, description = "File name containing mutational catalogues. Each sample catalogue is in a column, with sample names as column headers and channel.")
+        public String catalogues;
+
+        @Parameter(names = {"--catalogues-content"}, description = "Mutational catalogues. Each sample catalogue is in a column, with sample names as column headers and channel.")
+        public String cataloguesContent;
+
+        @Parameter(names = {"--n-boot"}, description = "Number of bootstrap to be used.")
+        public int nBoot;
+
+        @Parameter(names = {"--sig-version"}, description = "Either COSMICv2, COSMICv3.2, RefSigv1 or RefSigv2. If not specified RefSigv2.")
+        public String sigVersion = "RefSigv2";
+
+        @Parameter(names = {"--organ"}, description = "When using RefSigv1 or RefSigv2 as SIGVERSION, organ-specific signatures will be used. If SIGVERSION is COSMICv2 or COSMICv3.2, then a selection of signatures found in the given organ will be used. Available organs depend on the selected SIGVERSION. For RefSigv1 or RefSigv2: Biliary, Bladder, Bone_SoftTissue, Breast, Cervix (v1 only), CNS, Colorectal, Esophagus, Head_neck, Kidney, Liver, Lung, Lymphoid, NET (v2 only), Oral_Oropharyngeal (v2 only), Ovary, Pancreas, Prostate, Skin, Stomach, Uterus.")
+        public String organ;
+
+        @Parameter(names = {"--threshold-perc"}, description = "Threshold in percentage of total mutations in a sample, only exposures larger than THRPERC are considered. If not specified 5.")
+        public float thresholdPerc = 5f;
+
+        @Parameter(names = {"--nthreshold-pvalue"}, description = "P-value to determine the empirical probability that the exposure is lower than the threshold. If not specified then 0.05.")
+        public float thresholdPVal = 0.05f;
+
+        @Parameter(names = {"--max-rare-sigs"}, description = "Maximum number of rare signatures that are allowed to be present in each sample. If not specified 1.")
+        public int maxRareSigs = 1;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
         public String outdir;

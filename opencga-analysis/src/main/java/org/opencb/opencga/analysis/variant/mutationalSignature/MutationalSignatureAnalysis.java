@@ -115,8 +115,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                     .setQueryId(signatureParams.getId())
                     .setQueryDescription(signatureParams.getDescription())
                     .setQuery(signatureParams.getQuery())
-                    .setRelease(signatureParams.getRelease())
-                    .setFitting(signatureParams.isFitting())
+                    .setRelease(signatureParams.getSigVersion())
                     .execute();
 
             // Update quality control for the catalog sample
@@ -165,7 +164,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
             SignatureFitting fitting = new SignatureFitting()
                     .setMethod("GEL")
                     .setSignatureSource("Cosmic")
-                    .setSignatureVersion(signatureParams.getRelease());
+                    .setSignatureVersion(signatureParams.getSigVersion());
 
             Map content = JacksonUtils.getDefaultObjectMapper().readValue(coeffsFile, Map.class);
             Map coefficients = (Map) content.get("coefficients");

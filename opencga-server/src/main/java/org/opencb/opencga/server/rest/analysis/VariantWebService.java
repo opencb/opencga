@@ -983,12 +983,11 @@ public class VariantWebService extends AnalysisWebService {
 
             MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
             params.setSample(query.getString(SAMPLE.key()))
-                    .setQuery(query)
-                    .setFitting(fitting);
+                    .setQuery(query);
 
             MutationalSignatureAnalysis mutationalSignatureAnalysis = new MutationalSignatureAnalysis();
-            mutationalSignatureAnalysis.setUp(opencgaHome.toString(), catalogManager, storageEngineFactory, new ObjectMap(), outDir.toPath(), null,
-                    token);
+            mutationalSignatureAnalysis.setUp(opencgaHome.toString(), catalogManager, storageEngineFactory, new ObjectMap(),
+                    outDir.toPath(), null, token);
             mutationalSignatureAnalysis.setStudy(query.getString(STUDY.key()));
             mutationalSignatureAnalysis.setSignatureParams(params);
 
