@@ -16,28 +16,53 @@
 
 package org.opencb.opencga.core.models.variant;
 
+import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class MutationalSignatureAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Mutational signature analysis params";
 
+    @DataField(id = "sample", description = FieldConstants.SAMPLE_ID_DESCRIPTION)
     private String sample;
+
+    @DataField(id = "id", description = FieldConstants.MUTATIONAL_SIGNATURE_ID_DESCRIPTION)
     private String id;
+
+    @DataField(id = "description", description = FieldConstants.MUTATIONAL_SIGNATURE_DESCRIPTION_DESCRIPTION)
     private String description;
+
+    @DataField(id = "query", description = FieldConstants.MUTATIONAL_SIGNATURE_QUERY_DESCRIPTION)
     private ObjectMap query;
 
     // For fitting method
-    private String catalogues;        // a file path
-    private String cataloguesContent; // or the content of the catalogues file
 
+    @DataField(id = "catalogues", description = FieldConstants.MUTATIONAL_SIGNATURE_CATALOGUES_DESCRIPTION)
+    private String catalogues;
+
+    @DataField(id = "cataloguesContent", description = FieldConstants.MUTATIONAL_SIGNATURE_CATALOGUES_CONTENT_DESCRIPTION)
+    private String cataloguesContent;
+
+    @DataField(id = "nBoot", description = FieldConstants.MUTATIONAL_SIGNATURE_N_BOOT_DESCRIPTION)
     private int nBoot;
+
+    @DataField(id = "sigVersion", defaultValue = "RefSigv2", description = FieldConstants.MUTATIONAL_SIGNATURE_SIG_VERSION_DESCRIPTION)
     private String sigVersion;
+
+    @DataField(id = "organ", description = FieldConstants.MUTATIONAL_SIGNATURE_ORGAN_DESCRIPTION)
     private String organ;
+
+    @DataField(id = "thresholdPerc", defaultValue = "5f", description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PERC_DESCRIPTION)
     private float thresholdPerc;
-    private float thresholdPVal;
+
+    @DataField(id = "thresholdPval", defaultValue = "0.05f", description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PVAL_DESCRIPTION)
+    private float thresholdPval;
+
+    @DataField(id = "maxRareSigs", defaultValue = "1", description = FieldConstants.MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION)
     private int maxRareSigs;
 
+    @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
 
     public MutationalSignatureAnalysisParams() {
@@ -45,7 +70,7 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
 
     public MutationalSignatureAnalysisParams(String sample, String id, String description, ObjectMap query, String catalogues,
                                              String cataloguesContent, int nBoot, String sigVersion, String organ, float thresholdPerc,
-                                             float thresholdPVal, int maxRareSigs, String outdir) {
+                                             float thresholdPval, int maxRareSigs, String outdir) {
         this.sample = sample;
         this.id = id;
         this.description = description;
@@ -56,7 +81,7 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
         this.sigVersion = sigVersion;
         this.organ = organ;
         this.thresholdPerc = thresholdPerc;
-        this.thresholdPVal = thresholdPVal;
+        this.thresholdPval = thresholdPval;
         this.maxRareSigs = maxRareSigs;
         this.outdir = outdir;
     }
@@ -74,7 +99,7 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
         sb.append(", sigversion='").append(sigVersion).append('\'');
         sb.append(", organ='").append(organ).append('\'');
         sb.append(", thresholdPerc=").append(thresholdPerc);
-        sb.append(", thresholdPVal=").append(thresholdPVal);
+        sb.append(", thresholdPVal=").append(thresholdPval);
         sb.append(", maxRareSigs=").append(maxRareSigs);
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
@@ -171,12 +196,12 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
         return this;
     }
 
-    public float getThresholdPVal() {
-        return thresholdPVal;
+    public float getThresholdPval() {
+        return thresholdPval;
     }
 
-    public MutationalSignatureAnalysisParams setThresholdPVal(float thresholdPVal) {
-        this.thresholdPVal = thresholdPVal;
+    public MutationalSignatureAnalysisParams setThresholdPval(float thresholdPval) {
+        this.thresholdPval = thresholdPval;
         return this;
     }
 

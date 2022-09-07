@@ -45,6 +45,7 @@ import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.variant.AnnotationVariantQueryParams;
 import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
@@ -268,7 +269,8 @@ public class VariantCommandOptions {
                 + " If provided, all sample data will be added to the secondary index.", arity = 1)
         public List<String> sample;
 
-        @Parameter(names = {"--overwrite"}, description = "Overwrite search index for all files and variants. Repeat operation for already processed variants.")
+        @Parameter(names = {"--overwrite"}, description = "Overwrite search index for all files and variants. Repeat operation for already"
+                + " processed variants.")
         public boolean overwrite;
 
         @Parameter(names = {"--outdir"}, description = "Output directory", hidden = true)
@@ -446,19 +448,23 @@ public class VariantCommandOptions {
         @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
         public Aggregation aggregated = Aggregation.NONE;
 
-        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
+        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF"
+                + " file")
         public String aggregationMappingFile;
 
-        @Parameter(names = {"--index"}, hidden = true, description = "UNUSED. Index functionality moved to operations variant-stats-index", arity = 0)
+        @Parameter(names = {"--index"}, hidden = true, description = "UNUSED. Index functionality moved to operations variant-stats-index",
+                arity = 0)
         @Deprecated
         public void setIndex(Boolean index) {
             if (index != null && index) {
-                throw new ParameterException("Deprecated param --index . Index functionality has been moved to 'operations variant-stats-index'");
+                throw new ParameterException("Deprecated param --index . Index functionality has been moved to 'operations"
+                        + " variant-stats-index'");
             }
         }
     }
 
-    @Parameters(commandNames = {GenericVariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND}, commandDescription = GenericVariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND_DESCRIPTION)
+    @Parameters(commandNames = {GenericVariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND},
+            commandDescription = GenericVariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND_DESCRIPTION)
     public class VariantScoreIndexCommandOptions extends GenericVariantScoreIndexCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -476,7 +482,8 @@ public class VariantCommandOptions {
         public String outdir = null;
     }
 
-    @Parameters(commandNames = {GenericVariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND}, commandDescription = GenericVariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND_DESCRIPTION)
+    @Parameters(commandNames = {GenericVariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND},
+            commandDescription = GenericVariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND_DESCRIPTION)
     public class VariantScoreDeleteCommandOptions extends GenericVariantScoreDeleteCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -559,7 +566,8 @@ public class VariantCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = {VariantAnnotateCommandOptions.ANNOTATION_INDEX_COMMAND}, commandDescription = GenericVariantAnnotateOptions.ANNOTATE_DESCRIPTION)
+    @Parameters(commandNames = {VariantAnnotateCommandOptions.ANNOTATION_INDEX_COMMAND},
+            commandDescription = GenericVariantAnnotateOptions.ANNOTATE_DESCRIPTION)
     public class VariantAnnotateCommandOptions extends GeneralCliOptions.StudyOption {
 
         public static final String ANNOTATION_INDEX_COMMAND = "annotation-index";
@@ -697,7 +705,8 @@ public class VariantCommandOptions {
 
     }
 
-    @Parameters(commandNames = {VariantExportStatsCommandOptions.STATS_EXPORT_RUN_COMMAND}, commandDescription = "Export calculated variant stats and frequencies")
+    @Parameters(commandNames = {VariantExportStatsCommandOptions.STATS_EXPORT_RUN_COMMAND},
+            commandDescription = "Export calculated variant stats and frequencies")
     public class VariantExportStatsCommandOptions {
         public static final String STATS_EXPORT_RUN_COMMAND = "stats-export-run";
 
@@ -716,7 +725,8 @@ public class VariantCommandOptions {
 //        @ParametersDelegate
 //        public QueryCommandOptions queryOptions = new QueryCommandOptions();
 
-//        @Parameter(names = {"--of", "--output-format"}, description = "Output format: vcf, vcf.gz, tsv, tsv.gz, cellbase, cellbase.gz, json or json.gz", arity = 1)
+//        @Parameter(names = {"--of", "--output-format"}, description = "Output format: vcf, vcf.gz, tsv, tsv.gz, cellbase, cellbase.gz,"
+//        + " json or json.gz", arity = 1)
 //        public String outputFormat = "tsv";
 
         @Parameter(names = {"-r", "--region"}, description = "CSV list of regions: {chr}[:{start}-{end}]. example: 2,3:1000000-2000000",
@@ -787,7 +797,8 @@ public class VariantCommandOptions {
         public String outdir = "-";
     }
 
-    @Parameters(commandNames = {VariantSamplesFilterCommandOptions.SAMPLE_RUN_COMMAND}, commandDescription = "Get samples given a set of variants")
+    @Parameters(commandNames = {VariantSamplesFilterCommandOptions.SAMPLE_RUN_COMMAND}, commandDescription = "Get samples given a set of"
+            + " variants")
     public class VariantSamplesFilterCommandOptions extends GeneralCliOptions.StudyOption {
         public static final String SAMPLE_RUN_COMMAND = "sample-run";
 
@@ -1074,8 +1085,8 @@ public class VariantCommandOptions {
         @Parameter(names = {"--case-cohort-samples"}, description = "List of samples to conform the case cohort.")
         public List<String> caseCohortSamples;
 
-        @Parameter(names = {"--case-cohort-samples-annotation"}, description = "Samples annotation query selecting samples of the case cohort. "
-                + "This parameter is an alternative to --case-cohort . Example: age>30;gender=FEMALE. "
+        @Parameter(names = {"--case-cohort-samples-annotation"}, description = "Samples annotation query selecting samples of the case"
+                + " cohort. This parameter is an alternative to --case-cohort . Example: age>30;gender=FEMALE. "
                 + "For more information, please visit " + ParamConstants.ANNOTATION_DOC_URL)
         public String caseCohortSamplesAnnotation;
 
@@ -1116,7 +1127,8 @@ public class VariantCommandOptions {
         @Parameter(names = {"--individual"}, description = "List of individuals")
         public List<String> individual;
 
-        @DynamicParameter(names = {"--vq", "--variant-query"}, description = "Variant query, e.g.:. --vsq gene=\"BRCA2\" --vsq ct=\"missense_variant\"")
+        @DynamicParameter(names = {"--vq", "--variant-query"}, description = "Variant query, e.g.:. --vsq gene=\"BRCA2\" --vsq"
+                + " ct=\"missense_variant\"")
         public Map<String, String> variantQuery = new HashMap<>();
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
@@ -1138,7 +1150,8 @@ public class VariantCommandOptions {
         public boolean indexOverwrite;
     }
 
-    @Parameters(commandNames = SampleVariantStatsQueryCommandOptions.SAMPLE_VARIANT_STATS_QUERY_COMMAND, commandDescription = "Obtain sample variant stats from a sample.")
+    @Parameters(commandNames = SampleVariantStatsQueryCommandOptions.SAMPLE_VARIANT_STATS_QUERY_COMMAND, commandDescription = "Obtain"
+            + " sample variant stats from a sample.")
     public class SampleVariantStatsQueryCommandOptions {
         public static final String SAMPLE_VARIANT_STATS_QUERY_COMMAND = "sample-stats-query";
 
@@ -1190,7 +1203,8 @@ public class VariantCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND, commandDescription = "Read precomputed cohort variant stats")
+    @Parameters(commandNames = CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND, commandDescription = "Read"
+            + " precomputed cohort variant stats")
     public class CohortVariantStatsQueryCommandOptions {
         public static final String COHORT_VARIANT_STATS_QUERY_COMMAND = "cohort-stats-query";
 
@@ -1232,10 +1246,12 @@ public class VariantCommandOptions {
         @Parameter(names = {"--sample"}, description = "List of samples to analyse. The analysis will produce a file for each sample.")
         public List<String> sample;
 
-        @Parameter(names = {"--gene"}, description = "List of genes of interest. In combination with parameter panel, all genes will be used.")
+        @Parameter(names = {"--gene"}, description = "List of genes of interest. In combination with parameter panel, all genes will be"
+                + " used.")
         public List<String> gene;
 
-        @Parameter(names = {"--panel"}, description = "List of panels of interest. In combination with parameter gene, all genes will be used.")
+        @Parameter(names = {"--panel"}, description = "List of panels of interest. In combination with parameter gene, all genes will be"
+                + " used.")
         public List<String> panel;
 
         @Parameter(names = {"--biotype"}, description = "List of biotypes. Used to filter by transcripts biotype.")
@@ -1259,7 +1275,8 @@ public class VariantCommandOptions {
         public boolean index;
     }
 
-    @Parameters(commandNames = SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND, commandDescription = SampleEligibilityAnalysis.DESCRIPTION)
+    @Parameters(commandNames = SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND,
+            commandDescription = SampleEligibilityAnalysis.DESCRIPTION)
     public class SampleEligibilityCommandOptions {
         public static final String SAMPLE_ELIGIBILITY_RUN_COMMAND = "sample-eligibility-run";
 
@@ -1288,7 +1305,8 @@ public class VariantCommandOptions {
         public String cohortId;
     }
 
-    @Parameters(commandNames = MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND, commandDescription = MutationalSignatureAnalysis.DESCRIPTION)
+    @Parameters(commandNames = MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND,
+            commandDescription = MutationalSignatureAnalysis.DESCRIPTION)
     public class MutationalSignatureCommandOptions {
         public static final String MUTATIONAL_SIGNATURE_RUN_COMMAND = MutationalSignatureAnalysis.ID + "-run";
 
@@ -1301,45 +1319,45 @@ public class VariantCommandOptions {
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
 
-        @Parameter(names = {"--sample"}, description = "Sample name.", required = true)
+        @Parameter(names = {"--sample"}, description = FieldConstants.SAMPLE_ID_DESCRIPTION)
         public String sample;
 
-        @Parameter(names = {"--id"}, description = "Signature ID.")
+        @Parameter(names = {"--id"}, description = FieldConstants.MUTATIONAL_SIGNATURE_ID_DESCRIPTION)
         public String id;
 
-        @Parameter(names = {"--description"}, description = "Signature description.")
+        @Parameter(names = {"--description"}, description = FieldConstants.MUTATIONAL_SIGNATURE_DESCRIPTION_DESCRIPTION)
         public String description;
 
-        @DynamicParameter(names = {"-q", "--query"}, description = "Signature query, e.g.:. -q type=\"SNV\" -q ct=\"missense_variant\"")
+        @DynamicParameter(names = {"-q", "--query"}, description = FieldConstants.MUTATIONAL_SIGNATURE_QUERY_DESCRIPTION)
         public Map<String, String> query = new HashMap<>();
 
         // For fitting method
 
-        @Parameter(names = {"--catalogues"}, description = "File name containing mutational catalogues. Each sample catalogue is in a column, with sample names as column headers and channel.")
+        @Parameter(names = {"--catalogues"}, description = FieldConstants.MUTATIONAL_SIGNATURE_CATALOGUES_DESCRIPTION)
         public String catalogues;
 
-        @Parameter(names = {"--catalogues-content"}, description = "Mutational catalogues. Each sample catalogue is in a column, with sample names as column headers and channel.")
+        @Parameter(names = {"--catalogues-content"}, description = FieldConstants.MUTATIONAL_SIGNATURE_CATALOGUES_CONTENT_DESCRIPTION)
         public String cataloguesContent;
 
-        @Parameter(names = {"--n-boot"}, description = "Number of bootstrap to be used.")
+        @Parameter(names = {"--n-boot"}, description = FieldConstants.MUTATIONAL_SIGNATURE_N_BOOT_DESCRIPTION)
         public int nBoot;
 
-        @Parameter(names = {"--sig-version"}, description = "Either COSMICv2, COSMICv3.2, RefSigv1 or RefSigv2. If not specified RefSigv2.")
+        @Parameter(names = {"--sig-version"}, description = FieldConstants.MUTATIONAL_SIGNATURE_SIG_VERSION_DESCRIPTION)
         public String sigVersion = "RefSigv2";
 
-        @Parameter(names = {"--organ"}, description = "When using RefSigv1 or RefSigv2 as SIGVERSION, organ-specific signatures will be used. If SIGVERSION is COSMICv2 or COSMICv3.2, then a selection of signatures found in the given organ will be used. Available organs depend on the selected SIGVERSION. For RefSigv1 or RefSigv2: Biliary, Bladder, Bone_SoftTissue, Breast, Cervix (v1 only), CNS, Colorectal, Esophagus, Head_neck, Kidney, Liver, Lung, Lymphoid, NET (v2 only), Oral_Oropharyngeal (v2 only), Ovary, Pancreas, Prostate, Skin, Stomach, Uterus.")
+        @Parameter(names = {"--organ"}, description = FieldConstants.MUTATIONAL_SIGNATURE_ORGAN_DESCRIPTION)
         public String organ;
 
-        @Parameter(names = {"--threshold-perc"}, description = "Threshold in percentage of total mutations in a sample, only exposures larger than THRPERC are considered. If not specified 5.")
+        @Parameter(names = {"--threshold-perc"}, description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PERC_DESCRIPTION)
         public float thresholdPerc = 5f;
 
-        @Parameter(names = {"--nthreshold-pvalue"}, description = "P-value to determine the empirical probability that the exposure is lower than the threshold. If not specified then 0.05.")
-        public float thresholdPVal = 0.05f;
+        @Parameter(names = {"--threshold-pval"}, description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PVAL_DESCRIPTION)
+        public float thresholdPval = 0.05f;
 
-        @Parameter(names = {"--max-rare-sigs"}, description = "Maximum number of rare signatures that are allowed to be present in each sample. If not specified 1.")
+        @Parameter(names = {"--max-rare-sigs"}, description = FieldConstants.MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION)
         public int maxRareSigs = 1;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
+        @Parameter(names = {"-o", "--outdir"}, description = FieldConstants.JOB_OUT_DIR_DESCRIPTION, arity = 1, required = false)
         public String outdir;
     }
 
@@ -1369,7 +1387,8 @@ public class VariantCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = GenomePlotInternalCommandOptions.GENOME_PLOT_RUN_COMMAND, commandDescription = GenomePlotAnalysis.DESCRIPTION)
+    @Parameters(commandNames = GenomePlotInternalCommandOptions.GENOME_PLOT_RUN_COMMAND,
+            commandDescription = GenomePlotAnalysis.DESCRIPTION)
     public class GenomePlotInternalCommandOptions {
         public static final String GENOME_PLOT_RUN_COMMAND = GenomePlotAnalysis.ID + "-run";
 
@@ -1398,7 +1417,8 @@ public class VariantCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = MendelianErrorCommandOptions.MENDELIAN_ERROR_RUN_COMMAND, commandDescription = MendelianErrorAnalysis.DESCRIPTION)
+    @Parameters(commandNames = MendelianErrorCommandOptions.MENDELIAN_ERROR_RUN_COMMAND,
+            commandDescription = MendelianErrorAnalysis.DESCRIPTION)
     public class MendelianErrorCommandOptions {
         public static final String MENDELIAN_ERROR_RUN_COMMAND = MendelianErrorAnalysis.ID + "-run";
 
@@ -1466,7 +1486,8 @@ public class VariantCommandOptions {
         @Parameter(names = {"--samples"}, description = "List of sample IDs (incompatible with --individuals).")
         public List<String> samples;
 
-        @Parameter(names = {"--maf", "--minor-allele-freq"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU<0.35, cohort:ALL<0.4")
+        @Parameter(names = {"--maf", "--minor-allele-freq"}, description = "Minor allele frequency to filter variants, e.g.:"
+                + " 1kg_phase3:CEU<0.35, cohort:ALL<0.4")
         public String minorAlleleFreq;
 
         @Parameter(names = {"--method"}, description = "Method to compute relatedness.")
@@ -1495,7 +1516,8 @@ public class VariantCommandOptions {
         @Parameter(names = {"--relatedness-method"}, description = "Method to compute relatedness.")
         public String relatednessMethod = "PLINK/IBD";
 
-        @Parameter(names = {"--relatedness-maf"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU>0.35, cohort:ALL>0.05")
+        @Parameter(names = {"--relatedness-maf"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU>0.35,"
+                + " cohort:ALL>0.05")
         public String relatednessMaf = "cohort:ALL>0.05";
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
@@ -1521,7 +1543,8 @@ public class VariantCommandOptions {
         @Parameter(names = {"--sample"}, description = "Sample ID (in case that individual has multiple samples).")
         public String sample;
 
-        @Parameter(names = {"--inferred-sex-method"}, description = "Method to infer sex. Valid values: " + IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD)
+        @Parameter(names = {"--inferred-sex-method"}, description = "Method to infer sex. Valid values: "
+                + IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD)
         public String inferredSexMethod = IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
@@ -1550,23 +1573,27 @@ public class VariantCommandOptions {
         @Parameter(names = {"--vsd", "--variant-stats-description"}, description = "Variant stats description.")
         public String variantStatsDecription;
 
-        @DynamicParameter(names = {"--vsq", "--variant-stats-query"}, description = "Variant stats query, e.g.:. --vsq gene=\"BRCA2\" --vsq ct=\"missense_variant\"")
+        @DynamicParameter(names = {"--vsq", "--variant-stats-query"}, description = "Variant stats query, e.g.:. --vsq gene=\"BRCA2\""
+                + " --vsq ct=\"missense_variant\"")
         public Map<String, String> variantStatsQuery = new HashMap<>();
 
-        @Parameter(names = {"--si", "--signature-id"}, description = "Mutational signature ID (mutational signature is calculated for somatic samples only).")
+        @Parameter(names = {"--si", "--signature-id"}, description = "Mutational signature ID (mutational signature is calculated for"
+                + " somatic samples only).")
         public String signatureId;
 
         @Parameter(names = {"--sd", "--signature-description"}, description = "Mutational signature description.")
         public String signatureDescription;
 
-        @DynamicParameter(names = {"--sq", "--signature-query"}, description = "Mutational signature query, e.g.:. --sq type=\"SNV\" --sq ct=\"missense_variant\"")
+        @DynamicParameter(names = {"--sq", "--signature-query"}, description = "Mutational signature query, e.g.:. --sq type=\"SNV\""
+                + " --sq ct=\"missense_variant\"")
         public Map<String, String> signatureQuery = new HashMap<>();
 
         @Parameter(names = {"--signature-release"}, description = "Release of COSMIC mutational signatures. Valid values: 2, 3, 3.1 and 3.2.")
         public String signatureRelease = "2";
 
 
-        @Parameter(names = {"--gpi", "--genome-plot-id"}, description = "Genome plot ID (genome plot is calculated for somatic samples only).")
+        @Parameter(names = {"--gpi", "--genome-plot-id"}, description = "Genome plot ID (genome plot is calculated for somatic samples"
+                + " only).")
         public String genomePlotId;
 
         @Parameter(names = {"--gpd", "--genome-plot-description"}, description = "Genome plot description.")
@@ -1665,12 +1692,14 @@ public class VariantCommandOptions {
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
 
-        @DynamicParameter(names = {"--rvtests-params"}, description = "RvTests parameters e.g.:. --rvtests-params single=famScore --rvtests-params meta=score,cov")
+        @DynamicParameter(names = {"--rvtests-params"}, description = "RvTests parameters e.g.:. --rvtests-params single=famScore"
+                + " --rvtests-params meta=score,cov")
         public Map<String, String> rvtestsParams = new HashMap<>();
     }
 
     // GATK
-    @Parameters(commandNames = org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis.ID, commandDescription = org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis.DESCRIPTION)
+    @Parameters(commandNames = org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis.ID,
+            commandDescription = org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis.DESCRIPTION)
     public class GatkCommandOptions {
         public static final String GATK_RUN_COMMAND = GatkWrapperAnalysis.ID + "-run";
 
@@ -1696,7 +1725,8 @@ public class VariantCommandOptions {
         public Map<String, String> gatkParams = new HashMap<>();
     }
 
-    @Parameters(commandNames = ExomiserAnalysisCommandOptions.EXOMISER_RUN_COMMAND, commandDescription = ExomiserWrapperAnalysis.DESCRIPTION)
+    @Parameters(commandNames = ExomiserAnalysisCommandOptions.EXOMISER_RUN_COMMAND,
+            commandDescription = ExomiserWrapperAnalysis.DESCRIPTION)
     public class ExomiserAnalysisCommandOptions {
         public static final String EXOMISER_RUN_COMMAND = ExomiserWrapperAnalysis.ID + "-run";
 

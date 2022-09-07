@@ -809,7 +809,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.sigVersion,
                 cliOptions.organ,
                 cliOptions.thresholdPerc,
-                cliOptions.thresholdPVal,
+                cliOptions.thresholdPval,
                 cliOptions.maxRareSigs,
                 cliOptions.outdir)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
