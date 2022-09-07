@@ -198,7 +198,7 @@ public class JobCatalogMongoDBIterator<T> extends BatchedCatalogMongoDBIterator<
             List<Document> updatedfiles = new ArrayList<>(((Collection) files).size());
             for (Object file : ((Collection) files)) {
                 Number fileUid = ((Number) ((Document) file).get(JobDBAdaptor.QueryParams.UID.key()));
-                if (fileUid != null && fileUid.longValue() > 0) {
+                if (fileUid != null && fileUid.longValue() > 0 && fileMap.containsKey(fileUid.longValue())) {
                     updatedfiles.add(fileMap.get(fileUid.longValue()));
                 }
             }
