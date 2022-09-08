@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.core.tools.variant;
 
+import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
@@ -39,8 +41,15 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
     private String queryId;
     private String queryDescription;
     private ObjectMap query;
-    private String release;
-    private boolean fitting;
+
+    // For fitting signature
+    private String catalogues;
+    private int nBoot;
+    private String sigVersion;
+    private String organ;
+    private float thresholdPerc;
+    private float thresholdPval;
+    private int maxRareSigs;
 
     public MutationalSignatureAnalysisExecutor() {
     }
@@ -50,7 +59,7 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
     }
 
     protected String getMutationalSignatureFilename() {
-        return "COSMIC_v" + release + "_SBS_" + assembly + ".txt";
+        return "result_" + sigVersion + "_" + assembly + ".txt";
     }
 
     protected static Map<String, Map<String, Double>> initFreqMap() {
@@ -200,21 +209,66 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
         return this;
     }
 
-    public String getRelease() {
-        return release;
+    public String getCatalogues() {
+        return catalogues;
     }
 
-    public MutationalSignatureAnalysisExecutor setRelease(String release) {
-        this.release = release;
+    public MutationalSignatureAnalysisExecutor setCatalogues(String catalogues) {
+        this.catalogues = catalogues;
         return this;
     }
 
-    public boolean isFitting() {
-        return fitting;
+    public int getnBoot() {
+        return nBoot;
     }
 
-    public MutationalSignatureAnalysisExecutor setFitting(boolean fitting) {
-        this.fitting = fitting;
+    public MutationalSignatureAnalysisExecutor setnBoot(int nBoot) {
+        this.nBoot = nBoot;
+        return this;
+    }
+
+    public String getSigVersion() {
+        return sigVersion;
+    }
+
+    public MutationalSignatureAnalysisExecutor setSigVersion(String sigVersion) {
+        this.sigVersion = sigVersion;
+        return this;
+    }
+
+    public String getOrgan() {
+        return organ;
+    }
+
+    public MutationalSignatureAnalysisExecutor setOrgan(String organ) {
+        this.organ = organ;
+        return this;
+    }
+
+    public float getThresholdPerc() {
+        return thresholdPerc;
+    }
+
+    public MutationalSignatureAnalysisExecutor setThresholdPerc(float thresholdPerc) {
+        this.thresholdPerc = thresholdPerc;
+        return this;
+    }
+
+    public float getThresholdPval() {
+        return thresholdPval;
+    }
+
+    public MutationalSignatureAnalysisExecutor setThresholdPval(float thresholdPval) {
+        this.thresholdPval = thresholdPval;
+        return this;
+    }
+
+    public int getMaxRareSigs() {
+        return maxRareSigs;
+    }
+
+    public MutationalSignatureAnalysisExecutor setMaxRareSigs(int maxRareSigs) {
+        this.maxRareSigs = maxRareSigs;
         return this;
     }
 }

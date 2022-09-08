@@ -65,31 +65,35 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
     public void run() throws ToolException, CatalogException, IOException, StorageEngineException {
         opencgaHome = Paths.get(getExecutorParams().getString("opencgaHome"));
 
+        if (StringUtils.isEmpty(getCatalogues())) {
+            // Get first variant to check where the genome context is stored
+            Query query = new Query();
+            if (getQuery() != null) {
+                query.putAll(getQuery());
+            }
+            query.append(VariantQueryParam.TYPE.key(), VariantType.SNV);
 
-        // Get first variant to check where the genome context is stored
-        Query query = new Query();
-        if (getQuery() != null) {
-            query.putAll(getQuery());
+            QueryOptions queryOptions = new QueryOptions();
+            queryOptions.append(QueryOptions.INCLUDE, "id");
+            queryOptions.append(QueryOptions.LIMIT, "1");
+
+            VariantQueryResult<Variant> variantQueryResult = getVariantStorageManager().get(query, queryOptions, getToken());
+            Variant variant = variantQueryResult.first();
+            if (variant == null) {
+                // Nothing to do
+                addWarning("None variant found for that mutational signature query");
+                return;
+            }
+
+            // Run mutational analysis taking into account that the genome context is stored in an index file,
+            // if the genome context file does not exist, it will be created !!!
+            computeFromContextFile();
         }
-        query.append(VariantQueryParam.TYPE.key(), VariantType.SNV);
 
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.append(QueryOptions.INCLUDE, "id");
-        queryOptions.append(QueryOptions.LIMIT, "1");
-
-        VariantQueryResult<Variant> variantQueryResult = getVariantStorageManager().get(query, queryOptions, getToken());
-        Variant variant = variantQueryResult.first();
-        if (variant == null) {
-            // Nothing to do
-            addWarning("None variant found for that mutational signature query");
-            return;
-        }
-
-        // Run mutational analysis taking into account that the genome context is stored in an index file,
-        // if the genome context file does not exist, it will be created !!!
-        computeFromContextFile();
+        // Run R script for fitting signature
+        executeRScript();
     }
-    
+
     private void computeFromContextFile() throws ToolExecutorException {
         // Context index filename
         File indexFile = null;
@@ -155,12 +159,6 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
             // Write context counts
             writeCountMap(countMap, getOutDir().resolve(GENOME_CONTEXT_FILENAME).toFile());
-
-            // Run R script
-            if (isFitting()) {
-                executeRScript();
-            }
-
         } catch (IOException | CatalogException | StorageEngineException | ToolException e) {
             throw new ToolExecutorException(e);
         }
@@ -243,26 +241,42 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         }
     }
 
-    private String executeRScript() throws IOException, ToolExecutorException {
-        // Download signature profiles
-        File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID,
-                getMutationalSignatureFilename(), getOutDir(), opencgaHome);
-        if (signatureFile == null) {
-            throw new ToolExecutorException("Error downloading mutational signatures file from " + ResourceUtils.URL);
+    private void executeRScript() throws IOException, ToolExecutorException {
+        String inputPath = getOutDir().toString();
+        if (new File(getCatalogues()).exists()) {
+            inputPath = new File(getCatalogues()).getParent();
         }
-
-        String rScriptPath = opencgaHome + "/analysis/R/" + getToolId();
-        List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
-        inputBindings.add(new AbstractMap.SimpleEntry<>(rScriptPath, "/data/input"));
+        AbstractMap.SimpleEntry<String, String> inputBinding = new AbstractMap.SimpleEntry<>(inputPath, "/data/input");
         AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir()
                 .toAbsolutePath().toString(), "/data/output");
-        String scriptParams = "R CMD Rscript --vanilla /data/input/mutational-signature.r /data/output/"
-                + GENOME_CONTEXT_FILENAME + " "
-                + "/data/output/" + getMutationalSignatureFilename() + " /data/output ";
+        StringBuilder scriptParams = new StringBuilder("R CMD Rscript --vanilla ")
+                .append("/opt/opencga/signature.tools.lib/scripts/signatureFit")
+                .append(" --catalogues=/data/input/").append(new File(getCatalogues()).getName())
+                .append(" --outdir=/data/output");
+        if (StringUtils.isNotEmpty(getSigVersion())) {
+            scriptParams.append(" --sigversion=").append(getSigVersion());
+        }
+        if (StringUtils.isNotEmpty(getOrgan())) {
+            scriptParams.append(" --organ=").append(getOrgan());
+        }
+        if (StringUtils.isNotEmpty(getOrgan())) {
+            scriptParams.append(" --organ=").append(getOrgan());
+        }
+        if (getThresholdPerc() > 0.0f) {
+            scriptParams.append(" --thresholdperc=").append(getThresholdPerc());
+        }
+        if (getThresholdPval() > 0.0f) {
+            scriptParams.append(" --thresholdpval=").append(getThresholdPval());
+        }
+        if (getMaxRareSigs() > 0) {
+            scriptParams.append(" --maxraresigs=").append(getMaxRareSigs());
+        }
+        if (getnBoot() > 0) {
+            scriptParams.append(" -b --nboot=").append(getnBoot());
+        }
 
-        String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams, null);
+        String cmdline = DockerUtils.run(R_DOCKER_IMAGE, Collections.singletonList(inputBinding), outputBinding, scriptParams.toString(),
+                null);
         logger.info("Docker command line: " + cmdline);
-
-        return cmdline;
     }
 }

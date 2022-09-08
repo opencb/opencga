@@ -54,10 +54,10 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
     private String organ;
 
     @DataField(id = "thresholdPerc", defaultValue = "5f", description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PERC_DESCRIPTION)
-    private float thresholdPerc;
+    private Float thresholdPerc;
 
     @DataField(id = "thresholdPval", defaultValue = "0.05f", description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PVAL_DESCRIPTION)
-    private float thresholdPval;
+    private Float thresholdPval;
 
     @DataField(id = "maxRareSigs", defaultValue = "1", description = FieldConstants.MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION)
     private int maxRareSigs;
@@ -69,8 +69,8 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
     }
 
     public MutationalSignatureAnalysisParams(String sample, String id, String description, ObjectMap query, String catalogues,
-                                             String cataloguesContent, int nBoot, String sigVersion, String organ, float thresholdPerc,
-                                             float thresholdPval, int maxRareSigs, String outdir) {
+                                             String cataloguesContent, int nBoot, String sigVersion, String organ, Float thresholdPerc,
+                                             Float thresholdPval, int maxRareSigs, String outdir) {
         this.sample = sample;
         this.id = id;
         this.description = description;
@@ -96,10 +96,10 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
         sb.append(", catalogues='").append(catalogues).append('\'');
         sb.append(", cataloguesContent='").append(cataloguesContent).append('\'');
         sb.append(", nBoot=").append(nBoot);
-        sb.append(", sigversion='").append(sigVersion).append('\'');
+        sb.append(", sigVersion='").append(sigVersion).append('\'');
         sb.append(", organ='").append(organ).append('\'');
         sb.append(", thresholdPerc=").append(thresholdPerc);
-        sb.append(", thresholdPVal=").append(thresholdPval);
+        sb.append(", thresholdPval=").append(thresholdPval);
         sb.append(", maxRareSigs=").append(maxRareSigs);
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
@@ -187,20 +187,20 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
         return this;
     }
 
-    public float getThresholdPerc() {
+    public Float getThresholdPerc() {
         return thresholdPerc;
     }
 
-    public MutationalSignatureAnalysisParams setThresholdPerc(float thresholdPerc) {
+    public MutationalSignatureAnalysisParams setThresholdPerc(Float thresholdPerc) {
         this.thresholdPerc = thresholdPerc;
         return this;
     }
 
-    public float getThresholdPval() {
+    public Float getThresholdPval() {
         return thresholdPval;
     }
 
-    public MutationalSignatureAnalysisParams setThresholdPval(float thresholdPval) {
+    public MutationalSignatureAnalysisParams setThresholdPval(Float thresholdPval) {
         this.thresholdPval = thresholdPval;
         return this;
     }

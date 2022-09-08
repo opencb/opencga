@@ -53,6 +53,8 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
     public final static String GENOME_CONTEXT_FILENAME = "genome_context.txt";
     public final static String SIGNATURE_COEFFS_FILENAME = "signature_coefficients.json";
     public final static String SIGNATURE_FITTING_FILENAME = "signature_summary.png";
+    public final static String CATALOGUES_FILENAME_DEFAULT = "catalogues.tsv";
+
 
     public final static String QC_UPDATE_KEYNAME = "qcUpdate";
 
@@ -60,6 +62,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
     private MutationalSignatureAnalysisParams signatureParams = new MutationalSignatureAnalysisParams();
 
     private String assembly;
+    private String catalogues;
 
     @Override
     protected void check() throws Exception {
@@ -70,38 +73,60 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
             throw new ToolException("Missing study");
         }
 
-        if (signatureParams.getQuery() == null) {
-            throw new ToolException("Missing signature query");
-        }
-
-        assembly = ResourceUtils.getAssembly(catalogManager, study, token);
-        if (StringUtils.isEmpty(assembly)) {
-            throw new ToolException("Missing assembly for study '" + study + "'");
-        }
-        // TODO: improve this
-        switch (assembly.toUpperCase()) {
-            case "GRCH37":
-                assembly = "GRCh37";
-                break;
-            case "GRCH38":
-                assembly = "GRCh38";
-                break;
-            default:
-                break;
-        }
-
-
-        try {
-            study = catalogManager.getStudyManager().get(study, QueryOptions.empty(), token).first().getFqn();
-
-            OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(study, signatureParams.getSample(),
-                    QueryOptions.empty(), token);
-            if (sampleResult.getNumResults() != 1) {
-                throw new ToolException("Unable to compute mutational signature analysis. Sample '" + signatureParams.getSample()
-                        + "' not found");
+        // Two behaviours: using catalogues or using sample/query
+        if (StringUtils.isNotEmpty(signatureParams.getCatalogues())) {
+            // Fitting from file containing the counts
+            // Check if that file exists
+            OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult = getCatalogManager().getFileManager().get(study,
+                    signatureParams.getCatalogues(), QueryOptions.empty(), getToken());
+            if (fileResult.getNumResults() == 0) {
+                throw new ToolException("Catalogues file '" + signatureParams.getCatalogues() + "' does not exist in study '"
+                        + study + "'");
             }
-        } catch (CatalogException e) {
-            throw new ToolException(e);
+            if (fileResult.getNumResults() > 1) {
+                throw new ToolException("Multiple files '" + signatureParams.getCatalogues() + "' found in study '" + study + "'");
+            }
+            catalogues = fileResult.first().getUri().toURL().getPath();
+        } else if (StringUtils.isNotEmpty(signatureParams.getCataloguesContent())) {
+            // Fitting from counts
+            FileUtils.write(getOutDir().resolve(CATALOGUES_FILENAME_DEFAULT).toFile(), signatureParams.getCataloguesContent(),
+                    Charset.defaultCharset(), false);
+            catalogues = getOutDir().resolve(CATALOGUES_FILENAME_DEFAULT).toString();
+        } else {
+            // Fitting from sample/query
+            if (signatureParams.getQuery() == null) {
+                throw new ToolException("Missing signature query");
+            }
+
+            assembly = ResourceUtils.getAssembly(catalogManager, study, token);
+            if (StringUtils.isEmpty(assembly)) {
+                throw new ToolException("Missing assembly for study '" + study + "'");
+            }
+            // TODO: improve this
+            switch (assembly.toUpperCase()) {
+                case "GRCH37":
+                    assembly = "GRCh37";
+                    break;
+                case "GRCH38":
+                    assembly = "GRCh38";
+                    break;
+                default:
+                    break;
+            }
+
+
+            try {
+                study = catalogManager.getStudyManager().get(study, QueryOptions.empty(), token).first().getFqn();
+
+                OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(study, signatureParams.getSample(),
+                        QueryOptions.empty(), token);
+                if (sampleResult.getNumResults() != 1) {
+                    throw new ToolException("Unable to compute mutational signature analysis. Sample '" + signatureParams.getSample()
+                            + "' not found");
+                }
+            } catch (CatalogException e) {
+                throw new ToolException(e);
+            }
         }
     }
 
@@ -115,7 +140,13 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                     .setQueryId(signatureParams.getId())
                     .setQueryDescription(signatureParams.getDescription())
                     .setQuery(signatureParams.getQuery())
-                    .setRelease(signatureParams.getSigVersion())
+                    .setCatalogues(catalogues)
+                    .setnBoot(signatureParams.getnBoot())
+                    .setSigVersion(signatureParams.getSigVersion())
+                    .setOrgan(signatureParams.getOrgan())
+                    .setThresholdPerc(signatureParams.getThresholdPerc())
+                    .setThresholdPval(signatureParams.getThresholdPval())
+                    .setMaxRareSigs(signatureParams.getMaxRareSigs())
                     .execute();
 
             // Update quality control for the catalog sample
