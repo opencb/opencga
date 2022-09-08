@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.server.generator.writers.cli;
 
+import org.apache.solr.common.StringUtils;
 import org.opencb.opencga.server.generator.config.CategoryConfig;
 import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
 import org.opencb.opencga.server.generator.config.Shortcut;
@@ -178,7 +179,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                             if (restParameter.isAvailableType() && !variable_names.contains(normalizeNames(getAsCamelCase(restParameter.getName())))) {
                                 sb.append("        @Parameter(names = {" + getShortCuts(restParameter, config) + "}, description = " +
                                         "\"" + restParameter.getDescription().replaceAll("\"", "'") + "\", required = " + restParameter.isRequired() + ", arity = 1)\n");
-                                sb.append("        public " + getValidValue(restParameter) + " " + getVariableName(restParameter) + ";" +
+                                sb.append("        public " + getValidValue(restParameter) + " " + getVariableName(restParameter) + getDefaultValue(restParameter) + ";" +
                                         " " +
                                         "\n");
                                 sb.append("    \n");
@@ -195,7 +196,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                                 getVariableName(bodyRestParameter))) + ", arity = 1)\n");
 
                                         sb.append("        public " + getValidValue(bodyRestParameter) + " "
-                                                + getVariableName(bodyRestParameter) + ";\n");
+                                                + getVariableName(bodyRestParameter) + getDefaultValue(bodyRestParameter) + ";\n");
                                         sb.append("    \n");
                                         variable_names.add(normalizeNames(getAsCamelCase(bodyRestParameter.getName())));
                                     } else if (bodyRestParameter.getType().equals("enum")) {
@@ -207,7 +208,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                                 getVariableName(bodyRestParameter))) + ", arity = 1)\n");
 
                                         sb.append("        public " + getValidValue(bodyRestParameter) + " "
-                                                + getVariableName(bodyRestParameter) + ";\n");
+                                                + getVariableName(bodyRestParameter) + getDefaultValue(bodyRestParameter) + ";\n");
                                         sb.append("    \n");
                                     } else if (bodyRestParameter.getType().equals("Query")) {
                                         String names = getShortCuts(bodyRestParameter, config);
@@ -235,6 +236,18 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
             //  }
         }
         return sb.toString();
+    }
+
+    private String getDefaultValue(RestParameter bodyRestParameter) {
+        String res = "";
+        if (!StringUtils.isEmpty(bodyRestParameter.getDefaultValue())) {
+            if ("String".equals(getValidValue(bodyRestParameter))) {
+                res += " = \"" + bodyRestParameter.getDefaultValue() + "\"";
+            } else {
+                res += " = " + bodyRestParameter.getDefaultValue();
+            }
+        }
+        return res;
     }
 
 
