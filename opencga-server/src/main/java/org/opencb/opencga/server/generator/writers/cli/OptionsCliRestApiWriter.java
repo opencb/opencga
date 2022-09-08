@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.server.generator.writers.cli;
 
-import org.apache.solr.common.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.server.generator.config.CategoryConfig;
 import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
 import org.opencb.opencga.server.generator.config.Shortcut;
