@@ -395,8 +395,7 @@ public class FieldConstants {
     // Mutational signature run
     public static final String MUTATIONAL_SIGNATURE_ID_DESCRIPTION = "Signature ID.";
     public static final String MUTATIONAL_SIGNATURE_DESCRIPTION_DESCRIPTION = "Signature description.";
-    public static final String MUTATIONAL_SIGNATURE_QUERY_DESCRIPTION = "Signature query, e.g.:. -q type=\"SNV\" -q"
-            + " ct=\"missense_variant\"";
+    public static final String MUTATIONAL_SIGNATURE_QUERY_DESCRIPTION = "Signature query in JSON format.";
     public static final String MUTATIONAL_SIGNATURE_CATALOGUES_DESCRIPTION = "File name containing mutational catalogues. Each sample"
             + " catalogue is in a column, with sample names as column headers and channel.";
     public static final String MUTATIONAL_SIGNATURE_CATALOGUES_CONTENT_DESCRIPTION = "Mutational catalogues. Each sample catalogue is in a"
