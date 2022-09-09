@@ -34,7 +34,7 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
     private String description;
 
     @DataField(id = "query", description = FieldConstants.MUTATIONAL_SIGNATURE_QUERY_DESCRIPTION)
-    private ObjectMap query;
+    private String query;
 
     // For fitting method
 
@@ -68,7 +68,7 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
     public MutationalSignatureAnalysisParams() {
     }
 
-    public MutationalSignatureAnalysisParams(String sample, String id, String description, ObjectMap query, String catalogues,
+    public MutationalSignatureAnalysisParams(String sample, String id, String description, String query, String catalogues,
                                              String cataloguesContent, int nBoot, String sigVersion, String organ, Float thresholdPerc,
                                              Float thresholdPval, int maxRareSigs, String outdir) {
         this.sample = sample;
@@ -133,11 +133,11 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
         return this;
     }
 
-    public ObjectMap getQuery() {
+    public String getQuery() {
         return query;
     }
 
-    public MutationalSignatureAnalysisParams setQuery(ObjectMap query) {
+    public MutationalSignatureAnalysisParams setQuery(String query) {
         this.query = query;
         return this;
     }

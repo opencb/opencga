@@ -983,7 +983,7 @@ public class VariantWebService extends AnalysisWebService {
 
             MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
             params.setSample(query.getString(SAMPLE.key()))
-                    .setQuery(query);
+                    .setQuery(query.toJson());
 
             MutationalSignatureAnalysis mutationalSignatureAnalysis = new MutationalSignatureAnalysis();
             mutationalSignatureAnalysis.setUp(opencgaHome.toString(), catalogManager, storageEngineFactory, new ObjectMap(),

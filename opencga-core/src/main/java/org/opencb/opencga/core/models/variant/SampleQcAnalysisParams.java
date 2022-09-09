@@ -28,7 +28,7 @@ public class SampleQcAnalysisParams extends ToolParams {
     private AnnotationVariantQueryParams variantStatsQuery;
     private String signatureId;
     private String signatureDescription;
-    private ObjectMap signatureQuery;
+    private String signatureQuery;
     private String signatureRelease;
     private String genomePlotId;
     private String genomePlotDescription;
@@ -40,7 +40,7 @@ public class SampleQcAnalysisParams extends ToolParams {
 
     public SampleQcAnalysisParams(String sample, String variantStatsId, String variantStatsDescription,
                                   AnnotationVariantQueryParams variantStatsQuery, String signatureId, String signatureDescription,
-                                  ObjectMap signatureQuery, String signatureRelease, String genomePlotId, String genomePlotDescription,
+                                  String signatureQuery, String signatureRelease, String genomePlotId, String genomePlotDescription,
                                   String genomePlotConfigFile, String outdir) {
         this.sample = sample;
         this.variantStatsId = variantStatsId;
@@ -129,11 +129,11 @@ public class SampleQcAnalysisParams extends ToolParams {
         return this;
     }
 
-    public ObjectMap getSignatureQuery() {
+    public String getSignatureQuery() {
         return signatureQuery;
     }
 
-    public SampleQcAnalysisParams setSignatureQuery(ObjectMap signatureQuery) {
+    public SampleQcAnalysisParams setSignatureQuery(String signatureQuery) {
         this.signatureQuery = signatureQuery;
         return this;
     }

@@ -20,6 +20,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.clinical.qc.SignatureFitting;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
@@ -62,6 +63,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
     private MutationalSignatureAnalysisParams signatureParams = new MutationalSignatureAnalysisParams();
 
     private String assembly;
+    private ObjectMap query;
     private String catalogues;
 
     @Override
@@ -94,9 +96,11 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
             catalogues = getOutDir().resolve(CATALOGUES_FILENAME_DEFAULT).toString();
         } else {
             // Fitting from sample/query
+
             if (signatureParams.getQuery() == null) {
                 throw new ToolException("Missing signature query");
             }
+            query = JacksonUtils.getDefaultObjectMapper().readValue(signatureParams.getQuery(), ObjectMap.class);
 
             assembly = ResourceUtils.getAssembly(catalogManager, study, token);
             if (StringUtils.isEmpty(assembly)) {
@@ -139,7 +143,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                     .setSample(signatureParams.getSample())
                     .setQueryId(signatureParams.getId())
                     .setQueryDescription(signatureParams.getDescription())
-                    .setQuery(signatureParams.getQuery())
+                    .setQuery(query)
                     .setCatalogues(catalogues)
                     .setnBoot(signatureParams.getnBoot())
                     .setSigVersion(signatureParams.getSigVersion())
@@ -150,9 +154,9 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                     .execute();
 
             // Update quality control for the catalog sample
-            if (signatureParams.getQuery() != null && signatureParams.getQuery().containsKey(QC_UPDATE_KEYNAME)) {
+            if (signatureParams.getQuery() != null && query.containsKey(QC_UPDATE_KEYNAME)) {
                 // Remove quality control update key
-                signatureParams.getQuery().remove(QC_UPDATE_KEYNAME);
+                query.remove(QC_UPDATE_KEYNAME);
 
                 OpenCGAResult<Sample> sampleResult = getCatalogManager().getSampleManager().get(getStudy(), signatureParams.getSample(),
                         QueryOptions.empty(), getToken());
@@ -174,8 +178,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
     }
 
     public Signature parse(Path dir) throws IOException {
-        Signature result = new Signature(signatureParams.getId(), signatureParams.getDescription(),
-                signatureParams.getQuery(), "SNV", null, null, null);
+        Signature result = new Signature(signatureParams.getId(), signatureParams.getDescription(), query, "SNV", null, null, null);
 
         // Context counts
         File contextFile = dir.resolve(GENOME_CONTEXT_FILENAME).toFile();

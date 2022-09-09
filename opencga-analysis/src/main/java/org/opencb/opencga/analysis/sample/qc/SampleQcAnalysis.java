@@ -128,7 +128,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Check mutational signature
-        if (MapUtils.isEmpty(analysisParams.getSignatureQuery())) {
+        if (StringUtils.isEmpty(analysisParams.getSignatureQuery())) {
             runSignature = false;
         }
 
@@ -182,7 +182,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
                 if (runSignature) {
                     // Run mutational signature
                     // Be sure to update sample quality control
-                    analysisParams.getSignatureQuery().put(MutationalSignatureAnalysis.QC_UPDATE_KEYNAME, "true");
+//                    analysisParams.getSignatureQuery().put(MutationalSignatureAnalysis.QC_UPDATE_KEYNAME, "true");
                     params = new MutationalSignatureAnalysisParams()
                             .setSample(analysisParams.getSample())
                             .setId(analysisParams.getSignatureId())
