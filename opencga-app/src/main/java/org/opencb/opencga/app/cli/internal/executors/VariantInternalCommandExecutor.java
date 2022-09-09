@@ -802,7 +802,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.sample,
                 cliOptions.id,
                 cliOptions.description,
-                new ObjectMap(cliOptions.query).toJson(),
+                cliOptions.query,
                 cliOptions.catalogues,
                 cliOptions.cataloguesContent,
                 cliOptions.nBoot,

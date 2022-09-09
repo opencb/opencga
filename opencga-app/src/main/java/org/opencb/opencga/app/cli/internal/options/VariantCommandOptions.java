@@ -1328,8 +1328,8 @@ public class VariantCommandOptions {
         @Parameter(names = {"--description"}, description = FieldConstants.MUTATIONAL_SIGNATURE_DESCRIPTION_DESCRIPTION)
         public String description;
 
-        @DynamicParameter(names = {"-q", "--query"}, description = FieldConstants.MUTATIONAL_SIGNATURE_QUERY_DESCRIPTION)
-        public Map<String, String> query = new HashMap<>();
+        @Parameter(names = {"-q", "--query"}, description = FieldConstants.MUTATIONAL_SIGNATURE_QUERY_DESCRIPTION)
+        public String query;
 
         // For fitting method
 
