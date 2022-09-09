@@ -71,7 +71,8 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             if (getQuery() != null) {
                 query.putAll(getQuery());
             }
-            query.append(VariantQueryParam.TYPE.key(), VariantType.SNV);
+            // Ovewrite study and type (SNV)
+            query.append(VariantQueryParam.STUDY.key(), getStudy()).append(VariantQueryParam.TYPE.key(), VariantType.SNV);
 
             QueryOptions queryOptions = new QueryOptions();
             queryOptions.append(QueryOptions.INCLUDE, "id");
@@ -142,7 +143,8 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             if (getQuery() != null) {
                 query.putAll(getQuery());
             }
-            query.append(VariantQueryParam.TYPE.key(), VariantType.SNV);
+            // Ovewrite study and type (SNV)
+            query.append(VariantQueryParam.STUDY.key(), getStudy()).append(VariantQueryParam.TYPE.key(), VariantType.SNV);
 
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id");
 
