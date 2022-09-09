@@ -16,9 +16,7 @@
 
 package org.opencb.opencga.core.tools.variant;
 
-import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
@@ -62,13 +60,13 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
         return "result_" + sigVersion + "_" + assembly + ".txt";
     }
 
-    protected static Map<String, Map<String, Double>> initFreqMap() {
-        Map<String, Map<String, Double>> map = new LinkedHashMap<>();
+    protected static Map<String, Map<String, Integer>> initCountMap() {
+        Map<String, Map<String, Integer>> map = new LinkedHashMap<>();
         for (String firstKey : FIRST_LEVEL_KEYS) {
-            Map<String, Double> secondMap = new LinkedHashMap<>();
+            Map<String, Integer> secondMap = new LinkedHashMap<>();
             String[] secondLevelKeys = firstKey.startsWith("C") ? SECOND_LEVEL_KEYS_C : SECOND_LEVEL_KEYS_T;
             for (String secondKey : secondLevelKeys) {
-                secondMap.put(secondKey, 0.0d);
+                secondMap.put(secondKey, 0);
             }
             map.put(firstKey, secondMap);
         }
@@ -76,16 +74,15 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
         return map;
     }
 
-    protected static void writeCountMap(Map<String, Map<String, Double>> map, File outputFile) throws ToolException {
-        double sum = sumFreqMap(map);
+    protected static void writeCountMap(String sample, Map<String, Map<String, Integer>> map, File outputFile) throws ToolException {
+        //double sum = sumFreqMap(map);
         try (PrintWriter pw = new PrintWriter(outputFile)) {
-            pw.println("Substitution Type\tTrinucleotide\tSomatic Mutation Type\tCount\tNormalized Count");
+            pw.println(sample);
             for (String firstKey : FIRST_LEVEL_KEYS) {
                 String[] secondLevelKeys = firstKey.startsWith("C") ? SECOND_LEVEL_KEYS_C : SECOND_LEVEL_KEYS_T;
                 for (String secondKey : secondLevelKeys) {
-                    pw.println(firstKey + "\t" + secondKey + "\t" + secondKey.substring(0, 1) + "[" + firstKey + "]"
-                            + secondKey.substring(2) + "\t" + map.get(firstKey).get(secondKey) + "\t"
-                            + (map.get(firstKey).get(secondKey) / sum));
+                    pw.println(secondKey.substring(0, 1) + "[" + firstKey + "]" + secondKey.substring(2) + "\t"
+                            + map.get(firstKey).get(secondKey));
                 }
             }
         } catch (Exception e) {

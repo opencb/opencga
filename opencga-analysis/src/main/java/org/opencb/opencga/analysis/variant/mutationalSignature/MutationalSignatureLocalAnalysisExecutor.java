@@ -47,7 +47,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis.GENOME_CONTEXT_FILENAME;
+import static org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis.CATALOGUES_FILENAME_DEFAULT;
 
 @ToolExecutor(id="opencga-local", tool = MutationalSignatureAnalysis.ID,
         framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.STORAGE)
@@ -148,7 +148,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
             VariantDBIterator iterator = getVariantStorageManager().iterator(query, queryOptions, getToken());
 
-            Map<String, Map<String, Double>> countMap = initFreqMap();
+            Map<String, Map<String, Integer>> countMap = initCountMap();
 
             while (iterator.hasNext()) {
                 Variant variant = iterator.next();
@@ -158,7 +158,11 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             }
 
             // Write context counts
-            writeCountMap(countMap, getOutDir().resolve(GENOME_CONTEXT_FILENAME).toFile());
+            File cataloguesFile = getOutDir().resolve(CATALOGUES_FILENAME_DEFAULT).toFile();
+            writeCountMap(getSample(), countMap, cataloguesFile);
+
+            // Update the parameter catalogues
+            setCatalogues(cataloguesFile.getAbsolutePath());
         } catch (IOException | CatalogException | StorageEngineException | ToolException e) {
             throw new ToolExecutorException(e);
         }
@@ -219,7 +223,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         }
     }
 
-    private void updateCountMap(Variant variant, String sequence, Map<String, Map<String, Double>> countMap) {
+    private void updateCountMap(Variant variant, String sequence, Map<String, Map<String, Integer>> countMap) {
         try {
             String k, seq;
 
@@ -241,7 +245,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         }
     }
 
-    private void executeRScript() throws IOException, ToolExecutorException {
+    private void executeRScript() throws IOException {
         String inputPath = getOutDir().toString();
         if (new File(getCatalogues()).exists()) {
             inputPath = new File(getCatalogues()).getParent();
