@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
+import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -167,6 +168,23 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
                 outDir, true, true, true);
     }
 
+    @Test
+    public void testMergeWithWithoutFT_TASK_1935() throws Exception {
+        URI outDir = newOutputUri();
+
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), true);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.FAMILY.key(), true);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-2-DUP2.variant-test-file.vcf.gz")), outDir);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-2-DUP.variant-test-file.vcf.gz")), outDir);
+
+
+        Variant v = variantStorageEngine.get(new Query()
+                .append(VariantQueryParam.ID.key(), "1:100000:G:A")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL)
+                .append(VariantQueryParam.INCLUDE_SAMPLE_ID.key(), true), new QueryOptions()).first();
+        System.out.println("VARIANT " + v.toString() + " = " + v.toJson());
+    }
 
     @Test
     public void testDuplicatedVariantsAccepted1() throws Exception {
@@ -215,11 +233,11 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
                 .append(VariantQueryParam.ID.key(), "22:44681612:A:G")
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL)
                 .append(VariantQueryParam.INCLUDE_SAMPLE_ID.key(), true), new QueryOptions()).first();
-        System.out.println("v.toJson() = " + v.toJson());
+        System.out.println("VARIANT " + v.toString() + " = " + v.toJson());
         checkIssueEntries_22_44681612_A_G(v);
 
         v = variantStorageEngine.getSampleData("22:44681612:A:G", STUDY_NAME, new QueryOptions()).first();
-        System.out.println("v.toJson() = " + v.toJson());
+        System.out.println("VARIANT " + v.toString() + " = " + v.toJson());
         checkIssueEntries_22_44681612_A_G(v);
 
         Iterator<FileMetadata> it = metadataManager.fileMetadataIterator(studyId);
@@ -263,8 +281,8 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             assertTrue(uniq + " + " + sample.getSampleId() + "_" + sample.getFileIndex(),
                     uniq.add(sample.getSampleId() + "_" + sample.getFileIndex()));
             String FILE = sample.getData().get(study.getSampleDataKeyPosition("FILE"));
-            if (StringUtils.isNotEmpty(FILE)) {
-                assertEquals(study.getFile(sample.getFileIndex()).getFileId(), FILE+".variant-test-file.vcf.gz");
+            if (StringUtils.isNotEmpty(FILE) && !FILE.equals(VCFConstants.MISSING_VALUE_v4)) {
+                assertEquals(study.getFile(sample.getFileIndex()).getFileId(), FILE + ".variant-test-file.vcf.gz");
             }
         }
         for (IssueEntry issue : study.getIssues()) {
@@ -274,8 +292,8 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             assertTrue(uniq + " + " + sample.getSampleId() + "_" + sample.getFileIndex(),
                     uniq.add(sample.getSampleId() + "_" + sample.getFileIndex()));
             String FILE = sample.getData().get(study.getSampleDataKeyPosition("FILE"));
-            if (StringUtils.isNotEmpty(FILE)) {
-                assertEquals(study.getFile(sample.getFileIndex()).getFileId(), FILE+".variant-test-file.vcf.gz");
+            if (StringUtils.isNotEmpty(FILE) && !FILE.equals(VCFConstants.MISSING_VALUE_v4)) {
+                assertEquals(study.getFile(sample.getFileIndex()).getFileId(), FILE + ".variant-test-file.vcf.gz");
             }
         }
         assertNotEquals(0, study.getIssues().size());
