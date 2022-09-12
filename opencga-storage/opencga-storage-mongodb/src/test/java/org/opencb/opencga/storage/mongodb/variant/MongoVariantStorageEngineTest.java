@@ -207,7 +207,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         // 3) Clean some variants from the Stage collection.
         MongoDBCollection stage = dbAdaptor.getStageCollection(studyMetadata.getId());
 
-        long stageCount = stage.count().first();
+        long stageCount = stage.count().getNumMatches();
         System.out.println("stage count : " + stageCount);
         int i = 0;
         for (Document document : stage.find(new Document(), Projections.include("_id"), null).getResults()) {
@@ -613,7 +613,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         System.out.println("Comparing " + expectedCollection + " vs " + actualCollection);
         assertNotEquals(expectedCollection.toString(), actualCollection.toString());
         assertEquals(expectedCollection.count().first(), actualCollection.count().first());
-        assertNotEquals(0L, expectedCollection.count().first().longValue());
+        assertNotEquals(0L, expectedCollection.count().getNumMatches());
 
         Iterator<Document> actualIterator = actualCollection.nativeQuery().find(new Document(), options);
         Iterator<Document> expectedIterator = expectedCollection.nativeQuery().find(new Document(), options);

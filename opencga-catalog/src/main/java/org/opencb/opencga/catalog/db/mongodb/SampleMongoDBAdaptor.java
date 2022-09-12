@@ -49,6 +49,7 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
@@ -511,7 +512,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         Query query = new Query()
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE.key(), sampleUid);
-        OpenCGAResult<Long> count = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().count(clientSession, query);
+        OpenCGAResult<ClinicalAnalysis> count = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().count(clientSession, query);
         if (count.getNumMatches() > 0) {
             throw new CatalogDBException("Could not delete sample '" + sampleId + "'. Sample is in use in "
                     + count.getNumMatches() + " cases");
@@ -596,7 +597,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             tmpQuery = new Query()
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
                     .append(QueryParams.STUDY_UID.key(), studyId);
-            OpenCGAResult<Long> count = count(clientSession, tmpQuery);
+            OpenCGAResult<Sample> count = count(clientSession, tmpQuery);
             if (count.getNumMatches() > 0) {
                 throw new CatalogDBException("Cannot update the " + QueryParams.ID.key() + ". Sample "
                         + parameters.get(QueryParams.ID.key()) + " already exists.");
@@ -782,18 +783,18 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public OpenCGAResult<Long> count(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult<Sample> count(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(null, query);
     }
 
-    OpenCGAResult<Long> count(ClientSession clientSession, Query query)
+    OpenCGAResult<Sample> count(ClientSession clientSession, Query query)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query);
         return new OpenCGAResult<>(sampleCollection.count(clientSession, bson));
     }
 
     @Override
-    public OpenCGAResult<Long> count(Query query, String user)
+    public OpenCGAResult<Sample> count(Query query, String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query finalQuery = new Query(query);
 
@@ -824,7 +825,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             DataResult<Document> aggregate = sampleCollection.aggregate(Arrays.asList(match, lookup, individualMatch, count),
                     QueryOptions.empty());
             long numResults = aggregate.getNumResults() == 0 ? 0 : ((int) aggregate.first().get("count"));
-            return new OpenCGAResult<>(aggregate.getTime(), Collections.emptyList(), 1, Collections.singletonList(numResults), 1);
+            return new OpenCGAResult<Sample>(aggregate.getTime(), Collections.emptyList(), 0, Collections.emptyList(), numResults);
         } else {
             logger.debug("Sample count query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
             return new OpenCGAResult<>(sampleCollection.count(bson));

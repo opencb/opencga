@@ -1706,13 +1706,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             fixQueryObject(study, query, userId, token);
             query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            OpenCGAResult<Long> queryResultAux = clinicalDBAdaptor.count(query, userId);
+            OpenCGAResult<ClinicalAnalysis> queryResultAux = clinicalDBAdaptor.count(query, userId);
 
             auditManager.auditCount(userId, Enums.Resource.CLINICAL_ANALYSIS, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return new OpenCGAResult<>(queryResultAux.getTime(), queryResultAux.getEvents(), 0, Collections.emptyList(),
-                    queryResultAux.getNumMatches());
+            return queryResultAux;
         } catch (CatalogException e) {
             auditManager.auditCount(userId, Enums.Resource.CLINICAL_ANALYSIS, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));

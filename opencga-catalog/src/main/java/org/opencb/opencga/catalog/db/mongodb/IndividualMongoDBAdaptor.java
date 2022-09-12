@@ -275,23 +275,24 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     }
 
     @Override
-    public OpenCGAResult<Long> count(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult<Individual> count(Query query)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(null, query);
     }
 
-    public OpenCGAResult<Long> count(ClientSession clientSession, Query query)
+    public OpenCGAResult<Individual> count(ClientSession clientSession, Query query)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query);
         return new OpenCGAResult<>(individualCollection.count(clientSession, bson));
     }
 
     @Override
-    public OpenCGAResult<Long> count(Query query, String user)
+    public OpenCGAResult<Individual> count(Query query, String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(null, query, user);
     }
 
-    OpenCGAResult<Long> count(ClientSession clientSession, Query query, String user)
+    OpenCGAResult<Individual> count(ClientSession clientSession, Query query, String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, user);
         logger.debug("Individual count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class,
@@ -653,7 +654,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         Query query = new Query()
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.INDIVIDUAL.key(), individualUid);
-        OpenCGAResult<Long> count = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().count(clientSession, query);
+        OpenCGAResult<ClinicalAnalysis> count = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().count(clientSession, query);
         if (count.getNumMatches() > 0) {
             throw new CatalogDBException("Could not delete individual '" + individualId + "'. Individual is in use in "
                     + count.getNumMatches() + " cases");
@@ -675,7 +676,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             Query tmpQuery = new Query()
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
                     .append(QueryParams.STUDY_UID.key(), studyId);
-            OpenCGAResult<Long> count = count(clientSession, tmpQuery);
+            OpenCGAResult<Individual> count = count(clientSession, tmpQuery);
             if (count.getNumMatches() > 0) {
                 throw new CatalogDBException("Cannot set id for individual. An individual with { id: '"
                         + parameters.get(QueryParams.ID.key()) + "'} already exists.");

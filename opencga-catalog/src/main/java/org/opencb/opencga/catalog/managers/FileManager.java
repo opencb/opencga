@@ -1506,7 +1506,7 @@ public class FileManager extends AnnotationSetManager<File> {
             fixQueryObject(study, query, userId);
 
             query.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<Long> queryResultAux = fileDBAdaptor.count(query, userId);
+            OpenCGAResult<File> queryResultAux = fileDBAdaptor.count(query, userId);
 
             auditManager.auditCount(userId, Enums.Resource.FILE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -3941,7 +3941,7 @@ public class FileManager extends AnnotationSetManager<File> {
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), myPath);
-        OpenCGAResult<Long> fileDataResult = fileDBAdaptor.count(query);
+        OpenCGAResult<File> fileDataResult = fileDBAdaptor.count(query);
         if (fileDataResult.getNumMatches() > 0) {
             return CheckPath.FILE_EXISTS;
         }

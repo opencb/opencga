@@ -659,13 +659,12 @@ public class PanelManager extends ResourceManager<Panel> {
             query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
             // Here view permissions will be checked
-            OpenCGAResult<Long> queryResultAux = panelDBAdaptor.count(query, userId);
+            OpenCGAResult<Panel> queryResultAux = panelDBAdaptor.count(query, userId);
 
             auditManager.auditCount(userId, Enums.Resource.DISEASE_PANEL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return new OpenCGAResult<>(queryResultAux.getTime(), queryResultAux.getEvents(), 0, Collections.emptyList(),
-                    queryResultAux.getNumMatches());
+            return queryResultAux;
         } catch (CatalogException e) {
             auditManager.auditCount(userId, Enums.Resource.DISEASE_PANEL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));

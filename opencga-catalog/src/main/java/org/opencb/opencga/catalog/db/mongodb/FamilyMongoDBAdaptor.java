@@ -46,6 +46,7 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
@@ -230,23 +231,23 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public OpenCGAResult<Long> count(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult<Family> count(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(null, query);
     }
 
-    OpenCGAResult<Long> count(ClientSession clientSession, Query query)
+    OpenCGAResult<Family> count(ClientSession clientSession, Query query)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query);
         return new OpenCGAResult<>(familyCollection.count(clientSession, bson));
     }
 
     @Override
-    public OpenCGAResult<Long> count(final Query query, final String user)
+    public OpenCGAResult<Family> count(final Query query, final String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(null, query, user);
     }
 
-    public OpenCGAResult<Long> count(ClientSession clientSession, final Query query, final String user)
+    public OpenCGAResult<Family> count(ClientSession clientSession, final Query query, final String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, user);
         logger.debug("Family count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
@@ -654,7 +655,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             tmpQuery = new Query()
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
                     .append(QueryParams.STUDY_UID.key(), familyDataResult.first().getStudyUid());
-            OpenCGAResult<Long> count = count(clientSession, tmpQuery);
+            OpenCGAResult<Family> count = count(clientSession, tmpQuery);
             if (count.getNumMatches() > 0) {
                 throw new CatalogDBException("Cannot set '" + QueryParams.ID.key() + "' for family. A family with { '"
                         + QueryParams.ID.key() + "': '" + parameters.get(QueryParams.ID.key()) + "'} already exists.");
@@ -731,7 +732,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         Query queryCheck = new Query()
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY_UID.key(), familyUid)
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-        OpenCGAResult<Long> count = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().count(clientSession, queryCheck);
+        OpenCGAResult<ClinicalAnalysis> count = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().count(clientSession, queryCheck);
         if (count.getNumMatches() > 0) {
             throw new CatalogDBException("Could not delete family. Family is in use in " + count.getNumMatches() + " cases");
         }

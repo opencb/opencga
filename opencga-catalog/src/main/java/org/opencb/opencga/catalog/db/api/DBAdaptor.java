@@ -45,11 +45,11 @@ public interface DBAdaptor<T> extends Iterable<T> {
     @Deprecated
     String FORCE = "force";
 
-    default OpenCGAResult<Long> count() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    default OpenCGAResult<T> count() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(new Query());
     }
 
-    OpenCGAResult<Long> count(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult<T> count(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     default OpenCGAResult<T> stats() {
         return stats(new Query());

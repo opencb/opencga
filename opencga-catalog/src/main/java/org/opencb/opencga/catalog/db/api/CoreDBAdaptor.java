@@ -28,7 +28,7 @@ public interface CoreDBAdaptor<T> extends DBAdaptor<T> {
     DBIterator nativeIterator(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
 
-    OpenCGAResult<Long> count(Query query, String user) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult<T> count(Query query, String user) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<T> groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;

@@ -191,23 +191,23 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     }
 
     @Override
-    public OpenCGAResult<Long> count(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult<Cohort> count(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(null, query);
     }
 
-    private OpenCGAResult<Long> count(ClientSession clientSession, Query query)
+    private OpenCGAResult<Cohort> count(ClientSession clientSession, Query query)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long startTime = startQuery();
         return endQuery(startTime, cohortCollection.count(clientSession, parseQuery(query)));
     }
 
     @Override
-    public OpenCGAResult<Long> count(final Query query, final String user)
+    public OpenCGAResult<Cohort> count(final Query query, final String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(null, query, user);
     }
 
-    private OpenCGAResult<Long> count(ClientSession clientSession, final Query query, final String user)
+    private OpenCGAResult<Cohort> count(ClientSession clientSession, final Query query, final String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, user);
         logger.debug("Cohort count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
@@ -433,7 +433,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             tmpQuery = new Query()
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
                     .append(QueryParams.STUDY_UID.key(), studyId);
-            OpenCGAResult<Long> count = count(clientSession, tmpQuery);
+            OpenCGAResult<Cohort> count = count(clientSession, tmpQuery);
             if (count.getNumMatches() > 0) {
                 throw new CatalogDBException("Cannot update the " + QueryParams.ID.key() + ". Cohort "
                         + parameters.get(QueryParams.ID.key()) + " already exists.");

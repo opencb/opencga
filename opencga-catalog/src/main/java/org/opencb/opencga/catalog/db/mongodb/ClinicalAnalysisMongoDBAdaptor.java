@@ -92,23 +92,24 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public OpenCGAResult<Long> count(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult<ClinicalAnalysis> count(Query query)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(null, query);
     }
 
-    OpenCGAResult<Long> count(ClientSession clientSession, Query query)
+    OpenCGAResult<ClinicalAnalysis> count(ClientSession clientSession, Query query)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query);
         return new OpenCGAResult<>(clinicalCollection.count(clientSession, bson));
     }
 
     @Override
-    public OpenCGAResult<Long> count(final Query query, final String user)
+    public OpenCGAResult<ClinicalAnalysis> count(final Query query, final String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(null, query, user);
     }
 
-    OpenCGAResult<Long> count(ClientSession clientSession, final Query query, final String user)
+    OpenCGAResult<ClinicalAnalysis> count(ClientSession clientSession, final Query query, final String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, user);
         logger.debug("Clinical count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
@@ -244,7 +245,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             tmpQuery = new Query()
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
                     .append(QueryParams.STUDY_UID.key(), studyId);
-            OpenCGAResult<Long> count = count(tmpQuery);
+            OpenCGAResult<ClinicalAnalysis> count = count(tmpQuery);
             if (count.getNumMatches() > 0) {
                 throw new CatalogDBException("Cannot set id for clinical analysis. A clinical analysis with { id: '"
                         + parameters.get(QueryParams.ID.key()) + "'} already exists.");

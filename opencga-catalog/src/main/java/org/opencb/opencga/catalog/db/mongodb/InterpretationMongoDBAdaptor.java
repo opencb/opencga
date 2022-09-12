@@ -311,18 +311,18 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public OpenCGAResult<Long> count(Query query) throws CatalogDBException {
+    public OpenCGAResult<Interpretation> count(Query query) throws CatalogDBException {
         return count(null, query);
     }
 
-    public OpenCGAResult<Long> count(ClientSession clientSession, Query query) throws CatalogDBException {
+    public OpenCGAResult<Interpretation> count(ClientSession clientSession, Query query) throws CatalogDBException {
         Bson bson = parseQuery(query);
         logger.debug("Interpretation count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return new OpenCGAResult<>(interpretationCollection.count(clientSession, bson));
     }
 
     @Override
-    public OpenCGAResult<Long> count(Query query, String user)
+    public OpenCGAResult<Interpretation> count(Query query, String user)
             throws CatalogDBException {
         return count(query);
     }
@@ -401,7 +401,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 tmpQuery = new Query()
                         .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
                         .append(QueryParams.STUDY_UID.key(), studyId);
-                OpenCGAResult<Long> count = count(clientSession, tmpQuery);
+                OpenCGAResult<Interpretation> count = count(clientSession, tmpQuery);
                 if (count.getNumMatches() > 0) {
                     throw new CatalogDBException("Cannot set id for interpretation. A interpretation with { id: '"
                             + parameters.get(QueryParams.ID.key()) + "'} already exists.");
