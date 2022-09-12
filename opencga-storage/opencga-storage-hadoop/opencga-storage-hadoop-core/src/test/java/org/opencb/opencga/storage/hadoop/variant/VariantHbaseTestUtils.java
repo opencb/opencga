@@ -417,7 +417,7 @@ public class VariantHbaseTestUtils {
         for (Integer studyId : dbAdaptor.getMetadataManager().getStudies(null).values()) {
             StudyMetadata studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyId);
             List<StudyMetadata.SampleIndexConfigurationVersioned> confs = studyMetadata.getSampleIndexConfigurations();
-            if (confs == null) {
+            if (confs == null || confs.isEmpty()) {
                 confs = Collections.singletonList(studyMetadata.getSampleIndexConfigurationLatest());
             }
             for (StudyMetadata.SampleIndexConfigurationVersioned c : confs) {

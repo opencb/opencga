@@ -462,7 +462,7 @@ public class InternalMainTest {
         String temporalDir = opencga.createTmpOutdir(studyId, "_coverage", sessionId);
 
         // coverage run
-        execute("alignment", "coverage-run",
+        execute("alignment", "coverage-index-run",
                 "--session-id", sessionId,
                 "--study", studyId,
                 "--input-file", bamFile.getName(),

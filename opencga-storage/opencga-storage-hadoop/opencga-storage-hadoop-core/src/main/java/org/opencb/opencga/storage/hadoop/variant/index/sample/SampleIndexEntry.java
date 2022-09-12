@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.opencga.storage.core.io.bit.BitInputStream;
+import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -501,6 +502,51 @@ public class SampleIndexEntry {
                     : Bytes.toStringBinary(clinicalIndex, clinicalIndexOffset, clinicalIndexLength));
             sb.append(", parentsIndex=").append(parentsIndex == null ? "null"
                     : Bytes.toStringBinary(parentsIndex, parentsIndexOffset, parentsIndexLength));
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String toStringSummary() {
+            final StringBuilder sb = new StringBuilder("SampleIndexGtEntry{");
+            sb.append("gt='").append(gt).append('\'');
+            sb.append(", count=").append(count);
+            sb.append(", variants=(")
+                    .append(IndexUtils.bytesToSummary(variants, variantsOffset, variantsLength))
+                    .append(")");
+            sb.append(", fileIndex=(")
+                    .append(IndexUtils.bytesToSummary(fileIndex, fileIndexOffset, fileIndexLength))
+                    .append(")");
+            sb.append(", annotationIndex=(")
+                    .append(IndexUtils.bytesToSummary(annotationIndex, annotationIndexOffset, annotationIndexLength))
+                    .append(")");
+            sb.append(", annotationIndexLength=").append(annotationIndexLength);
+            sb.append(", annotationCounts=").append(Arrays.toString(annotationCounts));
+            sb.append(", consequenceTypeIndex=(")
+                    .append(IndexUtils.bytesToSummary(consequenceTypeIndex, consequenceTypeIndexOffset, consequenceTypeIndexLength))
+                    .append(")");
+            sb.append(", consequenceTypeIndexLength=").append(consequenceTypeIndexLength);
+            sb.append(", biotypeIndex=(")
+                    .append(IndexUtils.bytesToSummary(biotypeIndex, biotypeIndexOffset, biotypeIndexLength))
+                    .append(")");
+            sb.append(", biotypeIndexLength=").append(biotypeIndexLength);
+            sb.append(", transcriptFlagIndex=(")
+                    .append(IndexUtils.bytesToSummary(transcriptFlagIndex, transcriptFlagIndexOffset, transcriptFlagIndexLength))
+                    .append(")");
+            sb.append(", transcriptFlagIndexLength=").append(transcriptFlagIndexLength);
+            sb.append(", ctBtTfIndex=(")
+                    .append(IndexUtils.bytesToSummary(ctBtTfIndex, ctBtTfIndexOffset, ctBtTfIndexLength))
+                    .append(")");
+            sb.append(", ctBtTfIndexLength=").append(ctBtTfIndexLength);
+            sb.append(", populationFrequencyIndex=(")
+                    .append(IndexUtils.bytesToSummary(
+                            populationFrequencyIndex, populationFrequencyIndexOffset, populationFrequencyIndexLength))
+                    .append(")");
+            sb.append(", clinicalIndex=(")
+                    .append(IndexUtils.bytesToSummary(clinicalIndex, clinicalIndexOffset, clinicalIndexLength))
+                    .append(")");
+            sb.append(", parentsIndex=(")
+                    .append(IndexUtils.bytesToSummary(parentsIndex, parentsIndexOffset, parentsIndexLength))
+                    .append(")");
             sb.append('}');
             return sb.toString();
         }

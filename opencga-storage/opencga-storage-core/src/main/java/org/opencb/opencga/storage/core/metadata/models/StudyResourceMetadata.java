@@ -104,7 +104,7 @@ public abstract class StudyResourceMetadata<T extends StudyResourceMetadata> {
     }
 
     @SuppressWarnings("unchecked")
-    public T getThis() {
+    private T getThis() {
         return (T) this;
     }
 }

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.server.rest.analysis;
 
+import org.opencb.opencga.analysis.alignment.AlignmentCoverageAnalysis;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -178,7 +179,8 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = CoverageIndexParams.DESCRIPTION, required = true) CoverageIndexParams params) {
 
-        return null;
+        return submitJob(AlignmentCoverageAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+
         //        logger.debug("ObjectMap: {}", params);
 //
 //        DeeptoolsWrapperParams deeptoolsParams = new DeeptoolsWrapperParams();

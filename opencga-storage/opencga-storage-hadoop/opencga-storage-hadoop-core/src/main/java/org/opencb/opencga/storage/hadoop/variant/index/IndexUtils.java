@@ -33,6 +33,17 @@ public final class IndexUtils {
         return sb.append(" ]").toString();
     }
 
+    public static String bytesToSummary(byte[] bytes, int offset, int length) {
+        if (bytes == null) {
+            return "null";
+        }
+        String s = "bytes.length=" + bytes.length + ", offset=" + offset + ", length=" + length;
+        if (bytes.length - offset < length) {
+            s += " WARN! BYTES TOO SHORT";
+        }
+        return s;
+    }
+
     public static String shortToString(short s) {
         return binaryToString(s, Short.SIZE);
     }
@@ -89,6 +100,18 @@ public final class IndexUtils {
         for (boolean b : filter) {
             sb.append(b ? "1" : "0");
         }
+        sb.append(" [");
+        boolean comma = false;
+        for (int i = 0; i < filter.length; i++) {
+            if (filter[i]) {
+                if (comma) {
+                    sb.append(", ");
+                }
+                sb.append(GenotypeCodec.decode(i));
+                comma = true;
+            }
+        }
+        sb.append("]");
         return sb.toString();
     }
 

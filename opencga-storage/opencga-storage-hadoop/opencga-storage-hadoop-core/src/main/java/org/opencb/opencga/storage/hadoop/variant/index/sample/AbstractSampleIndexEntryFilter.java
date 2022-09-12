@@ -139,12 +139,22 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
 
             SampleIndexEntryIterator variantIterator = converter.toVariantsIterator(gtEntry, countIterator);
             ArrayList<T> variants = new ArrayList<>(variantIterator.getApproxSize());
-            while (expectedResultsFromAnnotation.intValue() > 0 && variantIterator.hasNext()) {
-                T variant = filter(variantIterator, expectedResultsFromAnnotation);
-                if (variant != null) {
-                    variants.add(variant);
-                    numVariants++;
+            try {
+                while (expectedResultsFromAnnotation.intValue() > 0 && variantIterator.hasNext()) {
+                    T variant = filter(variantIterator, expectedResultsFromAnnotation);
+                    if (variant != null) {
+                        variants.add(variant);
+                        numVariants++;
+                    }
                 }
+            } catch (Exception e) {
+                logger.error("Error '{}' filtering SampleIndexGtEntry. sample={}, region={}:{} gt={}",
+                        e.getClass().getName(),
+                        entry.getSampleId(),
+                        entry.getChromosome(), entry.getBatchStart(),
+                        gtEntry.getGt());
+                logger.warn(gtEntry.toStringSummary());
+                throw e;
             }
             if (!variants.isEmpty()) {
                 variantsByGt.add(variants);

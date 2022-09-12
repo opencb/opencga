@@ -122,7 +122,7 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     // Max number of variants matching the search index to be considered a smallQuery
     EXPORT_SMALL_QUERY_SEARCH_INDEX_VARIANTS_THRESHOLD("storage.hadoop.export.smallQuery.searchIndex.variantsThreshold", 50000),
     // Max number of variants match ratio matching the search index to be considered a smallQuery
-    EXPORT_SMALL_QUERY_SEARCH_INDEX_MATCH_RATIO_THRESHOLD("storage.hadoop.export.smallQuery.searchIndex.matchRatioThreshold", 0.01),
+    EXPORT_SMALL_QUERY_SEARCH_INDEX_MATCH_RATIO_THRESHOLD("storage.hadoop.export.smallQuery.searchIndex.matchRatioThreshold", 0.01F),
 
     STATS_LOCAL("storage.hadoop.stats.local", false);
 

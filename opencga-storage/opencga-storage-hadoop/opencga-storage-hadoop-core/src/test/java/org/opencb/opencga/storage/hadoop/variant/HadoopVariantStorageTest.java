@@ -448,6 +448,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                     }
                 }
             }
+            getVariantStorageEngine().getMetadataManager().clearCaches();
         } else {
             deleteTable(tableName);
         }

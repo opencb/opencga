@@ -251,6 +251,10 @@ public class HBaseVariantTableNameGenerator {
         return buildTableName(namespace, dbName, VARIANTS_SUFIX);
     }
 
+    public static boolean isVariantTableName(String tableName) {
+        return tableName.endsWith(VARIANTS_SUFIX);
+    }
+
     public static String getPendingAnnotationTableName(String namespace, String dbName) {
         return buildTableName(namespace, dbName, PENDING_ANNOTATION_SUFIX);
     }

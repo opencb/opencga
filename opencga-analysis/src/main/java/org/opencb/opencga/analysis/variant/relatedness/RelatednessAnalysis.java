@@ -36,6 +36,8 @@ public class RelatednessAnalysis extends OpenCgaTool {
     public static final String ID = "relatedness";
     public static final String DESCRIPTION = "Compute a score to quantify relatedness between samples.";
 
+    public static final String MAF_DEFAULT_VALUE = "1000G:ALL>0.3";
+
     private String studyId;
     private List<String> individualIds;
     private List<String> sampleIds;
@@ -122,6 +124,11 @@ public class RelatednessAnalysis extends OpenCgaTool {
 
         if (CollectionUtils.isEmpty(sampleIds)) {
             throw new ToolException("Member samples not found to execute relatedness analysis.");
+        }
+
+        // If the minor allele frequency is missing then set the default value
+        if (StringUtils.isEmpty(minorAlleleFreq)) {
+            minorAlleleFreq = MAF_DEFAULT_VALUE;
         }
     }
 

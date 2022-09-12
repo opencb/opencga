@@ -919,7 +919,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyMetadata.getId(), sampleIds)) {
                     metadataManager.updateFileMetadata(studyMetadata.getId(), fileId, f -> {
                         f.getSamples().removeAll(sampleIds);
-                        return f;
                     });
                 }
                 for (Integer sampleId : sampleIds) {
@@ -964,7 +963,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortId,
                             cohort -> {
                                 cohort.getFiles().removeAll(fileIds);
-                                return cohort.setStatsStatus(TaskMetadata.Status.ERROR);
+                                cohort.setStatsStatus(TaskMetadata.Status.ERROR);
                             });
                 }
 
