@@ -201,6 +201,22 @@ class RgaUtils {
             List<String> values = new LinkedList<>();
             float value = Float.parseFloat(keyOpValue.getValue());
             switch (keyOpValue.getOp()) {
+                case "=":
+                case "==":
+                    String encodedValue = null;
+                    for (Float popFreq : POP_FREQS) {
+                        if (popFreq == value) {
+                            encodedValue = encode(keyOpValue.getKey().toUpperCase() + SEPARATOR + popFreq);
+                            break;
+                        }
+                    }
+                    if (encodedValue != null) {
+                        values.add(encodedValue);
+                    } else {
+                        throw new RgaException("Cannot apply filter '" + filter + "'. When using '=' operator, it must be assigned to "
+                                + "one of the following values: " + StringUtils.join(POP_FREQS, ", "));
+                    }
+                    break;
                 case "<":
                     for (int i = 0; POP_FREQS.get(i) < value; i++) {
                         Float popFreq = POP_FREQS.get(i);

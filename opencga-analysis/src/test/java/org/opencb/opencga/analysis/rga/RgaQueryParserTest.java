@@ -24,6 +24,22 @@ public class RgaQueryParserTest {
         SolrQuery parse = parser.parseQuery(query);
         assertEquals(RgaDataModel.POPULATION_FREQUENCIES.replace("*", "") + RgaUtils.THOUSAND_GENOMES_STUDY + ":( P1-8 || P1-7 || P1-6 || P1-5 || P1-4 || P1-3 || P1-2 || P1-1 )", parse.get("fq"));
 
+        query = new Query(RgaQueryParams.POPULATION_FREQUENCY.key(), RgaUtils.THOUSAND_GENOMES_STUDY + "=0");
+        parse = parser.parseQuery(query);
+        assertEquals(RgaDataModel.POPULATION_FREQUENCIES.replace("*", "") + RgaUtils.THOUSAND_GENOMES_STUDY + ":P1-1", parse.get("fq"));
+
+        query = new Query(RgaQueryParams.POPULATION_FREQUENCY.key(), RgaUtils.THOUSAND_GENOMES_STUDY + "=0.02");
+        try {
+            parser.parseQuery(query);
+            fail("It should not be possible filtering with '=' by any value that is not one of the thresholds");
+        } catch (RgaException e) {
+            assertTrue(e.getMessage().contains("one of the following values"));
+        }
+
+        query = new Query(RgaQueryParams.POPULATION_FREQUENCY.key(), RgaUtils.THOUSAND_GENOMES_STUDY + "=0.0001");
+        parse = parser.parseQuery(query);
+        assertEquals(RgaDataModel.POPULATION_FREQUENCIES.replace("*", "") + RgaUtils.THOUSAND_GENOMES_STUDY + ":P1-2", parse.get("fq"));
+
         query = new Query(RgaQueryParams.POPULATION_FREQUENCY.key(), RgaUtils.THOUSAND_GENOMES_STUDY + "<0.001");
         parse = parser.parseQuery(query);
         assertEquals(RgaDataModel.POPULATION_FREQUENCIES + ":( P1-1 || P1-2 || P1-3 )", parse.get("fq"));
