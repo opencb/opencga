@@ -37,7 +37,7 @@ public class StudyVariantEngineConfiguration {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("StudyVariantEngineConfiguration{");
-        sb.append("options=").append(options.toJson());
+       // sb.append("options=").append(options != null ? options.toJson() : "");
         sb.append(", sampleIndex=").append(sampleIndex);
         sb.append('}');
         return sb.toString();
