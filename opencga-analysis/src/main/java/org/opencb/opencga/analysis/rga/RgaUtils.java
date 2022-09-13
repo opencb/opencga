@@ -220,9 +220,13 @@ class RgaUtils {
                     }
                     break;
                 case ">=":
-                    for (int i = POP_FREQS.size() - 1; POP_FREQS.get(i) >= value; i--) {
+                    for (int i = POP_FREQS.size() - 1; i >= 0; i--) {
                         Float popFreq = POP_FREQS.get(i);
-                        values.add(encode(keyOpValue.getKey().toUpperCase() + SEPARATOR + popFreq));
+                        if (popFreq >= value) {
+                            values.add(encode(keyOpValue.getKey().toUpperCase() + SEPARATOR + popFreq));
+                        } else {
+                            break;
+                        }
                     }
                     break;
                 default:
