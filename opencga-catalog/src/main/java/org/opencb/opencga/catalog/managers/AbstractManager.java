@@ -58,7 +58,7 @@ public abstract class AbstractManager {
 
     protected final Logger logger;
     protected final AuthorizationManager authorizationManager;
-    protected final AuditManager auditManager;
+    private final AuditManager auditManager;
     protected final CatalogManager catalogManager;
 
     protected Configuration configuration;
@@ -121,7 +121,7 @@ public abstract class AbstractManager {
     protected <T> T run(ObjectMap params, Enums.Action action, Enums.Resource resource, String studyStr, String token, QueryOptions options,
                                  ExecuteOperation<T> body) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET_AND_CONFIGURATION);
         String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         return run(params, action, resource, operationUuid, study, userId, options, body);
     }
@@ -166,7 +166,7 @@ public abstract class AbstractManager {
                              QueryOptions options, ExecuteBatchOperation<T> body) throws CatalogException {
         StopWatch totalStopWatch = StopWatch.createStarted();
         String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET_AND_CONFIGURATION);
         String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         auditManager.initAuditBatch(operationUuid);
         Exception exception = null;

@@ -110,6 +110,8 @@ public class StudyManager extends AbstractManager {
     public static final QueryOptions INCLUDE_STUDY_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             StudyDBAdaptor.QueryParams.UID.key(), StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UUID.key(),
             StudyDBAdaptor.QueryParams.FQN.key()));
+    static final QueryOptions INCLUDE_VARIABLE_SET_AND_CONFIGURATION = keepFieldsInQueryOptions(INCLUDE_STUDY_IDS,
+            Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(), StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION.key()));
     static final QueryOptions INCLUDE_VARIABLE_SET = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key());
     static final QueryOptions INCLUDE_CONFIGURATION =
             new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION.key());
@@ -217,7 +219,7 @@ public class StudyManager extends AbstractManager {
 
         if (!queryOptions.isEmpty()) {
             // Ensure at least the ids are included
-            fixQueryOptions(queryOptions, INCLUDE_STUDY_IDS.getAsStringList(QueryOptions.INCLUDE));
+            keepFieldsInQueryOptions(queryOptions, INCLUDE_STUDY_IDS.getAsStringList(QueryOptions.INCLUDE));
         }
 
         OpenCGAResult<Study> studyDataResult = studyDBAdaptor.get(query, queryOptions, userId);
@@ -240,30 +242,6 @@ public class StudyManager extends AbstractManager {
         }
 
         return studyDataResult;
-    }
-
-    private void fixQueryOptions(QueryOptions queryOptions, List<String> includeFieldsList) {
-        if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
-            Set<String> includeList = new HashSet<>(queryOptions.getAsStringList(QueryOptions.INCLUDE));
-            includeList.addAll(Arrays.asList(
-                    StudyDBAdaptor.QueryParams.UUID.key(), StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UID.key(),
-                    StudyDBAdaptor.QueryParams.ALIAS.key(), StudyDBAdaptor.QueryParams.CREATION_DATE.key(),
-                    StudyDBAdaptor.QueryParams.NOTIFICATION.key(), StudyDBAdaptor.QueryParams.FQN.key(),
-                    StudyDBAdaptor.QueryParams.URI.key()));
-            // We create a new object in case there was an exclude or any other field. We only want to include fields in this case
-            queryOptions.put(QueryOptions.INCLUDE, new ArrayList<>(includeList));
-        } else if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
-            // We will make sure that the user does not exclude the minimum required fields
-            Set<String> excludeList = new HashSet<>(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
-            for (String field : includeFieldsList) {
-                excludeList.remove(field);
-            }
-            if (!excludeList.isEmpty()) {
-                queryOptions.put(QueryOptions.EXCLUDE, new ArrayList<>(excludeList));
-            } else {
-                queryOptions.remove(QueryOptions.EXCLUDE);
-            }
-        }
     }
 
     private OpenCGAResult<Study> getStudy(long projectUid, String studyUuid, QueryOptions options) throws CatalogDBException {

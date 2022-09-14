@@ -46,7 +46,6 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclEntryList;
-import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
@@ -470,6 +469,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                     Family family = iterator.next();
                     try {
                         run(auditParams, Enums.Action.DELETE, FAMILY, operationUuid, study, userId, qOptions, (s, u, rp, qo) -> {
+                            rp.setId(family.getId());
+                            rp.setUuid(family.getUuid());
+
                             if (checkPermissions) {
                                 authorizationManager.checkFamilyPermission(study.getUid(), family.getUid(), userId,
                                         FamilyPermissions.DELETE);
@@ -1149,12 +1151,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             }
 
             try (CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager)) {
-                DataResult<FacetField> result = catalogSolrManager.facetedQuery(study, CatalogSolrManager.FAMILY_SOLR_COLLECTION, myQuery,
-                        options, userId);
-                auditManager.auditFacet(userId, FAMILY, study.getId(), study.getUuid(), auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-                return new OpenCGAResult<>(result);
+                return new OpenCGAResult<>(catalogSolrManager.facetedQuery(study, CatalogSolrManager.FAMILY_SOLR_COLLECTION, myQuery,
+                        options, userId));
             }
         });
     }
