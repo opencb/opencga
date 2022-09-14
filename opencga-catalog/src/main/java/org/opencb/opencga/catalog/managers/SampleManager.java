@@ -1286,7 +1286,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             } else {
                 for (String sampleId : sampleList) {
                     Event event = new Event(Event.Type.ERROR, sampleId, e.getMessage());
-                    sampleAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, new AclEntryList<>(), 0));
+                    sampleAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 }
             }
         } finally {
@@ -1433,6 +1433,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             }
 
             List<Long> sampleUids = batchSampleList.stream().map(Sample::getUid).collect(Collectors.toList());
+            List<String> sampleIds = batchSampleList.stream().map(Sample::getId).collect(Collectors.toList());
             List<AuthorizationManager.CatalogAclParams> aclParamsList = new ArrayList<>();
             AuthorizationManager.CatalogAclParams.addToList(sampleUids, permissions, Enums.Resource.SAMPLE, aclParamsList);
 
@@ -1459,6 +1460,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
                 OpenCGAResult<AclEntryList<SamplePermissions>> queryResults = authorizationManager.getAcls(study.getUid(),
                         sampleUids, members, Enums.Resource.SAMPLE, SamplePermissions.class);
+
+                for (int i = 0; i < queryResults.getResults().size(); i++) {
+                    queryResults.getResults().get(i).setId(sampleIds.get(i));
+                }
                 aclResultList.append(queryResults);
 
                 for (Sample sample : batchSampleList) {

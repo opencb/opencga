@@ -945,7 +945,7 @@ public class PanelManager extends ResourceManager<Panel> {
             } else {
                 for (String panelId : panelList) {
                     Event event = new Event(Event.Type.ERROR, panelId, e.getMessage());
-                    panelAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, new AclEntryList<>(), 0));
+                    panelAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 }
             }
         } finally {

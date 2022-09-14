@@ -1264,7 +1264,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             } else {
                 for (String individualId : individualList) {
                     Event event = new Event(Event.Type.ERROR, individualId, e.getMessage());
-                    individualAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, new AclEntryList<>(), 0));
+                    individualAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 }
             }
         } finally {

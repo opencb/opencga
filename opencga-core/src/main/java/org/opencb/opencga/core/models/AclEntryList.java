@@ -1,12 +1,14 @@
 package org.opencb.opencga.core.models;
 
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class AclEntryList<E extends Enum<E>> {
 
     protected String id;
-    private List<AclEntry<E>> acl;
+    private List<AclEntry<E>> acl = new ArrayList<>();
+
 
     public String getId() {
         return id;

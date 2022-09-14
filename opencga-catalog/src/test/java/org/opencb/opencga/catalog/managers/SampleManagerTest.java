@@ -53,7 +53,10 @@ import org.opencb.opencga.core.models.common.IndexStatus;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.individual.*;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualAclParams;
+import org.opencb.opencga.core.models.individual.IndividualPermissions;
+import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.study.*;
@@ -88,7 +91,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().update(studyFqn, "testSample", new SampleUpdateParams().setDescription(descriptions.get(0)),
                 new QueryOptions(), token);
         catalogManager.getSampleManager().update(studyFqn, "testSample", new SampleUpdateParams().setDescription(descriptions.get(1)),
-         new QueryOptions(), token);
+                new QueryOptions(), token);
 
         catalogManager.getProjectManager().incrementRelease(projectId, token);
         // We create something to have a gap in the release
@@ -96,7 +99,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         catalogManager.getProjectManager().incrementRelease(projectId, token);
         catalogManager.getSampleManager().update(studyFqn, "testSample", new SampleUpdateParams().setDescription(descriptions.get(2)),
-         new QueryOptions(), token);
+                new QueryOptions(), token);
 
         catalogManager.getSampleManager().update(studyFqn, "testSample",
                 new SampleUpdateParams().setDescription("new description"), null, token);
@@ -2432,9 +2435,9 @@ public class SampleManagerTest extends AbstractManagerTest {
         OpenCGAResult<AclEntryList<SamplePermissions>> dataResult = catalogManager.getSampleManager().updateAcl(studyFqn,
                 Collections.singletonList("sample"), "user2", new SampleAclParams(null, null, null, null, "VIEW"), SET, token);
         assertEquals(1, dataResult.getNumResults());
-        assertEquals(1, dataResult.first().size());
-        assertEquals("user2", dataResult.first().get(0).getMember());
-        assertTrue(dataResult.first().get(0).getPermissions().contains(SamplePermissions.VIEW));
+        assertEquals(1, dataResult.first().getAcl().size());
+        assertEquals("user2", dataResult.first().getAcl().get(0).getMember());
+        assertTrue(dataResult.first().getAcl().get(0).getPermissions().contains(SamplePermissions.VIEW));
     }
 
     @Test
@@ -2463,9 +2466,9 @@ public class SampleManagerTest extends AbstractManagerTest {
                 Arrays.asList(sample.getId(), sample2.getId()), "user2", false, token);
         assertEquals(2, permissions.getNumResults());
         for (AclEntryList<SamplePermissions> result : permissions.getResults()) {
-            assertEquals(1, result.size());
-            assertEquals("user2", result.get(0).getMember());
-            assertNull(result.get(0).getPermissions());
+            assertEquals(1, result.getAcl().size());
+            assertEquals("user2", result.getAcl().get(0).getMember());
+            assertNull(result.getAcl().get(0).getPermissions());
         }
 
         // Assign permissions to both families
@@ -2478,9 +2481,9 @@ public class SampleManagerTest extends AbstractManagerTest {
                 Arrays.asList(sample.getId(), sample2.getId()), "user2", false, token);
         assertEquals(2, permissions.getNumResults());
         for (AclEntryList<SamplePermissions> result : permissions.getResults()) {
-            assertEquals(1, result.size());
-            assertEquals(1, result.get(0).getGroups().size()); // Group @members
-            assertTrue(result.get(0).getPermissions().contains(SamplePermissions.VIEW));
+            assertEquals(1, result.getAcl().size());
+            assertEquals(1, result.getAcl().get(0).getGroups().size()); // Group @members
+            assertTrue(result.getAcl().get(0).getPermissions().contains(SamplePermissions.VIEW));
         }
     }
 

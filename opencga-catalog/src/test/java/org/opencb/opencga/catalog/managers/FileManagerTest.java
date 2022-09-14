@@ -2150,10 +2150,10 @@ public class FileManagerTest extends AbstractManagerTest {
 
         assertEquals(3, dataResult.getNumResults());
         for (AclEntryList<FilePermissions> result : dataResult.getResults()) {
-            assertEquals(1, result.size());
-            assertEquals("user2", result.get(0).getMember());
-            assertEquals(1, result.get(0).getPermissions().size());
-            assertTrue(result.get(0).getPermissions().contains(FilePermissions.VIEW));
+            assertEquals(1, result.getAcl().size());
+            assertEquals("user2", result.getAcl().get(0).getMember());
+            assertEquals(1, result.getAcl().get(0).getPermissions().size());
+            assertTrue(result.getAcl().get(0).getPermissions().contains(FilePermissions.VIEW));
         }
     }
 

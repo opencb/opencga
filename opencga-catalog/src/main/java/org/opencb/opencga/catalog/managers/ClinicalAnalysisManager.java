@@ -2013,7 +2013,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             } else {
                 for (String caseId : clinicalList) {
                     Event event = new Event(Event.Type.ERROR, caseId, e.getMessage());
-                    clinicalAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, new AclEntryList<>(), 0));
+                    clinicalAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 }
             }
         } finally {

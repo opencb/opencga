@@ -644,8 +644,8 @@ public class FamilyManagerTest extends GenericTest {
         OpenCGAResult<AclEntryList<SamplePermissions>> acls = catalogManager.getSampleManager().getAcls(STUDY,
                 sampleList.stream().map(Sample::getId).collect(Collectors.toList()), "user2", false, sessionIdUser);
         for (AclEntryList<SamplePermissions> result : acls.getResults()) {
-            assertTrue(result.get(0).getPermissions().contains(SamplePermissions.VIEW));
-            assertFalse(result.get(0).getPermissions().contains(SamplePermissions.VIEW_VARIANTS));
+            assertTrue(result.getAcl().get(0).getPermissions().contains(SamplePermissions.VIEW));
+            assertFalse(result.getAcl().get(0).getPermissions().contains(SamplePermissions.VIEW_VARIANTS));
         }
 
         familyManager.updateAcl(STUDY, new FamilyAclParams("VIEW", "Martinez-Martinez", null, null,
@@ -662,8 +662,8 @@ public class FamilyManagerTest extends GenericTest {
         acls = catalogManager.getSampleManager().getAcls(STUDY, sampleList.stream().map(Sample::getId).collect(Collectors.toList()),
                 "user2", false, sessionIdUser);
         for (AclEntryList<SamplePermissions> result : acls.getResults()) {
-            assertTrue(result.get(0).getPermissions().contains(SamplePermissions.VIEW));
-            assertTrue(result.get(0).getPermissions().contains(SamplePermissions.VIEW_VARIANTS));
+            assertTrue(result.getAcl().get(0).getPermissions().contains(SamplePermissions.VIEW));
+            assertTrue(result.getAcl().get(0).getPermissions().contains(SamplePermissions.VIEW_VARIANTS));
         }
     }
 

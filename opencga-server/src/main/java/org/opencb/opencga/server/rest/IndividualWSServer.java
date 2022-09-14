@@ -72,9 +72,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
     })
     public Response createIndividualPOST(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
-                    String studyStr,
+            String studyStr,
             @ApiParam(value = "Comma separated list of sample ids to be associated to the created individual") @QueryParam("samples")
-                    String samples,
+            String samples,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
             @ApiParam(value = "JSON containing individual information", required = true) IndividualCreateParams params) {
         return run(() -> individualManager.create(studyStr, params.toIndividual(), getIdListOrEmpty(samples), queryOptions, token));
@@ -417,10 +417,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/acl/{members}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", response = AclEntryList.class)
+    @ApiOperation(value = "Update the set of permissions granted for the member", response = IndividualAclEntryList.class)
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
-                    String studyStr,
+            String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true, defaultValue = "ADD") @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
             @ApiParam(value = "Propagate individual permissions to related samples", defaultValue = "false") @QueryParam("propagate") boolean propagate,

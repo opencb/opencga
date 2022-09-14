@@ -1266,7 +1266,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             } else {
                 for (String cohortId : cohortList) {
                     Event event = new Event(Event.Type.ERROR, cohortId, e.getMessage());
-                    cohortAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, new AclEntryList<>(), 0));
+                    cohortAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 }
             }
         } finally {

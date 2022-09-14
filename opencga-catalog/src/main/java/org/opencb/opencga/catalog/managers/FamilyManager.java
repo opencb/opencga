@@ -1142,7 +1142,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             } else {
                 for (String familyId : familyList) {
                     Event event = new Event(Event.Type.ERROR, familyId, e.getMessage());
-                    familyAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, new AclEntryList<>(), 0));
+                    familyAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 }
             }
         } finally {

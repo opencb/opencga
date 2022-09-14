@@ -1682,7 +1682,7 @@ public class JobManager extends ResourceManager<Job> {
             } else {
                 for (String jobId : jobList) {
                     Event event = new Event(Event.Type.ERROR, jobId, e.getMessage());
-                    jobAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, new AclEntryList<>(), 0));
+                    jobAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 }
             }
         } finally {

@@ -171,9 +171,9 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
      * Internal method to fetch the permissions of every user. Permissions are splitted and returned in a map of user -> list of
      * permissions.
      *
-     * @param resourceId Resource id being queried.
+     * @param resourceId  Resource id being queried.
      * @param membersList Members for which we want to fetch the permissions. If empty, it should return the permissions for all members.
-     * @param entry     Entity where the query will be performed.
+     * @param entry       Entity where the query will be performed.
      * @return A map of [acl, user_defined_acl] -> user -> List of permissions and the string id of the resource queried.
      */
     private EntryPermission internalGet(long resourceId, List<String> membersList, Enums.Resource entry) {
@@ -246,7 +246,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                         if (!permissions.get(QueryParams.USER_DEFINED_ACLS.key()).containsKey(split[0])) {
                             permissions.get(QueryParams.USER_DEFINED_ACLS.key()).put(split[0], new ArrayList<>());
                         }
-                            permissions.get(QueryParams.USER_DEFINED_ACLS.key()).get(split[0]).add(split[1]);
+                        permissions.get(QueryParams.USER_DEFINED_ACLS.key()).get(split[0]).add(split[1]);
                     }
                 }
             }
@@ -341,13 +341,13 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                         groups.add(new AclEntry.GroupAclEntry<>(group, groupPermissions));
                     }
                 }
-                aclList.add(new AclEntry<>(member, permissions, groups));
+                aclList.getAcl().add(new AclEntry<>(member, permissions, groups));
             }
         } else {
             for (Map.Entry<String, List<String>> tmpEntry : myMap.entrySet()) {
                 List<T> allPermissions = tmpEntry.getValue().stream().map(p -> T.valueOf(clazz, p)).collect(Collectors.toList());
                 EnumSet<T> permissions = allPermissions.isEmpty() ? EnumSet.noneOf(clazz) : EnumSet.copyOf(allPermissions);
-                aclList.add(new AclEntry<>(tmpEntry.getKey(), permissions, Collections.emptyList()));
+                aclList.getAcl().add(new AclEntry<>(tmpEntry.getKey(), permissions, Collections.emptyList()));
             }
         }
 
@@ -614,7 +614,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             // Get current permissions for resource and override with new ones set for members (already existing or not)
             Map<String, Map<String, List<String>>> currentPermissions = internalGet(resourceId, Collections.emptyList(), resource)
                     .getPermissions();
-            for (AclEntry<?> acl : acls) {
+            for (AclEntry<?> acl : acls.getAcl()) {
                 // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
                 List<String> permissions = acl.getPermissions().stream().map(Enum::name).collect(Collectors.toList());
                 permissions.add("NONE");

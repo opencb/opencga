@@ -2713,7 +2713,7 @@ public class FileManager extends AnnotationSetManager<File> {
             } else {
                 for (String fileId : fileList) {
                     Event event = new Event(Event.Type.ERROR, fileId, e.getMessage());
-                    fileAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, new AclEntryList<>(), 0));
+                    fileAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 }
             }
         } finally {
