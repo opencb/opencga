@@ -190,8 +190,9 @@ public class TextOutputWriter extends AbstractOutputWriter {
                         AclEntryList entries = (AclEntryList) result;
                         PrintUtils.println(entries.toString(), PrintUtils.Color.CYAN);
                         PrintUtils.println(entries.getId(), PrintUtils.Color.GREEN);
-                        for (int i = 0; i < entries.size(); i++) {
-                            PrintUtils.println(((AclEntry) entries.get(i)).getMember() + ": " + ((AclEntry) entries.get(i)).getPermissions(), PrintUtils.Color.YELLOW);
+                        for (int i = 0; i < entries.getAcl().size(); i++) {
+                            PrintUtils.println(((AclEntry) entries.getAcl().get(i)).getMember()
+                                    + ": " + ((AclEntry) entries.getAcl().get(i)).getPermissions(), PrintUtils.Color.YELLOW);
                         }
                     } else {
                         PrintUtils.print(result.getClass() + ": " + result, PrintUtils.Color.YELLOW);
