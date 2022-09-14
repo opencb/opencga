@@ -169,7 +169,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                     String studyStr,
             @ApiParam(value = "Comma separated list of member ids to be associated to the created family") @QueryParam("members")
                     String members,
-            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "JSON containing family information", required = true) FamilyCreateParams family) {
         try {
             family = ObjectUtils.defaultIfNull(family, new FamilyCreateParams());
@@ -232,7 +232,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.FAMILY_UPDATE_ROLES_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.FAMILY_UPDATE_ROLES_PARAM) boolean updateRoles,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
-            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "body") FamilyUpdateParams parameters) {
         try {
             if (annotationSetsAction == null) {
