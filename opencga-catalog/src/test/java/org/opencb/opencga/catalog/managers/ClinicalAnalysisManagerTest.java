@@ -214,6 +214,39 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
+    public void createAndTestStatusIdIsNotNull() throws CatalogException {
+        createDummyFamily();
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("analysis" + RandomStringUtils.randomAlphanumeric(3))
+                .setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
+                .setProband(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))
+                .setFamily(new Family().setId("family")
+                        .setMembers(Collections.singletonList(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))));
+
+        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, false,
+                INCLUDE_RESULT, sessionIdUser);
+        assertEquals("", result.first().getStatus().getId());
+
+        clinicalAnalysis = new ClinicalAnalysis()
+                .setId("analysis" + RandomStringUtils.randomAlphanumeric(3))
+                .setStatus(new Status(null, null, null, null))
+                .setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
+                .setProband(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))
+                .setFamily(new Family().setId("family")
+                        .setMembers(Collections.singletonList(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))));
+        result = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, false, INCLUDE_RESULT, sessionIdUser);
+        assertEquals("", result.first().getStatus().getId());
+
+        result = catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
+                new ClinicalAnalysisUpdateParams().setStatus(new StatusParam(null)), INCLUDE_RESULT, sessionIdUser);
+        assertEquals("", result.first().getStatus().getId());
+
+        result = catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
+                new ClinicalAnalysisUpdateParams().setStatus(new StatusParam("")), INCLUDE_RESULT, sessionIdUser);
+        assertEquals("", result.first().getStatus().getId());
+    }
+
+    @Test
     public void createAndUpdateClinicalAnalysisWithQualityControl() throws CatalogException, InterruptedException {
         Individual individual = new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2")));
         catalogManager.getIndividualManager().create(STUDY, individual, null, sessionIdUser);
