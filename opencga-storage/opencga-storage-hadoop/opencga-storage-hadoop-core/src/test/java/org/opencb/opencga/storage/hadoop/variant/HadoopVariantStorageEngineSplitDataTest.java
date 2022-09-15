@@ -25,7 +25,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRestVariantAnnotator;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
@@ -74,7 +73,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             assertEquals(TaskMetadata.Status.NONE, sampleMetadata.getSampleIndexAnnotationStatus(1));
         }
 
-        variantStorageEngine.annotate(new Query(), new QueryOptions(DefaultVariantAnnotationManager.OUT_DIR, outputUri));
+        variantStorageEngine.annotate(outputUri, new QueryOptions());
         for (String sample : SAMPLES) {
             SampleMetadata sampleMetadata = mm.getSampleMetadata(studyId, mm.getSampleId(studyId, sample));
             assertEquals(TaskMetadata.Status.READY, sampleMetadata.getIndexStatus());
@@ -93,7 +92,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             assertEquals(TaskMetadata.Status.NONE, sampleMetadata.getAnnotationStatus());
             assertEquals(TaskMetadata.Status.NONE, sampleMetadata.getSampleIndexAnnotationStatus(1));
         }
-        variantStorageEngine.annotate(new Query(), new QueryOptions(DefaultVariantAnnotationManager.OUT_DIR, outputUri));
+        variantStorageEngine.annotate(outputUri, new QueryOptions());
         for (String sample : SAMPLES) {
             SampleMetadata sampleMetadata = mm.getSampleMetadata(studyId, mm.getSampleId(studyId, sample));
             assertEquals(TaskMetadata.Status.READY, sampleMetadata.getIndexStatus());

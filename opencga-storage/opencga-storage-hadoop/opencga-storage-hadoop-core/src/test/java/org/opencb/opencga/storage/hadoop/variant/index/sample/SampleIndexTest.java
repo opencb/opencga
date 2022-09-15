@@ -36,7 +36,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.Values;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -178,7 +177,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
 
         // ---------------- Annotate
-        this.variantStorageEngine.annotate(new Query(), new QueryOptions(DefaultVariantAnnotationManager.OUT_DIR, outputUri));
+        this.variantStorageEngine.annotate(outputUri, new QueryOptions());
         engine.familyIndex(STUDY_NAME_3, triosPlatinum, new ObjectMap());
 
         // Study 1 - extra sample index configuration, not staging, only one sample in that configuration
