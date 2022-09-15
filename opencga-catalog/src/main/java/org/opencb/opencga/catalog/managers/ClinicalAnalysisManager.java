@@ -605,6 +605,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             ClinicalStatusValue clinicalStatusValue = statusMap.get(clinicalAnalysis.getStatus().getId());
             clinicalAnalysis.getStatus().setDescription(clinicalStatusValue.getDescription());
             clinicalAnalysis.getStatus().setDate(TimeUtils.getTime());
+        } else if (clinicalAnalysis.getStatus().getId() == null) {
+            clinicalAnalysis.getStatus().setId("");
         }
     }
 
