@@ -178,7 +178,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                         if (!"body".equals(normalizeNames(restParameter.getName()))) {
                             if (restParameter.isAvailableType() && !variable_names.contains(normalizeNames(getAsCamelCase(restParameter.getName())))) {
                                 sb.append("        @Parameter(names = {" + getShortCuts(restParameter, config) + "}, description = " +
-                                        "\"" + restParameter.getDescription().replaceAll("\"", "'") + "\", required = " + restParameter.isRequired() + ", arity = 1)\n");
+                                        "\"" + restParameter.getDescription().replaceAll("\"", "'") + "\", required = " + restParameter.isRequired() + ", " + getArity(restParameter) + ")\n");
                                 sb.append("        public " + getValidValue(restParameter) + " " + getVariableName(restParameter) + getDefaultValue(restParameter) + ";" +
                                         " " +
                                         "\n");
@@ -193,7 +193,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                                 "description"
                                                 + " = \"" + bodyRestParameter.getDescription().replaceAll("\"", "'") + "\", required = "
                                                 + (bodyRestParameter.isRequired() || isMandatory(commandName,
-                                                getVariableName(bodyRestParameter))) + ", arity = 1)\n");
+                                                getVariableName(bodyRestParameter))) + ", " + getArity(bodyRestParameter) + ")\n");
 
                                         sb.append("        public " + getValidValue(bodyRestParameter) + " "
                                                 + getVariableName(bodyRestParameter) + getDefaultValue(bodyRestParameter) + ";\n");
@@ -205,7 +205,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                                 "description"
                                                 + " = \"" + bodyRestParameter.getDescription().replaceAll("\"", "'") + "\", required = "
                                                 + (bodyRestParameter.isRequired() || isMandatory(commandName,
-                                                getVariableName(bodyRestParameter))) + ", arity = 1)\n");
+                                                getVariableName(bodyRestParameter))) + ", " + getArity(bodyRestParameter) + ")\n");
 
                                         sb.append("        public " + getValidValue(bodyRestParameter) + " "
                                                 + getVariableName(bodyRestParameter) + getDefaultValue(bodyRestParameter) + ";\n");
@@ -238,6 +238,14 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
         return sb.toString();
     }
 
+    private String getArity(RestParameter bodyRestParameter) {
+        String res = "arity = 1";
+        if (getValidValue(bodyRestParameter).equals("boolean")) {
+            res = "help = true, arity = 0";
+        }
+        return res;
+    }
+
     private String getDefaultValue(RestParameter bodyRestParameter) {
         String res = "";
         if (!StringUtils.isEmpty(bodyRestParameter.getDefaultValue())) {
@@ -247,6 +255,11 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                 res += " = " + bodyRestParameter.getDefaultValue();
             }
         }
+        if (getValidValue(bodyRestParameter).equals("boolean")) {
+            res = " = false";
+        }
+
+
         return res;
     }
 
