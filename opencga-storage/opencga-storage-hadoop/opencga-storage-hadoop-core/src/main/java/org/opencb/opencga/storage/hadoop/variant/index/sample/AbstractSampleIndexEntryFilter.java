@@ -5,6 +5,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
@@ -108,7 +109,8 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
         if (iterator != null) {
             while (iterator.hasNext()) {
                 int mendelianErrorCode = iterator.nextMendelianErrorCode();
-                if (query.isOnlyDeNovo() && !isDeNovo(mendelianErrorCode)) {
+                String genotype = iterator.nextGenotype();
+                if (!testDeNovo(mendelianErrorCode, genotype)) {
                     iterator.skip();
                 } else {
                     T variant = filter(iterator);
@@ -119,6 +121,24 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
             }
         }
         return variants;
+    }
+
+    private boolean testDeNovo(int mendelianErrorCode, String genotype) {
+        return testDeNovo(mendelianErrorCode, genotype, query.isOnlyDeNovo());
+    }
+
+    public static boolean testDeNovo(int mendelianErrorCode, String genotype, boolean onlyDeNovo) {
+        if (isDeNovo(mendelianErrorCode)) {
+            // Discard those de-novo variants where the GT does not contain the main alternate
+            if (!GenotypeClass.MAIN_ALT.test(genotype)) {
+                return false;
+            }
+        } else if (onlyDeNovo) {
+            // Discard non de-novo variants
+            return false;
+        }
+        // Either mendelian-error or valid de-novo
+        return true;
     }
 
     public static boolean isDeNovo(int mendelianErrorCode) {

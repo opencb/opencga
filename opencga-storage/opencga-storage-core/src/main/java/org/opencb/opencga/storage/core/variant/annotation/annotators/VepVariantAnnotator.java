@@ -76,12 +76,12 @@ public class VepVariantAnnotator extends VariantAnnotator {
     }
 
     @Override
-    public ProjectMetadata.VariantAnnotatorProgram getVariantAnnotatorProgram() throws IOException {
+    public ProjectMetadata.VariantAnnotatorProgram getVariantAnnotatorProgram() {
         return null;
     }
 
     @Override
-    public List<ObjectMap> getVariantAnnotatorSourceVersion() throws IOException {
+    public List<ObjectMap> getVariantAnnotatorSourceVersion() {
         return null;
     }
 

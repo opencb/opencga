@@ -1,0 +1,21 @@
+##fileformat=VCFv4.1
+##FILTER=<ID=PASS,Description="All filters passed">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	PROBAND	MOTHER	FATHER
+1	100	.	A	C,G,T	.	PASS	.	GT	0/0	0/1	0/1
+1	101	.	A	C,G,T	.	PASS	.	GT	1/1	0/0	0/0
+1	102	.	A	C,G,T	.	PASS	.	GT	2/3	0/0	1/1
+1	103	.	A	C,G,T	.	PASS	.	GT	2/2	1/0	0/1
+1	104	.	A	C,G,T	.	PASS	.	GT	0/0	1/1	0/1
+1	105	.	A	C,G,T	.	PASS	.	GT	1/1	0/0	0/0
+1	106	.	A	C,G,T	.	PASS	.	GT	1/2	0/1	0/2
+1	107	.	A	C,G,T	.	PASS	.	GT	0/1	0/1	0/1
+1	108	.	A	C,G,T	.	PASS	.	GT	0/1	0/1	0/1
+1	109	.	A	C,G,T	.	PASS	.	GT	0/1	0/1	0/1
+1	110	.	A	C,G,T	.	PASS	.	GT	0/1	0/1	0/1
+1	111	.	A	C,G,T	.	PASS	.	GT	0/1	0/1	0/1
+1	112	.	A	C,G,T	.	PASS	.	GT	0/1	0/1	0/1
+1	113	.	A	C,G,T	.	PASS	.	GT	0/1	0/1	0/1
+1	114	.	A	C,G,T	.	PASS	.	GT	0/1	0/1	0/1
+1	115	.	A	C,G,T	.	PASS	.	GT	0/1	0/1	0/1
+
