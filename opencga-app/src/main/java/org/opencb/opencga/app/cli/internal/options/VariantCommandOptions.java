@@ -1001,7 +1001,7 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--clinical-confirmed-status"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
         @Override
-        public AnnotationVariantQueryParams setClinicalConfirmedStatus(String clinicalConfirmedStatus) {
+        public AnnotationVariantQueryParams setClinicalConfirmedStatus(boolean clinicalConfirmedStatus) {
             return super.setClinicalConfirmedStatus(clinicalConfirmedStatus);
         }
     }
