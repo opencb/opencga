@@ -23,7 +23,6 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 
-import java.io.IOException;
 import java.util.List;
 
 /**
@@ -44,8 +43,8 @@ public abstract class VariantAnnotator {
      */
     public abstract List<VariantAnnotation> annotate(List<Variant> variants) throws VariantAnnotatorException;
 
-    public abstract ProjectMetadata.VariantAnnotatorProgram getVariantAnnotatorProgram() throws IOException;
+    public abstract ProjectMetadata.VariantAnnotatorProgram getVariantAnnotatorProgram() throws VariantAnnotatorException;
 
-    public abstract List<ObjectMap> getVariantAnnotatorSourceVersion() throws IOException;
+    public abstract List<ObjectMap> getVariantAnnotatorSourceVersion() throws VariantAnnotatorException;
 
 }
