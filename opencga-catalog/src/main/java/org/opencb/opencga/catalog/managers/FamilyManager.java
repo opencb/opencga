@@ -1430,31 +1430,21 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 membersMap.put(String.valueOf(individual.getUid()), individual);
             }
 
-            String parentsKey = null;
+            String parentsKey = "";
             if (individual.getMother() != null) {
-                if (individual.getMother().getUid() > 0) {
-                    individual.getMother().setId(String.valueOf(individual.getMother().getUid()));
-                }
                 if (!StringUtils.isEmpty(individual.getMother().getId())) {
-                    parentsKey = individual.getMother().getId() + "||F";
+                    parentsKey += individual.getMother().getId() + "__" + individual.getMother().getUid() + "||F";
                 }
             }
             if (individual.getFather() != null) {
-                if (parentsKey != null) {
+                if (StringUtils.isNotEmpty(parentsKey)) {
                     parentsKey += "---";
                 }
-                if (individual.getFather().getUid() > 0) {
-                    individual.getFather().setId(String.valueOf(individual.getFather().getUid()));
-                }
                 if (!StringUtils.isEmpty(individual.getFather().getId())) {
-                    if (parentsKey != null) {
-                        parentsKey += individual.getFather().getId() + "||M";
-                    } else {
-                        parentsKey = individual.getFather().getId() + "||M";
-                    }
+                    parentsKey += individual.getFather().getId() + "__" + individual.getFather().getUid() + "||M";
                 }
             }
-            if (parentsKey == null) {
+            if (StringUtils.isEmpty(parentsKey)) {
                 noParentsSet.add(individual.getId());
             } else {
                 if (!parentsMap.containsKey(parentsKey)) {
@@ -1466,32 +1456,31 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         // 2. Loop over the parentsMap object. We will be emptying the noParentsSet as soon as we find a parent in the set. Once,
         // everything finishes, that set should be empty. Otherwise, it will mean that parent is not in use
-        // On the other hand, all the parents should exist in the membersMap, otherwise it will mean that is missing in the family
         for (Map.Entry<String, List<Individual>> parentListEntry : parentsMap.entrySet()) {
             String[] split = parentListEntry.getKey().split("---");
             for (String parentName : split) {
                 String[] splitNameSex = parentName.split("\\|\\|");
-                String name = splitNameSex[0];
+                String[] splitIdUid = splitNameSex[0].split("__");
+                String parentId = splitIdUid[0];
+                String parentUid = splitIdUid[1];
                 SexOntologyTermAnnotation sexTerm = splitNameSex[1].equals("F")
                         ? SexOntologyTermAnnotation.initFemale()
                         : SexOntologyTermAnnotation.initMale();
                 IndividualProperty.Sex sex = sexTerm.getSex();
 
-                if (!membersMap.containsKey(name)) {
-                    throw new CatalogException("The parent " + name + " is not present in the members list");
-                } else {
+                if (membersMap.containsKey(parentUid)) {
                     // Check if the sex is correct
-                    IndividualProperty.Sex sex1 = membersMap.get(name).getSex() != null
-                            ? membersMap.get(name).getSex().getSex()
+                    IndividualProperty.Sex sex1 = membersMap.get(parentUid).getSex() != null
+                            ? membersMap.get(parentUid).getSex().getSex()
                             : IndividualProperty.Sex.UNKNOWN;
                     if (sex1 != null && sex1 != sex && sex1 != IndividualProperty.Sex.UNKNOWN) {
-                        throw new CatalogException("Sex of parent " + name + " is incorrect or the relationship is incorrect. In "
+                        throw new CatalogException("Sex of parent '" + parentId + "' is incorrect or the relationship is incorrect. In "
                                 + "principle, it should be " + sexTerm);
                     }
-                    membersMap.get(name).setSex(sexTerm);
+                    membersMap.get(parentUid).setSex(sexTerm);
 
                     // We attempt to remove the individual from the noParentsSet
-                    noParentsSet.remove(membersMap.get(name).getId());
+                    noParentsSet.remove(membersMap.get(parentUid).getId());
                 }
             }
         }

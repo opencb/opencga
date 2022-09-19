@@ -7,14 +7,12 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers;
-import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
@@ -111,7 +109,7 @@ public class VariantPruneManagerTest extends VariantStorageBaseTest implements H
 
 
         // ---------------- Annotate
-        this.variantStorageEngine.annotate(new Query(), new QueryOptions(DefaultVariantAnnotationManager.OUT_DIR, outputUri));
+        this.variantStorageEngine.annotate(outputUri, new QueryOptions());
 
         VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
     }

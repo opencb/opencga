@@ -28,9 +28,11 @@ import org.opencb.opencga.catalog.db.mongodb.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.*;
 
 import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.*;
@@ -246,6 +248,13 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
     }
 
     private Document fillIndividualData(Document individualDoc, Document completeIndividualDoc) {
+        Document individualCopy;
+        try {
+            individualCopy = JacksonUtils.copy(completeIndividualDoc, Document.class);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
         List<Document> samples = (List<Document>) individualDoc.get(IndividualDBAdaptor.QueryParams.SAMPLES.key());
         List<Document> completeSamples = (List<Document>) completeIndividualDoc.get(IndividualDBAdaptor.QueryParams.SAMPLES.key());
 
@@ -263,10 +272,10 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
                 }
             }
 
-            completeIndividualDoc.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), finalSamples);
+            individualCopy.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), finalSamples);
         }
 
-        return completeIndividualDoc;
+        return individualCopy;
     }
 
     private void fillInterpretationData(Document clinicalAnalysis, Map<String, Document> interpretationMap) {
