@@ -24,9 +24,6 @@ import org.opencb.opencga.core.tools.ToolParams;
 public class MutationalSignatureAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Mutational signature analysis params";
 
-    @DataField(id = "sample", description = FieldConstants.SAMPLE_ID_DESCRIPTION)
-    private String sample;
-
     @DataField(id = "id", description = FieldConstants.MUTATIONAL_SIGNATURE_ID_DESCRIPTION)
     private String id;
 
@@ -43,6 +40,9 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
 
     @DataField(id = "cataloguesContent", description = FieldConstants.MUTATIONAL_SIGNATURE_CATALOGUES_CONTENT_DESCRIPTION)
     private String cataloguesContent;
+
+    @DataField(id = "fitMethod", defaultValue = "FitMS", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION)
+    private String fitMethod;
 
     @DataField(id = "nBoot", description = FieldConstants.MUTATIONAL_SIGNATURE_N_BOOT_DESCRIPTION)
     private int nBoot;
@@ -68,15 +68,14 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
     public MutationalSignatureAnalysisParams() {
     }
 
-    public MutationalSignatureAnalysisParams(String sample, String id, String description, String query, String catalogues,
-                                             String cataloguesContent, int nBoot, String sigVersion, String organ, Float thresholdPerc,
+    public MutationalSignatureAnalysisParams(String description, String query, String catalogues, String cataloguesContent,
+                                             String fitMethod, int nBoot, String sigVersion, String organ, Float thresholdPerc,
                                              Float thresholdPval, int maxRareSigs, String outdir) {
-        this.sample = sample;
-        this.id = id;
         this.description = description;
         this.query = query;
         this.catalogues = catalogues;
         this.cataloguesContent = cataloguesContent;
+        this.fitMethod = fitMethod;
         this.nBoot = nBoot;
         this.sigVersion = sigVersion;
         this.organ = organ;
@@ -89,12 +88,12 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("MutationalSignatureAnalysisParams{");
-        sb.append("sample='").append(sample).append('\'');
         sb.append(", id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", query=").append(query);
+        sb.append(", query='").append(query).append('\'');
         sb.append(", catalogues='").append(catalogues).append('\'');
         sb.append(", cataloguesContent='").append(cataloguesContent).append('\'');
+        sb.append(", fitMethod='").append(fitMethod).append('\'');
         sb.append(", nBoot=").append(nBoot);
         sb.append(", sigVersion='").append(sigVersion).append('\'');
         sb.append(", organ='").append(organ).append('\'');
@@ -104,15 +103,6 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
-    }
-
-    public String getSample() {
-        return sample;
-    }
-
-    public MutationalSignatureAnalysisParams setSample(String sample) {
-        this.sample = sample;
-        return this;
     }
 
     public String getId() {
@@ -157,6 +147,15 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
 
     public MutationalSignatureAnalysisParams setCataloguesContent(String cataloguesContent) {
         this.cataloguesContent = cataloguesContent;
+        return this;
+    }
+
+    public String getFitMethod() {
+        return fitMethod;
+    }
+
+    public MutationalSignatureAnalysisParams setFitMethod(String fitMethod) {
+        this.fitMethod = fitMethod;
         return this;
     }
 

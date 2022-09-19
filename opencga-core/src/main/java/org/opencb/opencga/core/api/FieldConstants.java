@@ -400,6 +400,7 @@ public class FieldConstants {
             + " catalogue is in a column, with sample names as column headers and channel.";
     public static final String MUTATIONAL_SIGNATURE_CATALOGUES_CONTENT_DESCRIPTION = "Mutational catalogues. Each sample catalogue is in a"
             + " column, with sample names as column headers and channel.";
+    public static final String MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION = "Either Fit or FitMS. If not specified then FitMS";
     public static final String MUTATIONAL_SIGNATURE_N_BOOT_DESCRIPTION = "Number of bootstrap to be used.";
     public static final String MUTATIONAL_SIGNATURE_SIG_VERSION_DESCRIPTION = "Either COSMICv2, COSMICv3.2, RefSigv1 or RefSigv2. If not"
             + " specified RefSigv2.";

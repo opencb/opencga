@@ -32,10 +32,12 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleQualityControl;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
+import org.opencb.opencga.core.models.variant.VariantQueryParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.core.tools.variant.MutationalSignatureAnalysisExecutor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.io.File;
 import java.io.IOException;
@@ -62,6 +64,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
     @ToolParams
     private MutationalSignatureAnalysisParams signatureParams = new MutationalSignatureAnalysisParams();
 
+    private String sample;
     private String assembly;
     private ObjectMap query;
     private String catalogues;
@@ -96,12 +99,25 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
             catalogues = getOutDir().resolve(CATALOGUES_FILENAME_DEFAULT).toString();
         } else {
             // Fitting from sample/query
-
             if (signatureParams.getQuery() == null) {
                 throw new ToolException("Missing signature query");
             }
             query = JacksonUtils.getDefaultObjectMapper().readValue(signatureParams.getQuery(), ObjectMap.class);
+            logger.info(signatureParams.getQuery());
+            if (!query.containsKey(VariantQueryParam.SAMPLE.key())) {
+                throw new ToolException("Missing sample in the signature query");
+            }
+            if (StringUtils.isEmpty(query.getString(VariantQueryParam.SAMPLE.key()))) {
+                throw new ToolException("Sample is empty in the signature query");
+            }
 
+            // Get sample
+            sample = query.getString(VariantQueryParam.SAMPLE.key());
+            if (sample.contains(":")) {
+                sample = sample.split(":")[0];
+            }
+
+            // Get assembly
             assembly = ResourceUtils.getAssembly(catalogManager, study, token);
             if (StringUtils.isEmpty(assembly)) {
                 throw new ToolException("Missing assembly for study '" + study + "'");
@@ -118,15 +134,12 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                     break;
             }
 
-
             try {
                 study = catalogManager.getStudyManager().get(study, QueryOptions.empty(), token).first().getFqn();
 
-                OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(study, signatureParams.getSample(),
-                        QueryOptions.empty(), token);
+                OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(study, sample, QueryOptions.empty(), token);
                 if (sampleResult.getNumResults() != 1) {
-                    throw new ToolException("Unable to compute mutational signature analysis. Sample '" + signatureParams.getSample()
-                            + "' not found");
+                    throw new ToolException("Unable to compute mutational signature analysis. Sample '" + sample + "' not found");
                 }
             } catch (CatalogException e) {
                 throw new ToolException(e);
@@ -139,12 +152,13 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
         step(getId(), () -> {
             getToolExecutor(MutationalSignatureAnalysisExecutor.class)
                     .setStudy(study)
+                    .setSample(sample)
                     .setAssembly(assembly)
-                    .setSample(signatureParams.getSample())
                     .setQueryId(signatureParams.getId())
                     .setQueryDescription(signatureParams.getDescription())
                     .setQuery(query)
                     .setCatalogues(catalogues)
+                    .setFitMethod(signatureParams.getFitMethod())
                     .setnBoot(signatureParams.getnBoot())
                     .setSigVersion(signatureParams.getSigVersion())
                     .setOrgan(signatureParams.getOrgan())
@@ -158,8 +172,8 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                 // Remove quality control update key
                 query.remove(QC_UPDATE_KEYNAME);
 
-                OpenCGAResult<Sample> sampleResult = getCatalogManager().getSampleManager().get(getStudy(), signatureParams.getSample(),
-                        QueryOptions.empty(), getToken());
+                OpenCGAResult<Sample> sampleResult = getCatalogManager().getSampleManager().get(getStudy(), sample, QueryOptions.empty(),
+                        getToken());
                 Sample sample = sampleResult.first();
                 if (sample != null) {
 
@@ -196,10 +210,19 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
         File coeffsFile = dir.resolve(SIGNATURE_COEFFS_FILENAME).toFile();
         if (coeffsFile.exists()) {
             SignatureFitting fitting = new SignatureFitting()
-                    .setMethod("GEL")
-                    .setSignatureSource("Cosmic")
+                    .setMethod(signatureParams.getFitMethod())
                     .setSignatureVersion(signatureParams.getSigVersion());
 
+            // Set source from fit method
+            if (StringUtils.isNotEmpty(getSignatureParams().getSigVersion())) {
+                if (getSignatureParams().getSigVersion().startsWith("COSMIC")) {
+                    fitting.setSignatureSource("COSMIC");
+                } else if (getSignatureParams().getSigVersion().startsWith("RefSig")) {
+                    fitting.setSignatureSource("RefSig");
+                }
+            }
+
+            // Set fitting scores
             List<String> lines = FileUtils.readLines(coeffsFile, Charset.defaultCharset());
             String[] labels = lines.get(0).split("\t");
             String[] values = lines.get(1).split("\t");
@@ -214,11 +237,44 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
             }
             fitting.setScores(scores);
 
-//            ObjectMap params = new ObjectMap()
-//                    .append("nBoot", signatureParams.getnBoot())
-//                    .append();
-//            fitting.setCoeff((Double) content.get("rss"));
+            // Set files
+            List<String> files = new ArrayList<>();
+            for (File file : getOutDir().toFile().listFiles()) {
+                if (file.getName().endsWith("pdf")) {
+                    files.add(file.getName());
+                } else if (file.isDirectory()) {
+                    for (File file2 : file.listFiles()) {
+                        if (file2.getName().endsWith("pdf")) {
+                            files.add(file.getName() + "/" + file2.getName());
+                        }
+                    }
+                }
+            }
+            fitting.setFiles(files);
 
+            // Set params
+            ObjectMap params = new ObjectMap();
+            if (signatureParams.getnBoot() > 0) {
+                params.append("nBoot", signatureParams.getnBoot());
+            }
+            if (StringUtils.isNotEmpty(signatureParams.getOrgan())) {
+                params.append("organ", signatureParams.getOrgan());
+            }
+            if (signatureParams.getThresholdPerc() > 0.0f) {
+                params.append("thresholdPerc", signatureParams.getThresholdPerc());
+            }
+            if (signatureParams.getThresholdPval() > 0.0f) {
+                params.append("thresholdPval", signatureParams.getThresholdPval());
+            }
+            if (signatureParams.getMaxRareSigs() > 0) {
+                params.append("maxRareSigs", signatureParams.getMaxRareSigs());
+            }
+            if (params.size() > 0) {
+                fitting.setParams(params);
+            }
+            fitting.setParams(params);
+
+            // Set fitting signature
             result.setFitting(fitting);
         }
 

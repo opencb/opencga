@@ -960,12 +960,14 @@ public class VariantWebService extends AnalysisWebService {
     public Response mutationalSignatureQuery(
             // For fitting method
             @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_CATALOGUES_DESCRIPTION) @QueryParam("catalogues") String catalogues,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_N_BOOT_DESCRIPTION, defaultValue = "200") @QueryParam("nBoot") int nBoot,
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_CATALOGUES_CONTENT_DESCRIPTION) @QueryParam("cataloguesContent") String cataloguesContent,
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION, defaultValue = "FitMS") @QueryParam("fitMethod") String fitMethod,
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_N_BOOT_DESCRIPTION, defaultValue = "200") @QueryParam("nBoot") String nBoot,
             @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_SIG_VERSION_DESCRIPTION, defaultValue = "RefSigv2") @QueryParam("sigVersion") String sigVersion,
             @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_ORGAN_DESCRIPTION) @QueryParam("organ") String organ,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PERC_DESCRIPTION, defaultValue = "5f") @QueryParam("thresholdPerc") float thresholdPerc,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PVAL_DESCRIPTION, defaultValue = "0.05f") @QueryParam("thresholdPval") float thresholdPval,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION, defaultValue = "1") @QueryParam("maxRareSigs") int maxRareSigs
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PERC_DESCRIPTION, defaultValue = "5f") @QueryParam("thresholdPerc") String thresholdPerc,
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PVAL_DESCRIPTION, defaultValue = "0.05f") @QueryParam("thresholdPval") String thresholdPval,
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION, defaultValue = "1") @QueryParam("maxRareSigs") String maxRareSigs
     ) {
         File outDir = null;
         try {
@@ -991,15 +993,24 @@ public class VariantWebService extends AnalysisWebService {
             }
 
             MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
-            params.setSample(query.getString(SAMPLE.key()))
-                    .setQuery(query.toJson())
+            params.setQuery(query.toJson())
                     .setCatalogues(catalogues)
-                    .setnBoot(nBoot)
+                    .setCataloguesContent(cataloguesContent)
+                    .setFitMethod(fitMethod)
                     .setSigVersion(sigVersion)
-                    .setOrgan(organ)
-                    .setThresholdPerc(thresholdPerc)
-                    .setThresholdPval(thresholdPval)
-                    .setMaxRareSigs(maxRareSigs);
+                    .setOrgan(organ);
+            if (StringUtils.isNotEmpty(nBoot)) {
+                params.setnBoot(Integer.parseInt(nBoot));
+            }
+            if (StringUtils.isNotEmpty(thresholdPerc)) {
+                params.setThresholdPerc(Float.parseFloat(thresholdPerc));
+            }
+            if (StringUtils.isNotEmpty(thresholdPval)) {
+                params.setThresholdPval(Float.parseFloat(thresholdPval));
+            }
+            if (StringUtils.isNotEmpty(maxRareSigs)) {
+                params.setMaxRareSigs(Integer.parseInt(maxRareSigs));
+            }
 
             MutationalSignatureAnalysis mutationalSignatureAnalysis = new MutationalSignatureAnalysis();
             mutationalSignatureAnalysis.setUp(opencgaHome.toString(), catalogManager, storageEngineFactory, new ObjectMap(),
@@ -1018,17 +1029,17 @@ public class VariantWebService extends AnalysisWebService {
             return createOkResponse(result);
         } catch (ToolException | IOException e) {
             return createErrorResponse(e);
-        } finally {
-            if (outDir != null) {
-                // Delete temporal directory
-                try {
-                    if (outDir.exists()) {
-                        FileUtils.deleteDirectory(outDir);
-                    }
-                } catch (IOException e) {
-                    logger.warn("Error cleaning scratch directory " + outDir, e);
-                }
-            }
+//        } finally {
+//            if (outDir != null) {
+//                // Delete temporal directory
+//                try {
+//                    if (outDir.exists()) {
+//                        FileUtils.deleteDirectory(outDir);
+//                    }
+//                } catch (IOException e) {
+//                    logger.warn("Error cleaning scratch directory " + outDir, e);
+//                }
+//            }
         }
     }
 

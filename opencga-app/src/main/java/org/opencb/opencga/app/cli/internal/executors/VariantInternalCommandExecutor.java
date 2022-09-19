@@ -799,7 +799,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         checkSignatureVersion(cliOptions.sigVersion);
 
         ObjectMap params = new MutationalSignatureAnalysisParams(
-                cliOptions.sample,
                 cliOptions.id,
                 cliOptions.description,
                 cliOptions.query,

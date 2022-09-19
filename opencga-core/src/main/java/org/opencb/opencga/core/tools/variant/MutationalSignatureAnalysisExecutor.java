@@ -34,14 +34,15 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
             "GTT", "TTA", "TTC", "TTG", "TTT"};
 
     private String study;
-    private String assembly;
     private String sample;
+    private String assembly;
     private String queryId;
     private String queryDescription;
     private ObjectMap query;
 
     // For fitting signature
     private String catalogues;
+    private String fitMethod;
     private int nBoot;
     private String sigVersion;
     private String organ;
@@ -161,21 +162,21 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
         return this;
     }
 
-    public String getAssembly() {
-        return assembly;
-    }
-
-    public MutationalSignatureAnalysisExecutor setAssembly(String assembly) {
-        this.assembly = assembly;
-        return this;
-    }
-
     public String getSample() {
         return sample;
     }
 
     public MutationalSignatureAnalysisExecutor setSample(String sample) {
         this.sample = sample;
+        return this;
+    }
+
+    public String getAssembly() {
+        return assembly;
+    }
+
+    public MutationalSignatureAnalysisExecutor setAssembly(String assembly) {
+        this.assembly = assembly;
         return this;
     }
 
@@ -212,6 +213,15 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
 
     public MutationalSignatureAnalysisExecutor setCatalogues(String catalogues) {
         this.catalogues = catalogues;
+        return this;
+    }
+
+    public String getFitMethod() {
+        return fitMethod;
+    }
+
+    public MutationalSignatureAnalysisExecutor setFitMethod(String fitMethod) {
+        this.fitMethod = fitMethod;
         return this;
     }
 

@@ -92,7 +92,11 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         }
 
         // Run R script for fitting signature
-        executeRScript();
+        if (StringUtils.isEmpty(getOrgan())) {
+            addWarning("Since the parameter 'organ' is missing, the fitting signature will not be computed.");
+        } else{
+            executeRScript();
+        }
     }
 
     private void computeFromContextFile() throws ToolExecutorException {
@@ -259,11 +263,11 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                 .append("/opt/opencga/signature.tools.lib/scripts/signatureFit")
                 .append(" --catalogues=/data/input/").append(new File(getCatalogues()).getName())
                 .append(" --outdir=/data/output");
+        if (StringUtils.isNotEmpty(getFitMethod())) {
+            scriptParams.append(" --fitmethod=").append(getFitMethod());
+        }
         if (StringUtils.isNotEmpty(getSigVersion())) {
             scriptParams.append(" --sigversion=").append(getSigVersion());
-        }
-        if (StringUtils.isNotEmpty(getOrgan())) {
-            scriptParams.append(" --organ=").append(getOrgan());
         }
         if (StringUtils.isNotEmpty(getOrgan())) {
             scriptParams.append(" --organ=").append(getOrgan());

@@ -1319,9 +1319,6 @@ public class VariantCommandOptions {
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
 
-        @Parameter(names = {"--sample"}, description = FieldConstants.SAMPLE_ID_DESCRIPTION)
-        public String sample;
-
         @Parameter(names = {"--id"}, description = FieldConstants.MUTATIONAL_SIGNATURE_ID_DESCRIPTION)
         public String id;
 
@@ -1338,6 +1335,9 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--catalogues-content"}, description = FieldConstants.MUTATIONAL_SIGNATURE_CATALOGUES_CONTENT_DESCRIPTION)
         public String cataloguesContent;
+
+        @Parameter(names = {"--fit-method"}, description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION)
+        public String fitMethod;
 
         @Parameter(names = {"--n-boot"}, description = FieldConstants.MUTATIONAL_SIGNATURE_N_BOOT_DESCRIPTION)
         public int nBoot;
