@@ -68,9 +68,10 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
     public MutationalSignatureAnalysisParams() {
     }
 
-    public MutationalSignatureAnalysisParams(String description, String query, String catalogues, String cataloguesContent,
+    public MutationalSignatureAnalysisParams(String id, String description, String query, String catalogues, String cataloguesContent,
                                              String fitMethod, int nBoot, String sigVersion, String organ, Float thresholdPerc,
                                              Float thresholdPval, int maxRareSigs, String outdir) {
+        this.id = id;
         this.description = description;
         this.query = query;
         this.catalogues = catalogues;

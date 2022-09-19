@@ -804,6 +804,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.query,
                 cliOptions.catalogues,
                 cliOptions.cataloguesContent,
+                cliOptions.fitMethod,
                 cliOptions.nBoot,
                 cliOptions.sigVersion,
                 cliOptions.organ,
