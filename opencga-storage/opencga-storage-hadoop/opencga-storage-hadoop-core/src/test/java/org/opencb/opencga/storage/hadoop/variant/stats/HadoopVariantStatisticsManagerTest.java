@@ -135,7 +135,7 @@ public class HadoopVariantStatisticsManagerTest extends VariantStatisticsManager
 
         engine.getOptions().put(VariantStorageOptions.ANNOTATOR.key(), "other");
         engine.getOptions().put(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName());
-        engine.annotate(new Query(), new QueryOptions(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        engine.annotate(outputUri, new QueryOptions(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
 
         engine.getMRExecutor().run(JulieToolDriver.class, JulieToolDriver.buildArgs(
                 dbAdaptor.getVariantTable(),
