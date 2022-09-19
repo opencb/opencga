@@ -52,7 +52,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
     public static final String DESCRIPTION = "Run mutational signature analysis for a given sample.";
 
     public final static String GENOME_CONTEXT_FILENAME = "genome_context.txt";
-    public final static String SIGNATURE_COEFFS_FILENAME = "signature_coefficients.json";
+    public final static String SIGNATURE_COEFFS_FILENAME = "exposures.tsv";
     public final static String SIGNATURE_FITTING_FILENAME = "signature_summary.png";
     public final static String CATALOGUES_FILENAME_DEFAULT = "catalogues.tsv";
 
@@ -192,7 +192,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
             result.setCounts(sigCounts);
         }
 
-        // Signatures coefficients
+        // Signature fitting
         File coeffsFile = dir.resolve(SIGNATURE_COEFFS_FILENAME).toFile();
         if (coeffsFile.exists()) {
             SignatureFitting fitting = new SignatureFitting()
@@ -200,23 +200,24 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                     .setSignatureSource("Cosmic")
                     .setSignatureVersion(signatureParams.getSigVersion());
 
-            Map content = JacksonUtils.getDefaultObjectMapper().readValue(coeffsFile, Map.class);
-            Map coefficients = (Map) content.get("coefficients");
-            List<SignatureFitting.Score> scores = new ArrayList<>(coefficients.size());
-            for (Object key : coefficients.keySet()) {
-                Number coeff = (Number) coefficients.get(key);
-                scores.add(new SignatureFitting.Score((String) key, coeff.doubleValue()));
+            List<String> lines = FileUtils.readLines(coeffsFile, Charset.defaultCharset());
+            String[] labels = lines.get(0).split("\t");
+            String[] values = lines.get(1).split("\t");
+            List<SignatureFitting.Score> scores = new ArrayList<>(labels.length);
+            for (int i = 0; i < labels.length; i++) {
+                String label = labels[i];
+                if (label.contains("_")) {
+                    String[] splits = label.split("_");
+                    label = splits[splits.length - 1];
+                }
+                scores.add(new SignatureFitting.Score(label, Double.parseDouble(values[i + 1])));
             }
             fitting.setScores(scores);
-            fitting.setCoeff((Double) content.get("rss"));
 
-            // Signature summary image
-            File imgFile = dir.resolve(SIGNATURE_FITTING_FILENAME).toFile();
-            if (imgFile.exists()) {
-                int index = imgFile.getAbsolutePath().indexOf("JOBS/");
-                String relativeFilePath = (index == -1 ? imgFile.getName() : imgFile.getAbsolutePath().substring(index));
-                fitting.setFile(relativeFilePath);
-            }
+//            ObjectMap params = new ObjectMap()
+//                    .append("nBoot", signatureParams.getnBoot())
+//                    .append();
+//            fitting.setCoeff((Double) content.get("rss"));
 
             result.setFitting(fitting);
         }

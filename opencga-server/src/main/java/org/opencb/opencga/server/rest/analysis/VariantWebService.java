@@ -27,6 +27,7 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
+import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
@@ -62,6 +63,7 @@ import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -956,8 +958,15 @@ public class VariantWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "panelIntersection", value = VariantCatalogQueryUtils.PANEL_INTERSECTION_DESC, dataType = "boolean", paramType = "query"),
     })
     public Response mutationalSignatureQuery(
-            @ApiParam(value = "Compute the relative proportions of the different mutational signatures demonstrated by the tumour",
-                    defaultValue = "false") @QueryParam("fitting") boolean fitting) {
+            // For fitting method
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_CATALOGUES_DESCRIPTION) @QueryParam("catalogues") String catalogues,
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_N_BOOT_DESCRIPTION, defaultValue = "200") @QueryParam("nBoot") int nBoot,
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_SIG_VERSION_DESCRIPTION, defaultValue = "RefSigv2") @QueryParam("sigVersion") String sigVersion,
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_ORGAN_DESCRIPTION) @QueryParam("organ") String organ,
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PERC_DESCRIPTION, defaultValue = "5f") @QueryParam("thresholdPerc") float thresholdPerc,
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PVAL_DESCRIPTION, defaultValue = "0.05f") @QueryParam("thresholdPval") float thresholdPval,
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION, defaultValue = "1") @QueryParam("maxRareSigs") int maxRareSigs
+    ) {
         File outDir = null;
         try {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
@@ -983,7 +992,14 @@ public class VariantWebService extends AnalysisWebService {
 
             MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
             params.setSample(query.getString(SAMPLE.key()))
-                    .setQuery(query.toJson());
+                    .setQuery(query.toJson())
+                    .setCatalogues(catalogues)
+                    .setnBoot(nBoot)
+                    .setSigVersion(sigVersion)
+                    .setOrgan(organ)
+                    .setThresholdPerc(thresholdPerc)
+                    .setThresholdPval(thresholdPval)
+                    .setMaxRareSigs(maxRareSigs);
 
             MutationalSignatureAnalysis mutationalSignatureAnalysis = new MutationalSignatureAnalysis();
             mutationalSignatureAnalysis.setUp(opencgaHome.toString(), catalogManager, storageEngineFactory, new ObjectMap(),
