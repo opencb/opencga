@@ -23,6 +23,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.*;
@@ -1567,6 +1568,47 @@ public final class VariantQueryUtils {
 
     public static Query nonNull(Query query) {
         return query == null ? new Query() : query;
+    }
+
+    public static String toVcfDebug(Variant variant) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(variant.getChromosome());
+        sb.append('\t');
+        sb.append(variant.getStart());
+        sb.append('\t');
+        sb.append(variant.getId());
+        sb.append('\t');
+        sb.append(variant.getReference());
+        sb.append('\t');
+        sb.append(variant.getAlternate());
+        sb.append('\t');
+
+        String qual = ".";
+        String filter = ".";
+
+        if (variant.getStudies().size() == 1) {
+            if (variant.getStudies().get(0).getFiles().size() == 1) {
+                qual = variant.getStudies().get(0).getFiles().get(0).getData().getOrDefault(StudyEntry.QUAL, qual);
+                filter = variant.getStudies().get(0).getFiles().get(0).getData().getOrDefault(StudyEntry.FILTER, filter);
+            }
+        }
+
+        sb.append(qual);
+        sb.append('\t');
+        sb.append(filter);
+        sb.append('\t');
+
+        sb.append("GT:SAMPLE_ID");
+        sb.append('\t');
+
+        for (StudyEntry study : variant.getStudies()) {
+            for (SampleEntry sample : study.getSamples()) {
+                sb.append(sample.getData().get(0)).append(":").append(sample.getSampleId());
+                sb.append('\t');
+            }
+        }
+        return sb.toString();
     }
 
 }

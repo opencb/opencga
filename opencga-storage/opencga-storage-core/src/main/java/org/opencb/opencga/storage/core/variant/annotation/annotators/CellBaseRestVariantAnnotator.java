@@ -32,6 +32,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -82,21 +83,26 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
                     .getAnnotationByVariantIds(variantIds, new QueryOptions(queryOptions), true);
             return response.getResponses();
         } catch (IOException e) {
-            throw new VariantAnnotatorException("Error fetching variants from Client");
+            throw new VariantAnnotatorException("Error fetching variants from " + getDebugInfo("/genomic/variant/annotation"));
         }
     }
 
     @Override
-    public ProjectMetadata.VariantAnnotatorProgram getVariantAnnotatorProgram() throws IOException {
-        CellBaseDataResponse<ObjectMap> response = cellBaseClient.getMetaClient().about();
+    public ProjectMetadata.VariantAnnotatorProgram getVariantAnnotatorProgram() throws VariantAnnotatorException {
+        CellBaseDataResponse<ObjectMap> response;
+        try {
+            response = cellBaseClient.getMetaClient().about();
+        } catch (IOException e) {
+            throw new VariantAnnotatorException("Error fetching CellBase information from " + getDebugInfo("/meta/about"), e);
+        }
         Event event = errorEvent(response);
         if (event != null) {
-            throw new IOException("Error fetching CellBase program information from meta/about. "
+            throw new VariantAnnotatorException("Error fetching CellBase information from " + getDebugInfo("/meta/about") + ". "
                     + event.getName() + " : " + event.getMessage());
         }
         ObjectMap about = response.firstResult();
         if (about == null) {
-            throw new IOException("Error fetching CellBase program information from meta/about");
+            throw new VariantAnnotatorException("Error fetching CellBase information from " + getDebugInfo("/meta/about"));
         }
         ProjectMetadata.VariantAnnotatorProgram program = new ProjectMetadata.VariantAnnotatorProgram();
 
@@ -117,18 +123,39 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
 
 
     @Override
-    public List<ObjectMap> getVariantAnnotatorSourceVersion() throws IOException {
-        CellBaseDataResponse<ObjectMap> response = cellBaseClient.getMetaClient().versions();
+    public List<ObjectMap> getVariantAnnotatorSourceVersion() throws VariantAnnotatorException {
+        CellBaseDataResponse<ObjectMap> response;
+        try {
+            response = cellBaseClient.getMetaClient().versions();
+        } catch (IOException e) {
+            throw new VariantAnnotatorException("Error fetching CellBase source information from " + getDebugInfo("/meta/versions"), e);
+        }
         Event event = errorEvent(response);
         if (event != null) {
-            throw new IOException("Error fetching CellBase source information from meta/versions. "
+            throw new VariantAnnotatorException(
+                    "Error fetching CellBase source information from " + getDebugInfo("/meta/versions") + ". "
                     + event.getName() + " : " + event.getMessage());
         }
-        List<ObjectMap> objectMaps = response.allResults();
-        if (objectMaps == null) {
-            throw new IOException("Error fetching CellBase source information from meta/versions");
+        List<ObjectMap> objectMaps = new ArrayList<>();
+        if (response.getResponses() != null) {
+            for (CellBaseDataResult<ObjectMap> r : response.getResponses()) {
+                if (r.getResults() != null) {
+                    objectMaps.addAll(r.getResults());
+                }
+            }
+        }
+        if (objectMaps.isEmpty()) {
+            throw new VariantAnnotatorException("Error fetching CellBase source information from " + getDebugInfo("/meta/versions"));
         }
         return objectMaps;
+    }
+
+    private String getDebugInfo(String path) {
+        return "host: '" + cellBaseClient.getClientConfiguration().getRest().getHosts().get(0) + "', "
+                + "version: '" + cellBaseClient.getClientConfiguration().getVersion() + "', "
+                + "species: '" + species + "', "
+                + "assembly: '" + assembly + "', "
+                + "path: '" + path + "'";
     }
 
     private Event errorEvent(CellBaseDataResponse<ObjectMap> response) {

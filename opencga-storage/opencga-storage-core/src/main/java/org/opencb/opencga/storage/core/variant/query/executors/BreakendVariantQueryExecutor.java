@@ -151,7 +151,7 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
         for (Variant variant : variants) {
             BreakendMate mate = variant.getSv().getBreakend().getMate();
             int buffer = 50;
-            regions.add(new Region(mate.getChromosome(), mate.getPosition() - buffer, mate.getPosition() + buffer));
+            regions.add(new Region(mate.getChromosome(), Math.max(1, mate.getPosition() - buffer), mate.getPosition() + buffer));
         }
         baseQuery.put(VariantQueryParam.REGION.key(), regions);
 

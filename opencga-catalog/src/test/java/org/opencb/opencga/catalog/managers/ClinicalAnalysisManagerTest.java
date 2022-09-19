@@ -45,6 +45,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.AclParams;
@@ -210,6 +211,39 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 null), false, sessionIdUser).first());
 
         return files;
+    }
+
+    @Test
+    public void createAndTestStatusIdIsNotNull() throws CatalogException {
+        createDummyFamily();
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("analysis" + RandomStringUtils.randomAlphanumeric(3))
+                .setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
+                .setProband(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))
+                .setFamily(new Family().setId("family")
+                        .setMembers(Collections.singletonList(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))));
+
+        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, false,
+                INCLUDE_RESULT, sessionIdUser);
+        assertEquals("", result.first().getStatus().getId());
+
+        clinicalAnalysis = new ClinicalAnalysis()
+                .setId("analysis" + RandomStringUtils.randomAlphanumeric(3))
+                .setStatus(new Status(null, null, null, null))
+                .setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
+                .setProband(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))
+                .setFamily(new Family().setId("family")
+                        .setMembers(Collections.singletonList(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))));
+        result = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, false, INCLUDE_RESULT, sessionIdUser);
+        assertEquals("", result.first().getStatus().getId());
+
+        result = catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
+                new ClinicalAnalysisUpdateParams().setStatus(new StatusParam(null)), INCLUDE_RESULT, sessionIdUser);
+        assertEquals("", result.first().getStatus().getId());
+
+        result = catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
+                new ClinicalAnalysisUpdateParams().setStatus(new StatusParam("")), INCLUDE_RESULT, sessionIdUser);
+        assertEquals("", result.first().getStatus().getId());
     }
 
     @Test
@@ -535,12 +569,12 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         VariantAvro variantAvro = new VariantAvro("id1", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
         ClinicalVariant cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+                null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
         findingList.add(cv);
         findingList.add(cv);
         variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
-        cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(), ClinicalVariant.Status.NOT_REVIEWED,
-                Collections.emptyList(), null);
+        cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(), null,
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
         findingList.add(cv);
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
@@ -566,12 +600,12 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         VariantAvro variantAvro = new VariantAvro("id1", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
         ClinicalVariant cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+                null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
         findingList.add(cv);
         findingList.add(cv);
         variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
-        cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(), ClinicalVariant.Status.NOT_REVIEWED,
-                Collections.emptyList(), null);
+        cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(), null,
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
         findingList.add(cv);
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
@@ -597,11 +631,11 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         VariantAvro variantAvro = new VariantAvro("id1", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
         ClinicalVariant cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+                null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
         findingList.add(cv1);
         variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariant cv2 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+                null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
         findingList.add(cv2);
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
@@ -624,7 +658,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         variantAvro = new VariantAvro("id3", null, "chr3", 2, 3, "", "", "+", null, 1, null, null, null);
         evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method2");
         ClinicalVariant cv3 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+                null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
         findingList.add(cv3);
 
         InterpretationUpdateParams updateParams = new InterpretationUpdateParams()
@@ -719,8 +753,8 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         // Remove finding with missing id
         variantAvro = new VariantAvro("", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
-        cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(), ClinicalVariant.Status.NOT_REVIEWED,
-                Collections.emptyList(), null);
+        cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(), null,
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
 
         updateParams = new InterpretationUpdateParams()
                 .setPrimaryFindings(Collections.singletonList(cv1));
@@ -759,11 +793,11 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         VariantAvro variantAvro = new VariantAvro("id1", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
         ClinicalVariant cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+                null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
         findingList.add(cv1);
         variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariant cv2 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+                null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
         findingList.add(cv2);
 
         ClinicalAnalysis ca = new ClinicalAnalysis()
@@ -788,7 +822,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         variantAvro = new VariantAvro("id3", null, "chr3", 2, 3, "", "", "+", null, 1, null, null, null);
         evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method2");
         ClinicalVariant cv3 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+                null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
         findingList.add(cv3);
 
         InterpretationUpdateParams updateParams = new InterpretationUpdateParams()
@@ -886,8 +920,8 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         // Remove finding with missing id
         variantAvro = new VariantAvro("", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
-        cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(), ClinicalVariant.Status.NOT_REVIEWED,
-                Collections.emptyList(), null);
+        cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(), null,
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
 
         updateParams = new InterpretationUpdateParams()
                 .setSecondaryFindings(Collections.singletonList(cv1));
@@ -3205,5 +3239,35 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(2, ca.getFiles().size());
         assertTrue(files.subList(2, 4).stream().map(File::getPath).collect(Collectors.toSet())
                 .containsAll(ca.getFiles().stream().map(File::getPath).collect(Collectors.toSet())));
+    }
+
+    @Test
+    public void fetchCasesWithSameProbandAndDifferentSample() throws CatalogException, IOException {
+        Sample sample1 = DummyModelUtils.getDummySample("sample1");
+        Sample sample2 = DummyModelUtils.getDummySample("sample2");
+
+        Individual proband = DummyModelUtils.getDummyIndividual("proband", Arrays.asList(sample1, sample2), null, null);
+        catalogManager.getIndividualManager().create(STUDY, proband, QueryOptions.empty(), sessionIdUser);
+
+        Individual probandCopy = JacksonUtils.copy(proband, Individual.class);
+        probandCopy.setSamples(Collections.singletonList(proband.getSamples().get(0)));
+        ClinicalAnalysis case1 = DummyModelUtils.getDummyClinicalAnalysis("case1", probandCopy, null, null);
+        catalogManager.getClinicalAnalysisManager().create(STUDY, case1, QueryOptions.empty(), sessionIdUser);
+
+        probandCopy.setSamples(Collections.singletonList(proband.getSamples().get(1)));
+        ClinicalAnalysis case2 = DummyModelUtils.getDummyClinicalAnalysis("case2", probandCopy, null, null);
+        catalogManager.getClinicalAnalysisManager().create(STUDY, case2, QueryOptions.empty(), sessionIdUser);
+
+        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().search(STUDY, new Query(),
+                QueryOptions.empty(), sessionIdUser);
+        assertEquals(2, result.getNumResults());
+        assertEquals(case1.getId(), result.getResults().get(0).getId());
+        assertEquals(proband.getId(), result.getResults().get(0).getProband().getId());
+        assertEquals(1, result.getResults().get(0).getProband().getSamples().size());
+        assertEquals(proband.getSamples().get(0).getId(), result.getResults().get(0).getProband().getSamples().get(0).getId());
+        assertEquals(case2.getId(), result.getResults().get(1).getId());
+        assertEquals(proband.getId(), result.getResults().get(1).getProband().getId());
+        assertEquals(1, result.getResults().get(1).getProband().getSamples().size());
+        assertEquals(proband.getSamples().get(1).getId(), result.getResults().get(1).getProband().getSamples().get(0).getId());
     }
 }

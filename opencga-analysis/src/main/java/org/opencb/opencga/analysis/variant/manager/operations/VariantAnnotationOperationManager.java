@@ -90,12 +90,11 @@ public class VariantAnnotationOperationManager extends OperationManager {
         }
 
         QueryOptions annotationOptions = new QueryOptions(params).append(DefaultVariantAnnotationManager.FILE_NAME, outputFileName);
-        annotationOptions.append(DefaultVariantAnnotationManager.OUT_DIR, outdir);
 
         synchronizeProjectMetadata(projectStr, token);
 
         if (StringUtils.isEmpty(loadFileStr)) {
-            variantStorageEngine.annotate(annotationQuery, annotationOptions);
+            variantStorageEngine.annotate(outdir.toUri(), annotationQuery, annotationOptions);
         } else {
             Path loadFilePath = Paths.get(loadFileStr);
             boolean fileExists = Files.exists(loadFilePath);

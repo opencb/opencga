@@ -179,12 +179,17 @@ public class DummyModelUtils {
     }
 
     public static ClinicalAnalysis getDummyClinicalAnalysis(String id, Individual proband, Family family, List<Panel> panelList) {
-        return new ClinicalAnalysis()
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
                 .setId(id)
-                .setType(ClinicalAnalysis.Type.FAMILY)
                 .setProband(proband)
                 .setFamily(family)
                 .setPanels(panelList);
+        if (family != null) {
+            clinicalAnalysis.setType(ClinicalAnalysis.Type.FAMILY);
+        } else {
+            clinicalAnalysis.setType(ClinicalAnalysis.Type.SINGLE);
+        }
+        return clinicalAnalysis;
     }
 
     public static Interpretation getDummyInterpretation(List<Panel> panelList) {
