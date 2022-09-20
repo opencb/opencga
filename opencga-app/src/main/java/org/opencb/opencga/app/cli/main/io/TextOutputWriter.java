@@ -117,7 +117,12 @@ public class TextOutputWriter extends AbstractOutputWriter {
 */
         List<DataResult> queryResultList = queryResponse.getResponses();
 
-        if (queryResultList.size() == 0 || ((OpenCGAResult) queryResultList.get(0)).getNumResults() == 0) {
+
+        if (CollectionUtils.isNotEmpty(queryResultList) && ((OpenCGAResult) queryResultList.get(0)) != null
+                && ((OpenCGAResult) queryResultList.get(0)).getNumMatches() > -1) {
+            PrintUtils.print("Number of matches: ", PrintUtils.Color.YELLOW);
+            PrintUtils.println(String.valueOf(((OpenCGAResult) queryResultList.get(0)).getNumMatches()), PrintUtils.Color.GREEN);
+        } else if (queryResultList.size() == 0 || ((OpenCGAResult) queryResultList.get(0)).getNumResults() == 0) {
             processResponse(queryResponse);
             return;
         }
@@ -183,12 +188,12 @@ public class TextOutputWriter extends AbstractOutputWriter {
             DataResult response = (DataResult) o;
             List results = response.getResults();
 
-            PrintUtils.println(String.valueOf(response), PrintUtils.Color.GREEN);
+            //   PrintUtils.println(String.valueOf(response), PrintUtils.Color.GREEN);
             if (CollectionUtils.isNotEmpty(results)) {
                 for (Object result : results) {
                     if (result instanceof AclEntryList) {
                         AclEntryList entries = (AclEntryList) result;
-                        PrintUtils.println(entries.toString(), PrintUtils.Color.CYAN);
+                        // PrintUtils.println(entries.toString(), PrintUtils.Color.CYAN);
                         PrintUtils.println(entries.getId(), PrintUtils.Color.GREEN);
                         for (int i = 0; i < entries.getAcl().size(); i++) {
                             PrintUtils.println(((AclEntry) entries.getAcl().get(i)).getMember()
@@ -205,6 +210,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
     }
 
     private void processResponse(RestResponse queryResponse) {
+
         if (queryResponse.getEvents() != null && queryResponse.getEvents().size() > 0) {
             for (Object o : queryResponse.getEvents()) {
                 Event event = (Event) o;
