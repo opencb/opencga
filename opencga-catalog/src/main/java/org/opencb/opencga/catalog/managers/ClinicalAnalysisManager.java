@@ -114,7 +114,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     @Override
-    Enums.Resource getEntity() {
+    Enums.Resource getResource() {
         return CLINICAL_ANALYSIS;
     }
 

@@ -94,7 +94,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    Enums.Resource getEntity() {
+    Enums.Resource getResource() {
         return COHORT;
     }
 

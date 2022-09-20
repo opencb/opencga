@@ -93,7 +93,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     @Override
-    Enums.Resource getEntity() {
+    Enums.Resource getResource() {
         return Enums.Resource.SAMPLE;
     }
 

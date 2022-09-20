@@ -112,7 +112,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    Enums.Resource getEntity() {
+    Enums.Resource getResource() {
         return Enums.Resource.INDIVIDUAL;
     }
 

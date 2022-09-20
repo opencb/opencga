@@ -138,7 +138,7 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    Enums.Resource getEntity() {
+    Enums.Resource getResource() {
         return Enums.Resource.FILE;
     }
 

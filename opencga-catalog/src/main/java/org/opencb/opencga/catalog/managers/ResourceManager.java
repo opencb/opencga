@@ -22,18 +22,15 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import javax.annotation.Nullable;
@@ -51,7 +48,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
     }
 
-    abstract Enums.Resource getEntity();
+    abstract Enums.Resource getResource();
 
     OpenCGAResult<R> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
         return internalGet(studyUid, entry, null, options, user);
@@ -94,9 +91,17 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @throws CatalogException CatalogException.
      */
     public OpenCGAResult<R> get(String studyStr, String entryStr, QueryOptions options, String token) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-        return internalGet(study.getUid(), entryStr, options, userId);
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("id", entryStr)
+                .append("options", options)
+                .append("token", token);
+        return run(auditParams, Enums.Action.INFO, getResource(), studyStr, token, options, (study, userId, rp, queryOptions) -> {
+            OpenCGAResult<R> result = internalGet(study.getUid(), entryStr, queryOptions, userId);
+            rp.setId(result.first().getId());
+            rp.setUuid(result.first().getUuid());
+            return result;
+        });
     }
 
     /**
@@ -120,27 +125,20 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
 
     public OpenCGAResult<R> get(String studyId, List<String> entryList, Query query, QueryOptions options, boolean ignoreException,
                                 String token) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
-
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
         ObjectMap auditParams = new ObjectMap()
-                .append("studyId", studyId)
-                .append("entryList", entryList)
-                .append("query", new Query(query))
-                .append("options", new QueryOptions(options))
+                .append("study", studyId)
+                .append("id", entryList)
+                .append("query", query)
+                .append("options", options)
                 .append("ignoreException", ignoreException)
                 .append("token", token);
-        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
-        auditManager.initAuditBatch(operationUuid);
+        return runBatch(auditParams, Enums.Action.INFO, getResource(), studyId, token, options, (study, user, qOptions, operationUuid) -> {
+            Query myQuery = query != null ? new Query(query) : new Query();
 
-        try {
             OpenCGAResult<R> result = OpenCGAResult.empty();
 
             options.remove(QueryOptions.LIMIT);
-            InternalGetDataResult<R> responseResult = internalGet(study.getUid(), entryList, query, options, userId, ignoreException);
+            InternalGetDataResult<R> responseResult = internalGet(study.getUid(), entryList, myQuery, options, user, ignoreException);
 
             Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
             if (responseResult.getMissing() != null) {
@@ -160,25 +158,17 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
                 } else {
                     int size = versionedResults.get(i).size();
                     result.append(new OpenCGAResult<>(0, Collections.emptyList(), size, versionedResults.get(i), size));
-//                    resultList.add(new OpenCGAResult<>(responseResult.getTime(), Collections.emptyList(), size, versionedResults.get(i),
-//                            size));
-
                     R entry = versionedResults.get(i).get(0);
-                    auditManager.auditInfo(operationUuid, userId, getEntity(), entry.getId(), entry.getUuid(),
-                            study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                    run(auditParams, Enums.Action.INFO, getResource(), operationUuid, study, user, qOptions, (s, u, rp, qo) -> {
+                        rp.setId(entry.getId());
+                        rp.setUuid(entry.getUuid());
+                        return null;
+                    });
                 }
             }
 
             return result;
-        } catch (CatalogException e) {
-            for (String entryId : entryList) {
-                auditManager.auditInfo(operationUuid, userId, getEntity(), entryId, "", study.getId(), study.getUuid(), auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            }
-            throw e;
-        } finally {
-            auditManager.finishAuditBatch(operationUuid);
-        }
+        });
     }
 
     /**

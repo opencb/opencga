@@ -90,7 +90,7 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
-    Enums.Resource getEntity() {
+    Enums.Resource getResource() {
         return Enums.Resource.JOB;
     }
 

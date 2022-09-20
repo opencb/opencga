@@ -98,7 +98,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    Enums.Resource getEntity() {
+    Enums.Resource getResource() {
         return FAMILY;
     }
 

@@ -94,7 +94,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     @Override
-    Enums.Resource getEntity() {
+    Enums.Resource getResource() {
         return Enums.Resource.INTERPRETATION;
     }
 

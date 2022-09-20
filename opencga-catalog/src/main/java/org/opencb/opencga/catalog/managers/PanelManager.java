@@ -88,7 +88,7 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    Enums.Resource getEntity() {
+    Enums.Resource getResource() {
         return Enums.Resource.DISEASE_PANEL;
     }
 
