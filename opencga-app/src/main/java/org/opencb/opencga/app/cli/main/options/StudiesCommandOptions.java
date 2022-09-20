@@ -599,38 +599,38 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--action"}, description = "Action to be performed: ADD or REMOVE a variable", required = false, arity = 1)
         public String action = "ADD"; 
     
-        @Parameter(names = {"--body_id"}, description = "The body web service id parameter", required = false, arity = 1)
-        public String bodyId;
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String id;
     
-        @Parameter(names = {"--body_name"}, description = "The body web service name parameter", required = false, arity = 1)
-        public String bodyName;
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String name;
     
-        @Parameter(names = {"--body_category"}, description = "The body web service category parameter", required = false, arity = 1)
-        public String bodyCategory;
+        @Parameter(names = {"--category"}, description = "The body web service category parameter", required = false, arity = 1)
+        public String category;
     
-        @Parameter(names = {"--body_type"}, description = "Enum param allowed values: BOOLEAN, CATEGORICAL, INTEGER, DOUBLE, TEXT, STRING, OBJECT, MAP_BOOLEAN, MAP_INTEGER, MAP_DOUBLE, MAP_STRING", required = false, arity = 1)
-        public String bodyType;
+        @Parameter(names = {"--type"}, description = "Enum param allowed values: BOOLEAN, CATEGORICAL, INTEGER, DOUBLE, TEXT, STRING, OBJECT, MAP_BOOLEAN, MAP_INTEGER, MAP_DOUBLE, MAP_STRING", required = false, arity = 1)
+        public String type;
     
-        @Parameter(names = {"--body_required"}, description = "The body web service required parameter", required = false, help = true, arity = 0)
-        public boolean bodyRequired = false;
+        @Parameter(names = {"--required"}, description = "The body web service required parameter", required = false, help = true, arity = 0)
+        public boolean required = false;
     
-        @Parameter(names = {"--body_multi-value"}, description = "The body web service multiValue parameter", required = false, help = true, arity = 0)
-        public boolean bodyMultiValue = false;
+        @Parameter(names = {"--multi-value"}, description = "The body web service multiValue parameter", required = false, help = true, arity = 0)
+        public boolean multiValue = false;
     
-        @Parameter(names = {"--body_allowed-values"}, description = "The body web service allowedValues parameter", required = false, arity = 1)
-        public String bodyAllowedValues;
+        @Parameter(names = {"--allowed-values"}, description = "The body web service allowedValues parameter", required = false, arity = 1)
+        public String allowedValues;
     
-        @Parameter(names = {"--body_allowed-keys"}, description = "The body web service allowedKeys parameter", required = false, arity = 1)
-        public String bodyAllowedKeys;
+        @Parameter(names = {"--allowed-keys"}, description = "The body web service allowedKeys parameter", required = false, arity = 1)
+        public String allowedKeys;
     
-        @Parameter(names = {"--body_rank"}, description = "The body web service rank parameter", required = false, arity = 1)
-        public Long bodyRank;
+        @Parameter(names = {"--rank"}, description = "The body web service rank parameter", required = false, arity = 1)
+        public Long rank;
     
-        @Parameter(names = {"--body_depends-on"}, description = "The body web service dependsOn parameter", required = false, arity = 1)
-        public String bodyDependsOn;
+        @Parameter(names = {"--depends-on"}, description = "The body web service dependsOn parameter", required = false, arity = 1)
+        public String dependsOn;
     
-        @Parameter(names = {"--body_description"}, description = "The body web service description parameter", required = false, arity = 1)
-        public String bodyDescription;
+        @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
+        public String description;
     
     }
 

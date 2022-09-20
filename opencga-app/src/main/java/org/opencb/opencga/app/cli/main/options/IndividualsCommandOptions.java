@@ -233,11 +233,11 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
         public boolean includeResult = false; 
     
-        @Parameter(names = {"--body_id"}, description = "The body web service id parameter", required = false, arity = 1)
-        public String bodyId;
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = true, arity = 1)
+        public String id;
     
-        @Parameter(names = {"--body_name"}, description = "The body web service name parameter", required = false, arity = 1)
-        public String bodyName;
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String name;
     
         @Parameter(names = {"--father-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String fatherId;
@@ -251,11 +251,11 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--mother-uuid"}, description = "The body web service uuid parameter", required = false, arity = 1)
         public String motherUuid;
     
-        @Parameter(names = {"--body_creation-date"}, description = "The body web service creationDate parameter", required = false, arity = 1)
-        public String bodyCreationDate;
+        @Parameter(names = {"--creation-date", "--cd"}, description = "The body web service creationDate parameter", required = false, arity = 1)
+        public String creationDate;
     
-        @Parameter(names = {"--body_modification-date"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
-        public String bodyModificationDate;
+        @Parameter(names = {"--modification-date", "--md"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
+        public String modificationDate;
     
         @Parameter(names = {"--location-address"}, description = "Location address.", required = false, arity = 1)
         public String locationAddress;
@@ -302,8 +302,8 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--ethnicity-url"}, description = "Ontology url", required = false, arity = 1)
         public String ethnicityUrl;
     
-        @Parameter(names = {"--body_parental-consanguinity"}, description = "The body web service parentalConsanguinity parameter", required = false, arity = 1)
-        public Boolean bodyParentalConsanguinity;
+        @Parameter(names = {"--parental-consanguinity"}, description = "The body web service parentalConsanguinity parameter", required = false, arity = 1)
+        public Boolean parentalConsanguinity;
     
         @Parameter(names = {"--population-name"}, description = "Name of the individual population.", required = false, arity = 1)
         public String populationName;
@@ -314,14 +314,14 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--population-description"}, description = "Description of the individual population.", required = false, arity = 1)
         public String populationDescription;
     
-        @Parameter(names = {"--body_date-of-birth"}, description = "The body web service dateOfBirth parameter", required = false, arity = 1)
-        public String bodyDateOfBirth;
+        @Parameter(names = {"--date-of-birth"}, description = "The body web service dateOfBirth parameter", required = false, arity = 1)
+        public String dateOfBirth;
     
-        @Parameter(names = {"--body_karyotypic-sex"}, description = "The body web service karyotypicSex parameter", required = false, arity = 1)
-        public String bodyKaryotypicSex;
+        @Parameter(names = {"--karyotypic-sex"}, description = "The body web service karyotypicSex parameter", required = false, arity = 1)
+        public String karyotypicSex;
     
-        @Parameter(names = {"--body_life-status"}, description = "The body web service lifeStatus parameter", required = false, arity = 1)
-        public String bodyLifeStatus;
+        @Parameter(names = {"--life-status"}, description = "The body web service lifeStatus parameter", required = false, arity = 1)
+        public String lifeStatus;
     
         @Parameter(names = {"--status-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String statusId;

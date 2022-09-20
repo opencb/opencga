@@ -354,14 +354,14 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--body_id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String bodyId;
     
-        @Parameter(names = {"--body_name"}, description = "The body web service name parameter", required = false, arity = 1)
-        public String bodyName;
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String name;
     
-        @Parameter(names = {"--body_type"}, description = "Enum param allowed values: CASE_CONTROL, CASE_SET, CONTROL_SET, PAIRED, PAIRED_TUMOR, AGGREGATE, TIME_SERIES, FAMILY, TRIO, COLLECTION", required = false, arity = 1)
-        public String bodyType;
+        @Parameter(names = {"--type"}, description = "Enum param allowed values: CASE_CONTROL, CASE_SET, CONTROL_SET, PAIRED, PAIRED_TUMOR, AGGREGATE, TIME_SERIES, FAMILY, TRIO, COLLECTION", required = false, arity = 1)
+        public String type;
     
-        @Parameter(names = {"--body_description"}, description = "The body web service description parameter", required = false, arity = 1)
-        public String bodyDescription;
+        @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
+        public String description;
     
         @Parameter(names = {"--body_creation-date"}, description = "The body web service creationDate parameter", required = false, arity = 1)
         public String bodyCreationDate;

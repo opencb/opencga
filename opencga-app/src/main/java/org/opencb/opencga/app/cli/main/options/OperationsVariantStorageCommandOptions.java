@@ -765,8 +765,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--body_study"}, description = "The body web service study parameter", required = false, arity = 1)
         public String bodyStudy;
     
-        @Parameter(names = {"--body_files"}, description = "The body web service files parameter", required = false, arity = 1)
-        public String bodyFiles;
+        @Parameter(names = {"--files"}, description = "The body web service files parameter", required = false, arity = 1)
+        public String files;
     
     }
 

@@ -331,9 +331,9 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.bodyId, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.bodyName, true);
-             putNestedIfNotNull(beanParams, "type",commandOptions.bodyType, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.bodyDescription, true);
+             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+             putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
+             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
              putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.bodyCreationDate, true);
              putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.bodyModificationDate, true);
              putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);

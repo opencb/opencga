@@ -213,23 +213,23 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
         public boolean includeResult = false; 
     
-        @Parameter(names = {"--body_id"}, description = "The body web service id parameter", required = false, arity = 1)
-        public String bodyId;
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = true, arity = 1)
+        public String id;
     
-        @Parameter(names = {"--body_name"}, description = "The body web service name parameter", required = false, arity = 1)
-        public String bodyName;
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String name;
     
-        @Parameter(names = {"--body_description"}, description = "The body web service description parameter", required = false, arity = 1)
-        public String bodyDescription;
+        @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
+        public String description;
     
-        @Parameter(names = {"--body_creation-date"}, description = "The body web service creationDate parameter", required = false, arity = 1)
-        public String bodyCreationDate;
+        @Parameter(names = {"--creation-date", "--cd"}, description = "The body web service creationDate parameter", required = false, arity = 1)
+        public String creationDate;
     
-        @Parameter(names = {"--body_modification-date"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
-        public String bodyModificationDate;
+        @Parameter(names = {"--modification-date", "--md"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
+        public String modificationDate;
     
-        @Parameter(names = {"--body_expected-size"}, description = "The body web service expectedSize parameter", required = false, arity = 1)
-        public Integer bodyExpectedSize;
+        @Parameter(names = {"--expected-size"}, description = "The body web service expectedSize parameter", required = false, arity = 1)
+        public Integer expectedSize;
     
         @Parameter(names = {"--status-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String statusId;

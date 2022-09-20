@@ -735,7 +735,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "study",commandOptions.bodyStudy, true);
-             putNestedIfNotNull(beanParams, "files",commandOptions.bodyFiles, true);
+             putNestedIfNotNull(beanParams, "files",commandOptions.files, true);
  
             variantStorageMetadataSynchronizeParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

@@ -243,12 +243,12 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), FamilyCreateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.bodyId, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.bodyName, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.bodyDescription, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.bodyCreationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.bodyModificationDate, true);
-             putNestedIfNotNull(beanParams, "expectedSize",commandOptions.bodyExpectedSize, true);
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+             putNestedIfNotNull(beanParams, "expectedSize",commandOptions.expectedSize, true);
              putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
              putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
              putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
