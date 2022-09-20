@@ -37,7 +37,7 @@ import static java.util.stream.Collectors.toList;
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
 *    Command line version: 2.4.5-SNAPSHOT
-*    Command line commit: 6036bb48ff305157a3c9baa5d9649a9f8ff96dc0
+*    Command line commit: 1c53e81feac099571ccc52fd8b4bd9b7c12503ad
 */
 
 public abstract class OpenCgaCompleter implements Completer {
