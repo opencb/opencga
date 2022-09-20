@@ -35,16 +35,16 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER);
 
         // First annotation. Should run ok.
-        variantStorageEngine.annotate(new Query(), new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1"));
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1"));
         assertEquals("v1", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
 
         // Second annotation. New annotator. Overwrite. Should run ok.
-        variantStorageEngine.annotate(new Query(), new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v2").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v2").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
         assertEquals("v2", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
 
         // Third annotation. New annotator. Do not overwrite. Should fail.
         thrown.expect(VariantAnnotatorException.class);
-        variantStorageEngine.annotate(new Query(), new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v3").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false));
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v3").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false));
     }
 
     @Test
@@ -58,11 +58,11 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER);
 
         // First annotation. Should run ok.
-        variantStorageEngine.annotate(new Query(), new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1"));
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1"));
 
         try {
             // Second annotation. New annotator. Overwrite. Fail annotation
-            variantStorageEngine.annotate(new Query(), new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v2")
+            variantStorageEngine.annotate(outputUri, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v2")
                     .append(DummyTestAnnotator.FAIL, true)
                     .append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
             fail("Expected to fail!");
@@ -74,7 +74,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
 
 
         // Second annotation bis. New annotator. Overwrite.
-        variantStorageEngine.annotate(new Query(), new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v2")
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v2")
                 .append(DummyTestAnnotator.FAIL, false)
                 .append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
         assertEquals("v2", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
@@ -92,11 +92,11 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER);
 
         variantStorageEngine.saveAnnotation("v0", new ObjectMap());
-        variantStorageEngine.annotate(new Query(), new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
         variantStorageEngine.saveAnnotation("v1", new ObjectMap());
-        variantStorageEngine.annotate(new Query(), new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v2").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v2").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
         variantStorageEngine.saveAnnotation("v2", new ObjectMap());
-        variantStorageEngine.annotate(new Query(VariantQueryParam.REGION.key(), "1"), new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v3").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        variantStorageEngine.annotate(outputUri, new Query(VariantQueryParam.REGION.key(), "1"), new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v3").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
 
         assertEquals(0, variantStorageEngine.getAnnotation("v0", null, null).getResults().size());
         checkAnnotationSnapshot(variantStorageEngine, "v1", "v1");

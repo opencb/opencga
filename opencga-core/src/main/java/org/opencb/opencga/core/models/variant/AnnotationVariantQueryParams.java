@@ -12,7 +12,7 @@ public class AnnotationVariantQueryParams extends ToolParams {
     private String panelModeOfInheritance;
     private String panelConfidence;
     private String panelRoleInCancer;
-    private Boolean panelIntersection;
+    private boolean panelIntersection;
     private String cohortStatsRef;
     private String cohortStatsAlt;
     private String cohortStatsMaf;
@@ -28,7 +28,7 @@ public class AnnotationVariantQueryParams extends ToolParams {
     private String functionalScore;
     private String clinical;
     private String clinicalSignificance;
-    private String clinicalConfirmedStatus;
+    private boolean clinicalConfirmedStatus;
 
     public AnnotationVariantQueryParams() {
     }
@@ -262,11 +262,11 @@ public class AnnotationVariantQueryParams extends ToolParams {
         return this;
     }
 
-    public String getClinicalConfirmedStatus() {
+    public boolean getClinicalConfirmedStatus() {
         return clinicalConfirmedStatus;
     }
 
-    public AnnotationVariantQueryParams setClinicalConfirmedStatus(String clinicalConfirmedStatus) {
+    public AnnotationVariantQueryParams setClinicalConfirmedStatus(boolean clinicalConfirmedStatus) {
         this.clinicalConfirmedStatus = clinicalConfirmedStatus;
         return this;
     }

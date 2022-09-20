@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
-import sys
 import re
+import sys
 
 from rest_client_generator import RestClientGenerator
 
@@ -19,6 +19,7 @@ class PythonClientGenerator(RestClientGenerator):
             'long': 'int',
             'map': 'dict',
             'boolean': 'bool',
+            'java.lang.Boolean': 'bool',
             'enum': 'str',
             'list': 'list',
             'object': 'dict',
@@ -47,7 +48,7 @@ class PythonClientGenerator(RestClientGenerator):
                 len_line += len(word) + 1
             else:
                 new_lines.append(' '.join(new_line))
-                new_line = [' '*(indent + 4) + word]
+                new_line = [' ' * (indent + 4) + word]
                 len_line = len(new_line[0])
         new_lines.append(' '.join(new_line))
         return '\n'.join(new_lines)
@@ -65,7 +66,8 @@ class PythonClientGenerator(RestClientGenerator):
         text = []
         text.append('class {}(_ParentRestClient):'.format(self.categories[self.get_category_name(category)]))
         text.append('{}"""'.format(' ' * 4))
-        text.append('{}This class contains methods for the \'{}\' webservices'.format(' ' * 4, self.get_category_name(category)))
+        text.append('{}This class contains methods for the \'{}\' webservices'.format(' ' * 4,
+                                                                                      self.get_category_name(category)))
         text.append('{}Client version: {}'.format(' ' * 4, self.version))
         text.append('{}PATH: {}'.format(' ' * 4, category['path']))
         text.append('{}"""'.format(' ' * 4))
@@ -97,11 +99,11 @@ class PythonClientGenerator(RestClientGenerator):
                     self.get_parameter_allowed_values(param).split(',')
                 )
             line = '{}:param {} {}: {}'.format(
-                        ' ' * 8,
-                        self.param_types[self.get_parameter_type(param)],
-                        self.to_snake_case(param),
-                        desc
-                )
+                ' ' * 8,
+                self.param_types[self.get_parameter_type(param)],
+                self.to_snake_case(param),
+                desc
+            )
             if self.is_required(param):
                 line += ' (REQUIRED)'
                 params_descriptions.insert(0, self.format_line(line))
@@ -119,8 +121,9 @@ class PythonClientGenerator(RestClientGenerator):
         method_args = ', '.join(method_args)
 
         # Method body
-        method_body = ['{}options[\'{}\'] = {}'.format(' ' * 8, self.to_camel_case(required_parameter), required_parameter)
-                       for required_parameter in mandatory_query_params if required_parameter != 'data']
+        method_body = [
+            '{}options[\'{}\'] = {}'.format(' ' * 8, self.to_camel_case(required_parameter), required_parameter)
+            for required_parameter in mandatory_query_params if required_parameter != 'data']
 
         # Call arguments
         call_args = []

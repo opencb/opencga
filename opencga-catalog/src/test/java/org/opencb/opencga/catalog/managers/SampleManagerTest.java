@@ -2414,15 +2414,25 @@ public class SampleManagerTest extends AbstractManagerTest {
                 token).first().getUid();
 
         Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), "SAMPLE_1");
+        DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().search("1000G:phase1", query, new QueryOptions(), token);
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals("SAMPLE_1", sampleDataResult.first().getId());
+
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "SAMPLE_1")
+                .append(SampleDBAdaptor.QueryParams.DELETED.key(), false);
+        sampleDataResult = catalogManager.getSampleManager().search("1000G:phase1", query, new QueryOptions(), token);
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals("SAMPLE_1", sampleDataResult.first().getId());
+
+
         DataResult delete = catalogManager.getSampleManager().delete("1000G:phase1", query, null, token);
         assertEquals(1, delete.getNumDeleted());
 
         query = new Query()
                 .append(SampleDBAdaptor.QueryParams.UID.key(), sampleUid)
                 .append(SampleDBAdaptor.QueryParams.DELETED.key(), true);
-
-        DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().search("1000G:phase1", query, new QueryOptions(), token);
-//        DataResult<Sample> sample = catalogManager.getSample(sampleId, new QueryOptions(), sessionIdUser);
+        sampleDataResult = catalogManager.getSampleManager().search("1000G:phase1", query, new QueryOptions(), token);
         assertEquals(1, sampleDataResult.getNumResults());
         assertEquals(InternalStatus.DELETED, sampleDataResult.first().getInternal().getStatus().getId());
     }
