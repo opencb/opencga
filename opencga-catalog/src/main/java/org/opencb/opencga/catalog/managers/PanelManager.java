@@ -71,13 +71,12 @@ import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorization
 
 public class PanelManager extends ResourceManager<Panel> {
 
-    protected static Logger logger = LoggerFactory.getLogger(PanelManager.class);
-    private UserManager userManager;
-    private StudyManager studyManager;
-
     public static final QueryOptions INCLUDE_PANEL_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             PanelDBAdaptor.QueryParams.ID.key(), PanelDBAdaptor.QueryParams.UID.key(), PanelDBAdaptor.QueryParams.UUID.key(),
             PanelDBAdaptor.QueryParams.VERSION.key(), PanelDBAdaptor.QueryParams.STUDY_UID.key()));
+    protected static Logger logger = LoggerFactory.getLogger(PanelManager.class);
+    private UserManager userManager;
+    private StudyManager studyManager;
 
     PanelManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                  DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
@@ -620,16 +619,10 @@ public class PanelManager extends ResourceManager<Panel> {
                 .append("token", token);
         fixQueryObject(query);
         try {
-            PanelDBAdaptor.QueryParams param = PanelDBAdaptor.QueryParams.getParam(field);
-            if (param == null) {
-                throw new CatalogException("Unknown '" + field + "' parameter.");
-            }
-            Class<?> clazz = getTypeClass(param.type());
-
             fixQueryObject(query);
 
             query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<?> result = panelDBAdaptor.distinct(study.getUid(), field, query, userId, clazz);
+            OpenCGAResult<?> result = panelDBAdaptor.distinct(study.getUid(), field, query, userId);
 
             auditManager.auditDistinct(userId, Enums.Resource.DISEASE_PANEL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
