@@ -17,6 +17,8 @@
 package org.opencb.opencga.analysis.clinical;
 
 import org.opencb.biodata.models.clinical.ClinicalProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URL;
@@ -34,8 +36,11 @@ public class RoleInCancerManager {
 
     private Path openCgaHome;
 
+    private final Logger logger;
+
     public RoleInCancerManager(Path openCgaHome) {
         this.openCgaHome = openCgaHome;
+        logger = LoggerFactory.getLogger(getClass());
     }
 
     public Map<String, List<ClinicalProperty.RoleInCancer>> getRoleInCancer() throws IOException {
@@ -54,11 +59,11 @@ public class RoleInCancerManager {
         // Read 'role in cancer' file
         Path path = openCgaHome.resolve(ROLE_IN_CANCER_PATH);
         if (path.toFile().exists()) {
-            System.out.println("loadRoleInCancer from path: " + path);
+            logger.info("loadRoleInCancer from path: {}", path);
             InputStream in = Files.newInputStream(path);
             return loadRoleInCancer(in);
         } else {
-            System.out.println("loadRoleInCancer from URL: " + ROLE_IN_CANCER_URL + ", (path does not exist: " + path + ")");
+            logger.info("loadRoleInCancer from URL: {}, (since path does not exist: {})", ROLE_IN_CANCER_URL, path);
             try (InputStream in = new URL(ROLE_IN_CANCER_URL).openStream()) {
                 return loadRoleInCancer(in);
             } catch (FileNotFoundException e) {
@@ -71,7 +76,7 @@ public class RoleInCancerManager {
     private Map<String, List<ClinicalProperty.RoleInCancer>> loadRoleInCancer(InputStream in) {
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in));
 
-        Map<String, List<ClinicalProperty.RoleInCancer>> roleInCancer = new HashMap<>();
+        Map<String, List<ClinicalProperty.RoleInCancer>> roleInCancerMap = new HashMap<>();
 
         List<String> lines = bufferedReader.lines().collect(Collectors.toList());
         Set<ClinicalProperty.RoleInCancer> set = new HashSet<>();
@@ -107,9 +112,9 @@ public class RoleInCancerManager {
 
             // Update set
             if (set.size() > 0) {
-                roleInCancer.put(split[0], new ArrayList<>(set));
+                roleInCancerMap.put(split[0], new ArrayList<>(set));
             }
         }
-        return roleInCancer;
+        return roleInCancerMap;
     }
 }
