@@ -1357,6 +1357,12 @@ public class VariantCommandOptions {
         @Parameter(names = {"--max-rare-sigs"}, description = FieldConstants.MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION)
         public Integer maxRareSigs = 1;
 
+        @Parameter(names = {"--signatures-file"}, description = FieldConstants.MUTATIONAL_SIGNATURE_SIGNATURES_FILE_DESCRIPTION)
+        public String signaturesFile;
+
+        @Parameter(names = {"--rare-signatures-file"}, description = FieldConstants.MUTATIONAL_SIGNATURE_RARE_SIGNATURES_FILE_DESCRIPTION)
+        public String rareSignaturesFile;
+
         @Parameter(names = {"-o", "--outdir"}, description = FieldConstants.JOB_OUT_DIR_DESCRIPTION, arity = 1, required = false)
         public String outdir;
     }
@@ -1610,6 +1616,12 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--signature-max-rare-sigs"}, description = FieldConstants.MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION)
         public Integer signatureMaxRareSigs = 1;
+
+        @Parameter(names = {"--signature-signatures-file"}, description = FieldConstants.MUTATIONAL_SIGNATURE_SIGNATURES_FILE_DESCRIPTION)
+        public String signatureSignaturesFile;
+
+        @Parameter(names = {"--signature-rare-signatures-file"}, description = FieldConstants.MUTATIONAL_SIGNATURE_RARE_SIGNATURES_FILE_DESCRIPTION)
+        public String signatureRareSignaturesFile;
 
         // Genome plot
 

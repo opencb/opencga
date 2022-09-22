@@ -811,6 +811,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.thresholdPerc,
                 cliOptions.thresholdPval,
                 cliOptions.maxRareSigs,
+                cliOptions.signaturesFile,
+                cliOptions.rareSignaturesFile,
                 cliOptions.outdir)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
@@ -930,6 +932,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.signatureThresholdPerc,
                 cliOptions.signatureThresholdPval,
                 cliOptions.signatureMaxRareSigs,
+                cliOptions.signatureSignaturesFile,
+                cliOptions.signatureRareSignaturesFile,
                 cliOptions.genomePlotId,
                 cliOptions.genomePlotDescr,
                 cliOptions.genomePlotConfigFile,

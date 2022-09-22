@@ -17,7 +17,6 @@
 package org.opencb.opencga.core.models.variant;
 
 import org.opencb.commons.annotations.DataField;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
@@ -62,6 +61,12 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
     @DataField(id = "maxRareSigs", defaultValue = "1", description = FieldConstants.MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION)
     private Integer maxRareSigs;
 
+    @DataField(id = "signaturesFile", description = FieldConstants.MUTATIONAL_SIGNATURE_SIGNATURES_FILE_DESCRIPTION)
+    private String signaturesFile;
+
+    @DataField(id = "rareSignaturesFile", description = FieldConstants.MUTATIONAL_SIGNATURE_RARE_SIGNATURES_FILE_DESCRIPTION)
+    private String rareSignaturesFile;
+
     @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
 
@@ -70,7 +75,8 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
 
     public MutationalSignatureAnalysisParams(String id, String description, String query, String catalogues, String cataloguesContent,
                                              String fitMethod, Integer nBoot, String sigVersion, String organ, Float thresholdPerc,
-                                             Float thresholdPval, Integer maxRareSigs, String outdir) {
+                                             Float thresholdPval, Integer maxRareSigs, String signaturesFile, String rareSignaturesFile,
+                                             String outdir) {
         this.id = id;
         this.description = description;
         this.query = query;
@@ -83,6 +89,8 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
         this.thresholdPerc = thresholdPerc;
         this.thresholdPval = thresholdPval;
         this.maxRareSigs = maxRareSigs;
+        this.signaturesFile = signaturesFile;
+        this.rareSignaturesFile = rareSignaturesFile;
         this.outdir = outdir;
     }
 
@@ -101,6 +109,8 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
         sb.append(", thresholdPerc=").append(thresholdPerc);
         sb.append(", thresholdPval=").append(thresholdPval);
         sb.append(", maxRareSigs=").append(maxRareSigs);
+        sb.append(", signaturesFile='").append(signaturesFile).append('\'');
+        sb.append(", rareSignaturesFile='").append(rareSignaturesFile).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -211,6 +221,24 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
 
     public MutationalSignatureAnalysisParams setMaxRareSigs(Integer maxRareSigs) {
         this.maxRareSigs = maxRareSigs;
+        return this;
+    }
+
+    public String getSignaturesFile() {
+        return signaturesFile;
+    }
+
+    public MutationalSignatureAnalysisParams setSignaturesFile(String signaturesFile) {
+        this.signaturesFile = signaturesFile;
+        return this;
+    }
+
+    public String getRareSignaturesFile() {
+        return rareSignaturesFile;
+    }
+
+    public MutationalSignatureAnalysisParams setRareSignaturesFile(String rareSignaturesFile) {
+        this.rareSignaturesFile = rareSignaturesFile;
         return this;
     }
 

@@ -1109,6 +1109,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("thresholdPerc", commandOptions.thresholdPerc);
         queryParams.putIfNotNull("thresholdPval", commandOptions.thresholdPval);
         queryParams.putIfNotNull("maxRareSigs", commandOptions.maxRareSigs);
+        queryParams.putIfNotEmpty("signaturesFile", commandOptions.signaturesFile);
+        queryParams.putIfNotEmpty("rareSignaturesFile", commandOptions.rareSignaturesFile);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
@@ -1157,6 +1159,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotNull(beanParams, "thresholdPerc",commandOptions.thresholdPerc, true);
              putNestedIfNotNull(beanParams, "thresholdPval",commandOptions.thresholdPval, true);
              putNestedIfNotNull(beanParams, "maxRareSigs",commandOptions.maxRareSigs, true);
+             putNestedIfNotEmpty(beanParams, "signaturesFile",commandOptions.signaturesFile, true);
+             putNestedIfNotEmpty(beanParams, "rareSignaturesFile",commandOptions.rareSignaturesFile, true);
              putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
  
             mutationalSignatureAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
@@ -1519,6 +1523,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotNull(beanParams, "signatureThresholdPerc",commandOptions.signatureThresholdPerc, true);
              putNestedIfNotNull(beanParams, "signatureThresholdPval",commandOptions.signatureThresholdPval, true);
              putNestedIfNotNull(beanParams, "signatureMaxRareSigs",commandOptions.signatureMaxRareSigs, true);
+             putNestedIfNotEmpty(beanParams, "signatureRareSignaturesFile",commandOptions.signatureRareSignaturesFile, true);
              putNestedIfNotEmpty(beanParams, "genomePlotId",commandOptions.genomePlotId, true);
              putNestedIfNotEmpty(beanParams, "genomePlotDescription",commandOptions.genomePlotDescription, true);
              putNestedIfNotEmpty(beanParams, "genomePlotConfigFile",commandOptions.genomePlotConfigFile, true);

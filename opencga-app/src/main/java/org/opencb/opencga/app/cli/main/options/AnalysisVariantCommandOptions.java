@@ -1396,6 +1396,12 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--max-rare-sigs"}, description = "Maximum number of rare signatures that are allowed to be present in each sample. If not specified 1.", required = false, arity = 1)
         public Integer maxRareSigs = 1; 
     
+        @Parameter(names = {"--signatures-file"}, description = "The file name containing mutational signatures. Each signature is in a column, with signature names as column hearders and channel names as row names in the first column with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are considered common signatures.", required = false, arity = 1)
+        public String signaturesFile = "1"; 
+    
+        @Parameter(names = {"--rare-signatures-file"}, description = "The file name containing mutational signatures. Each signature is in a column, with signature names as column hearders and channel names as row names in the first column with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are considered rare signatures.", required = false, arity = 1)
+        public String rareSignaturesFile = "1"; 
+    
     }
 
     @Parameters(commandNames = {"mutational-signature-run"}, commandDescription ="Run mutational signature analysis for a given sample.")
@@ -1460,6 +1466,12 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--max-rare-sigs"}, description = "Maximum number of rare signatures that are allowed to be present in each sample. If not specified 1.", required = false, arity = 1)
         public Integer maxRareSigs = 1;
+    
+        @Parameter(names = {"--signatures-file"}, description = "The file name containing mutational signatures. Each signature is in a column, with signature names as column hearders and channel names as row names in the first column with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are considered common signatures.", required = false, arity = 1)
+        public String signaturesFile;
+    
+        @Parameter(names = {"--rare-signatures-file"}, description = "The file name containing mutational signatures. Each signature is in a column, with signature names as column hearders and channel names as row names in the first column with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are considered rare signatures.", required = false, arity = 1)
+        public String rareSignaturesFile;
     
         @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;
@@ -2068,6 +2080,9 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--signature-max-rare-sigs"}, description = "Maximum number of rare signatures that are allowed to be present in each sample. If not specified 1.", required = false, arity = 1)
         public Integer signatureMaxRareSigs = 1;
+    
+        @Parameter(names = {"--signature-rare-signatures-file"}, description = "The file name containing mutational signatures. Each signature is in a column, with signature names as column hearders and channel names as row names in the first column with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are considered rare signatures.", required = false, arity = 1)
+        public String signatureRareSignaturesFile;
     
         @Parameter(names = {"--genome-plot-id"}, description = "The body web service genomePlotId parameter", required = false, arity = 1)
         public String genomePlotId;

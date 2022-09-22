@@ -22,6 +22,7 @@ import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.clinical.qc.SignatureFitting;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -66,6 +67,8 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
     private String assembly;
     private ObjectMap query;
     private String catalogues;
+    private String signaturesFile;
+    private String rareSignaturesFile;
 
     @Override
     protected void check() throws Exception {
@@ -135,11 +138,25 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
             }
 
             try {
+                // Check sample
                 study = catalogManager.getStudyManager().get(study, QueryOptions.empty(), token).first().getFqn();
-
                 OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(study, sample, QueryOptions.empty(), token);
                 if (sampleResult.getNumResults() != 1) {
                     throw new ToolException("Unable to compute mutational signature analysis. Sample '" + sample + "' not found");
+                }
+
+                // Check signatures file
+                if (StringUtils.isNotEmpty(signatureParams.getSignaturesFile())) {
+                    org.opencb.opencga.core.models.file.File catalogFile = AnalysisUtils.getCatalogFile(signatureParams.getSignaturesFile(),
+                            getStudy(), catalogManager.getFileManager(), getToken());
+                    signaturesFile = catalogFile.getUri().getPath();
+                }
+
+                // Check rare signatures file
+                if (StringUtils.isNotEmpty(signatureParams.getRareSignaturesFile())) {
+                    org.opencb.opencga.core.models.file.File catalogFile = AnalysisUtils.getCatalogFile(
+                            signatureParams.getRareSignaturesFile(), getStudy(), catalogManager.getFileManager(), getToken());
+                    rareSignaturesFile = catalogFile.getUri().getPath();
                 }
             } catch (CatalogException e) {
                 throw new ToolException(e);
@@ -154,6 +171,8 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
         logger.info("Signagture threshold percentage: {}", signatureParams.getThresholdPerc());
         logger.info("Signagture threshold p-value: {}", signatureParams.getThresholdPval());
         logger.info("Signagture max. rare sigs.: {}", signatureParams.getMaxRareSigs());
+        logger.info("Signagture signatures file: {}", signaturesFile);
+        logger.info("Signagture rare signatures file: {}", rareSignaturesFile);
     }
 
     @Override
@@ -175,6 +194,8 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                     .setThresholdPerc(signatureParams.getThresholdPerc())
                     .setThresholdPval(signatureParams.getThresholdPval())
                     .setMaxRareSigs(signatureParams.getMaxRareSigs())
+                    .setSignaturesFile(signaturesFile)
+                    .setRareSignaturesFile(rareSignaturesFile)
                     .execute();
 
             // Update quality control for the catalog sample

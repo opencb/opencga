@@ -63,6 +63,12 @@ public class SampleQcAnalysisParams extends ToolParams {
     @DataField(id = "signatureMaxRareSigs", defaultValue = "1", description = FieldConstants.MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION)
     private Integer signatureMaxRareSigs;
 
+    @DataField(id = "signatureSignaturesFile", description = FieldConstants.MUTATIONAL_SIGNATURE_SIGNATURES_FILE_DESCRIPTION)
+    private String signatureSignaturesFile;
+
+    @DataField(id = "signatureRareSignaturesFile", description = FieldConstants.MUTATIONAL_SIGNATURE_RARE_SIGNATURES_FILE_DESCRIPTION)
+    private String signatureRareSignaturesFile;
+
     // Genome plot
 
     private String genomePlotId;
@@ -78,8 +84,8 @@ public class SampleQcAnalysisParams extends ToolParams {
                                   AnnotationVariantQueryParams variantStatsQuery, String signatureId, String signatureDescription,
                                   String signatureQuery, String signatureFitMethod, Integer signatureNBoot, String signatureSigVersion,
                                   String signatureOrgan, Float signatureThresholdPerc, Float signatureThresholdPval,
-                                  Integer signatureMaxRareSigs, String genomePlotId, String genomePlotDescription,
-                                  String genomePlotConfigFile, String outdir) {
+                                  Integer signatureMaxRareSigs, String signatureSignaturesFile, String signatureRareSignaturesFile,
+                                  String genomePlotId, String genomePlotDescription, String genomePlotConfigFile, String outdir) {
         this.sample = sample;
         this.variantStatsId = variantStatsId;
         this.variantStatsDescription = variantStatsDescription;
@@ -94,6 +100,8 @@ public class SampleQcAnalysisParams extends ToolParams {
         this.signatureThresholdPerc = signatureThresholdPerc;
         this.signatureThresholdPval = signatureThresholdPval;
         this.signatureMaxRareSigs = signatureMaxRareSigs;
+        this.signatureSignaturesFile = signatureSignaturesFile;
+        this.signatureRareSignaturesFile = signatureRareSignaturesFile;
         this.genomePlotId = genomePlotId;
         this.genomePlotDescription = genomePlotDescription;
         this.genomePlotConfigFile = genomePlotConfigFile;
@@ -117,6 +125,8 @@ public class SampleQcAnalysisParams extends ToolParams {
         sb.append(", signatureThresholdPerc=").append(signatureThresholdPerc);
         sb.append(", signatureThresholdPval=").append(signatureThresholdPval);
         sb.append(", signatureMaxRareSigs=").append(signatureMaxRareSigs);
+        sb.append(", signatureSignaturesFile='").append(signatureSignaturesFile).append('\'');
+        sb.append(", signatureRareSignaturesFile='").append(signatureRareSignaturesFile).append('\'');
         sb.append(", genomePlotId='").append(genomePlotId).append('\'');
         sb.append(", genomePlotDescription='").append(genomePlotDescription).append('\'');
         sb.append(", genomePlotConfigFile='").append(genomePlotConfigFile).append('\'');
@@ -248,6 +258,24 @@ public class SampleQcAnalysisParams extends ToolParams {
 
     public SampleQcAnalysisParams setSignatureMaxRareSigs(Integer signatureMaxRareSigs) {
         this.signatureMaxRareSigs = signatureMaxRareSigs;
+        return this;
+    }
+
+    public String getSignatureSignaturesFile() {
+        return signatureSignaturesFile;
+    }
+
+    public SampleQcAnalysisParams setSignatureSignaturesfile(String signatureSignaturesFile) {
+        this.signatureSignaturesFile = signatureSignaturesFile;
+        return this;
+    }
+
+    public String getSignatureRareSignaturesFile() {
+        return signatureRareSignaturesFile;
+    }
+
+    public SampleQcAnalysisParams setSignatureRareSignaturesFile(String signatureRareSignaturesFile) {
+        this.signatureRareSignaturesFile = signatureRareSignaturesFile;
         return this;
     }
 

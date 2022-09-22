@@ -49,6 +49,8 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
     private Float thresholdPerc;
     private Float thresholdPval;
     private Integer maxRareSigs;
+    private String signaturesFile;
+    private String rareSignaturesFile;
 
     public MutationalSignatureAnalysisExecutor() {
     }
@@ -79,32 +81,39 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
         //double sum = sumFreqMap(map);
         try (PrintWriter pw = new PrintWriter(outputFile)) {
             pw.println(sample);
-
-            String[] bases = new String[]{"A", "C", "G", "T"};
-            for (String first : bases) {
+//            for (String firstKey : FIRST_LEVEL_KEYS) {
+//                String[] secondLevelKeys = firstKey.startsWith("C") ? SECOND_LEVEL_KEYS_C : SECOND_LEVEL_KEYS_T;
+//                for (String secondKey : secondLevelKeys) {
+//                    pw.println(secondKey.substring(0, 1) + "[" + firstKey + "]" + secondKey.substring(2) + "\t"
+//                            + map.get(firstKey).get(secondKey));
+//                }
+//            }
+//
+//            String[] bases = new String[]{"A", "C", "G", "T"};
+//            for (String first : bases) {
+//                for (String firstKey : FIRST_LEVEL_KEYS) {
+//                    for (String last : bases) {
+//                        String secondKey = first + (firstKey.startsWith("C") ? "C" : "T") + last;
+//                        if (map.get(firstKey).containsKey(secondKey)) {
+//                            pw.println(first + "[" + firstKey + "]" + last + "\t" + map.get(firstKey).get(secondKey));
+//                        }
+//                    }
+//                }
+//            }
+//
+//
+            for (String secondKey : SECOND_LEVEL_KEYS_C) {
                 for (String firstKey : FIRST_LEVEL_KEYS) {
-                    for (String last : bases) {
-                        String secondKey = first + (firstKey.startsWith("C") ? "C" : "T") + last;
-                        if (map.get(firstKey).containsKey(secondKey)) {
-                            pw.println(first + "[" + firstKey + "]" + last + "\t" + map.get(firstKey).get(secondKey));
-                        }
-                    }
+                    pw.println(secondKey.substring(0, 1) + "[" + firstKey + "]" + secondKey.substring(2) + "\t"
+                            + map.get(firstKey).get(secondKey));
                 }
             }
-//
-//
-//            for (String secondKey : SECOND_LEVEL_KEYS_C) {
-//                for (String firstKey : FIRST_LEVEL_KEYS) {
-//                    pw.println(secondKey.substring(0, 1) + "[" + firstKey + "]" + secondKey.substring(2) + "\t"
-//                            + map.get(firstKey).get(secondKey));
-//                }
-//            }
-//            for (String secondKey : SECOND_LEVEL_KEYS_T) {
-//                for (String firstKey : FIRST_LEVEL_KEYS) {
-//                    pw.println(secondKey.substring(0, 1) + "[" + firstKey + "]" + secondKey.substring(2) + "\t"
-//                            + map.get(firstKey).get(secondKey));
-//                }
-//            }
+            for (String secondKey : SECOND_LEVEL_KEYS_T) {
+                for (String firstKey : FIRST_LEVEL_KEYS) {
+                    pw.println(secondKey.substring(0, 1) + "[" + firstKey + "]" + secondKey.substring(2) + "\t"
+                            + map.get(firstKey).get(secondKey));
+                }
+            }
         } catch (Exception e) {
             throw new ToolException("Error writing output file: " + outputFile.getName(), e);
         }
@@ -295,6 +304,24 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
 
     public MutationalSignatureAnalysisExecutor setMaxRareSigs(Integer maxRareSigs) {
         this.maxRareSigs = maxRareSigs;
+        return this;
+    }
+
+    public String getSignaturesFile() {
+        return signaturesFile;
+    }
+
+    public MutationalSignatureAnalysisExecutor setSignaturesFile(String signaturesFile) {
+        this.signaturesFile = signaturesFile;
+        return this;
+    }
+
+    public String getRareSignaturesFile() {
+        return rareSignaturesFile;
+    }
+
+    public MutationalSignatureAnalysisExecutor setRareSignaturesFile(String rareSignaturesFile) {
+        this.rareSignaturesFile = rareSignaturesFile;
         return this;
     }
 }

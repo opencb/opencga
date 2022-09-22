@@ -199,6 +199,8 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
                             .setThresholdPerc(analysisParams.getSignatureThresholdPerc())
                             .setThresholdPval(analysisParams.getSignatureThresholdPval())
                             .setMaxRareSigs(analysisParams.getSignatureMaxRareSigs())
+                            .setSignaturesFile(analysisParams.getSignatureSignaturesFile())
+                            .setRareSignaturesFile(analysisParams.getSignatureRareSignaturesFile())
                             .toParams(new ObjectMap(ParamConstants.STUDY_PARAM, getStudy()));
 
                     signatureJobResult = catalogManager.getJobManager()

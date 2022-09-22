@@ -415,4 +415,12 @@ public class FieldConstants {
             + " exposure is lower than the threshold. If not specified then 0.05.";
     public static final String MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION = "Maximum number of rare signatures that are allowed to be"
             + " present in each sample. If not specified 1.";
+    public static final String MUTATIONAL_SIGNATURE_SIGNATURES_FILE_DESCRIPTION = "The file name containing mutational signatures. Each"
+            + " signature is in a column, with signature names as column hearders and channel names as row names in the first column with"
+            + " no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are"
+            + " considered common signatures.";
+    public static final String MUTATIONAL_SIGNATURE_RARE_SIGNATURES_FILE_DESCRIPTION = "The file name containing mutational signatures."
+            + " Each signature is in a column, with signature names as column hearders and channel names as row names in the first column"
+            + " with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures"
+            + " are considered rare signatures.";
 }

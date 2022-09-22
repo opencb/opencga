@@ -92,11 +92,12 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         }
 
         // Run R script for fitting signature
-        if (StringUtils.isEmpty(getOrgan()) && (StringUtils.isEmpty(getSigVersion()) || getSigVersion().startsWith("Ref"))) {
-            addWarning("Since the parameter 'organ' is missing and RefSig is been used, the fitting signature will not be computed.");
-        } else {
-            executeRScript();
-        }
+        executeRScript();
+//        if (StringUtils.isEmpty(getOrgan()) && (StringUtils.isEmpty(getSigVersion()) || getSigVersion().startsWith("Ref"))) {
+//            addWarning("Since the parameter 'organ' is missing and RefSig is been used, the fitting signature will not be computed.");
+//        } else {
+//            executeRScript();
+//        }
     }
 
     private void computeFromContextFile() throws ToolExecutorException {
@@ -256,7 +257,20 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         if (new File(getCatalogues()).exists()) {
             inputPath = new File(getCatalogues()).getParent();
         }
-        AbstractMap.SimpleEntry<String, String> inputBinding = new AbstractMap.SimpleEntry<>(inputPath, "/data/input");
+        List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
+        inputBindings.add(new AbstractMap.SimpleEntry<>(inputPath, "/data/input"));
+        if (StringUtils.isNotEmpty(getSignaturesFile())) {
+            File signaturesFile = new File(getSignaturesFile());
+            if (signaturesFile.exists()) {
+                inputBindings.add(new AbstractMap.SimpleEntry<>(signaturesFile.getParent(), "/data/signaturesFile"));
+            }
+        }
+        if (StringUtils.isNotEmpty(getRareSignaturesFile())) {
+            File rareSignaturesFile = new File(getRareSignaturesFile());
+            if (rareSignaturesFile.exists()) {
+                inputBindings.add(new AbstractMap.SimpleEntry<>(rareSignaturesFile.getParent(), "/data/rareSignaturesFile"));
+            }
+        }
         AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir()
                 .toAbsolutePath().toString(), "/data/output");
         StringBuilder scriptParams = new StringBuilder("R CMD Rscript --vanilla ")
@@ -284,8 +298,24 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         if (getnBoot() > 0) {
             scriptParams.append(" -b --nboot=").append(getnBoot());
         }
+        if (StringUtils.isNotEmpty(getSignaturesFile()) && new File(getSignaturesFile()).exists()) {
+            scriptParams.append(" --signaturesfile=/data/signaturesFile/").append(new File(getSignaturesFile()).getName());
+        }
+        if (StringUtils.isNotEmpty(getRareSignaturesFile()) && new File(getRareSignaturesFile()).exists()) {
+            scriptParams.append(" --raresignaturesfile=/data/rareSignaturesFile/").append(new File(getRareSignaturesFile()).getName());
+        }
+        switch (getAssembly()) {
+            case "GRCh37": {
+                scriptParams.append(" --genomev=hg19");
+                break;
+            }
+            case "GRCh38": {
+                scriptParams.append(" --genomev=hg38");
+                break;
+            }
+        }
 
-        String cmdline = DockerUtils.run(R_DOCKER_IMAGE, Collections.singletonList(inputBinding), outputBinding, scriptParams.toString(),
+        String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams.toString(),
                 null);
         logger.info("Docker command line: " + cmdline);
     }
