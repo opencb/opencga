@@ -45,7 +45,7 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
     private String fitMethod;
 
     @DataField(id = "nBoot", description = FieldConstants.MUTATIONAL_SIGNATURE_N_BOOT_DESCRIPTION)
-    private int nBoot;
+    private String nBoot;
 
     @DataField(id = "sigVersion", defaultValue = "RefSigv2", description = FieldConstants.MUTATIONAL_SIGNATURE_SIG_VERSION_DESCRIPTION)
     private String sigVersion;
@@ -53,14 +53,14 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
     @DataField(id = "organ", description = FieldConstants.MUTATIONAL_SIGNATURE_ORGAN_DESCRIPTION)
     private String organ;
 
-    @DataField(id = "thresholdPerc", defaultValue = "5f", description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PERC_DESCRIPTION)
-    private Float thresholdPerc;
+    @DataField(id = "thresholdPerc", defaultValue = "5", description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PERC_DESCRIPTION)
+    private String thresholdPerc;
 
-    @DataField(id = "thresholdPval", defaultValue = "0.05f", description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PVAL_DESCRIPTION)
-    private Float thresholdPval;
+    @DataField(id = "thresholdPval", defaultValue = "0.05", description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PVAL_DESCRIPTION)
+    private String thresholdPval;
 
     @DataField(id = "maxRareSigs", defaultValue = "1", description = FieldConstants.MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION)
-    private int maxRareSigs;
+    private String maxRareSigs;
 
     @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
@@ -69,8 +69,8 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
     }
 
     public MutationalSignatureAnalysisParams(String id, String description, String query, String catalogues, String cataloguesContent,
-                                             String fitMethod, int nBoot, String sigVersion, String organ, Float thresholdPerc,
-                                             Float thresholdPval, int maxRareSigs, String outdir) {
+                                             String fitMethod, String nBoot, String sigVersion, String organ, String thresholdPerc,
+                                             String thresholdPval, String maxRareSigs, String outdir) {
         this.id = id;
         this.description = description;
         this.query = query;
@@ -89,18 +89,18 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("MutationalSignatureAnalysisParams{");
-        sb.append(", id='").append(id).append('\'');
+        sb.append("id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", query='").append(query).append('\'');
         sb.append(", catalogues='").append(catalogues).append('\'');
         sb.append(", cataloguesContent='").append(cataloguesContent).append('\'');
         sb.append(", fitMethod='").append(fitMethod).append('\'');
-        sb.append(", nBoot=").append(nBoot);
+        sb.append(", nBoot='").append(nBoot).append('\'');
         sb.append(", sigVersion='").append(sigVersion).append('\'');
         sb.append(", organ='").append(organ).append('\'');
-        sb.append(", thresholdPerc=").append(thresholdPerc);
-        sb.append(", thresholdPval=").append(thresholdPval);
-        sb.append(", maxRareSigs=").append(maxRareSigs);
+        sb.append(", thresholdPerc='").append(thresholdPerc).append('\'');
+        sb.append(", thresholdPval='").append(thresholdPval).append('\'');
+        sb.append(", maxRareSigs='").append(maxRareSigs).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -160,11 +160,11 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
         return this;
     }
 
-    public int getnBoot() {
+    public String getnBoot() {
         return nBoot;
     }
 
-    public MutationalSignatureAnalysisParams setnBoot(int nBoot) {
+    public MutationalSignatureAnalysisParams setnBoot(String nBoot) {
         this.nBoot = nBoot;
         return this;
     }
@@ -187,29 +187,29 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
         return this;
     }
 
-    public Float getThresholdPerc() {
+    public String getThresholdPerc() {
         return thresholdPerc;
     }
 
-    public MutationalSignatureAnalysisParams setThresholdPerc(Float thresholdPerc) {
+    public MutationalSignatureAnalysisParams setThresholdPerc(String thresholdPerc) {
         this.thresholdPerc = thresholdPerc;
         return this;
     }
 
-    public Float getThresholdPval() {
+    public String getThresholdPval() {
         return thresholdPval;
     }
 
-    public MutationalSignatureAnalysisParams setThresholdPval(Float thresholdPval) {
+    public MutationalSignatureAnalysisParams setThresholdPval(String thresholdPval) {
         this.thresholdPval = thresholdPval;
         return this;
     }
 
-    public int getMaxRareSigs() {
+    public String getMaxRareSigs() {
         return maxRareSigs;
     }
 
-    public MutationalSignatureAnalysisParams setMaxRareSigs(int maxRareSigs) {
+    public MutationalSignatureAnalysisParams setMaxRareSigs(String maxRareSigs) {
         this.maxRareSigs = maxRareSigs;
         return this;
     }

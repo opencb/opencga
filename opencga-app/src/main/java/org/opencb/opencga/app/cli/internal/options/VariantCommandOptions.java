@@ -1337,10 +1337,10 @@ public class VariantCommandOptions {
         public String cataloguesContent;
 
         @Parameter(names = {"--fit-method"}, description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION)
-        public String fitMethod;
+        public String fitMethod = "FitMS";
 
         @Parameter(names = {"--n-boot"}, description = FieldConstants.MUTATIONAL_SIGNATURE_N_BOOT_DESCRIPTION)
-        public int nBoot;
+        public String nBoot;
 
         @Parameter(names = {"--sig-version"}, description = FieldConstants.MUTATIONAL_SIGNATURE_SIG_VERSION_DESCRIPTION)
         public String sigVersion = "RefSigv2";
@@ -1349,13 +1349,13 @@ public class VariantCommandOptions {
         public String organ;
 
         @Parameter(names = {"--threshold-perc"}, description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PERC_DESCRIPTION)
-        public float thresholdPerc = 5f;
+        public String thresholdPerc = "5";
 
         @Parameter(names = {"--threshold-pval"}, description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PVAL_DESCRIPTION)
-        public float thresholdPval = 0.05f;
+        public String thresholdPval = "0.05";
 
         @Parameter(names = {"--max-rare-sigs"}, description = FieldConstants.MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION)
-        public int maxRareSigs = 1;
+        public String maxRareSigs = "1";
 
         @Parameter(names = {"-o", "--outdir"}, description = FieldConstants.JOB_OUT_DIR_DESCRIPTION, arity = 1, required = false)
         public String outdir;

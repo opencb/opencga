@@ -32,7 +32,6 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleQualityControl;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
-import org.opencb.opencga.core.models.variant.VariantQueryParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
@@ -45,7 +44,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Tool(id = MutationalSignatureAnalysis.ID, resource = Enums.Resource.VARIANT)
 public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
@@ -92,18 +90,20 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                 throw new ToolException("Multiple files '" + signatureParams.getCatalogues() + "' found in study '" + study + "'");
             }
             catalogues = fileResult.first().getUri().toURL().getPath();
+            logger.info("Signagture catalogues file: {}", catalogues);
         } else if (StringUtils.isNotEmpty(signatureParams.getCataloguesContent())) {
             // Fitting from counts
             FileUtils.write(getOutDir().resolve(CATALOGUES_FILENAME_DEFAULT).toFile(), signatureParams.getCataloguesContent(),
                     Charset.defaultCharset(), false);
             catalogues = getOutDir().resolve(CATALOGUES_FILENAME_DEFAULT).toString();
+            logger.info("Signagture catalogues file: {}", catalogues);
         } else {
             // Fitting from sample/query
             if (signatureParams.getQuery() == null) {
                 throw new ToolException("Missing signature query");
             }
             query = JacksonUtils.getDefaultObjectMapper().readValue(signatureParams.getQuery(), ObjectMap.class);
-            logger.info(signatureParams.getQuery());
+            logger.info("Signagture query: {}", signatureParams.getQuery());
             if (!query.containsKey(VariantQueryParam.SAMPLE.key())) {
                 throw new ToolException("Missing sample in the signature query");
             }
@@ -145,12 +145,22 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                 throw new ToolException(e);
             }
         }
+
+        // Log messages
+        logger.info("Signagture fitting method: {}", signatureParams.getFitMethod());
+        logger.info("Signagture sig. version: {}", signatureParams.getSigVersion());
+        logger.info("Signagture organ: {}", signatureParams.getOrgan());
+        logger.info("Signagture n boot: {}", signatureParams.getnBoot());
+        logger.info("Signagture threshold percentage: {}", signatureParams.getThresholdPerc());
+        logger.info("Signagture threshold p-value: {}", signatureParams.getThresholdPval());
+        logger.info("Signagture max. rare sigs.: {}", signatureParams.getMaxRareSigs());
     }
 
     @Override
     protected void run() throws ToolException {
         step(getId(), () -> {
-            getToolExecutor(MutationalSignatureAnalysisExecutor.class)
+            MutationalSignatureAnalysisExecutor toolExecutor = getToolExecutor(MutationalSignatureAnalysisExecutor.class);
+            toolExecutor
                     .setStudy(study)
                     .setSample(sample)
                     .setAssembly(assembly)
@@ -159,13 +169,24 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                     .setQuery(query)
                     .setCatalogues(catalogues)
                     .setFitMethod(signatureParams.getFitMethod())
-                    .setnBoot(signatureParams.getnBoot())
                     .setSigVersion(signatureParams.getSigVersion())
-                    .setOrgan(signatureParams.getOrgan())
-                    .setThresholdPerc(signatureParams.getThresholdPerc())
-                    .setThresholdPval(signatureParams.getThresholdPval())
-                    .setMaxRareSigs(signatureParams.getMaxRareSigs())
-                    .execute();
+                    .setOrgan(signatureParams.getOrgan());
+
+            if (StringUtils.isNotEmpty(signatureParams.getnBoot())) {
+                toolExecutor.setnBoot(Integer.parseInt(signatureParams.getnBoot()));
+            }
+            if (StringUtils.isNotEmpty(signatureParams.getThresholdPerc())) {
+                toolExecutor.setThresholdPerc(Float.parseFloat(signatureParams.getThresholdPerc()));
+            }
+            if (StringUtils.isNotEmpty(signatureParams.getThresholdPval())) {
+                toolExecutor.setThresholdPval(Float.parseFloat(signatureParams.getThresholdPval()));
+            }
+            if (StringUtils.isNotEmpty(signatureParams.getMaxRareSigs())) {
+                toolExecutor.setMaxRareSigs(Integer.parseInt(signatureParams.getMaxRareSigs()));
+            }
+
+            // Execute
+            toolExecutor.execute();
 
             // Update quality control for the catalog sample
             if (signatureParams.getQuery() != null && query.containsKey(QC_UPDATE_KEYNAME)) {
@@ -254,19 +275,19 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
 
             // Set params
             ObjectMap params = new ObjectMap();
-            if (signatureParams.getnBoot() > 0) {
+            if (StringUtils.isNotEmpty(signatureParams.getnBoot())) {
                 params.append("nBoot", signatureParams.getnBoot());
             }
             if (StringUtils.isNotEmpty(signatureParams.getOrgan())) {
                 params.append("organ", signatureParams.getOrgan());
             }
-            if (signatureParams.getThresholdPerc() > 0.0f) {
+            if (StringUtils.isNotEmpty(signatureParams.getThresholdPerc())) {
                 params.append("thresholdPerc", signatureParams.getThresholdPerc());
             }
-            if (signatureParams.getThresholdPval() > 0.0f) {
+            if (StringUtils.isNotEmpty(signatureParams.getThresholdPval())) {
                 params.append("thresholdPval", signatureParams.getThresholdPval());
             }
-            if (signatureParams.getMaxRareSigs() > 0) {
+            if (StringUtils.isNotEmpty(signatureParams.getMaxRareSigs())) {
                 params.append("maxRareSigs", signatureParams.getMaxRareSigs());
             }
             if (params.size() > 0) {
