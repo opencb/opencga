@@ -31,6 +31,7 @@ import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatu
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
@@ -181,13 +182,23 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
                 if (runSignature) {
                     // Run mutational signature
+
                     // Be sure to update sample quality control
-//                    analysisParams.getSignatureQuery().put(MutationalSignatureAnalysis.QC_UPDATE_KEYNAME, "true");
+                    ObjectMap query = JacksonUtils.getDefaultObjectMapper().readValue(analysisParams.getSignatureQuery(), ObjectMap.class);
+                    query.append(MutationalSignatureAnalysis.QC_UPDATE_KEYNAME, true);
+                    String queryString = query.toJson();
+
                     params = new MutationalSignatureAnalysisParams()
                             .setId(analysisParams.getSignatureId())
                             .setDescription(analysisParams.getSignatureDescription())
-                            .setQuery(analysisParams.getSignatureQuery())
-                            .setSigVersion(analysisParams.getSignatureRelease())
+                            .setQuery(queryString)
+                            .setFitMethod(analysisParams.getSignatureFitMethod())
+                            .setSigVersion(analysisParams.getSignatureSigVersion())
+                            .setOrgan(analysisParams.getSignatureOrgan())
+                            .setnBoot(analysisParams.getSignatureNBoot())
+                            .setThresholdPerc(analysisParams.getSignatureThresholdPerc())
+                            .setThresholdPval(analysisParams.getSignatureThresholdPval())
+                            .setMaxRareSigs(analysisParams.getSignatureMaxRareSigs())
                             .toParams(new ObjectMap(ParamConstants.STUDY_PARAM, getStudy()));
 
                     signatureJobResult = catalogManager.getJobManager()

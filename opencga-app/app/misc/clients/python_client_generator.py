@@ -13,6 +13,8 @@ class PythonClientGenerator(RestClientGenerator):
         super().__init__(server_url, output_dir)
 
         self.param_types = {
+            'double': 'float',
+            'float': 'float',
             'string': 'str',
             'integer': 'int',
             'int': 'int',

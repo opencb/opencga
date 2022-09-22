@@ -909,7 +909,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         VariantCommandOptions.SampleQcCommandOptions cliOptions = variantCommandOptions.sampleQcCommandOptions;
 
         // Check signature release
-        checkSignatureVersion(cliOptions.signatureRelease);
+        checkSignatureVersion(cliOptions.signatureSigVersion);
 
         // Build variant query from cli options
         AnnotationVariantQueryParams variantStatsQuery = ToolParams.fromParams(AnnotationVariantQueryParams.class,
@@ -922,8 +922,14 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 variantStatsQuery,
                 cliOptions.signatureId,
                 cliOptions.signatureDescription,
-                new ObjectMap(cliOptions.signatureQuery).toJson(),
-                cliOptions.signatureRelease,
+                cliOptions.signatureQuery,
+                cliOptions.signatureFitMethod,
+                cliOptions.signatureNBoot,
+                cliOptions.signatureSigVersion,
+                cliOptions.signatureOrgan,
+                cliOptions.signatureThresholdPerc,
+                cliOptions.signatureThresholdPval,
+                cliOptions.signatureMaxRareSigs,
                 cliOptions.genomePlotId,
                 cliOptions.genomePlotDescr,
                 cliOptions.genomePlotConfigFile,

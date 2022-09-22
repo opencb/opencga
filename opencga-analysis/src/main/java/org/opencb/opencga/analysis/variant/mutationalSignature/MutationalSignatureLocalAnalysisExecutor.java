@@ -92,9 +92,9 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         }
 
         // Run R script for fitting signature
-        if (StringUtils.isEmpty(getOrgan())) {
-            addWarning("Since the parameter 'organ' is missing, the fitting signature will not be computed.");
-        } else{
+        if (StringUtils.isEmpty(getOrgan()) && (StringUtils.isEmpty(getSigVersion()) || getSigVersion().startsWith("Ref"))) {
+            addWarning("Since the parameter 'organ' is missing and RefSig is been used, the fitting signature will not be computed.");
+        } else {
             executeRScript();
         }
     }

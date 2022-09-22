@@ -160,8 +160,8 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
     protected void run() throws ToolException {
         step(getId(), () -> {
             MutationalSignatureAnalysisExecutor toolExecutor = getToolExecutor(MutationalSignatureAnalysisExecutor.class);
-            toolExecutor
-                    .setStudy(study)
+
+            toolExecutor.setStudy(study)
                     .setSample(sample)
                     .setAssembly(assembly)
                     .setQueryId(signatureParams.getId())
@@ -170,23 +170,12 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                     .setCatalogues(catalogues)
                     .setFitMethod(signatureParams.getFitMethod())
                     .setSigVersion(signatureParams.getSigVersion())
-                    .setOrgan(signatureParams.getOrgan());
-
-            if (StringUtils.isNotEmpty(signatureParams.getnBoot())) {
-                toolExecutor.setnBoot(Integer.parseInt(signatureParams.getnBoot()));
-            }
-            if (StringUtils.isNotEmpty(signatureParams.getThresholdPerc())) {
-                toolExecutor.setThresholdPerc(Float.parseFloat(signatureParams.getThresholdPerc()));
-            }
-            if (StringUtils.isNotEmpty(signatureParams.getThresholdPval())) {
-                toolExecutor.setThresholdPval(Float.parseFloat(signatureParams.getThresholdPval()));
-            }
-            if (StringUtils.isNotEmpty(signatureParams.getMaxRareSigs())) {
-                toolExecutor.setMaxRareSigs(Integer.parseInt(signatureParams.getMaxRareSigs()));
-            }
-
-            // Execute
-            toolExecutor.execute();
+                    .setOrgan(signatureParams.getOrgan())
+                    .setnBoot(signatureParams.getnBoot())
+                    .setThresholdPerc(signatureParams.getThresholdPerc())
+                    .setThresholdPval(signatureParams.getThresholdPval())
+                    .setMaxRareSigs(signatureParams.getMaxRareSigs())
+                    .execute();
 
             // Update quality control for the catalog sample
             if (signatureParams.getQuery() != null && query.containsKey(QC_UPDATE_KEYNAME)) {
@@ -275,19 +264,19 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
 
             // Set params
             ObjectMap params = new ObjectMap();
-            if (StringUtils.isNotEmpty(signatureParams.getnBoot())) {
+            if (signatureParams.getnBoot() != null) {
                 params.append("nBoot", signatureParams.getnBoot());
             }
             if (StringUtils.isNotEmpty(signatureParams.getOrgan())) {
                 params.append("organ", signatureParams.getOrgan());
             }
-            if (StringUtils.isNotEmpty(signatureParams.getThresholdPerc())) {
+            if (signatureParams.getThresholdPerc() != null) {
                 params.append("thresholdPerc", signatureParams.getThresholdPerc());
             }
-            if (StringUtils.isNotEmpty(signatureParams.getThresholdPval())) {
+            if (signatureParams.getThresholdPval() != null) {
                 params.append("thresholdPval", signatureParams.getThresholdPval());
             }
-            if (StringUtils.isNotEmpty(signatureParams.getMaxRareSigs())) {
+            if (signatureParams.getMaxRareSigs() != null) {
                 params.append("maxRareSigs", signatureParams.getMaxRareSigs());
             }
             if (params.size() > 0) {

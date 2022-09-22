@@ -119,6 +119,10 @@ public abstract class ParentClientRestApiWriter {
         validTypes.put("Object", "Object");
         validTypes.put("integer", "Integer");
         validTypes.put("int", "Integer");
+        validTypes.put("float", "Float");
+        validTypes.put("Float", "Float");
+        validTypes.put("double", "Double");
+        validTypes.put("Double", "Double");
         validTypes.put("map", "ObjectMap");
         validTypes.put("boolean", "Boolean");
         validTypes.put("enum", "String");
@@ -131,8 +135,8 @@ public abstract class ParentClientRestApiWriter {
         validTypes.put("java.lang.Integer", "Integer");
         validTypes.put("java.lang.Long", "Integer");
         validTypes.put("java.lang.Short", "Integer");
-        validTypes.put("java.lang.Double", "Integer");
-        validTypes.put("java.lang.Float", "Integer");
+        validTypes.put("java.lang.Double", "Double");
+        validTypes.put("java.lang.Float", "Float");
         validTypes.put("List", "String");
         validTypes.put("java.util.List", "String");
     }

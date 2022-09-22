@@ -962,12 +962,12 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_CATALOGUES_DESCRIPTION) @QueryParam("catalogues") String catalogues,
             @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_CATALOGUES_CONTENT_DESCRIPTION) @QueryParam("cataloguesContent") String cataloguesContent,
             @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION, defaultValue = "FitMS") @QueryParam("fitMethod") String fitMethod,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_N_BOOT_DESCRIPTION) @QueryParam("nBoot") String nBoot,
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_N_BOOT_DESCRIPTION) @QueryParam("nBoot") Integer nBoot,
             @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_SIG_VERSION_DESCRIPTION, defaultValue = "RefSigv2") @QueryParam("sigVersion") String sigVersion,
             @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_ORGAN_DESCRIPTION) @QueryParam("organ") String organ,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PERC_DESCRIPTION, defaultValue = "5") @QueryParam("thresholdPerc") String thresholdPerc,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PVAL_DESCRIPTION, defaultValue = "0.05") @QueryParam("thresholdPval") String thresholdPval,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION, defaultValue = "1") @QueryParam("maxRareSigs") String maxRareSigs
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PERC_DESCRIPTION, defaultValue = "5f") @QueryParam("thresholdPerc") Float thresholdPerc,
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PVAL_DESCRIPTION, defaultValue = "0.05f") @QueryParam("thresholdPval") Float thresholdPval,
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION, defaultValue = "1") @QueryParam("maxRareSigs") Integer maxRareSigs
     ) {
         File outDir = null;
         try {

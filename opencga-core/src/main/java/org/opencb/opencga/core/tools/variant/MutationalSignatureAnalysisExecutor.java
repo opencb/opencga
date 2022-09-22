@@ -43,12 +43,12 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
     // For fitting signature
     private String catalogues;
     private String fitMethod;
-    private int nBoot;
+    private Integer nBoot;
     private String sigVersion;
     private String organ;
-    private float thresholdPerc;
-    private float thresholdPval;
-    private int maxRareSigs;
+    private Float thresholdPerc;
+    private Float thresholdPval;
+    private Integer maxRareSigs;
 
     public MutationalSignatureAnalysisExecutor() {
     }
@@ -79,13 +79,32 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
         //double sum = sumFreqMap(map);
         try (PrintWriter pw = new PrintWriter(outputFile)) {
             pw.println(sample);
-            for (String firstKey : FIRST_LEVEL_KEYS) {
-                String[] secondLevelKeys = firstKey.startsWith("C") ? SECOND_LEVEL_KEYS_C : SECOND_LEVEL_KEYS_T;
-                for (String secondKey : secondLevelKeys) {
-                    pw.println(secondKey.substring(0, 1) + "[" + firstKey + "]" + secondKey.substring(2) + "\t"
-                            + map.get(firstKey).get(secondKey));
+
+            String[] bases = new String[]{"A", "C", "G", "T"};
+            for (String first : bases) {
+                for (String firstKey : FIRST_LEVEL_KEYS) {
+                    for (String last : bases) {
+                        String secondKey = first + (firstKey.startsWith("C") ? "C" : "T") + last;
+                        if (map.get(firstKey).containsKey(secondKey)) {
+                            pw.println(first + "[" + firstKey + "]" + last + "\t" + map.get(firstKey).get(secondKey));
+                        }
+                    }
                 }
             }
+//
+//
+//            for (String secondKey : SECOND_LEVEL_KEYS_C) {
+//                for (String firstKey : FIRST_LEVEL_KEYS) {
+//                    pw.println(secondKey.substring(0, 1) + "[" + firstKey + "]" + secondKey.substring(2) + "\t"
+//                            + map.get(firstKey).get(secondKey));
+//                }
+//            }
+//            for (String secondKey : SECOND_LEVEL_KEYS_T) {
+//                for (String firstKey : FIRST_LEVEL_KEYS) {
+//                    pw.println(secondKey.substring(0, 1) + "[" + firstKey + "]" + secondKey.substring(2) + "\t"
+//                            + map.get(firstKey).get(secondKey));
+//                }
+//            }
         } catch (Exception e) {
             throw new ToolException("Error writing output file: " + outputFile.getName(), e);
         }
@@ -180,6 +199,10 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
         return this;
     }
 
+    public String getFitMethod() {
+        return fitMethod;
+    }
+
     public String getQueryId() {
         return queryId;
     }
@@ -216,20 +239,16 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
         return this;
     }
 
-    public String getFitMethod() {
-        return fitMethod;
-    }
-
     public MutationalSignatureAnalysisExecutor setFitMethod(String fitMethod) {
         this.fitMethod = fitMethod;
         return this;
     }
 
-    public int getnBoot() {
+    public Integer getnBoot() {
         return nBoot;
     }
 
-    public MutationalSignatureAnalysisExecutor setnBoot(int nBoot) {
+    public MutationalSignatureAnalysisExecutor setnBoot(Integer nBoot) {
         this.nBoot = nBoot;
         return this;
     }
@@ -252,29 +271,29 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
         return this;
     }
 
-    public float getThresholdPerc() {
+    public Float getThresholdPerc() {
         return thresholdPerc;
     }
 
-    public MutationalSignatureAnalysisExecutor setThresholdPerc(float thresholdPerc) {
+    public MutationalSignatureAnalysisExecutor setThresholdPerc(Float thresholdPerc) {
         this.thresholdPerc = thresholdPerc;
         return this;
     }
 
-    public float getThresholdPval() {
+    public Float getThresholdPval() {
         return thresholdPval;
     }
 
-    public MutationalSignatureAnalysisExecutor setThresholdPval(float thresholdPval) {
+    public MutationalSignatureAnalysisExecutor setThresholdPval(Float thresholdPval) {
         this.thresholdPval = thresholdPval;
         return this;
     }
 
-    public int getMaxRareSigs() {
+    public Integer getMaxRareSigs() {
         return maxRareSigs;
     }
 
-    public MutationalSignatureAnalysisExecutor setMaxRareSigs(int maxRareSigs) {
+    public MutationalSignatureAnalysisExecutor setMaxRareSigs(Integer maxRareSigs) {
         this.maxRareSigs = maxRareSigs;
         return this;
     }
