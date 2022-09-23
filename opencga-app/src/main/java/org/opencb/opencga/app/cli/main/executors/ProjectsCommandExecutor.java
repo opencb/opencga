@@ -41,7 +41,7 @@ import org.opencb.opencga.core.models.study.Study;
 
 /**
  * This class contains methods for the Projects command line.
- *    OpenCGA version: 2.4.5-SNAPSHOT
+ *    OpenCGA version: 2.4.6-SNAPSHOT
  *    PATH: /{apiVersion}/projects
  */
 public class ProjectsCommandExecutor extends OpencgaCommandExecutor {

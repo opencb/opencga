@@ -124,7 +124,8 @@ public abstract class ParentClientRestApiWriter {
         validTypes.put("double", "Double");
         validTypes.put("Double", "Double");
         validTypes.put("map", "ObjectMap");
-        validTypes.put("boolean", "Boolean");
+        validTypes.put("boolean", "boolean");
+        validTypes.put("Boolean", "Boolean");
         validTypes.put("enum", "String");
         validTypes.put("long", "Long");
         validTypes.put("Long", "Long");
@@ -145,6 +146,13 @@ public abstract class ParentClientRestApiWriter {
         String type = parameter.getType();
         if (type.equals("Map")) {
             return parameter.getGenericType();
+        }
+        if (StringUtils.containsIgnoreCase(type, "boolean")) {
+            if (StringUtils.containsIgnoreCase(parameter.getTypeClass(), "java.lang")) {
+                return "Boolean";
+            } else {
+                return "boolean";
+            }
         }
         return validTypes.getOrDefault(type, type);
     }
@@ -176,7 +184,7 @@ public abstract class ParentClientRestApiWriter {
     public static String getCommandName(RestCategory restCategory, RestEndpoint restEndpoint) {
         return getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
     }
-    
+
     protected static String getMethodName(RestCategory restCategory, RestEndpoint restEndpoint) {
 
         String methodName = "";

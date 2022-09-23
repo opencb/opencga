@@ -50,7 +50,7 @@ import org.opencb.opencga.core.models.user.UserUpdateParams;
 
 /**
  * This class contains methods for the Users command line.
- *    OpenCGA version: 2.4.5-SNAPSHOT
+ *    OpenCGA version: 2.4.6-SNAPSHOT
  *    PATH: /{apiVersion}/users
  */
 public class UsersCommandExecutor extends ParentUsersCommandExecutor {

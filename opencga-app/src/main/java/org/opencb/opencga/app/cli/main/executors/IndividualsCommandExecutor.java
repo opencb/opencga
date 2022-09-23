@@ -54,7 +54,7 @@ import org.opencb.opencga.core.models.job.Job;
 
 /**
  * This class contains methods for the Individuals command line.
- *    OpenCGA version: 2.4.5-SNAPSHOT
+ *    OpenCGA version: 2.4.6-SNAPSHOT
  *    PATH: /{apiVersion}/individuals
  */
 public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
@@ -258,14 +258,14 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), IndividualCreateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.bodyId, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.bodyName, true);
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
              putNestedIfNotEmpty(beanParams, "father.id",commandOptions.fatherId, true);
              putNestedIfNotEmpty(beanParams, "father.uuid",commandOptions.fatherUuid, true);
              putNestedIfNotEmpty(beanParams, "mother.id",commandOptions.motherId, true);
              putNestedIfNotEmpty(beanParams, "mother.uuid",commandOptions.motherUuid, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.bodyCreationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.bodyModificationDate, true);
+             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
              putNestedIfNotEmpty(beanParams, "location.address",commandOptions.locationAddress, true);
              putNestedIfNotEmpty(beanParams, "location.postalCode",commandOptions.locationPostalCode, true);
              putNestedIfNotEmpty(beanParams, "location.city",commandOptions.locationCity, true);
@@ -281,13 +281,13 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotEmpty(beanParams, "ethnicity.description",commandOptions.ethnicityDescription, true);
              putNestedIfNotEmpty(beanParams, "ethnicity.source",commandOptions.ethnicitySource, true);
              putNestedIfNotEmpty(beanParams, "ethnicity.url",commandOptions.ethnicityUrl, true);
-             putNestedIfNotNull(beanParams, "parentalConsanguinity",commandOptions.bodyParentalConsanguinity, true);
+             putNestedIfNotNull(beanParams, "parentalConsanguinity",commandOptions.parentalConsanguinity, true);
              putNestedIfNotEmpty(beanParams, "population.name",commandOptions.populationName, true);
              putNestedIfNotEmpty(beanParams, "population.subpopulation",commandOptions.populationSubpopulation, true);
              putNestedIfNotEmpty(beanParams, "population.description",commandOptions.populationDescription, true);
-             putNestedIfNotEmpty(beanParams, "dateOfBirth",commandOptions.bodyDateOfBirth, true);
-             putNestedIfNotNull(beanParams, "karyotypicSex",commandOptions.bodyKaryotypicSex, true);
-             putNestedIfNotNull(beanParams, "lifeStatus",commandOptions.bodyLifeStatus, true);
+             putNestedIfNotEmpty(beanParams, "dateOfBirth",commandOptions.dateOfBirth, true);
+             putNestedIfNotNull(beanParams, "karyotypicSex",commandOptions.karyotypicSex, true);
+             putNestedIfNotNull(beanParams, "lifeStatus",commandOptions.lifeStatus, true);
              putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
              putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
              putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);

@@ -68,7 +68,7 @@ import org.opencb.opencga.core.models.variant.VariantFileQualityControl;
 
 /**
  * This class contains methods for the Files command line.
- *    OpenCGA version: 2.4.5-SNAPSHOT
+ *    OpenCGA version: 2.4.6-SNAPSHOT
  *    PATH: /{apiVersion}/files
  */
 public class FilesCommandExecutor extends ParentFilesCommandExecutor {

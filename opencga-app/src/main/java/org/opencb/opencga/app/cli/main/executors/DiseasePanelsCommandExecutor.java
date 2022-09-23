@@ -42,7 +42,7 @@ import org.opencb.opencga.core.models.panel.PanelUpdateParams;
 
 /**
  * This class contains methods for the Disease Panels command line.
- *    OpenCGA version: 2.4.5-SNAPSHOT
+ *    OpenCGA version: 2.4.6-SNAPSHOT
  *    PATH: /{apiVersion}/panels
  */
 public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {

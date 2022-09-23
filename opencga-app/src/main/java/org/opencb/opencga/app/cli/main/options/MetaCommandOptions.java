@@ -26,7 +26,7 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
 /**
  * This class contains methods for the Meta command line.
- *    OpenCGA version: 2.4.5-SNAPSHOT
+ *    OpenCGA version: 2.4.6-SNAPSHOT
  *    PATH: /{apiVersion}/meta
  */
 @Parameters(commandNames = {"meta"}, commandDescription = "Meta commands")

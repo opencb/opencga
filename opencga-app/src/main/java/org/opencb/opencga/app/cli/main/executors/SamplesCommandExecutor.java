@@ -53,7 +53,7 @@ import org.opencb.opencga.core.models.sample.SampleVariantQualityControlMetrics;
 
 /**
  * This class contains methods for the Samples command line.
- *    OpenCGA version: 2.4.5-SNAPSHOT
+ *    OpenCGA version: 2.4.6-SNAPSHOT
  *    PATH: /{apiVersion}/samples
  */
 public class SamplesCommandExecutor extends OpencgaCommandExecutor {

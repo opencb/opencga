@@ -49,7 +49,7 @@ import org.opencb.opencga.core.models.job.Job;
 
 /**
  * This class contains methods for the Cohorts command line.
- *    OpenCGA version: 2.4.5-SNAPSHOT
+ *    OpenCGA version: 2.4.6-SNAPSHOT
  *    PATH: /{apiVersion}/cohorts
  */
 public class CohortsCommandExecutor extends OpencgaCommandExecutor {
@@ -331,9 +331,9 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.bodyId, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.bodyName, true);
-             putNestedIfNotNull(beanParams, "type",commandOptions.bodyType, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.bodyDescription, true);
+             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+             putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
+             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
              putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.bodyCreationDate, true);
              putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.bodyModificationDate, true);
              putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);

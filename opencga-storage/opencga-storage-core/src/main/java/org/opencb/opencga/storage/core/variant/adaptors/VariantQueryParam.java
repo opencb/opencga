@@ -308,7 +308,7 @@ public final class VariantQueryParam implements QueryParam {
     public static final String ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR
             = "Clinical confirmed status";
     public static final VariantQueryParam ANNOT_CLINICAL_CONFIRMED_STATUS =
-            new VariantQueryParam("clinicalConfirmedStatus", TEXT_ARRAY, ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR);
+            new VariantQueryParam("clinicalConfirmedStatus", BOOLEAN, ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR);
 
     @Deprecated
     public static final String ANNOT_CLINVAR_DESCR

@@ -46,7 +46,7 @@ import org.opencb.opencga.core.models.job.Job;
 
 /**
  * This class contains methods for the Analysis - Alignment command line.
- *    OpenCGA version: 2.4.5-SNAPSHOT
+ *    OpenCGA version: 2.4.6-SNAPSHOT
  *    PATH: /{apiVersion}/analysis/alignment
  */
 public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {

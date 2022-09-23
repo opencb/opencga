@@ -28,7 +28,7 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
 /**
  * This class contains methods for the Users command line.
- *    OpenCGA version: 2.4.5-SNAPSHOT
+ *    OpenCGA version: 2.4.6-SNAPSHOT
  *    PATH: /{apiVersion}/users
  */
 @Parameters(commandNames = {"users"}, commandDescription = "Users commands")
@@ -241,8 +241,8 @@ public class UsersCommandOptions extends ParentUsersCommandOptions {
         @Parameter(names = {"--user", "-u"}, description = "User ID", required = true, arity = 1)
         public String user; 
     
-        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1)
-        public Boolean includeResult = false; 
+        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
+        public boolean includeResult = false; 
     
         @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
         public String name;

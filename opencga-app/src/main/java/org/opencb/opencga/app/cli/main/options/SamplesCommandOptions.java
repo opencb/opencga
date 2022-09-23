@@ -26,7 +26,7 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
 /**
  * This class contains methods for the Samples command line.
- *    OpenCGA version: 2.4.5-SNAPSHOT
+ *    OpenCGA version: 2.4.6-SNAPSHOT
  *    PATH: /{apiVersion}/samples
  */
 @Parameters(commandNames = {"samples"}, commandDescription = "Samples commands")
@@ -154,8 +154,8 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", required = false, arity = 1)
         public String annotation; 
     
-        @Parameter(names = {"--default"}, description = "Calculate default stats", required = false, arity = 1)
-        public Boolean default_values = false; 
+        @Parameter(names = {"--default"}, description = "Calculate default stats", required = false, help = true, arity = 0)
+        public boolean default_values = false; 
     
         @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1", required = false, arity = 1)
         public String field; 
@@ -183,8 +183,8 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--path"}, description = "Path where the TSV file is located in OpenCGA or where it should be located.", required = true, arity = 1)
         public String path; 
     
-        @Parameter(names = {"--parents"}, description = "Flag indicating whether to create parent directories if they don't exist (only when TSV file was not previously associated).", required = false, arity = 1)
-        public Boolean parents; 
+        @Parameter(names = {"--parents"}, description = "Flag indicating whether to create parent directories if they don't exist (only when TSV file was not previously associated).", required = false, help = true, arity = 0)
+        public boolean parents = false; 
     
         @Parameter(names = {"--annotation-set-id"}, description = "Annotation set id. If not provided, variableSetId will be used.", required = false, arity = 1)
         public String annotationSetId; 
@@ -215,8 +215,8 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1)
-        public Boolean includeResult = false; 
+        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
+        public boolean includeResult = false; 
     
         @Parameter(names = {"--id"}, description = "The body web service id parameter", required = true, arity = 1)
         public String id;
@@ -367,8 +367,8 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--snapshot"}, description = "Snapshot value (Latest version of the entry in the specified release)", required = false, arity = 1)
         public Integer snapshot; 
     
-        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, arity = 1)
-        public Boolean deleted = false; 
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
     
         @Parameter(names = {"--stats-id"}, description = "Sample variant stats Id. If this field is not provided and the user filters by other stats fields, it will automatically be set to ALL", required = false, arity = 1)
         public String statsId; 
@@ -449,14 +449,14 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
         public Integer skip; 
     
-        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, arity = 1)
-        public Boolean count = false; 
+        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
+        public boolean count = false; 
     
-        @Parameter(names = {"--include-individual"}, description = "Include Individual object as an attribute", required = false, arity = 1)
-        public Boolean includeIndividual = false; 
+        @Parameter(names = {"--include-individual"}, description = "Include Individual object as an attribute", required = false, help = true, arity = 0)
+        public boolean includeIndividual = false; 
     
-        @Parameter(names = {"--flatten-annotations"}, description = "Flatten the annotations?", required = false, arity = 1)
-        public Boolean flattenAnnotations = false; 
+        @Parameter(names = {"--flatten-annotations"}, description = "Flatten the annotations?", required = false, help = true, arity = 0)
+        public boolean flattenAnnotations = false; 
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
@@ -530,8 +530,8 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--snapshot"}, description = "Snapshot value (Latest version of the entry in the specified release)", required = false, arity = 1)
         public Integer snapshot; 
     
-        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, arity = 1)
-        public Boolean deleted = false; 
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
     
         @Parameter(names = {"--stats-id"}, description = "Sample variant stats Id. If this field is not provided and the user filters by other stats fields, it will automatically be set to ALL", required = false, arity = 1)
         public String statsId; 
@@ -589,8 +589,8 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--member"}, description = "User or group id", required = false, arity = 1)
         public String member; 
     
-        @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, arity = 1)
-        public Boolean silent = false; 
+        @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, help = true, arity = 0)
+        public boolean silent = false; 
     
     }
 
@@ -600,14 +600,14 @@ public class SamplesCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--force"}, description = "Force the deletion of samples even if they are associated to files, individuals or cohorts.", required = false, arity = 1)
-        public Boolean force = false; 
+        @Parameter(names = {"--force"}, description = "Force the deletion of samples even if they are associated to files, individuals or cohorts.", required = false, help = true, arity = 0)
+        public boolean force = false; 
     
         @Parameter(names = {"--empty-files-action"}, description = "Action to be performed over files that were associated only to the sample to be deleted. Possible actions are NONE, TRASH, DELETE", required = false, arity = 1)
         public String emptyFilesAction = "NONE"; 
     
-        @Parameter(names = {"--delete-empty-cohorts"}, description = "Boolean indicating if the cohorts associated only to the sample to be deleted should be also deleted.", required = false, arity = 1)
-        public Boolean deleteEmptyCohorts = false; 
+        @Parameter(names = {"--delete-empty-cohorts"}, description = "Boolean indicating if the cohorts associated only to the sample to be deleted should be also deleted.", required = false, help = true, arity = 0)
+        public boolean deleteEmptyCohorts = false; 
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
@@ -629,11 +629,11 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
         public String exclude; 
     
-        @Parameter(names = {"--include-individual"}, description = "Include Individual object as an attribute", required = false, arity = 1)
-        public Boolean includeIndividual = false; 
+        @Parameter(names = {"--include-individual"}, description = "Include Individual object as an attribute", required = false, help = true, arity = 0)
+        public boolean includeIndividual = false; 
     
-        @Parameter(names = {"--flatten-annotations"}, description = "Flatten the annotations?", required = false, arity = 1)
-        public Boolean flattenAnnotations = false; 
+        @Parameter(names = {"--flatten-annotations"}, description = "Flatten the annotations?", required = false, help = true, arity = 0)
+        public boolean flattenAnnotations = false; 
     
         @Parameter(names = {"--samples"}, description = "Comma separated list sample IDs or UUIDs up to a maximum of 100", required = true, arity = 1)
         public String samples; 
@@ -644,8 +644,8 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--version"}, description = "Comma separated list of sample versions. 'all' to get all the sample versions. Not supported if multiple sample ids are provided", required = false, arity = 1)
         public String version; 
     
-        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, arity = 1)
-        public Boolean deleted = false; 
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
     
     }
 
@@ -673,8 +673,8 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1)
-        public Boolean includeResult = false; 
+        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
+        public boolean includeResult = false; 
     
         @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String id;

@@ -232,13 +232,13 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         Bson bsonQuery = parseQuery(query);
 
         versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
-            DataResult update = individualCollection.update(clientSession, bsonQuery, bsonUpdate,
-                    new QueryOptions(MongoDBCollection.MULTI, true));
-            if (update.getNumMatches() == 0) {
-                throw new CatalogDBException("Could not update family references in individuals");
-            }
-            return null;
-        }, Collections.singletonList(QueryParams.SAMPLES_IDS.key()), this::iterator,
+                    DataResult update = individualCollection.update(clientSession, bsonQuery, bsonUpdate,
+                            new QueryOptions(MongoDBCollection.MULTI, true));
+                    if (update.getNumMatches() == 0) {
+                        throw new CatalogDBException("Could not update family references in individuals");
+                    }
+                    return null;
+                }, Collections.singletonList(QueryParams.SAMPLES_IDS.key()), this::iterator,
                 (DBIterator<Individual> iterator) -> updateReferencesAfterIndividualVersionIncrement(clientSession, studyUid, iterator));
     }
 
@@ -1237,13 +1237,13 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     }
 
     @Override
-    public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
+    public OpenCGAResult distinct(long studyUid, String field, Query query, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query finalQuery = query != null ? new Query(query) : new Query();
         finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
         Bson bson = parseQuery(finalQuery, userId);
 
-        return new OpenCGAResult<>(individualCollection.distinct(field, bson, clazz));
+        return new OpenCGAResult<>(individualCollection.distinct(field, bson));
     }
 
     @Override
@@ -1670,16 +1670,16 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         Bson bsonQuery = parseQuery(query);
         versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
-            QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+                    QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
 
-            logger.debug("Sample references extraction. Query: {}, update: {}",
-                    bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-            DataResult updateResult = individualCollection.update(clientSession, bsonQuery, update, multi);
-            logger.debug("Sample uid '" + sampleUid + "' references removed from " + updateResult.getNumUpdated() + " out of "
-                    + updateResult.getNumMatches() + " individuals");
-            return null;
-        }, Collections.singletonList(QueryParams.SAMPLES_IDS.key()), this::iterator,
+                    logger.debug("Sample references extraction. Query: {}, update: {}",
+                            bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                            update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                    DataResult updateResult = individualCollection.update(clientSession, bsonQuery, update, multi);
+                    logger.debug("Sample uid '" + sampleUid + "' references removed from " + updateResult.getNumUpdated() + " out of "
+                            + updateResult.getNumMatches() + " individuals");
+                    return null;
+                }, Collections.singletonList(QueryParams.SAMPLES_IDS.key()), this::iterator,
                 (DBIterator<Individual> iterator) -> updateReferencesAfterIndividualVersionIncrement(clientSession, studyUid, iterator));
     }
 

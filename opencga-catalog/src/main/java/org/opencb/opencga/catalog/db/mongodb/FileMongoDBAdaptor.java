@@ -73,13 +73,11 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
  */
 public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implements FileDBAdaptor {
 
+    public static final String REVERSE_NAME = "_reverse";
+    public static final String PRIVATE_SAMPLES = "_samples";
     private final MongoDBCollection fileCollection;
     private final MongoDBCollection deletedFileCollection;
     private FileConverter fileConverter;
-
-    public static final String REVERSE_NAME = "_reverse";
-    public static final String PRIVATE_SAMPLES = "_samples";
-
     private int fileSampleLinkThreshold = 5000;
 
     /***
@@ -1179,13 +1177,13 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
-    public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
+    public OpenCGAResult distinct(long studyUid, String field, Query query, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query finalQuery = query != null ? new Query(query) : new Query();
         finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
         Bson bson = parseQuery(finalQuery, userId);
 
-        return new OpenCGAResult<>(fileCollection.distinct(field, bson, clazz));
+        return new OpenCGAResult<>(fileCollection.distinct(field, bson));
     }
 
     @Override

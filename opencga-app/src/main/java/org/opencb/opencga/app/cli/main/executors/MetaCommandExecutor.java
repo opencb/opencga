@@ -35,7 +35,7 @@ import java.util.Map;
 
 /**
  * This class contains methods for the Meta command line.
- *    OpenCGA version: 2.4.5-SNAPSHOT
+ *    OpenCGA version: 2.4.6-SNAPSHOT
  *    PATH: /{apiVersion}/meta
  */
 public class MetaCommandExecutor extends OpencgaCommandExecutor {
