@@ -232,7 +232,8 @@ public class PanelWSServer extends OpenCGAWSServer {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
-            return createOkResponse(panelManager.distinct(studyStr, field, query, token));
+            List<String> fields = split(field, "field", true);
+            return createOkResponse(panelManager.distinct(studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

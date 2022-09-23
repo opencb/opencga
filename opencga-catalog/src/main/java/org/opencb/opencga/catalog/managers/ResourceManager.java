@@ -22,7 +22,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
@@ -32,6 +31,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -215,7 +215,21 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @return The list of distinct values.
      * @throws CatalogException CatalogException.
      */
-    public abstract OpenCGAResult<?> distinct(String studyId, String field, Query query, String token) throws CatalogException;
+    public OpenCGAResult<?> distinct(String studyId, String field, Query query, String token) throws CatalogException {
+        return distinct(studyId, Collections.singletonList(field), query, token);
+    }
+
+    /**
+     * Fetch a list containing all the distinct values of the key {@code field}.
+     *
+     * @param studyId study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param fields Fields for which to return distinct values.
+     * @param query Query object.
+     * @param token Token of the user logged in.
+     * @return The list of distinct values.
+     * @throws CatalogException CatalogException.
+     */
+    public abstract OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token) throws CatalogException;
 
     /**
      * Count matching entries in catalog.

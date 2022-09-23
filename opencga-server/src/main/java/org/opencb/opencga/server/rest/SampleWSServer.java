@@ -42,10 +42,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by jacobo on 15/12/14.
@@ -250,7 +247,8 @@ public class SampleWSServer extends OpenCGAWSServer {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
-            return createOkResponse(sampleManager.distinct(studyStr, field, query, token));
+            List<String> fields = split(field, "field", true);
+            return createOkResponse(sampleManager.distinct(studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
