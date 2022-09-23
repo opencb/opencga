@@ -81,35 +81,9 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
         //double sum = sumFreqMap(map);
         try (PrintWriter pw = new PrintWriter(outputFile)) {
             pw.println(sample);
-//            for (String firstKey : FIRST_LEVEL_KEYS) {
-//                String[] secondLevelKeys = firstKey.startsWith("C") ? SECOND_LEVEL_KEYS_C : SECOND_LEVEL_KEYS_T;
-//                for (String secondKey : secondLevelKeys) {
-//                    pw.println(secondKey.substring(0, 1) + "[" + firstKey + "]" + secondKey.substring(2) + "\t"
-//                            + map.get(firstKey).get(secondKey));
-//                }
-//            }
-//
-//            String[] bases = new String[]{"A", "C", "G", "T"};
-//            for (String first : bases) {
-//                for (String firstKey : FIRST_LEVEL_KEYS) {
-//                    for (String last : bases) {
-//                        String secondKey = first + (firstKey.startsWith("C") ? "C" : "T") + last;
-//                        if (map.get(firstKey).containsKey(secondKey)) {
-//                            pw.println(first + "[" + firstKey + "]" + last + "\t" + map.get(firstKey).get(secondKey));
-//                        }
-//                    }
-//                }
-//            }
-//
-//
-            for (String secondKey : SECOND_LEVEL_KEYS_C) {
-                for (String firstKey : FIRST_LEVEL_KEYS) {
-                    pw.println(secondKey.substring(0, 1) + "[" + firstKey + "]" + secondKey.substring(2) + "\t"
-                            + map.get(firstKey).get(secondKey));
-                }
-            }
-            for (String secondKey : SECOND_LEVEL_KEYS_T) {
-                for (String firstKey : FIRST_LEVEL_KEYS) {
+            for (String firstKey : FIRST_LEVEL_KEYS) {
+                String[] secondLevelKeys = firstKey.startsWith("C") ? SECOND_LEVEL_KEYS_C : SECOND_LEVEL_KEYS_T;
+                for (String secondKey : secondLevelKeys) {
                     pw.println(secondKey.substring(0, 1) + "[" + firstKey + "]" + secondKey.substring(2) + "\t"
                             + map.get(firstKey).get(secondKey));
                 }

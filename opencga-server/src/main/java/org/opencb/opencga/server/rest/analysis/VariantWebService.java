@@ -968,8 +968,8 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PERC_DESCRIPTION, defaultValue = "5f") @QueryParam("thresholdPerc") Float thresholdPerc,
             @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PVAL_DESCRIPTION, defaultValue = "0.05f") @QueryParam("thresholdPval") Float thresholdPval,
             @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION, defaultValue = "1") @QueryParam("maxRareSigs") Integer maxRareSigs,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_SIGNATURES_FILE_DESCRIPTION, defaultValue = "1") @QueryParam("signaturesFile") String signaturesFile,
-                    @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_RARE_SIGNATURES_FILE_DESCRIPTION, defaultValue = "1") @QueryParam("rareSignaturesFile") String rareSignaturesFile
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_SIGNATURES_FILE_DESCRIPTION) @QueryParam("signaturesFile") String signaturesFile,
+                    @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_RARE_SIGNATURES_FILE_DESCRIPTION) @QueryParam("rareSignaturesFile") String rareSignaturesFile
     ) {
         File outDir = null;
         try {

@@ -286,16 +286,16 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         if (StringUtils.isNotEmpty(getOrgan())) {
             scriptParams.append(" --organ=").append(getOrgan());
         }
-        if (getThresholdPerc() > 0.0f) {
+        if (getThresholdPerc() != null) {
             scriptParams.append(" --thresholdperc=").append(getThresholdPerc());
         }
-        if (getThresholdPval() > 0.0f) {
+        if (getThresholdPval() != null) {
             scriptParams.append(" --thresholdpval=").append(getThresholdPval());
         }
-        if (getMaxRareSigs() > 0) {
+        if (getMaxRareSigs() != null) {
             scriptParams.append(" --maxraresigs=").append(getMaxRareSigs());
         }
-        if (getnBoot() > 0) {
+        if (getnBoot() != null) {
             scriptParams.append(" -b --nboot=").append(getnBoot());
         }
         if (StringUtils.isNotEmpty(getSignaturesFile()) && new File(getSignaturesFile()).exists()) {

@@ -1575,67 +1575,65 @@ public class VariantCommandOptions {
 
         // Variant stats
 
-        @Parameter(names = {"--vsi", "--variant-stats-id"}, description = "Variant stats ID.")
+        @Parameter(names = {"--vsi", "--vs-id"}, description = FieldConstants.VARIANT_STATS_ID_DESCRIPTION)
         public String variantStatsId;
 
-        @Parameter(names = {"--vsd", "--variant-stats-description"}, description = "Variant stats description.")
+        @Parameter(names = {"--vsd", "--vs-description"}, description = FieldConstants.VARIANT_STATS_DESCRIPTION_DESCRIPTION)
         public String variantStatsDecription;
 
-        @DynamicParameter(names = {"--vsq", "--variant-stats-query"}, description = "Variant stats query, e.g.:. --vsq gene=\"BRCA2\""
-                + " --vsq ct=\"missense_variant\"")
+        @DynamicParameter(names = {"--vsq", "--vs-query"}, description = FieldConstants.VARIANT_STATS_QUERY_DESCRIPTION)
         public Map<String, String> variantStatsQuery = new HashMap<>();
 
         // Mutational signature
 
-        @Parameter(names = {"--signature-id"}, description = FieldConstants.MUTATIONAL_SIGNATURE_ID_DESCRIPTION)
+        @Parameter(names = {"--ms-id"}, description = FieldConstants.MUTATIONAL_SIGNATURE_ID_DESCRIPTION)
         public String signatureId;
 
-        @Parameter(names = {"--signature-description"}, description = FieldConstants.MUTATIONAL_SIGNATURE_DESCRIPTION_DESCRIPTION)
+        @Parameter(names = {"--ms-description"}, description = FieldConstants.MUTATIONAL_SIGNATURE_DESCRIPTION_DESCRIPTION)
         public String signatureDescription;
 
-        @Parameter(names = {"--signature-query"}, description = FieldConstants.MUTATIONAL_SIGNATURE_QUERY_DESCRIPTION)
+        @Parameter(names = {"--ms-query"}, description = FieldConstants.MUTATIONAL_SIGNATURE_QUERY_DESCRIPTION)
         public String signatureQuery;
 
-        @Parameter(names = {"--signature-fit-method"}, description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION)
+        @Parameter(names = {"--ms-fit-method"}, description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION)
         public String signatureFitMethod = "FitMS";
 
-        @Parameter(names = {"--signature-n-boot"}, description = FieldConstants.MUTATIONAL_SIGNATURE_N_BOOT_DESCRIPTION)
+        @Parameter(names = {"--ms-n-boot"}, description = FieldConstants.MUTATIONAL_SIGNATURE_N_BOOT_DESCRIPTION)
         public Integer signatureNBoot;
 
-        @Parameter(names = {"--signature-sig-version"}, description = FieldConstants.MUTATIONAL_SIGNATURE_SIG_VERSION_DESCRIPTION)
+        @Parameter(names = {"--ms-sig-version"}, description = FieldConstants.MUTATIONAL_SIGNATURE_SIG_VERSION_DESCRIPTION)
         public String signatureSigVersion = "RefSigv2";
 
-        @Parameter(names = {"--signature-organ"}, description = FieldConstants.MUTATIONAL_SIGNATURE_ORGAN_DESCRIPTION)
+        @Parameter(names = {"--ms-organ"}, description = FieldConstants.MUTATIONAL_SIGNATURE_ORGAN_DESCRIPTION)
         public String signatureOrgan;
 
-        @Parameter(names = {"--signature-threshold-perc"}, description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PERC_DESCRIPTION)
+        @Parameter(names = {"--ms-threshold-perc"}, description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PERC_DESCRIPTION)
         public Float signatureThresholdPerc = 5f;
 
-        @Parameter(names = {"--signature-threshold-pval"}, description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PVAL_DESCRIPTION)
+        @Parameter(names = {"--ms-threshold-pval"}, description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PVAL_DESCRIPTION)
         public Float signatureThresholdPval = 0.05f;
 
-        @Parameter(names = {"--signature-max-rare-sigs"}, description = FieldConstants.MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION)
+        @Parameter(names = {"--ms-max-rare-sigs"}, description = FieldConstants.MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION)
         public Integer signatureMaxRareSigs = 1;
 
-        @Parameter(names = {"--signature-signatures-file"}, description = FieldConstants.MUTATIONAL_SIGNATURE_SIGNATURES_FILE_DESCRIPTION)
+        @Parameter(names = {"--ms-signatures-file"}, description = FieldConstants.MUTATIONAL_SIGNATURE_SIGNATURES_FILE_DESCRIPTION)
         public String signatureSignaturesFile;
 
-        @Parameter(names = {"--signature-rare-signatures-file"}, description = FieldConstants.MUTATIONAL_SIGNATURE_RARE_SIGNATURES_FILE_DESCRIPTION)
+        @Parameter(names = {"--ms-rare-signatures-file"}, description = FieldConstants.MUTATIONAL_SIGNATURE_RARE_SIGNATURES_FILE_DESCRIPTION)
         public String signatureRareSignaturesFile;
 
         // Genome plot
 
-        @Parameter(names = {"--gpi", "--genome-plot-id"}, description = "Genome plot ID (genome plot is calculated for somatic samples"
-                + " only).")
+        @Parameter(names = {"--gpi", "--gp-id"}, description = FieldConstants.GENOME_PLOT_ID_DESCRIPTION)
         public String genomePlotId;
 
-        @Parameter(names = {"--gpd", "--genome-plot-description"}, description = "Genome plot description.")
+        @Parameter(names = {"--gpd", "--gp-description"}, description = FieldConstants.GENOME_PLOT_DESCRIPTION_DESCRIPTION)
         public String genomePlotDescr;
 
-        @Parameter(names = {"--gpcf", "--genome-plot-config-file"}, description = "Genome plot configuration file in JSON format.")
+        @Parameter(names = {"--gpcf", "--gp-config-file"}, description = FieldConstants.GENOME_PLOT_CONFIGURATION_FILE_DESCRIPTION)
         public String genomePlotConfigFile;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        @Parameter(names = {"-o", "--outdir"}, description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
         public String outdir;
     }
 

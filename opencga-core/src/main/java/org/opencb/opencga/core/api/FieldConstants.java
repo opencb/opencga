@@ -392,10 +392,11 @@ public class FieldConstants {
     public static final String USER_FILTER_QUERY_OPTIONS = "User filter query options";
 
 
-    // Mutational signature run
+    // Mutational signature (sample-qc-run, mutationsl-signature-run, mutational-signature-query)
     public static final String MUTATIONAL_SIGNATURE_ID_DESCRIPTION = "Signature ID.";
     public static final String MUTATIONAL_SIGNATURE_DESCRIPTION_DESCRIPTION = "Signature description.";
-    public static final String MUTATIONAL_SIGNATURE_QUERY_DESCRIPTION = "Signature query in JSON format.";
+    public static final String MUTATIONAL_SIGNATURE_QUERY_DESCRIPTION = "Signature query in JSON format, e.g: \"\"{\\\"sample\\\":"
+            + "\\\"NR123456_T\\\", \\\"fileData\\\": \\\"NR.123456_T_vs_NR.1234567_G.annot.vcf.gz:FILTER=PASS;CLPM<=0;ASMD>=140\\\"}\".";
     public static final String MUTATIONAL_SIGNATURE_CATALOGUES_DESCRIPTION = "File name containing mutational catalogues. Each sample"
             + " catalogue is in a column, with sample names as column headers and channel.";
     public static final String MUTATIONAL_SIGNATURE_CATALOGUES_CONTENT_DESCRIPTION = "Mutational catalogues. Each sample catalogue is in a"
@@ -423,4 +424,14 @@ public class FieldConstants {
             + " Each signature is in a column, with signature names as column hearders and channel names as row names in the first column"
             + " with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures"
             + " are considered rare signatures.";
+
+    // Genome plot (sample-qc-run)
+    public static final String GENOME_PLOT_ID_DESCRIPTION = "Genome plot ID.";
+    public static final String GENOME_PLOT_DESCRIPTION_DESCRIPTION = "Genome plot description.";
+    public static final String GENOME_PLOT_CONFIGURATION_FILE_DESCRIPTION = "Genome plot configuration file.";
+
+    // Varaint stats (sample-qc-run)
+    public static final String VARIANT_STATS_ID_DESCRIPTION = "Variant stats ID.";
+    public static final String VARIANT_STATS_DESCRIPTION_DESCRIPTION = "Variant stats description.";
+    public static final String VARIANT_STATS_QUERY_DESCRIPTION = "Variant stats query in JSON format.";
 }

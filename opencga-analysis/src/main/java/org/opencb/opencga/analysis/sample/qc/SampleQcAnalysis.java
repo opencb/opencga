@@ -17,7 +17,6 @@
 package org.opencb.opencga.analysis.sample.qc;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.commons.datastore.core.Event;
@@ -97,31 +96,31 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
         // Check variant stats
         final String OPENCGA_ALL = "ALL";
-        if (OPENCGA_ALL.equals(analysisParams.getVariantStatsId())) {
+        if (OPENCGA_ALL.equals(analysisParams.getVsId())) {
             throw new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
                     + " variant stats ID");
         }
 
-        if (StringUtils.isEmpty(analysisParams.getVariantStatsId()) && analysisParams.getVariantStatsQuery() != null
-                && !analysisParams.getVariantStatsQuery().toParams().isEmpty()) {
+        if (StringUtils.isEmpty(analysisParams.getVsId()) && analysisParams.getVsQuery() != null
+                && !analysisParams.getVsQuery().toParams().isEmpty()) {
             throw new ToolException("Invalid parameters: if variant stats ID is empty, variant stats query must be empty");
         }
-        if (StringUtils.isNotEmpty(analysisParams.getVariantStatsId())
-                && (analysisParams.getVariantStatsQuery() == null || analysisParams.getVariantStatsQuery().toParams().isEmpty())) {
+        if (StringUtils.isNotEmpty(analysisParams.getVsId())
+                && (analysisParams.getVsQuery() == null || analysisParams.getVsQuery().toParams().isEmpty())) {
             throw new ToolException("Invalid parameters: if you provide a variant stats ID, variant stats query can not be empty");
         }
-        if (StringUtils.isEmpty(analysisParams.getVariantStatsId())) {
-            analysisParams.setVariantStatsId(OPENCGA_ALL);
+        if (StringUtils.isEmpty(analysisParams.getVsId())) {
+            analysisParams.setVsId(OPENCGA_ALL);
         }
 
         if (sample.getQualityControl() != null && sample.getQualityControl().getVariant() != null) {
             if (CollectionUtils.isNotEmpty(sample.getQualityControl().getVariant().getVariantStats())
-                    && OPENCGA_ALL.equals(analysisParams.getVariantStatsId())) {
+                    && OPENCGA_ALL.equals(analysisParams.getVsId())) {
                 runVariantStats = false;
             } else {
                 for (SampleQcVariantStats variantStats : sample.getQualityControl().getVariant().getVariantStats()) {
-                    if (variantStats.getId().equals(analysisParams.getVariantStatsId())) {
-                        throw new ToolException("Invalid parameters: variant stats ID '" + analysisParams.getVariantStatsId()
+                    if (variantStats.getId().equals(analysisParams.getVsId())) {
+                        throw new ToolException("Invalid parameters: variant stats ID '" + analysisParams.getVsId()
                                 + "' is already used");
                     }
                 }
@@ -129,7 +128,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Check mutational signature
-        if (StringUtils.isEmpty(analysisParams.getSignatureQuery())) {
+        if (StringUtils.isEmpty(analysisParams.getMsQuery())) {
             runSignature = false;
         }
 
@@ -139,14 +138,14 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Check genome plot
-        if (StringUtils.isEmpty(analysisParams.getGenomePlotConfigFile())) {
+        if (StringUtils.isEmpty(analysisParams.getGpConfigFile())) {
             runGenomePlot = false;
         } else {
             if (runGenomePlot && !sample.isSomatic()) {
                 addWarning("Skipping genome plot: sample '" + sample.getId() + "' is not somatic.");
                 runGenomePlot = false;
             } else {
-                File genomePlotConfFile = AnalysisUtils.getCatalogFile(analysisParams.getGenomePlotConfigFile(), getStudy(),
+                File genomePlotConfFile = AnalysisUtils.getCatalogFile(analysisParams.getGpConfigFile(), getStudy(),
                         catalogManager.getFileManager(), getToken());
                 genomePlotConfigPath = Paths.get(genomePlotConfFile.getUri().getPath());
                 if (!genomePlotConfigPath.toFile().exists()) {
@@ -169,8 +168,8 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
                 if (runVariantStats) {
                     // Run variant stats
                     params = new SampleVariantStatsAnalysisParams(Collections.singletonList(analysisParams.getSample()), null, null, true,
-                            false, analysisParams.getVariantStatsId(), analysisParams.getVariantStatsDescription(), null,
-                            analysisParams.getVariantStatsQuery())
+                            false, analysisParams.getVsId(), analysisParams.getVsDescription(), null,
+                            analysisParams.getVsQuery())
                             .toParams(new ObjectMap(ParamConstants.STUDY_PARAM, getStudy()));
 
                     variantStatsJobResult = catalogManager.getJobManager()
@@ -184,23 +183,23 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
                     // Run mutational signature
 
                     // Be sure to update sample quality control
-                    ObjectMap query = JacksonUtils.getDefaultObjectMapper().readValue(analysisParams.getSignatureQuery(), ObjectMap.class);
+                    ObjectMap query = JacksonUtils.getDefaultObjectMapper().readValue(analysisParams.getMsQuery(), ObjectMap.class);
                     query.append(MutationalSignatureAnalysis.QC_UPDATE_KEYNAME, true);
                     String queryString = query.toJson();
 
                     params = new MutationalSignatureAnalysisParams()
-                            .setId(analysisParams.getSignatureId())
-                            .setDescription(analysisParams.getSignatureDescription())
+                            .setId(analysisParams.getMsId())
+                            .setDescription(analysisParams.getMsDescription())
                             .setQuery(queryString)
-                            .setFitMethod(analysisParams.getSignatureFitMethod())
-                            .setSigVersion(analysisParams.getSignatureSigVersion())
-                            .setOrgan(analysisParams.getSignatureOrgan())
-                            .setnBoot(analysisParams.getSignatureNBoot())
-                            .setThresholdPerc(analysisParams.getSignatureThresholdPerc())
-                            .setThresholdPval(analysisParams.getSignatureThresholdPval())
-                            .setMaxRareSigs(analysisParams.getSignatureMaxRareSigs())
-                            .setSignaturesFile(analysisParams.getSignatureSignaturesFile())
-                            .setRareSignaturesFile(analysisParams.getSignatureRareSignaturesFile())
+                            .setFitMethod(analysisParams.getMsFitMethod())
+                            .setSigVersion(analysisParams.getMsSigVersion())
+                            .setOrgan(analysisParams.getMsOrgan())
+                            .setnBoot(analysisParams.getMsNBoot())
+                            .setThresholdPerc(analysisParams.getMsThresholdPerc())
+                            .setThresholdPval(analysisParams.getMsThresholdPval())
+                            .setMaxRareSigs(analysisParams.getMsMaxRareSigs())
+                            .setSignaturesFile(analysisParams.getMsSignaturesFile())
+                            .setRareSignaturesFile(analysisParams.getMsRareSignaturesFile())
                             .toParams(new ObjectMap(ParamConstants.STUDY_PARAM, getStudy()));
 
                     signatureJobResult = catalogManager.getJobManager()
@@ -212,8 +211,8 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
                 if (runGenomePlot) {
                     // Run genome plot
-                    params = new GenomePlotAnalysisParams(analysisParams.getSample(), analysisParams.getGenomePlotId(),
-                            analysisParams.getGenomePlotDescription(), analysisParams.getGenomePlotConfigFile(), null)
+                    params = new GenomePlotAnalysisParams(analysisParams.getSample(), analysisParams.getGpId(),
+                            analysisParams.getGpDescription(), analysisParams.getGpConfigFile(), null)
                             .toParams(new ObjectMap(ParamConstants.STUDY_PARAM, getStudy()));
 
                     genomePlotJobResult = catalogManager.getJobManager()
