@@ -236,7 +236,7 @@ public class JobWSServer extends OpenCGAWSServer {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
-            List<String> fields = split(field, "field", true);
+            List<String> fields = split(field, ParamConstants.DISTINCT_FIELD_PARAM, true);
             return createOkResponse(jobManager.distinct(studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
