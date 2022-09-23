@@ -94,20 +94,30 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
             throw new ToolException("Sample '" + analysisParams.getSample() + "' not found.");
         }
 
+        String msg;
+        
         // Check variant stats
         final String OPENCGA_ALL = "ALL";
         if (OPENCGA_ALL.equals(analysisParams.getVsId())) {
-            throw new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
-                    + " variant stats ID");
+            msg = "Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a variant stats ID";
+            addWarning(msg);
+            logger.warn(msg);
+            runVariantStats = false;
         }
 
         if (StringUtils.isEmpty(analysisParams.getVsId()) && analysisParams.getVsQuery() != null
                 && !analysisParams.getVsQuery().toParams().isEmpty()) {
-            throw new ToolException("Invalid parameters: if variant stats ID is empty, variant stats query must be empty");
+            msg = "Invalid parameters: if variant stats ID is empty, variant stats query must be empty";
+            addWarning(msg);
+            logger.warn(msg);
+            runVariantStats = false;
         }
         if (StringUtils.isNotEmpty(analysisParams.getVsId())
                 && (analysisParams.getVsQuery() == null || analysisParams.getVsQuery().toParams().isEmpty())) {
-            throw new ToolException("Invalid parameters: if you provide a variant stats ID, variant stats query can not be empty");
+            msg = "Invalid parameters: if you provide a variant stats ID, variant stats query can not be empty";
+            addWarning(msg);
+            logger.warn(msg);
+            runVariantStats = false;
         }
         if (StringUtils.isEmpty(analysisParams.getVsId())) {
             analysisParams.setVsId(OPENCGA_ALL);
@@ -123,8 +133,10 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
                 } else {
                     for (SampleQcVariantStats variantStats : sample.getQualityControl().getVariant().getVariantStats()) {
                         if (variantStats.getId().equals(analysisParams.getVsId())) {
-                            throw new ToolException("Invalid parameters: variant stats ID '" + analysisParams.getVsId()
-                                    + "' is already used");
+                            msg = "Invalid parameters: variant stats ID '" + analysisParams.getVsId() + "' is already used";
+                            addWarning(msg);
+                            logger.warn(msg);
+                            runVariantStats = false;
                         }
                     }
                 }
@@ -137,7 +149,9 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
         }
 
         if (runSignature && !sample.isSomatic()) {
-            addWarning("Skipping mutational signature: sample '" + sample.getId() + "' is not somatic.");
+            msg = "Skipping mutational signature: sample '" + sample.getId() + "' is not somatic.";
+            addWarning(msg);
+            logger.warn(msg);
             runSignature = false;
         }
 
@@ -146,14 +160,19 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
             runGenomePlot = false;
         } else {
             if (runGenomePlot && !sample.isSomatic()) {
-                addWarning("Skipping genome plot: sample '" + sample.getId() + "' is not somatic.");
+                msg = "Skipping genome plot: sample '" + sample.getId() + "' is not somatic.";
+                addWarning(msg);
+                logger.warn(msg);
                 runGenomePlot = false;
             } else {
                 File genomePlotConfFile = AnalysisUtils.getCatalogFile(analysisParams.getGpConfigFile(), getStudy(),
                         catalogManager.getFileManager(), getToken());
                 genomePlotConfigPath = Paths.get(genomePlotConfFile.getUri().getPath());
                 if (!genomePlotConfigPath.toFile().exists()) {
-                    throw new ToolException("Invalid parameters: genome plot configuration file does not exist (" + genomePlotConfigPath + ")");
+                    msg = "Invalid parameters: genome plot configuration file does not exist (" + genomePlotConfigPath + ")";
+                    addWarning(msg);
+                    logger.warn(msg);
+                    runGenomePlot = false;
                 }
             }
         }
