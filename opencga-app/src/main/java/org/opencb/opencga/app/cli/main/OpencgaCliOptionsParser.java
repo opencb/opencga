@@ -31,7 +31,7 @@ import org.opencb.opencga.app.cli.main.parent.ParentCliOptionsParser;
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
 *    Command line version: 2.4.6-SNAPSHOT
-*    Command line commit: f7dbcccd451c5972bdb28e72539039e31c20c4cc
+*    Command line commit: b6bef641ebc46201f80c60b9614c0f0b1045b066
 */
 
 public class OpencgaCliOptionsParser extends ParentCliOptionsParser {

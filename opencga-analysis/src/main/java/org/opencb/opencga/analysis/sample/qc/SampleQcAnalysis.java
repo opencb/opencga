@@ -113,15 +113,19 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
             analysisParams.setVsId(OPENCGA_ALL);
         }
 
-        if (sample.getQualityControl() != null && sample.getQualityControl().getVariant() != null) {
-            if (CollectionUtils.isNotEmpty(sample.getQualityControl().getVariant().getVariantStats())
-                    && OPENCGA_ALL.equals(analysisParams.getVsId())) {
-                runVariantStats = false;
-            } else {
-                for (SampleQcVariantStats variantStats : sample.getQualityControl().getVariant().getVariantStats()) {
-                    if (variantStats.getId().equals(analysisParams.getVsId())) {
-                        throw new ToolException("Invalid parameters: variant stats ID '" + analysisParams.getVsId()
-                                + "' is already used");
+        if (analysisParams.getVsQuery() == null) {
+            runVariantStats = false;
+        } else {
+            if (sample.getQualityControl() != null && sample.getQualityControl().getVariant() != null) {
+                if (CollectionUtils.isNotEmpty(sample.getQualityControl().getVariant().getVariantStats())
+                        && OPENCGA_ALL.equals(analysisParams.getVsId())) {
+                    runVariantStats = false;
+                } else {
+                    for (SampleQcVariantStats variantStats : sample.getQualityControl().getVariant().getVariantStats()) {
+                        if (variantStats.getId().equals(analysisParams.getVsId())) {
+                            throw new ToolException("Invalid parameters: variant stats ID '" + analysisParams.getVsId()
+                                    + "' is already used");
+                        }
                     }
                 }
             }
