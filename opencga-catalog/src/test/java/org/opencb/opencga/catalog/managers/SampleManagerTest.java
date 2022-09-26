@@ -1825,6 +1825,13 @@ public class SampleManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testUpdateSampleId() throws CatalogException {
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("valid id");
+        catalogManager.getSampleManager().update(studyFqn, s_1, new SampleUpdateParams().setId(""), QueryOptions.empty(), token);
+    }
+
+    @Test
     public void testUpdateAnnotation() throws CatalogException {
         Sample sample = catalogManager.getSampleManager().get(studyFqn, s_1, null, token).first();
         AnnotationSet annotationSet = sample.getAnnotationSets().get(0);

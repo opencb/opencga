@@ -415,11 +415,12 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         UpdateDocument document = new UpdateDocument();
 
-        if (parameters.containsKey(CohortDBAdaptor.QueryParams.ID.key())) {
+        if (parameters.containsKey(QueryParams.ID.key())) {
             // That can only be done to one cohort...
             Query tmpQuery = new Query(query);
 
-            OpenCGAResult<Cohort> cohortDataResult = get(clientSession, tmpQuery, new QueryOptions());
+            OpenCGAResult<Cohort> cohortDataResult = get(clientSession, tmpQuery, new QueryOptions(QueryOptions.INCLUDE,
+                    Arrays.asList(STUDY_UID.key(), QueryParams.ID.key(), INTERNAL_STATUS.key())));
             if (cohortDataResult.getNumResults() == 0) {
                 throw new CatalogDBException("Update cohort: No cohort found to be updated");
             }
@@ -427,12 +428,20 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                 throw CatalogDBException.cannotUpdateMultipleEntries(QueryParams.ID.key(), "cohort");
             }
 
-            // Check that the new sample name is still unique
-            long studyId = cohortDataResult.first().getStudyUid();
+            Cohort cohort = cohortDataResult.first();
+            // Check cohort index status
+            if (cohort.getInternal() != null && cohort.getInternal().getStatus() != null
+                    && !cohort.getInternal().getStatus().getId().equals(CohortStatus.NONE)) {
+                throw new CatalogDBException("Cannot update the '" + QueryParams.ID.key() + "' of the cohort '" + cohort.getId() + "'. "
+                        + "The cohort index status is '" + cohort.getInternal().getStatus().getId() + "'.");
+            }
+
+            // Check that the new cohort id is still unique
+            long studyId = cohort.getStudyUid();
 
             tmpQuery = new Query()
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
-                    .append(QueryParams.STUDY_UID.key(), studyId);
+                    .append(STUDY_UID.key(), studyId);
             OpenCGAResult<Long> count = count(clientSession, tmpQuery);
             if (count.getNumMatches() > 0) {
                 throw new CatalogDBException("Cannot update the " + QueryParams.ID.key() + ". Cohort "
@@ -442,13 +451,13 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        String[] acceptedParams = {NAME.key(), QueryParams.DESCRIPTION.key()};
+        String[] acceptedParams = {NAME.key(), DESCRIPTION.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
-        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
-            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+        if (StringUtils.isNotEmpty(parameters.getString(CREATION_DATE.key()))) {
+            String time = parameters.getString(CREATION_DATE.key());
             Date date = TimeUtils.toDate(time);
-            document.getSet().put(QueryParams.CREATION_DATE.key(), time);
+            document.getSet().put(CREATION_DATE.key(), time);
             document.getSet().put(PRIVATE_CREATION_DATE, date);
         }
         if (StringUtils.isNotEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
@@ -458,7 +467,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
         }
 
-        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(QueryParams.TYPE.key(), Enums.CohortType.class);
+        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(TYPE.key(), Enums.CohortType.class);
         filterEnumParams(parameters, document.getSet(), acceptedEnums);
 
         Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
@@ -486,13 +495,13 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             }
         }
 
-        String[] acceptedObjectParams = {QueryParams.STATUS.key(), QueryParams.INTERNAL_STATUS.key()};
+        String[] acceptedObjectParams = {STATUS.key(), INTERNAL_STATUS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
-        if (document.getSet().containsKey(QueryParams.STATUS.key())) {
-            nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
+        if (document.getSet().containsKey(STATUS.key())) {
+            nestedPut(STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
         }
 
-        String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
+        String[] acceptedMapParams = {ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
         if (!document.toFinalUpdateDocument().isEmpty()) {

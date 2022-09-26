@@ -49,10 +49,7 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.InternalStatus;
-import org.opencb.opencga.core.models.common.RgaIndex;
+import org.opencb.opencga.core.models.common.*;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
@@ -66,7 +63,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
-import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.*;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
@@ -576,12 +573,13 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         if (parameters.containsKey(QueryParams.ID.key())) {
             // That can only be done to one sample...
-
             Query tmpQuery = new Query(query);
             // We take out ALL_VERSION from query just in case we get multiple results...
             tmpQuery.remove(Constants.ALL_VERSIONS);
 
-            OpenCGAResult<Sample> sampleDataResult = get(clientSession, tmpQuery, new QueryOptions());
+            OpenCGAResult<Sample> sampleDataResult = get(clientSession, tmpQuery,
+                    new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                            QueryParams.STUDY_UID.key(), QueryParams.ID.key(), QueryParams.INTERNAL_VARIANT.key())));
             if (sampleDataResult.getNumResults() == 0) {
                 throw new CatalogDBException("Update sample: No sample found to be updated");
             }
@@ -590,8 +588,17 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                         + "found to be updated.");
             }
 
+            Sample sample = sampleDataResult.first();
+            // Check the sample is not indexed
+            if (sample.getInternal().getVariant() != null && sample.getInternal().getVariant().getIndex() != null
+                    && sample.getInternal().getVariant().getIndex().getStatus() != null
+                    && !sample.getInternal().getVariant().getIndex().getStatus().getId().equals(IndexStatus.NONE)) {
+                throw new CatalogDBException("Cannot update the '" + QueryParams.ID.key() + "' of the sample '" + sample.getId() + "'. "
+                        + "The sample variant index status is '" + sample.getInternal().getVariant().getIndex().getStatus().getId() + "'.");
+            }
+
             // Check that the new sample name is still unique
-            long studyId = sampleDataResult.first().getStudyUid();
+            long studyId = sample.getStudyUid();
 
             tmpQuery = new Query()
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))

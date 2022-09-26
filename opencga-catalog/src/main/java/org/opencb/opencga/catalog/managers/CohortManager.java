@@ -1056,8 +1056,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             }
         }
 
-        if (updateParams != null && (ListUtils.isNotEmpty(updateParams.getSamples())
-                || StringUtils.isNotEmpty(updateParams.getId()))) {
+        if (updateParams != null && (ListUtils.isNotEmpty(updateParams.getSamples()) || updateParams.getId() != null)) {
             switch (cohort.getInternal().getStatus().getId()) {
                 case CohortStatus.CALCULATING:
                     throw new CatalogException("Unable to modify a cohort while it's in status \"" + CohortStatus.CALCULATING
@@ -1070,6 +1069,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                     break;
                 default:
                     break;
+            }
+
+            if (updateParams.getId() != null) {
+                ParamUtils.checkIdentifier(updateParams.getId(), CohortDBAdaptor.QueryParams.ID.key());
             }
 
             if (CollectionUtils.isNotEmpty(updateParams.getSamples())) {
