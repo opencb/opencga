@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.variant.query.executors;
 
 import com.google.common.collect.Iterators;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -150,7 +151,13 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
         List<Region> regions = new ArrayList<>(variants.size());
         for (Variant variant : variants) {
             BreakendMate mate = variant.getSv().getBreakend().getMate();
-            int buffer = 50;
+            String homlen = variant.getStudies().get(0).getFiles().get(0).getData().get("HOMLEN");
+            int buffer = 50; // get from configuration
+            if (homlen != null) {
+                if (StringUtils.isNumeric(homlen)) {
+                    buffer = 10 + Integer.parseInt(homlen);
+                }
+            }
             regions.add(new Region(mate.getChromosome(), Math.max(1, mate.getPosition() - buffer), mate.getPosition() + buffer));
         }
         baseQuery.put(VariantQueryParam.REGION.key(), regions);

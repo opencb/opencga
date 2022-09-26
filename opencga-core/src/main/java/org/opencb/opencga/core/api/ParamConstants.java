@@ -72,6 +72,10 @@ public class ParamConstants {
     public static final String BODY_PARAM = "body";
     public static final String OVERWRITE = "overwrite";
 
+
+    public static final String CELLBASE_URL = "https://ws.zettagenomics.com/cellbase";
+    public static final String CELLBASE_VERSION = "v5";
+
     public static final String POP_FREQ_1000G_CB_V4 = "1kG_phase3";
     public static final String POP_FREQ_1000G_CB_V5 = "1000G";
     public static final String POP_FREQ_1000G = POP_FREQ_1000G_CB_V5;
