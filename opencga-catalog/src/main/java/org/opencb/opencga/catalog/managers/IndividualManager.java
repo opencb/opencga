@@ -1052,14 +1052,14 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                     IndividualPermissions.WRITE);
         }
 
-        if (updateParams != null && StringUtils.isNotEmpty(updateParams.getId())) {
-            ParamUtils.checkIdentifier(updateParams.getId(), "id");
+        if (updateParams != null && updateParams.getId() != null) {
+            ParamUtils.checkIdentifier(updateParams.getId(), IndividualDBAdaptor.QueryParams.ID.key());
 
             Query query = new Query()
                     .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                     .append(IndividualDBAdaptor.QueryParams.ID.key(), updateParams.getId());
             if (individualDBAdaptor.count(query).getNumMatches() > 0) {
-                throw new CatalogException("Individual name " + updateParams.getId() + " already in use");
+                throw new CatalogException("Individual id " + updateParams.getId() + " already in use");
             }
         }
         if (updateParams != null && updateParams.getDateOfBirth() != null) {

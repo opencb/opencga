@@ -943,7 +943,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                     FamilyPermissions.WRITE);
         }
 
-        if (updateParams != null && StringUtils.isNotEmpty(updateParams.getId())) {
+        if (updateParams != null && updateParams.getId() != null) {
             ParamUtils.checkIdentifier(updateParams.getId(), FamilyDBAdaptor.QueryParams.ID.key());
         }
 
