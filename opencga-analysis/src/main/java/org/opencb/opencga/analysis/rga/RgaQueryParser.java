@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import static org.opencb.opencga.analysis.rga.RgaQueryParams.*;
@@ -100,6 +101,30 @@ public class RgaQueryParser {
         logger.debug("query     : " + printQuery(finalQuery));
         logger.debug("solrQuery : " + solrQuery);
         return solrQuery;
+    }
+
+    public Predicate<RgaDataModel> getCompHetVariantsPostQueryPredicate(Query query) {
+        List<String> variants = query.getAsStringList(RgaQueryParams.VARIANTS.key(), ";");
+        List<String> knockoutTypes = query.getAsStringList(RgaQueryParams.KNOCKOUT.key());
+        if (variants.size() > 1 && knockoutTypes.size() == 1 && knockoutTypes.get(0).equals(KnockoutVariant.KnockoutType.COMP_HET.name())) {
+            return rgaDataModel -> {
+                // Get the positions where the variants are found
+                List<Integer> positions = new ArrayList<>(variants.size());
+                for (String variant : variants) {
+                    positions.add(rgaDataModel.getVariants().indexOf(variant));
+                }
+                // And check that the knockout type corresponding to those variants is COMP_HET
+                for (Integer position : positions) {
+                    if (position < 0
+                            || !rgaDataModel.getKnockoutTypes().get(position).equals(KnockoutVariant.KnockoutType.COMP_HET.name())) {
+                        return false;
+                    }
+                }
+                return true;
+            };
+        } else {
+            return null;
+        }
     }
 
     private void parseMainCollCompoundFilters(Query query, List<String> filterList) throws RgaException {
@@ -391,13 +416,18 @@ public class RgaQueryParser {
     }
 
     private void parseStringValue(Query query, RgaQueryParams queryParam, String storageKey, List<String> filterList) {
-        parseStringValue(query, queryParam, storageKey, filterList, "||");
-    }
-
-    private void parseStringValue(Query query, RgaQueryParams queryParam, String storageKey, List<String> filterList, String opSeparator) {
         if (StringUtils.isNotEmpty(query.getString(queryParam.key()))) {
-            List<String> escapedValues = escapeValues(query.getAsStringList(queryParam.key()));
-            parseStringValue(escapedValues, storageKey, filterList, opSeparator);
+            String operator = "||";
+            List<String> values = query.getAsStringList(queryParam.key());
+            if (values.size() == 1) {
+                List<String> andValues = query.getAsStringList(queryParam.key(), ";");
+                if (andValues.size() > 1) {
+                    values = andValues;
+                    operator = "&&";
+                }
+            }
+            List<String> escapedValues = escapeValues(values);
+            parseStringValue(escapedValues, storageKey, filterList, operator);
         }
     }
 

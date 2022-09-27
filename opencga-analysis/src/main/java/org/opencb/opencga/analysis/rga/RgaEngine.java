@@ -22,10 +22,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 public class RgaEngine implements Closeable {
 
@@ -148,7 +150,12 @@ public class RgaEngine implements Closeable {
 //        solrQuery.setRows(Integer.MAX_VALUE);
         solrQuery.setRows(queryOptions.getInt(QueryOptions.LIMIT, Integer.MAX_VALUE));
         try {
-            return new RgaIterator(solrManager.getSolrClient(), collection, solrQuery);
+            List<Predicate<RgaDataModel>> filters = new ArrayList<>();
+            Predicate<RgaDataModel> filter = parser.getCompHetVariantsPostQueryPredicate(query);
+            if (filter != null) {
+                filters.add(filter);
+            }
+            return new RgaIterator(solrManager.getSolrClient(), collection, filters, solrQuery);
         } catch (SolrServerException e) {
             throw new RgaException("Error executing KnockoutByIndividual query", e);
         }
