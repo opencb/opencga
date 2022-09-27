@@ -454,7 +454,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 //            logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
 //        }
 
-        variantStorageEngine.annotate(query, options);
+        variantStorageEngine.annotate(outDir.toUri(), query, options);
     }
 
     private void annotationSave() throws VariantAnnotatorException, StorageEngineException {

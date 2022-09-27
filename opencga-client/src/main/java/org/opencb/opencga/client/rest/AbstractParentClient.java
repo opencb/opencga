@@ -203,7 +203,7 @@
              limit = params.getInt(QueryOptions.LIMIT, defaultLimit);
              batchSize = this.batchSize;
 
-             if (limit == 0) {
+             if (limit < 0) {
                  limit = defaultLimit;
              }
          } else {
@@ -594,7 +594,7 @@
                      List<String> msgs = new ArrayList<>();
                      for (Event event : result.getEvents()) {
                          if (Event.Type.ERROR.equals(event.getType())) {
-                            msgs.add(event.getMessage());
+                             msgs.add(event.getMessage());
                          }
                      }
                      if (!msgs.isEmpty()) {

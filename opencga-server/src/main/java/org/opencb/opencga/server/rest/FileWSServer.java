@@ -279,7 +279,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "String pattern") @QueryParam("pattern") String pattern,
             @ApiParam(value = "Flag to perform a case insensitive search") @DefaultValue("false") @QueryParam("ignoreCase")
-                    Boolean ignoreCase,
+                    boolean ignoreCase,
             @ApiParam(value = "Stop reading a file after 'n' matching lines. 0 means no limit.") @DefaultValue("10") @QueryParam(
                     "maxCount") int maxCount) {
         try {

@@ -76,12 +76,6 @@ import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper
  */
 public class FamilyManager extends AnnotationSetManager<Family> {
 
-    protected static Logger logger = LoggerFactory.getLogger(FamilyManager.class);
-    private UserManager userManager;
-    private StudyManager studyManager;
-
-    private final String defaultFacet = "creationYear>>creationMonth;status;phenotypes;expectedSize;numMembers[0..20]:2";
-
     public static final QueryOptions INCLUDE_FAMILY_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             FamilyDBAdaptor.QueryParams.ID.key(), FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.UUID.key(),
             FamilyDBAdaptor.QueryParams.VERSION.key(), FamilyDBAdaptor.QueryParams.STUDY_UID.key()));
@@ -89,6 +83,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             FamilyDBAdaptor.QueryParams.ID.key(), FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.UUID.key(),
             FamilyDBAdaptor.QueryParams.VERSION.key(), FamilyDBAdaptor.QueryParams.STUDY_UID.key(),
             FamilyDBAdaptor.QueryParams.MEMBERS.key()));
+    protected static Logger logger = LoggerFactory.getLogger(FamilyManager.class);
+    private final String defaultFacet = "creationYear>>creationMonth;status;phenotypes;expectedSize;numMembers[0..20]:2";
+    private UserManager userManager;
+    private StudyManager studyManager;
 
     FamilyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                   DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
@@ -96,6 +94,36 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         this.userManager = catalogManager.getUserManager();
         this.studyManager = catalogManager.getStudyManager();
+    }
+
+    public static Pedigree getPedigreeFromFamily(Family family, String probandId) {
+        List<Individual> members = family.getMembers();
+        Map<String, Member> individualMap = new HashMap<>();
+
+        // Parse all the individuals
+        for (Individual member : members) {
+            Member individual = new Member(member.getId(), member.getName(), null, null, null, member.getSex(), member.getLifeStatus(),
+                    member.getPhenotypes(), member.getDisorders(), member.getAttributes());
+            individualMap.put(individual.getId(), individual);
+        }
+
+        // Fill parent information
+        for (Individual member : members) {
+            if (member.getFather() != null && StringUtils.isNotEmpty(member.getFather().getId())) {
+                individualMap.get(member.getId()).setFather(individualMap.get(member.getFather().getId()));
+            }
+            if (member.getMother() != null && StringUtils.isNotEmpty(member.getMother().getId())) {
+                individualMap.get(member.getId()).setMother(individualMap.get(member.getMother().getId()));
+            }
+        }
+
+        Member proband = null;
+        if (StringUtils.isNotEmpty(probandId)) {
+            proband = individualMap.get(probandId);
+        }
+
+        List<Member> individuals = new ArrayList<>(individualMap.values());
+        return new Pedigree(family.getId(), individuals, proband, family.getPhenotypes(), family.getDisorders(), family.getAttributes());
     }
 
     @Override
@@ -317,18 +345,12 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 .append("query", new Query(query))
                 .append("token", token);
         try {
-            FamilyDBAdaptor.QueryParams param = FamilyDBAdaptor.QueryParams.getParam(field);
-            if (param == null) {
-                throw new CatalogException("Unknown '" + field + "' parameter.");
-            }
-            Class<?> clazz = getTypeClass(param.type());
-
             fixQueryObject(study, query, userId);
             // Fix query if it contains any annotation
             AnnotationUtils.fixQueryAnnotationSearch(study, query);
 
             query.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<?> result = familyDBAdaptor.distinct(study.getUid(), field, query, userId, clazz);
+            OpenCGAResult<?> result = familyDBAdaptor.distinct(study.getUid(), field, query, userId);
 
             auditManager.auditDistinct(userId, Enums.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1342,36 +1364,6 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", e.getMessage())));
             throw e;
         }
-    }
-
-    public static Pedigree getPedigreeFromFamily(Family family, String probandId) {
-        List<Individual> members = family.getMembers();
-        Map<String, Member> individualMap = new HashMap<>();
-
-        // Parse all the individuals
-        for (Individual member : members) {
-            Member individual = new Member(member.getId(), member.getName(), null, null, null, member.getSex(), member.getLifeStatus(),
-                    member.getPhenotypes(), member.getDisorders(), member.getAttributes());
-            individualMap.put(individual.getId(), individual);
-        }
-
-        // Fill parent information
-        for (Individual member : members) {
-            if (member.getFather() != null && StringUtils.isNotEmpty(member.getFather().getId())) {
-                individualMap.get(member.getId()).setFather(individualMap.get(member.getFather().getId()));
-            }
-            if (member.getMother() != null && StringUtils.isNotEmpty(member.getMother().getId())) {
-                individualMap.get(member.getId()).setMother(individualMap.get(member.getMother().getId()));
-            }
-        }
-
-        Member proband = null;
-        if (StringUtils.isNotEmpty(probandId)) {
-            proband = individualMap.get(probandId);
-        }
-
-        List<Member> individuals = new ArrayList<>(individualMap.values());
-        return new Pedigree(family.getId(), individuals, proband, family.getPhenotypes(), family.getDisorders(), family.getAttributes());
     }
 
     /**

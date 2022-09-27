@@ -102,7 +102,7 @@ public class VariantExporter {
 
         try (OutputStream os = VariantWriterFactory.getOutputStream(outputFile, outputFormat, ioConnectorProvider)) {
             boolean logProgress = !VariantWriterFactory.isStandardOutput(outputFile);
-            exportData(os, outputFormat, variantsFile, query.getInputQuery(), query.getInputOptions(), logProgress);
+            exportData(outputFile, os, outputFormat, variantsFile, query.getInputQuery(), query.getInputOptions(), logProgress);
         }
         if (metadataFactory != null && !VariantWriterFactory.isStandardOutput(outputFile)) {
             VariantMetadata metadata = metadataFactory.makeVariantMetadata(query.getInputQuery(), query.getInputOptions());
@@ -115,7 +115,7 @@ public class VariantExporter {
         return outputFile;
     }
 
-    protected void exportData(OutputStream outputStream, VariantOutputFormat outputFormat, URI variantsFile,
+    protected void exportData(URI outputFile, OutputStream outputStream, VariantOutputFormat outputFormat, URI variantsFile,
                               Query query, QueryOptions queryOptions, boolean logProgress)
             throws StorageEngineException, IOException {
         if (query == null) {
@@ -158,7 +158,7 @@ public class VariantExporter {
         }
 
         // DataWriter
-        DataWriter<Variant> variantDataWriter = variantWriterFactory.newDataWriter(outputFormat, outputStream, query, queryOptions);
+        DataWriter<Variant> variantDataWriter = newVariantDataWriter(outputFile, outputStream, outputFormat, query, queryOptions);
 
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(1).setBatchSize(10).build();
 
@@ -172,6 +172,11 @@ public class VariantExporter {
         logger.info("Time fetching data: " + variantDBReader.getTimeFetching(TimeUnit.MILLISECONDS) / 1000.0 + 's');
         logger.info("Time converting data: " + variantDBReader.getTimeConverting(TimeUnit.MILLISECONDS) / 1000.0 + 's');
 
+    }
+
+    protected DataWriter<Variant> newVariantDataWriter(URI outputFile, OutputStream outputStream, VariantOutputFormat outputFormat,
+                                                       Query query, QueryOptions queryOptions) throws IOException {
+        return variantWriterFactory.newDataWriter(outputFormat, outputStream, query, queryOptions);
     }
 
     protected void writeMetadata(VariantMetadata metadata, URI metadataFile) throws IOException {

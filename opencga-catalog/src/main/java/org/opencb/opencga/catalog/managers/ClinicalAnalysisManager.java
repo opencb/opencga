@@ -605,6 +605,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             ClinicalStatusValue clinicalStatusValue = statusMap.get(clinicalAnalysis.getStatus().getId());
             clinicalAnalysis.getStatus().setDescription(clinicalStatusValue.getDescription());
             clinicalAnalysis.getStatus().setDate(TimeUtils.getTime());
+        } else if (clinicalAnalysis.getStatus().getId() == null) {
+            clinicalAnalysis.getStatus().setId("");
         }
     }
 
@@ -1516,16 +1518,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 .append("query", new Query(query))
                 .append("token", token);
         try {
-            ClinicalAnalysisDBAdaptor.QueryParams param = ClinicalAnalysisDBAdaptor.QueryParams.getParam(field);
-            if (param == null) {
-                throw new CatalogException("Unknown '" + field + "' parameter.");
-            }
-            Class<?> clazz = getTypeClass(param.type());
-
             fixQueryObject(study, query, userId, token);
 
             query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<?> result = clinicalDBAdaptor.distinct(study.getUid(), field, query, userId, clazz);
+            OpenCGAResult<?> result = clinicalDBAdaptor.distinct(study.getUid(), field, query, userId);
 
             auditManager.auditDistinct(userId, Enums.Resource.CLINICAL_ANALYSIS, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));

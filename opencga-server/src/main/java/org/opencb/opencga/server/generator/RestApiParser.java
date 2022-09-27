@@ -137,7 +137,12 @@ public class RestApiParser {
                     restParameter.setName(apiImplicitParam.name());
                     restParameter.setParam(RestParamType.valueOf(apiImplicitParam.paramType().toUpperCase()));
                     restParameter.setType(apiImplicitParam.dataType());
-                    restParameter.setTypeClass("java.lang." + StringUtils.capitalize(apiImplicitParam.dataType()));
+                    //boolean and java.lang.Boolean the difference is if it is nullable or not
+                    if (StringUtils.containsIgnoreCase(apiImplicitParam.dataType(), "boolean")) {
+                        restParameter.setTypeClass(apiImplicitParam.dataType());
+                    } else {
+                        restParameter.setTypeClass("java.lang." + StringUtils.capitalize(apiImplicitParam.dataType()));
+                    }
                     restParameter.setAllowedValues(apiImplicitParam.allowableValues());
                     restParameter.setRequired(apiImplicitParam.required());
                     restParameter.setDefaultValue(apiImplicitParam.defaultValue());
@@ -297,8 +302,12 @@ public class RestApiParser {
         param.setParentName(parentParamName);
         param.setTypeClass(propertyClass.getName() + ";");
         param.setRequired(isRequired(property));
-//        innerParam.setDefaultValue(property.getMetadata().getDefaultValue());
-        param.setDefaultValue("");
+        if (property.getField() != null) {
+            DataField dataField = property.getField().getAnnotated().getAnnotation(DataField.class);
+            if (dataField != null && StringUtils.isNotEmpty(dataField.defaultValue())) {
+                param.setDefaultValue(dataField.defaultValue());
+            }
+        }
         param.setComplex(!CommandLineUtils.isPrimitiveType(propertyClass.getName()));
         param.setDescription(getDescriptionField(variablePrefix, property));
 
@@ -335,6 +344,7 @@ public class RestApiParser {
                 }
             }
         }
+
 
         return param;
     }
