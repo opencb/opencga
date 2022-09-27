@@ -1,5 +1,6 @@
 package org.opencb.opencga.analysis.rga.iterators;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -9,9 +10,8 @@ import org.apache.solr.common.params.CursorMarkParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.util.*;
+import java.util.function.Predicate;
 
 public abstract class SolrNativeIterator<E> implements Iterator<E>, AutoCloseable {
 
@@ -21,18 +21,19 @@ public abstract class SolrNativeIterator<E> implements Iterator<E>, AutoCloseabl
     private QueryResponse solrResponse;
     private String cursorMark;
     private String nextCursorMark;
-
-    private Iterator<E> solrIterator;
+    private Queue<E> listBuffer;
+    private List<Predicate<E>> filters;
 
     private int remaining;
     private static final int BATCH_SIZE = 100;
 
     private Class<E> clazz;
 
-    public SolrNativeIterator(SolrClient solrClient, String collection, SolrQuery solrQuery, Class<E> clazz) throws SolrServerException {
+    public SolrNativeIterator(SolrClient solrClient, String collection, SolrQuery solrQuery, List<Predicate<E>> filters, Class<E> clazz) {
         this.solrClient = solrClient;
         this.collection = collection;
         this.solrQuery = solrQuery;
+        this.filters = filters;
         this.clazz = clazz;
 
         // Make sure that query is sorted
@@ -47,7 +48,7 @@ public abstract class SolrNativeIterator<E> implements Iterator<E>, AutoCloseabl
         this.cursorMark = CursorMarkParams.CURSOR_MARK_START;
 
         // We create an empty iterator, this will return false in the first hasNext call
-        this.solrIterator = Collections.emptyIterator();
+        this.listBuffer = new LinkedList<>();
 
         // Current Solr iterator (aka cursorMarks) implementation does not support skip.
         // A simple solution is to waste these records and remove the Start from the solrQuery
@@ -61,25 +62,29 @@ public abstract class SolrNativeIterator<E> implements Iterator<E>, AutoCloseabl
                 next();
             }
         }
+
+        fetchNextBatch();
     }
 
     @Override
     public boolean hasNext() {
-        // This is always false the first time with the empty iterator
-        if (solrIterator.hasNext()) {
-            return true;
-        } else {
-            // This only happens when there are no more records in Solr
-            if (cursorMark.equals(nextCursorMark) || remaining == 0) {
-                return false;
-            }
+        return !listBuffer.isEmpty();
+    }
 
-            // We need to fetch another batch from Solr
-            try {
+    public void fetchNextBatch() {
+        if (cursorMark.equals(nextCursorMark) || remaining == 0) {
+            return;
+        }
+
+        // We need to fetch another batch from Solr
+        try {
+            int limit = Math.min(remaining, BATCH_SIZE);
+            solrQuery.setRows(limit);
+
+            while (listBuffer.size() < limit && remaining > 0) {
                 if (nextCursorMark != null) {
                     cursorMark = nextCursorMark;
                 }
-                solrQuery.setRows(remaining > BATCH_SIZE ? BATCH_SIZE : remaining);
                 solrQuery.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
 
                 // Execute the query and fetch setRows records, we will iterate over this list
@@ -93,11 +98,25 @@ public abstract class SolrNativeIterator<E> implements Iterator<E>, AutoCloseabl
                     remaining -= solrResponse.getResults().size();
                 }
                 nextCursorMark = solrResponse.getNextCursorMark();
-                solrIterator = solrResponse.getBeans(clazz).iterator();
-                return solrIterator.hasNext();
-            } catch (SolrServerException | IOException e) {
-                throw new VariantQueryException("Error searching more variants", e);
+                for (E next : solrResponse.getBeans(clazz)) {
+                    if (CollectionUtils.isNotEmpty(filters)) {
+                        boolean filterSuccess = true;
+                        for (Predicate<E> filter : filters) {
+                            if (!filter.test(next)) {
+                                filterSuccess = false;
+                                break;
+                            }
+                        }
+                        if (filterSuccess) {
+                            listBuffer.add(next);
+                        }
+                    } else {
+                        listBuffer.add(next);
+                    }
+                }
             }
+        } catch (SolrServerException | IOException e) {
+            throw new VariantQueryException("Error searching more documents", e);
         }
     }
 
@@ -105,7 +124,7 @@ public abstract class SolrNativeIterator<E> implements Iterator<E>, AutoCloseabl
     public E next() {
         // Sanity check
         if (hasNext()) {
-            return solrIterator.next();
+            return listBuffer.remove();
         } else {
             throw new NoSuchElementException();
         }

@@ -10,6 +10,7 @@ import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.analysis.rga.exceptions.RgaException;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
@@ -45,7 +46,7 @@ public class RgaManagerTest {
 
     public static final String OWNER = "owner";
     public static final String USER = "user";
-    public static final String PASSWORD = "asdf";
+    public static final String PASSWORD = TestParamConstants.PASSWORD;
     public static final String PROJECT = "project";
     public static final String STUDY = "study";
     public static final String PHENOTYPE_NAME = "myPhenotype";

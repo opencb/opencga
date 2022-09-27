@@ -1,8 +1,5 @@
 package org.opencb.opencga.core.models.analysis.knockout;
 
-import java.util.Map;
-import java.util.Set;
-
 public class KnockoutByGeneSummary {
 
     private String id;
