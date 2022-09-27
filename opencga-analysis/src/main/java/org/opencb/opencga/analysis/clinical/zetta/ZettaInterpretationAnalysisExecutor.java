@@ -112,18 +112,6 @@ public class ZettaInterpretationAnalysisExecutor extends OpenCgaToolExecutor imp
 
         // Write primary findings
         ClinicalUtils.writeClinicalVariants(clinicalVariants, Paths.get(getOutDir() + "/" + PRIMARY_FINDINGS_FILENAME));
-
-        // Get secondary findings
-        try {
-            variants = clinicalInterpretationManager.getSecondaryFindings(query.getString(VariantQueryParam.SAMPLE.key()),
-                    clinicalAnalysisId, query.getString(VariantQueryParam.STUDY.key()), sessionId);
-        } catch (CatalogException | IOException | StorageEngineException e) {
-            throw new ToolException("Error retrieving secondary findings variants", e);
-        }
-        clinicalVariants = clinicalVariantCreator.create(variants);
-
-        // Write secondary findings
-        ClinicalUtils.writeClinicalVariants(clinicalVariants, Paths.get(getOutDir() + "/" + SECONDARY_FINDINGS_FILENAME));
     }
 
     public String getClinicalAnalysisId() {

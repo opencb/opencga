@@ -258,7 +258,6 @@ public class OpenCGAWSServer {
             logger.error(errorMessage);
             throw new IllegalStateException(errorMessage);
         }
-//        ActionableVariantManager.init(opencgaHome);
 
         logger.info("| OpenCGA REST successfully started!");
         logger.info("| - Version " + GitRepositoryState.get().getBuildVersion());

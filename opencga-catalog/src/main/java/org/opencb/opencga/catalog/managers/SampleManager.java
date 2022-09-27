@@ -1127,7 +1127,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     SamplePermissions.WRITE);
         }
 
-        if (updateParamsClone != null && StringUtils.isNotEmpty(updateParamsClone.getId())) {
+        if (updateParamsClone != null && updateParamsClone.getId() != null) {
             ParamUtils.checkIdentifier(updateParamsClone.getId(), SampleDBAdaptor.QueryParams.ID.key());
         }
 
