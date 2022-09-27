@@ -100,7 +100,6 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaToolExecutor impl
         try {
             creator = new TeamClinicalVariantCreator(diseasePanels,
                     clinicalInterpretationManager.getRoleInCancerManager().getRoleInCancer(),
-                    clinicalInterpretationManager.getActionableVariantManager().getActionableVariants(assembly),
                     clinicalAnalysis.getDisorder(), null, ClinicalProperty.Penetrance.COMPLETE);
         } catch (IOException e) {
             throw new ToolException("Error creating Team clinical variant creator", e);
@@ -188,18 +187,6 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaToolExecutor impl
 
         // Write primary findings
         ClinicalUtils.writeClinicalVariants(primaryFindings, Paths.get(getOutDir() + "/" + PRIMARY_FINDINGS_FILENAME));
-
-        // Step 3: secondary findings, if clinical consent is TRUE
-        List<ClinicalVariant> secondaryFindings;
-        try {
-            secondaryFindings = clinicalInterpretationManager.getSecondaryFindings(clinicalAnalysis, sampleList, studyId,
-                    creator, sessionId);
-        } catch (StorageEngineException | CatalogException | IOException e) {
-            throw new ToolException("Error retrieving secondary findings variants", e);
-        }
-
-        // Write primary findings
-        ClinicalUtils.writeClinicalVariants(secondaryFindings, Paths.get(getOutDir() + "/" + SECONDARY_FINDINGS_FILENAME));
     }
 
     private List<ClinicalVariant> getClinicalVariants(Query query, QueryOptions queryOptions, TeamClinicalVariantCreator creator)
