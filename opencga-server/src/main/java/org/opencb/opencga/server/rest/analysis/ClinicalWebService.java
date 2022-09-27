@@ -1144,19 +1144,6 @@ public class ClinicalWebService extends AnalysisWebService {
         });
     }
 
-    @GET
-    @Path("/variant/actionable")
-    @ApiOperation(value = "Fetch actionable clinical variants", response = ClinicalVariant.class)
-    public Response variantActionable(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.SAMPLE_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PARAM) String sample) {
-        try {
-            return createOkResponse(clinicalInterpretationManager.getActionableVariants(study, sample, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
     //-------------------------------------------------------------------------
     // I N T E R P R E T A T I O N     A N A L Y S I S
     //-------------------------------------------------------------------------

@@ -2107,7 +2107,5 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--locked"}, description = "The body web service locked parameter", required = false, arity = 1)
         public Boolean locked;
-    
     }
-
 }
