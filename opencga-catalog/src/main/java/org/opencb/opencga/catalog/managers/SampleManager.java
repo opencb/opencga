@@ -1216,7 +1216,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     public OpenCGAResult<AclEntryList<SamplePermissions>> getAcls(String studyId, List<String> sampleList, String member,
                                                                   boolean ignoreException, String token)
             throws CatalogException {
-        return getAcls(studyId, sampleList, Collections.singletonList(member), ignoreException, token);
+        return getAcls(studyId, sampleList, StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(),
+                ignoreException, token);
     }
 
     public OpenCGAResult<AclEntryList<SamplePermissions>> getAcls(String studyId, List<String> sampleList,
@@ -1272,6 +1273,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                     new Error(0, "", missingMap.get(sampleId).getErrorMsg())), new ObjectMap());
                 }
+            }
+            for (int i = 0; i < queryResult.getResults().size(); i++) {
+                sampleAcls.getResults().get(i).setId(queryResult.getResults().get(i).getId());
             }
             sampleAcls.setResults(resultList);
             sampleAcls.setEvents(eventList);

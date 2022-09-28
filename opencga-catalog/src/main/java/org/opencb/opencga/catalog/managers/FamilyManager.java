@@ -1073,7 +1073,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     // **************************   ACLs  ******************************** //
     public OpenCGAResult<AclEntryList<FamilyPermissions>> getAcls(String studyId, List<String> familyList, String member,
                                                                   boolean ignoreException, String token) throws CatalogException {
-        return getAcls(studyId, familyList, Collections.singletonList(member), ignoreException, token);
+        return getAcls(studyId, familyList, StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(),
+                ignoreException, token);
     }
 
     public OpenCGAResult<AclEntryList<FamilyPermissions>> getAcls(String studyId, List<String> familyList, List<String> members,
@@ -1128,6 +1129,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                     new Error(0, "", missingMap.get(familyId).getErrorMsg())), new ObjectMap());
                 }
+            }
+            for (int i = 0; i < queryResult.getResults().size(); i++) {
+                familyAcls.getResults().get(i).setId(queryResult.getResults().get(i).getId());
             }
             familyAcls.setResults(resultList);
             familyAcls.setEvents(eventList);
@@ -1282,7 +1286,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             OpenCGAResult<AclEntryList<FamilyPermissions>> remainingAcls = authorizationManager.getAcls(study.getUid(),
                     familyUids, members, Enums.Resource.FAMILY, FamilyPermissions.class);
-
+            for (int i = 0; i < remainingAcls.getResults().size(); i++) {
+                remainingAcls.getResults().get(i).setId(familyList.get(i).getId());
+            }
             for (Family family : familyList) {
                 auditManager.audit(operationUUID, user, Enums.Action.UPDATE_ACLS, Enums.Resource.FAMILY, family.getId(),
                         family.getUuid(), study.getId(), study.getUuid(), auditParams,

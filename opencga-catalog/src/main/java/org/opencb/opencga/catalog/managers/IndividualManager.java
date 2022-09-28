@@ -1193,7 +1193,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     public OpenCGAResult<AclEntryList<IndividualPermissions>> getAcls(String studyId, List<String> individualList,
                                                                       String member, boolean ignoreException,
                                                                       String token) throws CatalogException {
-        return getAcls(studyId, individualList, Collections.singletonList(member), ignoreException, token);
+        return getAcls(studyId, individualList,
+                StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(),
+                ignoreException, token);
     }
 
     public OpenCGAResult<AclEntryList<IndividualPermissions>> getAcls(String studyId, List<String> individualList,
@@ -1250,6 +1252,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                     new Error(0, "", missingMap.get(individualId).getErrorMsg())), new ObjectMap());
                 }
+            }
+            for (int i = 0; i < queryResult.getResults().size(); i++) {
+                individualAcls.getResults().get(i).setId(queryResult.getResults().get(i).getId());
             }
             individualAcls.setResults(resultList);
             individualAcls.setEvents(eventList);
@@ -1370,7 +1375,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             OpenCGAResult<AclEntryList<IndividualPermissions>> queryResults = authorizationManager
                     .getAcls(study.getUid(), individualUids, members, Enums.Resource.INDIVIDUAL,
                             IndividualPermissions.class);
-
+            for (int i = 0; i < queryResults.getResults().size(); i++) {
+                queryResults.getResults().get(i).setId(individualList.get(i).getId());
+            }
             for (Individual individual : individualList) {
                 auditManager.audit(operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.INDIVIDUAL, individual.getId(),
                         individual.getUuid(), study.getId(), study.getUuid(), auditParams,

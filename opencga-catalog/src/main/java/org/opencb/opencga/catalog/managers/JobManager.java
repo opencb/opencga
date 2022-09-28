@@ -1614,7 +1614,8 @@ public class JobManager extends ResourceManager<Job> {
     // **************************   ACLs  ******************************** //
     public OpenCGAResult<AclEntryList<JobPermissions>> getAcls(String studyId, List<String> jobList, String member, boolean ignoreException,
                                                                String token) throws CatalogException {
-        return getAcls(studyId, jobList, Collections.singletonList(member), ignoreException, token);
+        return getAcls(studyId, jobList, StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(),
+                ignoreException, token);
     }
 
     public OpenCGAResult<AclEntryList<JobPermissions>> getAcls(String studyId, List<String> jobList, List<String> members,
@@ -1668,6 +1669,9 @@ public class JobManager extends ResourceManager<Job> {
                             new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", missingMap.get(jobId).getErrorMsg())),
                             new ObjectMap());
                 }
+            }
+            for (int i = 0; i < queryResult.getResults().size(); i++) {
+                jobAcls.getResults().get(i).setId(queryResult.getResults().get(i).getId());
             }
             jobAcls.setResults(resultList);
             jobAcls.setEvents(eventList);
@@ -1761,7 +1765,9 @@ public class JobManager extends ResourceManager<Job> {
             }
             OpenCGAResult<AclEntryList<JobPermissions>> queryResultList = authorizationManager.getAcls(study.getUid(), jobUids,
                     members, Enums.Resource.JOB, JobPermissions.class);
-
+            for (int i = 0; i < queryResultList.getResults().size(); i++) {
+                queryResultList.getResults().get(i).setId(jobList.get(i).getId());
+            }
             for (Job job : jobList) {
                 auditManager.audit(operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.JOB, job.getId(),
                         job.getUuid(), study.getId(), study.getUuid(), auditParams,
