@@ -119,6 +119,7 @@ public final class Enums {
         SEARCH,
         COUNT,
         DISTINCT,
+        RANK,
         GROUP_BY,
         DELETE,
         DOWNLOAD,

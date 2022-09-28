@@ -3,13 +3,11 @@ package org.opencb.opencga.catalog.managers;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Enums;
@@ -30,46 +28,23 @@ public class AdminManager extends AbstractManager {
         this.catalogIOManager = catalogIOManager;
     }
 
-    public OpenCGAResult<User> userSearch(Query query, QueryOptions options, String token)
-            throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
+    public OpenCGAResult<User> userSearch(Query query, QueryOptions options, String token) throws CatalogException {
         ObjectMap auditParams = new ObjectMap()
                 .append("query", query)
                 .append("options", options)
                 .append("token", token);
-        String userId = catalogManager.getUserManager().getUserId(token);
-        try {
+
+        return run(auditParams, Enums.Action.SEARCH, Enums.Resource.USER, "", token, options, (study, userId, rp, queryOptions) -> {
+            Query myQuery = query != null ? new Query(query) : new Query();
             authorizationManager.checkIsInstallationAdministrator(userId);
 
-            // Fix query object
-            if (query.containsKey(ParamConstants.USER)) {
-                query.put(UserDBAdaptor.QueryParams.ID.key(), query.get(ParamConstants.USER));
-                query.remove(ParamConstants.USER);
-            }
-            if (query.containsKey(ParamConstants.USER_ACCOUNT_TYPE)) {
-                query.put(UserDBAdaptor.QueryParams.ACCOUNT_TYPE.key(), query.get(ParamConstants.USER_ACCOUNT_TYPE));
-                query.remove(ParamConstants.USER_ACCOUNT_TYPE);
-            }
-            if (query.containsKey(ParamConstants.USER_AUTHENTICATION_ORIGIN)) {
-                query.put(UserDBAdaptor.QueryParams.ACCOUNT_AUTHENTICATION_ID.key(), query.get(ParamConstants.USER_AUTHENTICATION_ORIGIN));
-                query.remove(ParamConstants.USER_AUTHENTICATION_ORIGIN);
-            }
-            if (query.containsKey(ParamConstants.USER_CREATION_DATE)) {
-                query.put(UserDBAdaptor.QueryParams.ACCOUNT_CREATION_DATE.key(), query.get(ParamConstants.USER_CREATION_DATE));
-                query.remove(ParamConstants.USER_CREATION_DATE);
-            }
+            changeQueryId(myQuery, ParamConstants.USER, UserDBAdaptor.QueryParams.ID.key());
+            changeQueryId(myQuery, ParamConstants.USER_ACCOUNT_TYPE, UserDBAdaptor.QueryParams.ACCOUNT_TYPE.key());
+            changeQueryId(myQuery, ParamConstants.USER_AUTHENTICATION_ORIGIN, UserDBAdaptor.QueryParams.ACCOUNT_AUTHENTICATION_ID.key());
+            changeQueryId(myQuery, ParamConstants.USER_CREATION_DATE, UserDBAdaptor.QueryParams.ACCOUNT_CREATION_DATE.key());
 
-            OpenCGAResult<User> userDataResult = userDBAdaptor.get(query, options);
-            auditManager.auditSearch(userId, Enums.Resource.USER, "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return userDataResult;
-        } catch (CatalogException e) {
-            auditManager.auditSearch(userId, Enums.Resource.USER, "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
+            return userDBAdaptor.get(myQuery, queryOptions);
+        });
     }
 
 }

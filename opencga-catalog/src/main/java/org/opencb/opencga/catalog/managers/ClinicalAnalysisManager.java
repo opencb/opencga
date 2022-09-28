@@ -19,7 +19,10 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.*;
+import org.opencb.biodata.models.clinical.ClinicalAnalyst;
+import org.opencb.biodata.models.clinical.ClinicalAudit;
+import org.opencb.biodata.models.clinical.ClinicalComment;
+import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -100,14 +103,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.TYPE.key()));
     protected static Logger logger = LoggerFactory.getLogger(ClinicalAnalysisManager.class);
-    private UserManager userManager;
-    private StudyManager studyManager;
 
     ClinicalAnalysisManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                             DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
-        this.userManager = catalogManager.getUserManager();
-        this.studyManager = catalogManager.getStudyManager();
     }
 
     @Override
@@ -1354,7 +1353,6 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             if (param == null) {
                 throw new CatalogException("Unknown '" + field + "' parameter.");
             }
-            Class<?> clazz = getTypeClass(param.type());
 
             fixQueryObject(study, myQuery, userId, token);
             myQuery.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
