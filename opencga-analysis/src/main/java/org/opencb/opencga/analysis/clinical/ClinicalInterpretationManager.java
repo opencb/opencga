@@ -29,6 +29,7 @@ import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
+import org.opencb.biodata.models.variant.avro.GeneCancerAssociation;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.clinical.ClinicalVariantCreator;
@@ -100,8 +101,6 @@ public class ClinicalInterpretationManager extends StorageManager {
     protected CellBaseClient cellBaseClient;
     protected AlignmentStorageManager alignmentStorageManager;
 
-    private RoleInCancerManager roleInCancerManager;
-
     private VariantCatalogQueryUtils catalogQueryUtils;
 
     private static Query defaultDeNovoQuery;
@@ -141,8 +140,6 @@ public class ClinicalInterpretationManager extends StorageManager {
 
         this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
         this.alignmentStorageManager = new AlignmentStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
-
-        this.roleInCancerManager = new RoleInCancerManager(opencgaHome);
 
         this.catalogQueryUtils = new VariantCatalogQueryUtils(catalogManager);
 
@@ -289,12 +286,10 @@ public class ClinicalInterpretationManager extends StorageManager {
             }
         }
 
-        Map<String, ClinicalProperty.RoleInCancer> roleInCancer = roleInCancerManager.getRoleInCancer();
-
         List<ClinicalVariant> clinicalVariants = new ArrayList<>();
 
         for (Variant variant : variants) {
-            ClinicalVariant clinicalVariant = createClinicalVariant(variant, genePanelMap, roleInCancer, config);
+            ClinicalVariant clinicalVariant = createClinicalVariant(variant, genePanelMap, config);
             if (clinicalVariant != null) {
                 clinicalVariants.add(clinicalVariant);
             }
@@ -386,7 +381,6 @@ public class ClinicalInterpretationManager extends StorageManager {
     /*--------------------------------------------------------------------------*/
 
     private ClinicalVariant createClinicalVariant(Variant variant, Map<String, Set<String>> genePanelMap,
-                                                  Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
                                                   InterpretationAnalysisConfiguration config) {
         List<String> panelIds;
         GenomicFeature gFeature;
@@ -420,13 +414,11 @@ public class ClinicalInterpretationManager extends StorageManager {
                 ClinicalVariantEvidence evidence;
                 if (CollectionUtils.isNotEmpty(panelIds)) {
                     for (String panelId : panelIds) {
-                        evidence = createEvidence(variant.getId(), ct, gFeature, panelId, null, null, variant.getAnnotation(),
-                                roleInCancer, config);
+                        evidence = createEvidence(ct, gFeature, panelId, null, null, variant.getAnnotation(), config);
                         evidences.add(evidence);
                     }
                 } else if (genePanelMap.size() == 0) {
-                    evidence = createEvidence(variant.getId(), ct, gFeature, null, null, null, variant.getAnnotation(), roleInCancer,
-                            config);
+                    evidence = createEvidence(ct, gFeature, null, null, null, variant.getAnnotation(), config);
                     evidences.add(evidence);
                 }
             }
@@ -443,19 +435,11 @@ public class ClinicalInterpretationManager extends StorageManager {
 
     /*--------------------------------------------------------------------------*/
 
-    protected ClinicalVariantEvidence createEvidence(String variantId, ConsequenceType consequenceType, GenomicFeature genomicFeature,
-                                                     String panelId, List<ClinicalProperty.ModeOfInheritance> mois,
-                                                     ClinicalProperty.Penetrance penetrance, VariantAnnotation annotation,
-                                                     Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
-                                                     InterpretationAnalysisConfiguration config) {
+    protected ClinicalVariantEvidence createEvidence(ConsequenceType consequenceType, GenomicFeature genomicFeature, String panelId,
+                                                     List<ClinicalProperty.ModeOfInheritance> mois, ClinicalProperty.Penetrance penetrance,
+                                                     VariantAnnotation annotation, InterpretationAnalysisConfiguration config) {
 
         ClinicalVariantEvidence clinicalVariantEvidence = new ClinicalVariantEvidence();
-
-//        // Consequence types
-//        if (CollectionUtils.isNotEmpty(consequenceType.getSequenceOntologyTerms())) {
-//            // Set consequence type
-//            clinicalVariantEvidence.setConsequenceTypes(consequenceType.getSequenceOntologyTerms());
-//        }
 
         // Genomic feature
         if (genomicFeature != null) {
@@ -464,16 +448,6 @@ public class ClinicalInterpretationManager extends StorageManager {
 
         // Set panel
         clinicalVariantEvidence.setPanelId(panelId);
-
-        // Panel ID and compute tier based on SO terms
-//        String tier = UNTIERED;
-//        if (config != null) {
-//            if (isTier1(panelId, consequenceType.getSequenceOntologyTerms(), config)) {
-//                tier = TIER_1;
-//            } else if (isTier2(panelId, consequenceType.getSequenceOntologyTerms(), config)) {
-//                tier = TIER_2;
-//            }
-//        }
 
         // Mode of inheritance
         if (mois != null) {
@@ -496,13 +470,30 @@ public class ClinicalInterpretationManager extends StorageManager {
         clinicalVariantEvidence.getClassification().setClinicalSignificance(computeClinicalSignificance(acmgs));
 
         // Role in cancer
-        if (roleInCancer != null && genomicFeature != null && "GENE".equals(genomicFeature.getType())) {
-            if (roleInCancer.containsKey(genomicFeature.getGeneName())) {
-                clinicalVariantEvidence.setRoleInCancer(roleInCancer.get(genomicFeature.getGeneName()));
-            }
-        }
+        clinicalVariantEvidence.setRolesInCancer(getRolesInCancer(annotation));
 
         return clinicalVariantEvidence;
+    }
+
+    public List<ClinicalProperty.RoleInCancer> getRolesInCancer(VariantAnnotation annotation) {
+        if (CollectionUtils.isNotEmpty(annotation.getGeneCancerAssociations())) {
+            Set<ClinicalProperty.RoleInCancer> roles = new HashSet<>();
+            for (GeneCancerAssociation geneCancerAssociation : annotation.getGeneCancerAssociations()) {
+                if (CollectionUtils.isNotEmpty(geneCancerAssociation.getRoleInCancer())) {
+                    for (String value : geneCancerAssociation.getRoleInCancer()) {
+                        try {
+                            roles.add(ClinicalProperty.RoleInCancer.valueOf(value.toUpperCase()));
+                        } catch (Exception e) {
+                            logger.info("Unknown role in cancer value: {}. It will be ignored.", value.toUpperCase());
+                        }
+                    }
+                }
+            }
+            if (CollectionUtils.isNotEmpty(roles)) {
+                return new ArrayList<>(roles);
+            }
+        }
+        return new ArrayList<>();
     }
 
     private boolean isTier1(String panelId, List<SequenceOntologyTerm> soTerms, InterpretationAnalysisConfiguration config) {
@@ -719,14 +710,11 @@ public class ClinicalInterpretationManager extends StorageManager {
                 }
             }
         }
-        try {
-            Disorder disorder = new Disorder().setId(query.getString(FAMILY_DISORDER.key()));
-            List<DiseasePanel> diseasePanels = getDiseasePanels(query, sessionId);
-            return new DefaultClinicalVariantCreator(getRoleInCancerManager().getRoleInCancer(), disorder, Collections.singletonList(moi),
-                    ClinicalProperty.Penetrance.COMPLETE, diseasePanels, biotypes, soNames, !skipUntieredVariants);
-        } catch (IOException e) {
-            throw new ToolException("Error creating clinical variant creator", e);
-        }
+
+        Disorder disorder = new Disorder().setId(query.getString(FAMILY_DISORDER.key()));
+        List<DiseasePanel> diseasePanels = getDiseasePanels(query, sessionId);
+        return new DefaultClinicalVariantCreator(disorder, Collections.singletonList(moi), ClinicalProperty.Penetrance.COMPLETE,
+                diseasePanels, biotypes, soNames, !skipUntieredVariants);
     }
 
     public ClinicalAnalysis getClinicalAnalysis(String studyId, String clinicalAnalysisId, String sessionId)
@@ -860,10 +848,6 @@ public class ClinicalInterpretationManager extends StorageManager {
             assembly = assembly.toLowerCase();
         }
         return assembly;
-    }
-
-    public RoleInCancerManager getRoleInCancerManager() {
-        return roleInCancerManager;
     }
 
     public VariantStorageManager getVariantStorageManager() {

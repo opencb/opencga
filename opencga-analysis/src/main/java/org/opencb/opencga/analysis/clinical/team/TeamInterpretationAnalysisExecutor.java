@@ -52,7 +52,6 @@ import static org.opencb.biodata.models.clinical.ClinicalProperty.ModeOfInherita
 import static org.opencb.biodata.tools.pedigree.ModeOfInheritance.lof;
 import static org.opencb.biodata.tools.pedigree.ModeOfInheritance.proteinCoding;
 import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.PRIMARY_FINDINGS_FILENAME;
-import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.SECONDARY_FINDINGS_FILENAME;
 
 @ToolExecutor(id = "opencga-local",
         tool = TeamInterpretationAnalysis.ID,
@@ -95,17 +94,8 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaToolExecutor impl
         List<String> sampleList = ClinicalUtils.getSampleNames(clinicalAnalysis, proband);
 
         // Clinical variant creator
-        TeamClinicalVariantCreator creator;
-
-        try {
-            creator = new TeamClinicalVariantCreator(diseasePanels,
-                    clinicalInterpretationManager.getRoleInCancerManager().getRoleInCancer(),
-                    clinicalAnalysis.getDisorder(), null, ClinicalProperty.Penetrance.COMPLETE);
-        } catch (IOException e) {
-            throw new ToolException("Error creating Team clinical variant creator", e);
-        }
-
-        List<ClinicalVariant> primaryFindings;
+        TeamClinicalVariantCreator creator = new TeamClinicalVariantCreator(diseasePanels, clinicalAnalysis.getDisorder(), null,
+                ClinicalProperty.Penetrance.COMPLETE);
 
         // Step 1 - diagnostic variants
         // Get diagnostic variants from panels
@@ -124,6 +114,7 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaToolExecutor impl
                 .map(DiseasePanel.VariantPanel::getId).collect(Collectors.toList()), ","));
         query.put(VariantQueryParam.SAMPLE.key(), StringUtils.join(sampleList, ","));
 
+        List<ClinicalVariant> primaryFindings;
         try {
             primaryFindings = getClinicalVariants(query, queryOptions, creator);
         } catch (InterpretationAnalysisException | CatalogException | IOException | StorageEngineException e) {

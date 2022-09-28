@@ -218,15 +218,15 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
             variantMoIMap.get(variant.getId()).add(UNKNOWN);
         }
 
-        // Primary findings,
-        TieringClinicalVariantCreator creator;
+        // Tiering clinical variant creator
+        TieringClinicalVariantCreator creator = new TieringClinicalVariantCreator(diseasePanels, clinicalAnalysis.getDisorder(), null,
+                penetrance, assembly);
+
+        // Primary findings
         List<ClinicalVariant> primaryFindings;
         try {
-            creator = new TieringClinicalVariantCreator(diseasePanels,
-                    clinicalInterpretationManager.getRoleInCancerManager().getRoleInCancer(), clinicalAnalysis.getDisorder(),
-                    null, penetrance, assembly);
             primaryFindings = creator.create(variantList, variantMoIMap);
-        } catch (InterpretationAnalysisException | IOException e) {
+        } catch (InterpretationAnalysisException e) {
             throw new ToolException(e.getMessage(), e);
         }
 
