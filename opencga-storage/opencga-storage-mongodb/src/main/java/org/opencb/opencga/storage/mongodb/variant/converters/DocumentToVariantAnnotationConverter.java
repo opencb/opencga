@@ -53,6 +53,7 @@ public class DocumentToVariantAnnotationConverter
     public static final String CT_GENE_NAME_FIELD = "gn";
     public static final String CT_ENSEMBL_GENE_ID_FIELD = "ensg";
     public static final String CT_ENSEMBL_TRANSCRIPT_ID_FIELD = "enst";
+    public static final String CT_HGVS_FIELD = "hgvs";
     public static final String CT_RELATIVE_POS_FIELD = "relPos";
     public static final String CT_CODON_FIELD = "codon";
     public static final String CT_STRAND_FIELD = "strand";
@@ -297,6 +298,7 @@ public class DocumentToVariantAnnotationConverter
                             getDefault(ct, CT_GENE_NAME_FIELD, ""),
                             getDefault(ct, CT_ENSEMBL_GENE_ID_FIELD, ""),
                             getDefault(ct, CT_ENSEMBL_TRANSCRIPT_ID_FIELD, ""),
+                            getDefault(ct, CT_HGVS_FIELD, Collections.emptyList()),
                             getDefault(ct, CT_STRAND_FIELD, "+"),
                             getDefault(ct, CT_BIOTYPE_FIELD, ""),
                             getDefault(ct, CT_EXON_OVERLAP_FIELD, Collections.emptyList()),
@@ -516,8 +518,8 @@ public class DocumentToVariantAnnotationConverter
         );
     }
 
-    private ConsequenceType buildConsequenceType(String geneName, String ensemblGeneId, String ensemblTranscriptId, String strand,
-                                                 String biotype, List<Document> exonOverlap, List<SpliceScores> spliceScores,
+    private ConsequenceType buildConsequenceType(String geneName, String ensemblGeneId, String ensemblTranscriptId, List<String> hgvs,
+                                                 String strand, String biotype, List<Document> exonOverlap, List<SpliceScores> spliceScores,
                                                  List<String> transcriptAnnotationFlags, Integer cDnaPosition, Integer cdsPosition,
                                                  String codon, List<String> soNameList, ProteinVariantAnnotation proteinVariantAnnotation) {
         List<SequenceOntologyTerm> soTerms = new ArrayList<>(soNameList.size());
@@ -532,9 +534,9 @@ public class DocumentToVariantAnnotationConverter
             exonOverlapList.add(e);
         }
 
-        return new ConsequenceType(ensemblGeneId, geneName, ensemblGeneId, ensemblTranscriptId, ensemblTranscriptId, strand, biotype, null,
-                exonOverlapList, spliceScores, transcriptAnnotationFlags, cDnaPosition, cdsPosition, codon,
-                proteinVariantAnnotation, soTerms);
+        return new ConsequenceType(ensemblGeneId, geneName, ensemblGeneId, ensemblTranscriptId, ensemblTranscriptId, hgvs, strand, biotype,
+                null, exonOverlapList, spliceScores, transcriptAnnotationFlags, cDnaPosition, cdsPosition, codon, proteinVariantAnnotation,
+                soTerms);
     }
 
     private ProteinVariantAnnotation buildProteinVariantAnnotation(String uniprotAccession, String uniprotName, int aaPosition,
