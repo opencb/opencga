@@ -679,6 +679,12 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(9, distinct.getNumResults());
         assertEquals(9, distinct.getResults().size());
 
+        distinct = catalogManager.getSampleManager().distinct(studyFqn, Arrays.asList(SampleDBAdaptor.QueryParams.ID.key(),
+                SampleDBAdaptor.QueryParams.UID.key()), null, token);
+        assertEquals(String.class.getName(), distinct.getResultType());
+        assertEquals(18, distinct.getNumResults());
+        assertEquals(18, distinct.getResults().size());
+
         distinct = catalogManager.getSampleManager().distinct(studyFqn, SampleDBAdaptor.QueryParams.UID.key(), null, token);
         assertEquals(Long.class.getName(), distinct.getResultType());
         assertEquals(9, distinct.getNumResults());
