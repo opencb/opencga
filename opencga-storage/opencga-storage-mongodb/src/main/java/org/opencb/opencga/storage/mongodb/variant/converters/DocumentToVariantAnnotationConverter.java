@@ -622,6 +622,7 @@ public class DocumentToVariantAnnotationConverter
                 putNotNull(ct, CT_GENE_NAME_FIELD, consequenceType.getGeneName());
                 putNotNull(ct, CT_ENSEMBL_GENE_ID_FIELD, consequenceType.getGeneId());
                 putNotNull(ct, CT_ENSEMBL_TRANSCRIPT_ID_FIELD, consequenceType.getTranscriptId());
+                putNotNull(ct, CT_HGVS_FIELD, consequenceType.getHgvs());
 //                putNotNull(ct, RELATIVE_POS_FIELD, consequenceType.getRelativePosition());
                 putNotNull(ct, CT_CODON_FIELD, consequenceType.getCodon());
                 putNotDefault(ct, CT_STRAND_FIELD, consequenceType.getStrand(), DEFAULT_STRAND_VALUE);
