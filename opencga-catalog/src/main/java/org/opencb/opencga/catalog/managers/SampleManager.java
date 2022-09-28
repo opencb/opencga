@@ -310,16 +310,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 .append("query", new Query(query))
                 .append("token", token);
         try {
-            SampleDBAdaptor.QueryParams param = SampleDBAdaptor.QueryParams.getParam(field);
-            if (param == null) {
-                throw new CatalogException("Unknown '" + field + "' parameter.");
-            }
-            Class<?> clazz = getTypeClass(param.type());
-
             fixQueryObject(study, query, userId);
 
             query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<?> result = sampleDBAdaptor.distinct(study.getUid(), field, query, userId, clazz);
+            OpenCGAResult<?> result = sampleDBAdaptor.distinct(study.getUid(), field, query, userId);
 
             auditManager.auditDistinct(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1123,7 +1117,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     SamplePermissions.WRITE);
         }
 
-        if (updateParamsClone != null && StringUtils.isNotEmpty(updateParamsClone.getId())) {
+        if (updateParamsClone != null && updateParamsClone.getId() != null) {
             ParamUtils.checkIdentifier(updateParamsClone.getId(), SampleDBAdaptor.QueryParams.ID.key());
         }
 

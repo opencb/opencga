@@ -19,10 +19,7 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.ClinicalAnalyst;
-import org.opencb.biodata.models.clinical.ClinicalAudit;
-import org.opencb.biodata.models.clinical.ClinicalComment;
-import org.opencb.biodata.models.clinical.Disorder;
+import org.opencb.biodata.models.clinical.*;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -600,6 +597,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             ClinicalStatusValue clinicalStatusValue = statusMap.get(clinicalAnalysis.getStatus().getId());
             clinicalAnalysis.getStatus().setDescription(clinicalStatusValue.getDescription());
             clinicalAnalysis.getStatus().setDate(TimeUtils.getTime());
+        } else if (clinicalAnalysis.getStatus().getId() == null) {
+            clinicalAnalysis.getStatus().setId("");
         }
     }
 
@@ -1028,8 +1027,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         Map<String, Object> actionMap = options.getMap(Constants.ACTIONS);
 
-        if (StringUtils.isNotEmpty(updateParams.getId())) {
-            ParamUtils.checkIdentifier(updateParams.getId(), "id");
+        if (updateParams.getId() != null) {
+            ParamUtils.checkIdentifier(updateParams.getId(), ClinicalAnalysisDBAdaptor.QueryParams.ID.key());
         }
         if (StringUtils.isNotEmpty(updateParams.getDueDate()) && TimeUtils.toDate(updateParams.getDueDate()) == null) {
             throw new CatalogException("Unrecognised due date. Accepted format is: yyyyMMddHHmmss");
@@ -1359,7 +1358,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
             fixQueryObject(study, myQuery, userId, token);
             myQuery.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            return clinicalDBAdaptor.distinct(study.getUid(), field, myQuery, userId, clazz);
+            return clinicalDBAdaptor.distinct(study.getUid(), field, myQuery, userId);
         });
     }
 

@@ -90,7 +90,7 @@ public class InterpretationUtilsTest {
         ClinicalVariant.Status status = Arrays.asList(ClinicalVariant.Status.values()).get(i % 5);
         VariantAnnotation variantAnnotation = new VariantAnnotation();
         variantAnnotation.setConsequenceTypes(Collections.singletonList(
-                new ConsequenceType(gene, gene, gene, null, null, null, null, null, null, null, null, null, null, null, null, null)));
+                new ConsequenceType(gene, gene, gene, null, null, null, null, null, null, null, null, null, null, null, null, null, null)));
         VariantAvro variantAvro = new VariantAvro("chr" + i, null, "chr" + i, 0, 10, "G", "T", "+", null, 10, VariantType.CNV, null,
                 variantAnnotation);
 
@@ -101,6 +101,6 @@ public class InterpretationUtilsTest {
             variantEvidenceList.add(evidence);
         }
 
-        return new ClinicalVariant(variantAvro, variantEvidenceList, null, null, null, status, Collections.emptyList(), null);
+        return new ClinicalVariant(variantAvro, variantEvidenceList, null, null, null, null, status, Collections.emptyList(), null);
     }
 }

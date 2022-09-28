@@ -5,10 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.parquet.hadoop.metadata.CompressionCodecName;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.io.managers.IOConnector;
@@ -54,6 +57,7 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
  */
 public class HadoopVariantExporter extends VariantExporter {
 
+    private final HadoopVariantStorageEngine engine;
     private final MRExecutor mrExecutor;
     private final Logger logger = LoggerFactory.getLogger(HadoopVariantExporter.class);
 
@@ -61,6 +65,7 @@ public class HadoopVariantExporter extends VariantExporter {
                                  IOConnectorProvider ioConnectorProvider)
             throws StorageEngineException {
         super(engine, metadataFactory, ioConnectorProvider);
+        this.engine = engine;
         this.mrExecutor = mrExecutor;
     }
 
@@ -75,9 +80,7 @@ public class HadoopVariantExporter extends VariantExporter {
         Query query = variantQuery.getQuery();
         QueryOptions queryOptions = variantQuery.getInputOptions();
         boolean smallQuery = false;
-        boolean parquet = outputFormat == VariantWriterFactory.VariantOutputFormat.PARQUET_GZ
-                || outputFormat == VariantWriterFactory.VariantOutputFormat.PARQUET;
-        if (!queryOptions.getBoolean("skipSmallQuery", false) && !parquet) {
+        if (!queryOptions.getBoolean("skipSmallQuery", false)) {
             ParsedVariantQuery.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
             if (xrefs.getVariants().size() > 0 && xrefs.getVariants().size() < 2000) {
                 // FIXME: Is this scenario still needed?
@@ -231,6 +234,19 @@ public class HadoopVariantExporter extends VariantExporter {
         }
 
         return outputFileUri;
+    }
+
+    @Override
+    protected DataWriter<Variant> newVariantDataWriter(URI outputFile, OutputStream outputStream,
+                                                       VariantWriterFactory.VariantOutputFormat outputFormat,
+                                                       Query query, QueryOptions queryOptions) throws IOException {
+        if (outputFormat == VariantWriterFactory.VariantOutputFormat.PARQUET) {
+            return new VariantParquetWriter(outputFile, CompressionCodecName.UNCOMPRESSED, engine.getConf());
+        } else if (outputFormat == VariantWriterFactory.VariantOutputFormat.PARQUET_GZ) {
+            return new VariantParquetWriter(outputFile, CompressionCodecName.GZIP, engine.getConf());
+        } else {
+            return super.newVariantDataWriter(outputFile, outputStream, outputFormat, query, queryOptions);
+        }
     }
 
     protected void writeMetadataInHdfs(VariantMetadata metadata, Path metadataPath, FileSystem fileSystem) throws IOException {

@@ -1,5 +1,11 @@
 package org.opencb.opencga.core.api;
 
+import com.beust.jcommander.DynamicParameter;
+import com.beust.jcommander.Parameter;
+
+import java.util.HashMap;
+import java.util.Map;
+
 public class FieldConstants {
 
     //Generic descriptions
@@ -385,4 +391,47 @@ public class FieldConstants {
     public static final String USER_FILTER_QUERY = "User filter query";
     public static final String USER_FILTER_QUERY_OPTIONS = "User filter query options";
 
+
+    // Mutational signature (sample-qc-run, mutationsl-signature-run, mutational-signature-query)
+    public static final String MUTATIONAL_SIGNATURE_ID_DESCRIPTION = "Signature ID.";
+    public static final String MUTATIONAL_SIGNATURE_DESCRIPTION_DESCRIPTION = "Signature description.";
+    public static final String MUTATIONAL_SIGNATURE_QUERY_DESCRIPTION = "Signature query in JSON format, e.g: \"\"{\\\"sample\\\":"
+            + "\\\"NR123456_T\\\", \\\"fileData\\\": \\\"NR.123456_T_vs_NR.1234567_G.annot.vcf.gz:FILTER=PASS;CLPM<=0;ASMD>=140\\\"}\".";
+    public static final String MUTATIONAL_SIGNATURE_CATALOGUES_DESCRIPTION = "File name containing mutational catalogues. Each sample"
+            + " catalogue is in a column, with sample names as column headers and channel.";
+    public static final String MUTATIONAL_SIGNATURE_CATALOGUES_CONTENT_DESCRIPTION = "Mutational catalogues. Each sample catalogue is in a"
+            + " column, with sample names as column headers and channel.";
+    public static final String MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION = "Either Fit or FitMS. If not specified then FitMS";
+    public static final String MUTATIONAL_SIGNATURE_N_BOOT_DESCRIPTION = "Number of bootstrap to be used.";
+    public static final String MUTATIONAL_SIGNATURE_SIG_VERSION_DESCRIPTION = "Either COSMICv2, COSMICv3.2, RefSigv1 or RefSigv2. If not"
+            + " specified RefSigv2.";
+    public static final String MUTATIONAL_SIGNATURE_ORGAN_DESCRIPTION = "When using RefSigv1 or RefSigv2 as SIGVERSION, organ-specific"
+            + " signatures will be used. If SIGVERSION is COSMICv2 or COSMICv3.2, then a selection of signatures found in the given organ will be"
+            + " used. Available organs depend on the selected SIGVERSION. For RefSigv1 or RefSigv2: Biliary, Bladder, Bone_SoftTissue, Breast,"
+            + " Cervix (v1 only), CNS, Colorectal, Esophagus, Head_neck, Kidney, Liver, Lung, Lymphoid, NET (v2 only), Oral_Oropharyngeal"
+            + " (v2 only), Ovary, Pancreas, Prostate, Skin, Stomach, Uterus.";
+    public static final String MUTATIONAL_SIGNATURE_THRESHOLD_PERC_DESCRIPTION = "Threshold in percentage of total mutations in a sample,"
+            + " only exposures larger than THRPERC are considered. If not specified 5.";
+    public static final String MUTATIONAL_SIGNATURE_THRESHOLD_PVAL_DESCRIPTION = "P-value to determine the empirical probability that the"
+            + " exposure is lower than the threshold. If not specified then 0.05.";
+    public static final String MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION = "Maximum number of rare signatures that are allowed to be"
+            + " present in each sample. If not specified 1.";
+    public static final String MUTATIONAL_SIGNATURE_SIGNATURES_FILE_DESCRIPTION = "The file name containing mutational signatures. Each"
+            + " signature is in a column, with signature names as column hearders and channel names as row names in the first column with"
+            + " no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are"
+            + " considered common signatures.";
+    public static final String MUTATIONAL_SIGNATURE_RARE_SIGNATURES_FILE_DESCRIPTION = "The file name containing mutational signatures."
+            + " Each signature is in a column, with signature names as column hearders and channel names as row names in the first column"
+            + " with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures"
+            + " are considered rare signatures.";
+
+    // Genome plot (sample-qc-run)
+    public static final String GENOME_PLOT_ID_DESCRIPTION = "Genome plot ID.";
+    public static final String GENOME_PLOT_DESCRIPTION_DESCRIPTION = "Genome plot description.";
+    public static final String GENOME_PLOT_CONFIGURATION_FILE_DESCRIPTION = "Genome plot configuration file.";
+
+    // Varaint stats (sample-qc-run)
+    public static final String VARIANT_STATS_ID_DESCRIPTION = "Variant stats ID.";
+    public static final String VARIANT_STATS_DESCRIPTION_DESCRIPTION = "Variant stats description.";
+    public static final String VARIANT_STATS_QUERY_DESCRIPTION = "Variant stats query in JSON format.";
 }

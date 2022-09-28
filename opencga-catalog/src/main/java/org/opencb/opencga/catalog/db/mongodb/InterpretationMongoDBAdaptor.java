@@ -89,6 +89,20 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 deleteInterpretationCollection);
     }
 
+    static void fixFindingsForRemoval(ObjectMap parameters, String findingsKey) {
+        if (parameters.get(findingsKey) == null) {
+            return;
+        }
+
+        List<Document> findingsParamList = new LinkedList<>();
+        for (Object finding : parameters.getAsList(findingsKey)) {
+            if (finding instanceof Map) {
+                findingsParamList.add(new Document("id", ((Map) finding).get("id")));
+            }
+        }
+        parameters.put(findingsKey, findingsParamList);
+    }
+
     public MongoDBCollection getInterpretationCollection() {
         return interpretationCollection;
     }
@@ -563,20 +577,6 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         return document;
     }
 
-    static void fixFindingsForRemoval(ObjectMap parameters, String findingsKey) {
-        if (parameters.get(findingsKey) == null) {
-            return;
-        }
-
-        List<Document> findingsParamList = new LinkedList<>();
-        for (Object finding : parameters.getAsList(findingsKey)) {
-            if (finding instanceof Map) {
-                findingsParamList.add(new Document("id", ((Map) finding).get("id")));
-            }
-        }
-        parameters.put(findingsKey, findingsParamList);
-    }
-
     private void checkNewFindingsDontExist(List<ClinicalVariant> currentFindings, List<Map> newFindings)
             throws CatalogDBException {
         Set<String> currentVariantIds = currentFindings.stream().map(ClinicalVariant::getId).collect(Collectors.toSet());
@@ -954,11 +954,11 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     /**
      * Update Panel references from the Interpretations of the CA.
      *
-     * @param clientSession Client session.
+     * @param clientSession    Client session.
      * @param clinicalAnalysis Clinical Analysis.
-     * @param panel         Panel object containing the new version.
-     * @throws CatalogDBException CatalogDBException.
-     * @throws CatalogParameterException CatalogParameterException.
+     * @param panel            Panel object containing the new version.
+     * @throws CatalogDBException            CatalogDBException.
+     * @throws CatalogParameterException     CatalogParameterException.
      * @throws CatalogAuthorizationException CatalogAuthorizationException.
      */
     void updateInterpretationPanelReferences(ClientSession clientSession, ClinicalAnalysis clinicalAnalysis, Panel panel)
@@ -1024,13 +1024,13 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
+    public OpenCGAResult distinct(long studyUid, String field, Query query, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query finalQuery = query != null ? new Query(query) : new Query();
         finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
         Bson bson = parseQuery(finalQuery);
 
-        return new OpenCGAResult<>(interpretationCollection.distinct(field, bson, clazz));
+        return new OpenCGAResult<>(interpretationCollection.distinct(field, bson));
     }
 
     @Override

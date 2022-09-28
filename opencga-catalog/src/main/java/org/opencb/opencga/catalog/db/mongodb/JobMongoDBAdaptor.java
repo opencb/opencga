@@ -44,7 +44,10 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
-import org.opencb.opencga.core.models.job.*;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobInternalWebhook;
+import org.opencb.opencga.core.models.job.JobPermissions;
+import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -62,12 +65,11 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
  */
 public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
+    private static final String PRIVATE_PRIORITY = "_priority";
+    private static final String PRIVATE_STUDY_UIDS = "_studyUids";
     private final MongoDBCollection jobCollection;
     private final MongoDBCollection deletedJobCollection;
     private JobConverter jobConverter;
-
-    private static final String PRIVATE_PRIORITY = "_priority";
-    private static final String PRIVATE_STUDY_UIDS = "_studyUids";
 
     public JobMongoDBAdaptor(MongoDBCollection jobCollection, MongoDBCollection deletedJobCollection, Configuration configuration,
                              MongoDBAdaptorFactory dbAdaptorFactory) {
@@ -700,13 +702,13 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
+    public OpenCGAResult distinct(long studyUid, String field, Query query, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query finalQuery = query != null ? new Query(query) : new Query();
         finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
         Bson bson = parseQuery(finalQuery, null, userId);
 
-        return new OpenCGAResult(jobCollection.distinct(field, bson, clazz));
+        return new OpenCGAResult(jobCollection.distinct(field, bson));
     }
 
     @Override

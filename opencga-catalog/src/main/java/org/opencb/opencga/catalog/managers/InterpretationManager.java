@@ -65,11 +65,6 @@ import java.util.stream.Collectors;
 
 public class InterpretationManager extends ResourceManager<Interpretation> {
 
-    protected static Logger logger = LoggerFactory.getLogger(InterpretationManager.class);
-
-    private UserManager userManager;
-    private StudyManager studyManager;
-
     public static final QueryOptions INCLUDE_CLINICAL_ANALYSIS = keepFieldsInQueryOptions(ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS,
             Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCK.key()));
     public static final QueryOptions INCLUDE_INTERPRETATION_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
@@ -81,8 +76,11 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             InterpretationDBAdaptor.QueryParams.ID.key(), InterpretationDBAdaptor.QueryParams.UID.key(),
             InterpretationDBAdaptor.QueryParams.UUID.key(), InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS_ID.key(),
             InterpretationDBAdaptor.QueryParams.VERSION.key(), InterpretationDBAdaptor.QueryParams.STUDY_UID.key(),
-            InterpretationDBAdaptor.QueryParams.LOCKED.key(),  InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS_ID.key(),
+            InterpretationDBAdaptor.QueryParams.LOCKED.key(), InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS_ID.key(),
             InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS_ID.key()));
+    protected static Logger logger = LoggerFactory.getLogger(InterpretationManager.class);
+    private UserManager userManager;
+    private StudyManager studyManager;
 
 
     public InterpretationManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
@@ -1214,16 +1212,10 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 .append("query", new Query(query))
                 .append("token", token);
         try {
-            InterpretationDBAdaptor.QueryParams param = InterpretationDBAdaptor.QueryParams.getParam(field);
-            if (param == null) {
-                throw new CatalogException("Unknown '" + field + "' parameter.");
-            }
-            Class<?> clazz = getTypeClass(param.type());
-
             fixQueryObject(study, query, userId);
 
             query.append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<?> result = interpretationDBAdaptor.distinct(study.getUid(), field, query, userId, clazz);
+            OpenCGAResult<?> result = interpretationDBAdaptor.distinct(study.getUid(), field, query, userId);
 
             auditManager.auditDistinct(userId, Enums.Resource.INTERPRETATION, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));

@@ -70,19 +70,16 @@ import static org.opencb.opencga.core.models.common.Enums.Resource.COHORT;
  */
 public class CohortManager extends AnnotationSetManager<Cohort> {
 
-    protected static Logger logger = LoggerFactory.getLogger(CohortManager.class);
-
-    private UserManager userManager;
-    private StudyManager studyManager;
-
-    private final String defaultFacet = "creationYear>>creationMonth;status;numSamples[0..10]:1";
-
     public static final QueryOptions INCLUDE_COHORT_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             CohortDBAdaptor.QueryParams.STUDY_UID.key(), CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.UID.key(),
             CohortDBAdaptor.QueryParams.UUID.key()));
     public static final QueryOptions INCLUDE_COHORT_STATUS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             CohortDBAdaptor.QueryParams.STUDY_UID.key(), CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.UID.key(),
             CohortDBAdaptor.QueryParams.UUID.key(), CohortDBAdaptor.QueryParams.INTERNAL_STATUS.key()));
+    protected static Logger logger = LoggerFactory.getLogger(CohortManager.class);
+    private final String defaultFacet = "creationYear>>creationMonth;status;numSamples[0..10]:1";
+    private UserManager userManager;
+    private StudyManager studyManager;
 
 
     CohortManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
@@ -468,7 +465,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             // Fix query if it contains any annotation
             AnnotationUtils.fixQueryAnnotationSearch(study, myQuery);
             myQuery.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            return cohortDBAdaptor.distinct(study.getUid(), field, myQuery, userId, clazz);
+            return cohortDBAdaptor.distinct(study.getUid(), field, myQuery, userId);
         });
     }
 
@@ -890,8 +887,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             }
         }
 
-        if (updateParams != null && (ListUtils.isNotEmpty(updateParams.getSamples())
-                || StringUtils.isNotEmpty(updateParams.getId()))) {
+        if (updateParams != null && (ListUtils.isNotEmpty(updateParams.getSamples()) || updateParams.getId() != null)) {
             switch (cohort.getInternal().getStatus().getId()) {
                 case CohortStatus.CALCULATING:
                     throw new CatalogException("Unable to modify a cohort while it's in status \"" + CohortStatus.CALCULATING
@@ -904,6 +900,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                     break;
                 default:
                     break;
+            }
+
+            if (updateParams.getId() != null) {
+                ParamUtils.checkIdentifier(updateParams.getId(), CohortDBAdaptor.QueryParams.ID.key());
             }
 
             if (CollectionUtils.isNotEmpty(updateParams.getSamples())) {

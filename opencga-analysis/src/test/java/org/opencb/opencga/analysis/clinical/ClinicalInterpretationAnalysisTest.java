@@ -196,8 +196,8 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
 //        VariantAvro variant = new VariantAvro("1:1456330:C:A", null, "1", 1456330, 1456330, "C", "A", "+", null, 1, null, null, null);
         VariantAvro variant = new VariantAvro("rs1212112", null, "1", 1456330, 1456330, "C", "A", "+", null, 1, null, null, null);
         ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method2");
-        ClinicalVariant cv3 = new ClinicalVariant(variant, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(null, null, "helllooooo"),
-                ClinicalVariant.Status.REVIEWED, Collections.emptyList(), null);
+        ClinicalVariant cv3 = new ClinicalVariant(variant, Collections.singletonList(evidence), null, null,
+                new ClinicalDiscussion(null, null, "helllooooo"), null, ClinicalVariant.Status.REVIEWED, Collections.emptyList(), null);
         findingList.add(cv3);
         InterpretationUpdateParams updateParams = new InterpretationUpdateParams().setPrimaryFindings(findingList);
         ObjectMap actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.ADD);

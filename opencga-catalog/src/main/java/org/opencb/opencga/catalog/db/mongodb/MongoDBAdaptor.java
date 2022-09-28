@@ -145,10 +145,11 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
      */
     protected MongoDBCollection getQueryCollection(Query query, MongoDBCollection collection, MongoDBCollection archiveCollection,
                                                    MongoDBCollection deleteCollection) {
-        if (query.containsKey(ParamConstants.DELETED_PARAM)) {
+        if (query.getBoolean(ParamConstants.DELETED_PARAM, false)) {
             return deleteCollection;
         }
-        if (query.containsKey(Constants.ALL_VERSIONS) || query.containsKey(VERSION) || query.containsKey(ParamConstants.SNAPSHOT_PARAM)) {
+        if (query.getBoolean(Constants.ALL_VERSIONS, false) || query.containsKey(VERSION)
+                || query.containsKey(ParamConstants.SNAPSHOT_PARAM)) {
             return archiveCollection;
         }
         return collection;

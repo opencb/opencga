@@ -51,8 +51,7 @@ import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.INCLUDE_STUDY;
-import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.VCF;
-import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.VCF_GZ;
+import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.*;
 
 /**
  * Created on 06/12/16.
@@ -216,6 +215,15 @@ public class VariantWriterFactory {
             throws IOException {
         boolean gzip = outputFormat.isGzip();
 
+        if (outputFormat == PARQUET || outputFormat == PARQUET_GZ) {
+            // dummy stream. Do not use a stream for Parquet
+            return new OutputStream() {
+                @Override
+                public void write(int b) throws IOException {
+                    throw new IOException("Unexpected write");
+                }
+            };
+        }
         // output format has priority over output name
         OutputStream outputStream;
         if (isStandardOutput(output)) {

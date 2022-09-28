@@ -4,6 +4,7 @@
 ##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth for tier1 (used+filtered)">
 ##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the variant described in this record">
 ##INFO=<ID=CIPOS,Number=2,Type=Integer,Description="Confidence interval around POS for imprecise variants">
+##INFO=<ID=HOMLEN,Number=.,Type=Integer,Description="Length of base pair identical micro-homology at event breakpoints">
 ##INFO=<ID=CIEND,Number=2,Type=Integer,Description="Confidence interval around END for imprecise variants">
 ##INFO=<ID=SVLEN,Number=.,Type=Integer,Description="Difference in length between REF and ALT alleles">
 ##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
@@ -14,9 +15,13 @@
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE_BND1	SAMPLE_BND2
 2	100000	BND_W	G	G[chr17:500000[	.	PASS	SVTYPE=BND;MATEID=BND_Y;CIPOS=-150,150	GT	0/0	0/1
 2	100001	BND_V	T	]chr13:300000]T	.	PASS	SVTYPE=BND;MATEID=BND_U	GT	0/1	0/1
+3	1080	BND_HOMLEN_1	C	[chr3:3000[C	.	PASS	SVTYPE=BND;MATEID=BND_HOMLEN_2;HOMLEN=180;CIPOS=0,80	GT	0/1	0/1
+3	3180	BND_HOMLEN_2	C	[chr3:1000[C	.	PASS	SVTYPE=BND;MATEID=BND_HOMLEN_1;HOMLEN=80;CIPOS=0,80	GT	0/1	0/1
 13	300000	BND_U	C	C[chr2:100001[	.	PASS	SVTYPE=BND;MATEID=BND_V;CIPOS=-150,150	GT	0/1	0/1
 13	300001	BND_X	A	[chr17:500001[A	.	PASS	SVTYPE=BND;MATEID=BND_Z	GT	0/1	0/1
 13	32890000	BND_A	A	[chr17:500002[A	.	PASS	SVTYPE=BND;MATEID=BND_B	GT	0/1	0/1
 17	500000	BND_Y	A	A]chr2:100000]	.	PASS	SVTYPE=BND;MATEID=BND_W	GT	0/1	0/1
 17	500001	BND_Z	C	[chr13:300001[C	.	PASS	SVTYPE=BND;MATEID=BND_X	GT	0/1	0/1
 17	500002	BND_B	C	[chr13:32890000[C	.	PASS	SVTYPE=BND;MATEID=BND_A	GT	0/1	0/1
+21	49	BND_AB	C	[chr22:1[C	.	PASS	SVTYPE=BND;MATEID=BND_AA	GT	0/1	0/1
+22	1	BND_AA	C	[chr21:49[C	.	PASS	SVTYPE=BND;MATEID=BND_AB	GT	0/1	0/1
