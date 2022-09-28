@@ -29,7 +29,6 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
-import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.individual.*;
 import org.opencb.opencga.core.models.job.Job;
@@ -400,7 +399,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individuals}/acl")
-    @ApiOperation(value = "Return the acl of the individual. If member is provided, it will only return the acl for the member.", response = AclEntryList.class)
+    @ApiOperation(value = "Return the acl of the individual. If member is provided, it will only return the acl for the member.",
+            response = IndividualAclEntryList.class)
     public Response getAcls(@ApiParam(value = ParamConstants.INDIVIDUALS_DESCRIPTION, required = true) @PathParam("individuals") String individualIdsStr,
                             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
                             @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,

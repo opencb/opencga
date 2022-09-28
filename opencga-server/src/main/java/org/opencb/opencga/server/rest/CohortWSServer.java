@@ -26,7 +26,6 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
-import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.cohort.*;
 import org.opencb.opencga.core.models.common.Enums;
@@ -362,7 +361,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{cohorts}/acl")
     @ApiOperation(value = "Return the acl of the cohort. If member is provided, it will only return the acl for the member.",
-            response = AclEntryList.class)
+            response = CohortAclEntryList.class)
     public Response getAcls(
             @ApiParam(value = ParamConstants.COHORTS_DESCRIPTION, required = true) @PathParam("cohorts") String cohortIdsStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
