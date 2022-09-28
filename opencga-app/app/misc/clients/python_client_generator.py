@@ -103,7 +103,7 @@ class PythonClientGenerator(RestClientGenerator):
             line = '{}:param {} {}: {}'.format(
                 ' ' * 8,
                 self.param_types[self.get_parameter_type(param)],
-                self.to_snake_case(param),
+                param,
                 desc
             )
             if self.is_required(param):
