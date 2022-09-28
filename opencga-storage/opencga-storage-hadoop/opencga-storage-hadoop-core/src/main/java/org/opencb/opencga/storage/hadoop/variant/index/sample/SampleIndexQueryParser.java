@@ -1374,7 +1374,7 @@ public class SampleIndexQueryParser {
             clinicalFieldFilters.add(schema.getClinicalIndexSchema().getSourceField().buildFilter(
                     new Values<>(sources.getOperation(), sources.mapValues(s -> new OpValue<>("=", Collections.singletonList(s))))));
         }
-        if (isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE) || isValidParam(query, ANNOT_CLINICAL_CONFIRMED_STATUS)) {
+        if (isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE) || query.getBoolean(ANNOT_CLINICAL_CONFIRMED_STATUS.key())) {
             annotationIndex |= CLINICAL_MASK;
             List<List<String>> clinicalLists = VariantQueryParser.parseClinicalCombination(query, true);
 
