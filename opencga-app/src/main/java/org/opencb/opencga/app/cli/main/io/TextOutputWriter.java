@@ -119,7 +119,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
 
 
         if (CollectionUtils.isNotEmpty(queryResultList) && ((OpenCGAResult) queryResultList.get(0)) != null
-                && ((OpenCGAResult) queryResultList.get(0)).getNumMatches() > -1) {
+                && ((OpenCGAResult) queryResultList.get(0)).getNumMatches() > -1 && !isEdition(queryResultList)) {
             PrintUtils.print("Number of matches: ", PrintUtils.Color.YELLOW);
             PrintUtils.println(String.valueOf(((OpenCGAResult) queryResultList.get(0)).getNumMatches()), PrintUtils.Color.GREEN);
         } else if (queryResultList.size() == 0 || ((OpenCGAResult) queryResultList.get(0)).getNumResults() == 0) {
@@ -134,7 +134,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
             String[] split = queryResultList.get(0).getResultType().split("\\.");
             clazz = split[split.length - 1];
         }
-
+        logger.info("Print results type " + clazz);
         switch (clazz) {
             case "User":
                 printUser(queryResponse.getResponses());
@@ -183,6 +183,14 @@ public class TextOutputWriter extends AbstractOutputWriter {
         }
     }
 
+    private boolean isEdition(List<DataResult> queryResultList) {
+        OpenCGAResult openCGAResult = (OpenCGAResult) queryResultList.get(0);
+        if ((openCGAResult.getNumInserted() > 0) || (openCGAResult.getNumDeleted() > 0)
+                || (openCGAResult.getNumUpdated() > 0))
+            return true;
+        return false;
+    }
+
     private void printResponseResults(List<DataResult> responses) {
         for (Object o : responses) {
             DataResult response = (DataResult) o;
@@ -194,11 +202,15 @@ public class TextOutputWriter extends AbstractOutputWriter {
                     if (result instanceof AclEntryList) {
                         AclEntryList entries = (AclEntryList) result;
                         // PrintUtils.println(entries.toString(), PrintUtils.Color.CYAN);
-                        PrintUtils.println(entries.getId(), PrintUtils.Color.GREEN);
+                        PrintUtils.println(" - " + entries.getId(), PrintUtils.Color.GREEN);
                         for (int i = 0; i < entries.getAcl().size(); i++) {
-                            PrintUtils.println(((AclEntry) entries.getAcl().get(i)).getMember()
+                            PrintUtils.println("\t- " + ((AclEntry) entries.getAcl().get(i)).getMember()
                                     + ": " + ((AclEntry) entries.getAcl().get(i)).getPermissions(), PrintUtils.Color.YELLOW);
                         }
+                        if (CollectionUtils.isEmpty(entries.getAcl())) {
+                            PrintUtils.println("\t----", PrintUtils.Color.YELLOW);
+                        }
+                        PrintUtils.println("", PrintUtils.Color.YELLOW);
                     } else {
                         PrintUtils.print(result.getClass() + ": " + result, PrintUtils.Color.YELLOW);
 
