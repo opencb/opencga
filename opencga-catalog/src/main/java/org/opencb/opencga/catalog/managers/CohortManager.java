@@ -68,19 +68,16 @@ import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorization
  */
 public class CohortManager extends AnnotationSetManager<Cohort> {
 
-    protected static Logger logger = LoggerFactory.getLogger(CohortManager.class);
-
-    private UserManager userManager;
-    private StudyManager studyManager;
-
-    private final String defaultFacet = "creationYear>>creationMonth;status;numSamples[0..10]:1";
-
     public static final QueryOptions INCLUDE_COHORT_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             CohortDBAdaptor.QueryParams.STUDY_UID.key(), CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.UID.key(),
             CohortDBAdaptor.QueryParams.UUID.key()));
     public static final QueryOptions INCLUDE_COHORT_STATUS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             CohortDBAdaptor.QueryParams.STUDY_UID.key(), CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.UID.key(),
             CohortDBAdaptor.QueryParams.UUID.key(), CohortDBAdaptor.QueryParams.INTERNAL_STATUS.key()));
+    protected static Logger logger = LoggerFactory.getLogger(CohortManager.class);
+    private final String defaultFacet = "creationYear>>creationMonth;status;numSamples[0..10]:1";
+    private UserManager userManager;
+    private StudyManager studyManager;
 
 
     CohortManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
@@ -502,18 +499,12 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 .append("query", new Query(query))
                 .append("token", token);
         try {
-            CohortDBAdaptor.QueryParams param = CohortDBAdaptor.QueryParams.getParam(field);
-            if (param == null) {
-                throw new CatalogException("Unknown '" + field + "' parameter.");
-            }
-            Class<?> clazz = getTypeClass(param.type());
-
             fixQueryObject(study, query, userId);
             // Fix query if it contains any annotation
             AnnotationUtils.fixQueryAnnotationSearch(study, query);
 
             query.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<?> result = cohortDBAdaptor.distinct(study.getUid(), field, query, userId, clazz);
+            OpenCGAResult<?> result = cohortDBAdaptor.distinct(study.getUid(), field, query, userId);
 
             auditManager.auditDistinct(userId, Enums.Resource.COHORT, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));

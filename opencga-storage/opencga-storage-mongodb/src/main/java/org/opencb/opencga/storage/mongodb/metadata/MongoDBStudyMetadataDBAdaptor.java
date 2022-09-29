@@ -77,7 +77,7 @@ public class MongoDBStudyMetadataDBAdaptor extends AbstractMongoDBAdaptor<StudyM
     }
 
     private DataResult<StudyConfiguration> getStudyConfiguration(Integer studyId, String studyName, Long timeStamp,
-                                                                  QueryOptions options) {
+                                                                 QueryOptions options) {
         long start = System.currentTimeMillis();
         StudyConfiguration studyConfiguration;
 
@@ -130,7 +130,7 @@ public class MongoDBStudyMetadataDBAdaptor extends AbstractMongoDBAdaptor<StudyM
 
     @Override
     public List<String> getStudyNames(QueryOptions options) {
-        List<String> studyNames = collection.distinct("name", new Document("name", new Document("$exists", 1))).getResults();
+        List<String> studyNames = collection.distinct("name", new Document("name", new Document("$exists", 1)), String.class).getResults();
         return studyNames.stream().map(Object::toString).collect(Collectors.toList());
     }
 

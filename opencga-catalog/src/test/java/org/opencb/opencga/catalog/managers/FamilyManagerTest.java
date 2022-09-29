@@ -991,6 +991,27 @@ public class FamilyManagerTest extends GenericTest {
     }
 
     @Test
+    public void disordersDistinctTest() throws CatalogException {
+        DataResult<Family> family = createDummyFamily("family", true);
+
+        List<Disorder> disorderList1 = Arrays.asList(new Disorder().setId("disorderId1").setName("disorderName1"));
+        IndividualUpdateParams params1 = new IndividualUpdateParams().setDisorders(disorderList1);
+
+        List<Disorder> disorderList2 = Arrays.asList(new Disorder().setId("disorderId2").setName("disorderName2"));
+        IndividualUpdateParams params2 = new IndividualUpdateParams().setDisorders(disorderList2);
+
+
+        catalogManager.getIndividualManager().update(STUDY, "child1", params1, new QueryOptions(), sessionIdUser);
+        catalogManager.getIndividualManager().update(STUDY, "child2", params2, new QueryOptions(), sessionIdUser);
+
+        OpenCGAResult<?> distinct = catalogManager.getFamilyManager().distinct(STUDY, "disorders.name", new Query(), sessionIdUser);
+
+        System.out.println(distinct);
+        assertEquals(2, distinct.getNumResults());
+    }
+
+
+    @Test
     public void createFamilyDuo() throws CatalogException {
         Family family = new Family()
                 .setId("test")

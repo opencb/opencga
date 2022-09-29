@@ -69,16 +69,14 @@ import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorization
  */
 public class JobManager extends ResourceManager<Job> {
 
-    protected static Logger logger = LoggerFactory.getLogger(JobManager.class);
-    private UserManager userManager;
-    private StudyManager studyManager;
-    private IOManagerFactory ioManagerFactory;
-
-    private final String defaultFacet = "creationYear>>creationMonth;toolId>>executorId";
-
     public static final QueryOptions INCLUDE_JOB_IDS = new QueryOptions(QueryOptions.INCLUDE,
             Arrays.asList(JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.UUID.key(),
                     JobDBAdaptor.QueryParams.STUDY_UID.key(), JobDBAdaptor.QueryParams.INTERNAL.key()));
+    protected static Logger logger = LoggerFactory.getLogger(JobManager.class);
+    private final String defaultFacet = "creationYear>>creationMonth;toolId>>executorId";
+    private UserManager userManager;
+    private StudyManager studyManager;
+    private IOManagerFactory ioManagerFactory;
 
     JobManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, Configuration configuration) {
@@ -629,16 +627,10 @@ public class JobManager extends ResourceManager<Job> {
                 .append("query", new Query(query))
                 .append("token", token);
         try {
-            JobDBAdaptor.QueryParams param = JobDBAdaptor.QueryParams.getParam(field);
-            if (param == null) {
-                throw new CatalogException("Unknown '" + field + "' parameter.");
-            }
-            Class<?> clazz = getTypeClass(param.type());
-
             fixQueryObject(study, query, userId);
 
             query.append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<?> result = jobDBAdaptor.distinct(study.getUid(), field, query, userId, clazz);
+            OpenCGAResult<?> result = jobDBAdaptor.distinct(study.getUid(), field, query, userId);
 
             auditManager.auditDistinct(userId, Enums.Resource.JOB, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));

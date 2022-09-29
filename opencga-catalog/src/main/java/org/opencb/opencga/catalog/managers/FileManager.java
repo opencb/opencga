@@ -1417,18 +1417,12 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append("query", new Query(query))
                 .append("token", token);
         try {
-            FileDBAdaptor.QueryParams param = FileDBAdaptor.QueryParams.getParam(field);
-            if (param == null) {
-                throw new CatalogException("Unknown '" + field + "' parameter.");
-            }
-            Class<?> clazz = getTypeClass(param.type());
-
             fixQueryObject(study, query, userId);
             // Fix query if it contains any annotation
             AnnotationUtils.fixQueryAnnotationSearch(study, query);
 
             query.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<?> result = fileDBAdaptor.distinct(study.getUid(), field, query, userId, clazz);
+            OpenCGAResult<?> result = fileDBAdaptor.distinct(study.getUid(), field, query, userId);
 
             auditManager.auditDistinct(userId, Enums.Resource.FILE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
