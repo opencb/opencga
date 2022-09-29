@@ -13,6 +13,8 @@ class JavaScriptClientGenerator(RestClientGenerator):
         self.text_wrap_limit = 140  # 140 columns max
 
         self.param_types = {
+            'double': 'Number',
+            'float': 'Number',
             'string': 'String',
             'integer': 'Number',
             'int': 'Number',

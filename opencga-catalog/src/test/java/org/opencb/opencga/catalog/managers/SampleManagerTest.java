@@ -682,6 +682,12 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(9, distinct.getNumResults());
         assertEquals(9, distinct.getResults().size());
 
+        distinct = catalogManager.getSampleManager().distinct(studyFqn, Arrays.asList(SampleDBAdaptor.QueryParams.ID.key(),
+                SampleDBAdaptor.QueryParams.UID.key()), null, token);
+        assertEquals(String.class.getName(), distinct.getResultType());
+        assertEquals(18, distinct.getNumResults());
+        assertEquals(18, distinct.getResults().size());
+
         distinct = catalogManager.getSampleManager().distinct(studyFqn, SampleDBAdaptor.QueryParams.UID.key(), null, token);
         assertEquals(Long.class.getName(), distinct.getResultType());
         assertEquals(9, distinct.getNumResults());
@@ -1825,6 +1831,13 @@ public class SampleManagerTest extends AbstractManagerTest {
                 + Constants.VARIABLE_SET + "=" + variableSet.getId());
         samples = catalogManager.getSampleManager().search(studyFqn, query, null, token).getResults();
         assertEquals(2, samples.size());
+    }
+
+    @Test
+    public void testUpdateSampleId() throws CatalogException {
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("valid id");
+        catalogManager.getSampleManager().update(studyFqn, s_1, new SampleUpdateParams().setId(""), QueryOptions.empty(), token);
     }
 
     @Test

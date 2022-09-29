@@ -486,7 +486,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    public OpenCGAResult<?> distinct(String studyId, String field, Query query, String token) throws CatalogException {
+    public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(token);
@@ -495,7 +495,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
-                .append("field", new Query(query))
+                .append("fields", fields)
                 .append("query", new Query(query))
                 .append("token", token);
         try {
@@ -504,7 +504,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             AnnotationUtils.fixQueryAnnotationSearch(study, query);
 
             query.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<?> result = cohortDBAdaptor.distinct(study.getUid(), field, query, userId);
+            OpenCGAResult<?> result = cohortDBAdaptor.distinct(study.getUid(), fields, query, userId);
 
             auditManager.auditDistinct(userId, Enums.Resource.COHORT, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1047,8 +1047,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             }
         }
 
-        if (updateParams != null && (ListUtils.isNotEmpty(updateParams.getSamples())
-                || StringUtils.isNotEmpty(updateParams.getId()))) {
+        if (updateParams != null && (ListUtils.isNotEmpty(updateParams.getSamples()) || updateParams.getId() != null)) {
             switch (cohort.getInternal().getStatus().getId()) {
                 case CohortStatus.CALCULATING:
                     throw new CatalogException("Unable to modify a cohort while it's in status \"" + CohortStatus.CALCULATING
@@ -1061,6 +1060,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                     break;
                 default:
                     break;
+            }
+
+            if (updateParams.getId() != null) {
+                ParamUtils.checkIdentifier(updateParams.getId(), CohortDBAdaptor.QueryParams.ID.key());
             }
 
             if (CollectionUtils.isNotEmpty(updateParams.getSamples())) {

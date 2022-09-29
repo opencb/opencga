@@ -263,9 +263,8 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
             moi = ClinicalProperty.ModeOfInheritance.UNKNOWN;
         }
 
-        return new DefaultClinicalVariantCreator(null, null, null,
-                Collections.singletonList(moi), ClinicalProperty.Penetrance.COMPLETE, new ArrayList<>(),
-                new ArrayList<>(ModeOfInheritance.proteinCoding), new ArrayList<>(ModeOfInheritance.extendedLof), true);
+        return new DefaultClinicalVariantCreator(null, null, Collections.singletonList(moi), ClinicalProperty.Penetrance.COMPLETE,
+                new ArrayList<>(), new ArrayList<>(ModeOfInheritance.proteinCoding), new ArrayList<>(ModeOfInheritance.extendedLof), true);
     }
 
     public String getStudyId() {

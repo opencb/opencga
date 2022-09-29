@@ -64,13 +64,17 @@ public class ParamConstants {
     public static final String SNAPSHOT_PARAM = "snapshot";
     public static final String SNAPSHOT_DESCRIPTION = "Snapshot value (Latest version of the entry in the specified release)";
     public static final String DISTINCT_FIELD_PARAM = "field";
-    public static final String DISTINCT_FIELD_DESCRIPTION = "Field for which to obtain the distinct values";
+    public static final String DISTINCT_FIELD_DESCRIPTION = "Comma separated list of fields for which to obtain the distinct values";
     public static final String PHENOTYPES_PARAM = "phenotypes";
     public static final String PHENOTYPES_DESCRIPTION = "Comma separated list of phenotype ids or names";
     public static final String DISORDERS_PARAM = "disorders";
     public static final String DISORDERS_DESCRIPTION = "Comma separated list of disorder ids or names";
     public static final String BODY_PARAM = "body";
     public static final String OVERWRITE = "overwrite";
+
+
+    public static final String CELLBASE_URL = "https://ws.zettagenomics.com/cellbase";
+    public static final String CELLBASE_VERSION = "v5";
 
     public static final String POP_FREQ_1000G_CB_V4 = "1kG_phase3";
     public static final String POP_FREQ_1000G_CB_V5 = "1000G";
