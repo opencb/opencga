@@ -108,6 +108,9 @@ public class RgaQueryParser {
         List<String> knockoutTypes = query.getAsStringList(RgaQueryParams.KNOCKOUT.key());
         if (variants.size() > 1 && knockoutTypes.size() == 1 && knockoutTypes.get(0).equals(KnockoutVariant.KnockoutType.COMP_HET.name())) {
             return rgaDataModel -> {
+                if (rgaDataModel == null || rgaDataModel.getVariants() == null || rgaDataModel.getKnockoutTypes() == null) {
+                    return false;
+                }
                 // Get the positions where the variants are found
                 List<Integer> positions = new ArrayList<>(variants.size());
                 for (String variant : variants) {
