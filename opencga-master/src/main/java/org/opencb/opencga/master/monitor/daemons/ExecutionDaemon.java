@@ -764,22 +764,26 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             String key = entry.getKey();
             String param = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_HYPHEN, key);
             if (entry.getValue() instanceof Map) {
-                Map<String, String> dynamicParams = (Map<String, String>) entry.getValue();
-                for (Map.Entry<String, String> dynamicEntry : dynamicParams.entrySet()) {
-                    cliBuilder.append(" ").append("--").append(param).append(" ");
-                    escapeCliArg(cliBuilder, dynamicEntry.getKey());
-                    cliBuilder.append("=");
-                    escapeCliArg(cliBuilder, dynamicEntry.getValue());
+                Map<String, ?> dynamicParams = (Map<String, ?>) entry.getValue();
+                for (Map.Entry<String, ?> dynamicEntry : dynamicParams.entrySet()) {
+                    if (dynamicEntry.getValue() != null) {
+                        cliBuilder.append(" ").append("--").append(param).append(" ");
+                        escapeCliArg(cliBuilder, dynamicEntry.getKey());
+                        cliBuilder.append("=");
+                        escapeCliArg(cliBuilder, dynamicEntry.getValue().toString());
+                    }
                 }
             } else {
-                if (!StringUtils.isAlphanumeric(StringUtils.replaceChars(key, "-_", ""))) {
-                    // This should never happen
-                    throw new IllegalArgumentException("Invalid job param key '" + key + "'");
+                if (entry.getValue() != null) {
+                    if (!StringUtils.isAlphanumeric(StringUtils.replaceChars(key, "-_", ""))) {
+                        // This should never happen
+                        throw new IllegalArgumentException("Invalid job param key '" + key + "'");
+                    }
+                    cliBuilder
+                            .append(" --").append(param)
+                            .append(" ");
+                    escapeCliArg(cliBuilder, entry.getValue().toString());
                 }
-                cliBuilder
-                        .append(" --").append(param)
-                        .append(" ");
-                escapeCliArg(cliBuilder, entry.getValue().toString());
             }
         }
         return cliBuilder.toString();

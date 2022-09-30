@@ -26,6 +26,7 @@ import com.mongodb.client.model.Updates;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.biodata.models.clinical.Phenotype;
@@ -60,6 +61,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
@@ -1084,6 +1086,23 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
         Bson bson = parseQuery(finalQuery, userId);
         return new OpenCGAResult<>(sampleCollection.distinct(field, bson));
+    }
+
+    @Override
+    public OpenCGAResult<?> distinct(long studyUid, List<String> fields, Query query, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        StopWatch stopWatch = StopWatch.createStarted();
+        Query finalQuery = query != null ? new Query(query) : new Query();
+        finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
+        Bson bson = parseQuery(finalQuery, userId);
+
+        Set<String> results = new LinkedHashSet<>();
+        for (String field : fields) {
+            results.addAll(sampleCollection.distinct(field, bson, String.class).getResults());
+        }
+
+        return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), Collections.emptyList(), results.size(),
+                new ArrayList<>(results), -1);
     }
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, String user)

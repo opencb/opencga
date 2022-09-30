@@ -432,7 +432,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    public OpenCGAResult<?> distinct(String studyId, String field, Query query, String token) throws CatalogException {
+    public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(token);
@@ -441,7 +441,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
-                .append("field", new Query(query))
+                .append("fields", fields)
                 .append("query", new Query(query))
                 .append("token", token);
         try {
@@ -450,7 +450,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             AnnotationUtils.fixQueryAnnotationSearch(study, query);
 
             query.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<?> result = individualDBAdaptor.distinct(study.getUid(), field, query, userId);
+            OpenCGAResult<?> result = individualDBAdaptor.distinct(study.getUid(), fields, query, userId);
 
             auditManager.auditDistinct(userId, Enums.Resource.INDIVIDUAL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));

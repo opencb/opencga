@@ -35,4 +35,7 @@ public interface CoreDBAdaptor<T> extends DBAdaptor<T> {
 
     OpenCGAResult<?> distinct(long studyUid, String field, Query query, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    OpenCGAResult<?> distinct(long studyUid, List<String> fields, Query query, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 }

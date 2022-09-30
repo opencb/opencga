@@ -490,6 +490,21 @@ public class OpenCGAWSServer {
                 .build();
     }
 
+    protected static List<String> split(String values) throws CatalogParameterException {
+        return split(values, "", false);
+    }
+
+    protected static List<String> split(String values, String field, boolean failOnEmptyValues) throws CatalogParameterException {
+        if (StringUtils.isEmpty(values)) {
+            if (failOnEmptyValues) {
+                throw CatalogParameterException.isNull(field);
+            }
+            return Collections.emptyList();
+        } else {
+            return Arrays.asList(values.split(","));
+        }
+    }
+
     protected static List<String> checkUniqueList(String ids) throws WebServiceException {
         if (StringUtils.isNotEmpty(ids)) {
             List<String> idsList = Arrays.asList(ids.split(","));
