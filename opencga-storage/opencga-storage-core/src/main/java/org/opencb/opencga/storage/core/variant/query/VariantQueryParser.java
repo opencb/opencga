@@ -72,7 +72,7 @@ public class VariantQueryParser {
             return Collections.emptyList();
         }
         Values<String> clinicalSources = splitValues(query.getString(ANNOT_CLINICAL.key()));
-        if (QueryOperation.AND.equals(clinicalSources.getOperation()) && clinicalSources.getValues().size() > 1) {
+        if (QueryOperation.AND == clinicalSources.getOperation() && clinicalSources.getValues().size() > 1) {
             List<List<String>> combinationsPerSource = new ArrayList<>(clinicalSources.getValues().size());
             for (String source : clinicalSources.getValues()) {
                 combinationsPerSource.add(clinicalCombinationSet.stream().filter(s -> s.contains(source)).collect(Collectors.toList()));

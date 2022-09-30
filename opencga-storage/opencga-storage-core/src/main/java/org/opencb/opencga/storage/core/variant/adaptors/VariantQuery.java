@@ -459,12 +459,16 @@ public class VariantQuery extends Query {
         return getString(VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE.key());
     }
 
-    public VariantQuery clinicalConfirmedStatus(String value) {
-        put(VariantQueryParam.ANNOT_CLINICAL_CONFIRMED_STATUS.key(), value);
+    public VariantQuery clinicalConfirmedStatus(boolean value) {
+        if (value) {
+            put(VariantQueryParam.ANNOT_CLINICAL_CONFIRMED_STATUS.key(), value);
+        } else {
+            remove(VariantQueryParam.ANNOT_CLINICAL_CONFIRMED_STATUS.key());
+        }
         return this;
     }
-    public String clinicalConfirmedStatus() {
-        return getString(VariantQueryParam.ANNOT_CLINICAL_CONFIRMED_STATUS.key());
+    public boolean clinicalConfirmedStatus() {
+        return getBoolean(VariantQueryParam.ANNOT_CLINICAL_CONFIRMED_STATUS.key());
     }
 
     @Deprecated
