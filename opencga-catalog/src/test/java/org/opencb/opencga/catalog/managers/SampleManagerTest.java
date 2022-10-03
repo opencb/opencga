@@ -53,12 +53,13 @@ import org.opencb.opencga.core.models.common.IndexStatus;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.individual.*;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualAclParams;
+import org.opencb.opencga.core.models.individual.IndividualPermissions;
+import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.study.*;
-import org.opencb.opencga.core.models.summaries.FeatureCount;
-import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -2048,47 +2049,6 @@ public class SampleManagerTest extends AbstractManagerTest {
         DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().get(studyFqn, s_1,
                 new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key()), token);
         assertEquals(0, sampleDataResult.first().getAnnotationSets().size());
-    }
-
-    @Test
-    public void getVariableSetSummary() throws CatalogException {
-        VariableSet variableSet = catalogManager.getStudyManager().getVariableSet(studyFqn, "vs", null, token).first();
-
-        DataResult<VariableSetSummary> variableSetSummary = catalogManager.getStudyManager()
-                .getVariableSetSummary(studyFqn, variableSet.getId(), token);
-
-        assertEquals(1, variableSetSummary.getNumResults());
-        VariableSetSummary summary = variableSetSummary.first();
-
-        assertEquals(5, summary.getSamples().size());
-
-        // PHEN
-        int i;
-        for (i = 0; i < summary.getSamples().size(); i++) {
-            if ("PHEN".equals(summary.getSamples().get(i).getName())) {
-                break;
-            }
-        }
-        List<FeatureCount> annotations = summary.getSamples().get(i).getAnnotations();
-        assertEquals("PHEN", summary.getSamples().get(i).getName());
-        assertEquals(2, annotations.size());
-
-        for (i = 0; i < annotations.size(); i++) {
-            if ("CONTROL".equals(annotations.get(i).getName())) {
-                break;
-            }
-        }
-        assertEquals("CONTROL", annotations.get(i).getName());
-        assertEquals(5, annotations.get(i).getCount());
-
-        for (i = 0; i < annotations.size(); i++) {
-            if ("CASE".equals(annotations.get(i).getName())) {
-                break;
-            }
-        }
-        assertEquals("CASE", annotations.get(i).getName());
-        assertEquals(3, annotations.get(i).getCount());
-
     }
 
     @Test

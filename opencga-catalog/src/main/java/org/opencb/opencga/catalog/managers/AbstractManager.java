@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -118,16 +119,28 @@ public abstract class AbstractManager {
         T execute(Study study, String userId, QueryOptions queryOptions, String auditOperationUuid) throws CatalogException;
     }
 
-    protected <T> T run(ObjectMap params, Enums.Action action, Enums.Resource resource, String studyStr, String token, QueryOptions options,
-                                 ExecuteOperation<T> body) throws CatalogException {
+    protected <T, S extends ObjectMap> T run(ObjectMap params, Enums.Action action, Enums.Resource resource, String studyStr, String token,
+                                             S options, ExecuteOperation<T> body) throws CatalogException {
+        return run(params, action, resource, studyStr, token, options, Collections.emptyList(), body);
+    }
+
+    protected <T, S extends ObjectMap> T run(ObjectMap params, Enums.Action action, Enums.Resource resource, String studyStr, String token,
+                                             S options, List<String> studyIncludeList, ExecuteOperation<T> body) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_BASE);
+        Study study = null;
+        if (StringUtils.isNotEmpty(studyStr)) {
+            QueryOptions studyOptions = StudyManager.INCLUDE_BASE;
+            if (CollectionUtils.isNotEmpty(studyIncludeList)) {
+                studyOptions = keepFieldsInQueryOptions(studyOptions, studyIncludeList);
+            }
+            study = catalogManager.getStudyManager().resolveId(studyStr, userId, studyOptions);
+        }
         String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         return run(params, action, resource, operationUuid, study, userId, options, body);
     }
 
-    protected <T> T run(ObjectMap params, Enums.Action action, Enums.Resource resource, String operationUuid, Study study, String userId,
-                        QueryOptions options, ExecuteOperation<T> body) throws CatalogException {
+    protected <T, S extends ObjectMap> T run(ObjectMap params, Enums.Action action, Enums.Resource resource, String operationUuid,
+                                             Study study, String userId, S options, ExecuteOperation<T> body) throws CatalogException {
         StopWatch totalStopWatch = StopWatch.createStarted();
         Exception exception = null;
         ReferenceParam referenceParam = new ReferenceParam();
