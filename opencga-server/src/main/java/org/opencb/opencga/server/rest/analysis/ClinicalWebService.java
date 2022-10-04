@@ -16,14 +16,12 @@
 
 package org.opencb.opencga.server.rest.analysis;
 
-import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
-import org.opencb.opencga.core.models.AclEntryList;
-import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
+import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
@@ -47,6 +45,7 @@ import org.opencb.opencga.core.models.analysis.knockout.*;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
+import org.opencb.opencga.core.tools.annotations.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
@@ -149,7 +148,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @QueryParam(ParamConstants.CLINICAL_ANALYSIS_SKIP_CREATE_DEFAULT_INTERPRETATION_PARAM) boolean skipCreateInterpretation,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true)
-                    ClinicalAnalysisCreateParams params) {
+            ClinicalAnalysisCreateParams params) {
         try {
             return createOkResponse(clinicalManager.create(studyStr, params.toClinicalAnalysis(), skipCreateInterpretation, queryOptions,
                     token));
@@ -183,7 +182,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
 
             @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true)
-                    ClinicalAnalysisUpdateParams params) {
+            ClinicalAnalysisUpdateParams params) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             return createOkResponse(clinicalManager.update(studyStr, query, params, true, queryOptions, token));
@@ -372,7 +371,7 @@ public class ClinicalWebService extends AnalysisWebService {
     @GET
     @Path("/{clinicalAnalyses}/acl")
     @ApiOperation(value = "Returns the acl of the clinical analyses. If member is provided, it will only return the acl for the member.",
-            response = AclEntryList.class)
+            response = ClinicalAnalysisAclEntryList.class)
     public Response getAcls(
             @ApiParam(value = ParamConstants.CLINICAL_ANALYSES_DESCRIPTION, required = true)
             @PathParam("clinicalAnalyses") String clinicalAnalysis,
@@ -390,7 +389,7 @@ public class ClinicalWebService extends AnalysisWebService {
 
     @POST
     @Path("/acl/{members}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", response = AclEntryList.class)
+    @ApiOperation(value = "Update the set of permissions granted for the member", response = ClinicalAnalysisAclEntryList.class)
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group IDs", required = true) @PathParam("members") String memberId,
@@ -444,7 +443,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @QueryParam("setAs") ParamUtils.SaveInterpretationAs setAs,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(name = "body", value = "JSON containing clinical interpretation information", required = true)
-                    InterpretationCreateParams params) {
+            InterpretationCreateParams params) {
         try {
             if (setAs == null) {
                 setAs = ParamUtils.SaveInterpretationAs.SECONDARY;
@@ -480,13 +479,13 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Action to be performed if the array of comments is being updated. To REMOVE or REPLACE, the date will need to be provided to identify the comment.",
                     allowableValues = "ADD,REMOVE,REPLACE", defaultValue = "ADD") @QueryParam("commentsAction") ParamUtils.AddRemoveReplaceAction commentsAction,
             @ApiParam(value = "Action to be performed if the array of panels is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("panelsAction") ParamUtils.BasicUpdateAction panelsAction,
+            @QueryParam("panelsAction") ParamUtils.BasicUpdateAction panelsAction,
             @ApiParam(value = "Set interpretation as", allowableValues = "PRIMARY,SECONDARY") @QueryParam("setAs") ParamUtils.SaveInterpretationAs setAs,
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
             @ApiParam(value = "Interpretation ID") @PathParam("interpretation") String interpretationId,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(name = "body", value = "JSON containing clinical interpretation information", required = true)
-                    InterpretationUpdateParams params) {
+            InterpretationUpdateParams params) {
         try {
             if (primaryFindingsAction == null) {
                 primaryFindingsAction = ParamUtils.UpdateAction.ADD;

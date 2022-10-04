@@ -1095,7 +1095,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     // **************************   ACLs  ******************************** //
     public OpenCGAResult<AclEntryList<FamilyPermissions>> getAcls(String studyId, List<String> familyList, String member,
                                                                   boolean ignoreException, String token) throws CatalogException {
-        return getAcls(studyId, familyList, Collections.singletonList(member), ignoreException, token);
+        return getAcls(studyId, familyList, StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(),
+                ignoreException, token);
     }
 
     public OpenCGAResult<AclEntryList<FamilyPermissions>> getAcls(String studyId, List<String> familyList, List<String> members,
@@ -1151,6 +1152,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                                     new Error(0, "", missingMap.get(familyId).getErrorMsg())), new ObjectMap());
                 }
             }
+            for (int i = 0; i < queryResult.getResults().size(); i++) {
+                familyAcls.getResults().get(i).setId(queryResult.getResults().get(i).getId());
+            }
             familyAcls.setResults(resultList);
             familyAcls.setEvents(eventList);
         } catch (CatalogException e) {
@@ -1164,7 +1168,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             } else {
                 for (String familyId : familyList) {
                     Event event = new Event(Event.Type.ERROR, familyId, e.getMessage());
-                    familyAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, new AclEntryList<>(), 0));
+                    familyAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 }
             }
         } finally {
@@ -1304,7 +1308,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             OpenCGAResult<AclEntryList<FamilyPermissions>> remainingAcls = authorizationManager.getAcls(study.getUid(),
                     familyUids, members, Enums.Resource.FAMILY, FamilyPermissions.class);
-
+            for (int i = 0; i < remainingAcls.getResults().size(); i++) {
+                remainingAcls.getResults().get(i).setId(familyList.get(i).getId());
+            }
             for (Family family : familyList) {
                 auditManager.audit(operationUUID, user, Enums.Action.UPDATE_ACLS, Enums.Resource.FAMILY, family.getId(),
                         family.getUuid(), study.getId(), study.getUuid(), auditParams,

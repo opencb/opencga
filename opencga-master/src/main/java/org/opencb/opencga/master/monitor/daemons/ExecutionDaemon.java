@@ -727,7 +727,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         // Check if the user already has permissions set in his folder
         OpenCGAResult<AclEntryList<FilePermissions>> result = fileManager.getAcls(job.getStudy().getId(),
                 Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(), true, token);
-        if (result.getNumResults() == 0 || result.first().isEmpty() || CollectionUtils.isEmpty(result.first().get(0).getPermissions())) {
+        if (result.getNumResults() == 0 || result.first().getAcl().isEmpty()
+                || CollectionUtils.isEmpty(result.first().getAcl().get(0).getPermissions())) {
             // Add permissions to do anything under that path to the user launching the job
             String allFilePermissions = EnumSet.allOf(FilePermissions.class)
                     .stream()

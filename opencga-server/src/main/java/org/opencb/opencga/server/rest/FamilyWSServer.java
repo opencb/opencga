@@ -28,7 +28,6 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
-import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.family.*;
 import org.opencb.opencga.core.models.job.Job;
@@ -167,9 +166,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
     })
     public Response createFamilyPOST(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
-                    String studyStr,
+            String studyStr,
             @ApiParam(value = "Comma separated list of member ids to be associated to the created family") @QueryParam("members")
-                    String members,
+            String members,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "JSON containing family information", required = true) FamilyCreateParams family) {
         try {
@@ -317,9 +316,10 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{families}/acl")
-    @ApiOperation(value = "Returns the acl of the families. If member is provided, it will only return the acl for the member.", response = AclEntryList.class)
+    @ApiOperation(value = "Returns the acl of the families. If member is provided, it will only return the acl for the member.",
+            response = FamilyAclEntryList.class)
     public Response getAcls(@ApiParam(value = ParamConstants.FAMILIES_DESCRIPTION, required = true) @PathParam("families")
-                                    String familyIdsStr,
+                            String familyIdsStr,
                             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
                             @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
                             @ApiParam(value = "User or group id") @QueryParam("member") String member,
@@ -335,7 +335,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/acl/{members}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", response = AclEntryList.class)
+    @ApiOperation(value = "Update the set of permissions granted for the member", response = FamilyAclEntryList.class)
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberList,

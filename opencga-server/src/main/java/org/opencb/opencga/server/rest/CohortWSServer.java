@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.server.rest;
 
-import org.opencb.opencga.core.models.AclEntryList;
-import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.cohort.CohortTsvAnnotationLoader;
@@ -33,6 +31,7 @@ import org.opencb.opencga.core.models.cohort.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.tools.annotations.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
@@ -363,7 +362,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{cohorts}/acl")
     @ApiOperation(value = "Return the acl of the cohort. If member is provided, it will only return the acl for the member.",
-            response = AclEntryList.class)
+            response = CohortAclEntryList.class)
     public Response getAcls(
             @ApiParam(value = ParamConstants.COHORTS_DESCRIPTION, required = true) @PathParam("cohorts") String cohortIdsStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
@@ -380,7 +379,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/acl/{members}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", response = AclEntryList.class)
+    @ApiOperation(value = "Update the set of permissions granted for the member", response = CohortAclEntryList.class)
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,

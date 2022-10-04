@@ -37,7 +37,10 @@ import org.opencb.opencga.core.models.individual.IndividualPermissions;
 import org.opencb.opencga.core.models.job.JobPermissions;
 import org.opencb.opencga.core.models.panel.PanelPermissions;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
-import org.opencb.opencga.core.models.study.*;
+import org.opencb.opencga.core.models.study.Group;
+import org.opencb.opencga.core.models.study.PermissionRule;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -927,7 +930,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (CollectionUtils.isEmpty(uids)) {
             throw new CatalogDBException("Missing identifiers to set acls");
         }
-        if (CollectionUtils.isEmpty(aclEntryList)) {
+        if (CollectionUtils.isEmpty(aclEntryList.getAcl())) {
             return;
         }
         aclDBAdaptor.setAcls(uids, aclEntryList, resource);
@@ -979,6 +982,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     Auxiliar methods
     ====================================
      */
+
     /**
      * Retrieves the groupId where the members belongs to.
      *

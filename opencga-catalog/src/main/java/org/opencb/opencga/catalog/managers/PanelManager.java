@@ -869,7 +869,8 @@ public class PanelManager extends ResourceManager<Panel> {
     // **************************   ACLs  ******************************** //
     public OpenCGAResult<AclEntryList<PanelPermissions>> getAcls(String studyId, List<String> panelList, String member,
                                                                  boolean ignoreException, String token) throws CatalogException {
-        return getAcls(studyId, panelList, Collections.singletonList(member), ignoreException, token);
+        return getAcls(studyId, panelList, StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(),
+                ignoreException, token);
     }
 
     public OpenCGAResult<AclEntryList<PanelPermissions>> getAcls(String studyId, List<String> panelList, List<String> members,
@@ -925,6 +926,9 @@ public class PanelManager extends ResourceManager<Panel> {
                                     new Error(0, "", missingMap.get(panelId).getErrorMsg())), new ObjectMap());
                 }
             }
+            for (int i = 0; i < queryResult.getResults().size(); i++) {
+                panelAcls.getResults().get(i).setId(queryResult.getResults().get(i).getId());
+            }
             panelAcls.setResults(resultList);
             panelAcls.setEvents(eventList);
         } catch (CatalogException e) {
@@ -938,7 +942,7 @@ public class PanelManager extends ResourceManager<Panel> {
             } else {
                 for (String panelId : panelList) {
                     Event event = new Event(Event.Type.ERROR, panelId, e.getMessage());
-                    panelAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, new AclEntryList<>(), 0));
+                    panelAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 }
             }
         } finally {
@@ -1017,7 +1021,9 @@ public class PanelManager extends ResourceManager<Panel> {
             }
             OpenCGAResult<AclEntryList<PanelPermissions>> queryResultList = authorizationManager.getAcls(study.getUid(),
                     panelUids, members, Enums.Resource.DISEASE_PANEL, PanelPermissions.class);
-
+            for (int i = 0; i < queryResultList.getResults().size(); i++) {
+                queryResultList.getResults().get(i).setId(panelDataResult.getResults().get(i).getId());
+            }
             for (Panel panel : panelDataResult.getResults()) {
                 auditManager.audit(operationId, user, Enums.Action.UPDATE_ACLS, Enums.Resource.DISEASE_PANEL, panel.getId(),
                         panel.getUuid(), study.getId(), study.getUuid(), auditParams,

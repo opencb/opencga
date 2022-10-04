@@ -1936,7 +1936,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     // **************************   ACLs  ******************************** //
     public OpenCGAResult<AclEntryList<ClinicalAnalysisPermissions>> getAcls(
             String studyStr, List<String> clinicalList, String member, boolean ignoreException, String token) throws CatalogException {
-        return getAcls(studyStr, clinicalList, Collections.singletonList(member), ignoreException, token);
+        return getAcls(studyStr, clinicalList, StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(),
+                ignoreException, token);
     }
 
     public OpenCGAResult<AclEntryList<ClinicalAnalysisPermissions>> getAcls(String studyId, List<String> clinicalList, List<String> members,
@@ -1993,6 +1994,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                                     new Error(0, "", missingMap.get(clinicalId).getErrorMsg())), new ObjectMap());
                 }
             }
+            for (int i = 0; i < queryResult.getResults().size(); i++) {
+                clinicalAcls.getResults().get(i).setId(queryResult.getResults().get(i).getId());
+            }
             clinicalAcls.setResults(resultList);
             clinicalAcls.setEvents(eventList);
         } catch (CatalogException e) {
@@ -2006,7 +2010,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             } else {
                 for (String caseId : clinicalList) {
                     Event event = new Event(Event.Type.ERROR, caseId, e.getMessage());
-                    clinicalAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, new AclEntryList<>(), 0));
+                    clinicalAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 }
             }
         } finally {
@@ -2151,7 +2155,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
             queryResults = authorizationManager.getAcls(study.getUid(), clinicalUidList, members, Enums.Resource.CLINICAL_ANALYSIS,
                     ClinicalAnalysisPermissions.class);
-
+            for (int i = 0; i < queryResults.getResults().size(); i++) {
+                queryResults.getResults().get(i).setId(queryResult.getResults().get(i).getId());
+            }
             for (ClinicalAnalysis clinicalAnalysis : queryResult.getResults()) {
                 auditManager.audit(operationUuid, user, Enums.Action.UPDATE_ACLS, Enums.Resource.CLINICAL_ANALYSIS,
                         clinicalAnalysis.getId(), clinicalAnalysis.getUuid(), study.getId(), study.getUuid(), auditParams,

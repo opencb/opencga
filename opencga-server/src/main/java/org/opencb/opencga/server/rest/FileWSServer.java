@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.server.rest;
 
-import org.opencb.opencga.core.models.AclEntryList;
-import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
@@ -38,6 +36,7 @@ import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.annotations.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
@@ -179,7 +178,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @FormDataParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Path within catalog where the file will be located (default: root folder)") @DefaultValue("") @FormDataParam("relativeFilePath") String relativeFilePath,
             @ApiParam(value = "description") @DefaultValue("") @FormDataParam("description")
-                    String description,
+            String description,
             @ApiParam(value = "Create the parent directories if they do not exist", type = "form") @DefaultValue("true") @FormDataParam(
                     "parents") boolean parents) {
         if (StringUtils.isNotEmpty(relativeFilePath)) {
@@ -279,7 +278,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "String pattern") @QueryParam("pattern") String pattern,
             @ApiParam(value = "Flag to perform a case insensitive search") @DefaultValue("false") @QueryParam("ignoreCase")
-                    boolean ignoreCase,
+            boolean ignoreCase,
             @ApiParam(value = "Stop reading a file after 'n' matching lines. 0 means no limit.") @DefaultValue("10") @QueryParam(
                     "maxCount") int maxCount) {
         try {
@@ -941,7 +940,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{files}/acl")
     @ApiOperation(value = "Return the acl defined for the file or folder. If member is provided, it will only return the acl for the " +
-            "member.", response = AclEntryList.class)
+            "member.", response = FileAclEntryList.class)
     public Response getAcls(@ApiParam(value = ParamConstants.FILES_DESCRIPTION, required = true) @PathParam("files") String fileIdStr,
                             @ApiParam(value = ParamConstants.STUDIES_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
                             @ApiParam(value = "User or group id") @QueryParam("member") String member,
@@ -957,10 +956,10 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/acl/{members}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", response = AclEntryList.class)
+    @ApiOperation(value = "Update the set of permissions granted for the member", response = FileAclEntryList.class)
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
-                    String studyStr,
+            String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true, defaultValue = "ADD") @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) FileAclUpdateParams params) {
