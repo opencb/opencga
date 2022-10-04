@@ -115,6 +115,7 @@ public class HadoopVariantExporter extends VariantExporter {
                                 EXPORT_SMALL_QUERY_SAMPLE_INDEX_VARIANTS_THRESHOLD.key(),
                                 EXPORT_SMALL_QUERY_SAMPLE_INDEX_VARIANTS_THRESHOLD.defaultValue());
                         try {
+                            logger.info("Count number of matches from the export from query {}", VariantQueryUtils.printQuery(query));
                             long numMatches = engine.get(new Query(query), new QueryOptions(queryOptions)
                                     .append(QueryOptions.LIMIT, 1)
                                     .append(QueryOptions.SKIP, 0)

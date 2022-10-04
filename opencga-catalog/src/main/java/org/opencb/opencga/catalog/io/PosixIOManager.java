@@ -22,6 +22,7 @@ import org.opencb.commons.exec.Command;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.models.file.FileContent;
 import org.slf4j.Logger;
@@ -193,14 +194,29 @@ public class PosixIOManager extends IOManager {
     public void move(URI source, URI target, CopyOption... options) throws CatalogIOException {
         checkUriExists(source);
         if (source.getScheme().equals("file") && target.getScheme().equals("file")) {
+            Path sourcePath = Paths.get(source);
+            Path targetPath = Paths.get(target);
             try {
-                Files.move(Paths.get(source), Paths.get(target), options);
+                Files.move(sourcePath, targetPath, options);
             } catch (IOException e) {
-                throw new CatalogIOException("Can't move from " + source.getScheme() + " to " + target.getScheme() + ": " + e.getMessage(),
-                        e);
+                try {
+                    if (Files.exists(sourcePath) && Files.notExists(targetPath)) {
+                        // This might happen when moving files from Posix to Samba
+                        logger.warn("Could not move files: " + ExceptionUtils.prettyExceptionMessage(e, false, true));
+                        logger.warn("Try copy&delete strategy");
+                        Files.copy(sourcePath, targetPath);
+                        Files.delete(sourcePath);
+                        logger.info("File copied and deleted successfully!");
+                        return;
+                    }
+                } catch (Exception suppressed) {
+                    e.addSuppressed(suppressed);
+                }
+                throw new CatalogIOException("Can't move from '" + source.getScheme() + "' to '" + target.getScheme() + "': "
+                        + e.getMessage(), e);
             }
         } else {
-            throw new CatalogIOException("Can't move from " + source.getScheme() + " to " + target.getScheme());
+            throw new CatalogIOException("Can't move from schema '" + source.getScheme() + "' to '" + target.getScheme() + "'");
         }
     }
 
