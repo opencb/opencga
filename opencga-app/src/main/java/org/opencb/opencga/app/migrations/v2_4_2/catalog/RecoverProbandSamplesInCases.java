@@ -89,10 +89,14 @@ public class RecoverProbandSamplesInCases extends MigrationTool {
             if (type == ClinicalAnalysis.Type.CANCER) {
                 if (proband.getSamples().size() == 2) {
                     sampleList = proband.getSamples();
-                } else {
+                } else if (proband.getSamples().size() > 2){
                     sampleList = proband.getSamples().subList(0, 2);
                     logger.warn("Proband '{}' from study uid {} has more than 2 samples. Considering the first 2.", proband.getId(),
                             proband.getStudyUid());
+                } else {
+                    sampleList = proband.getSamples();
+                    logger.warn("Proband '{}' from study uid {} has {} samples. Considering those.", proband.getId(), proband.getStudyUid(),
+                            proband.getSamples().size());
                 }
             } else {
                 if (proband.getSamples().size() == 1) {
