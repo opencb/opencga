@@ -41,9 +41,11 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
+import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -148,8 +150,12 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
 
     protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis) throws ToolException {
         // Interpretation method
-        InterpretationMethod method = new InterpretationMethod(getId(), "", "",
-                Collections.singletonList(new Software().setName(getId())));
+        InterpretationMethod method = new InterpretationMethod(getId(), GitRepositoryState.get().getBuildVersion(),
+                GitRepositoryState.get().getCommitId(), Collections.singletonList(
+                        new Software()
+                                .setName("Exomiser")
+                                .setRepository("Docker: " + ExomiserWrapperAnalysisExecutor.DOCKER_IMAGE_NAME)
+                                .setVersion(ExomiserWrapperAnalysisExecutor.DOCKER_IMAGE_VERSION)));
 
         // Analyst
         ClinicalAnalyst analyst = clinicalInterpretationManager.getAnalyst(token);
@@ -283,14 +289,10 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
             if (CollectionUtils.isNotEmpty(studyEntry.getFiles())) {
                 FileEntry fileEntry = studyEntry.getFiles().get(0);
                 if (MapUtils.isNotEmpty(fileEntry.getData())) {
-                    List<String> keys = Arrays.asList("ExGeneSCombi", "ExGeneSPheno", "ExGeneSVar", "ExVarScore");
-                    for (String key : keys) {
-                        if (fileEntry.getData().containsKey(key)) {
-                            try {
-                                attributes.put(key, Double.parseDouble(fileEntry.getData().get(key)));
-                            } catch (NumberFormatException e) {
-                                attributes.put(key, fileEntry.getData().get(key));
-                            }
+                    for (Map.Entry<String, String> entry : fileEntry.getData().entrySet()) {
+                        if (entry.getKey().startsWith("Ex")) {
+                            // Only Exomiser attributes, i.e., those starting with "Ex"
+                            attributes.put(entry.getKey(), entry.getValue());
                         }
                     }
                 }
