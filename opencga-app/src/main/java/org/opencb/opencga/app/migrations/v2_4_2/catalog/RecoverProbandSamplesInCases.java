@@ -42,7 +42,7 @@ public class RecoverProbandSamplesInCases extends MigrationTool {
                         new Document("proband.samples", null),
                         new Document("proband.samples", Collections.emptyList())
                 )),
-                Projections.include("uid", "id", "uuid", "studyUid", "proband"), (doc) -> {
+                Projections.include("uid", "id", "uuid", "studyUid", "proband", "type"), (doc) -> {
                     ClinicalAnalysis currentCase = converter.convertToDataModelType(doc);
                     logger.info("Trying to recover Clinical Analysis [id: {}, uid: {}, uuid: {}]", currentCase.getId(),
                             currentCase.getUid(), currentCase.getUuid());
@@ -59,56 +59,112 @@ public class RecoverProbandSamplesInCases extends MigrationTool {
                                 converter);
                     }
                     if (clinicalAnalysis == null) {
-                        throw new RuntimeException("ClinicalAnalysis '" + currentCase.getId() + "' not found in the audit collection.");
-                    }
-                    if (clinicalAnalysis.getProband() == null) {
-                        throw new RuntimeException("Proband from ClinicalAnalysis '" + currentCase.getId()
-                                +  "' could not be found in the audit collection.");
-                    }
-                    if (CollectionUtils.isEmpty(clinicalAnalysis.getProband().getSamples())) {
-                        throw new RuntimeException("List of samples from proband of ClinicalAnalysis '" + currentCase.getId()
-                                + "' could not be found in the audit collection.");
-                    }
-
-                    // The proband from the audit matches the one used in the case currently :)
-                    Individual proband;
-                    try {
-                        Query query = new Query()
-                                .append(IndividualDBAdaptor.QueryParams.UID.key(), currentCase.getProband().getUid())
-                                .append(IndividualDBAdaptor.QueryParams.VERSION.key(), currentCase.getProband().getVersion());
-                        proband = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(query,
-                                        new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
-                                                IndividualDBAdaptor.QueryParams.VERSION.key(), IndividualDBAdaptor.QueryParams.SAMPLES.key())))
-                                .first();
-                    } catch (CatalogException e) {
-                        throw new RuntimeException(e);
-                    }
-                    List<Sample> sampleList = new ArrayList<>(clinicalAnalysis.getProband().getSamples().size());
-
-                    Map<String, Sample> sampleMap = new HashMap<>();
-                    for (Sample sample : proband.getSamples()) {
-                        sampleMap.put(sample.getId(), sample);
-                    }
-                    for (Sample sample : clinicalAnalysis.getProband().getSamples()) {
-                        if (sampleMap.containsKey(sample.getId())) {
-                            sampleList.add(sample);
-                        } else {
-                            logger.warn("Sample '{}' is no longer associated to the individual '{}'", sample.getId(), proband.getId());
-                        }
-                    }
-
-                    if (sampleList.isEmpty()) {
-                        logger.warn("The list of samples associated to the proband '{}' is empty after processing", proband.getId());
-                    }
-                    proband.setSamples(sampleList);
-
-                    ObjectMap params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), proband);
-                    try {
-                        dbAdaptorFactory.getClinicalAnalysisDBAdaptor().update(currentCase.getUid(), params, null, QueryOptions.empty());
-                    } catch (CatalogException e) {
-                        throw new RuntimeException(e);
+                        recoverWithoutAudit(currentCase);
+                    } else {
+                        recoverFromAudit(currentCase, clinicalAnalysis);
                     }
                 });
+    }
+
+    private void recoverWithoutAudit(ClinicalAnalysis currentCase) {
+        ClinicalAnalysis.Type type = currentCase.getType();
+
+        // The proband from the audit matches the one used in the case currently :)
+        Individual proband;
+        try {
+            Query query = new Query()
+                    .append(IndividualDBAdaptor.QueryParams.UID.key(), currentCase.getProband().getUid())
+                    .append(IndividualDBAdaptor.QueryParams.VERSION.key(), currentCase.getProband().getVersion());
+            proband = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(query,
+                            new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
+                                    IndividualDBAdaptor.QueryParams.VERSION.key(), IndividualDBAdaptor.QueryParams.SAMPLES.key(),
+                                    IndividualDBAdaptor.QueryParams.STUDY_UID.key())))
+                    .first();
+        } catch (CatalogException e) {
+            throw new RuntimeException(e);
+        }
+
+        List<Sample> sampleList = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(proband.getSamples())) {
+            if (type == ClinicalAnalysis.Type.CANCER) {
+                if (proband.getSamples().size() == 2) {
+                    sampleList = proband.getSamples();
+                } else {
+                    sampleList = proband.getSamples().subList(0, 2);
+                    logger.warn("Proband '{}' from study uid {} has more than 2 samples. Considering the first 2.", proband.getId(),
+                            proband.getStudyUid());
+                }
+            } else {
+                if (proband.getSamples().size() == 1) {
+                    sampleList = proband.getSamples();
+                } else {
+                    sampleList = proband.getSamples().subList(0, 1);
+                    logger.warn("Proband '{}' from study uid {} has more than 1 sample. Considering the first sample.", proband.getId(),
+                            proband.getStudyUid());
+                }
+            }
+        } else {
+            logger.warn("Could not find samples for proband '{}' of study uid {}. Setting an empty list.", proband.getId(),
+                    proband.getStudyUid());
+        }
+
+        proband.setSamples(sampleList);
+        ObjectMap params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), proband);
+        try {
+            dbAdaptorFactory.getClinicalAnalysisDBAdaptor().update(currentCase.getUid(), params, null, QueryOptions.empty());
+        } catch (CatalogException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void recoverFromAudit(ClinicalAnalysis currentCase, ClinicalAnalysis clinicalAnalysis) {
+        if (clinicalAnalysis.getProband() == null) {
+            throw new RuntimeException("Proband from ClinicalAnalysis '" + currentCase.getId()
+                    +  "' could not be found in the audit collection.");
+        }
+        if (CollectionUtils.isEmpty(clinicalAnalysis.getProband().getSamples())) {
+            throw new RuntimeException("List of samples from proband of ClinicalAnalysis '" + currentCase.getId()
+                    + "' could not be found in the audit collection.");
+        }
+
+        // The proband from the audit matches the one used in the case currently :)
+        Individual proband;
+        try {
+            Query query = new Query()
+                    .append(IndividualDBAdaptor.QueryParams.UID.key(), currentCase.getProband().getUid())
+                    .append(IndividualDBAdaptor.QueryParams.VERSION.key(), currentCase.getProband().getVersion());
+            proband = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(query,
+                            new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
+                                    IndividualDBAdaptor.QueryParams.VERSION.key(), IndividualDBAdaptor.QueryParams.SAMPLES.key())))
+                    .first();
+        } catch (CatalogException e) {
+            throw new RuntimeException(e);
+        }
+        List<Sample> sampleList = new ArrayList<>(clinicalAnalysis.getProband().getSamples().size());
+
+        Map<String, Sample> sampleMap = new HashMap<>();
+        for (Sample sample : proband.getSamples()) {
+            sampleMap.put(sample.getId(), sample);
+        }
+        for (Sample sample : clinicalAnalysis.getProband().getSamples()) {
+            if (sampleMap.containsKey(sample.getId())) {
+                sampleList.add(sample);
+            } else {
+                logger.warn("Sample '{}' is no longer associated to the individual '{}'", sample.getId(), proband.getId());
+            }
+        }
+
+        if (sampleList.isEmpty()) {
+            logger.warn("The list of samples associated to the proband '{}' is empty after processing", proband.getId());
+        }
+        proband.setSamples(sampleList);
+
+        ObjectMap params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), proband);
+        try {
+            dbAdaptorFactory.getClinicalAnalysisDBAdaptor().update(currentCase.getUid(), params, null, QueryOptions.empty());
+        } catch (CatalogException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private ClinicalAnalysis findCreatedCaseInAudit(String uuid, String probandId, MongoCollection<Document> audit,
