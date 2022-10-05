@@ -1,5 +1,6 @@
 package org.opencb.opencga.app.migrations.v2_4_2.catalog;
 
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.UpdateOneModel;
 import org.apache.commons.collections4.CollectionUtils;
@@ -44,41 +45,43 @@ public class AddClinicalDiscussion extends MigrationTool {
                 })
         );
 
-        // We will be replacing the findings array which may be really big so we change the batch size to 1
-        setBatchSize(1);
         // Replace discussion from ClinicalVariants from Interpretations primaryFindings.discussion, secondaryFindings.discussion
-        migrateCollection(
-                Arrays.asList(MongoDBAdaptorFactory.INTERPRETATION_COLLECTION, MongoDBAdaptorFactory.INTERPRETATION_ARCHIVE_COLLECTION,
-                        MongoDBAdaptorFactory.DELETED_INTERPRETATION_COLLECTION),
-                new Document("$or", Arrays.asList(
-                        new Document("primaryFindings.discussion.author", new Document("$exists", false)),
-                        new Document("secondaryFindings.discussion.author", new Document("$exists", false))
-                )),
-                Projections.include("primaryFindings", "secondaryFindings", "analyst"),
-                ((document, bulk) -> {
-                    String author = extractAuthor(document);
-                    List<Document> primaryFindings = document.getList("primaryFindings", Document.class);
-                    List<Document> secondaryFindings = document.getList("secondaryFindings", Document.class);
-                    if (CollectionUtils.isNotEmpty(primaryFindings)) {
-                        for (Document primaryFinding : primaryFindings) {
-                            migrateClinicalVariant(primaryFinding, author);
+        for (String collectionString : Arrays.asList(MongoDBAdaptorFactory.INTERPRETATION_COLLECTION,
+                MongoDBAdaptorFactory.INTERPRETATION_ARCHIVE_COLLECTION, MongoDBAdaptorFactory.DELETED_INTERPRETATION_COLLECTION)) {
+            logger.info("Migrating documents from collection '{}'", collectionString);
+            MongoCollection<Document> collection = getMongoCollection(collectionString);
+            queryMongo(collectionString,
+                    new Document("$or", Arrays.asList(
+                            new Document("primaryFindings.discussion.author", new Document("$exists", false)),
+                            new Document("secondaryFindings.discussion.author", new Document("$exists", false))
+                    )),
+                    Projections.include("primaryFindings", "secondaryFindings", "analyst", "studyUid", "id"),
+                    (document) -> {
+                        String author = extractAuthor(document);
+                        List<Document> primaryFindings = document.getList("primaryFindings", Document.class);
+                        List<Document> secondaryFindings = document.getList("secondaryFindings", Document.class);
+                        if (CollectionUtils.isNotEmpty(primaryFindings)) {
+                            for (Document primaryFinding : primaryFindings) {
+                                migrateClinicalVariant(primaryFinding, author);
+                            }
                         }
-                    }
-                    if (CollectionUtils.isNotEmpty(secondaryFindings)) {
-                        for (Document secondaryFinding : secondaryFindings) {
-                            migrateClinicalVariant(secondaryFinding, author);
+                        if (CollectionUtils.isNotEmpty(secondaryFindings)) {
+                            for (Document secondaryFinding : secondaryFindings) {
+                                migrateClinicalVariant(secondaryFinding, author);
+                            }
                         }
-                    }
 
-                    bulk.add(new UpdateOneModel<>(
-                                    eq("_id", document.get("_id")),
+                        try {
+                            collection.updateOne(eq("_id", document.get("_id")),
                                     new Document("$set", new Document()
                                             .append("primaryFindings", primaryFindings)
-                                            .append("secondaryFindings", secondaryFindings))
-                            )
-                    );
-                })
-        );
+                                            .append("secondaryFindings", secondaryFindings)));
+                        } catch (Exception e) {
+                            logger.warn("Could not add ClinicalDiscussion to Interpretation '{}' from study uid {}. Error message: {}",
+                                    document.getString("id"), document.get("studyUid", Number.class), e.getMessage());
+                        }
+                    });
+        }
     }
 
     private void migrateClinicalVariant(Document finding, String author) {
