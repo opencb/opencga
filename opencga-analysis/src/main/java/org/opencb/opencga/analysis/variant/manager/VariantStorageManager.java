@@ -174,16 +174,17 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
      * @param token        User's session id
      * @throws CatalogException       if there is any error with Catalog
      * @throws StorageEngineException If there is any error exporting variants
+     * @return generated files
      */
-    public void exportData(String outputFile, VariantOutputFormat outputFormat, String variantsFile,
+    public List<URI> exportData(String outputFile, VariantOutputFormat outputFormat, String variantsFile,
                            Query query, QueryOptions queryOptions, String token)
             throws CatalogException, StorageEngineException {
         String anyStudy = catalogUtils.getAnyStudy(query, token);
-        secureOperation(VariantExportTool.ID, anyStudy, queryOptions, token, engine -> {
+        return secureOperation(VariantExportTool.ID, anyStudy, queryOptions, token, engine -> {
             Query finalQuery = catalogUtils.parseQuery(query, queryOptions, engine.getCellBaseUtils(), token);
             checkSamplesPermissions(finalQuery, queryOptions, token);
-            new VariantExportOperationManager(this, engine).export(outputFile, outputFormat, variantsFile, finalQuery, queryOptions, token);
-            return null;
+            return new VariantExportOperationManager(this, engine)
+                    .export(outputFile, outputFormat, variantsFile, finalQuery, queryOptions, token);
         });
     }
 

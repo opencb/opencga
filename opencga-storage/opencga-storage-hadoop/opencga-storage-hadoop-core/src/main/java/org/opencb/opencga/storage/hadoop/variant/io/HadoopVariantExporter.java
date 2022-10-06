@@ -45,6 +45,8 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.getSearchEngineQuery;
@@ -70,8 +72,8 @@ public class HadoopVariantExporter extends VariantExporter {
     }
 
     @Override
-    public URI export(@Nullable URI outputFileUri, VariantWriterFactory.VariantOutputFormat outputFormat, URI variantsFile,
-                      ParsedVariantQuery variantQuery)
+    public List<URI> export(@Nullable URI outputFileUri, VariantWriterFactory.VariantOutputFormat outputFormat, URI variantsFile,
+                            ParsedVariantQuery variantQuery)
             throws IOException, StorageEngineException {
         VariantHadoopDBAdaptor dbAdaptor = ((VariantHadoopDBAdaptor) engine.getDBAdaptor());
         IOConnector ioConnector = ioConnectorProvider.get(outputFileUri);
@@ -113,6 +115,7 @@ public class HadoopVariantExporter extends VariantExporter {
                                 EXPORT_SMALL_QUERY_SAMPLE_INDEX_VARIANTS_THRESHOLD.key(),
                                 EXPORT_SMALL_QUERY_SAMPLE_INDEX_VARIANTS_THRESHOLD.defaultValue());
                         try {
+                            logger.info("Count number of matches from the export from query {}", VariantQueryUtils.printQuery(query));
                             long numMatches = engine.get(new Query(query), new QueryOptions(queryOptions)
                                     .append(QueryOptions.LIMIT, 1)
                                     .append(QueryOptions.SKIP, 0)
@@ -229,11 +232,11 @@ public class HadoopVariantExporter extends VariantExporter {
             writeMetadata(metadata, metadataPath.toUri());
             //writeMetadataInHdfs(metadata, metadataPath, fileSystem);
 
-            logger.info("Output file : " + outputPath.toString());
-            logger.info("Output metadata file : " + metadataPath.toString());
-        }
+            logger.info("Output file : " + outputPath);
+            logger.info("Output metadata file : " + metadataPath);
 
-        return outputFileUri;
+            return Arrays.asList(outputFileUri, metadataPath.toUri());
+        }
     }
 
     @Override

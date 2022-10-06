@@ -46,8 +46,8 @@ public class VariantExportOperationManager extends OperationManager {
         super(variantStorageManager, engine);
     }
 
-    public void export(String outputFileStr, VariantWriterFactory.VariantOutputFormat outputFormat, String variantsFile,
-                       Query query, QueryOptions queryOptions, String token) throws Exception {
+    public List<URI> export(String outputFileStr, VariantWriterFactory.VariantOutputFormat outputFormat, String variantsFile,
+                      Query query, QueryOptions queryOptions, String token) throws Exception {
         URI outputFile;
         if (!VariantWriterFactory.isStandardOutput(outputFileStr)) {
             URI outdirUri;
@@ -83,7 +83,7 @@ public class VariantExportOperationManager extends OperationManager {
                 new CatalogVariantMetadataFactory(catalogManager, variantStorageEngine.getDBAdaptor(), token);
 
         URI variantsFileUri = StringUtils.isEmpty(variantsFile) ? null : UriUtils.createUri(variantsFile);
-        variantStorageEngine.exportData(outputFile, outputFormat, variantsFileUri, query, queryOptions, metadataExporter);
+        return variantStorageEngine.exportData(outputFile, outputFormat, variantsFileUri, query, queryOptions, metadataExporter);
     }
 
     private String buildOutputFileName(Query query, String token) throws CatalogException {
