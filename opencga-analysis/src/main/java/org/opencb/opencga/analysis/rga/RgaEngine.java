@@ -17,6 +17,7 @@ import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.analysis.rga.exceptions.RgaException;
 import org.opencb.opencga.analysis.rga.iterators.RgaIterator;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -146,7 +147,7 @@ public class RgaEngine implements Closeable {
      */
     public RgaIterator individualQuery(String collection, Query query, QueryOptions queryOptions) throws RgaException{
         SolrQuery solrQuery = parser.parseQuery(query);
-        fixIndividualOptions(queryOptions, solrQuery);
+        fixIndividualOptions(queryOptions, query, solrQuery);
 //        solrQuery.setRows(Integer.MAX_VALUE);
         solrQuery.setRows(queryOptions.getInt(QueryOptions.LIMIT, Integer.MAX_VALUE));
         try {
@@ -161,7 +162,7 @@ public class RgaEngine implements Closeable {
         }
     }
 
-    private void fixIndividualOptions(QueryOptions queryOptions, SolrQuery solrQuery) {
+    private void fixIndividualOptions(QueryOptions queryOptions, Query query, SolrQuery solrQuery) {
         if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
             for (String include : individualRgaConverter.getIncludeFields(queryOptions.getAsStringList(QueryOptions.INCLUDE))) {
                 solrQuery.addField(include);
@@ -171,6 +172,8 @@ public class RgaEngine implements Closeable {
                 solrQuery.addField(include);
             }
         }
+
+        fixCommonOptions(query, solrQuery);
     }
 
     /**
@@ -184,7 +187,7 @@ public class RgaEngine implements Closeable {
      */
     public RgaIterator geneQuery(String collection, Query query, QueryOptions queryOptions) throws RgaException {
         SolrQuery solrQuery = parser.parseQuery(query);
-        fixGeneOptions(queryOptions, solrQuery);
+        fixGeneOptions(queryOptions, query, solrQuery);
         solrQuery.setRows(Integer.MAX_VALUE);
         try {
             return new RgaIterator(solrManager.getSolrClient(), collection, solrQuery);
@@ -193,7 +196,7 @@ public class RgaEngine implements Closeable {
         }
     }
 
-    private void fixGeneOptions(QueryOptions queryOptions, SolrQuery solrQuery) {
+    private void fixGeneOptions(QueryOptions queryOptions, Query query, SolrQuery solrQuery) {
         if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
             for (String include : geneConverter.getIncludeFields(queryOptions.getAsStringList(QueryOptions.INCLUDE))) {
                 solrQuery.addField(include);
@@ -203,6 +206,8 @@ public class RgaEngine implements Closeable {
                 solrQuery.addField(include);
             }
         }
+
+        fixCommonOptions(query, solrQuery);
     }
 
     /**
@@ -216,7 +221,7 @@ public class RgaEngine implements Closeable {
      */
     public RgaIterator variantQuery(String collection, Query query, QueryOptions queryOptions) throws RgaException {
         SolrQuery solrQuery = parser.parseQuery(query);
-        fixVariantOptions(queryOptions, solrQuery);
+        fixVariantOptions(queryOptions, query, solrQuery);
         solrQuery.setRows(Integer.MAX_VALUE);
         try {
             return new RgaIterator(solrManager.getSolrClient(), collection, solrQuery);
@@ -226,7 +231,7 @@ public class RgaEngine implements Closeable {
     }
 
 
-    private void fixVariantOptions(QueryOptions queryOptions, SolrQuery solrQuery) {
+    private void fixVariantOptions(QueryOptions queryOptions, Query query, SolrQuery solrQuery) {
         if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
             for (String include : variantConverter.getIncludeFields(queryOptions.getAsStringList(QueryOptions.INCLUDE))) {
                 solrQuery.addField(include);
@@ -236,6 +241,8 @@ public class RgaEngine implements Closeable {
                 solrQuery.addField(include);
             }
         }
+
+        fixCommonOptions(query, solrQuery);
     }
 
     /**
@@ -345,6 +352,15 @@ public class RgaEngine implements Closeable {
         }
 
         return facetResult;
+    }
+
+    private void fixCommonOptions(Query query, SolrQuery solrQuery) {
+        List<String> variants = query.getAsStringList(RgaQueryParams.VARIANTS.key(), ";");
+        List<String> knockoutTypes = query.getAsStringList(RgaQueryParams.KNOCKOUT.key());
+        if (variants.size() > 1 && knockoutTypes.size() == 1 && knockoutTypes.get(0).equals(KnockoutVariant.KnockoutType.COMP_HET.name())) {
+            solrQuery.addField(RgaDataModel.VARIANTS);
+            solrQuery.addField(RgaDataModel.KNOCKOUT_TYPES);
+        }
     }
 
     @Override
