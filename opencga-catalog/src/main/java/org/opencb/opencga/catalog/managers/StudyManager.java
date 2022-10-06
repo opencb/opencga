@@ -1344,7 +1344,7 @@ public class StudyManager extends AbstractManager {
 
     public Map<String, Object> facet(String studyStr, String fileFields, String sampleFields, String individualFields, String cohortFields,
                                      String familyFields, String jobFields, boolean defaultStats, String token)
-            throws CatalogException, IOException {
+            throws CatalogException {
         Map<String, Object> result = new HashMap<>();
         result.put("sample", catalogManager.getSampleManager().facet(studyStr, new Query(), setFacetFields(sampleFields), defaultStats,
                 token));

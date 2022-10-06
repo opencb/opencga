@@ -57,7 +57,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -1134,7 +1133,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     public DataResult<FacetField> facet(String studyId, Query query, QueryOptions options, boolean defaultStats, String token)
-            throws CatalogException, IOException {
+            throws CatalogException {
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
                 .append("query", query)
