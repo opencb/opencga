@@ -17,6 +17,7 @@
 package org.opencb.opencga.analysis.clinical.exomiser;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
@@ -26,34 +27,37 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.tools.clinical.ClinicalVariantCreator;
 import org.opencb.biodata.tools.clinical.DefaultClinicalVariantCreator;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
-import org.opencb.cellbase.client.rest.CellBaseClient;
-import org.opencb.cellbase.client.rest.VariantClient;
-import org.opencb.cellbase.core.result.CellBaseDataResponse;
-import org.opencb.cellbase.core.result.CellBaseDataResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.slf4j.LoggerFactory;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.io.File;
 import java.io.IOException;
@@ -73,6 +77,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
     private String sampleId;
 
     private ClinicalAnalysis clinicalAnalysis;
+    private Individual individual;
 
     @Override
     protected InterpretationMethod getInterpretationMethod() {
@@ -145,8 +150,12 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
 
     protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis) throws ToolException {
         // Interpretation method
-        InterpretationMethod method = new InterpretationMethod(getId(), "", "",
-                Collections.singletonList(new Software().setName(getId())));
+        InterpretationMethod method = new InterpretationMethod(getId(), GitRepositoryState.get().getBuildVersion(),
+                GitRepositoryState.get().getCommitId(), Collections.singletonList(
+                        new Software()
+                                .setName("Exomiser")
+                                .setRepository("Docker: " + ExomiserWrapperAnalysisExecutor.DOCKER_IMAGE_NAME)
+                                .setVersion(ExomiserWrapperAnalysisExecutor.DOCKER_IMAGE_VERSION)));
 
         // Analyst
         ClinicalAnalyst analyst = clinicalInterpretationManager.getAnalyst(token);
@@ -194,45 +203,71 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         Map<String, ClinicalVariant> cvMap = new HashMap<>();
 
         VariantNormalizer normalizer = new VariantNormalizer();
-        CellBaseClient cellBaseClient = getVariantStorageManager().getCellBaseUtils(studyId, token).getCellBaseClient();
-        logger.info("{}: Annotating with Cellbase REST: {}", ID, cellBaseClient.getClientConfiguration());
 
-        VariantClient variantClient = cellBaseClient.getVariantClient();
+        // Prepare variant query
+        List<String> sampleIds = new ArrayList<>();
+        sampleIds.add(sampleId);
+        if (clinicalAnalysis.getProband().getFather() != null) {
+            sampleIds.add(clinicalAnalysis.getProband().getFather().getId());
+        }
+        if (clinicalAnalysis.getProband().getMother() != null) {
+            sampleIds.add(clinicalAnalysis.getProband().getMother().getId());
+        }
+        Query query = new Query(VariantQueryParam.STUDY.key(), getStudyId())
+                .append(VariantQueryParam.INCLUDE_SAMPLE_ID.key(), true)
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), "all")
+                .append(VariantQueryParam.SAMPLE.key(), StringUtils.join(sampleIds, ","));
 
+        // Parse all Exomiser output files (VCF)
         for (File file : getOutDir().toFile().listFiles()) {
             String filename = file.getName();
             if (filename.startsWith("exomiser_output") && filename.endsWith("vcf")) {
+                Map<String, ObjectMap> variantExomiserAttrMaps = new HashMap<>();
+
                 // Read variants from VCF file
                 VariantStudyMetadata variantStudyMetadata = new VariantFileMetadata(filename, "").toVariantStudyMetadata(studyId);
                 VariantReader reader = new VariantVcfHtsjdkReader(file.toPath(), variantStudyMetadata, normalizer);
-                List<Variant> variants = new ArrayList<>();
+                List<String> variantIds = new ArrayList<>();
                 Iterator<Variant> iterator = reader.iterator();
                 while (iterator.hasNext()) {
                     Variant variant = iterator.next();
-                    if (StringUtils.isEmpty(variant.getId())) {
-                        variant.setId(variant.toStringSimple());
-                    }
-                    variants.add(variant);
-                }
-                if (CollectionUtils.isNotEmpty(variants)) {
-                    // Annotate variants
-                    List<Variant> annotatedVariants = new ArrayList<>();
-                    CellBaseDataResponse<Variant> cellBaseResponse = variantClient.annotate(variants, new QueryOptions("exclude",
-                            "expression"), true);
-                    if (cellBaseResponse != null && CollectionUtils.isNotEmpty(cellBaseResponse.getResponses())) {
-                        for (CellBaseDataResult<Variant> response : cellBaseResponse.getResponses()) {
-                            annotatedVariants.addAll(response.getResults());
-                        }
+                    String variantId = StringUtils.isEmpty(variant.getId()) ? variant.toStringSimple() : variant.getId();
 
-                        // Convert annotated variant to clinical variants
+                    // Get Exomiser attributes and put it into a map to further processing
+                    variantExomiserAttrMaps.put(variantId, getExomiserAttributes(variant));
+
+                    // Add variant into the list
+                    variantIds.add(variantId);
+                }
+                if (CollectionUtils.isNotEmpty(variantIds)) {
+                    query.put(VariantQueryParam.ID.key(), StringUtils.join(variantIds, ","));
+                    logger.info("Query (including father/mother samples): {}", query.toJson());
+                    VariantQueryResult<Variant> variantResults = getVariantStorageManager().get(query, QueryOptions.empty(), getToken());
+
+                    if (variantResults != null && CollectionUtils.isNotEmpty(variantResults.getResults())) {
+                        // Convert variants to clinical variants
                         ClinicalVariantCreator clinicalVariantCreator = getClinicalVariantCreator(filename);
-                        List<ClinicalVariant> clinicalVariants = clinicalVariantCreator.create(annotatedVariants);
+                        List<ClinicalVariant> clinicalVariants = clinicalVariantCreator.create(variantResults.getResults());
                         if (CollectionUtils.isNotEmpty(clinicalVariants)) {
-                            for (ClinicalVariant clinicalVariant : clinicalVariants) {
-                                if (!cvMap.containsKey(clinicalVariant.getId())) {
-                                    cvMap.put(clinicalVariant.getId(), clinicalVariant);
+                            for (ClinicalVariant cv : clinicalVariants) {
+                                String variantId = StringUtils.isEmpty(cv.getId()) ? cv.toStringSimple() : cv.getId();
+
+                                // Add Exomiser attributes to the clinical variant evidences
+                                if (variantExomiserAttrMaps.containsKey(variantId) && CollectionUtils.isNotEmpty(cv.getEvidences())) {
+                                    for (ClinicalVariantEvidence cve : cv.getEvidences()) {
+                                        if (cve.getAttributes() == null) {
+                                            // Initialize map before populating
+                                            cve.setAttributes(new HashMap<>());
+                                        }
+                                        cve.getAttributes().putAll(variantExomiserAttrMaps.get(cv.getId()));
+                                    }
+                                }
+
+                                // Add clinical variant to the map (to group by mode of inheritance)
+                                if (cvMap.containsKey(variantId)) {
+                                    cvMap.get(variantId).getEvidences().addAll(cv.getEvidences());
                                 } else {
-                                    cvMap.get(clinicalVariant.getId()).getEvidences().addAll(clinicalVariant.getEvidences());
+                                    cvMap.put(variantId, cv);
                                 }
                             }
                         }
@@ -245,6 +280,25 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         }
 
         return new ArrayList<>(cvMap.values());
+    }
+
+    private ObjectMap getExomiserAttributes(Variant variant) {
+        ObjectMap attributes = new ObjectMap();
+        if (variant != null && CollectionUtils.isNotEmpty(variant.getStudies())) {
+            StudyEntry studyEntry = variant.getStudies().get(0);
+            if (CollectionUtils.isNotEmpty(studyEntry.getFiles())) {
+                FileEntry fileEntry = studyEntry.getFiles().get(0);
+                if (MapUtils.isNotEmpty(fileEntry.getData())) {
+                    for (Map.Entry<String, String> entry : fileEntry.getData().entrySet()) {
+                        if (entry.getKey().startsWith("Ex")) {
+                            // Only Exomiser attributes, i.e., those starting with "Ex"
+                            attributes.put(entry.getKey(), entry.getValue());
+                        }
+                    }
+                }
+            }
+        }
+        return attributes;
     }
 
     private ClinicalVariantCreator getClinicalVariantCreator(String filename) {
@@ -263,7 +317,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
             moi = ClinicalProperty.ModeOfInheritance.UNKNOWN;
         }
 
-        return new DefaultClinicalVariantCreator(null, null, Collections.singletonList(moi), ClinicalProperty.Penetrance.COMPLETE,
+        return new DefaultClinicalVariantCreator(null, Collections.singletonList(moi), ClinicalProperty.Penetrance.COMPLETE,
                 new ArrayList<>(), new ArrayList<>(ModeOfInheritance.proteinCoding), new ArrayList<>(ModeOfInheritance.extendedLof), true);
     }
 
