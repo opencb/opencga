@@ -126,7 +126,10 @@ public abstract class AbstractManager {
 
     protected <T, S extends ObjectMap> T run(ObjectMap params, Enums.Action action, Enums.Resource resource, String studyStr, String token,
                                              S options, List<String> studyIncludeList, ExecuteOperation<T> body) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(token);
+        String userId = null;
+        if (StringUtils.isNotEmpty(token)) {
+            userId = catalogManager.getUserManager().getUserId(token);
+        }
         Study study = null;
         if (StringUtils.isNotEmpty(studyStr)) {
             QueryOptions studyOptions = StudyManager.INCLUDE_BASE;

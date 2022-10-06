@@ -134,6 +134,7 @@ public final class Enums {
 
         LOGIN,
         REFRESH_TOKEN,
+        FETCH_NON_EXPIRING_TOKEN,
         CHANGE_USER_PASSWORD,
         RESET_USER_PASSWORD,
         CHANGE_USER_CONFIG,
