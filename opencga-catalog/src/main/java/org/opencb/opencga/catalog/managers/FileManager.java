@@ -2640,7 +2640,8 @@ public class FileManager extends AnnotationSetManager<File> {
     // **************************   ACLs  ******************************** //
     public OpenCGAResult<AclEntryList<FilePermissions>> getAcls(String studyId, List<String> fileList, String member,
                                                                 boolean ignoreException, String token) throws CatalogException {
-        return getAcls(studyId, fileList, Collections.singletonList(member), ignoreException, token);
+        return getAcls(studyId, fileList, StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(),
+                ignoreException, token);
     }
 
     public OpenCGAResult<AclEntryList<FilePermissions>> getAcls(String studyId, List<String> fileList, List<String> members,
@@ -2694,6 +2695,9 @@ public class FileManager extends AnnotationSetManager<File> {
                                     new Error(0, "", missingMap.get(fileId).getErrorMsg())), new ObjectMap());
                 }
             }
+            for (int i = 0; i < queryResult.getResults().size(); i++) {
+                fileAcls.getResults().get(i).setId(queryResult.getResults().get(i).getId());
+            }
             fileAcls.setResults(resultList);
             fileAcls.setEvents(eventList);
         } catch (CatalogException e) {
@@ -2707,7 +2711,7 @@ public class FileManager extends AnnotationSetManager<File> {
             } else {
                 for (String fileId : fileList) {
                     Event event = new Event(Event.Type.ERROR, fileId, e.getMessage());
-                    fileAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, new AclEntryList<>(), 0));
+                    fileAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 }
             }
         } finally {
@@ -2810,7 +2814,9 @@ public class FileManager extends AnnotationSetManager<File> {
 
             queryResultList = authorizationManager.getAcls(study.getUid(), fileUids, members, Enums.Resource.FILE,
                     FilePermissions.class);
-
+            for (int i = 0; i < queryResultList.getResults().size(); i++) {
+                queryResultList.getResults().get(i).setId(extendedFileList.get(i).getId());
+            }
             for (File file : extendedFileList) {
                 auditManager.audit(operationId, user, Enums.Action.UPDATE_ACLS, Enums.Resource.FILE, file.getId(),
                         file.getUuid(), study.getId(), study.getUuid(), auditParams,

@@ -185,8 +185,7 @@ public abstract class MigrationTool {
     }
 
     protected final void migrateCollection(MongoCollection<Document> inputCollection, MongoCollection<Document> outputCollection,
-                                           Bson query, Bson projection,
-                                           MigrateCollectionFunc migrateFunc) {
+                                           Bson query, Bson projection, MigrateCollectionFunc migrateFunc) {
         int count = 0;
         List<WriteModel<Document>> list = new ArrayList<>(batchSize);
 

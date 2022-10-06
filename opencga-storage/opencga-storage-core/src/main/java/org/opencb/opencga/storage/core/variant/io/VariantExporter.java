@@ -44,8 +44,10 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.io.*;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -91,8 +93,8 @@ public class VariantExporter {
      * @throws StorageEngineException  If there is any error exporting variants
      * @return output file
      */
-    public URI export(@Nullable URI outputFile, VariantOutputFormat outputFormat, URI variantsFile,
-                      ParsedVariantQuery query)
+    public List<URI> export(@Nullable URI outputFile, VariantOutputFormat outputFormat, URI variantsFile,
+                            ParsedVariantQuery query)
             throws IOException, StorageEngineException {
 
         outputFile = VariantWriterFactory.checkOutput(outputFile, outputFormat);
@@ -110,9 +112,12 @@ public class VariantExporter {
             if (outputFormat == VariantOutputFormat.TPED) {
                 metaFilename = outputFile.getPath().replace(TPED_FILE_EXTENSION, TFAM_FILE_EXTENSION);
             }
-            writeMetadata(metadata, UriUtils.replacePath(outputFile, metaFilename));
+            URI metadataFile = UriUtils.replacePath(outputFile, metaFilename);
+            writeMetadata(metadata, metadataFile);
+            return Arrays.asList(outputFile, metadataFile);
+        } else {
+            return Collections.singletonList(outputFile);
         }
-        return outputFile;
     }
 
     protected void exportData(URI outputFile, OutputStream outputStream, VariantOutputFormat outputFormat, URI variantsFile,

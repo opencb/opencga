@@ -20,12 +20,20 @@ import org.apache.solr.common.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
-import org.opencb.opencga.core.tools.annotations.Tool;
-import org.opencb.opencga.core.models.variant.VariantExportParams;
+import org.opencb.opencga.catalog.io.IOManager;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.variant.VariantExportParams;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
+
+import java.net.URI;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Tool(id = VariantExportTool.ID, description = VariantExportTool.DESCRIPTION,
         scope = Tool.Scope.PROJECT, resource = Enums.Resource.VARIANT)
@@ -56,19 +64,34 @@ public class VariantExportTool extends OpenCgaTool {
     }
 
     @Override
+    protected List<String> getSteps() {
+        return Arrays.asList(ID, "move-files");
+    }
+
+    @Override
     protected void run() throws Exception {
-        step(() -> {
+        List<URI> uris = new ArrayList<>(2);
+        step(ID, () -> {
+            Path outDir = getScratchDir();
             String outputFile = StringUtils.isEmpty(toolParams.getOutputFileName())
-                    ? getOutDir().toString()
-                    : getOutDir().resolve(toolParams.getOutputFileName()).toString();
+                    ? outDir.toString()
+                    : outDir.resolve(toolParams.getOutputFileName()).toString();
             Query query = toolParams.toQuery();
             QueryOptions queryOptions = new QueryOptions(params);
             for (VariantQueryParam param : VariantQueryParam.values()) {
                 queryOptions.remove(param.key());
             }
-            variantStorageManager.exportData(outputFile,
+            uris.addAll(variantStorageManager.exportData(outputFile,
                     outputFormat,
-                    toolParams.getVariantsFile(), query, queryOptions, token);
+                    toolParams.getVariantsFile(), query, queryOptions, token));
+        });
+        step("move-files", () -> {
+            IOManager ioManager = catalogManager.getIoManagerFactory().get(uris.get(0));
+            for (URI uri : uris) {
+                String fileName = UriUtils.fileName(uri);
+                logger.info("Moving file -- " + fileName);
+                ioManager.move(uri, getOutDir().resolve(fileName).toUri());
+            }
         });
     }
 }

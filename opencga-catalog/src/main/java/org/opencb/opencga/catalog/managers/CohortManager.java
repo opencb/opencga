@@ -1192,7 +1192,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     // **************************   ACLs  ******************************** //
     public OpenCGAResult<AclEntryList<CohortPermissions>> getAcls(String studyId, List<String> cohortList, String member,
                                                                   boolean ignoreException, String token) throws CatalogException {
-        return getAcls(studyId, cohortList, Collections.singletonList(member), ignoreException, token);
+        return getAcls(studyId, cohortList, StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(),
+                ignoreException, token);
     }
 
     public OpenCGAResult<AclEntryList<CohortPermissions>> getAcls(String studyId, List<String> cohortList, List<String> members,
@@ -1247,6 +1248,9 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                                     new Error(0, "", missingMap.get(cohortId).getErrorMsg())), new ObjectMap());
                 }
             }
+            for (int i = 0; i < queryResult.getResults().size(); i++) {
+                cohortAcls.getResults().get(i).setId(queryResult.getResults().get(i).getId());
+            }
             cohortAcls.setResults(resultList);
             cohortAcls.setEvents(eventList);
         } catch (CatalogException e) {
@@ -1260,7 +1264,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             } else {
                 for (String cohortId : cohortList) {
                     Event event = new Event(Event.Type.ERROR, cohortId, e.getMessage());
-                    cohortAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, new AclEntryList<>(), 0));
+                    cohortAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 }
             }
         } finally {
@@ -1343,7 +1347,9 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
             queryResultList = authorizationManager.getAcls(study.getUid(), cohortUids, members, Enums.Resource.COHORT,
                     CohortPermissions.class);
-
+            for (int i = 0; i < queryResultList.getResults().size(); i++) {
+                queryResultList.getResults().get(i).setId(cohortList.get(i).getId());
+            }
             for (Cohort cohort : cohortList) {
                 auditManager.audit(operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.COHORT, cohort.getId(),
                         cohort.getUuid(), study.getId(), study.getUuid(), auditParams,

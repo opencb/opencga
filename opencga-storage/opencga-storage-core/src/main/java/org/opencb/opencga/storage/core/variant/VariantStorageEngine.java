@@ -232,9 +232,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @param queryOptions  Query options
      * @throws IOException  If there is any IO error
      * @throws StorageEngineException  If there is any error exporting variants
-     * @return output file, could be different from input
+     * @return output files, could be different from input
      */
-    public URI exportData(URI outputFile, VariantOutputFormat outputFormat, URI variantsFile, Query query, QueryOptions queryOptions)
+    public List<URI> exportData(URI outputFile, VariantOutputFormat outputFormat, URI variantsFile, Query query, QueryOptions queryOptions)
             throws IOException, StorageEngineException {
         return exportData(outputFile, outputFormat, variantsFile, query, queryOptions, null);
     }
@@ -252,7 +252,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException If there is any error exporting variants
      * @return outputFile could be different from input
      */
-    public URI exportData(URI outputFile, VariantOutputFormat outputFormat, URI variantsFile, Query query, QueryOptions queryOptions,
+    public List<URI> exportData(URI outputFile, VariantOutputFormat outputFormat, URI variantsFile, Query query, QueryOptions queryOptions,
                           VariantMetadataFactory metadataFactory)
             throws IOException, StorageEngineException {
         if (metadataFactory == null) {
