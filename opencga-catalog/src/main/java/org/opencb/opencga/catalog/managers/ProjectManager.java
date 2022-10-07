@@ -530,7 +530,10 @@ public class ProjectManager extends AbstractManager {
                 .append("token", token);
 
         return run(auditParams, Enums.Action.FACET, PROJECT, null, token, null, (s, userId, rp, queryOptions) -> {
+            rp.setId(projectStr);
             Project project = resolveId(projectStr, userId);
+            rp.setId(project.getId());
+            rp.setUuid(project.getUuid());
             Query query = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
             OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager().search(query, new QueryOptions(QueryOptions.INCLUDE,
                     Arrays.asList(StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.ID.key())), token);

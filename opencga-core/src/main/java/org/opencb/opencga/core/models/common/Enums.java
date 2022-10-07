@@ -166,6 +166,7 @@ public final class Enums {
         RELATIVES,
 
         UPLOAD,
+        SYNC,
         LINK,
         UNLINK,
         GREP,
