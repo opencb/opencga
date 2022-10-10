@@ -24,7 +24,6 @@ import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
@@ -48,7 +47,6 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.HookConfiguration;
 import org.opencb.opencga.core.models.AclEntryList;
-import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.*;
@@ -2464,17 +2462,11 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append("members", members)
                 .append("ignoreException", ignoreException)
                 .append("token", token);
-        
-        String user = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyId, user);
 
-        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
-
-        OpenCGAResult<AclEntryList<FilePermissions>> fileAcls = OpenCGAResult.empty();
-        Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
-        try {
-            auditManager.initAuditBatch(operationId);
-            InternalGetDataResult<File> queryResult = internalGet(study.getUid(), fileList, INCLUDE_FILE_IDS, user, ignoreException);
+        return runBatch(auditParams, Enums.Action.FETCH_ACLS, FILE, studyId, token, null, (study, userId, qOptions, operationUuid) -> {
+            OpenCGAResult<AclEntryList<FilePermissions>> fileAcls;
+            Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
+            InternalGetDataResult<File> queryResult = internalGet(study.getUid(), fileList, INCLUDE_FILE_IDS, userId, ignoreException);
 
             if (queryResult.getMissing() != null) {
                 missingMap = queryResult.getMissing().stream()
@@ -2483,9 +2475,9 @@ public class FileManager extends AnnotationSetManager<File> {
 
             List<Long> fileUids = queryResult.getResults().stream().map(File::getUid).collect(Collectors.toList());
             if (org.apache.commons.collections4.CollectionUtils.isNotEmpty(members)) {
-                fileAcls = authorizationManager.getAcl(user, study.getUid(), fileUids, members, FILE, FilePermissions.class);
+                fileAcls = authorizationManager.getAcl(userId, study.getUid(), fileUids, members, FILE, FilePermissions.class);
             } else {
-                fileAcls = authorizationManager.getAcl(user, study.getUid(), fileUids, FILE, FilePermissions.class);
+                fileAcls = authorizationManager.getAcl(userId, study.getUid(), fileUids, FILE, FilePermissions.class);
             }
 
             // Include non-existing samples to the result list
@@ -2495,49 +2487,32 @@ public class FileManager extends AnnotationSetManager<File> {
             for (String fileId : fileList) {
                 if (!missingMap.containsKey(fileId)) {
                     File file = queryResult.getResults().get(counter);
+                    run(auditParams, Enums.Action.FETCH_ACLS, FILE, operationUuid, study, userId, qOptions, (s, u, rp, qo) -> {
+                        rp.setId(file.getId());
+                        rp.setUuid(file.getUuid());
+                        return null;
+                    });
                     resultList.add(fileAcls.getResults().get(counter));
-                    auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, FILE, file.getId(),
-                            file.getUuid(), study.getId(), study.getUuid(), auditParams,
-                            new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
                     counter++;
                 } else {
+                    if (!ignoreException) {
+                        throw new CatalogException(missingMap.get(fileId).getErrorMsg());
+                    }
                     resultList.add(new AclEntryList<>());
                     eventList.add(new Event(Event.Type.ERROR, fileId, missingMap.get(fileId).getErrorMsg()));
-                    auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, FILE, fileId, "",
-                            study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
-                                    new Error(0, "", missingMap.get(fileId).getErrorMsg())), new ObjectMap());
                 }
             }
             fileAcls.setResults(resultList);
             fileAcls.setEvents(eventList);
-        } catch (CatalogException e) {
-            for (String fileId : fileList) {
-                auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, FILE, fileId, "",
-                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
-                        new ObjectMap());
-            }
-            if (!ignoreException) {
-                throw e;
-            } else {
-                for (String fileId : fileList) {
-                    Event event = new Event(Event.Type.ERROR, fileId, e.getMessage());
-                    fileAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, new AclEntryList<>(), 0));
-                }
-            }
-        } finally {
-            auditManager.finishAuditBatch(operationId);
-        }
 
-        return fileAcls;
+            return fileAcls;
+        });
     }
 
     public OpenCGAResult<AclEntryList<FilePermissions>> updateAcl(String studyId, List<String> fileStrList, String memberList,
                                                                   FileAclParams aclParams, ParamUtils.AclAction action,
                                                                   String token)
             throws CatalogException {
-        String user = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyId, user);
-
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
                 .append("fileStrList", fileStrList)
@@ -2545,11 +2520,8 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append("aclParams", aclParams)
                 .append("action", action)
                 .append("token", token);
-        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
-        try {
-            auditManager.initAuditBatch(operationId);
-
+        return runBatch(auditParams, Enums.Action.UPDATE_ACLS, FILE, studyId, token, null, (study, userId, qOptions, operationUuid) -> {
             int count = 0;
             count += fileStrList != null && !fileStrList.isEmpty() ? 1 : 0;
             count += StringUtils.isNotEmpty(aclParams.getSample()) ? 1 : 0;
@@ -2574,16 +2546,16 @@ public class FileManager extends AnnotationSetManager<File> {
             if (StringUtils.isNotEmpty(aclParams.getSample())) {
                 // Obtain the sample ids
                 OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager().internalGet(study.getUid(),
-                        Arrays.asList(StringUtils.split(aclParams.getSample(), ",")), SampleManager.INCLUDE_SAMPLE_IDS, user, false);
+                        Arrays.asList(StringUtils.split(aclParams.getSample(), ",")), SampleManager.INCLUDE_SAMPLE_IDS, userId, false);
                 Query query = new Query(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(),
                         sampleDataResult.getResults().stream().map(Sample::getId).collect(Collectors.toList()));
 
                 extendedFileList = catalogManager.getFileManager().search(studyId, query, EXCLUDE_FILE_ATTRIBUTES, token).getResults();
             } else {
-                extendedFileList = internalGet(study.getUid(), fileStrList, EXCLUDE_FILE_ATTRIBUTES, user, false).getResults();
+                extendedFileList = internalGet(study.getUid(), fileStrList, EXCLUDE_FILE_ATTRIBUTES, userId, false).getResults();
             }
 
-            authorizationManager.checkCanAssignOrSeePermissions(study.getUid(), user);
+            authorizationManager.checkCanAssignOrSeePermissions(study.getUid(), userId);
 
             // Increase the list with the files/folders within the list of ids that correspond with folders
             extendedFileList = getRecursiveFilesAndFolders(study.getUid(), extendedFileList);
@@ -2603,7 +2575,6 @@ public class FileManager extends AnnotationSetManager<File> {
                     FILE);
 //        studyManager.membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
-            OpenCGAResult<AclEntryList<FilePermissions>> queryResultList;
             switch (action) {
                 case SET:
                     authorizationManager.setAcls(study.getUid(), members, catalogAclParams);
@@ -2622,27 +2593,17 @@ public class FileManager extends AnnotationSetManager<File> {
                     throw new CatalogException("Unexpected error occurred. No valid action found.");
             }
 
-            queryResultList = authorizationManager.getAcls(study.getUid(), fileUids, members, FILE,
-                    FilePermissions.class);
-
             for (File file : extendedFileList) {
-                auditManager.audit(operationId, user, Enums.Action.UPDATE_ACLS, FILE, file.getId(),
-                        file.getUuid(), study.getId(), study.getUuid(), auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
+                // To audit
+                run(auditParams, Enums.Action.UPDATE_ACLS, FILE, operationUuid, study, userId, qOptions, (s, u, rp, qo) -> {
+                    rp.setId(file.getId());
+                    rp.setUuid(file.getUuid());
+                    return null;
+                });
             }
-            return queryResultList;
-        } catch (CatalogException e) {
-            if (fileStrList != null) {
-                for (String fileId : fileStrList) {
-                    auditManager.audit(operationId, user, Enums.Action.UPDATE_ACLS, FILE, fileId, "",
-                            study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
-                                    e.getError()), new ObjectMap());
-                }
-            }
-            throw e;
-        } finally {
-            auditManager.finishAuditBatch(operationId);
-        }
+
+            return authorizationManager.getAcls(study.getUid(), fileUids, members, FILE, FilePermissions.class);
+        });
     }
 
     public OpenCGAResult<File> getParents(String studyStr, String path, boolean rootFirst, QueryOptions options, String token)
@@ -2989,41 +2950,29 @@ public class FileManager extends AnnotationSetManager<File> {
 
     public DataResult<FacetField> facet(String studyId, Query query, QueryOptions options, boolean defaultStats, String token)
             throws CatalogException {
-        ParamUtils.defaultObject(query, Query::new);
-        ParamUtils.defaultObject(options, QueryOptions::new);
-
-        String userId = userManager.getUserId(token);
-        // We need to add variableSets and groups to avoid additional queries as it will be used in the catalogSolrManager
-        Study study = studyManager.resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(), StudyDBAdaptor.QueryParams.GROUPS.key())));
-
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
-                .append("query", new Query(query))
+                .append("query", query)
                 .append("options", options)
                 .append("defaultStats", defaultStats)
                 .append("token", token);
-        try {
-            if (defaultStats || StringUtils.isEmpty(options.getString(QueryOptions.FACET))) {
-                String facet = options.getString(QueryOptions.FACET);
-                options.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
-            }
 
-            AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
+        return run(auditParams, Enums.Action.FACET, FILE, studyId, token, options,
+                Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(), StudyDBAdaptor.QueryParams.GROUPS.key()),
+                (study, userId, rp, qOptions) -> {
+                    Query finalQuery = query != null ? new Query(query) : new Query();
+                    if (defaultStats || StringUtils.isEmpty(qOptions.getString(QueryOptions.FACET))) {
+                        String facet = qOptions.getString(QueryOptions.FACET);
+                        qOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
+                    }
 
-            try (CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager)) {
-                DataResult<FacetField> result = catalogSolrManager.facetedQuery(study, CatalogSolrManager.FILE_SOLR_COLLECTION, query,
-                        options, userId);
-                auditManager.auditFacet(userId, FILE, study.getId(), study.getUuid(), auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                    AnnotationUtils.fixQueryAnnotationSearch(study, userId, finalQuery, authorizationManager);
 
-                return result;
-            }
-        } catch (CatalogException e) {
-            auditManager.auditFacet(userId, FILE, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", e.getMessage())));
-            throw e;
-        }
+                    try (CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager)) {
+                        return catalogSolrManager.facetedQuery(study, CatalogSolrManager.FILE_SOLR_COLLECTION, finalQuery, qOptions,
+                                userId);
+                    }
+                });
     }
 
     /**

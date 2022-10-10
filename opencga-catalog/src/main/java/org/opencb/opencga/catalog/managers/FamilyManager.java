@@ -1169,18 +1169,18 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 .append("defaultStats", defaultStats)
                 .append("token", token);
 
-        return run(auditParams, Enums.Action.FACET, FAMILY, studyId, token, options, (study, userId, rp, queryOptions) -> {
+        return run(auditParams, Enums.Action.FACET, FAMILY, studyId, token, options, (study, userId, rp, qOptions) -> {
             Query myQuery = query != null ? new Query(query) : new Query();
             AnnotationUtils.fixQueryAnnotationSearch(study, userId, myQuery, authorizationManager);
 
-            if (defaultStats || StringUtils.isEmpty(options.getString(QueryOptions.FACET))) {
-                String facet = options.getString(QueryOptions.FACET);
-                options.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
+            if (defaultStats || StringUtils.isEmpty(qOptions.getString(QueryOptions.FACET))) {
+                String facet = qOptions.getString(QueryOptions.FACET);
+                qOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
             }
 
             try (CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager)) {
                 return new OpenCGAResult<>(catalogSolrManager.facetedQuery(study, CatalogSolrManager.FAMILY_SOLR_COLLECTION, myQuery,
-                        options, userId));
+                        qOptions, userId));
             }
         });
     }
