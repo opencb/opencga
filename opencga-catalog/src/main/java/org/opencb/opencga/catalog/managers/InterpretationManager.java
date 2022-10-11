@@ -36,7 +36,6 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -45,7 +44,6 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.StatusParam;
@@ -62,6 +60,8 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.core.models.common.Enums.Resource.INTERPRETATION;
 
 public class InterpretationManager extends ResourceManager<Interpretation> {
 
@@ -93,7 +93,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
     @Override
     Enums.Resource getResource() {
-        return Enums.Resource.INTERPRETATION;
+        return INTERPRETATION;
     }
 
     @Override
@@ -197,10 +197,6 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     public OpenCGAResult<Interpretation> create(String studyStr, String clinicalAnalysisStr, Interpretation interpretation,
                                                 ParamUtils.SaveInterpretationAs saveInterpretationAs, QueryOptions options, String token)
             throws CatalogException {
-        // We check if the user can create interpretations in the clinical analysis
-        String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_CONFIGURATION);
-
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("clinicalAnalysis", clinicalAnalysisStr)
@@ -209,40 +205,35 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 .append("options", options)
                 .append("token", token);
 
-        try {
-            QueryOptions clinicalOptions = keepFieldsInQueryOptions(ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS,
-                    Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(),
-                            ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCK.key(),
-                            ClinicalAnalysisDBAdaptor.QueryParams.AUDIT.key(),
-                            ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_ID.key(),
-                            ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS_ID.key()));
-            ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(), clinicalAnalysisStr,
-                    clinicalOptions, userId).first();
+        return run(auditParams, Enums.Action.CREATE, INTERPRETATION, studyStr, token, options,
+                Collections.singletonList(StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION.key()), (study, userId, rp, qOptions) -> {
+                    QueryOptions clinicalOptions = keepFieldsInQueryOptions(ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS,
+                            Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(),
+                                    ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCK.key(),
+                                    ClinicalAnalysisDBAdaptor.QueryParams.AUDIT.key(),
+                                    ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_ID.key(),
+                                    ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS_ID.key()));
+                    ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
+                            clinicalAnalysisStr, clinicalOptions, userId).first();
 
-            authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(),
-                    userId, ClinicalAnalysisPermissions.WRITE);
+                    authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(),
+                            userId, ClinicalAnalysisPermissions.WRITE);
 
-            validateNewInterpretation(study, interpretation, clinicalAnalysis, userId);
+                    validateNewInterpretation(study, interpretation, clinicalAnalysis, userId);
 
-            ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.CREATE_INTERPRETATION,
-                    "Create interpretation '" + interpretation.getId() + "'", TimeUtils.getTime());
-            OpenCGAResult<Interpretation> result = interpretationDBAdaptor.insert(study.getUid(), interpretation, saveInterpretationAs,
-                    Collections.singletonList(clinicalAudit));
-            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
-                // Fetch created Interpretation
-                OpenCGAResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(),
-                        QueryOptions.empty());
-                result.setResults(queryResult.getResults());
-            }
+                    ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.CREATE_INTERPRETATION,
+                            "Create interpretation '" + interpretation.getId() + "'", TimeUtils.getTime());
+                    OpenCGAResult<Interpretation> result = interpretationDBAdaptor.insert(study.getUid(), interpretation,
+                            saveInterpretationAs, Collections.singletonList(clinicalAudit));
+                    if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                        // Fetch created Interpretation
+                        OpenCGAResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(),
+                                QueryOptions.empty());
+                        result.setResults(queryResult.getResults());
+                    }
 
-            auditManager.auditCreate(userId, Enums.Resource.INTERPRETATION, interpretation.getId(), "", study.getId(),
-                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return result;
-        } catch (CatalogException e) {
-            auditManager.auditCreate(userId, Enums.Resource.INTERPRETATION, interpretation.getId(), "", study.getId(),
-                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
+                    return result;
+                });
     }
 
     void validateNewInterpretation(Study study, Interpretation interpretation, ClinicalAnalysis clinicalAnalysis, String userId)
@@ -388,90 +379,76 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
     public OpenCGAResult<Interpretation> clear(String studyStr, String clinicalAnalysisId, List<String> interpretationList, String token)
             throws CatalogException {
-        String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_CONFIGURATION);
-
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("clinicalAnalysisId", clinicalAnalysisId)
+                .append("interpretationList", interpretationList)
                 .append("token", token);
 
-        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
-        auditManager.initAuditBatch(operationId);
+        return runBatch(auditParams, Enums.Action.CLEAR, INTERPRETATION, studyStr, token, null, (study, userId, qOptions,
+                                                                                                 operationUuid) -> {
+            OpenCGAResult<Interpretation> result = OpenCGAResult.empty(Interpretation.class);
+            for (String interpretationStr : interpretationList) {
+                run(auditParams, Enums.Action.CLEAR, INTERPRETATION, operationUuid, study, userId, qOptions, (s, u, rp, qo) -> {
+                    rp.setId(interpretationStr);
 
-        OpenCGAResult<Interpretation> result = OpenCGAResult.empty();
-        for (String interpretationStr : interpretationList) {
-            String interpretationId = interpretationStr;
-            String interpretationUuid = "";
-            try {
-                QueryOptions clinicalOptions = keepFieldInQueryOptions(INCLUDE_CLINICAL_ANALYSIS,
-                        ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key());
-                OpenCGAResult<ClinicalAnalysis> clinicalResult = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
-                        clinicalAnalysisId, clinicalOptions, userId);
-                if (clinicalResult.getNumResults() == 0) {
-                    throw new CatalogException("ClinicalAnalysis '" + clinicalAnalysisId + "' not found");
-                }
-                ClinicalAnalysis clinicalAnalysis = clinicalResult.first();
-                if (clinicalAnalysis.isLocked()) {
-                    throw new CatalogException("Could not clear the Interpretation. Case is locked so no further modifications can be "
-                            + "made to the Interpretation.");
-                }
+                    QueryOptions clinicalOptions = keepFieldInQueryOptions(INCLUDE_CLINICAL_ANALYSIS,
+                            ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key());
+                    OpenCGAResult<ClinicalAnalysis> clinicalResult = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
+                            clinicalAnalysisId, clinicalOptions, userId);
+                    if (clinicalResult.getNumResults() == 0) {
+                        throw new CatalogException("ClinicalAnalysis '" + clinicalAnalysisId + "' not found");
+                    }
+                    ClinicalAnalysis clinicalAnalysis = clinicalResult.first();
+                    if (clinicalAnalysis.isLocked()) {
+                        throw new CatalogException("Could not clear the Interpretation. Case is locked so no further modifications can be "
+                                + "made to the Interpretation.");
+                    }
 
-                OpenCGAResult<Interpretation> tmpResult = internalGet(study.getUid(), interpretationStr, INCLUDE_INTERPRETATION_IDS,
-                        userId);
-                if (tmpResult.getNumResults() == 0) {
-                    throw new CatalogException("Interpretation '" + interpretationStr + "' not found.");
-                }
-                Interpretation interpretation = tmpResult.first();
-                if (interpretation.isLocked()) {
-                    throw new CatalogException("Could not clear the Interpretation. Interpretation '" + interpretation.getId()
-                            + " is locked. Please, unlock it first.");
-                }
+                    OpenCGAResult<Interpretation> tmpResult = internalGet(study.getUid(), interpretationStr, INCLUDE_INTERPRETATION_IDS,
+                            userId);
+                    if (tmpResult.getNumResults() == 0) {
+                        throw new CatalogException("Interpretation '" + interpretationStr + "' not found.");
+                    }
+                    Interpretation interpretation = tmpResult.first();
+                    rp.setId(interpretation.getId());
+                    rp.setUuid(interpretation.getUuid());
+                    if (interpretation.isLocked()) {
+                        throw new CatalogException("Could not clear the Interpretation. Interpretation '" + interpretation.getId()
+                                + " is locked. Please, unlock it first.");
+                    }
 
-                if (!interpretation.getClinicalAnalysisId().equals(clinicalAnalysisId)) {
-                    throw new CatalogException("Interpretation '" + interpretationId + "' does not belong to ClinicalAnalysis '"
-                            + clinicalAnalysisId + "'. It belongs to '" + interpretation.getClinicalAnalysisId() + "'.");
-                }
+                    if (!interpretation.getClinicalAnalysisId().equals(clinicalAnalysisId)) {
+                        throw new CatalogException("Interpretation '" + interpretation.getId() + "' does not belong to ClinicalAnalysis '"
+                                + clinicalAnalysisId + "'. It belongs to '" + interpretation.getClinicalAnalysisId() + "'.");
+                    }
 
-                interpretationId = interpretation.getId();
-                interpretationUuid = interpretation.getUuid();
+                    Map<String, Object> actionMap = new HashMap<>();
+                    actionMap.put(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.BasicUpdateAction.SET);
+                    actionMap.put(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.BasicUpdateAction.SET);
+                    actionMap.put(InterpretationDBAdaptor.QueryParams.METHOD.key(), ParamUtils.BasicUpdateAction.SET);
+                    actionMap.put(InterpretationDBAdaptor.QueryParams.PANELS.key(), ParamUtils.BasicUpdateAction.SET);
+                    QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
-                Map<String, Object> actionMap = new HashMap<>();
-                actionMap.put(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.BasicUpdateAction.SET);
-                actionMap.put(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.BasicUpdateAction.SET);
-                actionMap.put(InterpretationDBAdaptor.QueryParams.METHOD.key(), ParamUtils.BasicUpdateAction.SET);
-                actionMap.put(InterpretationDBAdaptor.QueryParams.PANELS.key(), ParamUtils.BasicUpdateAction.SET);
-                QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+                    InterpretationUpdateParams params = new InterpretationUpdateParams("", new ClinicalAnalystParam(),
+                            InterpretationMethod.init(), null, null, Collections.emptyList(), Collections.emptyList(),
+                            clinicalAnalysis.getPanels() != null
+                                    ? clinicalAnalysis.getPanels().stream()
+                                    .map(p -> new PanelReferenceParam().setId(p.getId())).collect(Collectors.toList())
+                                    : null,
+                            Collections.emptyList(), new StatusParam(), false, new ObjectMap());
 
-                InterpretationUpdateParams params = new InterpretationUpdateParams("", new ClinicalAnalystParam(),
-                        InterpretationMethod.init(), null, null, Collections.emptyList(), Collections.emptyList(),
-                        clinicalAnalysis.getPanels() != null
-                                ? clinicalAnalysis.getPanels().stream()
-                                .map(p -> new PanelReferenceParam().setId(p.getId())).collect(Collectors.toList())
-                                : null,
-                        Collections.emptyList(), new StatusParam(), false, new ObjectMap());
-
-                ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.CLEAR_INTERPRETATION,
-                        "Clear interpretation '" + interpretationId + "'", TimeUtils.getTime());
-                OpenCGAResult writeResult = update(study, interpretation, params, Collections.singletonList(clinicalAudit), null, options,
-                        userId);
-                result.append(writeResult);
-
-                auditManager.audit(operationId, userId, Enums.Action.CLEAR, Enums.Resource.INTERPRETATION, interpretationId,
-                        interpretationUuid, study.getId(), study.getUuid(), auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
-
-                return result;
-            } catch (CatalogException e) {
-                auditManager.audit(operationId, userId, Enums.Action.CLEAR, Enums.Resource.INTERPRETATION, interpretationId,
-                        interpretationUuid, study.getId(), study.getUuid(), auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
-                throw e;
+                    ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.CLEAR_INTERPRETATION,
+                            "Clear interpretation '" + interpretation.getId() + "'", TimeUtils.getTime());
+                    OpenCGAResult<?> writeResult = update(study, interpretation, params, Collections.singletonList(clinicalAudit), null,
+                            options, userId);
+                    result.append(writeResult);
+                    return null;
+                });
             }
-        }
-        auditManager.finishAuditBatch(operationId);
 
-        return result;
+            return result;
+        });
     }
 
 //    public OpenCGAResult<Interpretation> merge(String studyStr, String clinicalAnalysisId, String interpretationId,
@@ -622,13 +599,6 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     public OpenCGAResult<Interpretation> update(String studyStr, Query query, InterpretationUpdateParams updateParams,
                                                 ParamUtils.SaveInterpretationAs as, boolean ignoreException, QueryOptions options,
                                                 String token) throws CatalogException {
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_CONFIGURATION);
-
-        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
-
         ObjectMap updateMap;
         try {
             updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
@@ -645,63 +615,49 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 .append("options", options)
                 .append("token", token);
 
-        Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
-        fixQueryObject(study, finalQuery, userId);
-
-        DBIterator<Interpretation> iterator;
-        try {
+        return runBatch(auditParams, Enums.Action.UPDATE, INTERPRETATION, studyStr, token, options, (study, userId, qOptions,
+                                                                                                     operationUuid) -> {
+            Query finalQuery = query != null ? new Query(query) : new Query();
+            fixQueryObject(study, finalQuery, userId);
             finalQuery.append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            iterator = interpretationDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_INTERPRETATION_FINDING_IDS, userId);
-        } catch (CatalogException e) {
-            auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, "", "", study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
 
-        auditManager.initAuditBatch(operationId);
-        OpenCGAResult<Interpretation> result = OpenCGAResult.empty();
-        while (iterator.hasNext()) {
-            Interpretation interpretation = iterator.next();
-            try {
-                List<ClinicalAudit> clinicalAuditList = new ArrayList<>();
-                clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.UPDATE_INTERPRETATION,
-                        "Update interpretation '" + interpretation.getId() + "'", TimeUtils.getTime()));
-                if (as != null) {
-                    clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.SWAP_INTERPRETATION,
-                            "Swap interpretation '" + interpretation.getId() + "' to " + as, TimeUtils.getTime()));
+            OpenCGAResult<Interpretation> result = OpenCGAResult.empty(Interpretation.class);
+            try (DBIterator<Interpretation> iterator = interpretationDBAdaptor.iterator(study.getUid(), finalQuery,
+                    INCLUDE_INTERPRETATION_FINDING_IDS, userId)) {
+                while (iterator.hasNext()) {
+                    Interpretation interpretation = iterator.next();
+                    try {
+                        run(auditParams, Enums.Action.UPDATE, INTERPRETATION, operationUuid, study, userId, qOptions, (s, u, rp, qo) -> {
+                            rp.setId(interpretation.getId());
+                            rp.setUuid(interpretation.getUuid());
+                            List<ClinicalAudit> clinicalAuditList = new ArrayList<>();
+                            clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.UPDATE_INTERPRETATION,
+                                    "Update interpretation '" + interpretation.getId() + "'", TimeUtils.getTime()));
+                            if (as != null) {
+                                clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.SWAP_INTERPRETATION,
+                                        "Swap interpretation '" + interpretation.getId() + "' to " + as, TimeUtils.getTime()));
+                            }
+                            OpenCGAResult<?> writeResult = update(study, interpretation, updateParams, clinicalAuditList, as, qo, userId);
+                            result.append(writeResult);
+                            return null;
+                        });
+                    } catch (CatalogException e) {
+                        Event event = new Event(Event.Type.ERROR, interpretation.getId(), e.getMessage());
+                        result.getEvents().add(event);
+                        result.setNumErrors(result.getNumErrors() + 1);
+
+                        logger.error("Cannot update interpretation {}: {}", interpretation.getId(), e.getMessage(), e);
+                    }
                 }
-                OpenCGAResult writeResult = update(study, interpretation, updateParams, clinicalAuditList, as, options, userId);
-                auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
-                        interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-                result.append(writeResult);
-            } catch (CatalogException e) {
-                Event event = new Event(Event.Type.ERROR, interpretation.getId(), e.getMessage());
-                result.getEvents().add(event);
-                result.setNumErrors(result.getNumErrors() + 1);
-
-                logger.error("Cannot update interpretation {}: {}", interpretation.getId(), e.getMessage(), e);
-                auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
-                        interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+                return endResult(result, ignoreException);
             }
-        }
-        auditManager.finishAuditBatch(operationId);
-
-        return endResult(result, ignoreException);
+        });
     }
 
-    public OpenCGAResult<Interpretation> update(String studyStr, String clinicalAnalysisId, String intepretationId,
+    public OpenCGAResult<Interpretation> update(String studyStr, String clinicalAnalysisId, String interpretationId,
                                                 InterpretationUpdateParams updateParams, ParamUtils.SaveInterpretationAs as,
                                                 QueryOptions options, String token) throws CatalogException {
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_CONFIGURATION);
-
-        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
-
         ObjectMap updateMap;
         try {
             updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
@@ -712,34 +668,29 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("clinicalAnalysisId", clinicalAnalysisId)
-                .append("intepretationId", intepretationId)
+                .append("interpretationId", interpretationId)
                 .append("updateParams", updateMap)
                 .append("as", as)
                 .append("options", options)
                 .append("token", token);
 
-        OpenCGAResult<Interpretation> result = OpenCGAResult.empty();
-        String interpretationId = "";
-        String interpretationUuid = "";
-        try {
+        return run(auditParams, Enums.Action.UPDATE, INTERPRETATION, studyStr, token, options, (study, userId, rp, qOptions) -> {
             ParamUtils.checkParameter(clinicalAnalysisId, "ClinicalAnalysisId");
-            ParamUtils.checkParameter(intepretationId, "InterpretationId");
+            ParamUtils.checkParameter(interpretationId, "InterpretationId");
 
-            OpenCGAResult<Interpretation> interpretationOpenCGAResult = internalGet(study.getUid(), intepretationId,
+            OpenCGAResult<Interpretation> interpretationOpenCGAResult = internalGet(study.getUid(), interpretationId,
                     INCLUDE_INTERPRETATION_FINDING_IDS, userId);
             if (interpretationOpenCGAResult.getNumResults() == 0) {
                 throw new CatalogException("Interpretation '" + interpretationId + "' not found.");
             }
             Interpretation interpretation = interpretationOpenCGAResult.first();
+            rp.setId(interpretation.getId());
+            rp.setUuid(interpretation.getUuid());
 
             if (!interpretation.getClinicalAnalysisId().equals(clinicalAnalysisId)) {
-                throw new CatalogException("Interpretation '" + intepretationId + "' does not belong to ClinicalAnalysis '"
+                throw new CatalogException("Interpretation '" + interpretationId + "' does not belong to ClinicalAnalysis '"
                         + clinicalAnalysisId + "'. It belongs to '" + interpretation.getClinicalAnalysisId() + "'.");
             }
-
-            // We set the proper values for the audit
-            interpretationId = interpretation.getId();
-            interpretationUuid = interpretation.getUuid();
 
             List<ClinicalAudit> clinicalAuditList = new ArrayList<>();
             clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.UPDATE_INTERPRETATION,
@@ -748,26 +699,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.SWAP_INTERPRETATION,
                         "Swap interpretation '" + interpretation.getId() + "' to " + as, TimeUtils.getTime()));
             }
-            OpenCGAResult writeResult = update(study, interpretation, updateParams, clinicalAuditList, as, options, userId);
-            result.append(writeResult);
-
-            auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
-                    interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-        } catch (CatalogException e) {
-            CatalogException e1 = new CatalogException("Cannot update interpretation '" + interpretationId + "' of clinical analysis '"
-                    + clinicalAnalysisId + "': " + e.getMessage(), e);
-            Event event = new Event(Event.Type.ERROR, interpretationId, e1.getMessage());
-            result.getEvents().add(event);
-            result.setNumErrors(result.getNumErrors() + 1);
-
-            logger.error("{}", e1.getMessage(), e);
-            auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretationId, interpretationUuid,
-                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e1.getError()));
-            throw e1;
-        }
-
-        return result;
+            return update(study, interpretation, updateParams, clinicalAuditList, as, options, userId);
+        });
     }
 
     /**
@@ -793,13 +726,6 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     public OpenCGAResult<Interpretation> update(String studyStr, String clinicalAnalysisId, List<String> interpretationIds,
                                                 InterpretationUpdateParams updateParams, ParamUtils.SaveInterpretationAs as,
                                                 boolean ignoreException, QueryOptions options, String token) throws CatalogException {
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_CONFIGURATION);
-
-        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
-
         ObjectMap updateMap;
         try {
             updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
@@ -809,63 +735,58 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
-                .append("interpretationIds", interpretationIds)
                 .append("clinicalAnalysisId", clinicalAnalysisId)
+                .append("interpretationIds", interpretationIds)
                 .append("updateParams", updateMap)
                 .append("as", as)
                 .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
 
-        auditManager.initAuditBatch(operationId);
-        OpenCGAResult<Interpretation> result = OpenCGAResult.empty();
-        for (String id : interpretationIds) {
-            String interpretationId = id;
-            String interpretationUuid = "";
+        return runBatch(auditParams, Enums.Action.UPDATE, INTERPRETATION, studyStr, token, options, (study, userId, qOptions,
+                                                                                                     operationUuid) -> {
+            OpenCGAResult<Interpretation> result = OpenCGAResult.empty(Interpretation.class);
+            for (String id : interpretationIds) {
+                try {
+                    run(auditParams, Enums.Action.UPDATE, INTERPRETATION, operationUuid, study, userId, qOptions, (s, u, rp, qo) -> {
+                        rp.setId(id);
+                        OpenCGAResult<Interpretation> tmpResult = internalGet(study.getUid(), id, INCLUDE_INTERPRETATION_FINDING_IDS,
+                                userId);
+                        if (tmpResult.getNumResults() == 0) {
+                            throw new CatalogException("Interpretation '" + id + "' not found.");
+                        }
+                        Interpretation interpretation = tmpResult.first();
+                        rp.setId(interpretation.getId());
+                        rp.setUuid(interpretation.getUuid());
 
-            try {
-                OpenCGAResult<Interpretation> tmpResult = internalGet(study.getUid(), interpretationId, INCLUDE_INTERPRETATION_FINDING_IDS,
-                        userId);
-                if (tmpResult.getNumResults() == 0) {
-                    throw new CatalogException("Interpretation '" + interpretationId + "' not found.");
+                        if (!interpretation.getClinicalAnalysisId().equals(clinicalAnalysisId)) {
+                            throw new CatalogException("Interpretation '" + id + "' does not belong to ClinicalAnalysis '"
+                                    + clinicalAnalysisId + "'. It belongs to '" + interpretation.getClinicalAnalysisId() + "'.");
+                        }
+
+                        List<ClinicalAudit> clinicalAuditList = new ArrayList<>();
+                        clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.UPDATE_INTERPRETATION,
+                                "Update interpretation '" + interpretation.getId() + "'", TimeUtils.getTime()));
+                        if (as != null) {
+                            clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.SWAP_INTERPRETATION,
+                                    "Swap interpretation '" + interpretation.getId() + "' to " + as, TimeUtils.getTime()));
+                        }
+                        OpenCGAResult<?> writeResult = update(study, interpretation, updateParams, clinicalAuditList, as, options, userId);
+                        result.append(writeResult);
+
+                        return null;
+                    });
+                } catch (CatalogException e) {
+                    Event event = new Event(Event.Type.ERROR, id, e.getMessage());
+                    result.getEvents().add(event);
+                    result.setNumErrors(result.getNumErrors() + 1);
+
+                    logger.error("Cannot update interpretation {}: {}", id, e.getMessage(), e);
                 }
-                Interpretation interpretation = tmpResult.first();
-
-                if (!interpretation.getClinicalAnalysisId().equals(clinicalAnalysisId)) {
-                    throw new CatalogException("Interpretation '" + interpretationId + "' does not belong to ClinicalAnalysis '"
-                            + clinicalAnalysisId + "'. It belongs to '" + interpretation.getClinicalAnalysisId() + "'.");
-                }
-
-                // We set the proper values for the audit
-                interpretationId = interpretation.getId();
-                interpretationUuid = interpretation.getUuid();
-
-                List<ClinicalAudit> clinicalAuditList = new ArrayList<>();
-                clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.UPDATE_INTERPRETATION,
-                        "Update interpretation '" + interpretation.getId() + "'", TimeUtils.getTime()));
-                if (as != null) {
-                    clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.SWAP_INTERPRETATION,
-                            "Swap interpretation '" + interpretation.getId() + "' to " + as, TimeUtils.getTime()));
-                }
-                OpenCGAResult writeResult = update(study, interpretation, updateParams, clinicalAuditList, as, options, userId);
-                result.append(writeResult);
-
-                auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
-                        interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            } catch (CatalogException e) {
-                Event event = new Event(Event.Type.ERROR, id, e.getMessage());
-                result.getEvents().add(event);
-                result.setNumErrors(result.getNumErrors() + 1);
-
-                logger.error("Cannot update interpretation {}: {}", interpretationId, e.getMessage(), e);
-                auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretationId, interpretationUuid,
-                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
-        }
-        auditManager.finishAuditBatch(operationId);
 
-        return endResult(result, ignoreException);
+            return endResult(result, ignoreException);
+        });
     }
 
     private OpenCGAResult update(Study study, Interpretation interpretation, InterpretationUpdateParams updateParams,
@@ -1068,9 +989,6 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
     public OpenCGAResult<Interpretation> revert(String studyStr, String clinicalAnalysisId, String interpretationId, int version,
                                                 String token) throws CatalogException {
-        String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_CONFIGURATION);
-
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("clinicalAnalysisId", clinicalAnalysisId)
@@ -1078,8 +996,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 .append("version", version)
                 .append("token", token);
 
-        String interpretationUuid = "";
-        try {
+        return run(auditParams, Enums.Action.REVERT, INTERPRETATION, studyStr, token, null, (study, userId, rp, qOptions) -> {
+            rp.setId(interpretationId);
             OpenCGAResult<ClinicalAnalysis> clinicalResult = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
                     clinicalAnalysisId, INCLUDE_CLINICAL_ANALYSIS, userId);
             if (clinicalResult.getNumResults() == 0) {
@@ -1102,13 +1020,12 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 throw new CatalogException("Could not find interpretation '" + interpretationId + "'");
             }
             Interpretation interpretation = result.first();
+            rp.setId(interpretation.getId());
+            rp.setUuid(interpretation.getUuid());
             if (interpretation.isLocked()) {
                 throw new CatalogException("Could not revert the Interpretation. Interpretation '" + interpretation.getId()
                         + " is locked. Please, unlock it first.");
             }
-
-            interpretationId = interpretation.getId();
-            interpretationUuid = interpretation.getUuid();
 
             if (!interpretation.getClinicalAnalysisId().equals(clinicalAnalysisId)) {
                 throw new CatalogException("Interpretation '" + interpretationId + "' does not belong to ClinicalAnalysis '"
@@ -1126,28 +1043,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             List<ClinicalAudit> clinicalAuditList = new ArrayList<>();
             clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.REVERT_INTERPRETATION,
                     "Revert interpretation '" + interpretation.getId() + "' to version '" + version + "'", TimeUtils.getTime()));
-            OpenCGAResult<Interpretation> revert = interpretationDBAdaptor.revert(interpretation.getUid(), version, clinicalAuditList);
-
-            auditManager.audit(userId, Enums.Action.REVERT, Enums.Resource.INTERPRETATION, interpretation.getId(),
-                    interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-            return revert;
-        } catch (CatalogDBException e) {
-            logger.error("Could not revert interpretation {}", interpretationId, e);
-            auditManager.audit(userId, Enums.Action.REVERT, Enums.Resource.INTERPRETATION, interpretationId,
-                    interpretationUuid, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            CatalogException exception = new CatalogException("Could not revert interpretation '" + interpretationId + "'");
-            exception.addSuppressed(e);
-            throw exception;
-        } catch (CatalogException e) {
-            logger.error("Could not revert interpretation {}: {}", interpretationId, e.getMessage(), e);
-            auditManager.audit(userId, Enums.Action.REVERT, Enums.Resource.INTERPRETATION, interpretationId,
-                    interpretationUuid, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw new CatalogException("Could not revert interpretation '" + interpretationId + "': " + e.getMessage());
-        }
+            return interpretationDBAdaptor.revert(interpretation.getUid(), version, clinicalAuditList);
+        });
     }
 
     @Override
@@ -1157,75 +1054,63 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     @Override
-    public OpenCGAResult<Interpretation> search(String studyId, Query query, QueryOptions options, String token)
-            throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
+    public OpenCGAResult<Interpretation> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("query", query)
+                .append("options", options)
+                .append("token", token);
+        return run(auditParams, Enums.Action.SEARCH, INTERPRETATION, studyId, token, options, (study, userId, rp, qOptions) -> {
+            Query finalQuery = query != null ? new Query(query) : new Query();
+            fixQueryObject(study, finalQuery, userId);
+            finalQuery.append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
+            OpenCGAResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), finalQuery, qOptions, userId);
 
-        fixQueryObject(study, query, userId);
-        query.append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-
-        OpenCGAResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), query, options, userId);
-
-        List<Interpretation> results = new ArrayList<>(queryResult.getResults().size());
-        for (Interpretation interpretation : queryResult.getResults()) {
-            if (StringUtils.isNotEmpty(interpretation.getClinicalAnalysisId())) {
-                try {
-                    catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(), interpretation.getClinicalAnalysisId(),
-                            ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, userId);
-                    results.add(interpretation);
-                } catch (CatalogException e) {
-                    // Maybe the clinical analysis was deleted
-                    Query clinicalQuery = new Query(ClinicalAnalysisDBAdaptor.QueryParams.DELETED.key(), true);
-
+            List<Interpretation> results = new ArrayList<>(queryResult.getResults().size());
+            for (Interpretation interpretation : queryResult.getResults()) {
+                if (StringUtils.isNotEmpty(interpretation.getClinicalAnalysisId())) {
                     try {
                         catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(), interpretation.getClinicalAnalysisId(),
-                                clinicalQuery, ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, userId);
+                                ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, userId);
                         results.add(interpretation);
-                    } catch (CatalogException e1) {
-                        logger.debug("Removing interpretation " + interpretation.getUuid() + " from results. User " + userId
-                                + " does not have proper permissions");
+                    } catch (CatalogException e) {
+                        // Maybe the clinical analysis was deleted
+                        Query clinicalQuery = new Query(ClinicalAnalysisDBAdaptor.QueryParams.DELETED.key(), true);
+
+                        try {
+                            catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(), interpretation.getClinicalAnalysisId(),
+                                    clinicalQuery, ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, userId);
+                            results.add(interpretation);
+                        } catch (CatalogException e1) {
+                            logger.debug("Removing interpretation " + interpretation.getUuid() + " from results. User " + userId
+                                    + " does not have proper permissions");
+                        }
                     }
                 }
             }
-        }
 
-        queryResult.setResults(results);
-        queryResult.setNumMatches(results.size());
-        queryResult.setNumResults(results.size());
-        return queryResult;
+            queryResult.setResults(results);
+            queryResult.setNumMatches(results.size());
+            queryResult.setNumResults(results.size());
+            return queryResult;
+        });
     }
 
     @Override
     public OpenCGAResult<?> distinct(String studyId, String field, Query query, String token) throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-
-        String userId = userManager.getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
-
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
-                .append("field", new Query(query))
-                .append("query", new Query(query))
+                .append("field", field)
+                .append("query", query)
                 .append("token", token);
-        try {
-            fixQueryObject(study, query, userId);
 
-            query.append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<?> result = interpretationDBAdaptor.distinct(study.getUid(), field, query, userId);
-
-            auditManager.auditDistinct(userId, Enums.Resource.INTERPRETATION, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-            return result;
-        } catch (CatalogException e) {
-            auditManager.auditDistinct(userId, Enums.Resource.INTERPRETATION, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
+        return run(auditParams, Enums.Action.DISTINCT, INTERPRETATION, studyId, token, null, (study, userId, rp, queryOptions) -> {
+            Query finalQuery = query != null ? new Query(query) : new Query();
+            fixQueryObject(study, finalQuery, userId);
+            finalQuery.append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            return interpretationDBAdaptor.distinct(study.getUid(), field, finalQuery, userId);
+        });
     }
 
     @Override
@@ -1245,15 +1130,6 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
     public OpenCGAResult delete(String studyStr, String clinicalAnalysisId, List<String> interpretationIds, boolean ignoreException,
                                 String token) throws CatalogException {
-        if (interpretationIds == null || ListUtils.isEmpty(interpretationIds)) {
-            throw new CatalogException("Missing list of interpretation ids");
-        }
-
-        String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId);
-
-        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
-
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("clinicalAnalysisId", clinicalAnalysisId)
@@ -1261,19 +1137,16 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 .append("ignoreException", ignoreException)
                 .append("token", token);
 
-        boolean checkPermissions;
-        try {
-            // If the user is the owner or the admin, we won't check if he has permissions for every single entry
-            checkPermissions = !authorizationManager.isOwnerOrAdmin(study.getUid(), userId);
-        } catch (CatalogException e) {
-            auditManager.auditDelete(operationId, userId, Enums.Resource.INTERPRETATION, "", "", study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
+        return runBatch(auditParams, Enums.Action.DELETE, INTERPRETATION, studyStr, token, null, (study, userId, qOptions,
+                                                                                                  operationUuid) -> {
+            if (interpretationIds == null || ListUtils.isEmpty(interpretationIds)) {
+                throw new CatalogException("Missing list of interpretation ids");
+            }
 
-        ClinicalAnalysis clinicalAnalysis;
-        try {
-            clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(), clinicalAnalysisId,
+            // If the user is the owner or the admin, we won't check if he has permissions for every single entry
+            boolean checkPermissions = !authorizationManager.isOwnerOrAdmin(study.getUid(), userId);
+
+            ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(), clinicalAnalysisId,
                     INCLUDE_CLINICAL_ANALYSIS, userId).first();
             if (clinicalAnalysis.isLocked()) {
                 throw new CatalogException("Could not delete the Interpretation. Case is locked so no further modifications can be made to"
@@ -1283,62 +1156,52 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(),
                         userId, ClinicalAnalysisPermissions.WRITE);
             }
-        } catch (CatalogException e) {
-            auditManager.auditDelete(operationId, userId, Enums.Resource.INTERPRETATION, "", "", study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
 
-        auditManager.initAuditBatch(operationId);
-        OpenCGAResult result = OpenCGAResult.empty();
-        for (String id : interpretationIds) {
-            String interpretationId = id;
-            String interpretationUuid = "";
-            try {
-                OpenCGAResult<Interpretation> internalResult = internalGet(study.getUid(), id, INCLUDE_INTERPRETATION_IDS, userId);
-                if (internalResult.getNumResults() == 0) {
-                    throw new CatalogException("Interpretation '" + id + "' not found");
+            OpenCGAResult<Interpretation> result = OpenCGAResult.empty(Interpretation.class);
+            for (String id : interpretationIds) {
+                try {
+                    run(auditParams, Enums.Action.DELETE, INTERPRETATION, operationUuid, study, userId, qOptions, (s, u, rp, qo) -> {
+                        rp.setId(id);
+                        OpenCGAResult<Interpretation> internalResult = internalGet(study.getUid(), id, INCLUDE_INTERPRETATION_IDS, userId);
+                        if (internalResult.getNumResults() == 0) {
+                            throw new CatalogException("Interpretation '" + id + "' not found");
+                        }
+                        Interpretation interpretation = internalResult.first();
+
+                        // We set the proper values for the audit
+                        rp.setId(interpretation.getId());
+                        rp.setUuid(interpretation.getUuid());
+
+                        if (interpretation.isLocked()) {
+                            throw new CatalogException("Could not delete the Interpretation. Interpretation '" + interpretation.getId()
+                                    + " is locked. Please, unlock it first.");
+                        }
+                        if (!interpretation.getClinicalAnalysisId().equals(clinicalAnalysis.getId())) {
+                            throw new CatalogException("Cannot delete interpretation '" + id + "': Interpretation does not belong"
+                                    + " to ClinicalAnalysis '" + clinicalAnalysis.getId() + "'.");
+                        }
+
+                        // Check if the interpretation can be deleted
+                        // checkCanBeDeleted(study.getUid(), interpretation, params.getBoolean(Constants.FORCE, false));
+
+                        ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.DELETE_INTERPRETATION,
+                                "Delete interpretation '" + interpretation.getId() + "'", TimeUtils.getTime());
+                        result.append(interpretationDBAdaptor.delete(interpretation, Collections.singletonList(clinicalAudit)));
+                        return null;
+                    });
+                } catch (CatalogException e) {
+                    String errorMsg = "Cannot delete interpretation " + id + ": " + e.getMessage();
+
+                    Event event = new Event(Event.Type.ERROR, id, e.getMessage());
+                    result.getEvents().add(event);
+                    result.setNumErrors(result.getNumErrors() + 1);
+
+                    logger.error(errorMsg);
                 }
-                Interpretation interpretation = internalResult.first();
-
-                // We set the proper values for the audit
-                interpretationId = interpretation.getId();
-                interpretationUuid = interpretation.getUuid();
-
-                if (interpretation.isLocked()) {
-                    throw new CatalogException("Could not delete the Interpretation. Interpretation '" + interpretation.getId()
-                            + " is locked. Please, unlock it first.");
-                }
-                if (!interpretation.getClinicalAnalysisId().equals(clinicalAnalysis.getId())) {
-                    throw new CatalogException("Cannot delete interpretation '" + interpretationId + "': Interpretation does not belong"
-                            + " to ClinicalAnalysis '" + clinicalAnalysis.getId() + "'.");
-                }
-
-                // Check if the interpretation can be deleted
-                // checkCanBeDeleted(study.getUid(), interpretation, params.getBoolean(Constants.FORCE, false));
-
-                ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.DELETE_INTERPRETATION,
-                        "Delete interpretation '" + interpretation.getId() + "'", TimeUtils.getTime());
-                result.append(interpretationDBAdaptor.delete(interpretation, Collections.singletonList(clinicalAudit)));
-
-                auditManager.auditDelete(operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
-                        interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            } catch (CatalogException e) {
-                String errorMsg = "Cannot delete interpretation " + interpretationId + ": " + e.getMessage();
-
-                Event event = new Event(Event.Type.ERROR, interpretationId, e.getMessage());
-                result.getEvents().add(event);
-                result.setNumErrors(result.getNumErrors() + 1);
-
-                logger.error(errorMsg);
-                auditManager.auditDelete(operationId, userId, Enums.Resource.INTERPRETATION, interpretationId, interpretationUuid,
-                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
-        }
-        auditManager.finishAuditBatch(operationId);
 
-        return endResult(result, ignoreException);
+            return endResult(result, ignoreException);
+        });
     }
 
     @Override
