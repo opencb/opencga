@@ -175,7 +175,8 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
 
     private boolean isQueryCovered(Query query) {
         if (VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_MENDELIAN_ERROR)
-                || VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO)) {
+                || VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO)
+                || VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO_STRICT)) {
             // Can't use with special filters.
             return false;
         }

@@ -50,6 +50,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
     private static String child = "NA12879";  // Maybe this is not accurate, but works file for the example
     private static Set<String> mendelianErrorVariants;
     private static Set<String> deNovoVariants;
+    private static Set<String> deNovoStrictVariants;
 
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();
@@ -87,16 +88,20 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
 
             mendelianErrorVariants = new HashSet<>();
             deNovoVariants = new HashSet<>();
+            deNovoStrictVariants = new HashSet<>();
             for (Variant variant : variantStorageEngine.iterable(new VariantQuery().includeSampleAll().unknownGenotype("./."), new QueryOptions())) {
                 Genotype fatherGenotype = new Genotype(variant.getStudies().get(0).getSampleData(father, "GT"));
                 Genotype motherGenotype = new Genotype(variant.getStudies().get(0).getSampleData(mother, "GT"));
                 Genotype childGenotype = new Genotype(variant.getStudies().get(0).getSampleData(child, "GT"));
                 int meCode = MendelianError.compute(fatherGenotype, motherGenotype, childGenotype, variant.getChromosome());
                 if (meCode != 0) {
-                    if (AbstractSampleIndexEntryFilter.testDeNovo(meCode, childGenotype.toString(), false)) {
+                    if (AbstractSampleIndexEntryFilter.testDeNovo(meCode, childGenotype.toString(), SampleIndexQuery.MendelianErrorType.ALL)) {
                         mendelianErrorVariants.add(variant.toString());
                         if (AbstractSampleIndexEntryFilter.isDeNovo(meCode)) {
                             deNovoVariants.add(variant.toString());
+                        }
+                        if (AbstractSampleIndexEntryFilter.isDeNovoStrict(meCode)) {
+                            deNovoStrictVariants.add(variant.toString());
                         }
                     }
                 }
@@ -140,6 +145,21 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
                 .qual(">30"));
     }
 
+    @Test
+    public void testDeNovoStrict() throws Exception {
+        testDeNovoStrictVariants(new VariantQuery());
+    }
+    @Test
+    public void testDeNovoStrictBT() throws Exception {
+        testDeNovoStrictVariants(new VariantQuery().biotype("processed_transcript"));
+    }
+    @Test
+    public void testDeNovoStrictQual() throws Exception {
+        testDeNovoStrictVariants(new VariantQuery()
+                .file("1K.end.platinum-genomes-vcf-" + child + "_S1.genome.vcf.gz")
+                .qual(">30"));
+    }
+
     private void testDeNovoVariants(Query baseQuery) {
         Query query = new Query(baseQuery)
                 .append(VariantQueryParam.SAMPLE.key(), child + ":denovo");
@@ -147,6 +167,15 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
                 .append(VariantQueryParam.SAMPLE.key(), child);
 
         testQuery(deNovoVariants, query, plainQuery);
+    }
+
+    private void testDeNovoStrictVariants(Query baseQuery) {
+        Query query = new Query(baseQuery)
+                .append(VariantQueryParam.SAMPLE.key(), child + ":denovostrict");
+        Query plainQuery = new Query(baseQuery)
+                .append(VariantQueryParam.SAMPLE.key(), child);
+
+        testQuery(deNovoStrictVariants, query, plainQuery);
     }
 
     private void testMendelianErrorVariants(Query baseQuery) {
@@ -163,9 +192,10 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
             plainQueryVariants.add(variant.toString());
         }
         VariantQueryResult<Variant> result = variantStorageEngine.get(query, new QueryOptions());
+        System.out.println(VariantQueryUtils.toVcfDebug(result.getResults().iterator()));
         for (Variant variant : result.getResults()) {
 //            System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamples());
-            System.out.println(variant.toString() + "\t" + variant.getAnnotation());
+//            System.out.println(variant.toString() + "\t" + variant.getAnnotation());
             assertThat("expected plain filter", plainQueryVariants, hasItem(variant.toString()));
             assertThat("expected with familyIndex filter", expectedVariants, hasItem(variant.toString()));
         }
@@ -182,7 +212,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
             Genotype motherGt = new Genotype(variant.getStudies().get(0).getSample("MOTHER").getData().get(0));
             int meCode = MendelianError.compute(fatherGt, motherGt, probandGt, variant.getChromosome());
             if (meCode != 0) {
-                if (AbstractSampleIndexEntryFilter.testDeNovo(meCode, probandGt.toString(), false)) {
+                if (AbstractSampleIndexEntryFilter.testDeNovo(meCode, probandGt.toString(), SampleIndexQuery.MendelianErrorType.ALL)) {
                     mendelianErrorVariants.add(variant.toString());
                     if (AbstractSampleIndexEntryFilter.isDeNovo(meCode)) {
                         deNovoVariants.add(variant.toString());

@@ -34,7 +34,7 @@ public class SingleSampleIndexQuery extends SampleIndexQuery {
                 query.getSampleFileIndexQueryMap(),
                 query.getAnnotationIndexQuery(),
                 query.getMendelianErrorSet(),
-                query.isOnlyDeNovo(),
+                query.getMendelianErrorType(),
                 query.getQueryOperation());
         this.sample = sample;
         this.gts = gts;

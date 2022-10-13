@@ -499,6 +499,15 @@ public class VariantCatalogQueryUtilsTest {
     }
 
     @Test
+    public void queryBySampleSegregationDeNovoStrict() throws Exception {
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAMPLE.key(), "sample3:de_novo_strict"), null, sessionId);
+        System.out.println("query.toJson() = " + query.toJson());
+        assertEquals("sample3", query.getString(SAMPLE_DE_NOVO_STRICT.key()));
+        assertFalse(VariantQueryUtils.isValidParam(query, GENOTYPE));
+        assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
+    }
+
+    @Test
     public void queryBySampleSegregationMendelianError() throws Exception {
         Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAMPLE.key(), "sample3:mendelianerror"), null, sessionId);
         assertEquals("sample3", query.getString(SAMPLE_MENDELIAN_ERROR.key()));

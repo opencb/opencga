@@ -613,7 +613,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                 if (includeAll || !query.emptyFileIndex()) {
                     scan.addColumn(family, SampleIndexSchema.toFileIndexColumn(gt));
                 }
-                if (includeAll || query.hasFatherFilter() || query.hasMotherFilter()) {
+                if (includeAll || query.hasFatherFilter() || query.hasMotherFilter() || query.getMendelianErrorType() != null) {
                     scan.addColumn(family, SampleIndexSchema.toParentsGTColumn(gt));
                 }
             }
