@@ -36,8 +36,10 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,7 +54,6 @@ public class AlignmentFlagStatsAnalysis extends OpenCgaToolScopeStudy {
     public static final String DESCRIPTION = ALIGNMENT_FLAG_STATS_DESCRIPTION;
 
     private static final String SAMTOOLS_FLAG_STATS_STEP = "samtools-flagstat";
-    private static final String SAVE_ALIGNMENT_FLAG_STATS_STEP = "save-alignment-flagstats";
 
     @ToolParams
     protected final AlignmentFlagStatsParams analysisParams = new AlignmentFlagStatsParams();
@@ -85,7 +86,6 @@ public class AlignmentFlagStatsAnalysis extends OpenCgaToolScopeStudy {
     protected List<String> getSteps() {
         List<String> steps = new ArrayList<>();
         steps.add(SAMTOOLS_FLAG_STATS_STEP);
-        steps.add(SAVE_ALIGNMENT_FLAG_STATS_STEP);
         return steps;
     }
 
@@ -94,7 +94,7 @@ public class AlignmentFlagStatsAnalysis extends OpenCgaToolScopeStudy {
         
         setUpStorageEngineExecutor(study);
 
-        Path flagStatsFile = getOutDir().resolve(new java.io.File(catalogBamFile.getUri().getPath()).getName() + ".flagstats.txt");
+        Path flagStatsFile = getResultPath(getOutDir().toString(), catalogBamFile.getName());
 
         step(SAMTOOLS_FLAG_STATS_STEP, () -> {
             executorParams.put(EXECUTOR_ID, SamtoolsWrapperAnalysisExecutor.ID);
@@ -112,21 +112,19 @@ public class AlignmentFlagStatsAnalysis extends OpenCgaToolScopeStudy {
                 throw new ToolException("Something wrong happened running samtools-flagstat.");
             }
         });
+    }
 
-        step(SAVE_ALIGNMENT_FLAG_STATS_STEP, () -> {
+    public static Path getResultPath(String outDir, String inputName) {
+        return Paths.get(outDir + "/" + inputName + ".flagstats.txt");
+    }
 
-            SamtoolsFlagstats flagStats = SamtoolsFlagstatsParser.parse(flagStatsFile);
-
-            // Update quality control for the catalog file
-            FileQualityControl qc = catalogBamFile.getQualityControl();
-            // Sanity check
-            if (qc == null) {
-                qc = new FileQualityControl();
-            }
-            qc.getAlignment().setSamtoolsFlagStats(flagStats);
-
-            catalogManager.getFileManager().update(getStudy(), catalogBamFile.getId(), new FileUpdateParams().setQualityControl(qc),
-                    QueryOptions.empty(), getToken());
-        });
+    public static SamtoolsFlagstats parseResults(Path flagStatsFile) throws ToolException {
+        SamtoolsFlagstats samtoolsFlagStats = null;
+        try {
+            samtoolsFlagStats = SamtoolsFlagstatsParser.parse(flagStatsFile);
+        } catch (IOException e) {
+            new ToolException("Error parsing Samtools Flag Stats file: " + e.getMessage());
+        }
+        return samtoolsFlagStats;
     }
 }

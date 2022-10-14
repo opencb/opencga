@@ -143,7 +143,7 @@ analysis:
       variant-secondary-index: 2
     options:
       ## Local executor configuration
-      local.maxConcurrentJobs: 1    # Max number of concurrent jobs to be executed locally in the master
+      local.maxConcurrentJobs: 2    # Max number of concurrent jobs to be executed locally in the master
       ## Azure Batch Service configuration example
       # azure.batchAccount : "batchAccount"
       # azure.batchKey : "batchKey"
