@@ -48,6 +48,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -116,7 +117,7 @@ public abstract class AbstractManager {
     }
 
     public interface ExecuteBatchOperation<T> {
-        T execute(Study study, String userId, QueryOptions queryOptions, String auditOperationUuid) throws CatalogException;
+        T execute(Study study, String userId, QueryOptions queryOptions, String auditOperationUuid) throws CatalogException, IOException;
     }
 
     protected <T, S extends ObjectMap> T run(ObjectMap params, Enums.Action action, Enums.Resource resource, String studyStr, String token,
@@ -189,6 +190,18 @@ public abstract class AbstractManager {
         try {
             QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
             return body.execute(study, userId, queryOptions, operationUuid);
+        } catch (IOException e) {
+            exception = new CatalogException(e);
+            ObjectMap auditAttributes = new ObjectMap()
+                    .append("totalTimeMillis", totalStopWatch.getTime(TimeUnit.MILLISECONDS))
+                    .append("errorType", e.getClass())
+                    .append("errorMessage", e.getMessage());
+            AuditRecord.Status status = new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", e.getMessage()));
+            AuditRecord auditRecord = new AuditRecord(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT), operationUuid, userId,
+                    GitRepositoryState.get().getBuildVersion(), action, resource, "", "", study.getId(), study.getUuid(), params,
+                    status, TimeUtils.getDate(), auditAttributes);
+            auditManager.audit(auditRecord);
+            throw (CatalogException) exception;
         } catch (Exception e) {
             exception = e;
             ObjectMap auditAttributes = new ObjectMap()
