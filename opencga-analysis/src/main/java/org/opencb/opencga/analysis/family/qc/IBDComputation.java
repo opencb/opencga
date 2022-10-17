@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.analysis.family.qc;
 
+import org.apache.commons.math3.ode.nonstiff.RungeKuttaFieldIntegrator;
 import org.opencb.biodata.models.clinical.qc.RelatednessReport;
+import org.opencb.biodata.models.clinical.qc.RelatednessScore;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -116,8 +118,8 @@ public class IBDComputation {
         }
     }
 
-    public static List<RelatednessReport.RelatednessScore> parseRelatednessScores(File file) throws ToolException {
-        List<RelatednessReport.RelatednessScore> scores = new ArrayList<>();
+    public static List<RelatednessScore> parseRelatednessScores(File file) throws ToolException {
+        List<RelatednessScore> scores = new ArrayList<>();
 
         String line;
         BufferedReader reader;
@@ -132,10 +134,12 @@ public class IBDComputation {
                 String[] splits = line.trim().split("\\s+");
 
                 // Create relatedness score
-                RelatednessReport.RelatednessScore score = new RelatednessReport.RelatednessScore();
+                RelatednessScore score = new RelatednessScore();
                 score.setSampleId1(splits[1]);
                 score.setSampleId2(splits[3]);
-                score.setInferredRelationship(splits[4]);
+
+                score.setReportedRelationship(getReportedRelationshipDescription(splits[4]));
+                score.setInferredRelationship(inferredRelationship(splits[6], splits[7], splits[8], splits[9], splits[4]));
 
                 Map<String, Object> values = new LinkedHashMap<>();
                 values.put("ez", splits[5]);
@@ -154,5 +158,97 @@ public class IBDComputation {
         }
 
         return scores;
+    }
+
+    public static String inferredRelationship(String z0, String z1, String z2, String piHat, String reportedRelationship) {
+        String result = "unknown";
+
+        float z0Score;
+        float z1Score;
+        float z2Score;
+        float piHatScore;
+
+        // Sanity check
+        try {
+            z0Score = Float.parseFloat(z0);
+        } catch (NumberFormatException e) {
+            return result;
+        }
+        try {
+            z1Score = Float.parseFloat(z1);
+        } catch (NumberFormatException e) {
+            return result;
+        }
+        try {
+            z2Score = Float.parseFloat(z2);
+        } catch (NumberFormatException e) {
+            return result;
+        }
+        try {
+            piHatScore = Float.parseFloat(piHat);
+        } catch (NumberFormatException e) {
+            return result;
+        }
+
+        //              z0	   z1    z2    PiHat
+        // Identical	0	   0	 1     1
+        if (z0Score <= 0.1f && z1Score <= 0.1f && z2Score >= 0.9f && piHatScore >= 0.9) {
+            return "identical twins";
+        }
+
+        //              z0	   z1    z2    PiHat
+        // Parent	    0	   1	 0     0.5
+        if (z0Score <= 0.1f && z1Score >= 0.9f && z2Score <= 0.1f && piHatScore >= 0.4f && piHatScore <= 0.6f) {
+            return "parent-offspring";
+        }
+
+        //              z0	   z1    z2    PiHat
+        // Sibling	    0.25   0.5   0.25  0.5
+        if (z0Score >= 0.15f && z0Score <= 0.35f
+                && z1Score >= 0.4f && z1Score <= 0.6f
+                && z2Score >= 0.15f && z2Score <= 0.35f
+                && piHatScore >= 0.4f && piHatScore <= 0.6f) {
+            return "full siblings";
+        }
+
+        //              z0	   z1    z2    PiHat
+        // Grandparent	0.5    0.5   0     0.25
+        // Half sibling	0.5    0.5   0     0.25
+        if (z0Score >= 0.4f && z0Score <= 0.6f
+                && z1Score >= 0.4f && z1Score <= 0.6f
+                && z2Score <= 0.1f
+                && piHatScore >= 0.15f && piHatScore <= 0.35f) {
+            if (reportedRelationship.equals("HS")) {
+                return "half siblings";
+            } else {
+                return "grandparent";
+            }
+        }
+
+        //              z0	   z1    z2    PiHat
+        // Cousins	    0.75   0.25	 0	   0.15
+        if (z0Score >= 0.65f && z0Score <= 0.85f
+                && z1Score >= 0.15f && z1Score <= 0.35f
+                && z2Score <= 0.1f
+                && piHatScore >= 0.05f && piHatScore <= 0.25f) {
+            return "cousins";
+        }
+
+        return result;
+    }
+
+    public static String getReportedRelationshipDescription(String value) {
+        switch (value) {
+            case "FS":
+                return "full siblings";
+            case "HS":
+                return "half siblings";
+            case "PO":
+                return "parent-offspring";
+            case "OT":
+                return "other";
+            default:
+                return value;
+        }
     }
 }
