@@ -116,9 +116,9 @@ public class ClinicalAnalysis extends PrivateStudyUid {
             description = FieldConstants.CLINICAL_ANALYSIS_CONSENT)
     private ClinicalConsentAnnotation consent;
 
-    @DataField(id = "analyst", indexed = true,
-            description = FieldConstants.CLINICAL_ANALYSIS_ANALYST)
-    private ClinicalAnalyst analyst;
+    @DataField(id = "analysts", indexed = true,
+            description = FieldConstants.CLINICAL_ANALYSIS_ANALYSTS)
+    private List<ClinicalAnalyst> analysts;
 
     @DataField(id = "report", indexed = true,
             description = FieldConstants.CLINICAL_ANALYSIS_REPORT)
@@ -208,11 +208,11 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, List<File> files, Individual proband,
                             Family family, List<Panel> panels, boolean panelLock, boolean locked, Interpretation interpretation,
-                            List<Interpretation> secondaryInterpretations, ClinicalConsentAnnotation consent, ClinicalAnalyst analyst,
-                            ClinicalReport report, ClinicalPriorityAnnotation priority, List<FlagAnnotation> flags, String creationDate,
-                            String modificationDate, String dueDate, int release, List<ClinicalComment> comments,
-                            ClinicalAnalysisQualityControl qualityControl, List<ClinicalAudit> audit, ClinicalAnalysisInternal internal,
-                            Map<String, Object> attributes, Status status) {
+                            List<Interpretation> secondaryInterpretations, ClinicalConsentAnnotation consent,
+                            List<ClinicalAnalyst> analysts, ClinicalReport report, ClinicalPriorityAnnotation priority,
+                            List<FlagAnnotation> flags, String creationDate, String modificationDate, String dueDate, int release,
+                            List<ClinicalComment> comments, ClinicalAnalysisQualityControl qualityControl, List<ClinicalAudit> audit,
+                            ClinicalAnalysisInternal internal, Map<String, Object> attributes, Status status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -226,7 +226,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.interpretation = interpretation;
         this.secondaryInterpretations = secondaryInterpretations;
         this.consent = consent;
-        this.analyst = analyst;
+        this.analysts = analysts;
         this.report = report;
         this.priority = priority;
         this.flags = flags;
@@ -259,7 +259,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", interpretation=").append(interpretation);
         sb.append(", secondaryInterpretations=").append(secondaryInterpretations);
         sb.append(", consent=").append(consent);
-        sb.append(", analyst=").append(analyst);
+        sb.append(", analysts=").append(analysts);
         sb.append(", report=").append(report);
         sb.append(", priority=").append(priority);
         sb.append(", flags=").append(flags);
@@ -406,12 +406,12 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public ClinicalAnalyst getAnalyst() {
-        return analyst;
+    public List<ClinicalAnalyst> getAnalysts() {
+        return analysts;
     }
 
-    public ClinicalAnalysis setAnalyst(ClinicalAnalyst analyst) {
-        this.analyst = analyst;
+    public ClinicalAnalysis setAnalysts(List<ClinicalAnalyst> analysts) {
+        this.analysts = analysts;
         return this;
     }
 

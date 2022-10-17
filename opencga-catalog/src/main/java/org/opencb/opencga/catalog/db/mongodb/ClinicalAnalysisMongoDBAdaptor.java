@@ -338,7 +338,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
         String[] acceptedObjectParams = {QueryParams.FAMILY.key(), QueryParams.DISORDER.key(), QUALITY_CONTROL.key(),
                 QueryParams.PROBAND.key(), QueryParams.ALERTS.key(), QueryParams.INTERNAL_STATUS.key(), QueryParams.PRIORITY.key(),
-                QueryParams.ANALYST.key(), QueryParams.CONSENT.key(), QueryParams.STATUS.key(), QueryParams.INTERPRETATION.key(),
+                QueryParams.ANALYSTS.key(), QueryParams.CONSENT.key(), QueryParams.STATUS.key(), QueryParams.INTERPRETATION.key(),
                 REPORT.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
@@ -1169,7 +1169,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case FAMILY_MEMBERS_UID:
                     case FAMILY_MEMBERS_SAMPLES_UID:
                     case PANELS_UID:
-                    case ANALYST_ID:
+                    case ANALYSTS_ID:
                     case PRIORITY_ID:
                     case FLAGS_ID:
                     case QUALITY_CONTROL_SUMMARY:

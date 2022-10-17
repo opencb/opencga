@@ -19,7 +19,10 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.*;
+import org.opencb.biodata.models.clinical.ClinicalAnalyst;
+import org.opencb.biodata.models.clinical.ClinicalAudit;
+import org.opencb.biodata.models.clinical.ClinicalComment;
+import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -293,18 +296,23 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             // Analyst
             QueryOptions userInclude = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(UserDBAdaptor.QueryParams.ID.key(),
                     UserDBAdaptor.QueryParams.NAME.key(), UserDBAdaptor.QueryParams.EMAIL.key()));
-            User user;
-            if (clinicalAnalysis.getAnalyst() == null || StringUtils.isEmpty(clinicalAnalysis.getAnalyst().getId())) {
-                user = userDBAdaptor.get(userId, userInclude).first();
+            List<ClinicalAnalyst> analysts = new ArrayList<>();
+            if (CollectionUtils.isEmpty(clinicalAnalysis.getAnalysts())) {
+                User user = userDBAdaptor.get(userId, userInclude).first();
+                analysts.add(new ClinicalAnalyst(user.getId(), user.getName(), user.getEmail(), userId, TimeUtils.getTime()));
             } else {
-                // Validate user
-                OpenCGAResult<User> result = userDBAdaptor.get(clinicalAnalysis.getAnalyst().getId(), userInclude);
-                if (result.getNumResults() == 0) {
-                    throw new CatalogException("User '" + clinicalAnalysis.getAnalyst().getId() + "' not found");
+                for (ClinicalAnalyst analyst : clinicalAnalysis.getAnalysts()) {
+                    ParamUtils.checkParameter(analyst.getId(), ClinicalAnalysisDBAdaptor.QueryParams.ANALYSTS_ID.key());
+                    // Validate user
+                    OpenCGAResult<User> result = userDBAdaptor.get(analyst.getId(), userInclude);
+                    if (result.getNumResults() == 0) {
+                        throw new CatalogException("User '" + analyst.getId() + "' not found");
+                    }
+                    User user = result.first();
+                    analysts.add(new ClinicalAnalyst(user.getId(), user.getName(), user.getEmail(), userId, TimeUtils.getTime()));
                 }
-                user = result.first();
             }
-            clinicalAnalysis.setAnalyst(new ClinicalAnalyst(user.getId(), user.getName(), user.getEmail(), userId, TimeUtils.getTime()));
+            clinicalAnalysis.setAnalysts(analysts);
 
             if (TimeUtils.toDate(clinicalAnalysis.getDueDate()) == null) {
                 throw new CatalogException("Unrecognised due date. Accepted format is: yyyyMMddHHmmss");
@@ -1230,22 +1238,24 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), comments);
         }
 
-        if (parameters.get(InterpretationDBAdaptor.QueryParams.ANALYST.key()) != null) {
-            if (StringUtils.isNotEmpty(updateParams.getAnalyst().getId())) {
+        if (parameters.get(ClinicalAnalysisDBAdaptor.QueryParams.ANALYSTS.key()) != null) {
+            if (CollectionUtils.isNotEmpty(updateParams.getAnalysts())) {
                 QueryOptions userOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(UserDBAdaptor.QueryParams.ID.key(),
                         UserDBAdaptor.QueryParams.NAME.key(), UserDBAdaptor.QueryParams.EMAIL.key()));
-                // Check user exists
-                OpenCGAResult<User> userResult = userDBAdaptor.get(updateParams.getAnalyst().getId(), userOptions);
-                if (userResult.getNumResults() == 0) {
-                    throw new CatalogException("User '" + updateParams.getAnalyst().getId() + "' not found");
+                List<ClinicalAnalyst> analysts = new ArrayList<>(updateParams.getAnalysts().size());
+                for (ClinicalAnalystParam analyst : updateParams.getAnalysts()) {
+                    // Check user exists
+                    OpenCGAResult<User> userResult = userDBAdaptor.get(analyst.getId(), userOptions);
+                    if (userResult.getNumResults() == 0) {
+                        throw new CatalogException("User '" + analyst.getId() + "' not found");
+                    }
+                    User user = userResult.first();
+                    analysts.add(new ClinicalAnalyst(user.getId(), user.getName(), user.getEmail(), userId, TimeUtils.getTime()));
                 }
-
-                parameters.put(InterpretationDBAdaptor.QueryParams.ANALYST.key(), new ClinicalAnalyst(userResult.first().getId(),
-                        userResult.first().getName(), userResult.first().getEmail(), userId, TimeUtils.getTime()));
+                parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.ANALYSTS.key(), analysts);
             } else {
                 // Remove assignee
-                parameters.put(InterpretationDBAdaptor.QueryParams.ANALYST.key(), new ClinicalAnalyst("", "", "", userId,
-                        TimeUtils.getTime()));
+                parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.ANALYSTS.key(), Collections.emptyList());
             }
         }
         if (parameters.get(ClinicalAnalysisDBAdaptor.QueryParams.QUALITY_CONTROL.key()) != null) {
@@ -1533,7 +1543,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
     protected void fixQueryObject(Study study, Query query, String user, String token) throws CatalogException {
         changeQueryId(query, ParamConstants.CLINICAL_DISORDER_PARAM, ClinicalAnalysisDBAdaptor.QueryParams.DISORDER.key());
-        changeQueryId(query, ParamConstants.CLINICAL_ANALYST_ID_PARAM, ClinicalAnalysisDBAdaptor.QueryParams.ANALYST_ID.key());
+        changeQueryId(query, ParamConstants.CLINICAL_ANALYST_ID_PARAM, ClinicalAnalysisDBAdaptor.QueryParams.ANALYSTS_ID.key());
         changeQueryId(query, ParamConstants.CLINICAL_PRIORITY_PARAM, ClinicalAnalysisDBAdaptor.QueryParams.PRIORITY_ID.key());
         changeQueryId(query, ParamConstants.CLINICAL_FLAGS_PARAM, ClinicalAnalysisDBAdaptor.QueryParams.FLAGS_ID.key());
         changeQueryId(query, ParamConstants.CLINICAL_QUALITY_CONTROL_SUMMARY_PARAM,

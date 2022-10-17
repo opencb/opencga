@@ -47,9 +47,8 @@ public class ClinicalAnalysisUpdateParams {
     private FamilyParam family;
 
     private Boolean locked;
-    private ClinicalAnalystParam analyst;
+    private List<ClinicalAnalystParam> analysts;
     private ClinicalReport report;
-
 
     private ClinicalAnalysisQualityControlUpdateParam qualityControl;
 
@@ -70,11 +69,12 @@ public class ClinicalAnalysisUpdateParams {
 
     public ClinicalAnalysisUpdateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                         List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
-                                        List<PanelReferenceParam> panels, Boolean panelLock, Boolean locked, ClinicalAnalystParam analyst,
-                                        ClinicalReport report, ClinicalAnalysisQualityControlUpdateParam qualityControl,
-                                        ClinicalConsentAnnotationParam consent, String creationDate, String modificationDate,
-                                        String dueDate, List<ClinicalCommentParam> comments, PriorityParam priority,
-                                        List<FlagValueParam> flags, Map<String, Object> attributes, StatusParam status) {
+                                        List<PanelReferenceParam> panels, Boolean panelLock, Boolean locked,
+                                        List<ClinicalAnalystParam> analysts, ClinicalReport report,
+                                        ClinicalAnalysisQualityControlUpdateParam qualityControl, ClinicalConsentAnnotationParam consent,
+                                        String creationDate, String modificationDate, String dueDate, List<ClinicalCommentParam> comments,
+                                        PriorityParam priority, List<FlagValueParam> flags, Map<String, Object> attributes,
+                                        StatusParam status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -85,7 +85,7 @@ public class ClinicalAnalysisUpdateParams {
         this.panels = panels;
         this.panelLock = panelLock;
         this.locked = locked;
-        this.analyst = analyst;
+        this.analysts = analysts;
         this.report = report;
         this.qualityControl = qualityControl;
         this.consent = consent;
@@ -115,7 +115,10 @@ public class ClinicalAnalysisUpdateParams {
                 locked != null && locked,
                 null, null,
                 consent != null ? consent.toClinicalConsentAnnotation() : null,
-                analyst != null ? analyst.toClinicalAnalyst() : null, report,
+                analysts != null
+                        ? analysts.stream().map(ClinicalAnalystParam::toClinicalAnalyst).collect(Collectors.toList())
+                        : null,
+                report,
                 priority != null ? priority.toClinicalPriorityAnnotation() : null,
                 flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null, creationDate, modificationDate, dueDate,
                 1,
@@ -136,7 +139,7 @@ public class ClinicalAnalysisUpdateParams {
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", locked=").append(locked);
-        sb.append(", analyst=").append(analyst);
+        sb.append(", analysts=").append(analysts);
         sb.append(", report=").append(report);
         sb.append(", qualityControl=").append(qualityControl);
         sb.append(", consent=").append(consent);
@@ -242,12 +245,12 @@ public class ClinicalAnalysisUpdateParams {
         return this;
     }
 
-    public ClinicalAnalystParam getAnalyst() {
-        return analyst;
+    public List<ClinicalAnalystParam> getAnalysts() {
+        return analysts;
     }
 
-    public ClinicalAnalysisUpdateParams setAnalyst(ClinicalAnalystParam analyst) {
-        this.analyst = analyst;
+    public ClinicalAnalysisUpdateParams setAnalysts(List<ClinicalAnalystParam> analysts) {
+        this.analysts = analysts;
         return this;
     }
 

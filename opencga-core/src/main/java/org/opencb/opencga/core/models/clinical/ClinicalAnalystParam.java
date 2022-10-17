@@ -6,6 +6,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 public class ClinicalAnalystParam {
 
     private String id;
+    private Boolean validator;
 
     public ClinicalAnalystParam() {
     }
@@ -30,6 +31,7 @@ public class ClinicalAnalystParam {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalAnalystParam{");
         sb.append("id='").append(id).append('\'');
+        sb.append(", validator=").append(validator);
         sb.append('}');
         return sb.toString();
     }

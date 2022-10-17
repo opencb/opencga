@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models.clinical;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.StatusParam;
@@ -47,7 +48,7 @@ public class ClinicalAnalysisCreateParams {
     private List<PanelReferenceParam> panels;
     private Boolean panelLock;
 
-    private ClinicalAnalystParam analyst;
+    private List<ClinicalAnalystParam> analysts;
     private ClinicalReport report;
     private InterpretationCreateParams interpretation;
     private ClinicalAnalysisQualityControlUpdateParam qualityControl;
@@ -69,7 +70,7 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                         List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
-                                        List<PanelReferenceParam> panels, Boolean panelLock, ClinicalAnalystParam analyst,
+                                        List<PanelReferenceParam> panels, Boolean panelLock, List<ClinicalAnalystParam> analysts,
                                         ClinicalReport report, InterpretationCreateParams interpretation,
                                         ClinicalConsentAnnotationParam consent, String creationDate, String modificationDate,
                                         String dueDate, List<ClinicalCommentParam> comments,
@@ -85,7 +86,7 @@ public class ClinicalAnalysisCreateParams {
         this.panels = panels;
         this.panelLock = panelLock;
         this.report = report;
-        this.analyst = analyst;
+        this.analysts = analysts;
         this.interpretation = interpretation;
         this.consent = consent;
         this.creationDate = creationDate;
@@ -111,7 +112,9 @@ public class ClinicalAnalysisCreateParams {
                         ? clinicalAnalysis.getPanels().stream().map(p -> new PanelReferenceParam(p.getId())).collect(Collectors.toList())
                         : null,
                 clinicalAnalysis.isPanelLock(),
-                clinicalAnalysis.getAnalyst() != null ? ClinicalAnalystParam.of(clinicalAnalysis.getAnalyst()) : null,
+                CollectionUtils.isNotEmpty(clinicalAnalysis.getAnalysts())
+                        ? clinicalAnalysis.getAnalysts().stream().map(ClinicalAnalystParam::of).collect(Collectors.toList())
+                        : null,
                 clinicalAnalysis.getReport(),
                 clinicalAnalysis.getInterpretation() != null
                         ? InterpretationCreateParams.of(clinicalAnalysis.getInterpretation())
@@ -143,7 +146,7 @@ public class ClinicalAnalysisCreateParams {
         sb.append(", family=").append(family);
         sb.append(", panels=").append(panels);
         sb.append(", panelLock=").append(panelLock);
-        sb.append(", analyst=").append(analyst);
+        sb.append(", analysts=").append(analysts);
         sb.append(", report=").append(report);
         sb.append(", interpretation=").append(interpretation);
         sb.append(", qualityControl=").append(qualityControl);
@@ -192,7 +195,12 @@ public class ClinicalAnalysisCreateParams {
 
         Interpretation primaryInterpretation = interpretation != null ? interpretation.toClinicalInterpretation() : null;
 
-        String assignee = analyst != null ? analyst.getId() : "";
+        List<ClinicalAnalyst> clinicalAnalysts = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(analysts)) {
+            for (ClinicalAnalystParam analyst : analysts) {
+                clinicalAnalysts.add(new ClinicalAnalyst(analyst.getId(), analyst.getId(), "", "", TimeUtils.getTime()));
+            }
+        }
 
         List<File> caFiles = new LinkedList<>();
         if (files != null) {
@@ -210,8 +218,7 @@ public class ClinicalAnalysisCreateParams {
 
         return new ClinicalAnalysis(id, description, type, disorder != null ? disorder.toDisorder() : null, caFiles, individual, f,
                 diseasePanelList, panelLock != null ? panelLock : false, false, primaryInterpretation, new LinkedList<>(),
-                consent != null ? consent.toClinicalConsentAnnotation() : null,
-                new ClinicalAnalyst(assignee, assignee, "", "", TimeUtils.getTime()), report,
+                consent != null ? consent.toClinicalConsentAnnotation() : null, clinicalAnalysts, report,
                 priority != null ? priority.toClinicalPriorityAnnotation() : null,
                 flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null, creationDate, modificationDate, dueDate,
                 1,
@@ -300,12 +307,12 @@ public class ClinicalAnalysisCreateParams {
         return this;
     }
 
-    public ClinicalAnalystParam getAnalyst() {
-        return analyst;
+    public List<ClinicalAnalystParam> getAnalysts() {
+        return analysts;
     }
 
-    public ClinicalAnalysisCreateParams setAnalyst(ClinicalAnalystParam analyst) {
-        this.analyst = analyst;
+    public ClinicalAnalysisCreateParams setAnalysts(List<ClinicalAnalystParam> analysts) {
+        this.analysts = analysts;
         return this;
     }
 
