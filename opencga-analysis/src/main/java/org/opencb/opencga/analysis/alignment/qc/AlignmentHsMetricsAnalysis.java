@@ -19,6 +19,7 @@ package org.opencb.opencga.analysis.alignment.qc;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.alignment.picard.HsMetrics;
 import org.opencb.biodata.formats.alignment.picard.io.HsMetricsParser;
+import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
@@ -33,6 +34,8 @@ import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,9 +48,10 @@ public class AlignmentHsMetricsAnalysis extends OpenCgaToolScopeStudy {
     public static final String ID = "alignment-hsmetrics";
     public static final String DESCRIPTION = ALIGNMENT_HS_METRICS_DESCRIPTION;
 
+    public static final String HS_METRICS_FILENAME = "hsmetrics.txt";
+
     private static final String PICARD_BEDTOINTERVALLIST_STEP = "picard-bed-to-interval-list";
     private static final String PICARD_COLLECTHSMETRICS_STEP = "picard-collect-hs-metrics";
-    private static final String SAVE_ALIGNMENT_HSMETRICS_STEP = "save-alignment-hsmetrics";
 
     @ToolParams
     protected final AlignmentHsMetricsParams analysisParams = new AlignmentHsMetricsParams();
@@ -98,7 +102,6 @@ public class AlignmentHsMetricsAnalysis extends OpenCgaToolScopeStudy {
         List<String> steps = new ArrayList<>();
         steps.add(PICARD_BEDTOINTERVALLIST_STEP);
         steps.add(PICARD_COLLECTHSMETRICS_STEP);
-        steps.add(SAVE_ALIGNMENT_HSMETRICS_STEP);
         return steps;
     }
 
@@ -108,7 +111,7 @@ public class AlignmentHsMetricsAnalysis extends OpenCgaToolScopeStudy {
         setUpStorageEngineExecutor(study);
 
         java.io.File baitFile = getOutDir().resolve("intervals.bait").toFile();
-        java.io.File hsMetricsFile = getOutDir().resolve("hsmetrics.txt").toFile();
+        java.io.File hsMetricsFile = getOutDir().resolve(HS_METRICS_FILENAME).toFile();
 
         step(PICARD_BEDTOINTERVALLIST_STEP, () -> {
             executorParams.put(EXECUTOR_ID, PicardWrapperAnalysisExecutor.ID);
@@ -143,22 +146,16 @@ public class AlignmentHsMetricsAnalysis extends OpenCgaToolScopeStudy {
                         + " more details.");
             }
         });
+    }
 
-        step(SAVE_ALIGNMENT_HSMETRICS_STEP, () -> {
+    public static HsMetrics parseResults(Path outDir) throws ToolException {
+        HsMetrics hsMetrics = null;
+        try {
             // Parse HS metrics
-            HsMetrics hsMetrics = HsMetricsParser.parse(hsMetricsFile);
-
-            // Update quality control for the catalog file
-            FileQualityControl qc = catalogBamFile.getQualityControl();
-            // Sanity check
-            if (qc == null) {
-                qc = new FileQualityControl();
-            }
-            qc.getAlignment().setHsMetrics(hsMetrics);
-
-            catalogManager.getFileManager().update(getStudy(), catalogBamFile.getId(), new FileUpdateParams().setQualityControl(qc),
-                    QueryOptions.empty(), getToken());
-
-        });
+            hsMetrics = HsMetricsParser.parse(outDir.resolve(HS_METRICS_FILENAME).toFile());
+        } catch (IOException e) {
+            new ToolException("Error parsing HS Metrics file: " + e.getMessage());
+        }
+        return hsMetrics;
     }
 }

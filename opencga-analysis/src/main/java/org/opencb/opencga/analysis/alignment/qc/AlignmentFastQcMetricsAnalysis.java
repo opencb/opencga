@@ -17,6 +17,7 @@
 package org.opencb.opencga.analysis.alignment.qc;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
 import org.opencb.biodata.formats.sequence.fastqc.FastQcMetrics;
 import org.opencb.biodata.formats.sequence.fastqc.io.FastQcParser;
 import org.opencb.commons.datastore.core.Query;
@@ -34,6 +35,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,7 +50,6 @@ public class AlignmentFastQcMetricsAnalysis extends OpenCgaToolScopeStudy {
     public static final String DESCRIPTION = ALIGNMENT_FASTQC_METRICS_DESCRIPTION;
 
     private static final String FASTQC_STEP = "fastqc";
-    private static final String SAVE_ALIGNMENT_FASTQC_METRICS_STEP = "save-alignment-fastqcmetrics";
 
     @ToolParams
     protected final AlignmentFastQcMetricsParams analysisParams = new AlignmentFastQcMetricsParams();
@@ -81,7 +82,6 @@ public class AlignmentFastQcMetricsAnalysis extends OpenCgaToolScopeStudy {
     protected List<String> getSteps() {
         List<String> steps = new ArrayList<>();
         steps.add(FASTQC_STEP);
-        steps.add(SAVE_ALIGNMENT_FASTQC_METRICS_STEP);
         return steps;
     }
 
@@ -97,20 +97,23 @@ public class AlignmentFastQcMetricsAnalysis extends OpenCgaToolScopeStudy {
                     .setInputFile(catalogBamFile.getUri().getPath())
                     .execute();
         });
+    }
 
-        step(SAVE_ALIGNMENT_FASTQC_METRICS_STEP, () -> {
-
-            Path fastQcPath = null;
-            Path imgPath = null;
-            for (java.io.File file : getOutDir().toFile().listFiles()) {
-                if (file.isDirectory() && file.getName().endsWith("_fastqc")) {
-                    fastQcPath = file.toPath().resolve("fastqc_data.txt");
-                    imgPath = file.toPath().resolve("Images");
-                }
+    public static FastQcMetrics parseResults(Path outDir) throws ToolException {
+        Path fastQcPath = null;
+        Path imgPath = null;
+        for (java.io.File file : outDir.toFile().listFiles()) {
+            if (file.isDirectory() && file.getName().endsWith("_fastqc")) {
+                fastQcPath = file.toPath().resolve("fastqc_data.txt");
+                imgPath = file.toPath().resolve("Images");
             }
+        }
 
+        FastQcMetrics fastQcMetrics = null;
+        try {
             if (fastQcPath != null && fastQcPath.toFile().exists()) {
-                FastQcMetrics fastQcMetrics = FastQcParser.parse(fastQcPath.toFile());
+
+                fastQcMetrics = FastQcParser.parse(fastQcPath.toFile());
                 FastQcParser.addImages(imgPath, fastQcMetrics);
 
                 // Replace absolute paths to relative paths
@@ -120,20 +123,13 @@ public class AlignmentFastQcMetricsAnalysis extends OpenCgaToolScopeStudy {
                     relativePaths.add(index == -1 ? new java.io.File(path).getName() : path.substring(index));
                 }
                 fastQcMetrics.setFiles(relativePaths);
-
-                // Update quality control for the catalog file
-                FileQualityControl qc = catalogBamFile.getQualityControl();
-                // Sanity check
-                if (qc == null) {
-                    qc = new FileQualityControl();
-                }
-                qc.getAlignment().setFastQcMetrics(fastQcMetrics);
-
-                catalogManager.getFileManager().update(getStudy(), catalogBamFile.getId(), new FileUpdateParams().setQualityControl(qc),
-                        QueryOptions.empty(), getToken());
             } else {
                 throw new ToolException("Something wrong happened: FastQC file " + fastQcPath.getFileName() + " not found!");
             }
-        });
+        } catch (IOException e) {
+            new ToolException("Error parsing Alignment FastQC Metrics file: " + e.getMessage());
+        }
+
+        return fastQcMetrics;
     }
 }
