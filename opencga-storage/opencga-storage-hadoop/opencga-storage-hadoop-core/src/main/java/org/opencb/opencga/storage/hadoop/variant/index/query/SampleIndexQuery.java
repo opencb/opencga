@@ -46,8 +46,14 @@ public class SampleIndexQuery {
     private final Map<String, Values<SampleFileIndexQuery>> fileFilterMap;
     private final SampleAnnotationIndexQuery annotationIndexQuery;
     private final Set<String> mendelianErrorSet;
-    private final boolean onlyDeNovo;
+    private final MendelianErrorType mendelianErrorType;
     private final QueryOperation queryOperation;
+
+    public enum MendelianErrorType {
+        ALL,
+        DE_NOVO,
+        DE_NOVO_STRICT,
+    }
 
     public SampleIndexQuery(Collection<LocusQuery> locusQueries, SampleIndexQuery query) {
         this.schema = query.schema;
@@ -62,7 +68,7 @@ public class SampleIndexQuery {
         this.fileFilterMap = query.fileFilterMap;
         this.annotationIndexQuery = query.annotationIndexQuery;
         this.mendelianErrorSet = query.mendelianErrorSet;
-        this.onlyDeNovo = query.onlyDeNovo;
+        this.mendelianErrorType = query.mendelianErrorType;
         this.queryOperation = query.queryOperation;
     }
 
@@ -70,7 +76,7 @@ public class SampleIndexQuery {
             List<String>> samplesMap, QueryOperation queryOperation) {
         this(schema, locusQueries, null, study, samplesMap, Collections.emptySet(), null, Collections.emptyMap(), Collections.emptyMap(),
                 Collections.emptyMap(),
-                new SampleAnnotationIndexQuery(schema), Collections.emptySet(), false, queryOperation);
+                new SampleAnnotationIndexQuery(schema), Collections.emptySet(), null, queryOperation);
     }
 
     public SampleIndexQuery(SampleIndexSchema schema, Collection<LocusQuery> locusQueries, Set<VariantType> variantTypes, String study,
@@ -78,7 +84,7 @@ public class SampleIndexQuery {
                             Set<String> negatedSamples, Map<String, boolean[]> fatherFilter, Map<String, boolean[]> motherFilter,
                             Map<String, Values<SampleFileIndexQuery>> fileFilterMap,
                             SampleAnnotationIndexQuery annotationIndexQuery,
-                            Set<String> mendelianErrorSet, boolean onlyDeNovo, QueryOperation queryOperation) {
+                            Set<String> mendelianErrorSet, MendelianErrorType mendelianErrorType, QueryOperation queryOperation) {
         this.schema = schema;
         this.locusQueries = locusQueries;
         this.variantTypes = variantTypes;
@@ -91,7 +97,7 @@ public class SampleIndexQuery {
         this.fileFilterMap = fileFilterMap;
         this.annotationIndexQuery = annotationIndexQuery;
         this.mendelianErrorSet = mendelianErrorSet;
-        this.onlyDeNovo = onlyDeNovo;
+        this.mendelianErrorType = mendelianErrorType;
         this.queryOperation = queryOperation;
     }
 
@@ -225,9 +231,10 @@ public class SampleIndexQuery {
         return multiFileSamplesSet;
     }
 
-    public boolean isOnlyDeNovo() {
-        return onlyDeNovo;
+    public MendelianErrorType getMendelianErrorType() {
+        return mendelianErrorType;
     }
+
     /**
      * Create a SingleSampleIndexQuery.
      *

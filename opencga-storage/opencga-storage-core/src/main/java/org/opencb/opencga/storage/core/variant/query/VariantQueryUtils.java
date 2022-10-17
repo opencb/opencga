@@ -87,6 +87,9 @@ public final class VariantQueryUtils {
             "Get the precomputed mendelian errors for the given samples", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam SAMPLE_DE_NOVO = QueryParam.create("sampleDeNovo",
             "Get the precomputed mendelian errors non HOM_REF for the given samples", QueryParam.Type.TEXT_ARRAY);
+    public static final QueryParam SAMPLE_DE_NOVO_STRICT = QueryParam.create("sampleDeNovoStrict",
+            "Get the precomputed mendelian errors non HOM_REF for the given samples, where both parents are HOM_REF",
+            QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam SAMPLE_COMPOUND_HETEROZYGOUS = QueryParam.create("sampleCompoundHeterozygous",
             "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam NUM_SAMPLES = QueryParam.create("numSamples", "", QueryParam.Type.INTEGER);
@@ -102,6 +105,7 @@ public final class VariantQueryUtils {
             VARIANTS_TO_INDEX,
             SAMPLE_MENDELIAN_ERROR,
             SAMPLE_DE_NOVO,
+            SAMPLE_DE_NOVO_STRICT,
             SAMPLE_COMPOUND_HETEROZYGOUS,
             NUM_SAMPLES,
             NUM_TOTAL_SAMPLES);
@@ -1570,9 +1574,36 @@ public final class VariantQueryUtils {
         return query == null ? new Query() : query;
     }
 
-    public static String toVcfDebug(Variant variant) {
+    public static String toVcfDebug(Iterator<Variant> iterator) {
         StringBuilder sb = new StringBuilder();
 
+        sb.append("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT");
+
+        if (!iterator.hasNext()) {
+            return sb.toString();
+        }
+        Variant next = iterator.next();
+        for (StudyEntry study : next.getStudies()) {
+            for (String sample : study.getOrderedSamplesName()) {
+                sb.append('\t');
+                sb.append(sample);
+            }
+        }
+        sb.append("\n");
+        toVcfDebug(next, sb);
+        sb.append("\n");
+        while (iterator.hasNext()) {
+            toVcfDebug(iterator.next(), sb);
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
+
+    public static String toVcfDebug(Variant variant) {
+        return toVcfDebug(variant, new StringBuilder()).toString();
+    }
+
+    public static StringBuilder toVcfDebug(Variant variant, StringBuilder sb) {
         sb.append(variant.getChromosome());
         sb.append('\t');
         sb.append(variant.getStart());
@@ -1599,16 +1630,20 @@ public final class VariantQueryUtils {
         sb.append(filter);
         sb.append('\t');
 
+        sb.append("STUDY=" + variant.getStudies().get(0).getStudyId());
+        sb.append('\t');
+
         sb.append("GT:SAMPLE_ID");
         sb.append('\t');
 
         for (StudyEntry study : variant.getStudies()) {
-            for (SampleEntry sample : study.getSamples()) {
-                sb.append(sample.getData().get(0)).append(":").append(sample.getSampleId());
+            for (String sample : study.getOrderedSamplesName()) {
+                SampleEntry sampleEntry = study.getSample(sample);
+                sb.append(sampleEntry.getData().get(0)).append(":").append(sample);
                 sb.append('\t');
             }
         }
-        return sb.toString();
+        return sb;
     }
 
 }
