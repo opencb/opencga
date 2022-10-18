@@ -927,7 +927,7 @@ class RgaUtils {
             Set<String> chPairs = new HashSet<>();
             for (Set<String> chSet : transcriptCompHetIdsMap.values()) {
                 if (chSet.size() > 1) {
-                    if (chSet.size() > 100) {
+                    if (chSet.size() > 150) {
                         // Don't calculate this if the number of possible pairs is bigger than 1000
                         return -1000;
                     }
