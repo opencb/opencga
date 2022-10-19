@@ -1174,8 +1174,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
     @Override
     protected List<VariantQueryExecutor> initVariantQueryExecutors() throws StorageEngineException {
-        List<VariantQueryExecutor> executors = new ArrayList<>(8);
+        List<VariantQueryExecutor> executors = new ArrayList<>(10);
 
+        executors.add(new NoOpVariantQueryExecutor(
+                getMetadataManager(), getStorageEngineId(), getOptions()));
         executors.add(new SampleIndexCompoundHeterozygousQueryExecutor(
                 getMetadataManager(), getStorageEngineId(), getOptions(), this, getSampleIndexDBAdaptor(), getDBAdaptor()));
         executors.add(new BreakendVariantQueryExecutor(
