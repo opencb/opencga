@@ -39,6 +39,10 @@ public class AnalystToAnalystsMigration extends MigrationTool {
                     }
 
                     if (analyst != null) {
+                        // Remove deprecated fields
+                        analyst.remove("assignedBy");
+                        analyst.remove("date");
+                        analyst.put("signer", false);
                         updateDocument.getSet().put("analysts", Collections.singletonList(analyst));
                     } else {
                         updateDocument.getSet().put("analysts", Collections.emptyList());
