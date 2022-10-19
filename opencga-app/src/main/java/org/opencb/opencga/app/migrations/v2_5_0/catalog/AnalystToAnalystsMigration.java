@@ -43,6 +43,7 @@ public class AnalystToAnalystsMigration extends MigrationTool {
                         analyst.remove("assignedBy");
                         analyst.remove("date");
                         analyst.put("signer", false);
+                        analyst.put("signature", "");
                         updateDocument.getSet().put("analysts", Collections.singletonList(analyst));
                     } else {
                         updateDocument.getSet().put("analysts", Collections.emptyList());
