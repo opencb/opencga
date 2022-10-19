@@ -131,6 +131,7 @@ public final class Enums {
         INDEX,
         CHANGE_PERMISSION,
         REVERT,
+        TOP,
 
         LOGIN,
         REFRESH_TOKEN,
