@@ -18,6 +18,8 @@ package org.opencb.opencga.analysis.family.qc;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.AnalysisUtils;
+import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
@@ -31,8 +33,11 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.FamilyQcAnalysisExecutor;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_FAMILIES;
 
@@ -49,6 +54,7 @@ public class FamilyQcAnalysis extends OpenCgaTool {
     private String familyId;
     private String relatednessMethod;
     private String relatednessMaf;
+    private Map<String, Map<String, Float>> relatednessThresholds;
 
     private Family family;
 
@@ -87,6 +93,9 @@ public class FamilyQcAnalysis extends OpenCgaTool {
         if (StringUtils.isEmpty(relatednessMaf)) {
             relatednessMaf = RelatednessAnalysis.MAF_DEFAULT_VALUE;
         }
+
+        Path thresholdsPath = getOpencgaHome().resolve("analysis").resolve(FamilyQcAnalysis.ID).resolve("relatedness_thresholds.csv");
+        relatednessThresholds = AnalysisUtils.parseRelatednessThresholds(thresholdsPath);
     }
 
     @Override
@@ -110,6 +119,7 @@ public class FamilyQcAnalysis extends OpenCgaTool {
                 .setFamily(family)
                 .setRelatednessMethod(relatednessMethod)
                 .setRelatednessMaf(relatednessMaf)
+                .setRelatednessThresholds(relatednessThresholds)
                 .setQualityControl(qualityControl);
 
         // Step by step

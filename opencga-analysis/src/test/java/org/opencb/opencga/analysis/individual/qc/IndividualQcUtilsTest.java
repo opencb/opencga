@@ -42,7 +42,7 @@ public class IndividualQcUtilsTest {
 
         URI resourceUri = getResourceUri("ibd.genome");
         File file = Paths.get(resourceUri.getPath()).toFile();
-        List<RelatednessScore> relatednessReport = IBDComputation.parseRelatednessScores(file);
+        List<RelatednessScore> relatednessReport = IBDComputation.parseRelatednessScores(file, null, null);
 
         System.out.println(JacksonUtils.getDefaultNonNullObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(relatednessReport));
     }

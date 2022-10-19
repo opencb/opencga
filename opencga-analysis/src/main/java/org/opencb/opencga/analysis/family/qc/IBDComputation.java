@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.analysis.family.qc;
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.math3.ode.nonstiff.RungeKuttaFieldIntegrator;
 import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.biodata.models.clinical.qc.RelatednessScore;
@@ -24,17 +27,20 @@ import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysisExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.family.Family;
 
 import java.io.*;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class IBDComputation {
 
     private static final String BASENAME = "variants";
 
-    public static RelatednessReport compute(String study, List<String> samples, String maf, Path outDir,
-                                            VariantStorageManager storageManager, String token) throws ToolException {
+    public static RelatednessReport compute(String study, Family family, List<String> samples, String maf,
+                                            Map<String, Map<String, Float>> thresholds, Path outDir, VariantStorageManager storageManager,
+                                            String token) throws ToolException {
         // Select markers
         IndividualQcUtils.selectMarkers(BASENAME, study, samples, maf, outDir, storageManager, token);
 
@@ -48,7 +54,7 @@ public class IBDComputation {
         RelatednessReport relatedness = new RelatednessReport()
                 .setMethod("PLINK/IBD")
                 .setMaf(maf)
-                .setScores(parseRelatednessScores(outFile));
+                .setScores(parseRelatednessScores(outFile, family, thresholds));
 
         return relatedness;
     }
@@ -118,7 +124,8 @@ public class IBDComputation {
         }
     }
 
-    public static List<RelatednessScore> parseRelatednessScores(File file) throws ToolException {
+    public static List<RelatednessScore> parseRelatednessScores(File file, Family family, Map<String, Map<String, Float>> thresholds)
+            throws ToolException {
         List<RelatednessScore> scores = new ArrayList<>();
 
         String line;
@@ -138,10 +145,46 @@ public class IBDComputation {
                 score.setSampleId1(splits[1]);
                 score.setSampleId2(splits[3]);
 
-                score.setReportedRelationship(getReportedRelationshipDescription(splits[4]));
-                score.setInferredRelationship(inferredRelationship(splits[6], splits[7], splits[8], splits[9], splits[4]));
+                // Get reported relationship
+                Family.FamiliarRelationship reportedRelationship = Family.FamiliarRelationship.UNKNOWN;
+                if (family != null && MapUtils.isNotEmpty(family.getRoles()) && family.getRoles().containsKey(score.getSampleId1())) {
+                    if (family.getRoles().get(score.getSampleId1()).containsKey(score.getSampleId2())) {
+                        reportedRelationship = family.getRoles().get(score.getSampleId1()).get(score.getSampleId2());
+                    }
+                }
+                score.setReportedRelationship(reportedRelationship.name());
+
+                // Get inferred relationships and validation
+                String validation = null;
+                List<Family.FamiliarRelationship> inferredRelationships = inferredRelationship(splits[6], splits[7], splits[8], splits[9],
+                        thresholds);
+                // Inferred relationship list has always a minimum size of 1
+                if (inferredRelationships.size() == 1
+                        && ((inferredRelationships.get(0) == Family.FamiliarRelationship.UNKNOWN) ||
+                        (inferredRelationships.get(0) == Family.FamiliarRelationship.OTHER))) {
+                    score.setInferredRelationship(inferredRelationships.get(0).name());
+                    validation = "UNKNOWN";
+                } else {
+                    score.setInferredRelationship(StringUtils.join(inferredRelationships, ", "));
+                    if (reportedRelationship == Family.FamiliarRelationship.UNKNOWN
+                            || reportedRelationship == Family.FamiliarRelationship.OTHER) {
+                        validation = "UNKNOWN";
+                    } else {
+                        for (Family.FamiliarRelationship inferredRelationship : inferredRelationships) {
+                            if (inferredRelationship == reportedRelationship) {
+                                validation = "PASS";
+                                break;
+                            }
+                        }
+                        if (validation == null) {
+                            validation = "FAIL";
+                        }
+                    }
+                }
+                score.setValidation(validation);
 
                 Map<String, Object> values = new LinkedHashMap<>();
+                values.put("RT", splits[4]);
                 values.put("ez", splits[5]);
                 values.put("z0", splits[6]);
                 values.put("z1", splits[7]);
@@ -160,95 +203,54 @@ public class IBDComputation {
         return scores;
     }
 
-    public static String inferredRelationship(String z0, String z1, String z2, String piHat, String reportedRelationship) {
-        String result = "unknown";
-
+    public static List<Family.FamiliarRelationship> inferredRelationship(String z0, String z1, String z2, String piHat,
+                                                                         Map<String, Map<String, Float>> thresholds) {
         float z0Score;
         float z1Score;
         float z2Score;
         float piHatScore;
 
         // Sanity check
+        if (MapUtils.isEmpty(thresholds)) {
+            return Collections.singletonList(Family.FamiliarRelationship.UNKNOWN);
+        }
+
         try {
             z0Score = Float.parseFloat(z0);
         } catch (NumberFormatException e) {
-            return result;
+            return Collections.singletonList(Family.FamiliarRelationship.UNKNOWN);
         }
         try {
             z1Score = Float.parseFloat(z1);
         } catch (NumberFormatException e) {
-            return result;
+            return Collections.singletonList(Family.FamiliarRelationship.UNKNOWN);
         }
         try {
             z2Score = Float.parseFloat(z2);
         } catch (NumberFormatException e) {
-            return result;
+            return Collections.singletonList(Family.FamiliarRelationship.UNKNOWN);
         }
         try {
             piHatScore = Float.parseFloat(piHat);
         } catch (NumberFormatException e) {
-            return result;
+            return Collections.singletonList(Family.FamiliarRelationship.UNKNOWN);
         }
 
-        //              z0	   z1    z2    PiHat
-        // Identical	0	   0	 1     1
-        if (z0Score <= 0.1f && z1Score <= 0.1f && z2Score >= 0.9f && piHatScore >= 0.9) {
-            return "identical twins";
-        }
-
-        //              z0	   z1    z2    PiHat
-        // Parent	    0	   1	 0     0.5
-        if (z0Score <= 0.1f && z1Score >= 0.9f && z2Score <= 0.1f && piHatScore >= 0.4f && piHatScore <= 0.6f) {
-            return "parent-offspring";
-        }
-
-        //              z0	   z1    z2    PiHat
-        // Sibling	    0.25   0.5   0.25  0.5
-        if (z0Score >= 0.15f && z0Score <= 0.35f
-                && z1Score >= 0.4f && z1Score <= 0.6f
-                && z2Score >= 0.15f && z2Score <= 0.35f
-                && piHatScore >= 0.4f && piHatScore <= 0.6f) {
-            return "full siblings";
-        }
-
-        //              z0	   z1    z2    PiHat
-        // Grandparent	0.5    0.5   0     0.25
-        // Half sibling	0.5    0.5   0     0.25
-        if (z0Score >= 0.4f && z0Score <= 0.6f
-                && z1Score >= 0.4f && z1Score <= 0.6f
-                && z2Score <= 0.1f
-                && piHatScore >= 0.15f && piHatScore <= 0.35f) {
-            if (reportedRelationship.equals("HS")) {
-                return "half siblings";
-            } else {
-                return "grandparent";
+        List<Family.FamiliarRelationship> result = new ArrayList<>();
+        for (Map.Entry<String, Map<String, Float>> entry : thresholds.entrySet()) {
+            Map<String, Float> scores = entry.getValue();
+            if (z0Score >= scores.get("minZ0") && z0Score <= scores.get("maxZ0")
+                    && z1Score >= scores.get("minZ1") && z1Score <= scores.get("maxZ1")
+                    && z2Score >= scores.get("minZ2") && z2Score <= scores.get("maxZ2")
+                    && piHatScore >= scores.get("minPiHat") && piHatScore <= scores.get("maxPiHat")) {
+                try {
+                    result.add(Family.FamiliarRelationship.valueOf(entry.getKey()));
+                } catch (Exception e) {
+                    // Skip
+                }
             }
         }
 
-        //              z0	   z1    z2    PiHat
-        // Cousins	    0.75   0.25	 0	   0.15
-        if (z0Score >= 0.65f && z0Score <= 0.85f
-                && z1Score >= 0.15f && z1Score <= 0.35f
-                && z2Score <= 0.1f
-                && piHatScore >= 0.05f && piHatScore <= 0.25f) {
-            return "cousins";
-        }
-
-        return result;
-    }
-
-    public static String getReportedRelationshipDescription(String value) {
-        switch (value) {
-            case "FS":
-                return "full siblings";
-            case "HS":
-                return "half siblings";
-            case "PO":
-                return "parent-offspring";
-            case "OT":
-                return "other";
-            default:
-                return value;
-        }
+        return CollectionUtils.isEmpty(result) ? Collections.singletonList(Family.FamiliarRelationship.UNKNOWN) : result;
     }
 }

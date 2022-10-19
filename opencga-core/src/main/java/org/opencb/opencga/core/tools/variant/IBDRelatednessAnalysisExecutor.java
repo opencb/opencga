@@ -20,12 +20,15 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 import java.util.List;
+import java.util.Map;
 
 public abstract class IBDRelatednessAnalysisExecutor extends OpenCgaToolExecutor {
 
     private String studyId;
     private List<String> sampleIds;
     private String minorAlleleFreq;
+    private Map<String, Map<String, Float>> thresholds;
+
 
     public IBDRelatednessAnalysisExecutor() {
     }
@@ -54,6 +57,15 @@ public abstract class IBDRelatednessAnalysisExecutor extends OpenCgaToolExecutor
 
     public IBDRelatednessAnalysisExecutor setMinorAlleleFreq(String minorAlleleFreq) {
         this.minorAlleleFreq = minorAlleleFreq;
+        return this;
+    }
+
+    public Map<String, Map<String, Float>> getThresholds() {
+        return thresholds;
+    }
+
+    public IBDRelatednessAnalysisExecutor setThresholds(Map<String, Map<String, Float>> thresholds) {
+        this.thresholds = thresholds;
         return this;
     }
 }
