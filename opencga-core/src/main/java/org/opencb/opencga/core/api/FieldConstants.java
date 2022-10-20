@@ -187,8 +187,13 @@ public class FieldConstants {
     //ClinicalReport
     public static final String CLINICAL_REPORT_TITLE = "Report title.";
     public static final String CLINICAL_REPORT_OVERVIEW = "Report overview.";
+    public static final String CLINICAL_REPORT_METHODOLOGY = "Report methodology.";
+    public static final String CLINICAL_REPORT_RESULT = "Report result.";
     public static final String CLINICAL_REPORT_DISCUSSION = "Report discussion.";
     public static final String CLINICAL_REPORT_LOGO = "Report logo.";
+    public static final String CLINICAL_REPORT_NOTES = "Report notes.";
+    public static final String CLINICAL_REPORT_DISCLAIMER = "Report disclaimer.";
+    public static final String CLINICAL_REPORT_ANNEXES = "Report annexes.";
     public static final String CLINICAL_REPORT_SIGNED_BY = "Indicates who has signed the report.";
     public static final String CLINICAL_REPORT_SIGNATURE = "Report signature.";
     public static final String CLINICAL_REPORT_DATE = "Report date.";

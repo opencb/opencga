@@ -48,7 +48,7 @@ public class ClinicalAnalysisUpdateParams {
 
     private Boolean locked;
     private List<ClinicalAnalystParam> analysts;
-    private ClinicalReport report;
+    private ClinicalReportUpdateParams report;
 
     private ClinicalAnalysisQualityControlUpdateParam qualityControl;
 
@@ -70,7 +70,7 @@ public class ClinicalAnalysisUpdateParams {
     public ClinicalAnalysisUpdateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                         List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
                                         List<PanelReferenceParam> panels, Boolean panelLock, Boolean locked,
-                                        List<ClinicalAnalystParam> analysts, ClinicalReport report,
+                                        List<ClinicalAnalystParam> analysts, ClinicalReportUpdateParams report,
                                         ClinicalAnalysisQualityControlUpdateParam qualityControl, ClinicalConsentAnnotationParam consent,
                                         String creationDate, String modificationDate, String dueDate, List<ClinicalCommentParam> comments,
                                         PriorityParam priority, List<FlagValueParam> flags, Map<String, Object> attributes,
@@ -118,7 +118,7 @@ public class ClinicalAnalysisUpdateParams {
                 analysts != null
                         ? analysts.stream().map(ClinicalAnalystParam::toClinicalAnalyst).collect(Collectors.toList())
                         : null,
-                report,
+                report != null ? report.toClinicalReport() : null,
                 priority != null ? priority.toClinicalPriorityAnnotation() : null,
                 flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null, creationDate, modificationDate, dueDate,
                 1,
@@ -344,11 +344,11 @@ public class ClinicalAnalysisUpdateParams {
         return this;
     }
 
-    public ClinicalReport getReport() {
+    public ClinicalReportUpdateParams getReport() {
         return report;
     }
 
-    public ClinicalAnalysisUpdateParams setReport(ClinicalReport report) {
+    public ClinicalAnalysisUpdateParams setReport(ClinicalReportUpdateParams report) {
         this.report = report;
         return this;
     }

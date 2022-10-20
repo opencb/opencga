@@ -23,10 +23,7 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -56,6 +53,7 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
         validateProbandToUpdate(document);
         validatePanelsToUpdate(document);
         validateFilesToUpdate(document);
+        validateReportToUpdate(document);
     }
 
     public void validateInterpretationToUpdate(Document document) {
@@ -142,6 +140,19 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
     public void validateFilesToUpdate(Document document) {
         List<Document> files = (List) document.get(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key());
         if (files != null) {
+            List<File> uniqueListOfFiles = getUniqueListOfFiles(files);
+
+            document.put(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(),
+                    uniqueListOfFiles.stream()
+                            .map(file -> new Document()
+                                    .append(FileDBAdaptor.QueryParams.PATH.key(), file.getPath())
+                                    .append(FileDBAdaptor.QueryParams.UID.key(), file.getUid()))
+                            .collect(Collectors.toList()));
+        }
+    }
+
+    private List<File> getUniqueListOfFiles(List<Document> files) {
+        if (files != null) {
             // We make sure we don't store duplicates
             Map<Long, File> fileMap = new HashMap<>();
             for (Document file : files) {
@@ -154,12 +165,9 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
                 }
             }
 
-            document.put(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(),
-                    fileMap.entrySet().stream()
-                            .map(entry -> new Document()
-                                    .append(FileDBAdaptor.QueryParams.PATH.key(), entry.getValue().getPath())
-                                    .append(FileDBAdaptor.QueryParams.UID.key(), entry.getValue().getUid()))
-                            .collect(Collectors.toList()));
+            return new ArrayList<>(fileMap.values());
+        } else {
+            return Collections.emptyList();
         }
     }
 
@@ -217,6 +225,23 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
                 .append(FamilyDBAdaptor.QueryParams.VERSION.key(), family.getInteger(FamilyDBAdaptor.QueryParams.VERSION.key()))
                 .append(FamilyDBAdaptor.QueryParams.MEMBERS.key(), family.get(FamilyDBAdaptor.QueryParams.MEMBERS.key()))
         );
+    }
+
+    public void validateReportToUpdate(Document document) {
+        Document report = document.get(ClinicalAnalysisDBAdaptor.QueryParams.REPORT.key(), Document.class);
+        if (report != null) {
+            String annexesKey = ClinicalAnalysisDBAdaptor.QueryParams.REPORT_ANNEXES.key()
+                    .replace(ClinicalAnalysisDBAdaptor.QueryParams.REPORT.key() + ".", "");
+            List<Document> files = report.getList(annexesKey, Document.class);
+
+            List<File> uniqueListOfFiles = getUniqueListOfFiles(files);
+
+            report.put(annexesKey, uniqueListOfFiles.stream()
+                    .map(file -> new Document()
+                            .append(FileDBAdaptor.QueryParams.PATH.key(), file.getPath())
+                            .append(FileDBAdaptor.QueryParams.UID.key(), file.getUid()))
+                    .collect(Collectors.toList()));
+        }
     }
 
 }

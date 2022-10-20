@@ -4,10 +4,12 @@ import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileReferenceParam;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
-public class ClinicalReport {
+public class ClinicalReportUpdateParams {
 
     @DataField(id = "title", indexed = true, description = FieldConstants.CLINICAL_REPORT_TITLE)
     private String title;
@@ -34,13 +36,13 @@ public class ClinicalReport {
     private String disclaimer;
 
     @DataField(id = "annexes", since = "2.5.0", description = FieldConstants.CLINICAL_REPORT_ANNEXES)
-    private List<File> annexes;
+    private List<FileReferenceParam> annexes;
 
-    public ClinicalReport() {
+    public ClinicalReportUpdateParams() {
     }
 
-    public ClinicalReport(String title, String overview, String methodology, String result, ClinicalDiscussion discussion, String logo,
-                          String notes, String disclaimer, List<File> annexes) {
+    public ClinicalReportUpdateParams(String title, String overview, String methodology, String result, ClinicalDiscussion discussion,
+                                      String logo, String notes, String disclaimer, List<FileReferenceParam> annexes) {
         this.title = title;
         this.overview = overview;
         this.methodology = methodology;
@@ -52,9 +54,16 @@ public class ClinicalReport {
         this.annexes = annexes;
     }
 
+    public ClinicalReport toClinicalReport() {
+        List<File> fileAnnexes = annexes != null
+                ? annexes.stream().map(FileReferenceParam::toFile).collect(Collectors.toList())
+                : null;
+        return new ClinicalReport(title, overview, methodology, result, discussion, logo, notes, disclaimer, fileAnnexes);
+    }
+
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("ClinicalReport{");
+        final StringBuilder sb = new StringBuilder("ClinicalReportUpdateParams{");
         sb.append("title='").append(title).append('\'');
         sb.append(", overview='").append(overview).append('\'');
         sb.append(", methodology='").append(methodology).append('\'');
@@ -63,7 +72,7 @@ public class ClinicalReport {
         sb.append(", logo='").append(logo).append('\'');
         sb.append(", notes='").append(notes).append('\'');
         sb.append(", disclaimer='").append(disclaimer).append('\'');
-        sb.append(", annexes='").append(annexes).append('\'');
+        sb.append(", annexes=").append(annexes);
         sb.append('}');
         return sb.toString();
     }
@@ -72,7 +81,7 @@ public class ClinicalReport {
         return title;
     }
 
-    public ClinicalReport setTitle(String title) {
+    public ClinicalReportUpdateParams setTitle(String title) {
         this.title = title;
         return this;
     }
@@ -81,7 +90,7 @@ public class ClinicalReport {
         return overview;
     }
 
-    public ClinicalReport setOverview(String overview) {
+    public ClinicalReportUpdateParams setOverview(String overview) {
         this.overview = overview;
         return this;
     }
@@ -90,7 +99,7 @@ public class ClinicalReport {
         return methodology;
     }
 
-    public ClinicalReport setMethodology(String methodology) {
+    public ClinicalReportUpdateParams setMethodology(String methodology) {
         this.methodology = methodology;
         return this;
     }
@@ -99,7 +108,7 @@ public class ClinicalReport {
         return result;
     }
 
-    public ClinicalReport setResult(String result) {
+    public ClinicalReportUpdateParams setResult(String result) {
         this.result = result;
         return this;
     }
@@ -108,7 +117,7 @@ public class ClinicalReport {
         return discussion;
     }
 
-    public ClinicalReport setDiscussion(ClinicalDiscussion discussion) {
+    public ClinicalReportUpdateParams setDiscussion(ClinicalDiscussion discussion) {
         this.discussion = discussion;
         return this;
     }
@@ -117,7 +126,7 @@ public class ClinicalReport {
         return logo;
     }
 
-    public ClinicalReport setLogo(String logo) {
+    public ClinicalReportUpdateParams setLogo(String logo) {
         this.logo = logo;
         return this;
     }
@@ -126,7 +135,7 @@ public class ClinicalReport {
         return notes;
     }
 
-    public ClinicalReport setNotes(String notes) {
+    public ClinicalReportUpdateParams setNotes(String notes) {
         this.notes = notes;
         return this;
     }
@@ -135,16 +144,16 @@ public class ClinicalReport {
         return disclaimer;
     }
 
-    public ClinicalReport setDisclaimer(String disclaimer) {
+    public ClinicalReportUpdateParams setDisclaimer(String disclaimer) {
         this.disclaimer = disclaimer;
         return this;
     }
 
-    public List<File> getAnnexes() {
+    public List<FileReferenceParam> getAnnexes() {
         return annexes;
     }
 
-    public ClinicalReport setAnnexes(List<File> annexes) {
+    public ClinicalReportUpdateParams setAnnexes(List<FileReferenceParam> annexes) {
         this.annexes = annexes;
         return this;
     }

@@ -533,6 +533,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             validateCustomFlagParameters(clinicalAnalysis, clinicalConfiguration);
             validateCustomConsentParameters(clinicalAnalysis, clinicalConfiguration);
             validateStatusParameter(clinicalAnalysis, clinicalConfiguration);
+            if (clinicalAnalysis.getReport() == null || CollectionUtils.isEmpty(clinicalAnalysis.getReport().getAnnexes())) {
+                List<String> fileIds = clinicalAnalysis.getReport().getAnnexes().stream().map(File::getId).collect(Collectors.toList());
+                List<File> files = validateFilesFromReport(study, fileIds, userId);
+                clinicalAnalysis.getReport().setAnnexes(files);
+            }
 
             if (StringUtils.isNotEmpty(clinicalAnalysis.getStatus().getId())) {
                 List<ClinicalStatusValue> clinicalStatusValues = clinicalConfiguration.getStatus().get(clinicalAnalysis.getType());
@@ -588,6 +593,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
+    }
+
+    private List<File> validateFilesFromReport(Study study, List<String> fileIds, String user) throws CatalogException {
+        return catalogManager.getFileManager().internalGet(study.getUid(), fileIds, FileManager.INCLUDE_FILE_IDS, user, false).getResults();
     }
 
     private void validateStatusParameter(ClinicalAnalysis clinicalAnalysis, ClinicalAnalysisStudyConfiguration clinicalConfiguration)
@@ -1267,6 +1276,13 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 }
             }
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.QUALITY_CONTROL.key(), qualityControl);
+        }
+
+        if (updateParams.getReport() != null && CollectionUtils.isNotEmpty(updateParams.getReport().getAnnexes())) {
+            List<String> fileIds = updateParams.getReport().getAnnexes().stream().map(FileReferenceParam::getId)
+                    .collect(Collectors.toList());
+            List<File> files = validateFilesFromReport(study, fileIds, userId);
+            parameters.putNested(ClinicalAnalysisDBAdaptor.QueryParams.REPORT_ANNEXES.key(), files, false);
         }
 
         if (updateParams.getFiles() != null && !updateParams.getFiles().isEmpty()) {
