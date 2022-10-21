@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
+import org.apache.hadoop.hbase.TableName;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -8,7 +9,6 @@ import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
@@ -36,21 +36,16 @@ public class SampleIndexDuplicatedVariantsTest extends VariantStorageBaseTest im
 
     private VariantHadoopDBAdaptor dbAdaptor;
     private SampleIndexDBAdaptor sampleIndexDBAdaptor;
-    private static boolean loaded = false;
 
     @Before
     public void before() throws Exception {
+        clearDB(DB_NAME);
         dbAdaptor = getVariantStorageEngine().getDBAdaptor();
         sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
-        if (!loaded) {
-            load();
-            loaded = true;
-        }
     }
 
-    public void load() throws Exception {
-        clearDB(DB_NAME);
-        StudyMetadata.SampleIndexConfigurationVersioned versioned;
+    @Test
+    public void test2FilesSampleIndex() throws Exception {
         HadoopVariantStorageEngine engine = getVariantStorageEngine();
 
         // Study 1 - single file
@@ -59,26 +54,77 @@ public class SampleIndexDuplicatedVariantsTest extends VariantStorageBaseTest im
                 .append(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), true)
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
-        runETL(engine, getResourceUri("s1_2.vcf"), outputUri, params, true, true, true);
-        runETL(engine, getResourceUri("s1.vcf"), outputUri, params, true, true, true);
-
+        runETL(engine, getResourceUri("duplicated/s1.vcf"), outputUri, params, true, true, true);
+        runETL(engine, getResourceUri("duplicated/s1_2.vcf"), outputUri, params, true, true, true);
         VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
 
-    }
-
-    @Test
-    public void regenerateSampleIndex() throws Exception {
         SampleIndexOnlyVariantQueryExecutor queryExecutor = new SampleIndexOnlyVariantQueryExecutor(dbAdaptor, sampleIndexDBAdaptor, "", new ObjectMap());
         List<Variant> expectedVariants = new ArrayList<>();
         queryExecutor.iterator(new VariantQuery().sample("s1"), new QueryOptions()).forEachRemaining(expectedVariants::add);
 
-        getVariantStorageEngine().sampleIndex(STUDY_NAME, Arrays.asList("s1"), new ObjectMap(OVERWRITE, true));
+        int studyId = engine.getMetadataManager().getStudyId(STUDY_NAME);
+        String actualSampleIndexTableName = sampleIndexDBAdaptor.getSampleIndexTableNameLatest(studyId);
+        String expectedSampleIndexTableName = actualSampleIndexTableName + "_expected";
+        dbAdaptor.getHBaseManager().act(actualSampleIndexTableName, (table, admin) -> {
+            admin.snapshot(actualSampleIndexTableName + "_SNAPSHOT", TableName.valueOf(actualSampleIndexTableName));
+            admin.cloneSnapshot(actualSampleIndexTableName + "_SNAPSHOT", TableName.valueOf(expectedSampleIndexTableName));
+            admin.deleteSnapshot(actualSampleIndexTableName + "_SNAPSHOT");
+            admin.disableTable(table.getName());
+            admin.deleteTable(table.getName());
+            return null;
+        });
+
+        engine.sampleIndex(STUDY_NAME, Arrays.asList("s1"), new ObjectMap(OVERWRITE, true));
         VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
 
         List<Variant> actualVariants = new ArrayList<>();
         queryExecutor.iterator(new VariantQuery().sample("s1"), new QueryOptions()).forEachRemaining(actualVariants::add);
 
         Assert.assertEquals(expectedVariants, actualVariants);
+
+        assertEqualTables(dbAdaptor.getConnection(), expectedSampleIndexTableName, actualSampleIndexTableName);
+    }
+
+    @Test
+    public void test3FilesSampleIndex() throws Exception {
+        HadoopVariantStorageEngine engine = getVariantStorageEngine();
+
+        // Study 1 - single file
+        ObjectMap params = new ObjectMap()
+                .append(VariantStorageOptions.STUDY.key(), STUDY_NAME)
+                .append(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), true)
+                .append(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
+        runETL(engine, getResourceUri("duplicated/s1.vcf"), outputUri, params, true, true, true);
+        runETL(engine, getResourceUri("duplicated/s1_2.vcf"), outputUri, params, true, true, true);
+        runETL(engine, getResourceUri("duplicated/s1_3.vcf"), outputUri, params, true, true, true);
+        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
+
+        SampleIndexOnlyVariantQueryExecutor queryExecutor = new SampleIndexOnlyVariantQueryExecutor(dbAdaptor, sampleIndexDBAdaptor, "", new ObjectMap());
+        List<Variant> expectedVariants = new ArrayList<>();
+        queryExecutor.iterator(new VariantQuery().sample("s1"), new QueryOptions()).forEachRemaining(expectedVariants::add);
+
+        int studyId = engine.getMetadataManager().getStudyId(STUDY_NAME);
+        String actualSampleIndexTableName = sampleIndexDBAdaptor.getSampleIndexTableNameLatest(studyId);
+        String expectedSampleIndexTableName = actualSampleIndexTableName + "_expected";
+        dbAdaptor.getHBaseManager().act(actualSampleIndexTableName, (table, admin) -> {
+            admin.snapshot(actualSampleIndexTableName + "_SNAPSHOT", TableName.valueOf(actualSampleIndexTableName));
+            admin.cloneSnapshot(actualSampleIndexTableName + "_SNAPSHOT", TableName.valueOf(expectedSampleIndexTableName));
+            admin.deleteSnapshot(actualSampleIndexTableName + "_SNAPSHOT");
+            admin.disableTable(table.getName());
+            admin.deleteTable(table.getName());
+            return null;
+        });
+
+        engine.sampleIndex(STUDY_NAME, Arrays.asList("s1"), new ObjectMap(OVERWRITE, true));
+        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
+
+        List<Variant> actualVariants = new ArrayList<>();
+        queryExecutor.iterator(new VariantQuery().sample("s1"), new QueryOptions()).forEachRemaining(actualVariants::add);
+
+        Assert.assertEquals(expectedVariants, actualVariants);
+
+        assertEqualTables(dbAdaptor.getConnection(), expectedSampleIndexTableName, actualSampleIndexTableName);
     }
 
 }

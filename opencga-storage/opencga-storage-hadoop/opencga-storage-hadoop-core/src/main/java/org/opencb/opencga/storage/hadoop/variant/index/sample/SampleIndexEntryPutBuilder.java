@@ -237,16 +237,31 @@ public class SampleIndexEntryPutBuilder {
 
         @Override
         public boolean add(SampleVariantIndexEntry variantIndexEntry) {
-            if (lastEntry != null) {
-                // Do not use this.comparator, as we are only interested in variant order.
+            if (lastEntry != null && comparator.compare(lastEntry, variantIndexEntry) >= 0) {
+                // Small out-of-order is expected in duplicated variants.
+                //   The order regarding the comparator will depend not only on the "variant", but
+                //   also on the fileIndex BitBuffer. The input is ensured to come "ordered" by
+                //   variantId, not by any other field.
+                // Ensure that the variants are ordered.
                 if (INTRA_CHROMOSOME_VARIANT_COMPARATOR.compare(lastEntry.getVariant(), variantIndexEntry.getVariant()) > 0) {
-                  throw new IllegalArgumentException("Using unordered input!"
-                          + " Compare " + lastEntry.getVariant() + " and " + variantIndexEntry.getVariant());
+                    // This should never happen
+                    throw new IllegalArgumentException("Using unordered input!"
+                            + " Compare " + lastEntry.getVariant() + " and " + variantIndexEntry.getVariant());
                 }
+                // Insert ordered. Take out values into a Deque to find the position where the entry
+                // should be placed.
+                ArrayDeque<SampleVariantIndexEntry> removedEntries = new ArrayDeque<>(1);
+                do {
+                    // Add first to preserve order
+                    removedEntries.addFirst(entries.removeLast());
+                } while (!entries.isEmpty() && comparator.compare(entries.getLast(), variantIndexEntry) >= 0);
+                entries.add(variantIndexEntry);
+                lastEntry = variantIndexEntry;
+                return entries.addAll(removedEntries);
+            } else {
+                lastEntry = variantIndexEntry;
+                return entries.add(variantIndexEntry);
             }
-            lastEntry = variantIndexEntry;
-
-            return entries.add(variantIndexEntry);
         }
 
         @Override
