@@ -1154,8 +1154,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     protected List<VariantQueryExecutor> initVariantQueryExecutors() throws StorageEngineException {
-        List<VariantQueryExecutor> executors = new ArrayList<>(3);
+        List<VariantQueryExecutor> executors = new ArrayList<>(6);
 
+        executors.add(new NoOpVariantQueryExecutor(
+                getMetadataManager(), getStorageEngineId(), getOptions()));
         executors.add(new CompoundHeterozygousQueryExecutor(
                 getMetadataManager(), getStorageEngineId(), getOptions(), this));
         executors.add(new BreakendVariantQueryExecutor(
