@@ -924,12 +924,16 @@ class RgaUtils {
         }
 
         public int getNumPairedCompHetIds() {
+            int threshold = 250;
             Set<String> chPairs = new HashSet<>();
-            for (Set<String> chSet : transcriptCompHetIdsMap.values()) {
+            for (Map.Entry<String, Set<String>> entry : transcriptCompHetIdsMap.entrySet()) {
+                Set<String> chSet = entry.getValue();
                 if (chSet.size() > 1) {
-                    if (chSet.size() > 150) {
-                        // Don't calculate this if the number of possible pairs is bigger than 1000
-                        return -1000;
+                    if (chSet.size() > threshold) {
+                        logger.warn("Showing a -1000 value for the numPairedCompHet stats. More than {} COMP_HET variants found in"
+                                + " transcript {}", threshold, entry.getKey());
+                        // Don't calculate this if the number of possible pairs is too big
+                        return -1;
                     }
                     ArrayList<String> chList = new ArrayList<>(chSet);
                     for (int i = 0; i < chList.size() - 1; i++) {
