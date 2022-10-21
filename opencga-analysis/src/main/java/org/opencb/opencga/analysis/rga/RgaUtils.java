@@ -924,7 +924,7 @@ class RgaUtils {
         }
 
         public int getNumPairedCompHetIds() {
-            int threshold = 150;
+            int threshold = 250;
             Set<String> chPairs = new HashSet<>();
             for (Map.Entry<String, Set<String>> entry : transcriptCompHetIdsMap.entrySet()) {
                 Set<String> chSet = entry.getValue();
