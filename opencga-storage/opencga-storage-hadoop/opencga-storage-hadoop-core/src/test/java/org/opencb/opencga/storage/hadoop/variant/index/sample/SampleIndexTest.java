@@ -4,11 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Assert;
@@ -314,34 +310,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
             VariantHbaseTestUtils.printSampleIndexTable(dbAdaptor, Paths.get(newOutputUri()), studyId, copy);
             VariantHbaseTestUtils.printSampleIndexTable2(dbAdaptor, Paths.get(newOutputUri()), studyId, copy);
 
-            ResultScanner origScanner = c.getTable(TableName.valueOf(orig)).getScanner(new Scan());
-            ResultScanner copyScanner = c.getTable(TableName.valueOf(copy)).getScanner(new Scan());
-            while (true) {
-                Result origValue = origScanner.next();
-                Result copyValue = copyScanner.next();
-                if (origValue == null) {
-                    assertNull(copyValue);
-                    break;
-                }
-                NavigableMap<byte[], byte[]> origFamily = origValue.getFamilyMap(GenomeHelper.COLUMN_FAMILY_BYTES);
-                NavigableMap<byte[], byte[]> copyFamily = copyValue.getFamilyMap(GenomeHelper.COLUMN_FAMILY_BYTES);
-
-                String row = SampleIndexSchema.rowKeyToString(origValue.getRow());
-                assertEquals(row, origFamily.keySet().stream().map(Bytes::toString).collect(toList()), copyFamily.keySet().stream().map(Bytes::toString).collect(toList()));
-                assertEquals(row, origFamily.size(), copyFamily.size());
-
-                for (byte[] key : origFamily.keySet()) {
-                    byte[] expecteds = origFamily.get(key);
-                    byte[] actuals = copyFamily.get(key);
-                    try {
-                        assertArrayEquals(row + " " + Bytes.toString(key), expecteds, actuals);
-                    } catch (AssertionError error) {
-                        System.out.println("Expected " + IndexUtils.bytesToString(expecteds));
-                        System.out.println("actuals " + IndexUtils.bytesToString(actuals));
-                        throw error;
-                    }
-                }
-            }
+            assertEqualTables(c, orig, copy);
         }
 
 
