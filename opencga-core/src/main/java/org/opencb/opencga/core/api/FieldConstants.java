@@ -121,8 +121,8 @@ public class FieldConstants {
             + "ALIVE, ABORTED, DECEASED, UNBORN, STILLBORN, MISCARRIAGE, UNKNOWN.";
     public static final String INDIVIDUAL_DISORDERS = "List of the individual disorders.";
     public static final String INDIVIDUAL_SAMPLES = "List of the individual samples.";
-    public static final String INDIVIDUAL_PARENTAL_CONSANGUINITY = "Indicates the parental consanguinity is "
-            + "true or false.";
+    public static final String INDIVIDUAL_PARENTAL_CONSANGUINITY = "Indicates whether the parental consanguinity is true or false.";
+    public static final String INDIVIDUAL_IDENTIFIERS = "Individual identifiers.";
 
     //Family
     public static final String FAMILY_ID_DESCRIPTION = "Family is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment.";

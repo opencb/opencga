@@ -24,6 +24,7 @@ import org.opencb.biodata.models.core.OntologyTermAnnotation;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.models.clinical.ClinicalIdentifier;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -59,6 +60,7 @@ public class IndividualUpdateParams {
     private List<Disorder> disorders;
     private StatusParams status;
     private IndividualQualityControl qualityControl;
+    private List<ClinicalIdentifier> identifiers;
     private Map<String, Object> attributes;
 
     public IndividualUpdateParams() {
@@ -70,7 +72,8 @@ public class IndividualUpdateParams {
                                   String dateOfBirth, IndividualProperty.KaryotypicSex karyotypicSex,
                                   IndividualProperty.LifeStatus lifeStatus, List<SampleReferenceParam> samples,
                                   List<AnnotationSet> annotationSets, List<Phenotype> phenotypes, List<Disorder> disorders,
-                                  StatusParams status, IndividualQualityControl qualityControl, Map<String, Object> attributes) {
+                                  StatusParams status, IndividualQualityControl qualityControl, List<ClinicalIdentifier> identifiers,
+                                  Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.father = father;
@@ -91,6 +94,7 @@ public class IndividualUpdateParams {
         this.disorders = disorders;
         this.status = status;
         this.qualityControl = qualityControl;
+        this.identifiers = identifiers;
         this.attributes = attributes;
     }
 
@@ -120,7 +124,7 @@ public class IndividualUpdateParams {
                 samples != null
                         ? samples.stream().map(s -> new Sample().setId(s.getId()).setUuid(s.getUuid())).collect(Collectors.toList())
                         : null, parentalConsanguinity != null && parentalConsanguinity, annotationSets,
-                status != null ? status.toStatus() : null, new IndividualInternal(), attributes);
+                status != null ? status.toStatus() : null, identifiers, new IndividualInternal(), attributes);
     }
 
     @Override
@@ -135,7 +139,7 @@ public class IndividualUpdateParams {
         sb.append(", parentalConsanguinity=").append(parentalConsanguinity);
         sb.append(", location=").append(location);
         sb.append(", sex=").append(sex);
-        sb.append(", ethnicity='").append(ethnicity).append('\'');
+        sb.append(", ethnicity=").append(ethnicity);
         sb.append(", population=").append(population);
         sb.append(", dateOfBirth='").append(dateOfBirth).append('\'');
         sb.append(", karyotypicSex=").append(karyotypicSex);
@@ -146,6 +150,7 @@ public class IndividualUpdateParams {
         sb.append(", disorders=").append(disorders);
         sb.append(", status=").append(status);
         sb.append(", qualityControl=").append(qualityControl);
+        sb.append(", identifiers=").append(identifiers);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -328,6 +333,15 @@ public class IndividualUpdateParams {
 
     public IndividualUpdateParams setQualityControl(IndividualQualityControl qualityControl) {
         this.qualityControl = qualityControl;
+        return this;
+    }
+
+    public List<ClinicalIdentifier> getIdentifiers() {
+        return identifiers;
+    }
+
+    public IndividualUpdateParams setIdentifiers(List<ClinicalIdentifier> identifiers) {
+        this.identifiers = identifiers;
         return this;
     }
 

@@ -75,6 +75,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         DATE_OF_BIRTH("dateOfBirth", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
+        IDENTIFIERS("identifiers", TEXT_ARRAY, ""),
         RELEASE("release", INTEGER, ""), //  Release where the individual was created
         SNAPSHOT("snapshot", INTEGER, ""), // Last version of individual at release = snapshot
         VERSION("version", INTEGER, ""), // Version of the individual

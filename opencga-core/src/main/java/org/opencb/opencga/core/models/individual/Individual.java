@@ -28,6 +28,7 @@ import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.clinical.ClinicalIdentifier;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -164,6 +165,9 @@ public class Individual extends Annotable {
             description = FieldConstants.INDIVIDUAL_PARENTAL_CONSANGUINITY)
     private boolean parentalConsanguinity;
 
+    @DataField(id = "identifiers", since = "2.5.0", description = FieldConstants.INDIVIDUAL_IDENTIFIERS)
+    private List<ClinicalIdentifier> identifiers;
+
     @DataField(id = "status", since = "2.0",
             description = FieldConstants.GENERIC_CUSTOM_STATUS)
 
@@ -193,7 +197,7 @@ public class Individual extends Annotable {
                       IndividualInternal internal, Map<String, Object> attributes) {
         this(id, name, father, mother, Collections.emptyList(), location, null, sex, karyotypicSex, ethnicity, population, dateOfBirth,
                 release, 1, TimeUtils.getTime(), TimeUtils.getTime(), lifeStatus, phenotypeList, disorders, samples,
-                parentalConsanguinity, annotationSets, new Status(), internal, attributes);
+                parentalConsanguinity, annotationSets, new Status(), null, internal, attributes);
     }
 
     public Individual(String id, String name, Individual father, Individual mother, List<String> familyIds, Location location,
@@ -201,7 +205,7 @@ public class Individual extends Annotable {
                       OntologyTermAnnotation ethnicity, IndividualPopulation population, String dateOfBirth, int release, int version,
                       String creationDate, String modificationDate, LifeStatus lifeStatus, List<Phenotype> phenotypes,
                       List<Disorder> disorders, List<Sample> samples, boolean parentalConsanguinity, List<AnnotationSet> annotationSets,
-                      Status status, IndividualInternal internal, Map<String, Object> attributes) {
+                      Status status, List<ClinicalIdentifier> identifiers, IndividualInternal internal, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.father = ObjectUtils.defaultIfNull(father, new Individual());
@@ -225,6 +229,7 @@ public class Individual extends Annotable {
         this.parentalConsanguinity = parentalConsanguinity;
         this.annotationSets = annotationSets;
         this.status = status;
+        this.identifiers = identifiers;
         this.internal = internal;
         this.attributes = ObjectUtils.defaultIfNull(attributes, new HashMap<>());
     }
@@ -242,7 +247,7 @@ public class Individual extends Annotable {
         sb.append(", qualityControl=").append(qualityControl);
         sb.append(", sex=").append(sex);
         sb.append(", karyotypicSex=").append(karyotypicSex);
-        sb.append(", ethnicity='").append(ethnicity).append('\'');
+        sb.append(", ethnicity=").append(ethnicity);
         sb.append(", population=").append(population);
         sb.append(", dateOfBirth='").append(dateOfBirth).append('\'');
         sb.append(", release=").append(release);
@@ -254,7 +259,7 @@ public class Individual extends Annotable {
         sb.append(", disorders=").append(disorders);
         sb.append(", samples=").append(samples);
         sb.append(", parentalConsanguinity=").append(parentalConsanguinity);
-        sb.append(", annotationSets=").append(annotationSets);
+        sb.append(", identifiers=").append(identifiers);
         sb.append(", status=").append(status);
         sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
@@ -529,6 +534,15 @@ public class Individual extends Annotable {
 
     public Individual setStatus(Status status) {
         this.status = status;
+        return this;
+    }
+
+    public List<ClinicalIdentifier> getIdentifiers() {
+        return identifiers;
+    }
+
+    public Individual setIdentifiers(List<ClinicalIdentifier> identifiers) {
+        this.identifiers = identifiers;
         return this;
     }
 

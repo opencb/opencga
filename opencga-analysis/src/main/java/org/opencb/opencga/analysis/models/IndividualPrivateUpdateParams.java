@@ -5,6 +5,7 @@ import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.core.OntologyTermAnnotation;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
+import org.opencb.opencga.core.models.clinical.ClinicalIdentifier;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.individual.*;
@@ -27,9 +28,10 @@ public class IndividualPrivateUpdateParams extends IndividualUpdateParams {
                                          IndividualProperty.LifeStatus lifeStatus, List<SampleReferenceParam> samples,
                                          List<AnnotationSet> annotationSets, List<Phenotype> phenotypes, List<Disorder> disorders,
                                          StatusParams status, IndividualQualityControl qualityControl, Map<String, Object> attributes,
-                                         IndividualInternal internal) {
+                                         List<ClinicalIdentifier> identifiers,  IndividualInternal internal) {
         super(id, name, father, mother, creationDate, modificationDate, parentalConsanguinity, location, sex, ethnicity, population,
-                dateOfBirth, karyotypicSex, lifeStatus, samples, annotationSets, phenotypes, disorders, status, qualityControl, attributes);
+                dateOfBirth, karyotypicSex, lifeStatus, samples, annotationSets, phenotypes, disorders, status, qualityControl, identifiers,
+                attributes);
         this.internal = internal;
     }
 
