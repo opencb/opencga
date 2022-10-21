@@ -533,7 +533,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             validateCustomFlagParameters(clinicalAnalysis, clinicalConfiguration);
             validateCustomConsentParameters(clinicalAnalysis, clinicalConfiguration);
             validateStatusParameter(clinicalAnalysis, clinicalConfiguration);
-            if (clinicalAnalysis.getReport() == null || CollectionUtils.isEmpty(clinicalAnalysis.getReport().getAnnexes())) {
+            if (clinicalAnalysis.getReport() != null && CollectionUtils.isNotEmpty(clinicalAnalysis.getReport().getAnnexes())) {
                 List<String> fileIds = clinicalAnalysis.getReport().getAnnexes().stream().map(File::getId).collect(Collectors.toList());
                 List<File> files = validateFilesFromReport(study, fileIds, userId);
                 clinicalAnalysis.getReport().setAnnexes(files);
