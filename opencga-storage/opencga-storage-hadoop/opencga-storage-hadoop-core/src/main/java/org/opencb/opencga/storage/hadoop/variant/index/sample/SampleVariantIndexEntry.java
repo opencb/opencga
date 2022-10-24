@@ -18,17 +18,19 @@ public class SampleVariantIndexEntry {
     private final BitBuffer fileIndex;
     private final AnnotationIndexEntry annotationIndexEntry;
     private final Integer meCode;
+    private final Byte parentsCode;
 
     public SampleVariantIndexEntry(Variant variant, BitBuffer fileIndex) {
-        this(variant, fileIndex, null, null);
-    }
-
-    public SampleVariantIndexEntry(Variant variant, BitBuffer fileIndex, String genotype, AnnotationIndexEntry annotationIndexEntry) {
-        this(variant, fileIndex, genotype, annotationIndexEntry, null);
+        this(variant, fileIndex, null, null, null);
     }
 
     public SampleVariantIndexEntry(Variant variant, BitBuffer fileIndex, String genotype, AnnotationIndexEntry annotationIndexEntry,
-                                   Integer meCode) {
+                                   Byte parentsCode) {
+        this(variant, fileIndex, genotype, annotationIndexEntry, parentsCode, null);
+    }
+
+    public SampleVariantIndexEntry(Variant variant, BitBuffer fileIndex, String genotype, AnnotationIndexEntry annotationIndexEntry,
+                                   Byte parentsCode, Integer meCode) {
         if (CollectionUtils.isEmpty(variant.getImpl().getStudies())) {
             this.variant = variant;
         } else {
@@ -50,6 +52,7 @@ public class SampleVariantIndexEntry {
         this.genotype = genotype;
         this.annotationIndexEntry = annotationIndexEntry;
         this.meCode = meCode;
+        this.parentsCode = parentsCode;
     }
 
     public Variant getVariant() {
@@ -66,6 +69,10 @@ public class SampleVariantIndexEntry {
 
     public Integer getMeCode() {
         return meCode;
+    }
+
+    public Byte getParentsCode() {
+        return parentsCode;
     }
 
     public AnnotationIndexEntry getAnnotationIndexEntry() {
