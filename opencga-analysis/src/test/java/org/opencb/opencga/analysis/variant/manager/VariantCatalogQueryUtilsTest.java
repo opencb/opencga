@@ -794,17 +794,17 @@ public class VariantCatalogQueryUtilsTest {
     public void testPanels() {
         assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL", "BEX2"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(), myPanel));
-        assertEquals(set("BRCA2", "CTBP2P1", "ADSL"),
+        assertEquals(set("BRCA2"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_ROLE_IN_CANCER.key(), "TUMOR_SUPPRESSOR_GENE"), myPanel));
-        assertEquals(set("BRCA2", "CTBP2P1", "ADSL"),
+        assertEquals(set("BRCA2"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_ROLE_IN_CANCER.key(), "TUMORSUPPRESSORGENE"), myPanel));
-        assertEquals(set("BRCA2", "CTBP2P1", "ADSL"),
+        assertEquals(set("BRCA2"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_ROLE_IN_CANCER.key(), "tumor_suppressor_gene"), myPanel));
-        assertEquals(set("BRCA2", "CTBP2P1", "ADSL"),
+        assertEquals(set("BRCA2"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_ROLE_IN_CANCER.key(), "tumorSuppressorGene"), myPanel));
-        assertEquals(set("CADM1", "CTBP2P1", "ADSL"),
+        assertEquals(set("CADM1"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_ROLE_IN_CANCER.key(), "oncogene"), myPanel));
-        assertEquals(set("BRCA2", "CADM1", "ADSL"),
+        assertEquals(set("CADM1"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_MODE_OF_INHERITANCE.key(), "AUTOSOMAL_RECESSIVE"), myPanel));
     }
 

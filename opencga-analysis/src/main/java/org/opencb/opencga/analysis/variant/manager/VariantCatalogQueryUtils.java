@@ -897,26 +897,22 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 new HashSet<>(getAsEnumList(query, PANEL_ROLE_IN_CANCER, ClinicalProperty.RoleInCancer.class));
 
         for (GenePanel genePanel : panel.getGenes()) {
-            // Do not filter out if undefined
-            if (!panelConfidence.isEmpty()
-                    && genePanel.getConfidence() != null
-                    && !panelConfidence.contains(genePanel.getConfidence())) {
-                // Discard this gene
-                continue;
+            if (!panelConfidence.isEmpty())
+                if (!panelConfidence.contains(genePanel.getConfidence())) {
+                    // Discard this gene
+                    continue;
+                }
+            if (!panelModeOfInheritance.isEmpty()) {
+                if (!panelModeOfInheritance.contains(genePanel.getModeOfInheritance())) {
+                    // Discard this gene
+                    continue;
+                }
             }
-            // Do not filter out if undefined
-            if (!panelModeOfInheritance.isEmpty()
-                    && genePanel.getModeOfInheritance() != null
-                    && !panelModeOfInheritance.contains(genePanel.getModeOfInheritance())) {
-                // Discard this gene
-                continue;
-            }
-            // Do not filter out if undefined
-            if (!panelRoleInCancer.isEmpty()
-                    && genePanel.getCancer() != null && genePanel.getCancer().getRole() != null
-                    && !panelRoleInCancer.contains(genePanel.getCancer().getRole())) {
-                // Discard this gene
-                continue;
+            if (!panelRoleInCancer.isEmpty()) {
+                if (genePanel.getCancer() == null || !panelRoleInCancer.contains(genePanel.getCancer().getRole())) {
+                    // Discard this gene
+                    continue;
+                }
             }
             String gene = genePanel.getName();
             if (StringUtils.isEmpty(gene)) {
