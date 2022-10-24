@@ -52,7 +52,6 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
     public static final String ID = "mutational-signature";
     public static final String DESCRIPTION = "Run mutational signature analysis for a given sample.";
 
-    public final static String GENOME_CONTEXT_FILENAME = "genome_context.txt";
     public final static String SIGNATURE_COEFFS_FILENAME = "exposures.tsv";
     public final static String SIGNATURE_FITTING_FILENAME = "signature_summary.png";
     public final static String CATALOGUES_FILENAME_DEFAULT = "catalogues.tsv";
@@ -226,13 +225,13 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
         Signature result = new Signature(signatureParams.getId(), signatureParams.getDescription(), query, "SNV", null, null, null);
 
         // Context counts
-        File contextFile = dir.resolve(GENOME_CONTEXT_FILENAME).toFile();
+        File contextFile = dir.resolve(CATALOGUES_FILENAME_DEFAULT).toFile();
         if (contextFile.exists()) {
             List<String> lines = FileUtils.readLines(contextFile, Charset.defaultCharset());
             List<Signature.GenomeContextCount> sigCounts = new ArrayList<>(lines.size() - 1);
             for (int i = 1; i < lines.size(); i++) {
                 String[] fields = lines.get(i).split("\t");
-                sigCounts.add(new Signature.GenomeContextCount(fields[2], Math.round(Float.parseFloat((fields[3])))));
+                sigCounts.add(new Signature.GenomeContextCount(fields[0], Math.round(Float.parseFloat((fields[1])))));
             }
             result.setCounts(sigCounts);
         }
