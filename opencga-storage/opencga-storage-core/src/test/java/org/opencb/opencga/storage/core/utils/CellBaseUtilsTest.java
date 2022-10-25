@@ -89,12 +89,24 @@ public class CellBaseUtilsTest {
     }
 
     @Test
+    public void testGet10xDuplicatedGene() {
+        assertNotNull(cellBaseUtils.getGeneRegion(Arrays.asList("5S_rRNA"), false).get(0));
+    }
+
+    @Test
+    public void testGetNamelessGene() {
+        assertNotNull(cellBaseUtils.getGeneRegion(Arrays.asList("ENSG00000266188"), false).get(0));
+    }
+
+    @Test
     public void testGetMissing() {
         List<Region> list = cellBaseUtils.getGeneRegion(Arrays.asList(UNKNOWN_GENE), true);
         assertEquals(0, list.size());
 
 
-        VariantQueryException e = VariantQueryException.geneNotFound(UNKNOWN_GENE);
+        VariantQueryException e = VariantQueryException.geneNotFound(UNKNOWN_GENE,
+                cellBaseClient.getClientConfiguration().getRest().getHosts().get(0),
+                cellBaseClient.getClientConfiguration().getVersion(), cellBaseUtils.getAssembly());
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
         cellBaseUtils.getGeneRegion(Arrays.asList(UNKNOWN_GENE), false);
@@ -112,7 +124,9 @@ public class CellBaseUtilsTest {
     public void convertGeneToRegionFail() {
         Query query = new Query(VariantQueryParam.GENE.key(), "BRCA2," + UNKNOWN_GENE + ",MFRP");
 
-        VariantQueryException e = VariantQueryException.geneNotFound(UNKNOWN_GENE);
+        VariantQueryException e = VariantQueryException.geneNotFound(UNKNOWN_GENE,
+                cellBaseClient.getClientConfiguration().getRest().getHosts().get(0),
+                cellBaseClient.getClientConfiguration().getVersion(), cellBaseUtils.getAssembly());
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
         VariantQueryUtils.convertGenesToRegionsQuery(query, cellBaseUtils);

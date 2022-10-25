@@ -232,10 +232,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @param queryOptions  Query options
      * @throws IOException  If there is any IO error
      * @throws StorageEngineException  If there is any error exporting variants
+     * @return output files, could be different from input
      */
-    public void exportData(URI outputFile, VariantOutputFormat outputFormat, URI variantsFile, Query query, QueryOptions queryOptions)
+    public List<URI> exportData(URI outputFile, VariantOutputFormat outputFormat, URI variantsFile, Query query, QueryOptions queryOptions)
             throws IOException, StorageEngineException {
-        exportData(outputFile, outputFormat, variantsFile, query, queryOptions, null);
+        return exportData(outputFile, outputFormat, variantsFile, query, queryOptions, null);
     }
 
     /**
@@ -249,9 +250,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @param metadataFactory  Metadata factory. Metadata will only be generated if the outputFile is defined.
      * @throws IOException            If there is any IO error
      * @throws StorageEngineException If there is any error exporting variants
+     * @return outputFile could be different from input
      */
-    public void exportData(URI outputFile, VariantOutputFormat outputFormat, URI variantsFile, Query query, QueryOptions queryOptions,
-                           VariantMetadataFactory metadataFactory)
+    public List<URI> exportData(URI outputFile, VariantOutputFormat outputFormat, URI variantsFile, Query query, QueryOptions queryOptions,
+                          VariantMetadataFactory metadataFactory)
             throws IOException, StorageEngineException {
         if (metadataFactory == null) {
             metadataFactory = new VariantMetadataFactory(getMetadataManager());
@@ -263,7 +265,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
         }
         ParsedVariantQuery parsedVariantQuery = parseQuery(query, queryOptions);
-        exporter.export(outputFile, outputFormat, variantsFile, parsedVariantQuery);
+        return exporter.export(outputFile, outputFormat, variantsFile, parsedVariantQuery);
     }
 
     /**
@@ -307,8 +309,23 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public abstract VariantStoragePipeline newStoragePipeline(boolean connected) throws StorageEngineException;
 
     /**
+     * Given a dbName, calculates the annotation for all the variants, and loads them into the database.
+     *
+     * @param outdir    Outdir where to store annotated variants
+     * @param params    Other params
+     * @throws VariantAnnotatorException    If the annotation goes wrong
+     * @throws StorageEngineException       If there is any problem related with the StorageEngine
+     * @return number of annotated variants
+     * @throws IOException                  If there is any IO problem
+     */
+    public long annotate(URI outdir, ObjectMap params) throws VariantAnnotatorException, StorageEngineException, IOException {
+        return annotate(outdir, new Query(), params);
+    }
+
+    /**
      * Given a dbName, calculates the annotation for all the variants that matches with a given query, and loads them into the database.
      *
+     * @param outdir    Outdir where to store annotated variants
      * @param query     Query to select variants to annotate
      * @param params    Other params
      * @throws VariantAnnotatorException    If the annotation goes wrong
@@ -316,9 +333,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @return number of annotated variants
      * @throws IOException                  If there is any IO problem
      */
-    public long annotate(Query query, ObjectMap params) throws VariantAnnotatorException, StorageEngineException, IOException {
+    public long annotate(URI outdir, Query query, ObjectMap params) throws VariantAnnotatorException, StorageEngineException, IOException {
         // Merge with configuration
         ObjectMap options = getMergedOptions(params);
+        options.put(DefaultVariantAnnotationManager.OUT_DIR, outdir.toString());
         VariantAnnotationManager annotationManager = newVariantAnnotationManager(options);
         return annotationManager.annotate(query, options);
     }
@@ -375,10 +393,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 annotationQuery.put(VariantQueryParam.FILE.key(), fileNames);
 
                 ObjectMap annotationOptions = new ObjectMap(options)
-                        .append(DefaultVariantAnnotationManager.OUT_DIR, outdirUri.toString())
                         .append(DefaultVariantAnnotationManager.FILE_NAME, dbName + "." + TimeUtils.getTime());
 
-                annotate(annotationQuery, annotationOptions);
+                annotate(outdirUri, annotationQuery, annotationOptions);
             } catch (RuntimeException | StorageEngineException | VariantAnnotatorException | IOException e) {
                 throw new StoragePipelineException("Error annotating.", e, results);
             }
@@ -647,7 +664,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         VariantSearchManager variantSearchManager = getVariantSearchManager();
         // first, create the collection it it does not exist
         variantSearchManager.create(dbName);
-        if (!configuration.getSearch().isActive() || !variantSearchManager.isAlive(dbName)) {
+        if (!secondaryAnnotationIndexActiveAndAlive(variantSearchManager, dbName)) {
             throw new StorageEngineException("Solr is not alive!");
         }
 
@@ -720,7 +737,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         try {
             variantSearchManager.create(collectionName);
-            if (configuration.getSearch().isActive() && variantSearchManager.isAlive(collectionName)) {
+            if (secondaryAnnotationIndexActiveAndAlive(variantSearchManager, collectionName)) {
                 // then, load variants
                 QueryOptions queryOptions = new QueryOptions();
                 Query query = new Query(VariantQueryParam.STUDY.key(), study)
@@ -744,6 +761,18 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         metadataManager.updateCohortMetadata(studyMetadata.getId(), id,
                 cohortMetadata -> cohortMetadata.setSecondaryIndexStatus(TaskMetadata.Status.READY));
+    }
+
+    public boolean secondaryAnnotationIndexActiveAndAlive() throws StorageEngineException {
+        return secondaryAnnotationIndexActiveAndAlive(getVariantSearchManager(), dbName);
+    }
+
+    public boolean secondaryAnnotationIndexActiveAndAlive(VariantSearchManager variantSearchManager) {
+        return secondaryAnnotationIndexActiveAndAlive(variantSearchManager, dbName);
+    }
+
+    public boolean secondaryAnnotationIndexActiveAndAlive(VariantSearchManager variantSearchManager, String collectionName) {
+        return variantSearchManager != null && configuration.getSearch().isActive() && variantSearchManager.isAlive(collectionName);
     }
 
     public void removeSecondaryIndexSamples(String study, List<String> samples) throws StorageEngineException, VariantSearchException {
@@ -905,7 +934,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyMetadata.getId(), sampleIds)) {
                     metadataManager.updateFileMetadata(studyMetadata.getId(), fileId, f -> {
                         f.getSamples().removeAll(sampleIds);
-                        return f;
                     });
                 }
                 for (Integer sampleId : sampleIds) {
@@ -950,7 +978,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortId,
                             cohort -> {
                                 cohort.getFiles().removeAll(fileIds);
-                                return cohort.setStatsStatus(TaskMetadata.Status.ERROR);
+                                cohort.setStatsStatus(TaskMetadata.Status.ERROR);
                             });
                 }
 
@@ -1114,7 +1142,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return getVariantQueryExecutor(query, options).iterator(query, options);
     }
 
-    protected final List<VariantQueryExecutor> getVariantQueryExecutors() throws StorageEngineException {
+    public final List<VariantQueryExecutor> getVariantQueryExecutors() throws StorageEngineException {
         if (lazyVariantQueryExecutorsList.isEmpty()) {
             synchronized (lazyVariantQueryExecutorsList) {
                 if (lazyVariantQueryExecutorsList.isEmpty()) {
@@ -1126,8 +1154,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     protected List<VariantQueryExecutor> initVariantQueryExecutors() throws StorageEngineException {
-        List<VariantQueryExecutor> executors = new ArrayList<>(3);
+        List<VariantQueryExecutor> executors = new ArrayList<>(6);
 
+        executors.add(new NoOpVariantQueryExecutor(
+                getMetadataManager(), getStorageEngineId(), getOptions()));
         executors.add(new CompoundHeterozygousQueryExecutor(
                 getMetadataManager(), getStorageEngineId(), getOptions(), this));
         executors.add(new BreakendVariantQueryExecutor(

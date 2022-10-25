@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.server.rest.analysis;
 
+import org.opencb.opencga.analysis.alignment.AlignmentCoverageAnalysis;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -103,17 +104,17 @@ public class AlignmentWebService extends AnalysisWebService {
                           @ApiParam(value = REGION_DESCRIPTION) @QueryParam(REGION_PARAM) String regionStr,
                           @ApiParam(value = GENE_DESCRIPTION) @QueryParam(GENE_PARAM) String geneStr,
                           @ApiParam(value = OFFSET_DESCRIPTION) @DefaultValue(OFFSET_DEFAULT) @QueryParam(OFFSET_PARAM) int offset,
-                          @ApiParam(value = ONLY_EXONS_DESCRIPTION) @QueryParam(ONLY_EXONS_PARAM) @DefaultValue("false") Boolean onlyExons,
+                          @ApiParam(value = ONLY_EXONS_DESCRIPTION) @QueryParam(ONLY_EXONS_PARAM) @DefaultValue("false") boolean onlyExons,
                           @ApiParam(value = MINIMUM_MAPPING_QUALITY_DESCRIPTION) @QueryParam(MINIMUM_MAPPING_QUALITY_PARAM) Integer minMappingQuality,
                           @ApiParam(value = MAXIMUM_NUMBER_MISMATCHES_DESCRIPTION) @QueryParam(MAXIMUM_NUMBER_MISMATCHES_PARAM) Integer maxNumMismatches,
                           @ApiParam(value = MAXIMUM_NUMBER_HITS_DESCRIPTION) @QueryParam(MAXIMUM_NUMBER_HITS_PARAM) Integer maxNumHits,
-                          @ApiParam(value = PROPERLY_PAIRED_DESCRIPTION) @QueryParam(PROPERLY_PAIRED_PARAM) @DefaultValue("false") Boolean properlyPaired,
+                          @ApiParam(value = PROPERLY_PAIRED_DESCRIPTION) @QueryParam(PROPERLY_PAIRED_PARAM) @DefaultValue("false") boolean properlyPaired,
                           @ApiParam(value = MAXIMUM_INSERT_SIZE_DESCRIPTION) @QueryParam(MAXIMUM_INSERT_SIZE_PARAM) Integer maxInsertSize,
-                          @ApiParam(value = SKIP_UNMAPPED_DESCRIPTION) @QueryParam(SKIP_UNMAPPED_PARAM) @DefaultValue("false") Boolean unmapped,
-                          @ApiParam(value = SKIP_DUPLICATED_DESCRIPTION) @QueryParam(SKIP_DUPLICATED_PARAM) @DefaultValue("false") Boolean duplicated,
-                          @ApiParam(value = REGION_CONTAINED_DESCRIPTION) @DefaultValue("false") @QueryParam(REGION_CONTAINED_PARAM) Boolean contained,
-                          @ApiParam(value = FORCE_MD_FIELD_DESCRIPTION) @DefaultValue("false") @QueryParam(FORCE_MD_FIELD_PARAM) Boolean forceMDField,
-                          @ApiParam(value = BIN_QUALITIES_DESCRIPTION) @QueryParam(BIN_QUALITIES_PARAM) @DefaultValue("false") Boolean binQualities,
+                          @ApiParam(value = SKIP_UNMAPPED_DESCRIPTION) @QueryParam(SKIP_UNMAPPED_PARAM) @DefaultValue("false") boolean unmapped,
+                          @ApiParam(value = SKIP_DUPLICATED_DESCRIPTION) @QueryParam(SKIP_DUPLICATED_PARAM) @DefaultValue("false") boolean duplicated,
+                          @ApiParam(value = REGION_CONTAINED_DESCRIPTION) @DefaultValue("false") @QueryParam(REGION_CONTAINED_PARAM) boolean contained,
+                          @ApiParam(value = FORCE_MD_FIELD_DESCRIPTION) @DefaultValue("false") @QueryParam(FORCE_MD_FIELD_PARAM) boolean forceMDField,
+                          @ApiParam(value = BIN_QUALITIES_DESCRIPTION) @QueryParam(BIN_QUALITIES_PARAM) @DefaultValue("false") boolean binQualities,
                           @ApiParam(value = SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION) @DefaultValue("false") @QueryParam(SPLIT_RESULTS_INTO_REGIONS_PARAM) boolean splitResults) {
         try {
             ParamUtils.checkIsSingleID(fileIdStr);
@@ -178,7 +179,8 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = CoverageIndexParams.DESCRIPTION, required = true) CoverageIndexParams params) {
 
-        return null;
+        return submitJob(AlignmentCoverageAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+
         //        logger.debug("ObjectMap: {}", params);
 //
 //        DeeptoolsWrapperParams deeptoolsParams = new DeeptoolsWrapperParams();
@@ -205,7 +207,7 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = REGION_DESCRIPTION) @QueryParam(REGION_PARAM) String regionStr,
             @ApiParam(value = GENE_DESCRIPTION) @QueryParam(GENE_PARAM) String geneStr,
             @ApiParam(value = OFFSET_DESCRIPTION) @DefaultValue(OFFSET_DEFAULT) @QueryParam(OFFSET_PARAM) int offset,
-            @ApiParam(value = ONLY_EXONS_DESCRIPTION) @QueryParam(ONLY_EXONS_PARAM) @DefaultValue("false") Boolean onlyExons,
+            @ApiParam(value = ONLY_EXONS_DESCRIPTION) @QueryParam(ONLY_EXONS_PARAM) @DefaultValue("false") boolean onlyExons,
             @ApiParam(value = COVERAGE_RANGE_DESCRIPTION) @QueryParam(COVERAGE_RANGE_PARAM) String range,
             @ApiParam(value = COVERAGE_WINDOW_SIZE_DESCRIPTION) @DefaultValue(COVERAGE_WINDOW_SIZE_DEFAULT) @QueryParam(COVERAGE_WINDOW_SIZE_PARAM) int windowSize,
             @ApiParam(value = SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION) @DefaultValue("false") @QueryParam(SPLIT_RESULTS_INTO_REGIONS_PARAM) boolean splitResults) {
@@ -283,11 +285,11 @@ public class AlignmentWebService extends AnalysisWebService {
     public Response coverageRatio(@ApiParam(value = FILE_ID_1_DESCRIPTION, required = true) @QueryParam(FILE_ID_1_PARAM) String somaticFile,
                                   @ApiParam(value = FILE_ID_2_DESCRIPTION, required = true) @QueryParam(FILE_ID_2_PARAM) String germlineFile,
                                   @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(STUDY_PARAM) String study,
-                                  @ApiParam(value = SKIP_LOG2_DESCRIPTION) @QueryParam(SKIP_LOG2_PARAM) @DefaultValue("false") Boolean skipLog2,
+                                  @ApiParam(value = SKIP_LOG2_DESCRIPTION) @QueryParam(SKIP_LOG2_PARAM) @DefaultValue("false") boolean skipLog2,
                                   @ApiParam(value = REGION_DESCRIPTION) @QueryParam(REGION_PARAM) String regionStr,
                                   @ApiParam(value = GENE_DESCRIPTION) @QueryParam(GENE_PARAM) String geneStr,
                                   @ApiParam(value = OFFSET_DESCRIPTION) @DefaultValue(OFFSET_DEFAULT) @QueryParam(OFFSET_PARAM) int offset,
-                                  @ApiParam(value = ONLY_EXONS_DESCRIPTION) @QueryParam(ONLY_EXONS_PARAM) @DefaultValue("false") Boolean onlyExons,
+                                  @ApiParam(value = ONLY_EXONS_DESCRIPTION) @QueryParam(ONLY_EXONS_PARAM) @DefaultValue("false") boolean onlyExons,
                                   @ApiParam(value = COVERAGE_WINDOW_SIZE_DESCRIPTION) @DefaultValue("" + COVERAGE_WINDOW_SIZE_DEFAULT) @QueryParam(COVERAGE_WINDOW_SIZE_PARAM) int windowSize,
                                   @ApiParam(value = SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION) @DefaultValue("false") @QueryParam(SPLIT_RESULTS_INTO_REGIONS_PARAM) boolean splitResults) {
         try {

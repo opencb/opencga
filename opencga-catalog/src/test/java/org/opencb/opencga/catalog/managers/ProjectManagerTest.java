@@ -109,6 +109,14 @@ public class ProjectManagerTest extends GenericTest {
     }
 
     @Test
+    public void searchSampleNoPermissions() throws CatalogException {
+        // User3 looks for any sample without providing any project or study and he has not been granted permissions anywhere
+        thrown.expect(CatalogAuthorizationException.class);
+        thrown.expectMessage("cannot view any study");
+        catalogManager.getSampleManager().search("", new Query(), QueryOptions.empty(), sessionIdUser3);
+    }
+
+    @Test
     public void searchProjects() throws CatalogException {
         catalogManager.getUserManager().create("userid", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
         String token = catalogManager.getUserManager().login("userid", TestParamConstants.PASSWORD).getToken();

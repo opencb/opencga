@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.server.rest;
 
-import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.cohort.CohortTsvAnnotationLoader;
@@ -32,6 +31,7 @@ import org.opencb.opencga.core.models.cohort.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.tools.annotations.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
@@ -75,7 +75,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Deprecated: Use /generate web service and filter by annotation") @QueryParam("variableSet") String variableSet,
             @Deprecated
             @ApiParam(value = "Deprecated: Use /generate web service and filter by annotation") @QueryParam("variable") String variableName,
-            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "JSON containing cohort information", required = true) CohortCreateParams params) {
         try {
             params = ObjectUtils.defaultIfNull(params, new CohortCreateParams());
@@ -110,7 +110,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
             @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam(ParamConstants.RELEASE_PARAM) String release,
             @ApiParam(value = ParamConstants.SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.SNAPSHOT_PARAM) int snapshot,
-            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             /* End Sample search query params */
             @ApiParam(value = "JSON containing cohort information", required = true) CohortGenerateParams params) {
         try {
@@ -170,7 +170,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_TYPE_PARAM) Enums.CohortType type,
             @ApiParam(value = ParamConstants.COHORT_CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_CREATION_DATE_PARAM) String creationDate,
             @ApiParam(value = ParamConstants.COHORT_MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_MODIFICATION_DATE_PARAM) String modificationDate,
-            @ApiParam(value = ParamConstants.COHORT_DELETED_DESCRIPTION) @QueryParam(ParamConstants.COHORT_DELETED_PARAM) Boolean deleted,
+            @ApiParam(value = ParamConstants.COHORT_DELETED_DESCRIPTION) @QueryParam(ParamConstants.COHORT_DELETED_PARAM) boolean deleted,
             @ApiParam(value = ParamConstants.COHORT_STATUS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_STATUS_PARAM) String status,
             @ApiParam(value = ParamConstants.COHORT_INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = ParamConstants.COHORT_ANNOTATION_DESCRIPTION) @QueryParam(ParamConstants.COHORT_ANNOTATION_PARAM) String annotation,
@@ -197,7 +197,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_TYPE_PARAM) Enums.CohortType type,
             @ApiParam(value = ParamConstants.COHORT_CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_CREATION_DATE_PARAM) String creationDate,
             @ApiParam(value = ParamConstants.COHORT_MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_MODIFICATION_DATE_PARAM) String modificationDate,
-            @ApiParam(value = ParamConstants.COHORT_DELETED_DESCRIPTION) @QueryParam(ParamConstants.COHORT_DELETED_PARAM) Boolean deleted,
+            @ApiParam(value = ParamConstants.COHORT_DELETED_DESCRIPTION) @QueryParam(ParamConstants.COHORT_DELETED_PARAM) boolean deleted,
             @ApiParam(value = ParamConstants.COHORT_STATUS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_STATUS_PARAM) String status,
             @ApiParam(value = ParamConstants.COHORT_INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = ParamConstants.COHORT_ANNOTATION_DESCRIPTION) @QueryParam(ParamConstants.COHORT_ANNOTATION_PARAM) String annotation,
@@ -209,7 +209,8 @@ public class CohortWSServer extends OpenCGAWSServer {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
-            return createOkResponse(cohortManager.distinct(studyStr, field, query, token));
+            List<String> fields = split(field, ParamConstants.DISTINCT_FIELD_PARAM, true);
+            return createOkResponse(cohortManager.distinct(studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -273,7 +274,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @QueryParam("samplesAction") ParamUtils.BasicUpdateAction samplesAction,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
             @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
-            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "body") CohortUpdateParams params) {
         try {
             Map<String, Object> actionMap = new HashMap<>();
@@ -360,7 +361,8 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohorts}/acl")
-    @ApiOperation(value = "Return the acl of the cohort. If member is provided, it will only return the acl for the member.", response = Map.class)
+    @ApiOperation(value = "Return the acl of the cohort. If member is provided, it will only return the acl for the member.",
+            response = CohortAclEntryList.class)
     public Response getAcls(
             @ApiParam(value = ParamConstants.COHORTS_DESCRIPTION, required = true) @PathParam("cohorts") String cohortIdsStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
@@ -377,7 +379,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/acl/{members}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
+    @ApiOperation(value = "Update the set of permissions granted for the member", response = CohortAclEntryList.class)
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,

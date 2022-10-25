@@ -26,7 +26,7 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converters.proto.VariantToVcfSliceConverter;
 import org.opencb.biodata.tools.variant.filters.VariantAvroFilters;
 import org.opencb.commons.ProgressLogger;
-import org.opencb.commons.run.ParallelTaskRunner.Task;
+import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.util.ArrayList;
@@ -80,9 +80,9 @@ public class VariantToVcfSliceConverterTask implements Task<ImmutablePair<Long, 
     public List<VcfSliceProtos.VcfSlice> apply(List<ImmutablePair<Long, List<Variant>>> batch) {
         List<VcfSliceProtos.VcfSlice> slices = new ArrayList<>(batch.size());
         for (ImmutablePair<Long, List<Variant>> pair : batch) {
-            List<Variant> ref = new ArrayList<>(pair.right.size());
-            List<Variant> nonRef = new ArrayList<>(pair.right.size());
-            for (Variant variant : pair.right) {
+            List<Variant> ref = new ArrayList<>(pair.getValue().size());
+            List<Variant> nonRef = new ArrayList<>(pair.getValue().size());
+            for (Variant variant : pair.getValue()) {
                 if (refFilter.test(variant)) {
                     ref.add(variant);
                 } else {

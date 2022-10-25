@@ -20,8 +20,6 @@ public class CommandLineUtils {
 
         primitiveTypes.add("String");
         primitiveTypes.add("string");
-        primitiveTypes.add("object");
-        primitiveTypes.add("Object");
         primitiveTypes.add("integer");
         primitiveTypes.add("int");
         primitiveTypes.add("boolean");
@@ -30,6 +28,8 @@ public class CommandLineUtils {
         primitiveTypes.add("long");
         primitiveTypes.add("enum");
         primitiveTypes.add("Long");
+        primitiveTypes.add("float");
+        primitiveTypes.add("double");
         primitiveTypes.add("java.lang.String");
         primitiveTypes.add("java.lang.Boolean");
         primitiveTypes.add("java.lang.Integer");

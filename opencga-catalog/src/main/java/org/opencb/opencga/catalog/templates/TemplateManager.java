@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.templates.config.TemplateManifest;
 import org.opencb.opencga.catalog.templates.config.TemplateStudy;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.models.AclEntry;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.Enums;
@@ -227,9 +228,9 @@ public class TemplateManager {
                 }
             }
         }
-        if (CollectionUtils.isNotEmpty(tmplStudy.getAcl())) {
+        if (CollectionUtils.isNotEmpty(tmplStudy.getAcl().getAcl())) {
             // Set permissions
-            for (StudyAclEntry studyAclEntry : tmplStudy.getAcl()) {
+            for (AclEntry<StudyPermissions.Permissions> studyAclEntry : tmplStudy.getAcl().getAcl()) {
                 logger.info("Setting permissions for '{}'", studyAclEntry.getMember());
                 catalogManager.getStudyManager().updateAcl(fqn, studyAclEntry.getMember(),
                         new StudyAclParams(StringUtils.join(studyAclEntry.getPermissions(), ","), ""), ParamUtils.AclAction.SET, token);

@@ -34,23 +34,24 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroWriter;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.FilterOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.INCLUDE_STUDY;
-import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.TPED;
-import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.VCF;
-import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.VCF_GZ;
+import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.*;
 
 /**
  * Created on 06/12/16.
@@ -187,10 +188,6 @@ public class VariantWriterFactory {
         if (output.endsWith("/")) {
             throw new IllegalArgumentException("Invalid directory as output file name");
         }
-        if (outputFormat == TPED && !output.endsWith(VariantExporter.TPED_FILE_EXTENSION)) {
-            throw new IllegalArgumentException("Invalid output file name (" + output + ") when exporting TPED file: its extension must be "
-                    + VariantExporter.TPED_FILE_EXTENSION);
-        }
         if (output.endsWith(".")) {
             output = output.substring(0, output.length() - 1);
         }
@@ -218,6 +215,15 @@ public class VariantWriterFactory {
             throws IOException {
         boolean gzip = outputFormat.isGzip();
 
+        if (outputFormat == PARQUET || outputFormat == PARQUET_GZ) {
+            // dummy stream. Do not use a stream for Parquet
+            return new OutputStream() {
+                @Override
+                public void write(int b) throws IOException {
+                    throw new IOException("Unexpected write");
+                }
+            };
+        }
         // output format has priority over output name
         OutputStream outputStream;
         if (isStandardOutput(output)) {

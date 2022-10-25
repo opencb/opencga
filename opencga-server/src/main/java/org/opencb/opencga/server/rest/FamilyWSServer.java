@@ -148,7 +148,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
-            return createOkResponse(familyManager.distinct(studyStr, field, query, token));
+            List<String> fields = split(field, ParamConstants.DISTINCT_FIELD_PARAM, true);
+            return createOkResponse(familyManager.distinct(studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -165,10 +166,10 @@ public class FamilyWSServer extends OpenCGAWSServer {
     })
     public Response createFamilyPOST(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
-                    String studyStr,
+            String studyStr,
             @ApiParam(value = "Comma separated list of member ids to be associated to the created family") @QueryParam("members")
-                    String members,
-            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            String members,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "JSON containing family information", required = true) FamilyCreateParams family) {
         try {
             family = ObjectUtils.defaultIfNull(family, new FamilyCreateParams());
@@ -231,7 +232,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.FAMILY_UPDATE_ROLES_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.FAMILY_UPDATE_ROLES_PARAM) boolean updateRoles,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
-            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "body") FamilyUpdateParams parameters) {
         try {
             if (annotationSetsAction == null) {
@@ -315,9 +316,10 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{families}/acl")
-    @ApiOperation(value = "Returns the acl of the families. If member is provided, it will only return the acl for the member.", response = Map.class)
+    @ApiOperation(value = "Returns the acl of the families. If member is provided, it will only return the acl for the member.",
+            response = FamilyAclEntryList.class)
     public Response getAcls(@ApiParam(value = ParamConstants.FAMILIES_DESCRIPTION, required = true) @PathParam("families")
-                                    String familyIdsStr,
+                            String familyIdsStr,
                             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
                             @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
                             @ApiParam(value = "User or group id") @QueryParam("member") String member,
@@ -333,7 +335,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/acl/{members}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
+    @ApiOperation(value = "Update the set of permissions granted for the member", response = FamilyAclEntryList.class)
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberList,

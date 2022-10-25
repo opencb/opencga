@@ -55,7 +55,7 @@ public class HadoopVariantAnnotationManagerTest extends VariantAnnotationManager
             System.out.println("pendingVariants = " + pendingVariantsCount);
             long expectedPendingVariantsCount = engine.count(new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), false)).first();
             Assert.assertEquals(expectedPendingVariantsCount, pendingVariantsCount);
-            Assert.assertEquals(expectedPendingVariantsCount, engine.annotate(new Query(), new ObjectMap()));
+            Assert.assertEquals(expectedPendingVariantsCount, engine.annotate(outputUri, new ObjectMap()));
 
 
             List<Variant> pendingVariants = new PendingVariantsReader(new Query(), new AnnotationPendingVariantsDescriptor(), engine.getDBAdaptor())
@@ -69,8 +69,8 @@ public class HadoopVariantAnnotationManagerTest extends VariantAnnotationManager
 
         long variants = engine.count(new Query()).first();
         System.out.println("Annotate :: Should annotate nothing");
-        Assert.assertEquals(0L, engine.annotate(new Query(), new ObjectMap()));
+        Assert.assertEquals(0L, engine.annotate(outputUri, new ObjectMap()));
         System.out.println("Annotate + Overwrite :: Should annotate everything again");
-        Assert.assertEquals(variants, engine.annotate(new Query(), new ObjectMap(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true)));
+        Assert.assertEquals(variants, engine.annotate(outputUri, new ObjectMap(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true)));
     }
 }

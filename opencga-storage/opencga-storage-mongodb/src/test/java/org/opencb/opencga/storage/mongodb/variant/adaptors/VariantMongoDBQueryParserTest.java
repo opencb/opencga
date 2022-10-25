@@ -117,7 +117,6 @@ public class VariantMongoDBQueryParserTest {
         int studyId = metadataManager.getStudyId("study_2");
         metadataManager.updateFileMetadata(studyId, 4, fileMetadata -> {
             fileMetadata.setSamples(new LinkedHashSet<>());
-            return fileMetadata;
         });
         metadataManager.addIndexedFiles(studyId, Collections.singletonList(4));
 

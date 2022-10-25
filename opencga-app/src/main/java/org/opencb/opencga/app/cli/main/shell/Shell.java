@@ -25,24 +25,60 @@ import org.opencb.opencga.core.response.RestResponse;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.opencb.commons.utils.PrintUtils.*;
 
 public class Shell extends OpencgaCommandExecutor {
 
 
+    // Create a command processor to process all the shell commands
+    private final CommandProcessor processor = new CommandProcessor();
     private LineReader lineReader = null;
     private Terminal terminal = null;
     private String host = null;
-
-    // Create a command processor to process all the shell commands
-    private final CommandProcessor processor = new CommandProcessor();
 
     public Shell(GeneralCliOptions.CommonCommandOptions options) throws CatalogAuthenticationException {
         super(options);
         if (options.host != null) {
             host = options.host;
         }
+    }
+
+    public static void printShellHeaderMessage() {
+        System.out.print(eraseScreen());
+        println("     ███████                                    █████████    █████████    █████████  ", Color.GREEN);
+        println("   ███░░░░░███                                 ███░░░░░███  ███░░░░░███  ███░░░░░███ ", Color.GREEN);
+        println("  ███     ░░███ ████████   ██████  ████████   ███     ░░░  ███     ░░░  ░███    ░███ ", Color.GREEN);
+        println("  ███      ░███░░███░░███ ███░░███░░███░░███ ░███         ░███          ░███████████ ", Color.GREEN);
+        println("  ███      ░███ ░███ ░███░███████  ░███ ░███ ░███         ░███    █████ ░███░░░░░███ ", Color.GREEN);
+        println("  ░███     ███  ░███ ░███░███░░░   ░███ ░███ ░░███     ███░░███  ░░███  ░███    ░███ ", Color.GREEN);
+        println("  ░░░███████░   ░███████ ░░██████  ████ █████ ░░█████████  ░░█████████  █████   █████", Color.GREEN);
+        println("    ░░░░░░░     ░███░░░   ░░░░░░  ░░░░ ░░░░░   ░░░░░░░░░    ░░░░░░░░░  ░░░░░   ░░░░░ ", Color.GREEN);
+        println("                ░███                                                                 ", Color.GREEN);
+        println("                █████                                                                ", Color.GREEN);
+        println("               ░░░░░                                                                 ", Color.GREEN);
+
+        println("");
+        println(CommandLineUtils.getVersionString());
+        println("");
+        println("\nTo close the application type \"exit\"", Color.BLUE);
+        println("");
+        println("");
+        println("");
+        println("");
+        println("Opencga is running in " + OpencgaMain.getLogLevel() + " mode");
+        println("");
+        println("");
+        println("");
+        println("");
+        println("");
+        println("");
+        println("");
+        println("");
     }
 
     private LineReader getTerminal() {
@@ -53,9 +89,6 @@ public class Shell extends OpencgaCommandExecutor {
                 terminal = TerminalBuilder.builder()
                         .system(true).nativeSignals(true)
                         .build();
-
-                System.out.print(eraseScreen());
-                printShellHeaderMessage();
             }
             History defaultHistory = new DefaultHistory();
 
@@ -112,7 +145,7 @@ public class Shell extends OpencgaCommandExecutor {
 
                 // Send the line read to the processor for process
                 if (!line.equals("")) {
-                    String[] args = line.split(" ");
+                    String[] args = splitLine(line);
                     logger.debug("Command: " + line);
 
                     args = parseParams(args);
@@ -132,47 +165,21 @@ public class Shell extends OpencgaCommandExecutor {
         }
     }
 
+    private String[] splitLine(String line) {
+        List<String> list = new ArrayList<String>();
+        Matcher m = Pattern.compile("([^\"]\\S*|\".+?\")\\s*").matcher(line);
+        while (m.find()) {
+            list.add(m.group(1).replace("\"", ""));
+        }
+        return list.toArray(new String[list.size()]);
+    }
+
     public String getPrompt() {
         String host = format("[" + sessionManager.getSession().getHost() + "]", PrintUtils.Color.GREEN);
         String study = format("[" + sessionManager.getSession().getCurrentStudy() + "]", PrintUtils.Color.BLUE);
         String user = format("<" + sessionManager.getSession().getUser() + "/>", PrintUtils.Color.YELLOW);
-        return host + study + user;
+        return host + study + user + " ";
     }
-
-
-    private void printShellHeaderMessage() {
-
-        println("     ███████                                    █████████    █████████    █████████  ", Color.GREEN);
-        println("   ███░░░░░███                                 ███░░░░░███  ███░░░░░███  ███░░░░░███ ", Color.GREEN);
-        println("  ███     ░░███ ████████   ██████  ████████   ███     ░░░  ███     ░░░  ░███    ░███ ", Color.GREEN);
-        println("  ███      ░███░░███░░███ ███░░███░░███░░███ ░███         ░███          ░███████████ ", Color.GREEN);
-        println("  ███      ░███ ░███ ░███░███████  ░███ ░███ ░███         ░███    █████ ░███░░░░░███ ", Color.GREEN);
-        println("  ░███     ███  ░███ ░███░███░░░   ░███ ░███ ░░███     ███░░███  ░░███  ░███    ░███ ", Color.GREEN);
-        println("  ░░░███████░   ░███████ ░░██████  ████ █████ ░░█████████  ░░█████████  █████   █████", Color.GREEN);
-        println("    ░░░░░░░     ░███░░░   ░░░░░░  ░░░░ ░░░░░   ░░░░░░░░░    ░░░░░░░░░  ░░░░░   ░░░░░ ", Color.GREEN);
-        println("                ░███                                                                 ", Color.GREEN);
-        println("                █████                                                                ", Color.GREEN);
-        println("               ░░░░░                                                                 ", Color.GREEN);
-
-        println("");
-        println(CommandLineUtils.getVersionString());
-        println("");
-        println("\nTo close the application type \"exit\"", Color.BLUE);
-        println("");
-        println("");
-        println("");
-        println("");
-        println("Opencga is running in " + OpencgaMain.getLogLevel() + " mode");
-        println("");
-        println("");
-        println("");
-        println("");
-        println("");
-        println("");
-        println("");
-        println("");
-    }
-
 
     public String[] parseParams(String[] args) throws CatalogAuthenticationException {
         logger.debug("Executing " + String.join(" ", args));

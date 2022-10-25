@@ -22,6 +22,7 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.biodata.models.clinical.Disorder;
@@ -45,6 +46,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
@@ -54,15 +56,17 @@ import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.common.RgaIndex;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.individual.IndividualAclEntry;
+import org.opencb.opencga.core.models.individual.IndividualPermissions;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -230,13 +234,14 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         Bson bsonQuery = parseQuery(query);
 
         versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
-            DataResult update = individualCollection.update(clientSession, bsonQuery, bsonUpdate,
-                    new QueryOptions(MongoDBCollection.MULTI, true));
-            if (update.getNumMatches() == 0) {
-                throw new CatalogDBException("Could not update family references in individuals");
-            }
-            return null;
-        }, (MongoDBIterator<Document> iterator) -> updateReferencesAfterIndividualVersionIncrement(clientSession, studyUid, iterator));
+                    DataResult update = individualCollection.update(clientSession, bsonQuery, bsonUpdate,
+                            new QueryOptions(MongoDBCollection.MULTI, true));
+                    if (update.getNumMatches() == 0) {
+                        throw new CatalogDBException("Could not update family references in individuals");
+                    }
+                    return null;
+                }, Collections.singletonList(QueryParams.SAMPLES_IDS.key()), this::iterator,
+                (DBIterator<Individual> iterator) -> updateReferencesAfterIndividualVersionIncrement(clientSession, studyUid, iterator));
     }
 
     @Override
@@ -462,8 +467,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             }
 
             return endWrite(tmpStartTime, 1, 1, events);
-        }, (MongoDBIterator<Document> iterator) -> updateReferencesAfterIndividualVersionIncrement(clientSession, individual.getStudyUid(),
-                iterator));
+        }, Collections.singletonList(QueryParams.SAMPLES_IDS.key()), this::iterator,
+                (DBIterator<Individual> iterator) -> updateReferencesAfterIndividualVersionIncrement(clientSession,
+                        individual.getStudyUid(), iterator));
     }
 
     private void recalculateFamilyRolesForMember(ClientSession clientSession, long studyUid, long memberUid)
@@ -485,11 +491,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     }
 
     private void updateReferencesAfterIndividualVersionIncrement(ClientSession clientSession, long studyUid,
-                                                                 MongoDBIterator<Document> iterator)
+                                                                 DBIterator<Individual> iterator)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Map<Long, Individual> individualMap = new HashMap<>();
         while (iterator.hasNext()) {
-            Individual individual = individualConverter.convertToDataModelType(iterator.next());
+            Individual individual = iterator.next();
             updateClinicalAnalysisIndividualReferences(clientSession, individual);
             individualMap.put(individual.getUid(), individual);
         }
@@ -600,7 +606,28 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
             if (clinicalAnalysis.getProband().getUid() == individual.getUid()
                     && clinicalAnalysis.getProband().getVersion() < individual.getVersion()) {
-                ObjectMap params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), individual);
+                // We create a copy because we are going to modify the individual instance and it could be involved in more than one case
+                Individual individualCopy;
+                try {
+                    individualCopy = JacksonUtils.copy(individual, Individual.class);
+                } catch (IOException e) {
+                    throw new CatalogDBException("Internal error copying the Individual object", e);
+                }
+                if (clinicalAnalysis.getProband().getSamples() != null) {
+                    List<Sample> sampleList = new ArrayList<>(clinicalAnalysis.getProband().getSamples().size());
+                    Set<Long> sampleUids = clinicalAnalysis.getProband().getSamples()
+                            .stream()
+                            .map(Sample::getUid)
+                            .collect(Collectors.toSet());
+                    for (Sample sample : individual.getSamples()) {
+                        if (sampleUids.contains(sample.getUid())) {
+                            sampleList.add(sample);
+                        }
+                    }
+                    individualCopy.setSamples(sampleList);
+                }
+
+                ObjectMap params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), individualCopy);
 
                 OpenCGAResult result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().update(clientSession, clinicalAnalysis, params, null,
                         QueryOptions.empty());
@@ -1124,8 +1151,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
         UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
-                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
-                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
+                StudyPermissions.Permissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
+                IndividualPermissions.VIEW_ANNOTATIONS.name());
 
         return new IndividualCatalogMongoDBIterator<>(mongoCursor, clientSession, individualConverter, iteratorFilter, dbAdaptorFactory,
                 studyUid, user, options);
@@ -1146,8 +1173,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
         UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
-                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
-                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
+                StudyPermissions.Permissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
+                IndividualPermissions.VIEW_ANNOTATIONS.name());
 
         return new IndividualCatalogMongoDBIterator<>(mongoCursor, clientSession, null, iteratorFilter, dbAdaptorFactory, studyUid, user,
                 options);
@@ -1212,13 +1239,30 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     }
 
     @Override
-    public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
+    public OpenCGAResult distinct(long studyUid, String field, Query query, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query finalQuery = query != null ? new Query(query) : new Query();
         finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
         Bson bson = parseQuery(finalQuery, userId);
 
-        return new OpenCGAResult<>(individualCollection.distinct(field, bson, clazz));
+        return new OpenCGAResult<>(individualCollection.distinct(field, bson));
+    }
+
+    @Override
+    public OpenCGAResult<?> distinct(long studyUid, List<String> fields, Query query, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        StopWatch stopWatch = StopWatch.createStarted();
+        Query finalQuery = query != null ? new Query(query) : new Query();
+        finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
+        Bson bson = parseQuery(finalQuery, userId);
+
+        Set<String> results = new LinkedHashSet<>();
+        for (String field : fields) {
+            results.addAll(individualCollection.distinct(field, bson, String.class).getResults());
+        }
+
+        return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), Collections.emptyList(), results.size(),
+                new ArrayList<>(results), -1);
     }
 
     @Override
@@ -1260,9 +1304,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             } else {
                 if (containsAnnotationQuery(query)) {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                            IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.INDIVIDUAL, configuration));
+                            IndividualPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.INDIVIDUAL, configuration));
                 } else {
-                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, IndividualAclEntry.IndividualPermissions.VIEW.name(),
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, IndividualPermissions.VIEW.name(),
                             Enums.Resource.INDIVIDUAL, configuration));
                 }
             }
@@ -1645,16 +1689,17 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         Bson bsonQuery = parseQuery(query);
         versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
-            QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+                    QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
 
-            logger.debug("Sample references extraction. Query: {}, update: {}",
-                    bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-            DataResult updateResult = individualCollection.update(clientSession, bsonQuery, update, multi);
-            logger.debug("Sample uid '" + sampleUid + "' references removed from " + updateResult.getNumUpdated() + " out of "
-                    + updateResult.getNumMatches() + " individuals");
-            return null;
-        }, (MongoDBIterator<Document> iterator) -> updateReferencesAfterIndividualVersionIncrement(clientSession, studyUid, iterator));
+                    logger.debug("Sample references extraction. Query: {}, update: {}",
+                            bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                            update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                    DataResult updateResult = individualCollection.update(clientSession, bsonQuery, update, multi);
+                    logger.debug("Sample uid '" + sampleUid + "' references removed from " + updateResult.getNumUpdated() + " out of "
+                            + updateResult.getNumMatches() + " individuals");
+                    return null;
+                }, Collections.singletonList(QueryParams.SAMPLES_IDS.key()), this::iterator,
+                (DBIterator<Individual> iterator) -> updateReferencesAfterIndividualVersionIncrement(clientSession, studyUid, iterator));
     }
 
     public MongoDBCollection getIndividualCollection() {

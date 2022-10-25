@@ -58,7 +58,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
                     response = openCGAClient.login(user, password);
                 } catch (Exception e) {
                     Event event = new Event();
-                    event.setMessage(LOGIN_FAIL);
+                    event.setMessage(e.getMessage());
                     event.setType(Event.Type.ERROR);
                     res.setType(QueryType.VOID);
                     res.getEvents().add(event);
@@ -94,6 +94,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
         RestResponse<AuthenticationResponse> res = new RestResponse();
         try {
             sessionManager.logoutSessionFile();
+            getOpenCGAClient().logout();
             Event event = new Event();
             event.setMessage(LOGOUT);
             event.setType(Event.Type.INFO);

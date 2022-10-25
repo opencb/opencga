@@ -104,6 +104,9 @@ public class SampleIndexQueryParser {
         if (isValidParam(query, SAMPLE_DE_NOVO, true)) {
             return true;
         }
+        if (isValidParam(query, SAMPLE_DE_NOVO_STRICT, true)) {
+            return true;
+        }
         return false;
     }
 
@@ -170,7 +173,7 @@ public class SampleIndexQueryParser {
         Map<String, boolean[]> motherFilterMap = new HashMap<>();
 
         Set<String> mendelianErrorSet = new HashSet<>();
-        boolean onlyDeNovo = false;
+        SampleIndexQuery.MendelianErrorType mendelianErrorType = null;
         boolean partialGtIndex = false;
 
         Map<String, SampleMetadata> sampleMetadatas = new HashMap<>();
@@ -227,7 +230,7 @@ public class SampleIndexQueryParser {
                 query.remove(SAMPLE.key());
             }
         } else if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
-            onlyDeNovo = false;
+            mendelianErrorType = SampleIndexQuery.MendelianErrorType.ALL;
             ParsedQuery<String> mendelianError = splitValue(query, SAMPLE_MENDELIAN_ERROR);
             mendelianErrorSet = new HashSet<>(mendelianError.getValues());
             queryOperation = mendelianError.getOperation();
@@ -240,7 +243,7 @@ public class SampleIndexQueryParser {
             // so the index is partial.
             partialIndex = true;
         } else if (isValidParam(query, SAMPLE_DE_NOVO)) {
-            onlyDeNovo = true;
+            mendelianErrorType = SampleIndexQuery.MendelianErrorType.DE_NOVO;
             ParsedQuery<String> sampleDeNovo = splitValue(query, SAMPLE_DE_NOVO);
             mendelianErrorSet = new HashSet<>(sampleDeNovo.getValues());
             queryOperation = sampleDeNovo.getOperation();
@@ -249,6 +252,16 @@ public class SampleIndexQueryParser {
                 sampleGenotypeQuery.put(s, mainGenotypes);
             }
             query.remove(SAMPLE_DE_NOVO.key());
+        } else if (isValidParam(query, SAMPLE_DE_NOVO_STRICT)) {
+            mendelianErrorType = SampleIndexQuery.MendelianErrorType.DE_NOVO_STRICT;
+            ParsedQuery<String> sampleDeNovo = splitValue(query, SAMPLE_DE_NOVO_STRICT);
+            mendelianErrorSet = new HashSet<>(sampleDeNovo.getValues());
+            queryOperation = sampleDeNovo.getOperation();
+            for (String s : mendelianErrorSet) {
+                // Return any genotype
+                sampleGenotypeQuery.put(s, mainGenotypes);
+            }
+            query.remove(SAMPLE_DE_NOVO_STRICT.key());
         //} else if (isValidParam(query, FILE)) {
             // Add FILEs filter ?
         } else {
@@ -378,7 +391,7 @@ public class SampleIndexQueryParser {
 
         // If not all genotypes are valid, query is not covered
         if (!negatedSamples.isEmpty()) {
-            logger.debug("NEG_SAMPLES - Set partialGtIndex to true. Prev value: {}", partialGtIndex);
+            logger.debug("NEG_SAMPLES - Set partialGtIndex to true. Prev value: {}, negSamples: {}", partialGtIndex, negatedSamples);
             partialGtIndex = true;
         }
         for (String negatedSample : negatedSamples) {
@@ -514,7 +527,7 @@ public class SampleIndexQueryParser {
 
         return new SampleIndexQuery(schema, regionGroups, variantTypes, study, sampleGenotypeQuery, multiFileSamples, negatedSamples,
                 fatherFilterMap, motherFilterMap,
-                fileIndexMap, annotationIndexQuery, mendelianErrorSet, onlyDeNovo, queryOperation);
+                fileIndexMap, annotationIndexQuery, mendelianErrorSet, mendelianErrorType, queryOperation);
     }
 
     private Set<String> findParents(Set<String> childrenSet, Map<String, List<String>> parentsMap) {
@@ -1374,7 +1387,7 @@ public class SampleIndexQueryParser {
             clinicalFieldFilters.add(schema.getClinicalIndexSchema().getSourceField().buildFilter(
                     new Values<>(sources.getOperation(), sources.mapValues(s -> new OpValue<>("=", Collections.singletonList(s))))));
         }
-        if (isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE) || isValidParam(query, ANNOT_CLINICAL_CONFIRMED_STATUS)) {
+        if (isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE) || query.getBoolean(ANNOT_CLINICAL_CONFIRMED_STATUS.key())) {
             annotationIndex |= CLINICAL_MASK;
             List<List<String>> clinicalLists = VariantQueryParser.parseClinicalCombination(query, true);
 

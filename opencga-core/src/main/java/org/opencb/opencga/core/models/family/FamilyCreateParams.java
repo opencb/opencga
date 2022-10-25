@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.core.models.family;
 
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -96,11 +95,9 @@ public class FamilyCreateParams {
             }
         }
 
-        String familyId = StringUtils.isEmpty(id) ? name : id;
-        String familyName = StringUtils.isEmpty(name) ? familyId : name;
         int familyExpectedSize = expectedSize != null ? expectedSize : -1;
-        return new Family(familyId, familyName, null, null, relatives, creationDate, modificationDate, description, familyExpectedSize, 1,
-                1, annotationSets, status != null ? status.toStatus() : null, null, null, attributes);
+        return new Family(id, name, null, null, relatives, creationDate, modificationDate, description, familyExpectedSize, 1, 1,
+                annotationSets, status != null ? status.toStatus() : null, null, null, attributes);
     }
 
     public String getId() {

@@ -45,19 +45,20 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.audit.AuditRecord;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
-import org.opencb.opencga.core.models.cohort.CohortAclEntry;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisPermissions;
+import org.opencb.opencga.core.models.cohort.CohortPermissions;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.family.FamilyAclEntry;
+import org.opencb.opencga.core.models.family.FamilyPermissions;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.file.FileInternal;
+import org.opencb.opencga.core.models.file.FilePermissions;
 import org.opencb.opencga.core.models.file.FileStatus;
-import org.opencb.opencga.core.models.individual.IndividualAclEntry;
-import org.opencb.opencga.core.models.job.JobAclEntry;
+import org.opencb.opencga.core.models.individual.IndividualPermissions;
+import org.opencb.opencga.core.models.job.JobPermissions;
 import org.opencb.opencga.core.models.project.Project;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.summaries.StudySummary;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
@@ -83,6 +84,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
+import static org.opencb.opencga.core.api.ParamConstants.ADMIN_PROJECT;
+import static org.opencb.opencga.core.api.ParamConstants.ADMIN_STUDY;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 /**
@@ -220,6 +223,10 @@ public class StudyManager extends AbstractManager {
         OpenCGAResult<Study> studyDataResult = studyDBAdaptor.get(query, queryOptions, userId);
 
         if (studyDataResult.getNumResults() == 0) {
+            if (!query.containsKey(StudyDBAdaptor.QueryParams.FQN.key())) {
+                // By default, exclude the opencga study for the validation
+                query.put(StudyDBAdaptor.QueryParams.FQN.key(), "!=" + OPENCGA + "@" + ADMIN_PROJECT + ":" + ADMIN_STUDY);
+            }
             studyDataResult = studyDBAdaptor.get(query, queryOptions);
             if (studyDataResult.getNumResults() == 0) {
                 String studyMessage = "";
@@ -228,7 +235,7 @@ public class StudyManager extends AbstractManager {
                 }
                 throw new CatalogException("No study found" + studyMessage + ".");
             } else {
-                throw CatalogAuthorizationException.deny(userId, "view", "study", studyDataResult.first().getFqn(), null);
+                throw CatalogAuthorizationException.denyAny(userId, "view", "study");
             }
         }
 
@@ -1497,7 +1504,8 @@ public class StudyManager extends AbstractManager {
 
 
     // **************************   ACLs  ******************************** //
-    public OpenCGAResult<Map<String, List<String>>> getAcls(List<String> studyIdList, String member, boolean ignoreException, String token)
+    public OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> getAcls(List<String> studyIdList, String member,
+                                                                             boolean ignoreException, String token)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         List<Study> studyList = resolveIds(studyIdList, userId);
@@ -1509,13 +1517,13 @@ public class StudyManager extends AbstractManager {
                 .append("token", token);
         String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
-        OpenCGAResult<Map<String, List<String>>> studyAclList = OpenCGAResult.empty();
+        OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> studyAclList = OpenCGAResult.empty();
 
         for (int i = 0; i < studyList.size(); i++) {
             Study study = studyList.get(i);
             long studyId = study.getUid();
             try {
-                OpenCGAResult<Map<String, List<String>>> allStudyAcls;
+                OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> allStudyAcls;
                 if (StringUtils.isNotEmpty(member)) {
                     allStudyAcls = authorizationManager.getStudyAcl(userId, studyId, member);
                 } else {
@@ -1532,8 +1540,7 @@ public class StudyManager extends AbstractManager {
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 if (ignoreException) {
                     Event event = new Event(Event.Type.ERROR, study.getFqn(), e.getMessage());
-                    studyAclList.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0,
-                            Collections.singletonList(Collections.emptyMap()), 0));
+                    studyAclList.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.singletonList(null), 0));
                 } else {
                     throw e;
                 }
@@ -1542,13 +1549,15 @@ public class StudyManager extends AbstractManager {
         return studyAclList;
     }
 
-    public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, String memberIds, StudyAclParams aclParams,
-                                                              ParamUtils.AclAction action, String token) throws CatalogException {
+    public OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> updateAcl(String studyId, String memberIds, StudyAclParams aclParams,
+                                                                               ParamUtils.AclAction action, String token)
+            throws CatalogException {
         return updateAcl(Collections.singletonList(studyId), memberIds, aclParams, action, token);
     }
 
-    public OpenCGAResult<Map<String, List<String>>> updateAcl(List<String> studyIdList, String memberIds, StudyAclParams aclParams,
-                                                              ParamUtils.AclAction action, String token) throws CatalogException {
+    public OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> updateAcl(List<String> studyIdList, String memberIds,
+                                                                               StudyAclParams aclParams, ParamUtils.AclAction action,
+                                                                               String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         List<Study> studies = resolveIds(studyIdList, userId);
 
@@ -1571,11 +1580,11 @@ public class StudyManager extends AbstractManager {
             List<String> permissions = Collections.emptyList();
             if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
                 permissions = Arrays.asList(aclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
-                checkPermissions(permissions, StudyAclEntry.StudyPermissions::valueOf);
+                checkPermissions(permissions, StudyPermissions.Permissions::valueOf);
             }
 
             if (StringUtils.isNotEmpty(aclParams.getTemplate())) {
-                EnumSet<StudyAclEntry.StudyPermissions> studyPermissions;
+                EnumSet<StudyPermissions.Permissions> studyPermissions;
                 switch (aclParams.getTemplate()) {
                     case AuthorizationManager.ROLE_ADMIN:
                         studyPermissions = AuthorizationManager.getAdminAcls();
@@ -1599,7 +1608,7 @@ public class StudyManager extends AbstractManager {
                     // Merge permissions from the template with the ones written
                     Set<String> uniquePermissions = new HashSet<>(permissions);
 
-                    for (StudyAclEntry.StudyPermissions studyPermission : studyPermissions) {
+                    for (StudyPermissions.Permissions studyPermission : studyPermissions) {
                         uniquePermissions.add(studyPermission.toString());
                     }
 
@@ -1624,46 +1633,38 @@ public class StudyManager extends AbstractManager {
                 checkMembers(study.getUid(), members);
             }
 
-            OpenCGAResult<Map<String, List<String>>> aclResult;
+            List<Long> studyUidList = studies
+                    .stream()
+                    .map(Study::getUid)
+                    .collect(Collectors.toList());
+
             switch (action) {
                 case SET:
-                    aclResult = authorizationManager.setStudyAcls(studies.
-                                    stream()
-                                    .map(Study::getUid)
-                                    .collect(Collectors.toList()),
-                            members, permissions);
+                    authorizationManager.setStudyAcls(studyUidList, members, permissions);
                     break;
                 case ADD:
-                    aclResult = authorizationManager.addStudyAcls(studies
-                                    .stream()
-                                    .map(Study::getUid)
-                                    .collect(Collectors.toList()),
-                            members, permissions);
+                    authorizationManager.addStudyAcls(studyUidList, members, permissions);
                     break;
                 case REMOVE:
-                    aclResult = authorizationManager.removeStudyAcls(studies
-                                    .stream()
-                                    .map(Study::getUid)
-                                    .collect(Collectors.toList()),
-                            members, permissions);
+                    authorizationManager.removeStudyAcls(studyUidList, members, permissions);
                     break;
                 case RESET:
-                    aclResult = authorizationManager.removeStudyAcls(studies
-                                    .stream()
-                                    .map(Study::getUid)
-                                    .collect(Collectors.toList()),
-                            members, null);
+                    authorizationManager.removeStudyAcls(studyUidList, members, null);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");
             }
+
+            OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> remainingAcls = authorizationManager.getStudyAcl(studyUidList,
+                    members);
 
             for (Study study : studies) {
                 auditManager.audit(operationUuid, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.STUDY, study.getId(),
                         study.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
             }
-            return aclResult;
+
+            return remainingAcls;
         } catch (CatalogException e) {
             for (Study study : studies) {
                 auditManager.audit(operationUuid, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.STUDY, study.getId(),
@@ -1756,25 +1757,25 @@ public class StudyManager extends AbstractManager {
 
         switch (entry) {
             case SAMPLES:
-                validatePermissions(permissionRule.getPermissions(), SampleAclEntry.SamplePermissions::valueOf);
+                validatePermissions(permissionRule.getPermissions(), SamplePermissions::valueOf);
                 break;
             case FILES:
-                validatePermissions(permissionRule.getPermissions(), FileAclEntry.FilePermissions::valueOf);
+                validatePermissions(permissionRule.getPermissions(), FilePermissions::valueOf);
                 break;
             case COHORTS:
-                validatePermissions(permissionRule.getPermissions(), CohortAclEntry.CohortPermissions::valueOf);
+                validatePermissions(permissionRule.getPermissions(), CohortPermissions::valueOf);
                 break;
             case INDIVIDUALS:
-                validatePermissions(permissionRule.getPermissions(), IndividualAclEntry.IndividualPermissions::valueOf);
+                validatePermissions(permissionRule.getPermissions(), IndividualPermissions::valueOf);
                 break;
             case FAMILIES:
-                validatePermissions(permissionRule.getPermissions(), FamilyAclEntry.FamilyPermissions::valueOf);
+                validatePermissions(permissionRule.getPermissions(), FamilyPermissions::valueOf);
                 break;
             case JOBS:
-                validatePermissions(permissionRule.getPermissions(), JobAclEntry.JobPermissions::valueOf);
+                validatePermissions(permissionRule.getPermissions(), JobPermissions::valueOf);
                 break;
             case CLINICAL_ANALYSES:
-                validatePermissions(permissionRule.getPermissions(), ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::valueOf);
+                validatePermissions(permissionRule.getPermissions(), ClinicalAnalysisPermissions::valueOf);
                 break;
             default:
                 throw new CatalogException("Unexpected entry found");

@@ -80,7 +80,6 @@ public abstract class VariantScoreLoader {
             } else {
                 throw new StorageEngineException("Variant score '" + scoreName + "' is in status '" + vsm.getIndexStatus() + "'.");
             }
-            return vsm;
         });
     }
 
@@ -91,7 +90,6 @@ public abstract class VariantScoreLoader {
             } else {
                 vsm.setIndexStatus(TaskMetadata.Status.ERROR);
             }
-            return vsm;
         });
     }
 

@@ -22,11 +22,10 @@ public class VariantExportParams extends VariantQueryParams {
     public static final String DESCRIPTION = "Variant export params";
     private String outdir;
     private String outputFileName;
-    private String outputFileFormat; //<<<<< CAMBIAR
+    private String outputFileFormat;
     private String variantsFile;
     private String include;
     private String exclude;
-    private boolean compress;
     private Integer limit;
     private Integer skip;
     private boolean summary;
@@ -67,15 +66,6 @@ public class VariantExportParams extends VariantQueryParams {
 
     public VariantExportParams setOutputFileFormat(String outputFileFormat) {
         this.outputFileFormat = outputFileFormat;
-        return this;
-    }
-
-    public boolean isCompress() {
-        return compress;
-    }
-
-    public VariantExportParams setCompress(boolean compress) {
-        this.compress = compress;
         return this;
     }
 

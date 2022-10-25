@@ -49,7 +49,6 @@ import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.StatusParam;
-import org.opencb.opencga.core.models.clinical.ClinicalStatusValue;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
@@ -66,11 +65,6 @@ import java.util.stream.Collectors;
 
 public class InterpretationManager extends ResourceManager<Interpretation> {
 
-    protected static Logger logger = LoggerFactory.getLogger(InterpretationManager.class);
-
-    private UserManager userManager;
-    private StudyManager studyManager;
-
     public static final QueryOptions INCLUDE_CLINICAL_ANALYSIS = keepFieldsInQueryOptions(ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS,
             Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCK.key()));
     public static final QueryOptions INCLUDE_INTERPRETATION_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
@@ -82,8 +76,11 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             InterpretationDBAdaptor.QueryParams.ID.key(), InterpretationDBAdaptor.QueryParams.UID.key(),
             InterpretationDBAdaptor.QueryParams.UUID.key(), InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS_ID.key(),
             InterpretationDBAdaptor.QueryParams.VERSION.key(), InterpretationDBAdaptor.QueryParams.STUDY_UID.key(),
-            InterpretationDBAdaptor.QueryParams.LOCKED.key(),  InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS_ID.key(),
+            InterpretationDBAdaptor.QueryParams.LOCKED.key(), InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS_ID.key(),
             InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS_ID.key()));
+    protected static Logger logger = LoggerFactory.getLogger(InterpretationManager.class);
+    private UserManager userManager;
+    private StudyManager studyManager;
 
 
     public InterpretationManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
@@ -223,7 +220,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                     clinicalOptions, userId).first();
 
             authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(),
-                    userId, ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
+                    userId, ClinicalAnalysisPermissions.WRITE);
 
             validateNewInterpretation(study, interpretation, clinicalAnalysis, userId);
 
@@ -312,7 +309,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 // Validate and get panels
                 Set<String> panelIds = interpretation.getPanels().stream().map(Panel::getId).collect(Collectors.toSet());
                 Query query = new Query(PanelDBAdaptor.QueryParams.ID.key(), panelIds);
-                OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> panelResult =
+                OpenCGAResult<Panel> panelResult =
                         panelDBAdaptor.get(study.getUid(), query, PanelManager.INCLUDE_PANEL_IDS, userId);
                 if (panelResult.getNumResults() < panelIds.size()) {
                     throw new CatalogException("Some panels were not found or user doesn't have permissions to see them");
@@ -888,7 +885,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
                 interpretation.getClinicalAnalysisId(), INCLUDE_CLINICAL_ANALYSIS, userId).first();
         authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
-                ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
+                ClinicalAnalysisPermissions.WRITE);
 
         if (clinicalAnalysis.isLocked()) {
             throw new CatalogException("Could not update the Interpretation. Case is locked so no further modifications can be made to"
@@ -1090,7 +1087,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             }
             ClinicalAnalysis clinicalAnalysis = clinicalResult.first();
             authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
-                    ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
+                    ClinicalAnalysisPermissions.WRITE);
             if (clinicalAnalysis.isLocked()) {
                 throw new CatalogException("Could not revert the Interpretation. Case is locked so no further modifications can be made to"
                         + " the Interpretation.");
@@ -1203,7 +1200,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     @Override
-    public OpenCGAResult<?> distinct(String studyId, String field, Query query, String token) throws CatalogException {
+    public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(token);
@@ -1211,20 +1208,14 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
-                .append("field", new Query(query))
+                .append("fields", fields)
                 .append("query", new Query(query))
                 .append("token", token);
         try {
-            InterpretationDBAdaptor.QueryParams param = InterpretationDBAdaptor.QueryParams.getParam(field);
-            if (param == null) {
-                throw new CatalogException("Unknown '" + field + "' parameter.");
-            }
-            Class<?> clazz = getTypeClass(param.type());
-
             fixQueryObject(study, query, userId);
 
             query.append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<?> result = interpretationDBAdaptor.distinct(study.getUid(), field, query, userId, clazz);
+            OpenCGAResult<?> result = interpretationDBAdaptor.distinct(study.getUid(), fields, query, userId);
 
             auditManager.auditDistinct(userId, Enums.Resource.INTERPRETATION, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1290,7 +1281,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             }
             if (checkPermissions) {
                 authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(),
-                        userId, ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
+                        userId, ClinicalAnalysisPermissions.WRITE);
             }
         } catch (CatalogException e) {
             auditManager.auditDelete(operationId, userId, Enums.Resource.INTERPRETATION, "", "", study.getId(), study.getUuid(),

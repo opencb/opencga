@@ -162,13 +162,6 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     private Logger logger;
 
     public MongoDBAdaptorFactory(Configuration catalogConfiguration) throws CatalogDBException {
-        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .setUserPassword(
-                        catalogConfiguration.getCatalog().getDatabase().getUser(),
-                        catalogConfiguration.getCatalog().getDatabase().getPassword())
-                .load(catalogConfiguration.getCatalog().getDatabase().getOptions())
-                .build();
-
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
         for (String host : catalogConfiguration.getCatalog().getDatabase().getHosts()) {
             if (host.contains(":")) {
@@ -178,6 +171,14 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
                 dataStoreServerAddresses.add(new DataStoreServerAddress(host, 27017));
             }
         }
+
+        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
+                .setUserPassword(
+                        catalogConfiguration.getCatalog().getDatabase().getUser(),
+                        catalogConfiguration.getCatalog().getDatabase().getPassword())
+                .setServerAddress(dataStoreServerAddresses)
+                .load(catalogConfiguration.getCatalog().getDatabase().getOptions())
+                .build();
 
         this.mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
         this.configuration = mongoDBConfiguration;

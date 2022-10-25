@@ -35,7 +35,6 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 
@@ -64,7 +63,7 @@ public class PanelWSServer extends OpenCGAWSServer {
     })
     public Response createPanel(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(name = "body", value = "Panel parameters") PanelCreateParams params) {
         try {
             return createOkResponse(panelManager.create(studyStr, params.toPanel(), queryOptions, token));
@@ -130,7 +129,7 @@ public class PanelWSServer extends OpenCGAWSServer {
     public Response updatePanel(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of panel ids") @PathParam("panels") String panels,
-            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(name = "body", value = "Panel parameters") PanelUpdateParams panelParams) {
         try {
             return createOkResponse(panelManager.update(studyStr, getIdList(panels), panelParams, true, queryOptions, token));
@@ -232,7 +231,8 @@ public class PanelWSServer extends OpenCGAWSServer {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
-            return createOkResponse(panelManager.distinct(studyStr, field, query, token));
+            List<String> fields = split(field, ParamConstants.DISTINCT_FIELD_PARAM, true);
+            return createOkResponse(panelManager.distinct(studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -253,10 +253,11 @@ public class PanelWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{panels}/acl")
-    @ApiOperation(value = "Returns the acl of the panels. If member is provided, it will only return the acl for the member.", response = Map.class)
+    @ApiOperation(value = "Returns the acl of the panels. If member is provided, it will only return the acl for the member.",
+            response = PanelAclEntryList.class)
     public Response getAcls(
             @ApiParam(value = ParamConstants.PANELS_DESCRIPTION, required = true) @PathParam("panels")
-                    String sampleIdsStr,
+            String sampleIdsStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "User or group id") @QueryParam("member") String member,
             @ApiParam(value = ParamConstants.SILENT_DESCRIPTION, defaultValue = "false")
@@ -271,7 +272,7 @@ public class PanelWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/acl/{members}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
+    @ApiOperation(value = "Update the set of permissions granted for the member", response = PanelAclEntryList.class)
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,

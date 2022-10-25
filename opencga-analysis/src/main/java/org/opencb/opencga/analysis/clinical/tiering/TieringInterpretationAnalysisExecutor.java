@@ -218,16 +218,15 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
             variantMoIMap.get(variant.getId()).add(UNKNOWN);
         }
 
-        // Primary findings,
-        TieringClinicalVariantCreator creator;
+        // Tiering clinical variant creator
+        TieringClinicalVariantCreator creator = new TieringClinicalVariantCreator(diseasePanels, clinicalAnalysis.getDisorder(), null,
+                penetrance, assembly);
+
+        // Primary findings
         List<ClinicalVariant> primaryFindings;
         try {
-            creator = new TieringClinicalVariantCreator(diseasePanels,
-                    clinicalInterpretationManager.getRoleInCancerManager().getRoleInCancer(),
-                    clinicalInterpretationManager.getActionableVariantManager().getActionableVariants(assembly),
-                    clinicalAnalysis.getDisorder(), null, penetrance, assembly);
             primaryFindings = creator.create(variantList, variantMoIMap);
-        } catch (InterpretationAnalysisException | IOException e) {
+        } catch (InterpretationAnalysisException e) {
             throw new ToolException(e.getMessage(), e);
         }
 
@@ -241,18 +240,6 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
 
         // Write primary findings
         ClinicalUtils.writeClinicalVariants(primaryFindings, Paths.get(getOutDir() + "/primary-findings.json"));
-
-        // Secondary findings, if clinical consent is TRUE
-        List<ClinicalVariant> secondaryFindings = null;
-        try {
-            secondaryFindings = clinicalInterpretationManager.getSecondaryFindings(clinicalAnalysis,
-                    new ArrayList<>(sampleMap.keySet()), studyId, creator, sessionId);
-        } catch (CatalogException | IOException | StorageEngineException e) {
-            throw new ToolException("Error retrieving secondary findings variants", e);
-        }
-
-        // Write primary findings
-        ClinicalUtils.writeClinicalVariants(secondaryFindings, Paths.get(getOutDir() + "/secondary-findings.json"));
     }
 
     private <T> Callable<T> getNamedThread(String name, Callable<T> c) {

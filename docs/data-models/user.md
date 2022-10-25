@@ -20,7 +20,15 @@ User data model hosts information about any user.
 ## Data Model
 
 ### User
+<<<<<<< HEAD
+<<<<<<< HEAD
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/user/User.java).
+=======
+You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/user/User.java).
+>>>>>>> release-2.2.x
+=======
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/user/User.java).
+>>>>>>> release-2.2.x
 
 | Field | Description |
 | :---  | :--- |
@@ -37,8 +45,43 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-52
 | **filters**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/user#userfilter"><em>UserFilter</em></a>>* <br> | <p>A List with related filters.</p> |
 | **attributes**<br>*Map<String,Object>* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 
+<<<<<<< HEAD
+<<<<<<< HEAD
 ### Account
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/user/Account.java).
+=======
+### UserQuota
+You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserQuota.java).
+
+
+=======
+>>>>>>> release-2.2.x
+### UserFilter
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserFilter.java).
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br>*String* <br> | <p>Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.</p> |
+| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **resource**<br>*Resource* <br> | <p>User resource can have the values AUDIT, USER, PROJECT, STUDY, FILE, SAMPLE, JOB, INDIVIDUAL, COHORT, DISEASE_PANEL, FAMILY, CLINICAL_ANALYSIS, INTERPRETATION, VARIANT, ALIGNMENT, CLINICAL, EXPRESSION, RGA and FUNCTIONAL.</p> |
+| **query**<br>*Query* <br> | <p>User filter query</p> |
+| **query**<br>*QueryOptions* <br> | <p>User filter query options</p> |
+
+### UserQuota
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserQuota.java).
+
+
+### UserInternal
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserInternal.java).
+
+
+### Account
+<<<<<<< HEAD
+You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/user/Account.java).
+>>>>>>> release-2.2.x
+=======
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/user/Account.java).
+>>>>>>> release-2.2.x
 
 | Field | Description |
 | :---  | :--- |
@@ -47,6 +90,8 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-52
 | **expirationDate**<br>*String* <br> | <p>Date the account expires.</p> |
 | **authentication**<br>*[AuthenticationOrigin](https://docs.opencga.opencb.org/data-models/user#authenticationorigin)* <br> | <p>How the account is authenticated</p> |
 
+<<<<<<< HEAD
+<<<<<<< HEAD
 ### UserQuota
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserQuota.java).
 
@@ -57,15 +102,20 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-52
 
 ### UserFilter
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserFilter.java).
+=======
+### UserInternal
+You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserInternal.java).
+>>>>>>> release-2.2.x
 
-| Field | Description |
-| :---  | :--- |
-| **id**<br>*String* <br> | <p>Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.</p> |
-| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **resource**<br>*Resource* <br> | <p>User resource can have the values AUDIT, USER, PROJECT, STUDY, FILE, SAMPLE, JOB, INDIVIDUAL, COHORT, DISEASE_PANEL, FAMILY, CLINICAL_ANALYSIS, INTERPRETATION, VARIANT, ALIGNMENT, CLINICAL, EXPRESSION, RGA and FUNCTIONAL.</p> |
-| **query**<br>*Query* <br> | <p>User filter query</p> |
-| **query**<br>*QueryOptions* <br> | <p>User filter query options</p> |
 
 ### AuthenticationOrigin
+<<<<<<< HEAD
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/user/Account/AuthenticationOrigin.java).
+=======
+You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/user/Account/AuthenticationOrigin.java).
+>>>>>>> release-2.2.x
+=======
+### AuthenticationOrigin
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/user/Account/AuthenticationOrigin.java).
+>>>>>>> release-2.2.x
 

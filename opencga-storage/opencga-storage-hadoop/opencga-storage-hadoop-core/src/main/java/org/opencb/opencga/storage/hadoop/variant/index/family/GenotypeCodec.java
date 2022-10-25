@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.family;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 
@@ -34,6 +35,25 @@ public class GenotypeCodec {
 
     public static final byte DISCREPANCY_SIMPLE = 14; // 0/1 AND 1/1 , which whichever phase
     public static final byte DISCREPANCY_ANY    = 15; // Any other combination
+
+    private static final String[] GENOTYPES = new String[]{
+            "0/0",
+            "0/1",
+            "1/1",
+            "0|0",
+            "0|1",
+            "1|0",
+            "1|1",
+            "0",
+            "1",
+            "2/2",
+            "1/2",
+            "./.",
+            "./*",
+            "?/?",
+            "DISCREPANCY_SIMPLE",
+            "DISCREPANCY_ANY",
+    };
 
     // GT codes that refer to only one possible genotype
     private static final boolean[] AMBIGUOUS_GT_CODE = new boolean[]{
@@ -144,6 +164,15 @@ public class GenotypeCodec {
                     }
                 }
         }
+    }
+
+    public static String decode(int i) {
+        return GENOTYPES[i];
+    }
+
+    public static Pair<String, String> decodeParents(byte code) {
+        byte[] split = split(code);
+        return Pair.of(decode(split[0]), decode(split[1]));
     }
 
     public static boolean isAmbiguousCode(int i) {

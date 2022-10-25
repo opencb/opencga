@@ -344,7 +344,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         }
 
         boolean archiveIterator = options.getBoolean("archive", false);
-        boolean nativeSupportedQuery = VariantHBaseQueryParser.isSupportedQuery(variantQuery.getQuery());
+        Set<String> unsupportedParamsFromQuery = VariantHBaseQueryParser.unsupportedParamsFromQuery(variantQuery.getQuery());
+        boolean nativeSupportedQuery = unsupportedParamsFromQuery.isEmpty();
+        if (!nativeSupportedQuery) {
+            logger.info("Unsupported native query : " + unsupportedParamsFromQuery);
+        }
         boolean hbaseIterator = nativeSupportedQuery && options.getBoolean(NATIVE, nativeSupportedQuery);
         // || VariantHBaseQueryParser.fullySupportedQuery(query);
 
@@ -487,10 +491,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     public VariantDBIterator archiveIterator(String study, String file, Query query, QueryOptions options) {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
 
-        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
-        int studyId = studyMetadata.getId();
-
-        Integer fileId = metadataManager.getFileId(studyMetadata.getId(), file, true);
+        int studyId = metadataManager.getStudyId(study);
+        Integer fileId = metadataManager.getFileId(studyId, file, true);
         if (fileId == null) {
             throw VariantQueryException.fileNotFound(file, study);
         }

@@ -52,7 +52,7 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.UserFilter;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -67,12 +67,14 @@ import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProj
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static org.opencb.biodata.models.clinical.ClinicalProperty.ModeOfInheritance.*;
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
@@ -107,7 +109,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             QueryParam.create("familyProband", FAMILY_PROBAND_DESC, QueryParam.Type.TEXT);
     public static final String FAMILY_SEGREGATION_DESCR = "Filter by segregation mode from a given family. Accepted values: "
             + "[ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, "
-            + "deNovo, mendelianError, compoundHeterozygous ]";
+            + "deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]";
     public static final QueryParam FAMILY_SEGREGATION =
             QueryParam.create("familySegregation", FAMILY_SEGREGATION_DESCR, QueryParam.Type.TEXT);
 
@@ -167,54 +169,55 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             SAVED_FILTER
     );
 
-//    public enum SegregationMode {
-//        AUTOSOMAL_DOMINANT("monoallelic"),
-//        AUTOSOMAL_RECESSIVE("biallelic"),
-//        X_LINKED_DOMINANT,
-//        X_LINKED_RECESSIVE,
-//        Y_LINKED,
-//        MITOCHONDRIAL,
-//
-//        DE_NOVO,
-//        MENDELIAN_ERROR("me"),
-//        COMPOUND_HETEROZYGOUS("ch");
-//
-//        private static Map<String, SegregationMode> namesMap;
-//
-//        static {
-//            namesMap = new HashMap<>();
-//            for (SegregationMode mode : values()) {
-//                namesMap.put(mode.name().toLowerCase(), mode);
-//                namesMap.put(mode.name().replace("_", "").toLowerCase(), mode);
-//                if (mode.names != null) {
-//                    for (String name : mode.names) {
-//                        namesMap.put(name.toLowerCase(), mode);
-//                    }
-//                }
-//            }
-//        }
-//
-//        private final String[] names;
-//
-//        SegregationMode(String... names) {
-//            this.names = names;
-//        }
-//
-//        @Nullable
-//        public static SegregationMode parseOrNull(String name) {
-//            return namesMap.get(name.toLowerCase());
-//        }
-//
-//        @Nonnull
-//        public static SegregationMode parse(String name) {
-//            SegregationMode segregationMode = namesMap.get(name.toLowerCase());
-//            if (segregationMode == null) {
-//                throw new VariantQueryException("Unknown SegregationMode value: '" + name + "'");
-//            }
-//            return segregationMode;
-//        }
-//
-//    }
+    public enum SegregationMode {
+        AUTOSOMAL_DOMINANT("monoallelic"),
+        AUTOSOMAL_RECESSIVE("biallelic"),
+        X_LINKED_DOMINANT,
+        X_LINKED_RECESSIVE,
+        Y_LINKED,
+        MITOCHONDRIAL,
+
+        DE_NOVO,
+        DE_NOVO_STRICT,
+        MENDELIAN_ERROR("me"),
+        COMPOUND_HETEROZYGOUS("ch");
+
+        private static Map<String, SegregationMode> namesMap;
+
+        static {
+            namesMap = new HashMap<>();
+            for (SegregationMode mode : values()) {
+                namesMap.put(mode.name().toLowerCase(), mode);
+                namesMap.put(mode.name().replace("_", "").toLowerCase(), mode);
+                if (mode.names != null) {
+                    for (String name : mode.names) {
+                        namesMap.put(name.toLowerCase(), mode);
+                    }
+                }
+            }
+        }
+
+        private final String[] names;
+
+        SegregationMode(String... names) {
+            this.names = names;
+        }
+
+        @Nullable
+        public static SegregationMode parseOrNull(String name) {
+            return namesMap.get(name.toLowerCase());
+        }
+
+        @Nonnull
+        public static SegregationMode parse(String name) {
+            SegregationMode segregationMode = namesMap.get(name.toLowerCase());
+            if (segregationMode == null) {
+                throw new VariantQueryException("Unknown SegregationMode value: '" + name + "'");
+            }
+            return segregationMode;
+        }
+
+    }
 
     private final StudyFilterValidator studyFilterValidator;
     private final FileFilterValidator fileFilterValidator;
@@ -388,7 +391,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             }
         }
 
-
+        ParsedVariantQuery.VariantQueryXref xrefs = VariantQueryParser.preProcessXrefs(query);
+        Region segregationChromosome = null;
         if (isValidParam(query, FAMILY)) {
             String familyId = query.getString(FAMILY.key());
             if (StringUtils.isEmpty(defaultStudyStr)) {
@@ -478,7 +482,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 PedigreeManager pedigreeManager = new PedigreeManager(pedigree);
 
                 String proband = query.getString(FAMILY_PROBAND.key());
-                ClinicalProperty.ModeOfInheritance segregationMode = parse(query.getString(FAMILY_SEGREGATION.key()));
+                SegregationMode segregationMode = SegregationMode.parse(query.getString(FAMILY_SEGREGATION.key()));
 
                 List<Member> children;
                 if (StringUtils.isNotEmpty(proband)) {
@@ -498,7 +502,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     children = pedigreeManager.getWithoutChildren();
                 }
 
-                if (segregationMode == MENDELIAN_ERROR || segregationMode == DE_NOVO) {
+                if (segregationMode == SegregationMode.MENDELIAN_ERROR
+                        || segregationMode == SegregationMode.DE_NOVO
+                        || segregationMode == SegregationMode.DE_NOVO_STRICT) {
                     List<String> childrenIds = children.stream().map(Member::getId).collect(Collectors.toList());
                     List<String> childrenSampleIds = new ArrayList<>(childrenIds.size());
 
@@ -511,12 +517,14 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         childrenSampleIds.add(sample.getId());
                     }
 
-                    if (segregationMode == DE_NOVO) {
+                    if (segregationMode == SegregationMode.DE_NOVO) {
                         query.put(SAMPLE_DE_NOVO.key(), childrenSampleIds);
+                    } else if (segregationMode == SegregationMode.DE_NOVO_STRICT) {
+                        query.put(SAMPLE_DE_NOVO_STRICT.key(), childrenSampleIds);
                     } else {
                         query.put(SAMPLE_MENDELIAN_ERROR.key(), childrenSampleIds);
                     }
-                } else if (segregationMode == COMPOUND_HETEROZYGOUS) {
+                } else if (segregationMode == SegregationMode.COMPOUND_HETEROZYGOUS) {
                     if (children.size() > 1) {
                         String childrenStr = children.stream().map(Member::getId).collect(Collectors.joining("', '", "[ '", "' ]"));
                         throw new VariantQueryException(
@@ -592,12 +600,10 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         individualToSample.put(entry.getKey(), samplesUidToId.get(entry.getValue()));
                     }
 
-                    String gtFilter = buildMoIGenotypeFilter(pedigree, disorder, segregationMode, individualToSample);
-                    if (gtFilter == null) {
-                        throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, segregationMode.toString(),
-                                "Invalid segregation mode for the family '" + family.getId() + "'");
-                    }
-                    query.put(GENOTYPE.key(), gtFilter);
+                    segregationChromosome = processSegregationFilter(query, cellBaseUtils, xrefs,
+                            pedigree, segregationMode, disorder, individualToSample,
+                            () -> VariantQueryException.malformedParam(FAMILY_SEGREGATION, segregationMode.toString(),
+                                    "Invalid segregation mode for the family '" + family.getId() + "'"));
                 }
             } else {
                 if (isValidParam(query, FAMILY_DISORDER)) {
@@ -639,7 +645,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         }
 
         if (isValidParam(query, SAMPLE)) {
-            processSampleFilter(query, defaultStudyStr, token);
+            segregationChromosome = processSampleFilter(query, defaultStudyStr, cellBaseUtils, xrefs, token);
         }
 
         if (isValidParam(query, PANEL)) {
@@ -684,14 +690,21 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 //                    }
                 }
             }
+            if (segregationChromosome != null) {
+                // Remove panel elements that are out of the segregationChromosome (if any)
+                Map<String, Region> panelGeneRegionMap = cellBaseUtils.getGeneRegionMap(new ArrayList<>(panelGenes), true);
+                for (Map.Entry<String, Region> entry : panelGeneRegionMap.entrySet()) {
+                    if (VariantQueryUtils.intersectRegions(entry.getValue(), segregationChromosome) == null) {
+                        panelGenes.remove(entry.getKey());
+                    }
+                }
+                Region finalSegregationChromosome = segregationChromosome;
+                panelRegions.removeIf(region -> VariantQueryUtils.intersectRegions(region, finalSegregationChromosome) == null);
+            }
+
             Set<Region> queryRegions = isValidParam(query, REGION)
                     ? new HashSet<>(mergeRegions(Region.parseRegions(query.getString(REGION.key()), true)))
                     : Collections.emptySet();
-
-            ParsedVariantQuery.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
-            // Extract GENEs from XRefs
-            query.put(GENE.key(), xrefs.getGenes());
-            query.put(ANNOT_XREF.key(), xrefs.getOtherXrefs());
 
             if (queryRegions.isEmpty() && xrefs.getGenes().isEmpty() && xrefs.getVariants().isEmpty()) {
                 // Nothing to intersect
@@ -809,7 +822,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 } else {
                     query.put(REGION.key(), regionsFinal);
                 }
-                if (genesFinal.isEmpty() && variantsFinal.isEmpty() && regionsFinal.isEmpty()) {
+                if (genesFinal.isEmpty() && geneRegionsFinal.isEmpty() && variantsFinal.isEmpty() && regionsFinal.isEmpty()) {
                     query.put(REGION.key(), VariantQueryUtils.NON_EXISTING_REGION);
                 }
             }
@@ -934,14 +947,16 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         return individuaOrSample;
     }
 
-    private void processSampleFilter(Query query, String defaultStudyStr, String token) throws CatalogException {
+    private Region processSampleFilter(Query query, String defaultStudyStr, CellBaseUtils cellBaseUtils,
+                                     ParsedVariantQuery.VariantQueryXref xrefs, String token) throws CatalogException {
+        Region segregationChromosome = null;
         String sampleFilterValue = query.getString(SAMPLE.key());
         if (sampleFilterValue.contains(IS)) {
-            ClinicalProperty.ModeOfInheritance moi = null;
+            SegregationMode moi = null;
             ParsedQuery<KeyOpValue<String, List<String>>> sampleFilter = parseGenotypeFilter(sampleFilterValue);
             for (KeyOpValue<String, List<String>> keyOpValue : sampleFilter.getValues()) {
                 for (String value : keyOpValue.getValue()) {
-                    ClinicalProperty.ModeOfInheritance aux = ClinicalProperty.ModeOfInheritance.parseOrNull(value);
+                    SegregationMode aux = SegregationMode.parseOrNull(value);
                     if (aux != null) {
                         moi = aux;
                     }
@@ -1023,16 +1038,19 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     query.put(INCLUDE_SAMPLE.key(), includeSample);
                 }
 
-                if (moi == ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS) {
+                if (moi == SegregationMode.COMPOUND_HETEROZYGOUS) {
                     String fatherId = member.getFather() != null ? member.getFather().getId() : MISSING_SAMPLE;
                     String motherId = member.getMother() != null ? member.getMother().getId() : MISSING_SAMPLE;
 
                     query.put(SAMPLE_COMPOUND_HETEROZYGOUS.key(), Arrays.asList(member.getId(), fatherId, motherId));
                     query.remove(SAMPLE.key());
-                } else if (moi == ClinicalProperty.ModeOfInheritance.DE_NOVO) {
+                } else if (moi == SegregationMode.DE_NOVO) {
                     query.put(SAMPLE_DE_NOVO.key(), member.getId());
                     query.remove(SAMPLE.key());
-                } else if (moi == ClinicalProperty.ModeOfInheritance.MENDELIAN_ERROR) {
+                } else if (moi == SegregationMode.DE_NOVO_STRICT) {
+                    query.put(SAMPLE_DE_NOVO_STRICT.key(), member.getId());
+                    query.remove(SAMPLE.key());
+                } else if (moi == SegregationMode.MENDELIAN_ERROR) {
                     query.put(SAMPLE_MENDELIAN_ERROR.key(), member.getId());
                     query.remove(SAMPLE.key());
                 } else {
@@ -1051,17 +1069,15 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         throw VariantQueryException.malformedParam(SAMPLE, sampleFilterValue,
                                 "Found multiple disorders for sample '" + sampleId + "'");
                     }
-                    String genotypeFilter = buildMoIGenotypeFilter(pedigree, individual.getDisorders().get(0), moi);
-                    if (genotypeFilter == null) {
-                        throw VariantQueryException.malformedParam(SAMPLE, sampleFilterValue,
-                                "Invalid segregation mode for the sample '" + sampleId + "'");
-                    }
-                    query.put(GENOTYPE.key(), genotypeFilter);
+                    segregationChromosome = processSegregationFilter(query, cellBaseUtils, xrefs,
+                            pedigree, moi, individual.getDisorders().get(0), null,
+                            () -> VariantQueryException.malformedParam(SAMPLE, sampleFilterValue,
+                                    "Invalid segregation mode for the sample '" + sampleId + "'"));
                     query.remove(SAMPLE.key());
                 }
             }
-
         }
+        return segregationChromosome;
     }
 
     private Set<Long> fetchIndexedSampleUIds(String token, String defaultStudyStr) throws CatalogException {
@@ -1075,15 +1091,13 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 .map(Sample::getUid).collect(Collectors.toSet());
     }
 
-
-    private String buildMoIGenotypeFilter(Pedigree pedigree, Disorder disorder, ClinicalProperty.ModeOfInheritance moi) {
-        return buildMoIGenotypeFilter(pedigree, disorder, moi, null);
-    }
-
-    private String buildMoIGenotypeFilter(Pedigree pedigree, Disorder disorder, ClinicalProperty.ModeOfInheritance moi,
-                                          Map<String, String> pedigreeMemberToSampleId) {
+    private Region processSegregationFilter(Query query, CellBaseUtils cellBaseUtils, ParsedVariantQuery.VariantQueryXref xrefs,
+                                            Pedigree pedigree,
+                                            SegregationMode segregationMode, Disorder disorder,
+                                            Map<String, String> pedigreeMemberToSampleId, Supplier<VariantQueryException> onError) {
+        Region segregationChromosome = null;
         Map<String, List<String>> genotypes;
-        switch (moi) {
+        switch (segregationMode) {
             case AUTOSOMAL_DOMINANT:
                 genotypes = ModeOfInheritance.dominant(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
                 break;
@@ -1097,22 +1111,28 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 //                genotypes = ModeOfInheritance.recessive(pedigree, disorder, ClinicalProperty.Penetrance.INCOMPLETE);
 //                break;
             case X_LINKED_DOMINANT:
+                segregationChromosome = new Region("X");
                 genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true, ClinicalProperty.Penetrance.COMPLETE);
                 break;
             case X_LINKED_RECESSIVE:
+                segregationChromosome = new Region("X");
                 genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false, ClinicalProperty.Penetrance.COMPLETE);
                 break;
             case Y_LINKED:
+
+                segregationChromosome = new Region("Y");
                 genotypes = ModeOfInheritance.yLinked(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
                 break;
             case MITOCHONDRIAL:
+
+                segregationChromosome = new Region("MT");
                 genotypes = ModeOfInheritance.mitochondrial(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
                 break;
             default:
-                throw new IllegalArgumentException("Unexpected segregation mode " + moi);
+                throw new IllegalArgumentException("Unexpected segregation mode " + segregationMode);
         }
         if (ModeOfInheritance.isEmptyMapOfGenotypes(genotypes)) {
-            return null;
+            throw onError.get();
         }
 
         StringBuilder sb = new StringBuilder();
@@ -1144,7 +1164,61 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 sb.append(gt);
             }
         }
-        return sb.toString();
+        String gtFilter = sb.toString();
+
+
+        if (segregationChromosome != null) {
+            boolean mightAddRegionFilter = true;
+            if (isValidParam(query, REGION.key())) {
+                mightAddRegionFilter = false;
+                List<Region> invalidRegions = new ArrayList<>();
+                for (Region region : Region.parseRegions(query.getString(REGION.key()))) {
+                    if (VariantQueryUtils.intersectRegions(segregationChromosome, region) == null) {
+                        invalidRegions.add(region);
+                    }
+                }
+                if (!invalidRegions.isEmpty()) {
+                    throw VariantQueryException.unsupportedParamsCombination(
+                            REGION, invalidRegions.toString(),
+                            FAMILY_SEGREGATION, query.getString(FAMILY_SEGREGATION.key()));
+                }
+            }
+            if (!xrefs.getVariants().isEmpty()) {
+                mightAddRegionFilter = false;
+                List<Variant> invalidVariants = new ArrayList<>();
+                for (Variant variant : xrefs.getVariants()) {
+                    if (!variant.getChromosome().equals(segregationChromosome.getChromosome())) {
+                        invalidVariants.add(variant);
+                    }
+                }
+                if (!invalidVariants.isEmpty()) {
+                    throw VariantQueryException.unsupportedParamsCombination(
+                            ID, invalidVariants.toString(),
+                            FAMILY_SEGREGATION, query.getString(FAMILY_SEGREGATION.key()));
+                }
+            }
+            if (!xrefs.getGenes().isEmpty()) {
+                mightAddRegionFilter = false;
+                List<String> invalidGenes = new ArrayList<>();
+                Map<String, Region> geneRegionMap = cellBaseUtils.getGeneRegionMap(xrefs.getGenes(), false);
+                for (Map.Entry<String, Region> entry : geneRegionMap.entrySet()) {
+                    if (VariantQueryUtils.intersectRegions(segregationChromosome, entry.getValue()) == null) {
+                        invalidGenes.add(entry.getKey());
+                    }
+                }
+                if (!invalidGenes.isEmpty()) {
+                    throw VariantQueryException.unsupportedParamsCombination(
+                            GENE, invalidGenes.toString(),
+                            FAMILY_SEGREGATION, query.getString(FAMILY_SEGREGATION.key()));
+                }
+            }
+            if (mightAddRegionFilter) {
+                query.put(REGION.key(), segregationChromosome);
+                query.put(PANEL_INTERSECTION.key(), true);
+            }
+        }
+        query.put(GENOTYPE.key(), gtFilter);
+        return segregationChromosome;
     }
 
     /**
@@ -1258,8 +1332,16 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     }
                 }
             }
-            if (individual.getFather() != null && membersMap.containsKey(individual.getFather().getUid())) {
-                Individual father = membersMap.get(individual.getFather().getUid());
+            if (individual.getFather() != null && individual.getFather().getUid() > 0) {
+                long uid = individual.getFather().getUid();
+                Individual father = membersMap.get(uid);
+                if (father == null) {
+                    father = catalogManager.getIndividualManager()
+                            .search(studyFqn,
+                                    new Query(IndividualDBAdaptor.QueryParams.UID.key(), uid),
+                                    new QueryOptions(INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key()), sessionId).first();
+                    membersMap.put(uid, father);
+                }
                 if (CollectionUtils.isNotEmpty(father.getSamples())) {
                     for (Sample sample : father.getSamples()) {
                         sample = catalogManager.getSampleManager().search(studyFqn,
@@ -1273,8 +1355,16 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     }
                 }
             }
-            if (individual.getMother() != null && membersMap.containsKey(individual.getMother().getUid())) {
-                Individual mother = membersMap.get(individual.getMother().getUid());
+            if (individual.getMother() != null && individual.getMother().getUid() > 0) {
+                long uid = individual.getMother().getUid();
+                Individual mother = membersMap.get(uid);
+                if (mother == null) {
+                    mother = catalogManager.getIndividualManager()
+                            .search(studyFqn,
+                                    new Query(IndividualDBAdaptor.QueryParams.UID.key(), uid),
+                                    new QueryOptions(INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key()), sessionId).first();
+                    membersMap.put(uid, mother);
+                }
                 if (CollectionUtils.isNotEmpty(mother.getSamples())) {
                     for (Sample sample : mother.getSamples()) {
                         sample = catalogManager.getSampleManager().search(studyFqn,
@@ -1504,7 +1594,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 //                        SampleManager.INCLUDE_SAMPLE_IDS, sessionId);
                 long numMatches = catalogManager.getSampleManager()
                         .count(defaultStudyStr, new Query(SampleDBAdaptor.QueryParams.ID.key(), values)
-                                        .append(ParamConstants.ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW_VARIANTS),
+                                        .append(ParamConstants.ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS),
                                 sessionId).getNumMatches();
                 if (numMatches != values.size()) {
                     OpenCGAResult<Sample> samples = catalogManager.getSampleManager()

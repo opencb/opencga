@@ -30,6 +30,8 @@ import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.opencga.core.models.common.mixins.GenotypeJsonMixin;
+import org.opencb.opencga.core.models.common.mixins.VariantStatsJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.*;
 import org.slf4j.Logger;

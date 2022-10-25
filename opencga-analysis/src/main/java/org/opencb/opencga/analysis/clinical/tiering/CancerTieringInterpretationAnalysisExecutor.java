@@ -19,6 +19,7 @@ package org.opencb.opencga.analysis.clinical.tiering;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.ClinicalAcmg;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
@@ -211,22 +212,27 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
                 .get(query, QueryOptions.empty(), sessionId);
 
         if (CollectionUtils.isNotEmpty(variantVariantQueryResult.getResults())) {
-            Map<String, ClinicalProperty.RoleInCancer> roleInCancer = clinicalInterpretationManager.getRoleInCancerManager()
-                    .getRoleInCancer();
             for (Variant variant : variantVariantQueryResult.getResults()) {
+                List<ClinicalProperty.RoleInCancer> rolesInCancer = clinicalInterpretationManager.getRolesInCancer(variant.getAnnotation());
                 if (variant.getAnnotation() != null && CollectionUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
                     List<ClinicalVariantEvidence> clinicalVariantEvidences = new ArrayList<>();
                     for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
                         List<SequenceOntologyTerm> somaticSOTerms = getSomaticSequenceOntologyTerms(ct);
-                        if (roleInCancer.containsKey(ct.getGeneId()) || roleInCancer.containsKey(ct.getGeneName())) {
+                        if (CollectionUtils.isNotEmpty(rolesInCancer)) {
                             // Create clinical variant evidence with TIER 2
                             ClinicalVariantEvidence clinicalVariantEvidence = new ClinicalVariantEvidence();
 
-                            clinicalVariantEvidence.setGenomicFeature(new GenomicFeature(ct.getGeneId(), "GENE",
-                                    ct.getTranscriptId(), ct.getGeneName(), somaticSOTerms, null));
+                            // Genomic variant
+                            clinicalVariantEvidence.setGenomicFeature(new GenomicFeature(ct.getGeneId(), "GENE", ct.getTranscriptId(),
+                                    ct.getGeneName(), somaticSOTerms, null));
+
+                            // Roles in cancer
+                            clinicalVariantEvidence.setRolesInCancer(rolesInCancer);
+
+                            // Variant classification
                             VariantClassification classification = new VariantClassification();
                             classification.setTier(TIER_2);
-                            List<String> acmg = calculateAcmgClassification(variant);
+                            List<ClinicalAcmg> acmg = calculateAcmgClassification(variant);
                             classification.setAcmg(acmg);
                             classification.setClinicalSignificance(computeClinicalSignificance(acmg));
                             clinicalVariantEvidence.setClassification(classification);
@@ -421,6 +427,7 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
         clinicalVariantEvidence.setPanelId(diseasePanel.getId());
         clinicalVariantEvidence.setGenomicFeature(new GenomicFeature(ct.getGeneId(), "GENE",
                 ct.getTranscriptId(), ct.getGeneName(), soTerms, panelGene.getXrefs()));
+        clinicalVariantEvidence.setRolesInCancer(clinicalInterpretationManager.getRolesInCancer(variant.getAnnotation()));
         VariantClassification classification = new VariantClassification();
         classification.setTier(tier);
         classification.setAcmg(calculateAcmgClassification(variant));

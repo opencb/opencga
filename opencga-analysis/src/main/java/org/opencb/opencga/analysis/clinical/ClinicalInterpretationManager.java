@@ -20,7 +20,6 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.*;
@@ -30,6 +29,7 @@ import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
+import org.opencb.biodata.models.variant.avro.GeneCancerAssociation;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.clinical.ClinicalVariantCreator;
@@ -55,9 +55,9 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.project.Project;
-import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
@@ -90,9 +90,6 @@ import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.is
 
 public class ClinicalInterpretationManager extends StorageManager {
 
-    public static final int LOW_COVERAGE_DEFAULT = 20;
-    public static final int DEFAULT_COVERAGE_THRESHOLD = 20;
-
     private String database;
 
     private InterpretationAnalysisConfiguration config;
@@ -104,9 +101,6 @@ public class ClinicalInterpretationManager extends StorageManager {
     protected CellBaseClient cellBaseClient;
     protected AlignmentStorageManager alignmentStorageManager;
 
-    private RoleInCancerManager roleInCancerManager;
-    private ActionableVariantManager actionableVariantManager;
-
     private VariantCatalogQueryUtils catalogQueryUtils;
 
     private static Query defaultDeNovoQuery;
@@ -115,14 +109,14 @@ public class ClinicalInterpretationManager extends StorageManager {
     static {
         defaultDeNovoQuery = new Query()
                 .append(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
-                          ParamConstants.POP_FREQ_1000G + ":AFR<0.002;"
-                        + ParamConstants.POP_FREQ_1000G + ":AMR<0.002;"
-                        + ParamConstants.POP_FREQ_1000G + ":EAS<0.002;"
-                        + ParamConstants.POP_FREQ_1000G + ":EUR<0.002;"
-                        + ParamConstants.POP_FREQ_1000G + ":SAS<0.002;"
-                        + "GNOMAD_EXOMES:AFR<0.001;GNOMAD_EXOMES:AMR<0.001;"
-                        + "GNOMAD_EXOMES:EAS<0.001;GNOMAD_EXOMES:FIN<0.001;GNOMAD_EXOMES:NFE<0.001;GNOMAD_EXOMES:ASJ<0.001;"
-                        + "GNOMAD_EXOMES:OTH<0.002")
+                        ParamConstants.POP_FREQ_1000G + ":AFR<0.002;"
+                                + ParamConstants.POP_FREQ_1000G + ":AMR<0.002;"
+                                + ParamConstants.POP_FREQ_1000G + ":EAS<0.002;"
+                                + ParamConstants.POP_FREQ_1000G + ":EUR<0.002;"
+                                + ParamConstants.POP_FREQ_1000G + ":SAS<0.002;"
+                                + "GNOMAD_EXOMES:AFR<0.001;GNOMAD_EXOMES:AMR<0.001;"
+                                + "GNOMAD_EXOMES:EAS<0.001;GNOMAD_EXOMES:FIN<0.001;GNOMAD_EXOMES:NFE<0.001;GNOMAD_EXOMES:ASJ<0.001;"
+                                + "GNOMAD_EXOMES:OTH<0.002")
                 .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.001")
                 .append(VariantQueryParam.ANNOT_BIOTYPE.key(), ModeOfInheritance.proteinCoding)
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ModeOfInheritance.extendedLof)
@@ -146,9 +140,6 @@ public class ClinicalInterpretationManager extends StorageManager {
 
         this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
         this.alignmentStorageManager = new AlignmentStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
-
-        this.roleInCancerManager = new RoleInCancerManager(opencgaHome);
-        this.actionableVariantManager = new ActionableVariantManager(opencgaHome);
 
         this.catalogQueryUtils = new VariantCatalogQueryUtils(catalogManager);
 
@@ -250,7 +241,6 @@ public class ClinicalInterpretationManager extends StorageManager {
 
     public OpenCGAResult<ClinicalVariant> get(Query query, QueryOptions queryOptions, InterpretationAnalysisConfiguration config,
                                               String token) throws CatalogException, IOException, StorageEngineException {
-
         VariantQueryResult<Variant> variantQueryResult = variantStorageManager.get(query, queryOptions, token);
         List<Variant> variants = variantQueryResult.getResults();
 
@@ -296,15 +286,67 @@ public class ClinicalInterpretationManager extends StorageManager {
             }
         }
 
-        Map<String, ClinicalProperty.RoleInCancer> roleInCancer = roleInCancerManager.getRoleInCancer();
-        Map<String, List<String>> actionableVariants = actionableVariantManager.getActionableVariants(assembly);
-
         List<ClinicalVariant> clinicalVariants = new ArrayList<>();
 
         for (Variant variant : variants) {
-            ClinicalVariant clinicalVariant = createClinicalVariant(variant, genePanelMap, roleInCancer, actionableVariants, config);
+            ClinicalVariant clinicalVariant = createClinicalVariant(variant, genePanelMap, config);
             if (clinicalVariant != null) {
                 clinicalVariants.add(clinicalVariant);
+            }
+        }
+
+        // Include interpretation management
+        String includeInterpretation = query.getString(ParamConstants.INCLUDE_INTERPRETATION);
+        logger.info("Checking the parameter {} with value = {} in query {}", ParamConstants.INCLUDE_INTERPRETATION, includeInterpretation,
+                query.toJson());
+        if (StringUtils.isNotEmpty(includeInterpretation)) {
+            OpenCGAResult<Interpretation> interpretationResult = catalogManager.getInterpretationManager().get(studyId,
+                    includeInterpretation, QueryOptions.empty(), token);
+            int numResults = interpretationResult.getNumResults();
+            logger.info("Checking number of results ({}) found for the interpretation ID {}, it should be 1, otherwise something wrong"
+                    + " happened", numResults, includeInterpretation);
+            if (numResults == 1) {
+                // Interpretation found, check if its primary findings are matching any retrieved variants, in that case set the
+                // fields: comments, filters, discussion, status and attributes
+                Interpretation interpretation = interpretationResult.first();
+                if (CollectionUtils.isNotEmpty(interpretation.getPrimaryFindings())) {
+                    logger.info("Checking the primary findings ({}) of the interpretation {}", interpretation.getPrimaryFindings().size(),
+                            query.getString(ParamConstants.INCLUDE_INTERPRETATION));
+                    for (ClinicalVariant primaryFinding : interpretation.getPrimaryFindings()) {
+                        for (ClinicalVariant clinicalVariant : clinicalVariants) {
+                            if (clinicalVariant.toStringSimple().equals(primaryFinding.toStringSimple())) {
+                                // Only it's updated the following fields
+                                // Important to note that the results include the "new" clinical evidences
+                                clinicalVariant.setComments(primaryFinding.getComments())
+                                        .setFilters(primaryFinding.getFilters())
+                                        .setDiscussion(primaryFinding.getDiscussion())
+                                        .setStatus(primaryFinding.getStatus())
+                                        .setAttributes(primaryFinding.getAttributes());
+
+                                // Update clinical evidence review if it is necessary
+                                if (CollectionUtils.isNotEmpty(primaryFinding.getEvidences())
+                                        && CollectionUtils.isNotEmpty(clinicalVariant.getEvidences())) {
+                                    for (ClinicalVariantEvidence primaryFindingEvidence : primaryFinding.getEvidences()) {
+                                        for (ClinicalVariantEvidence clinicalVariantEvidence : clinicalVariant.getEvidences()) {
+                                            if (matchEvidence(primaryFindingEvidence, clinicalVariantEvidence)) {
+                                                clinicalVariantEvidence.setReview(primaryFindingEvidence.getReview());
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    logger.warn("Interpretation {} does not have any primary finding", includeInterpretation);
+                }
+            } else {
+                if (interpretationResult.getNumResults() <= 0) {
+                    logger.warn("Interpretation {} not found when running the clinical variant query", includeInterpretation);
+                } else {
+                    logger.warn("Multiple interpretations {} were found for ID {} when running the clinical variant query",
+                            interpretationResult.getNumResults(), includeInterpretation);
+                }
             }
         }
 
@@ -315,67 +357,30 @@ public class ClinicalInterpretationManager extends StorageManager {
         return result;
     }
 
-    /*--------------------------------------------------------------------------*/
-    /*  Get actionable variants                                                 */
-    /*--------------------------------------------------------------------------*/
-
-    public OpenCGAResult<ClinicalVariant> getActionableVariants(String studyId, String sampleId, String token)
-            throws CatalogException, IOException, StorageEngineException {
-
-        // Start watch
-        StopWatch watch = StopWatch.createStarted();
-
-        List<Variant> variants = new ArrayList<>();
-
-        // Prepare query object
-        Query query = new Query();
-        query.put(STUDY.key(), studyId);
-        query.put(VariantQueryParam.SAMPLE.key(), sampleId);
-
-        // Get the correct actionable variants for the assembly
-        String assembly = getAssembly(studyId, token);
-        Map<String, List<String>> actionableVariants = actionableVariantManager.getActionableVariants(assembly);
-        if (actionableVariants != null) {
-            Iterator<String> iterator = actionableVariants.keySet().iterator();
-            List<String> variantIds = new ArrayList<>();
-            while (iterator.hasNext()) {
-                String id = iterator.next();
-                variantIds.add(id);
-                if (variantIds.size() >= 1000) {
-                    query.put(VariantQueryParam.ID.key(), variantIds);
-                    VariantQueryResult<Variant> result = variantStorageManager.get(query, QueryOptions.empty(), token);
-                    variants.addAll(result.getResults());
-                    variantIds.clear();
-                }
+    private boolean matchEvidence(ClinicalVariantEvidence ev1, ClinicalVariantEvidence ev2) {
+        // Check panel ID
+        if (ev1.getPanelId() != null && ev2.getPanelId() != null && !ev1.getPanelId().equals(ev2.getPanelId())) {
+            return false;
+        }
+        if (StringUtils.isNotEmpty(ev1.getPanelId()) || StringUtils.isNotEmpty(ev2.getPanelId())) {
+            return false;
+        }
+        if (ev1.getGenomicFeature() != null && ev2.getGenomicFeature() != null) {
+            if (ev1.getGenomicFeature().getTranscriptId() != null && ev2.getGenomicFeature().getTranscriptId() != null
+                    && ev1.getGenomicFeature().getTranscriptId().equals(ev2.getGenomicFeature().getTranscriptId())) {
+                return true;
             }
-
-            if (variantIds.size() > 0) {
-                query.put(VariantQueryParam.ID.key(), variantIds);
-                VariantQueryResult<Variant> result = variantStorageManager.get(query, QueryOptions.empty(), token);
-                variants.addAll(result.getResults());
+            if (ev1.getGenomicFeature().getId() != null && ev2.getGenomicFeature().getId() != null
+                    && ev1.getGenomicFeature().getId().equals(ev2.getGenomicFeature().getId())) {
+                return true;
             }
         }
-
-        // Convert variant into clinical variant
-        List<ClinicalVariant> clinicalVariants = new ArrayList<>();
-        for (Variant variant : variants) {
-            ClinicalVariant clinicalVariant = createClinicalVariant(variant, null, roleInCancerManager.getRoleInCancer(),
-                    actionableVariants, null);
-            if (clinicalVariant != null) {
-                clinicalVariants.add(clinicalVariant);
-            }
-        }
-
-        int dbTime = (int) watch.getTime(TimeUnit.MILLISECONDS);
-
-        return new OpenCGAResult<>(dbTime, Collections.emptyList(), clinicalVariants.size(), clinicalVariants, clinicalVariants.size());
+        return false;
     }
 
     /*--------------------------------------------------------------------------*/
 
     private ClinicalVariant createClinicalVariant(Variant variant, Map<String, Set<String>> genePanelMap,
-                                                  Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
-                                                  Map<String, List<String>> actionableVariants,
                                                   InterpretationAnalysisConfiguration config) {
         List<String> panelIds;
         GenomicFeature gFeature;
@@ -409,13 +414,11 @@ public class ClinicalInterpretationManager extends StorageManager {
                 ClinicalVariantEvidence evidence;
                 if (CollectionUtils.isNotEmpty(panelIds)) {
                     for (String panelId : panelIds) {
-                        evidence = createEvidence(variant.getId(), ct, gFeature, panelId, null, null, variant.getAnnotation(),
-                                roleInCancer, actionableVariants, config);
+                        evidence = createEvidence(ct, gFeature, panelId, null, null, variant.getAnnotation(), config);
                         evidences.add(evidence);
                     }
                 } else if (genePanelMap.size() == 0) {
-                    evidence = createEvidence(variant.getId(), ct, gFeature, null, null, null, variant.getAnnotation(), roleInCancer,
-                            actionableVariants, config);
+                    evidence = createEvidence(ct, gFeature, null, null, null, variant.getAnnotation(), config);
                     evidences.add(evidence);
                 }
             }
@@ -432,20 +435,11 @@ public class ClinicalInterpretationManager extends StorageManager {
 
     /*--------------------------------------------------------------------------*/
 
-    protected ClinicalVariantEvidence createEvidence(String variantId, ConsequenceType consequenceType, GenomicFeature genomicFeature,
-                                                     String panelId, List<ClinicalProperty.ModeOfInheritance> mois,
-                                                     ClinicalProperty.Penetrance penetrance, VariantAnnotation annotation,
-                                                     Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
-                                                     Map<String, List<String>> actionableVariants,
-                                                     InterpretationAnalysisConfiguration config) {
+    protected ClinicalVariantEvidence createEvidence(ConsequenceType consequenceType, GenomicFeature genomicFeature, String panelId,
+                                                     List<ClinicalProperty.ModeOfInheritance> mois, ClinicalProperty.Penetrance penetrance,
+                                                     VariantAnnotation annotation, InterpretationAnalysisConfiguration config) {
 
         ClinicalVariantEvidence clinicalVariantEvidence = new ClinicalVariantEvidence();
-
-//        // Consequence types
-//        if (CollectionUtils.isNotEmpty(consequenceType.getSequenceOntologyTerms())) {
-//            // Set consequence type
-//            clinicalVariantEvidence.setConsequenceTypes(consequenceType.getSequenceOntologyTerms());
-//        }
 
         // Genomic feature
         if (genomicFeature != null) {
@@ -454,16 +448,6 @@ public class ClinicalInterpretationManager extends StorageManager {
 
         // Set panel
         clinicalVariantEvidence.setPanelId(panelId);
-
-        // Panel ID and compute tier based on SO terms
-//        String tier = UNTIERED;
-//        if (config != null) {
-//            if (isTier1(panelId, consequenceType.getSequenceOntologyTerms(), config)) {
-//                tier = TIER_1;
-//            } else if (isTier2(panelId, consequenceType.getSequenceOntologyTerms(), config)) {
-//                tier = TIER_2;
-//            }
-//        }
 
         // Mode of inheritance
         if (mois != null) {
@@ -479,45 +463,37 @@ public class ClinicalInterpretationManager extends StorageManager {
         clinicalVariantEvidence.setClassification(new VariantClassification());
 
         // Variant classification: ACMG
-        List<String> acmgs = calculateAcmgClassification(consequenceType, annotation, mois);
+        List<ClinicalAcmg> acmgs = calculateAcmgClassification(consequenceType, annotation, mois);
         clinicalVariantEvidence.getClassification().setAcmg(acmgs);
 
         // Variant classification: clinical significance
         clinicalVariantEvidence.getClassification().setClinicalSignificance(computeClinicalSignificance(acmgs));
 
         // Role in cancer
-        if (roleInCancer != null && genomicFeature != null && "GENE".equals(genomicFeature.getType())) {
-            if (roleInCancer.containsKey(genomicFeature.getGeneName())) {
-                clinicalVariantEvidence.setRoleInCancer(roleInCancer.get(genomicFeature.getGeneName()));
-            }
-        }
-
-        // Set tier and actionable if necessary
-        if (MapUtils.isNotEmpty(actionableVariants) && actionableVariants.containsKey(variantId)) {
-            clinicalVariantEvidence.setActionable(true);
-
-            // Set tier 3 only if it is null or untiered
-//            if (UNTIERED.equals(tier)) {
-//                clinicalVariantEvidence.getClassification().setTier(TIER_3);
-//            } else {
-//                clinicalVariantEvidence.getClassification().setTier(tier);
-//            }
-
-            // Add 'actionable' phenotypes
-            if (CollectionUtils.isNotEmpty(actionableVariants.get(variantId))) {
-                List<Phenotype> phenotypes = new ArrayList<>();
-                for (String phenotypeId : actionableVariants.get(variantId)) {
-                    phenotypes.add(new Phenotype(phenotypeId, phenotypeId, ""));
-                }
-                if (CollectionUtils.isNotEmpty(phenotypes)) {
-                    clinicalVariantEvidence.setPhenotypes(phenotypes);
-                }
-            }
-//        } else {
-//            clinicalVariantEvidence.getClassification().setTier(tier);
-        }
+        clinicalVariantEvidence.setRolesInCancer(getRolesInCancer(annotation));
 
         return clinicalVariantEvidence;
+    }
+
+    public List<ClinicalProperty.RoleInCancer> getRolesInCancer(VariantAnnotation annotation) {
+        if (CollectionUtils.isNotEmpty(annotation.getGeneCancerAssociations())) {
+            Set<ClinicalProperty.RoleInCancer> roles = new HashSet<>();
+            for (GeneCancerAssociation geneCancerAssociation : annotation.getGeneCancerAssociations()) {
+                if (CollectionUtils.isNotEmpty(geneCancerAssociation.getRoleInCancer())) {
+                    for (String value : geneCancerAssociation.getRoleInCancer()) {
+                        try {
+                            roles.add(ClinicalProperty.RoleInCancer.valueOf(value.toUpperCase()));
+                        } catch (Exception e) {
+                            logger.info("Unknown role in cancer value: {}. It will be ignored.", value.toUpperCase());
+                        }
+                    }
+                }
+            }
+            if (CollectionUtils.isNotEmpty(roles)) {
+                return new ArrayList<>(roles);
+            }
+        }
+        return new ArrayList<>();
     }
 
     private boolean isTier1(String panelId, List<SequenceOntologyTerm> soTerms, InterpretationAnalysisConfiguration config) {
@@ -734,16 +710,11 @@ public class ClinicalInterpretationManager extends StorageManager {
                 }
             }
         }
-        try {
-            Disorder disorder = new Disorder().setId(query.getString(FAMILY_DISORDER.key()));
-            List<DiseasePanel> diseasePanels = getDiseasePanels(query, sessionId);
-            return new DefaultClinicalVariantCreator(getRoleInCancerManager().getRoleInCancer(),
-                    getActionableVariantManager().getActionableVariants(assembly), disorder,
-                    Collections.singletonList(moi), ClinicalProperty.Penetrance.COMPLETE, diseasePanels, biotypes,
-                    soNames, !skipUntieredVariants);
-        } catch (IOException e) {
-            throw new ToolException("Error creating clinical variant creator", e);
-        }
+
+        Disorder disorder = new Disorder().setId(query.getString(FAMILY_DISORDER.key()));
+        List<DiseasePanel> diseasePanels = getDiseasePanels(query, sessionId);
+        return new DefaultClinicalVariantCreator(disorder, Collections.singletonList(moi), ClinicalProperty.Penetrance.COMPLETE,
+                diseasePanels, biotypes, soNames, !skipUntieredVariants);
     }
 
     public ClinicalAnalysis getClinicalAnalysis(String studyId, String clinicalAnalysisId, String sessionId)
@@ -853,197 +824,6 @@ public class ClinicalInterpretationManager extends StorageManager {
         return clinicalVariants;
     }
 
-    public List<ClinicalVariant> getSecondaryFindings(String studyId, String sampleId, ClinicalVariantCreator clinicalVariantCreator,
-                                                      String sessionId) throws ToolException {
-        try {
-            List<Variant> variants = new ArrayList<>();
-
-            // Prepare query object
-            Query query = new Query();
-            query.put(STUDY.key(), studyId);
-            query.put(VariantQueryParam.SAMPLE.key(), sampleId);
-
-            // Get the correct actionable variants for the assembly
-            String assembly = getAssembly(studyId, sessionId);
-            Map<String, List<String>> actionableVariants = actionableVariantManager.getActionableVariants(assembly);
-            if (actionableVariants != null) {
-                Iterator<String> iterator = actionableVariants.keySet().iterator();
-                List<String> variantIds = new ArrayList<>();
-                while (iterator.hasNext()) {
-                    String id = iterator.next();
-                    variantIds.add(id);
-                    if (variantIds.size() >= 1000) {
-                        query.put(VariantQueryParam.ID.key(), variantIds);
-                        VariantQueryResult<Variant> result = variantStorageManager.get(query, QueryOptions.empty(), sessionId);
-                        variants.addAll(result.getResults());
-                        variantIds.clear();
-                    }
-                }
-
-                if (variantIds.size() > 0) {
-                    query.put(VariantQueryParam.ID.key(), variantIds);
-                    VariantQueryResult<Variant> result = variantStorageManager.get(query, QueryOptions.empty(), sessionId);
-                    variants.addAll(result.getResults());
-                }
-            }
-
-            return clinicalVariantCreator.create(variants);
-        } catch (InterpretationAnalysisException | IOException | CatalogException | StorageEngineException e) {
-            throw new ToolException(e);
-        }
-    }
-
-    public List<Variant> getSecondaryFindings(String inputSampleId, String clinicalAnalysisId, String studyId, String sessionId)
-            throws CatalogException, ToolException, IOException, StorageEngineException {
-        String sampleId = inputSampleId;
-        // sampleId has preference over clinicalAnalysisId
-        if (StringUtils.isEmpty(sampleId)) {
-            // Throws an Exception if it cannot fetch analysis ID or proband is null
-            ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis(studyId, clinicalAnalysisId, sessionId);
-            if (CollectionUtils.isNotEmpty(clinicalAnalysis.getProband().getSamples())) {
-                for (Sample sample : clinicalAnalysis.getProband().getSamples()) {
-                    if (!sample.isSomatic()) {
-                        sampleId = clinicalAnalysis.getProband().getSamples().get(0).getId();
-                        break;
-                    }
-                }
-            } else {
-                throw new ToolException("Missing germline sample");
-            }
-        }
-
-        List<Variant> variants = new ArrayList<>();
-
-        // Prepare query object
-        Query query = new Query();
-        query.put(STUDY.key(), studyId);
-        query.put(VariantQueryParam.SAMPLE.key(), sampleId);
-
-        // Get the correct actionable variants for the assembly
-        String assembly = getAssembly(studyId, sessionId);
-        Map<String, List<String>> actionableVariants = actionableVariantManager.getActionableVariants(assembly);
-        if (actionableVariants != null) {
-            Iterator<String> iterator = actionableVariants.keySet().iterator();
-            List<String> variantIds = new ArrayList<>();
-            while (iterator.hasNext()) {
-                String id = iterator.next();
-                variantIds.add(id);
-                if (variantIds.size() >= 1000) {
-                    query.put(VariantQueryParam.ID.key(), variantIds);
-                    VariantQueryResult<Variant> result = variantStorageManager.get(query, QueryOptions.empty(), sessionId);
-                    variants.addAll(result.getResults());
-                    variantIds.clear();
-                }
-            }
-
-            if (variantIds.size() > 0) {
-                query.put(VariantQueryParam.ID.key(), variantIds);
-                VariantQueryResult<Variant> result = variantStorageManager.get(query, QueryOptions.empty(), sessionId);
-                variants.addAll(result.getResults());
-            }
-        }
-
-        return variants;
-    }
-
-    public List<ClinicalVariant> getSecondaryFindings(ClinicalAnalysis clinicalAnalysis,  List<String> sampleNames,
-                                                      String studyId, ClinicalVariantCreator creator, String sessionId)
-            throws StorageEngineException, ToolException, CatalogException, IOException {
-        throw new NotImplementedException("Secondary findings does not exist");
-//        List<ClinicalVariant> secondaryFindings = null;
-//        if (clinicalAnalysis.getConsent() != null
-//                && clinicalAnalysis.getConsent().getSecondaryFindings() == ClinicalConsent.ConsentStatus.YES) {
-//            List<Variant> variants = getSecondaryFindings(sampleNames.get(0), clinicalAnalysis.getId(), studyId,
-//                    sessionId);
-//            if (CollectionUtils.isNotEmpty(variants)) {
-//                secondaryFindings = creator.createSecondaryFindings(variants);
-//            }
-//        }
-//        return secondaryFindings;
-    }
-
-//    public List<ReportedLowCoverage> getReportedLowCoverage(int maxCoverage, ClinicalAnalysis clinicalAnalysis,
-//                                                            List<DiseasePanel> diseasePanels, String studyId, String sessionId)
-//            throws ToolException {
-//        String clinicalAnalysisId = clinicalAnalysis.getId();
-//
-//        // Sanity check
-//        if (clinicalAnalysis.getProband() == null || CollectionUtils.isEmpty(clinicalAnalysis.getProband().getSamples())) {
-//            throw new ToolException("Missing proband when computing reported low coverage");
-//        }
-//        String probandId;
-//        try {
-//            probandId = clinicalAnalysis.getProband().getSamples().get(0).getId();
-//        } catch (Exception e) {
-//            throw new ToolException("Missing proband when computing reported low coverage", e);
-//        }
-//
-//        // Reported low coverage map
-//        List<ReportedLowCoverage> reportedLowCoverages = new ArrayList<>();
-//
-//        Set<String> lowCoverageByGeneDone = new HashSet<>();
-//
-//        // Look for the bam file of the proband
-//        OpenCGAResult<File> fileQueryResult;
-//        try {
-//            fileQueryResult = catalogManager.getFileManager().get(studyId, null, new Query()
-//                            .append(FileDBAdaptor.QueryParams.SAMPLES.key(), probandId)
-//                            .append(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.BAM),
-//                    new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UUID.key()), false, sessionId);
-//        } catch (CatalogException e) {
-//            throw new ToolException(e.getMessage(), e);
-//        }
-//        if (fileQueryResult.getNumResults() > 1) {
-//            throw new ToolException("More than one BAM file found for proband " + probandId + " in clinical analysis "
-//                    + clinicalAnalysisId);
-//        }
-//
-//        String bamFileId = fileQueryResult.getNumResults() == 1 ? fileQueryResult.first().getUuid() : null;
-//
-//        if (bamFileId != null) {
-//            for (DiseasePanel diseasePanel : diseasePanels) {
-//                for (DiseasePanel.GenePanel genePanel : diseasePanel.getGenes()) {
-//                    String geneName = genePanel.getId();
-//                    if (!lowCoverageByGeneDone.contains(geneName)) {
-//                        reportedLowCoverages.addAll(getReportedLowCoverages(geneName, bamFileId, maxCoverage, studyId,
-//                                sessionId));
-//                        lowCoverageByGeneDone.add(geneName);
-//                    }
-//                }
-//            }
-//        }
-//
-//        return reportedLowCoverages;
-//    }
-//
-//    public List<ReportedLowCoverage> getReportedLowCoverages(String geneName, String bamFileId, int maxCoverage, String studyId,
-//                                                             String sessionId) {
-//        List<ReportedLowCoverage> reportedLowCoverages = new ArrayList<>();
-//        try {
-//            // Get gene exons from CellBase
-//            QueryResponse<Gene> geneQueryResponse = cellBaseClient.getGeneClient().get(Collections.singletonList(geneName),
-//                    QueryOptions.empty());
-//            List<RegionCoverage> regionCoverages;
-//            for (Transcript transcript: geneQueryResponse.getResponse().get(0).first().getTranscripts()) {
-//                for (Exon exon: transcript.getExons()) {
-//                    Region region = new Region(exon.getChromosome(), exon.getStart(), exon.getEnd());
-//                    regionCoverages = alignmentStorageManager.coverageQuery(studyId, bamFileId, region, 0, maxCoverage, 1,
-//                            sessionId).getResults();
-//                    for (RegionCoverage regionCoverage: regionCoverages) {
-//                        ReportedLowCoverage reportedLowCoverage = new ReportedLowCoverage(regionCoverage)
-//                                .setGeneName(geneName)
-//                                .setId(exon.getId());
-//                        reportedLowCoverages.add(reportedLowCoverage);
-//                    }
-//                }
-//            }
-//        } catch (Exception e) {
-//            logger.error("Error getting low coverage regions for panel genes.", e.getMessage());
-//        }
-//        // And for that exon regions, get low coverage regions
-//        return reportedLowCoverages;
-//    }
-
     public ClinicalAnalyst getAnalyst(String token) throws ToolException {
         try {
             String userId = catalogManager.getUserManager().getUserId(token);
@@ -1068,75 +848,6 @@ public class ClinicalInterpretationManager extends StorageManager {
             assembly = assembly.toLowerCase();
         }
         return assembly;
-    }
-
-//    public org.opencb.biodata.models.clinical.interpretation.Interpretation generateInterpretation(
-//            String analysisName, String clinicalAnalysisId, Query query, List<ClinicalVariant> primaryFindings,
-//            List<ClinicalVariant> secondaryFindings, List<DiseasePanel> diseasePanels, List<ReportedLowCoverage> reportedLowCoverages,
-//            String sessionId) throws CatalogException {
-//        String userId = catalogManager.getUserManager().getUserId(sessionId);
-//        OpenCGAResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
-//                Arrays.asList(UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ORGANIZATION.key())), sessionId);
-//
-//        // Create Interpretation
-//        return new Interpretation()
-//                .setId(analysisName + "__" + TimeUtils.getTimeMillis())
-//                .setPrimaryFindings(primaryFindings)
-//                .setSecondaryFindings(secondaryFindings)
-//                .setLowCoverageRegions(reportedLowCoverages)
-//                .setAnalyst(new Analyst(userId, userQueryResult.first().getEmail(), userQueryResult.first().getOrganization()))
-//                .setClinicalAnalysisId(clinicalAnalysisId)
-//                .setCreationDate(TimeUtils.getTime())
-//                .setPanels(diseasePanels)
-//                .setFilters(query)
-//                .setSoftware(new Software().setName(analysisName));
-//    }
-
-//    public void calculateLowCoverageRegions(String studyId, List<String> inputGenes, List<DiseasePanel> diseasePanels,
-//                                            int maxCoverage, String probandSampleId, Map<String, List<File>> files,
-//                                            List<ReportedLowCoverage> reportedLowCoverages, String sessionId) {
-//        String bamFileId = null;
-//        if (files != null) {
-//            for (String sampleId : files.keySet()) {
-//                if (sampleId.equals(probandSampleId)) {
-//                    for (File file : files.get(sampleId)) {
-//                        if (File.Format.BAM.equals(file.getFormat())) {
-//                            bamFileId = file.getUuid();
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//
-//        if (bamFileId != null) {
-//            // We need the genes from Query.gene and Query.panel
-//            Set<String> genes = new HashSet<>(inputGenes);
-//            if (CollectionUtils.isNotEmpty(diseasePanels)) {
-//                for (DiseasePanel diseasePanel : diseasePanels) {
-//                    if (CollectionUtils.isNotEmpty(diseasePanel.getGenes())) {
-//                        genes.addAll(diseasePanel.getGenes().stream().map(DiseasePanel.GenePanel::getId).collect(Collectors.toList()));
-//                    }
-//                }
-//            }
-//
-//            // Compute low coverage for genes found
-//            Iterator<String> iterator = genes.iterator();
-//            while (iterator.hasNext()) {
-//                String geneName = iterator.next();
-//                List<ReportedLowCoverage> lowCoverages = getReportedLowCoverages(geneName, bamFileId, maxCoverage, studyId, sessionId);
-//                if (ListUtils.isNotEmpty(lowCoverages)) {
-//                    reportedLowCoverages.addAll(lowCoverages);
-//                }
-//            }
-//        }
-//    }
-
-    public RoleInCancerManager getRoleInCancerManager() {
-        return roleInCancerManager;
-    }
-
-    public ActionableVariantManager getActionableVariantManager() {
-        return actionableVariantManager;
     }
 
     public VariantStorageManager getVariantStorageManager() {

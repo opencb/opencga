@@ -25,9 +25,9 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.variant.io.AbstractVariantReader;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
+import org.opencb.opencga.core.models.common.mixins.GenotypeJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantSourceEntryJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
+import org.opencb.opencga.core.models.common.mixins.VariantStatsJsonMixin;
 import org.xerial.snappy.SnappyInputStream;
 
 import java.io.FileInputStream;

@@ -222,12 +222,12 @@ public class SampleIndexEntryPutBuilder {
     }
 
     private class SampleIndexGtEntryBuilderAssumeOrdered extends SampleIndexGtEntryBuilder {
-        protected final List<SampleVariantIndexEntry> entries;
+        protected final ArrayDeque<SampleVariantIndexEntry> entries;
         protected SampleVariantIndexEntry lastEntry;
 
         SampleIndexGtEntryBuilderAssumeOrdered(String gt) {
             super(gt);
-            entries = new ArrayList<>(1000);
+            entries = new ArrayDeque<>(1000);
         }
 
         @Override
@@ -237,14 +237,31 @@ public class SampleIndexEntryPutBuilder {
 
         @Override
         public boolean add(SampleVariantIndexEntry variantIndexEntry) {
-            if (lastEntry != null) {
-                if (comparator.compare(lastEntry, variantIndexEntry) >= 0) {
-                    throw new IllegalArgumentException("Using unordered input");
+            if (lastEntry != null && comparator.compare(lastEntry, variantIndexEntry) >= 0) {
+                // Small out-of-order is expected in duplicated variants.
+                //   The order regarding the comparator will depend not only on the "variant", but
+                //   also on the fileIndex BitBuffer. The input is ensured to come "ordered" by
+                //   variantId, not by any other field.
+                // Ensure that the variants are ordered.
+                if (INTRA_CHROMOSOME_VARIANT_COMPARATOR.compare(lastEntry.getVariant(), variantIndexEntry.getVariant()) > 0) {
+                    // This should never happen
+                    throw new IllegalArgumentException("Using unordered input!"
+                            + " Compare " + lastEntry.getVariant() + " and " + variantIndexEntry.getVariant());
                 }
+                // Insert ordered. Take out values into a Deque to find the position where the entry
+                // should be placed.
+                ArrayDeque<SampleVariantIndexEntry> removedEntries = new ArrayDeque<>(1);
+                do {
+                    // Add first to preserve order
+                    removedEntries.addFirst(entries.removeLast());
+                } while (!entries.isEmpty() && comparator.compare(entries.getLast(), variantIndexEntry) >= 0);
+                entries.add(variantIndexEntry);
+                lastEntry = variantIndexEntry;
+                return entries.addAll(removedEntries);
+            } else {
+                lastEntry = variantIndexEntry;
+                return entries.add(variantIndexEntry);
             }
-            lastEntry = variantIndexEntry;
-
-            return entries.add(variantIndexEntry);
         }
 
         @Override
@@ -266,8 +283,8 @@ public class SampleIndexEntryPutBuilder {
     }
 
     private class SampleIndexGtEntryBuilderWithPartialBuilds extends SampleIndexGtEntryBuilderAssumeOrdered {
-
-        private final int threshold;
+        private final int lowerThreshold;
+        private final int upperThreshold;
         private SampleVariantIndexEntry prev = null;
         // Variants is a shared object. No problem for the GC.
         private final ArrayList<Variant> variants = new ArrayList<>(0);
@@ -275,19 +292,20 @@ public class SampleIndexEntryPutBuilder {
         private final BitOutputStream fileIndexBuffer = new BitOutputStream();
 
         SampleIndexGtEntryBuilderWithPartialBuilds(String gt) {
-            this(gt, 100);
+            this(gt, 10, 100);
         }
 
-        SampleIndexGtEntryBuilderWithPartialBuilds(String gt, int threshold) {
+        SampleIndexGtEntryBuilderWithPartialBuilds(String gt, int lowerThreshold, int upperThreshold) {
             super(gt);
-            this.threshold = threshold;
+            this.lowerThreshold = lowerThreshold;
+            this.upperThreshold = upperThreshold;
         }
 
         @Override
         public boolean add(SampleVariantIndexEntry variantIndexEntry) {
             boolean add = super.add(variantIndexEntry);
-            if (entries.size() >= threshold) {
-                partialBuild();
+            if (entries.size() >= upperThreshold) {
+                partialBuild(false);
             }
 
             return add;
@@ -337,13 +355,30 @@ public class SampleIndexEntryPutBuilder {
             return c;
         }
 
-        private void partialBuild() {
+        private void partialBuild(boolean flush) {
+            int entriesToProcess = flush ? entries.size() : entries.size() - lowerThreshold;
             BitBuffer fileIndexBuffer = new BitBuffer(fileIndex.getBitsLength() * entries.size());
             int offset = 0;
 
             variants.ensureCapacity(variants.size() + entries.size());
-            for (SampleVariantIndexEntry gtEntry : entries) {
+            int processedEntries = 0;
+            while (!entries.isEmpty()) {
+                SampleVariantIndexEntry gtEntry = entries.removeFirst();
                 Variant variant = gtEntry.getVariant();
+                // This if-statement won't be executed in "flush==true"
+                if (processedEntries >= entriesToProcess) {
+                    // Ensure that the next entry to be processed is not the same as prev
+                    if (!prev.getVariant().sameGenomicVariant(variant)) {
+                        // It is safe to stop processing here.
+                        // Put the entry back, it will be processed in the next call to "partialBuild"
+                        entries.addFirst(gtEntry);
+                        break;
+                    }
+                    // else
+                    //   Add one extra entry, as it overlaps
+                }
+                processedEntries++;
+
                 if (prev == null || !prev.getVariant().sameGenomicVariant(variant)) {
                     variants.add(variant);
                 } else {
@@ -354,14 +389,14 @@ public class SampleIndexEntryPutBuilder {
                 offset += fileIndex.getBitsLength();
                 prev = gtEntry;
             }
-            this.fileIndexBuffer.write(fileIndexBuffer);
 
-            entries.clear();
+            // Do not write the whole buffer, but only the corresponding to the processed entries.
+            this.fileIndexBuffer.write(fileIndexBuffer.getBitBuffer(0, fileIndex.getBitsLength() * processedEntries));
         }
 
         @Override
         public void build(Put put) {
-            partialBuild();
+            partialBuild(true);
 
             byte[] variantsBuffer = variantConverter.toBytes(variants);
             int variantsCount = variants.size();

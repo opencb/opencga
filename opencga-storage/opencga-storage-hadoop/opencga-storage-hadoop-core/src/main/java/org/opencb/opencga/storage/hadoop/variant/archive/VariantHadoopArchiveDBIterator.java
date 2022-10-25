@@ -56,7 +56,7 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
     private final byte[] columnFamily;
     private final byte[] refColumnBytes;
     private final byte[] nonRefColumnBytes;
-    private ResultScanner resultScanner;
+    private final ResultScanner resultScanner;
     private int startPosition = 0;
     private int endPosition = Integer.MAX_VALUE;
     private Variant nextVariant = null;
@@ -119,13 +119,13 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
         VcfSliceProtos.VcfSlice vcfSlice;
         VcfRecordProtoToVariantConverter converter;
         int variantStart;
+        int variantEnd;
         do {
             if (!nonRefVcfRecordIterator.hasNext() && !refVcfRecordIterator.hasNext()) {
                 if (!iterator.hasNext()) {
                     return null;
                 }
                 Result result = fetch(iterator::next);
-                byte[] rid = result.getRow();
                 try {
                     byte[] nonRefValue = result.getValue(columnFamily, nonRefColumnBytes);
                     if (nonRefValue != null && nonRefValue.length > 0) {
@@ -166,8 +166,10 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
                 vcfSlice = refVcfSlice;
                 converter = refConverter;
             }
-            variantStart = nonRefVcfSlice.getPosition() + vcfRecord.getRelativeStart();
-        } while (vcfRecord.getRelativeStart() < 0 || variantStart < this.startPosition || variantStart > this.endPosition);
+            variantStart = VcfRecordProtoToVariantConverter.getStart(vcfRecord, vcfSlice.getPosition());
+            variantEnd = VcfRecordProtoToVariantConverter.getEnd(vcfRecord, vcfSlice.getPosition());
+        } while (variantStart < vcfSlice.getPosition() || variantEnd < vcfSlice.getPosition()
+                || variantStart < this.startPosition || variantStart > this.endPosition);
         //Skip duplicated variant!
 
         Variant variant;
@@ -177,13 +179,13 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
             VcfSliceProtos.VcfSlice finalSlice = vcfSlice;
             variant = convert(() -> finalConverter.convert(finalVcfRecord, finalSlice.getChromosome(), finalSlice.getPosition()));
         } catch (IllegalArgumentException e) {
-            e.printStackTrace(System.err);
-            System.err.println("vcfSlice.getPosition() = " + nonRefVcfSlice.getPosition());
-            System.err.println("vcfRecord.getRelativeStart() = " + vcfRecord.getRelativeStart());
-            System.err.println("vcfRecord.getRelativeEnd() = " + vcfRecord.getRelativeEnd());
-            variant = new Variant(nonRefVcfSlice.getChromosome(), vcfRecord.getRelativeStart() + nonRefVcfSlice.getPosition(),
-                    vcfRecord.getReference(), vcfRecord.getAlternate());
-            logger.debug("variant: {}", variant.toString());
+            logger.warn("vcfSlice.getPosition() = " + nonRefVcfSlice.getPosition());
+            logger.warn("vcfRecord.getRelativeStart() = " + vcfRecord.getRelativeStart());
+            logger.warn("vcfRecord.getRelativeEnd() = " + vcfRecord.getRelativeEnd());
+//            variant = new Variant(nonRefVcfSlice.getChromosome(), vcfRecord.getRelativeStart() + nonRefVcfSlice.getPosition(),
+//                    vcfRecord.getReference(), vcfRecord.getAlternate());
+//            logger.debug("variant: {}", variant.toString());
+            throw e;
         }
 
         return variant;

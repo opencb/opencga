@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.hadoop.variant.gaps;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
@@ -129,15 +128,7 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
         }
     }
 
-    public static Scan buildScan(Collection<Integer> fileIds, Configuration conf) {
-        return buildScan(fileIds, null, null, conf);
-    }
-
     public static List<Scan> buildScan(Collection<Integer> fileIds, String regionStr, Configuration conf) {
-        if (StringUtils.isEmpty(regionStr)) {
-            return Collections.singletonList(buildScan(fileIds, conf));
-        }
-
         Set<Integer> fileBatches = new HashSet<>();
         ArchiveRowKeyFactory archiveRowKeyFactory = new ArchiveRowKeyFactory(conf);
 
@@ -155,12 +146,7 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
     private static Scan buildScan(Collection<Integer> fileIds, Integer fileBatch, String regionStr, Configuration conf) {
         ArchiveRowKeyFactory archiveRowKeyFactory = new ArchiveRowKeyFactory(conf);
 
-        Scan scan;
-        if (StringUtils.isEmpty(regionStr)) {
-            scan = AbstractFillFromArchiveTask.buildScan(conf);
-        } else {
-            scan = AbstractFillFromArchiveTask.buildScan(regionStr, archiveRowKeyFactory.getFirstFileFromBatch(fileBatch), conf);
-        }
+        Scan scan = AbstractFillFromArchiveTask.buildScan(regionStr, archiveRowKeyFactory.getFirstFileFromBatch(fileBatch), conf);
 
         FilterList filterList = new FilterList(FilterList.Operator.MUST_PASS_ONE);
         filterList.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ALL,

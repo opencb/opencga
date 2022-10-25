@@ -47,7 +47,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis.GENOME_CONTEXT_FILENAME;
+import static org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis.CATALOGUES_FILENAME_DEFAULT;
 
 @ToolExecutor(id="opencga-local", tool = MutationalSignatureAnalysis.ID,
         framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.STORAGE)
@@ -65,31 +65,41 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
     public void run() throws ToolException, CatalogException, IOException, StorageEngineException {
         opencgaHome = Paths.get(getExecutorParams().getString("opencgaHome"));
 
+        if (StringUtils.isEmpty(getCatalogues())) {
+            // Get first variant to check where the genome context is stored
+            Query query = new Query();
+            if (getQuery() != null) {
+                query.putAll(getQuery());
+            }
+            // Ovewrite study and type (SNV)
+            query.append(VariantQueryParam.STUDY.key(), getStudy()).append(VariantQueryParam.TYPE.key(), VariantType.SNV);
 
-        // Get first variant to check where the genome context is stored
-        Query query = new Query();
-        if (getQuery() != null) {
-            query.putAll(getQuery());
+            QueryOptions queryOptions = new QueryOptions();
+            queryOptions.append(QueryOptions.INCLUDE, "id");
+            queryOptions.append(QueryOptions.LIMIT, "1");
+
+            VariantQueryResult<Variant> variantQueryResult = getVariantStorageManager().get(query, queryOptions, getToken());
+            Variant variant = variantQueryResult.first();
+            if (variant == null) {
+                // Nothing to do
+                addWarning("None variant found for that mutational signature query");
+                return;
+            }
+
+            // Run mutational analysis taking into account that the genome context is stored in an index file,
+            // if the genome context file does not exist, it will be created !!!
+            computeFromContextFile();
         }
-        query.append(VariantQueryParam.TYPE.key(), VariantType.SNV);
 
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.append(QueryOptions.INCLUDE, "id");
-        queryOptions.append(QueryOptions.LIMIT, "1");
-
-        VariantQueryResult<Variant> variantQueryResult = getVariantStorageManager().get(query, queryOptions, getToken());
-        Variant variant = variantQueryResult.first();
-        if (variant == null) {
-            // Nothing to do
-            addWarning("None variant found for that mutational signature query");
-            return;
-        }
-
-        // Run mutational analysis taking into account that the genome context is stored in an index file,
-        // if the genome context file does not exist, it will be created !!!
-        computeFromContextFile();
+        // Run R script for fitting signature
+        executeRScript();
+//        if (StringUtils.isEmpty(getOrgan()) && (StringUtils.isEmpty(getSigVersion()) || getSigVersion().startsWith("Ref"))) {
+//            addWarning("Since the parameter 'organ' is missing and RefSig is been used, the fitting signature will not be computed.");
+//        } else {
+//            executeRScript();
+//        }
     }
-    
+
     private void computeFromContextFile() throws ToolExecutorException {
         // Context index filename
         File indexFile = null;
@@ -138,13 +148,14 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             if (getQuery() != null) {
                 query.putAll(getQuery());
             }
-            query.append(VariantQueryParam.TYPE.key(), VariantType.SNV);
+            // Ovewrite study and type (SNV)
+            query.append(VariantQueryParam.STUDY.key(), getStudy()).append(VariantQueryParam.TYPE.key(), VariantType.SNV);
 
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id");
 
             VariantDBIterator iterator = getVariantStorageManager().iterator(query, queryOptions, getToken());
 
-            Map<String, Map<String, Double>> countMap = initFreqMap();
+            Map<String, Map<String, Integer>> countMap = initCountMap();
 
             while (iterator.hasNext()) {
                 Variant variant = iterator.next();
@@ -154,13 +165,11 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             }
 
             // Write context counts
-            writeCountMap(countMap, getOutDir().resolve(GENOME_CONTEXT_FILENAME).toFile());
+            File cataloguesFile = getOutDir().resolve(CATALOGUES_FILENAME_DEFAULT).toFile();
+            writeCountMap(getSample(), countMap, cataloguesFile);
 
-            // Run R script
-            if (isFitting()) {
-                executeRScript();
-            }
-
+            // Update the parameter catalogues
+            setCatalogues(cataloguesFile.getAbsolutePath());
         } catch (IOException | CatalogException | StorageEngineException | ToolException e) {
             throw new ToolExecutorException(e);
         }
@@ -221,7 +230,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         }
     }
 
-    private void updateCountMap(Variant variant, String sequence, Map<String, Map<String, Double>> countMap) {
+    private void updateCountMap(Variant variant, String sequence, Map<String, Map<String, Integer>> countMap) {
         try {
             String k, seq;
 
@@ -243,26 +252,71 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         }
     }
 
-    private String executeRScript() throws IOException, ToolExecutorException {
-        // Download signature profiles
-        File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID,
-                getMutationalSignatureFilename(), getOutDir(), opencgaHome);
-        if (signatureFile == null) {
-            throw new ToolExecutorException("Error downloading mutational signatures file from " + ResourceUtils.URL);
+    private void executeRScript() throws IOException {
+        String inputPath = getOutDir().toString();
+        if (new File(getCatalogues()).exists()) {
+            inputPath = new File(getCatalogues()).getParent();
         }
-
-        String rScriptPath = opencgaHome + "/analysis/R/" + getToolId();
         List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
-        inputBindings.add(new AbstractMap.SimpleEntry<>(rScriptPath, "/data/input"));
+        inputBindings.add(new AbstractMap.SimpleEntry<>(inputPath, "/data/input"));
+        if (StringUtils.isNotEmpty(getSignaturesFile())) {
+            File signaturesFile = new File(getSignaturesFile());
+            if (signaturesFile.exists()) {
+                inputBindings.add(new AbstractMap.SimpleEntry<>(signaturesFile.getParent(), "/data/signaturesFile"));
+            }
+        }
+        if (StringUtils.isNotEmpty(getRareSignaturesFile())) {
+            File rareSignaturesFile = new File(getRareSignaturesFile());
+            if (rareSignaturesFile.exists()) {
+                inputBindings.add(new AbstractMap.SimpleEntry<>(rareSignaturesFile.getParent(), "/data/rareSignaturesFile"));
+            }
+        }
         AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir()
                 .toAbsolutePath().toString(), "/data/output");
-        String scriptParams = "R CMD Rscript --vanilla /data/input/mutational-signature.r /data/output/"
-                + GENOME_CONTEXT_FILENAME + " "
-                + "/data/output/" + getMutationalSignatureFilename() + " /data/output ";
+        StringBuilder scriptParams = new StringBuilder("R CMD Rscript --vanilla ")
+                .append("/opt/opencga/signature.tools.lib/scripts/signatureFit")
+                .append(" --catalogues=/data/input/").append(new File(getCatalogues()).getName())
+                .append(" --outdir=/data/output");
+        if (StringUtils.isNotEmpty(getFitMethod())) {
+            scriptParams.append(" --fitmethod=").append(getFitMethod());
+        }
+        if (StringUtils.isNotEmpty(getSigVersion())) {
+            scriptParams.append(" --sigversion=").append(getSigVersion());
+        }
+        if (StringUtils.isNotEmpty(getOrgan())) {
+            scriptParams.append(" --organ=").append(getOrgan());
+        }
+        if (getThresholdPerc() != null) {
+            scriptParams.append(" --thresholdperc=").append(getThresholdPerc());
+        }
+        if (getThresholdPval() != null) {
+            scriptParams.append(" --thresholdpval=").append(getThresholdPval());
+        }
+        if (getMaxRareSigs() != null) {
+            scriptParams.append(" --maxraresigs=").append(getMaxRareSigs());
+        }
+        if (getnBoot() != null) {
+            scriptParams.append(" -b --nboot=").append(getnBoot());
+        }
+        if (StringUtils.isNotEmpty(getSignaturesFile()) && new File(getSignaturesFile()).exists()) {
+            scriptParams.append(" --signaturesfile=/data/signaturesFile/").append(new File(getSignaturesFile()).getName());
+        }
+        if (StringUtils.isNotEmpty(getRareSignaturesFile()) && new File(getRareSignaturesFile()).exists()) {
+            scriptParams.append(" --raresignaturesfile=/data/rareSignaturesFile/").append(new File(getRareSignaturesFile()).getName());
+        }
+        switch (getAssembly()) {
+            case "GRCh37": {
+                scriptParams.append(" --genomev=hg19");
+                break;
+            }
+            case "GRCh38": {
+                scriptParams.append(" --genomev=hg38");
+                break;
+            }
+        }
 
-        String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams, null);
+        String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams.toString(),
+                null);
         logger.info("Docker command line: " + cmdline);
-
-        return cmdline;
     }
 }

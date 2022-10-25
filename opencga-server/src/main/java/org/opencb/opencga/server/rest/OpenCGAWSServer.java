@@ -20,15 +20,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Splitter;
-import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.glassfish.jersey.server.ParamException;
-import org.opencb.biodata.models.variant.Genotype;
-import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -49,7 +46,6 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.FederationNode;
@@ -60,8 +56,6 @@ import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -154,10 +148,6 @@ public class OpenCGAWSServer {
         initialized = new AtomicBoolean(false);
 
         jsonObjectMapper = getExternalOpencgaObjectMapper();
-        jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
-        jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
-        jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
-
         jsonObjectWriter = jsonObjectMapper.writer();
     }
 
@@ -268,7 +258,6 @@ public class OpenCGAWSServer {
             logger.error(errorMessage);
             throw new IllegalStateException(errorMessage);
         }
-//        ActionableVariantManager.init(opencgaHome);
 
         logger.info("| OpenCGA REST successfully started!");
         logger.info("| - Version " + GitRepositoryState.get().getBuildVersion());
@@ -381,6 +370,160 @@ public class OpenCGAWSServer {
         }
         logger.info("| OpenCGA destroyed");
         logger.info("========================================================================\n");
+    }
+
+    public static Response createErrorResponse(Throwable e, long startTime, String apiVersion, String requestDescription, ObjectMap params,
+                                               UriInfo uriInfo) {
+        // First we print the exception in Server logs
+        logger.error("Catch error: " + e.getMessage(), e);
+
+        // Now we prepare the response to client
+        RestResponse<ObjectMap> queryResponse = new RestResponse<>();
+        queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
+        queryResponse.setApiVersion(apiVersion);
+        queryResponse.setParams(params);
+        addErrorEvent(queryResponse, e);
+
+        OpenCGAResult<ObjectMap> result = OpenCGAResult.empty();
+        setFederationServer(result, uriInfo.getBaseUri().toString());
+        queryResponse.setResponses(Collections.singletonList(result));
+
+        Response.StatusType errorStatus;
+        if (e instanceof WebApplicationException
+                && ((WebApplicationException) e).getResponse() != null
+                && ((WebApplicationException) e).getResponse().getStatusInfo() != null) {
+            errorStatus = ((WebApplicationException) e).getResponse().getStatusInfo();
+        } else if (e instanceof CatalogAuthorizationException) {
+            errorStatus = Response.Status.FORBIDDEN;
+        } else if (e instanceof CatalogAuthenticationException) {
+            errorStatus = Response.Status.UNAUTHORIZED;
+        } else {
+            errorStatus = Response.Status.INTERNAL_SERVER_ERROR;
+        }
+
+        Response response = Response.fromResponse(createJsonResponse(queryResponse)).status(errorStatus).build();
+        logResponse(response.getStatusInfo(), queryResponse, startTime, requestDescription);
+        return response;
+    }
+
+    static <T> void addErrorEvent(RestResponse<T> response, String message) {
+        if (response.getEvents() == null) {
+            response.setEvents(new ArrayList<>());
+        }
+        response.getEvents().add(new Event(Event.Type.ERROR, message));
+    }
+
+    private static <T> void addErrorEvent(RestResponse<T> response, Throwable e) {
+        if (response.getEvents() == null) {
+            response.setEvents(new ArrayList<>());
+        }
+        String message;
+        if (e instanceof ParamException.QueryParamException && e.getCause() != null) {
+            message = e.getCause().getMessage();
+        } else {
+            message = e.getMessage();
+        }
+        response.getEvents().add(
+                new Event(Event.Type.ERROR, 0, e.getClass().getName(), e.getClass().getSimpleName(), message));
+    }
+
+    public static void setFederationServer(OpenCGAResult result, String baseuri) {
+        result.setFederationNode(new FederationNode(baseuri, GitRepositoryState.get().getCommitId(),
+                GitRepositoryState.get().getBuildVersion()));
+    }
+
+    public static void logResponse(Response.StatusType statusInfo, RestResponse<?> queryResponse, long startTime,
+                                   String requestDescription) {
+        StringBuilder sb = new StringBuilder();
+        try {
+            boolean ok;
+            if (statusInfo.getFamily().equals(Response.Status.Family.SUCCESSFUL)) {
+                sb.append("OK");
+                ok = true;
+            } else {
+                sb.append("ERROR");
+                ok = false;
+            }
+            sb.append(" [").append(statusInfo.getStatusCode()).append(']');
+
+            if (queryResponse == null) {
+                sb.append(", ").append(System.currentTimeMillis() - startTime).append("ms");
+            } else {
+                sb.append(", ").append(queryResponse.getTime()).append("ms");
+                if (queryResponse.getResponses().size() == 1) {
+                    OpenCGAResult<?> result = queryResponse.getResponses().get(0);
+                    if (result != null) {
+                        sb.append(", num: ").append(result.getNumResults());
+                        if (result.getNumTotalResults() >= 0) {
+                            sb.append(", total: ").append(result.getNumTotalResults());
+                        }
+                    }
+                }
+            }
+            sb.append(", ").append(requestDescription);
+            if (ok) {
+                logger.info(sb.toString());
+            } else {
+                logger.error(sb.toString());
+            }
+        } catch (RuntimeException e) {
+            logger.warn("Error logging response", e);
+            logger.info(sb.toString()); // Print incomplete response
+        }
+    }
+
+    public static Response createJsonResponse(RestResponse queryResponse) {
+        try {
+            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(queryResponse), MediaType.APPLICATION_JSON_TYPE));
+        } catch (JsonProcessingException e) {
+            logger.error("Error parsing queryResponse object", e);
+            throw new WebApplicationException("Error parsing queryResponse object", e);
+        }
+    }
+
+    protected static Response buildResponse(Response.ResponseBuilder responseBuilder) {
+        return responseBuilder
+                .header("Access-Control-Allow-Origin", "*")
+                .header("Access-Control-Allow-Headers", "x-requested-with, content-type, authorization")
+                .header("Access-Control-Allow-Credentials", "true")
+                .header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+                .build();
+    }
+
+    protected static List<String> split(String values) throws CatalogParameterException {
+        return split(values, "", false);
+    }
+
+    protected static List<String> split(String values, String field, boolean failOnEmptyValues) throws CatalogParameterException {
+        if (StringUtils.isEmpty(values)) {
+            if (failOnEmptyValues) {
+                throw CatalogParameterException.isNull(field);
+            }
+            return Collections.emptyList();
+        } else {
+            return Arrays.asList(values.split(","));
+        }
+    }
+
+    protected static List<String> checkUniqueList(String ids) throws WebServiceException {
+        if (StringUtils.isNotEmpty(ids)) {
+            List<String> idsList = Arrays.asList(ids.split(","));
+            return checkUniqueList(idsList, "");
+        } else {
+            throw new WebServiceException("ID is null or Empty");
+        }
+    }
+
+    protected static List<String> checkUniqueList(List<String> ids, String field) throws WebServiceException {
+        if (ListUtils.isNotEmpty(ids)) {
+            Set<String> hashSet = new HashSet<>(ids);
+            if (hashSet.size() == ids.size()) {
+                return ids;
+            } else {
+                throw new WebServiceException("Provided " + field + " IDs are not unique. Only unique IDs are accepted.");
+            }
+        }
+        return null;
     }
 
     private void parseParams() throws VersionException {
@@ -518,40 +661,6 @@ public class OpenCGAWSServer {
         return createErrorResponse(e, startTime, apiVersion, requestDescription, params, uriInfo);
     }
 
-    public static Response createErrorResponse(Throwable e, long startTime, String apiVersion, String requestDescription, ObjectMap params,
-                                               UriInfo uriInfo) {
-        // First we print the exception in Server logs
-        logger.error("Catch error: " + e.getMessage(), e);
-
-        // Now we prepare the response to client
-        RestResponse<ObjectMap> queryResponse = new RestResponse<>();
-        queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
-        queryResponse.setApiVersion(apiVersion);
-        queryResponse.setParams(params);
-        addErrorEvent(queryResponse, e);
-
-        OpenCGAResult<ObjectMap> result = OpenCGAResult.empty();
-        setFederationServer(result, uriInfo.getBaseUri().toString());
-        queryResponse.setResponses(Collections.singletonList(result));
-
-        Response.StatusType errorStatus;
-        if (e instanceof WebApplicationException
-                && ((WebApplicationException) e).getResponse() != null
-                && ((WebApplicationException) e).getResponse().getStatusInfo() != null) {
-            errorStatus = ((WebApplicationException) e).getResponse().getStatusInfo();
-        } else if (e instanceof CatalogAuthorizationException) {
-            errorStatus = Response.Status.FORBIDDEN;
-        } else if (e instanceof CatalogAuthenticationException) {
-            errorStatus = Response.Status.UNAUTHORIZED;
-        } else {
-            errorStatus = Response.Status.INTERNAL_SERVER_ERROR;
-        }
-
-        Response response = Response.fromResponse(createJsonResponse(queryResponse)).status(errorStatus).build();
-        logResponse(response.getStatusInfo(), queryResponse, startTime, requestDescription);
-        return response;
-    }
-
     protected Response createErrorResponse(String errorMessage, OpenCGAResult result) {
         RestResponse<ObjectMap> dataResponse = new RestResponse<>();
         dataResponse.setApiVersion(apiVersion);
@@ -579,25 +688,9 @@ public class OpenCGAWSServer {
         return buildResponse(Response.ok("{\"error\":\"Error parsing json error\"}", MediaType.APPLICATION_JSON_TYPE));
     }
 
-    static <T> void addErrorEvent(RestResponse<T> response, String message) {
-        if (response.getEvents() == null) {
-            response.setEvents(new ArrayList<>());
-        }
-        response.getEvents().add(new Event(Event.Type.ERROR, message));
-    }
-
-    private static <T> void addErrorEvent(RestResponse<T> response, Throwable e) {
-        if (response.getEvents() == null) {
-            response.setEvents(new ArrayList<>());
-        }
-        String message;
-        if (e instanceof ParamException.QueryParamException && e.getCause() != null) {
-            message = e.getCause().getMessage();
-        } else {
-            message = e.getMessage();
-        }
-        response.getEvents().add(
-                new Event(Event.Type.ERROR, 0, e.getClass().getName(), e.getClass().getSimpleName(), message));
+    protected Response createOkResponse(Object obj, String message) {
+        Event event = new Event(Event.Type.INFO, message);
+        return createOkResponse(obj, Collections.singletonList(event));
     }
 
     // TODO: Change signature
@@ -609,7 +702,7 @@ public class OpenCGAWSServer {
 
     protected Response createOkResponse(Object obj, List<Event> events) {
         RestResponse queryResponse = new RestResponse();
-        queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
+        queryResponse.setTime((int) (System.currentTimeMillis() - startTime));
         queryResponse.setApiVersion(apiVersion);
         queryResponse.setParams(params);
         queryResponse.setEvents(events);
@@ -690,75 +783,12 @@ public class OpenCGAWSServer {
         return buildResponse(Response.ok(o1, o2).header("content-disposition", "attachment; filename =" + fileName));
     }
 
-    public static void setFederationServer(OpenCGAResult result, String baseuri) {
-        result.setFederationNode(new FederationNode(baseuri, GitRepositoryState.get().getCommitId(),
-                GitRepositoryState.get().getBuildVersion()));
-    }
-
     void logResponse(Response.StatusType statusInfo) {
         logResponse(statusInfo, null, startTime, requestDescription);
     }
 
     void logResponse(Response.StatusType statusInfo, RestResponse<?> queryResponse) {
         logResponse(statusInfo, queryResponse, startTime, requestDescription);
-    }
-
-    public static void logResponse(Response.StatusType statusInfo, RestResponse<?> queryResponse, long startTime,
-                                   String requestDescription) {
-        StringBuilder sb = new StringBuilder();
-        try {
-            boolean ok;
-            if (statusInfo.getFamily().equals(Response.Status.Family.SUCCESSFUL)) {
-                sb.append("OK");
-                ok = true;
-            } else {
-                sb.append("ERROR");
-                ok = false;
-            }
-            sb.append(" [").append(statusInfo.getStatusCode()).append(']');
-
-            if (queryResponse == null) {
-                sb.append(", ").append(System.currentTimeMillis() - startTime).append("ms");
-            } else {
-                sb.append(", ").append(queryResponse.getTime()).append("ms");
-                if (queryResponse.getResponses().size() == 1) {
-                    OpenCGAResult<?> result = queryResponse.getResponses().get(0);
-                    if (result != null) {
-                        sb.append(", num: ").append(result.getNumResults());
-                        if (result.getNumTotalResults() >= 0) {
-                            sb.append(", total: ").append(result.getNumTotalResults());
-                        }
-                    }
-                }
-            }
-            sb.append(", ").append(requestDescription);
-            if (ok) {
-                logger.info(sb.toString());
-            } else {
-                logger.error(sb.toString());
-            }
-        } catch (RuntimeException e) {
-            logger.warn("Error logging response", e);
-            logger.info(sb.toString()); // Print incomplete response
-        }
-    }
-
-    public static Response createJsonResponse(RestResponse queryResponse) {
-        try {
-            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(queryResponse), MediaType.APPLICATION_JSON_TYPE));
-        } catch (JsonProcessingException e) {
-            logger.error("Error parsing queryResponse object", e);
-            throw new WebApplicationException("Error parsing queryResponse object", e);
-        }
-    }
-
-    protected static Response buildResponse(Response.ResponseBuilder responseBuilder) {
-        return responseBuilder
-                .header("Access-Control-Allow-Origin", "*")
-                .header("Access-Control-Allow-Headers", "x-requested-with, content-type, authorization")
-                .header("Access-Control-Allow-Credentials", "true")
-                .header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-                .build();
     }
 
     private void verifyHeaders(HttpHeaders httpHeaders) {
@@ -795,27 +825,6 @@ public class OpenCGAWSServer {
         } else {
             throw new WebServiceException("ID is null or Empty");
         }
-    }
-
-    protected static List<String> checkUniqueList(String ids) throws WebServiceException {
-        if (StringUtils.isNotEmpty(ids)) {
-            List<String> idsList = Arrays.asList(ids.split(","));
-            return checkUniqueList(idsList, "");
-        } else {
-            throw new WebServiceException("ID is null or Empty");
-        }
-    }
-
-    protected static List<String> checkUniqueList(List<String> ids, String field) throws WebServiceException {
-        if (ListUtils.isNotEmpty(ids)) {
-            Set<String> hashSet = new HashSet<>(ids);
-            if (hashSet.size() == ids.size()) {
-                return ids;
-            } else {
-                throw new WebServiceException("Provided " + field + " IDs are not unique. Only unique IDs are accepted.");
-            }
-        }
-        return null;
     }
 
     protected void areSingleIds(String... ids) throws CatalogParameterException {

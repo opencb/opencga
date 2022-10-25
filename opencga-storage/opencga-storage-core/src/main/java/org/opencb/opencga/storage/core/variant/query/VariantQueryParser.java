@@ -72,7 +72,7 @@ public class VariantQueryParser {
             return Collections.emptyList();
         }
         Values<String> clinicalSources = splitValues(query.getString(ANNOT_CLINICAL.key()));
-        if (QueryOperation.AND.equals(clinicalSources.getOperation()) && clinicalSources.getValues().size() > 1) {
+        if (QueryOperation.AND == clinicalSources.getOperation() && clinicalSources.getValues().size() > 1) {
             List<List<String>> combinationsPerSource = new ArrayList<>(clinicalSources.getValues().size());
             for (String source : clinicalSources.getValues()) {
                 combinationsPerSource.add(clinicalCombinationSet.stream().filter(s -> s.contains(source)).collect(Collectors.toList()));
@@ -234,17 +234,7 @@ public class VariantQueryParser {
         convertGoToGeneQuery(query, cellBaseUtils);
         convertExpressionToGeneQuery(query, cellBaseUtils);
 
-        ParsedVariantQuery.VariantQueryXref xrefs = parseXrefs(query);
-        List<String> allIds = new ArrayList<>(xrefs.getIds().size() + xrefs.getVariants().size());
-        allIds.addAll(xrefs.getIds());
-        for (Variant variant : xrefs.getVariants()) {
-            allIds.add(variant.toString());
-        }
-        query.put(ID.key(), allIds);
-        query.put(GENE.key(), xrefs.getGenes());
-        query.put(ANNOT_XREF.key(), xrefs.getOtherXrefs());
-        query.remove(ANNOT_CLINVAR.key());
-        query.remove(ANNOT_COSMIC.key());
+        preProcessXrefs(query);
 
         if (VariantQueryUtils.isValidParam(query, TYPE)) {
             Set<VariantType> types = new HashSet<>();
@@ -452,6 +442,9 @@ public class VariantQueryParser {
         if (isValidParam(query, SAMPLE_DE_NOVO)) {
             sampleParamsList.add(SAMPLE_DE_NOVO);
         }
+        if (isValidParam(query, SAMPLE_DE_NOVO_STRICT)) {
+            sampleParamsList.add(SAMPLE_DE_NOVO_STRICT);
+        }
         if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
             sampleParamsList.add(SAMPLE_MENDELIAN_ERROR);
         }
@@ -468,7 +461,10 @@ public class VariantQueryParser {
                 QueryParam newSampleParam;
                 String expectedValue = null;
 
-                if (sampleValue.toLowerCase().contains(IS + "denovo")) {
+                if (sampleValue.toLowerCase().contains(IS + "denovostrict")) {
+                    newSampleParam = SAMPLE_DE_NOVO_STRICT;
+                    expectedValue = "denovostrict";
+                } else if (sampleValue.toLowerCase().contains(IS + "denovo")) {
                     newSampleParam = SAMPLE_DE_NOVO;
                     expectedValue = "denovo";
                 } else if (sampleValue.toLowerCase().contains(IS + "mendelianerror")) {
@@ -570,16 +566,28 @@ public class VariantQueryParser {
             throw VariantQueryException.mixedAndOrOperators(SAMPLE_DATA, genotypeParam);
         }
 
-        if (isValidParam(query, SAMPLE_MENDELIAN_ERROR) || isValidParam(query, SAMPLE_DE_NOVO)) {
-            QueryParam param;
-            if (isValidParam(query, SAMPLE_MENDELIAN_ERROR) && isValidParam(query, SAMPLE_DE_NOVO)) {
-                throw VariantQueryException.unsupportedParamsCombination(
-                        SAMPLE_MENDELIAN_ERROR, query.getString(SAMPLE_MENDELIAN_ERROR.key()),
-                        SAMPLE_DE_NOVO, query.getString(SAMPLE_DE_NOVO.key()));
-            } else if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
+        if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)
+                || isValidParam(query, SAMPLE_DE_NOVO)
+                || isValidParam(query, SAMPLE_DE_NOVO_STRICT)) {
+            QueryParam param = null;
+            if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
                 param = SAMPLE_MENDELIAN_ERROR;
-            } else {
+            }
+            if (isValidParam(query, SAMPLE_DE_NOVO)) {
+                if (param != null) {
+                    throw VariantQueryException.unsupportedParamsCombination(
+                            param, query.getString(param.key()),
+                            SAMPLE_DE_NOVO, query.getString(SAMPLE_DE_NOVO.key()));
+                }
                 param = SAMPLE_DE_NOVO;
+            }
+            if (isValidParam(query, SAMPLE_DE_NOVO_STRICT)) {
+                if (param != null) {
+                    throw VariantQueryException.unsupportedParamsCombination(
+                            param, query.getString(param.key()),
+                            SAMPLE_DE_NOVO_STRICT, query.getString(SAMPLE_DE_NOVO_STRICT.key()));
+                }
+                param = SAMPLE_DE_NOVO_STRICT;
             }
             if (defaultStudy == null) {
                 throw VariantQueryException.missingStudyForSamples(query.getAsStringList(param.key()),
@@ -761,6 +769,33 @@ public class VariantQueryParser {
         return genotypes;
     }
 
+    public static ParsedVariantQuery.VariantQueryXref preProcessXrefs(Query query) {
+        ParsedVariantQuery.VariantQueryXref xrefs = parseXrefs(query);
+        List<String> allIds = new ArrayList<>(xrefs.getIds().size() + xrefs.getVariants().size());
+        allIds.addAll(xrefs.getIds());
+        for (Variant variant : xrefs.getVariants()) {
+            allIds.add(variant.toString());
+        }
+        if (allIds.isEmpty()) {
+            query.remove(ID.key());
+        } else {
+            query.put(ID.key(), allIds);
+        }
+        if (xrefs.getGenes().isEmpty()) {
+            query.remove(GENE.key());
+        } else {
+            query.put(GENE.key(), xrefs.getGenes());
+        }
+        if (xrefs.getOtherXrefs().isEmpty()) {
+            query.remove(ANNOT_XREF.key());
+        } else {
+            query.put(ANNOT_XREF.key(), xrefs.getOtherXrefs());
+        }
+        query.remove(ANNOT_CLINVAR.key());
+        query.remove(ANNOT_COSMIC.key());
+        return xrefs;
+    }
+
     /**
      * Parses XREFS related filters, and sorts in different lists.
      *
@@ -814,6 +849,12 @@ public class VariantQueryParser {
         xrefs.getOtherXrefs().addAll(query.getAsStringList(ANNOT_CLINVAR.key(), OR));
 
         return xrefs;
+    }
+
+    public static ParsedQuery<KeyOpValue<String, Float>> parseFreqFilter(Query query, QueryParam queryParam) {
+        return VariantQueryUtils.splitValue(query, queryParam)
+                .map(VariantQueryUtils::parseKeyOpValue)
+                .map(kov -> new KeyOpValue<>(kov.getKey(), kov.getOp(), Float.valueOf(kov.getValue())));
     }
 
     @Deprecated

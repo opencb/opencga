@@ -132,14 +132,9 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         preAnnotate(query, doCreate, doLoad, params);
 
         if (doCreate && doLoad) {
-            ProjectMetadata.VariantAnnotatorProgram newAnnotator;
-            List<ObjectMap> newSourceVersion;
-            try {
-                newAnnotator = variantAnnotator.getVariantAnnotatorProgram();
-                newSourceVersion = variantAnnotator.getVariantAnnotatorSourceVersion();
-            } catch (IOException e) {
-                throw new VariantAnnotatorException("Error reading annotation metadata", e);
-            }
+            ProjectMetadata.VariantAnnotatorProgram newAnnotator = variantAnnotator.getVariantAnnotatorProgram();
+            List<ObjectMap> newSourceVersion = variantAnnotator.getVariantAnnotatorSourceVersion();
+
             dbAdaptor.getMetadataManager().updateProjectMetadata(projectMetadata -> {
                 checkCurrentAnnotation(projectMetadata, overwrite, newAnnotator, newSourceVersion);
                 return projectMetadata;
@@ -508,14 +503,9 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             throws VariantAnnotatorException, StorageEngineException, IOException {
         boolean overwrite = params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false);
         if (doLoad && doCreate) {
-            ProjectMetadata.VariantAnnotatorProgram newAnnotator;
-            List<ObjectMap> newSourceVersion;
-            try {
-                newAnnotator = variantAnnotator.getVariantAnnotatorProgram();
-                newSourceVersion = variantAnnotator.getVariantAnnotatorSourceVersion();
-            } catch (IOException e) {
-                throw new VariantAnnotatorException("Error reading current annotation metadata!", e);
-            }
+            ProjectMetadata.VariantAnnotatorProgram newAnnotator = variantAnnotator.getVariantAnnotatorProgram();
+            List<ObjectMap> newSourceVersion = variantAnnotator.getVariantAnnotatorSourceVersion();
+
 
             dbAdaptor.getMetadataManager().updateProjectMetadata(projectMetadata -> {
                 updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite, newAnnotator, newSourceVersion);
@@ -543,7 +533,6 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                 for (Integer file : fileIds) {
                     metadataManager.updateFileMetadata(studyId, file, fileMetadata -> {
                         fileMetadata.setAnnotationStatus(TaskMetadata.Status.READY);
-                        return fileMetadata;
                     });
                 }
             }

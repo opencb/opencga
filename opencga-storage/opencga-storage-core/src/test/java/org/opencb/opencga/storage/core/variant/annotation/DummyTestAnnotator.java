@@ -57,12 +57,12 @@ public class DummyTestAnnotator extends VariantAnnotator {
     }
 
     @Override
-    public ProjectMetadata.VariantAnnotatorProgram getVariantAnnotatorProgram() throws IOException {
+    public ProjectMetadata.VariantAnnotatorProgram getVariantAnnotatorProgram() {
         return new ProjectMetadata.VariantAnnotatorProgram("MyAnnotator", key, null);
     }
 
     @Override
-    public List<ObjectMap> getVariantAnnotatorSourceVersion() throws IOException {
+    public List<ObjectMap> getVariantAnnotatorSourceVersion() {
         return Collections.singletonList(new ObjectMap("data", "genes"));
     }
 }

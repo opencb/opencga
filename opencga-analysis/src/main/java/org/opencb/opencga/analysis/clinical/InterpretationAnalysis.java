@@ -48,7 +48,6 @@ import static org.opencb.opencga.analysis.clinical.ClinicalUtils.readClinicalVar
 
 public abstract class InterpretationAnalysis extends OpenCgaTool {
 
-
     public static String PRIMARY_FINDINGS_FILENAME = "primary-findings.json";
     public static String SECONDARY_FINDINGS_FILENAME = "secondary-findings.json";
     public static String INTERPRETATION_FILENAME = "interpretation.json";
@@ -144,7 +143,7 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
         // Store interpretation analysis in DB
         try {
             catalogManager.getInterpretationManager().create(studyId, clinicalAnalysis.getId(), new Interpretation(interpretation),
-                    ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), token);
+                    ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException("Error saving interpretation into database", e);
         }

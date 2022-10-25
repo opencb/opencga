@@ -10,10 +10,7 @@ import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
-import org.opencb.opencga.storage.core.metadata.models.Lock;
-import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
-import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLockManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -76,6 +73,20 @@ public class VariantPhoenixSchemaManager implements AutoCloseable {
         String dbName = HBaseVariantTableNameGenerator.getDBNameFromVariantsTableName(variantsTableName);
         this.metaTableName = HBaseVariantTableNameGenerator.getMetaTableName(null, dbName);
         columnExistsCache = new HashMap<>();
+    }
+
+    public void registerStudyColumns(int studyId) throws StorageEngineException {
+        registerNewFiles(studyId, new ArrayList<>(metadataManager.getIndexedFiles(studyId)));
+
+        List<Integer> cohortIds = new LinkedList<>();
+        for (CohortMetadata cohort : metadataManager.getCalculatedCohorts(studyId)) {
+            cohortIds.add(cohort.getId());
+        }
+        registerNewCohorts(studyId, cohortIds);
+
+        for (VariantScoreMetadata variantScore : metadataManager.getStudyMetadata(studyId).getVariantScores()) {
+            registerNewScore(studyId, variantScore.getId());
+        }
     }
 
     public void registerPendingColumns() throws StorageEngineException {

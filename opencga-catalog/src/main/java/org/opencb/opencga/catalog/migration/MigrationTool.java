@@ -168,9 +168,15 @@ public abstract class MigrationTool {
         void accept(Document document);
     }
 
-    protected final void migrateCollection(String collection, Bson query, Bson projection,
-                                           MigrateCollectionFunc migrateFunc) {
+    protected final void migrateCollection(String collection, Bson query, Bson projection, MigrateCollectionFunc migrateFunc) {
         migrateCollection(collection, collection, query, projection, migrateFunc);
+    }
+
+    protected final void migrateCollection(List<String> collections, Bson query, Bson projection, MigrateCollectionFunc migrateFunc) {
+        for (String collection : collections) {
+            privateLogger.info("Starting migration in {}", collection);
+            migrateCollection(collection, collection, query, projection, migrateFunc);
+        }
     }
 
     protected final void migrateCollection(String inputCollection, String outputCollection, Bson query, Bson projection,
@@ -179,8 +185,7 @@ public abstract class MigrationTool {
     }
 
     protected final void migrateCollection(MongoCollection<Document> inputCollection, MongoCollection<Document> outputCollection,
-                                           Bson query, Bson projection,
-                                           MigrateCollectionFunc migrateFunc) {
+                                           Bson query, Bson projection, MigrateCollectionFunc migrateFunc) {
         int count = 0;
         List<WriteModel<Document>> list = new ArrayList<>(batchSize);
 
@@ -246,6 +251,16 @@ public abstract class MigrationTool {
 
     protected final void dropIndex(String collection, Document index) {
         dropIndex(getMongoCollection(collection), index);
+    }
+
+    protected final void dropIndex(List<String> collections, Document index) {
+        for (String collection : collections) {
+            try {
+                getMongoCollection(collection).dropIndex(index);
+            } catch (Exception e) {
+                logger.warn("Could not drop index: {}", e.getMessage());
+            }
+        }
     }
 
     protected final void dropIndex(MongoCollection<Document> collection, Document index) {

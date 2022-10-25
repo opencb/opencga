@@ -55,7 +55,7 @@ import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotati
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
-import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.search.solr.SolrVariantDBIterator;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
@@ -341,7 +341,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 
         List<String> studyNames = variantStorageEngine.getMetadataManager().getStudyNames();
 
-        Query query = VariantQueryCommandUtils.parseQuery(variantQueryCommandOptions, studyNames);
+        Query query = VariantQueryCommandUtils.parseQuery(variantQueryCommandOptions);
         QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(variantQueryCommandOptions);
 
         if (variantQueryCommandOptions.commonQueryOptions.count) {
@@ -454,7 +454,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 //            logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
 //        }
 
-        variantStorageEngine.annotate(query, options);
+        variantStorageEngine.annotate(outDir.toUri(), query, options);
     }
 
     private void annotationSave() throws VariantAnnotatorException, StorageEngineException {
@@ -676,12 +676,10 @@ public class VariantCommandExecutor extends CommandExecutor {
 //        storageConfiguration.getOptions().putAll(exportVariantsCommandOptions.commonOptions.params);
 
 
-        List<String> studyNames = variantStorageEngine.getMetadataManager().getStudyNames();
-
 
         // TODO: JT
         try {
-            Query query = VariantQueryCommandUtils.parseQuery(exportVariantsCommandOptions.queryOptions, studyNames);
+            Query query = VariantQueryCommandUtils.parseQuery(exportVariantsCommandOptions.queryOptions);
             QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(exportVariantsCommandOptions.queryOptions);
 
             // create VCF header by getting information from metadata or study configuration

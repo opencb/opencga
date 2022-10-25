@@ -40,7 +40,6 @@ public class CohortVariantStatsHBaseMapReduceAnalysisExecutor
             cohortId = dbAdaptor.getMetadataManager().registerCohort(getStudy(), temporaryCohortName, getSampleNames());
             dbAdaptor.getMetadataManager().updateCohortMetadata(studyId, cohortId, cohortMetadata -> {
                 cohortMetadata.setStatus("TEMPORARY", TaskMetadata.Status.RUNNING);
-                return cohortMetadata;
             });
         } catch (StorageEngineException e) {
             throw new ToolExecutorException(e);

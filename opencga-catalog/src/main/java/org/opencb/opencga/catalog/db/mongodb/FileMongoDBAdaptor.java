@@ -22,6 +22,7 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
@@ -48,7 +49,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -58,6 +59,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -73,13 +75,11 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
  */
 public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implements FileDBAdaptor {
 
+    public static final String REVERSE_NAME = "_reverse";
+    public static final String PRIVATE_SAMPLES = "_samples";
     private final MongoDBCollection fileCollection;
     private final MongoDBCollection deletedFileCollection;
     private FileConverter fileConverter;
-
-    public static final String REVERSE_NAME = "_reverse";
-    public static final String PRIVATE_SAMPLES = "_samples";
-
     private int fileSampleLinkThreshold = 5000;
 
     /***
@@ -1088,8 +1088,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         Document studyDocument = getStudyDocument(null, studyUid);
         UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
-                StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
-                FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
+                StudyPermissions.Permissions.VIEW_FILE_ANNOTATIONS.name(),
+                FilePermissions.VIEW_ANNOTATIONS.name());
 
         return new FileCatalogMongoDBIterator<File>(mongoCursor, null, fileConverter, iteratorFilter, this,
                 studyUid, user, options);
@@ -1111,8 +1111,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         Document studyDocument = getStudyDocument(clientSession, studyUid);
         UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
-                StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
-                FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
+                StudyPermissions.Permissions.VIEW_FILE_ANNOTATIONS.name(),
+                FilePermissions.VIEW_ANNOTATIONS.name());
 
         return new FileCatalogMongoDBIterator<>(mongoCursor, null, null, iteratorFilter, this,
                 studyUid, user, options);
@@ -1179,13 +1179,30 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
-    public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
+    public OpenCGAResult distinct(long studyUid, String field, Query query, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query finalQuery = query != null ? new Query(query) : new Query();
         finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
         Bson bson = parseQuery(finalQuery, userId);
 
-        return new OpenCGAResult<>(fileCollection.distinct(field, bson, clazz));
+        return new OpenCGAResult<>(fileCollection.distinct(field, bson));
+    }
+
+    @Override
+    public OpenCGAResult<?> distinct(long studyUid, List<String> fields, Query query, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        StopWatch stopWatch = StopWatch.createStarted();
+        Query finalQuery = query != null ? new Query(query) : new Query();
+        finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
+        Bson bson = parseQuery(finalQuery, userId);
+
+        Set<String> results = new LinkedHashSet<>();
+        for (String field : fields) {
+            results.addAll(fileCollection.distinct(field, bson, String.class).getResults());
+        }
+
+        return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), Collections.emptyList(), results.size(),
+                new ArrayList<>(results), -1);
     }
 
     @Override
@@ -1227,10 +1244,10 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.FILE, user, configuration));
             } else {
                 if (containsAnnotationQuery(query)) {
-                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name(),
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FilePermissions.VIEW_ANNOTATIONS.name(),
                             Enums.Resource.FILE, configuration));
                 } else {
-                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FileAclEntry.FilePermissions.VIEW.name(),
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FilePermissions.VIEW.name(),
                             Enums.Resource.FILE, configuration));
                 }
             }

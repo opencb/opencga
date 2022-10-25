@@ -31,7 +31,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -106,8 +106,8 @@ public abstract class TsvAnnotationLoader extends OpenCgaTool  {
             // Check user has corresponding permissions to update the list of samples.
             Query query = new Query()
                     .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds)
-                    .append(ParamConstants.ACL_PARAM, userId + ":" + StringUtils.join(Arrays.asList(SampleAclEntry.SamplePermissions.VIEW,
-                            SampleAclEntry.SamplePermissions.WRITE, SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS), ","));
+                    .append(ParamConstants.ACL_PARAM, userId + ":" + StringUtils.join(Arrays.asList(SamplePermissions.VIEW,
+                            SamplePermissions.WRITE, SamplePermissions.WRITE_ANNOTATIONS), ","));
             int numResults = count(query);
             if (numResults < sampleIds.size()) {
                 throw new ToolException("Cannot create annotations for all the entries. Missing permissions in "

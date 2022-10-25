@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 
@@ -15,7 +16,7 @@ public class ClinicalReport {
 
     @DataField(id = "discussion", indexed = true,
             description = FieldConstants.CLINICAL_REPORT_DISCUSSION)
-    private String discussion;
+    private ClinicalDiscussion discussion;
 
     @DataField(id = "logo", indexed = true,
             description = FieldConstants.CLINICAL_REPORT_LOGO)
@@ -36,7 +37,7 @@ public class ClinicalReport {
     public ClinicalReport() {
     }
 
-    public ClinicalReport(String title, String overview, String discussion, String logo, String signedBy,
+    public ClinicalReport(String title, String overview, ClinicalDiscussion discussion, String logo, String signedBy,
                           String signature, String date) {
         this.title = title;
         this.overview = overview;
@@ -79,11 +80,11 @@ public class ClinicalReport {
         return this;
     }
 
-    public String getDiscussion() {
+    public ClinicalDiscussion getDiscussion() {
         return discussion;
     }
 
-    public ClinicalReport setDiscussion(String discussion) {
+    public ClinicalReport setDiscussion(ClinicalDiscussion discussion) {
         this.discussion = discussion;
         return this;
     }

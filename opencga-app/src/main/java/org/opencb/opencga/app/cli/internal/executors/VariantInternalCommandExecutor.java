@@ -48,6 +48,7 @@ import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
+import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
@@ -60,7 +61,8 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.exceptions.AnalysisExecutionException;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.core.models.clinical.ExomiserWrapperParams;
+import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.tools.ToolParams;
@@ -79,9 +81,9 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.ExomiserAnalysisCommandOptions.EXOMISER_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyQcCommandOptions.FAMILY_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
@@ -255,6 +257,9 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
             case VariantCommandOptions.JulieRunCommandOptions.JULIE_RUN_COMMAND:
                 julie();
                 break;
+            case EXOMISER_RUN_COMMAND:
+                exomiser();
+                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -270,7 +275,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
         VariantCommandOptions.VariantQueryCommandOptions queryCliOptions = variantCommandOptions.queryVariantCommandOptions;
 
-        queryCliOptions.commonOptions.outputFormat = exportCliOptions.commonOptions.outputFormat.toLowerCase().replace("tsv", "stats");
+        queryCliOptions.outputFileFormat = exportCliOptions.outputFileFormat.toLowerCase().replace("tsv", "stats");
         queryCliOptions.project = exportCliOptions.project;
         queryCliOptions.study = exportCliOptions.study;
         queryCliOptions.genericVariantQueryOptions.includeStudy = exportCliOptions.study;
@@ -316,8 +321,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 }
             }
 
-        Map<Long, String> studyIds = getStudyIds(token);
-        Query query = VariantQueryCommandUtils.parseQuery(cliOptions, studyIds.values());
+        Query query = VariantQueryCommandUtils.parseQuery(cliOptions);
         QueryOptions queryOptions = VariantQueryCommandUtils.parseQueryOptions(cliOptions);
         queryOptions.put("summary", cliOptions.genericVariantQueryOptions.summary);
 
@@ -329,13 +333,12 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         } else {
             queryOptions.putIfNotEmpty("annotations", cliOptions.genericVariantQueryOptions.annotations);
 
-            ObjectMap params = new VariantExportParams(
+            VariantExportParams toolParams = new VariantExportParams(
                     query, outdir,
                     cliOptions.outputFileName,
-                    cliOptions.commonOptions.outputFormat,
-                    cliOptions.variantsFile)
-                    .toObjectMap(queryOptions);
-            toolRunner.execute(VariantExportTool.class, params, Paths.get(outdir), jobId, token);
+                    cliOptions.outputFileFormat,
+                    cliOptions.variantsFile);
+            toolRunner.execute(VariantExportTool.class, toolParams, queryOptions, Paths.get(outdir), jobId, token);
         }
     }
 
@@ -793,15 +796,23 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         VariantCommandOptions.MutationalSignatureCommandOptions cliOptions = variantCommandOptions.mutationalSignatureCommandOptions;
 
         // Check signature release
-        checkSignatureRelease(cliOptions.release);
+        checkSignatureVersion(cliOptions.sigVersion);
 
         ObjectMap params = new MutationalSignatureAnalysisParams(
-                cliOptions.sample,
                 cliOptions.id,
                 cliOptions.description,
-                new ObjectMap(cliOptions.query),
-                cliOptions.release,
-                cliOptions.fitting,
+                cliOptions.query,
+                cliOptions.catalogues,
+                cliOptions.cataloguesContent,
+                cliOptions.fitMethod,
+                cliOptions.nBoot,
+                cliOptions.sigVersion,
+                cliOptions.organ,
+                cliOptions.thresholdPerc,
+                cliOptions.thresholdPval,
+                cliOptions.maxRareSigs,
+                cliOptions.signaturesFile,
+                cliOptions.rareSignaturesFile,
                 cliOptions.outdir)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
@@ -900,7 +911,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         VariantCommandOptions.SampleQcCommandOptions cliOptions = variantCommandOptions.sampleQcCommandOptions;
 
         // Check signature release
-        checkSignatureRelease(cliOptions.signatureRelease);
+        checkSignatureVersion(cliOptions.signatureSigVersion);
 
         // Build variant query from cli options
         AnnotationVariantQueryParams variantStatsQuery = ToolParams.fromParams(AnnotationVariantQueryParams.class,
@@ -913,8 +924,16 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 variantStatsQuery,
                 cliOptions.signatureId,
                 cliOptions.signatureDescription,
-                new ObjectMap(cliOptions.signatureQuery),
-                cliOptions.signatureRelease,
+                cliOptions.signatureQuery,
+                cliOptions.signatureFitMethod,
+                cliOptions.signatureNBoot,
+                cliOptions.signatureSigVersion,
+                cliOptions.signatureOrgan,
+                cliOptions.signatureThresholdPerc,
+                cliOptions.signatureThresholdPval,
+                cliOptions.signatureMaxRareSigs,
+                cliOptions.signatureSignaturesFile,
+                cliOptions.signatureRareSignaturesFile,
                 cliOptions.genomePlotId,
                 cliOptions.genomePlotDescr,
                 cliOptions.genomePlotConfigFile,
@@ -961,16 +980,27 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         toolRunner.execute(GatkWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
-    private void checkSignatureRelease(String release) throws ClientException {
-        switch (release) {
-            case "2":
-            case "3":
-            case "3.1":
-            case "3.2":
+    private void exomiser() throws Exception {
+        VariantCommandOptions.ExomiserAnalysisCommandOptions cliOptions = variantCommandOptions.exomiserAnalysisCommandOptions;
+
+        ObjectMap params = new ExomiserWrapperParams(
+                cliOptions.sample,
+                cliOptions.outdir)
+                .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
+
+        toolRunner.execute(ExomiserWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+    }
+
+    private void checkSignatureVersion(String sigVersion) throws ClientException {
+        switch (sigVersion) {
+            case "COSMICv2":
+            case "COSMICv3.2":
+            case "RefSigv1":
+            case "RefSigv2":
                 break;
             default:
-                throw new ClientException("Invalid value " + release + " for the mutational signature release. "
-                        + "Valid values are: 2, 3, 3.1 and 3.2");
+                throw new ClientException("Invalid value " + sigVersion + " for the mutational signature version. "
+                        + "Valid values are: COSMICv2, COSMICv3.2, RefSigv1 and RefSigv2");
         }
     }
 

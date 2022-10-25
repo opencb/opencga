@@ -39,6 +39,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.family.Family;
@@ -50,7 +51,7 @@ import org.opencb.opencga.core.models.individual.IndividualAclParams;
 import org.opencb.opencga.core.models.individual.IndividualReferenceParam;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -640,11 +641,11 @@ public class FamilyManagerTest extends GenericTest {
         }
         assertEquals(3, sampleList.size());
 
-        OpenCGAResult<Map<String, List<String>>> acls = catalogManager.getSampleManager().getAcls(STUDY,
+        OpenCGAResult<AclEntryList<SamplePermissions>> acls = catalogManager.getSampleManager().getAcls(STUDY,
                 sampleList.stream().map(Sample::getId).collect(Collectors.toList()), "user2", false, sessionIdUser);
-        for (Map<String, List<String>> result : acls.getResults()) {
-            assertTrue(result.get("user2").contains(SampleAclEntry.SamplePermissions.VIEW.name()));
-            assertFalse(result.get("user2").contains(SampleAclEntry.SamplePermissions.VIEW_VARIANTS.name()));
+        for (AclEntryList<SamplePermissions> result : acls.getResults()) {
+            assertTrue(result.getAcl().get(0).getPermissions().contains(SamplePermissions.VIEW));
+            assertFalse(result.getAcl().get(0).getPermissions().contains(SamplePermissions.VIEW_VARIANTS));
         }
 
         familyManager.updateAcl(STUDY, new FamilyAclParams("VIEW", "Martinez-Martinez", null, null,
@@ -660,9 +661,9 @@ public class FamilyManagerTest extends GenericTest {
 
         acls = catalogManager.getSampleManager().getAcls(STUDY, sampleList.stream().map(Sample::getId).collect(Collectors.toList()),
                 "user2", false, sessionIdUser);
-        for (Map<String, List<String>> result : acls.getResults()) {
-            assertTrue(result.get("user2").contains(SampleAclEntry.SamplePermissions.VIEW.name()));
-            assertTrue(result.get("user2").contains(SampleAclEntry.SamplePermissions.VIEW_VARIANTS.name()));
+        for (AclEntryList<SamplePermissions> result : acls.getResults()) {
+            assertTrue(result.getAcl().get(0).getPermissions().contains(SamplePermissions.VIEW));
+            assertTrue(result.getAcl().get(0).getPermissions().contains(SamplePermissions.VIEW_VARIANTS));
         }
     }
 
@@ -988,6 +989,27 @@ public class FamilyManagerTest extends GenericTest {
         }
         assertEquals(1, family.first().getDisorders().size());
     }
+
+    @Test
+    public void disordersDistinctTest() throws CatalogException {
+        DataResult<Family> family = createDummyFamily("family", true);
+
+        List<Disorder> disorderList1 = Arrays.asList(new Disorder().setId("disorderId1").setName("disorderName1"));
+        IndividualUpdateParams params1 = new IndividualUpdateParams().setDisorders(disorderList1);
+
+        List<Disorder> disorderList2 = Arrays.asList(new Disorder().setId("disorderId2").setName("disorderName2"));
+        IndividualUpdateParams params2 = new IndividualUpdateParams().setDisorders(disorderList2);
+
+
+        catalogManager.getIndividualManager().update(STUDY, "child1", params1, new QueryOptions(), sessionIdUser);
+        catalogManager.getIndividualManager().update(STUDY, "child2", params2, new QueryOptions(), sessionIdUser);
+
+        OpenCGAResult<?> distinct = catalogManager.getFamilyManager().distinct(STUDY, "disorders.name", new Query(), sessionIdUser);
+
+        System.out.println(distinct);
+        assertEquals(2, distinct.getNumResults());
+    }
+
 
     @Test
     public void createFamilyDuo() throws CatalogException {
@@ -1370,6 +1392,29 @@ public class FamilyManagerTest extends GenericTest {
         } catch (CatalogException e) {
             assertTrue(e.getMessage().contains("in use in Clinical Analyses"));
         }
+    }
+
+    @Test
+    public void updateFamilyMembers() throws CatalogException {
+        Individual child = DummyModelUtils.getDummyIndividual("child", null, null, null);
+        Individual father = DummyModelUtils.getDummyIndividual("father", null, null, null);
+        Individual mother = DummyModelUtils.getDummyIndividual("mother", null, null, null);
+        child.setFather(father);
+        child.setMother(mother);
+
+        catalogManager.getIndividualManager().create(STUDY, father, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getIndividualManager().create(STUDY, mother, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getIndividualManager().create(STUDY, child, QueryOptions.empty(), sessionIdUser);
+
+        Family family = DummyModelUtils.getDummyFamily("family");
+        family.setMembers(null);
+        catalogManager.getFamilyManager().create(STUDY, family, Collections.singletonList(child.getId()), QueryOptions.empty(), sessionIdUser);
+
+        FamilyUpdateParams updateParams = new FamilyUpdateParams().setMembers(Arrays.asList(
+                new IndividualReferenceParam(child.getId(), child.getUuid()),
+                new IndividualReferenceParam(father.getId(), child.getUuid())
+        ));
+        catalogManager.getFamilyManager().update(STUDY, family.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
     }
 
 }

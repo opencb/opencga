@@ -47,13 +47,14 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.HookConfiguration;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.variant.VariantFileQualityControl;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -311,7 +312,7 @@ public class FileManager extends AnnotationSetManager<File> {
         Study study = studyManager.resolveId(studyStr, userId);
 
         for (File transformedFile : transformedFiles) {
-            authorizationManager.checkFilePermission(study.getUid(), transformedFile.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
+            authorizationManager.checkFilePermission(study.getUid(), transformedFile.getUid(), userId, FilePermissions.WRITE);
             String variantPathName = getMainVariantFile(transformedFile.getPath());
             if (variantPathName == null) {
                 // Skip the file.
@@ -463,7 +464,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append(fieldKey, value)
                 .append("token", token);
 
-        authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
+        authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FilePermissions.WRITE);
 
         ObjectMap params;
         try {
@@ -488,7 +489,7 @@ public class FileManager extends AnnotationSetManager<File> {
         }
 
         String userId = userManager.getUserId(sessionId);
-        authorizationManager.checkFilePermission(fileDataResult.first().getStudyUid(), fileId, userId, FileAclEntry.FilePermissions.VIEW);
+        authorizationManager.checkFilePermission(fileDataResult.first().getStudyUid(), fileId, userId, FilePermissions.VIEW);
 
         return getParents(fileDataResult.first().getStudyUid(), fileDataResult.first().getPath(), true, options);
     }
@@ -569,7 +570,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 // Ensure path is a full path pointing to a file, not a folder
                 String[] split = path.split("/");
                 String fileName = split[split.length - 1];
-                if (StringUtils.isEmpty(fileName) || !fileName.contains(".")) {
+                if (StringUtils.isEmpty(fileName)) {
                     throw new CatalogException("Path must be a full OpenCGA Catalog path pointing to the file that must be generated. "
                             + "If, on the other hand, you want to create a directory, please set type to 'DIRECTORY' instead.");
                 }
@@ -589,7 +590,7 @@ public class FileManager extends AnnotationSetManager<File> {
             OpenCGAResult<File> parentResult = getParents(study.getUid(), path, false, FileManager.INCLUDE_FILE_URI_PATH);
             // Check user can write in path
             authorizationManager.checkFilePermission(study.getUid(), parentResult.first().getUid(), userId,
-                    FileAclEntry.FilePermissions.WRITE);
+                    FilePermissions.WRITE);
 
             // Check available path
             Query pathQuery = new Query()
@@ -819,17 +820,18 @@ public class FileManager extends AnnotationSetManager<File> {
         } else {
             if (!newParent) {
                 //If parent has been created, for sure we have permissions to create the new file.
-                authorizationManager.checkFilePermission(studyId, parentFileId, userId, FileAclEntry.FilePermissions.WRITE);
+                authorizationManager.checkFilePermission(studyId, parentFileId, userId, FilePermissions.WRITE);
             }
         }
 
         fileDBAdaptor.insert(studyId, file, existingSamples, nonExistingSamples, study.getVariableSets(), options);
         OpenCGAResult<File> queryResult = getFile(studyId, file.getUuid(), options);
         // We obtain the permissions set in the parent folder and set them to the file or folder being created
-        OpenCGAResult<Map<String, List<String>>> allFileAcls = authorizationManager.getAllFileAcls(studyId, parentFileId);
+        OpenCGAResult<AclEntryList<FilePermissions>> allFileAcls = authorizationManager.getAcls(studyId, parentFileId,
+                Enums.Resource.FILE, FilePermissions.class);
         // Propagate ACLs
         if (allFileAcls.getNumResults() > 0) {
-            authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getUid()), allFileAcls.getResults().get(0),
+            authorizationManager.replicateAcls(Collections.singletonList(queryResult.first().getUid()), allFileAcls.getResults().get(0),
                     Enums.Resource.FILE);
         }
 
@@ -934,9 +936,9 @@ public class FileManager extends AnnotationSetManager<File> {
 
             // Check permissions over the most internal path
             authorizationManager.checkFilePermission(study.getUid(), parentFolders.first().getUid(), userId,
-                    FileAclEntry.FilePermissions.UPLOAD);
+                    FilePermissions.UPLOAD);
             authorizationManager.checkFilePermission(study.getUid(), parentFolders.first().getUid(), userId,
-                    FileAclEntry.FilePermissions.WRITE);
+                    FilePermissions.WRITE);
 
             // We obtain the basic studyPath where we will upload the file temporarily
             java.nio.file.Path studyPath = Paths.get(study.getUri());
@@ -1166,7 +1168,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 }
 
                 File parentFolder = getParents(study.getUid(), path, false, INCLUDE_FILE_URI_PATH).first();
-                authorizationManager.checkFilePermission(study.getUid(), parentFolder.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
+                authorizationManager.checkFilePermission(study.getUid(), parentFolder.getUid(), userId, FilePermissions.WRITE);
             } else {
                 // It will be moved to an external folder. Only admins can move to that directory
                 if (!authorizationManager.isOwnerOrAdmin(study.getUid(), userId)) {
@@ -1402,7 +1404,7 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    public OpenCGAResult<?> distinct(String studyId, String field, Query query, String token) throws CatalogException {
+    public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(token);
@@ -1411,22 +1413,16 @@ public class FileManager extends AnnotationSetManager<File> {
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
-                .append("field", new Query(query))
+                .append("fields", fields)
                 .append("query", new Query(query))
                 .append("token", token);
         try {
-            FileDBAdaptor.QueryParams param = FileDBAdaptor.QueryParams.getParam(field);
-            if (param == null) {
-                throw new CatalogException("Unknown '" + field + "' parameter.");
-            }
-            Class<?> clazz = getTypeClass(param.type());
-
             fixQueryObject(study, query, userId);
             // Fix query if it contains any annotation
             AnnotationUtils.fixQueryAnnotationSearch(study, query);
 
             query.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<?> result = fileDBAdaptor.distinct(study.getUid(), field, query, userId, clazz);
+            OpenCGAResult<?> result = fileDBAdaptor.distinct(study.getUid(), fields, query, userId);
 
             auditManager.auditDistinct(userId, Enums.Resource.FILE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1732,7 +1728,7 @@ public class FileManager extends AnnotationSetManager<File> {
             throw new CatalogException("Provided folder '" + folderId + "' is actually a file");
         }
 
-        authorizationManager.checkFilePermission(study.getUid(), folder.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
+        authorizationManager.checkFilePermission(study.getUid(), folder.getUid(), userId, FilePermissions.WRITE);
 
         IOManager ioManager;
         try {
@@ -2190,12 +2186,12 @@ public class FileManager extends AnnotationSetManager<File> {
         // Only check write annotation permissions if the user wants to update the annotation sets
         if (updateParams != null && updateParams.getAnnotationSets() != null) {
             authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId,
-                    FileAclEntry.FilePermissions.WRITE_ANNOTATIONS);
+                    FilePermissions.WRITE_ANNOTATIONS);
         }
         // Only check update permissions if the user wants to update anything apart from the annotation sets
         if ((parameters.size() == 1 && !parameters.containsKey(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
                 || parameters.size() > 1) {
-            authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
+            authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FilePermissions.WRITE);
         }
 
         if (isRootFolder(file)) {
@@ -2249,12 +2245,12 @@ public class FileManager extends AnnotationSetManager<File> {
             // Only check write annotation permissions if the user wants to update the annotation sets
             if (parameters.containsKey(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
                 authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId,
-                        FileAclEntry.FilePermissions.WRITE_ANNOTATIONS);
+                        FilePermissions.WRITE_ANNOTATIONS);
             }
             // Only check update permissions if the user wants to update anything apart from the annotation sets
             if ((parameters.size() == 1 && !parameters.containsKey(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
                     || parameters.size() > 1) {
-                authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
+                authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FilePermissions.WRITE);
             }
 
             try {
@@ -2360,7 +2356,7 @@ public class FileManager extends AnnotationSetManager<File> {
         String userId = userManager.getUserId(sessionId);
         Study study = studyManager.resolveId(studyStr, userId);
 
-        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.VIEW_FILES);
+        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyPermissions.Permissions.VIEW_FILES);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -2404,7 +2400,7 @@ public class FileManager extends AnnotationSetManager<File> {
         Study study = studyManager.resolveId(studyStr, userId);
 
         File file = internalGet(study.getUid(), fileStr, EXCLUDE_FILE_ATTRIBUTES, userId).first();
-        authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
+        authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FilePermissions.WRITE);
 
         if (file.getName().equals(newName)) {
             OpenCGAResult result = OpenCGAResult.empty();
@@ -2475,7 +2471,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append("token", token);
         try {
             File file = internalGet(study.getUid(), fileId, INCLUDE_FILE_URI, userId).first();
-            authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.VIEW_CONTENT);
+            authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FilePermissions.VIEW_CONTENT);
 
             URI fileUri = getUri(file);
             FileContent fileContent;
@@ -2510,7 +2506,7 @@ public class FileManager extends AnnotationSetManager<File> {
         File file;
         try {
             file = internalGet(study.getUid(), fileId, INCLUDE_FILE_URI_PATH, userId).first();
-            authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.VIEW_CONTENT);
+            authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FilePermissions.VIEW_CONTENT);
 
             if (file.getFormat() != File.Format.IMAGE) {
                 throw new CatalogException("File '" + fileId + "' is not an image. Format of file is '" + file.getFormat() + "'.");
@@ -2551,7 +2547,7 @@ public class FileManager extends AnnotationSetManager<File> {
         File file;
         try {
             file = internalGet(study.getUid(), fileId, INCLUDE_FILE_URI, userId).first();
-            authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.VIEW_CONTENT);
+            authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FilePermissions.VIEW_CONTENT);
             URI fileUri = getUri(file);
             FileContent fileContent;
             try {
@@ -2585,7 +2581,7 @@ public class FileManager extends AnnotationSetManager<File> {
         File file;
         try {
             file = internalGet(study.getUid(), fileId, INCLUDE_FILE_URI, userId).first();
-            authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.VIEW_CONTENT);
+            authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FilePermissions.VIEW_CONTENT);
             URI fileUri = getUri(file);
             FileContent fileContent;
             try {
@@ -2622,7 +2618,7 @@ public class FileManager extends AnnotationSetManager<File> {
         File file;
         try {
             file = internalGet(study.getUid(), fileId, INCLUDE_FILE_URI, userId).first();
-            authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.DOWNLOAD);
+            authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FilePermissions.DOWNLOAD);
             URI fileUri = getUri(file);
             DataInputStream dataInputStream;
             try {
@@ -2642,8 +2638,14 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     // **************************   ACLs  ******************************** //
-    public OpenCGAResult<Map<String, List<String>>> getAcls(String studyId, List<String> fileList, String member, boolean ignoreException,
-                                                            String token) throws CatalogException {
+    public OpenCGAResult<AclEntryList<FilePermissions>> getAcls(String studyId, List<String> fileList, String member,
+                                                                boolean ignoreException, String token) throws CatalogException {
+        return getAcls(studyId, fileList, StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(),
+                ignoreException, token);
+    }
+
+    public OpenCGAResult<AclEntryList<FilePermissions>> getAcls(String studyId, List<String> fileList, List<String> members,
+                                                                boolean ignoreException, String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -2651,71 +2653,77 @@ public class FileManager extends AnnotationSetManager<File> {
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
                 .append("fileList", fileList)
-                .append("member", member)
+                .append("members", members)
                 .append("ignoreException", ignoreException)
                 .append("token", token);
-        try {
-            OpenCGAResult<Map<String, List<String>>> fileAclList = OpenCGAResult.empty();
-            InternalGetDataResult<File> fileDataResult = internalGet(study.getUid(), fileList, INCLUDE_FILE_IDS, user, ignoreException);
 
-            Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
-            if (fileDataResult.getMissing() != null) {
-                missingMap = fileDataResult.getMissing().stream()
+        OpenCGAResult<AclEntryList<FilePermissions>> fileAcls = OpenCGAResult.empty();
+        Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
+        try {
+            auditManager.initAuditBatch(operationId);
+            InternalGetDataResult<File> queryResult = internalGet(study.getUid(), fileList, INCLUDE_FILE_IDS, user, ignoreException);
+
+            if (queryResult.getMissing() != null) {
+                missingMap = queryResult.getMissing().stream()
                         .collect(Collectors.toMap(InternalGetDataResult.Missing::getId, Function.identity()));
             }
+
+            List<Long> fileUids = queryResult.getResults().stream().map(File::getUid).collect(Collectors.toList());
+            if (org.apache.commons.collections4.CollectionUtils.isNotEmpty(members)) {
+                fileAcls = authorizationManager.getAcl(user, study.getUid(), fileUids, members, Enums.Resource.FILE, FilePermissions.class);
+            } else {
+                fileAcls = authorizationManager.getAcl(user, study.getUid(), fileUids, Enums.Resource.FILE, FilePermissions.class);
+            }
+
+            // Include non-existing samples to the result list
+            List<AclEntryList<FilePermissions>> resultList = new ArrayList<>(fileList.size());
+            List<Event> eventList = new ArrayList<>(missingMap.size());
             int counter = 0;
             for (String fileId : fileList) {
                 if (!missingMap.containsKey(fileId)) {
-                    File file = fileDataResult.getResults().get(counter);
-                    try {
-                        OpenCGAResult<Map<String, List<String>>> allFileAcls;
-                        if (StringUtils.isNotEmpty(member)) {
-                            allFileAcls = authorizationManager.getFileAcl(study.getUid(), file.getUid(), user, member);
-                        } else {
-                            allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), file.getUid(), user, true);
-                        }
-                        fileAclList.append(allFileAcls);
-
-                        auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.FILE, file.getId(),
-                                file.getUuid(), study.getId(), study.getUuid(), auditParams,
-                                new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
-                    } catch (CatalogException e) {
-                        auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.FILE, file.getId(),
-                                file.getUuid(), study.getId(), study.getUuid(), auditParams,
-                                new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
-
-                        if (!ignoreException) {
-                            throw e;
-                        } else {
-                            Event event = new Event(Event.Type.ERROR, fileId, missingMap.get(fileId).getErrorMsg());
-                            fileAclList.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0,
-                                    Collections.singletonList(Collections.emptyMap()), 0));
-                        }
-                    }
-                    counter += 1;
+                    File file = queryResult.getResults().get(counter);
+                    resultList.add(fileAcls.getResults().get(counter));
+                    auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.FILE, file.getId(),
+                            file.getUuid(), study.getId(), study.getUuid(), auditParams,
+                            new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
+                    counter++;
                 } else {
-                    Event event = new Event(Event.Type.ERROR, fileId, missingMap.get(fileId).getErrorMsg());
-                    fileAclList.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0,
-                            Collections.singletonList(Collections.emptyMap()), 0));
-
+                    resultList.add(new AclEntryList<>());
+                    eventList.add(new Event(Event.Type.ERROR, fileId, missingMap.get(fileId).getErrorMsg()));
                     auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.FILE, fileId, "",
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                     new Error(0, "", missingMap.get(fileId).getErrorMsg())), new ObjectMap());
                 }
             }
-            return fileAclList;
+            for (int i = 0; i < queryResult.getResults().size(); i++) {
+                fileAcls.getResults().get(i).setId(queryResult.getResults().get(i).getId());
+            }
+            fileAcls.setResults(resultList);
+            fileAcls.setEvents(eventList);
         } catch (CatalogException e) {
             for (String fileId : fileList) {
-                auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.FILE, fileId, "", study.getId(),
-                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
+                auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.FILE, fileId, "",
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
                         new ObjectMap());
             }
-            throw e;
+            if (!ignoreException) {
+                throw e;
+            } else {
+                for (String fileId : fileList) {
+                    Event event = new Event(Event.Type.ERROR, fileId, e.getMessage());
+                    fileAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
+                }
+            }
+        } finally {
+            auditManager.finishAuditBatch(operationId);
         }
+
+        return fileAcls;
     }
 
-    public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, List<String> fileStrList, String memberList,
-                                                              FileAclParams aclParams, ParamUtils.AclAction action, String token)
+    public OpenCGAResult<AclEntryList<FilePermissions>> updateAcl(String studyId, List<String> fileStrList, String memberList,
+                                                                  FileAclParams aclParams, ParamUtils.AclAction action,
+                                                                  String token)
             throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
@@ -2730,6 +2738,8 @@ public class FileManager extends AnnotationSetManager<File> {
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         try {
+            auditManager.initAuditBatch(operationId);
+
             int count = 0;
             count += fileStrList != null && !fileStrList.isEmpty() ? 1 : 0;
             count += StringUtils.isNotEmpty(aclParams.getSample()) ? 1 : 0;
@@ -2747,7 +2757,7 @@ public class FileManager extends AnnotationSetManager<File> {
             List<String> permissions = Collections.emptyList();
             if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
                 permissions = Arrays.asList(aclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
-                checkPermissions(permissions, FileAclEntry.FilePermissions::valueOf);
+                checkPermissions(permissions, FilePermissions::valueOf);
             }
 
             List<File> extendedFileList;
@@ -2783,23 +2793,29 @@ public class FileManager extends AnnotationSetManager<File> {
                     Enums.Resource.FILE);
 //        studyManager.membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
-            OpenCGAResult<Map<String, List<String>>> queryResultList;
+            OpenCGAResult<AclEntryList<FilePermissions>> queryResultList;
             switch (action) {
                 case SET:
-                    queryResultList = authorizationManager.setAcls(study.getUid(), members, catalogAclParams);
+                    authorizationManager.setAcls(study.getUid(), members, catalogAclParams);
                     break;
                 case ADD:
-                    queryResultList = authorizationManager.addAcls(study.getUid(), members, catalogAclParams);
+                    authorizationManager.addAcls(study.getUid(), members, catalogAclParams);
                     break;
                 case REMOVE:
-                    queryResultList = authorizationManager.removeAcls(members, catalogAclParams);
+                    authorizationManager.removeAcls(members, catalogAclParams);
                     break;
                 case RESET:
                     catalogAclParams.setPermissions(null);
-                    queryResultList = authorizationManager.removeAcls(members, catalogAclParams);
+                    authorizationManager.removeAcls(members, catalogAclParams);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");
+            }
+
+            queryResultList = authorizationManager.getAcls(study.getUid(), fileUids, members, Enums.Resource.FILE,
+                    FilePermissions.class);
+            for (int i = 0; i < queryResultList.getResults().size(); i++) {
+                queryResultList.getResults().get(i).setId(extendedFileList.get(i).getId());
             }
             for (File file : extendedFileList) {
                 auditManager.audit(operationId, user, Enums.Action.UPDATE_ACLS, Enums.Resource.FILE, file.getId(),
@@ -2816,6 +2832,8 @@ public class FileManager extends AnnotationSetManager<File> {
                 }
             }
             throw e;
+        } finally {
+            auditManager.finishAuditBatch(operationId);
         }
     }
 
@@ -3040,8 +3058,8 @@ public class FileManager extends AnnotationSetManager<File> {
         }
         if (file.getType() == File.Type.FILE) {
             if (checkPermissions) {
-                authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
-                authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.DELETE);
+                authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FilePermissions.WRITE);
+                authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FilePermissions.DELETE);
             }
 
             // File must exist in the file system
@@ -3089,8 +3107,8 @@ public class FileManager extends AnnotationSetManager<File> {
                 File tmpFile = iterator.next();
 
                 if (checkPermissions) {
-                    authorizationManager.checkFilePermission(study.getUid(), tmpFile.getUid(), userId, FileAclEntry.FilePermissions.DELETE);
-                    authorizationManager.checkFilePermission(study.getUid(), tmpFile.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
+                    authorizationManager.checkFilePermission(study.getUid(), tmpFile.getUid(), userId, FilePermissions.DELETE);
+                    authorizationManager.checkFilePermission(study.getUid(), tmpFile.getUid(), userId, FilePermissions.WRITE);
                 }
 
                 // File must exist in the file system
@@ -3215,7 +3233,7 @@ public class FileManager extends AnnotationSetManager<File> {
     private void createParents(Study study, String userId, URI studyURI, Path path, boolean checkPermissions) throws CatalogException {
         if (path == null) {
             if (checkPermissions) {
-                authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_FILES);
+                authorizationManager.checkStudyPermission(study.getUid(), userId, StudyPermissions.Permissions.WRITE_FILES);
             }
             return;
         }
@@ -3245,7 +3263,7 @@ public class FileManager extends AnnotationSetManager<File> {
         } else {
             if (checkPermissions) {
                 long fileId = fileDBAdaptor.getId(study.getUid(), stringPath);
-                authorizationManager.checkFilePermission(study.getUid(), fileId, userId, FileAclEntry.FilePermissions.WRITE);
+                authorizationManager.checkFilePermission(study.getUid(), fileId, userId, FilePermissions.WRITE);
             }
             return;
         }
@@ -3253,7 +3271,8 @@ public class FileManager extends AnnotationSetManager<File> {
         String parentPath = getParentPath(stringPath);
         long parentFileId = fileDBAdaptor.getId(study.getUid(), parentPath);
         // We obtain the permissions set in the parent folder and set them to the file or folder being created
-        OpenCGAResult<Map<String, List<String>>> allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), parentFileId);
+        OpenCGAResult<AclEntryList<FilePermissions>> allFileAcls =
+                authorizationManager.getAcls(study.getUid(), parentFileId, Enums.Resource.FILE, FilePermissions.class);
 
         URI completeURI = Paths.get(studyURI).resolve(path).toUri();
 
@@ -3269,7 +3288,7 @@ public class FileManager extends AnnotationSetManager<File> {
         OpenCGAResult<File> queryResult = getFile(study.getUid(), folder.getUuid(), QueryOptions.empty());
         // Propagate ACLs
         if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
-            authorizationManager.replicateAcls(study.getUid(), Arrays.asList(queryResult.first().getUid()), allFileAcls.getResults().get(0),
+            authorizationManager.replicateAcls(Collections.singletonList(queryResult.first().getUid()), allFileAcls.getResults().get(0),
                     Enums.Resource.FILE);
         }
     }
@@ -3303,7 +3322,7 @@ public class FileManager extends AnnotationSetManager<File> {
         }
 
         String userId = userManager.getUserId(token);
-        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_FILES);
+        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyPermissions.Permissions.WRITE_FILES);
 
         params.setPath(ParamUtils.defaultString(params.getPath(), ""));
         if (params.getPath().length() == 1 && (params.getPath().equals(".") || params.getPath().equals("/"))) {
@@ -3393,7 +3412,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
         if (params.getPath().isEmpty()) {
             // If no destiny is given, everything will be linked to the root folder of the study.
-            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_FILES);
+            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyPermissions.Permissions.WRITE_FILES);
         } else {
             // Check if the folder exists
             query = new Query()
@@ -3413,7 +3432,7 @@ public class FileManager extends AnnotationSetManager<File> {
             } else {
                 // Check if the user has permissions to link files in the directory
                 long fileId = fileDBAdaptor.getId(study.getUid(), params.getPath());
-                authorizationManager.checkFilePermission(study.getUid(), fileId, userId, FileAclEntry.FilePermissions.WRITE);
+                authorizationManager.checkFilePermission(study.getUid(), fileId, userId, FilePermissions.WRITE);
             }
         }
 
@@ -3456,9 +3475,10 @@ public class FileManager extends AnnotationSetManager<File> {
                         String parentPath = getParentPath(destinyPath);
                         long parentFileId = fileDBAdaptor.getId(study.getUid(), parentPath);
                         // We obtain the permissions set in the parent folder and set them to the file or folder being created
-                        OpenCGAResult<Map<String, List<String>>> allFileAcls;
+                        OpenCGAResult<AclEntryList<FilePermissions>> allFileAcls;
                         try {
-                            allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), parentFileId);
+                            allFileAcls = authorizationManager.getAcls(study.getUid(), parentFileId, Enums.Resource.FILE,
+                                    FilePermissions.class);
                         } catch (CatalogException e) {
                             throw new RuntimeException(e);
                         }
@@ -3478,7 +3498,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
                         // Propagate ACLs
                         if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
-                            authorizationManager.replicateAcls(study.getUid(), Arrays.asList(queryResult.first().getUid()),
+                            authorizationManager.replicateAcls(Collections.singletonList(queryResult.first().getUid()),
                                     allFileAcls.getResults().get(0), Enums.Resource.FILE);
                         }
                     }
@@ -3509,9 +3529,10 @@ public class FileManager extends AnnotationSetManager<File> {
                         String parentPath = getParentPath(destinyPath);
                         long parentFileId = fileDBAdaptor.getId(study.getUid(), parentPath);
                         // We obtain the permissions set in the parent folder and set them to the file or folder being created
-                        OpenCGAResult<Map<String, List<String>>> allFileAcls;
+                        OpenCGAResult<AclEntryList<FilePermissions>> allFileAcls;
                         try {
-                            allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), parentFileId);
+                            allFileAcls = authorizationManager.getAcls(study.getUid(), parentFileId, Enums.Resource.FILE,
+                                    FilePermissions.class);
                         } catch (CatalogException e) {
                             throw new RuntimeException(e);
                         }
@@ -3544,8 +3565,8 @@ public class FileManager extends AnnotationSetManager<File> {
 
                         // Propagate ACLs
                         if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
-                            authorizationManager.replicateAcls(study.getUid(), Arrays.asList(subfile.getUid()),
-                                    allFileAcls.getResults().get(0), Enums.Resource.FILE);
+                            authorizationManager.replicateAcls(Collections.singletonList(subfile.getUid()), allFileAcls.getResults().get(0),
+                                    Enums.Resource.FILE);
                         }
 
                         if (isTransformedFile(subfile.getName())) {
@@ -3610,7 +3631,8 @@ public class FileManager extends AnnotationSetManager<File> {
         String parentPath = getParentPath(filePath);
         File parentFile = internalGet(study.getUid(), parentPath, INCLUDE_FILE_URI_PATH, userId).first();
         // We obtain the permissions set in the parent folder and set them to the file or folder being created
-        OpenCGAResult<Map<String, List<String>>> allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), parentFile.getUid());
+        OpenCGAResult<AclEntryList<FilePermissions>> allFileAcls =
+                authorizationManager.getAcls(study.getUid(), parentFile.getUid(), Enums.Resource.FILE, FilePermissions.class);
 
         File.Type type = filePath.endsWith("/") ? File.Type.DIRECTORY : File.Type.FILE;
 
@@ -3634,7 +3656,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
         // Propagate ACLs
         if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
-            authorizationManager.replicateAcls(study.getUid(), Arrays.asList(subfile.getUid()), allFileAcls.getResults().get(0),
+            authorizationManager.replicateAcls(Collections.singletonList(subfile.getUid()), allFileAcls.getResults().get(0),
                     Enums.Resource.FILE);
         }
 

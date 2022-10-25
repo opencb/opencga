@@ -62,7 +62,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
                     dataType = "string", paramType = "query")
     })
     public Response createProjectPOST(
-            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "JSON containing the mandatory parameters", required = true) ProjectCreateParams project) {
         try {
             ObjectUtils.defaultIfNull(project, new ProjectCreateParams());
@@ -213,7 +213,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
     })
     public Response updateByPost(
             @ApiParam(value = ParamConstants.PROJECT_DESCRIPTION, required = true) @PathParam(ParamConstants.PROJECT_PARAM) String projectStr,
-            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "JSON containing the params to be updated. It will be only possible to update organism "
                     + "fields not previously defined.", required = true) ProjectUpdateParams updateParams) {
         try {

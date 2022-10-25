@@ -613,7 +613,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                 if (includeAll || !query.emptyFileIndex()) {
                     scan.addColumn(family, SampleIndexSchema.toFileIndexColumn(gt));
                 }
-                if (includeAll || query.hasFatherFilter() || query.hasMotherFilter()) {
+                if (includeAll || query.hasFatherFilter() || query.hasMotherFilter() || query.getMendelianErrorType() != null) {
                     scan.addColumn(family, SampleIndexSchema.toParentsGTColumn(gt));
                 }
             }
@@ -720,7 +720,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 
     public static void printQuery(LocusQuery locusQuery) {
         if (locusQuery != null) {
-            logger.info("ChunkRegion: " + locusQuery.getChunkRegion());
+            logger.info("ChunkRegion: [ " + locusQuery.getChunkRegion() + " )");
             if (!locusQuery.getRegions().isEmpty()) {
                 logger.info("  - Regions: " + locusQuery.getRegions());
             }

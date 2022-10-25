@@ -330,10 +330,6 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Abstra
         }
     }
 
-    protected static Scan buildScan(Configuration conf) {
-        return buildScan(null, -1, conf);
-    }
-
     protected static Scan buildScan(String regionStr, int fileId, Configuration conf) {
         Scan scan = new Scan();
         Region region;
