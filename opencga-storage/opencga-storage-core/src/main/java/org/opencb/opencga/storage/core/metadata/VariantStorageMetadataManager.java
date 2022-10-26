@@ -532,6 +532,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         });
     }
 
+    public <E extends Exception> ProjectMetadata updateProjectMetadata(UpdateConsumer<ProjectMetadata, E> consumer)
+            throws StorageEngineException, E {
+        return updateProjectMetadata(consumer.toFunction());
+    }
+
     public <E extends Exception> ProjectMetadata updateProjectMetadata(UpdateFunction<ProjectMetadata, E> function)
             throws StorageEngineException, E {
         Objects.requireNonNull(function);

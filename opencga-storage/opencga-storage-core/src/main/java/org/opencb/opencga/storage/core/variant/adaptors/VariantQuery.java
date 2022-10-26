@@ -4,10 +4,12 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class VariantQuery extends Query {
     public VariantQuery() {
@@ -94,9 +96,14 @@ public class VariantQuery extends Query {
     }
 
     public VariantQuery sample(String... value) {
-        put(VariantQueryParam.SAMPLE.key(), Arrays.asList(value));
+        return sample(VariantQueryUtils.QueryOperation.OR, value);
+    }
+
+    public VariantQuery sample(VariantQueryUtils.QueryOperation op, String... value) {
+        put(VariantQueryParam.SAMPLE.key(), Arrays.stream(value).collect(Collectors.joining(op.separator())));
         return this;
     }
+
     public String sample() {
         return getString(VariantQueryParam.SAMPLE.key());
     }
