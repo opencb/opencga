@@ -167,7 +167,7 @@ public class AnnotationIndexConverterTest {
     @Test
     public void testPopFreqNone() {
         assertEquals(INTERGENIC_MASK,
-                b = converter.convert(annot(pf(ParamConstants.POP_FREQ_GNOMAD_GENOMES, "ALL", 0.3), pf(ParamConstants.POP_FREQ_1000G, "ALL", 0.3))).getSummaryIndex());
+                b = converter.convert(annot(pf(ParamConstants.POP_FREQ_GNOMAD_GENOMES, "ALL", 0.3), pf(ParamConstants.POP_FREQ_1000G_CB_V4, "ALL", 0.3))).getSummaryIndex());
     }
 
     @Test(expected = IllegalArgumentException.class)

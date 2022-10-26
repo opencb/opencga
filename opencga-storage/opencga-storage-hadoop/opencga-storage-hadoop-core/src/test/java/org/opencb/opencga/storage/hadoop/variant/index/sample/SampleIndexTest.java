@@ -4,11 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Assert;
@@ -23,6 +19,7 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
@@ -123,6 +120,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         ObjectMap params = new ObjectMap()
                 .append(VariantStorageOptions.STUDY.key(), STUDY_NAME)
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.LOAD_HOM_REF.key(), YesNoAuto.YES)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
         runETL(engine, smallInputUri, outputUri, params, true, true, true);
         engine.familyIndex(STUDY_NAME, trios, new ObjectMap());
@@ -177,6 +175,13 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
 
         // ---------------- Annotate
+//        variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
+//        variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.1");
+//        variantStorageEngine.getMetadataManager().updateProjectMetadata(projectMetadata -> {
+//            projectMetadata.setAssembly("grch38");
+//        });
+//        variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
+//        this.variantStorageEngine.reloadCellbaseConfiguration();
         this.variantStorageEngine.annotate(outputUri, new QueryOptions());
         engine.familyIndex(STUDY_NAME_3, triosPlatinum, new ObjectMap());
 
@@ -314,34 +319,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
             VariantHbaseTestUtils.printSampleIndexTable(dbAdaptor, Paths.get(newOutputUri()), studyId, copy);
             VariantHbaseTestUtils.printSampleIndexTable2(dbAdaptor, Paths.get(newOutputUri()), studyId, copy);
 
-            ResultScanner origScanner = c.getTable(TableName.valueOf(orig)).getScanner(new Scan());
-            ResultScanner copyScanner = c.getTable(TableName.valueOf(copy)).getScanner(new Scan());
-            while (true) {
-                Result origValue = origScanner.next();
-                Result copyValue = copyScanner.next();
-                if (origValue == null) {
-                    assertNull(copyValue);
-                    break;
-                }
-                NavigableMap<byte[], byte[]> origFamily = origValue.getFamilyMap(GenomeHelper.COLUMN_FAMILY_BYTES);
-                NavigableMap<byte[], byte[]> copyFamily = copyValue.getFamilyMap(GenomeHelper.COLUMN_FAMILY_BYTES);
-
-                String row = SampleIndexSchema.rowKeyToString(origValue.getRow());
-                assertEquals(row, origFamily.keySet().stream().map(Bytes::toString).collect(toList()), copyFamily.keySet().stream().map(Bytes::toString).collect(toList()));
-                assertEquals(row, origFamily.size(), copyFamily.size());
-
-                for (byte[] key : origFamily.keySet()) {
-                    byte[] expecteds = origFamily.get(key);
-                    byte[] actuals = copyFamily.get(key);
-                    try {
-                        assertArrayEquals(row + " " + Bytes.toString(key), expecteds, actuals);
-                    } catch (AssertionError error) {
-                        System.out.println("Expected " + IndexUtils.bytesToString(expecteds));
-                        System.out.println("actuals " + IndexUtils.bytesToString(actuals));
-                        throw error;
-                    }
-                }
-            }
+            assertEqualTables(c, orig, copy);
         }
 
 
@@ -1040,6 +1018,40 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                         .sample("NA19660", "NA19661"),
                 new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(VariantField.ID)),
                 SampleIndexOnlyVariantQueryExecutor.class);
+
+        testSampleIndexOnlyVariantQueryExecutor(
+                new VariantQuery()
+                        .study(STUDY_NAME_1)
+                        .sample(VariantQueryUtils.QueryOperation.AND, "NA19685", "NA19661")
+                        .includeGenotype(true),
+                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(VariantField.ID, VariantField.STUDIES_SAMPLES)),
+                SampleIndexOnlyVariantQueryExecutor.class);
+
+        testSampleIndexOnlyVariantQueryExecutor(
+                new VariantQuery()
+                        .study(STUDY_NAME_1)
+                        .sample(VariantQueryUtils.QueryOperation.AND, "NA19685", "NA19660")
+                        .includeGenotype(true),
+                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(VariantField.ID, VariantField.STUDIES_SAMPLES)),
+                SampleIndexOnlyVariantQueryExecutor.class);
+
+        testSampleIndexOnlyVariantQueryExecutor(
+                new VariantQuery()
+                        .study(STUDY_NAME_1)
+                        .sample("NA19685")
+                        .includeSample("NA19685", "NA19661", "NA19660")
+                        .includeGenotype(true),
+                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(VariantField.ID, VariantField.STUDIES_SAMPLES)),
+                SampleIndexOnlyVariantQueryExecutor.class);
+
+        testSampleIndexOnlyVariantQueryExecutor(
+                new VariantQuery()
+                        .study(STUDY_NAME_1)
+                        .sample(VariantQueryUtils.QueryOperation.AND, "NA19685", "NA19661", "NA19660")
+                        .includeGenotype(true),
+                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(VariantField.ID, VariantField.STUDIES_SAMPLES)),
+                SampleIndexOnlyVariantQueryExecutor.class);
+
     }
 
     private void testSampleIndexOnlyVariantQueryExecutor(VariantQuery query, QueryOptions options, Class<?> expected) {

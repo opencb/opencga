@@ -442,6 +442,9 @@ public class VariantQueryParser {
         if (isValidParam(query, SAMPLE_DE_NOVO)) {
             sampleParamsList.add(SAMPLE_DE_NOVO);
         }
+        if (isValidParam(query, SAMPLE_DE_NOVO_STRICT)) {
+            sampleParamsList.add(SAMPLE_DE_NOVO_STRICT);
+        }
         if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
             sampleParamsList.add(SAMPLE_MENDELIAN_ERROR);
         }
@@ -458,7 +461,10 @@ public class VariantQueryParser {
                 QueryParam newSampleParam;
                 String expectedValue = null;
 
-                if (sampleValue.toLowerCase().contains(IS + "denovo")) {
+                if (sampleValue.toLowerCase().contains(IS + "denovostrict")) {
+                    newSampleParam = SAMPLE_DE_NOVO_STRICT;
+                    expectedValue = "denovostrict";
+                } else if (sampleValue.toLowerCase().contains(IS + "denovo")) {
                     newSampleParam = SAMPLE_DE_NOVO;
                     expectedValue = "denovo";
                 } else if (sampleValue.toLowerCase().contains(IS + "mendelianerror")) {
@@ -560,16 +566,28 @@ public class VariantQueryParser {
             throw VariantQueryException.mixedAndOrOperators(SAMPLE_DATA, genotypeParam);
         }
 
-        if (isValidParam(query, SAMPLE_MENDELIAN_ERROR) || isValidParam(query, SAMPLE_DE_NOVO)) {
-            QueryParam param;
-            if (isValidParam(query, SAMPLE_MENDELIAN_ERROR) && isValidParam(query, SAMPLE_DE_NOVO)) {
-                throw VariantQueryException.unsupportedParamsCombination(
-                        SAMPLE_MENDELIAN_ERROR, query.getString(SAMPLE_MENDELIAN_ERROR.key()),
-                        SAMPLE_DE_NOVO, query.getString(SAMPLE_DE_NOVO.key()));
-            } else if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
+        if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)
+                || isValidParam(query, SAMPLE_DE_NOVO)
+                || isValidParam(query, SAMPLE_DE_NOVO_STRICT)) {
+            QueryParam param = null;
+            if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
                 param = SAMPLE_MENDELIAN_ERROR;
-            } else {
+            }
+            if (isValidParam(query, SAMPLE_DE_NOVO)) {
+                if (param != null) {
+                    throw VariantQueryException.unsupportedParamsCombination(
+                            param, query.getString(param.key()),
+                            SAMPLE_DE_NOVO, query.getString(SAMPLE_DE_NOVO.key()));
+                }
                 param = SAMPLE_DE_NOVO;
+            }
+            if (isValidParam(query, SAMPLE_DE_NOVO_STRICT)) {
+                if (param != null) {
+                    throw VariantQueryException.unsupportedParamsCombination(
+                            param, query.getString(param.key()),
+                            SAMPLE_DE_NOVO_STRICT, query.getString(SAMPLE_DE_NOVO_STRICT.key()));
+                }
+                param = SAMPLE_DE_NOVO_STRICT;
             }
             if (defaultStudy == null) {
                 throw VariantQueryException.missingStudyForSamples(query.getAsStringList(param.key()),

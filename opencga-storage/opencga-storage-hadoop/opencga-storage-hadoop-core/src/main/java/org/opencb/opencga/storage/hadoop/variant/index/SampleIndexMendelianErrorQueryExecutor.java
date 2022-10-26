@@ -34,7 +34,8 @@ public class SampleIndexMendelianErrorQueryExecutor extends SampleIndexVariantQu
     @Override
     public boolean canUseThisExecutor(Query query, QueryOptions options) {
         if (VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_MENDELIAN_ERROR)
-                || VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO)) {
+                || VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO)
+                || VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO_STRICT)) {
             return super.canUseThisExecutor(query, options);
         } else {
             return false;

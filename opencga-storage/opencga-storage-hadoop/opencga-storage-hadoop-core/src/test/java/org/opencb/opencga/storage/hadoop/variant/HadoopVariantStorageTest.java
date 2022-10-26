@@ -20,10 +20,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hbase.*;
-import org.apache.hadoop.hbase.client.Admin;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.coprocessor.CoprocessorHost;
 import org.apache.hadoop.hbase.fs.HFileSystem;
 import org.apache.hadoop.hbase.io.compress.Compression;
@@ -87,6 +84,8 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
+import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,6 +94,9 @@ import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static java.util.stream.Collectors.toList;
+import static org.junit.Assert.*;
 
 /**
  * Created on 15/10/15
@@ -543,6 +545,45 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
             }
 //            return 0;
         }
+    }
+
+    default void assertEqualTables(Connection c, String expected, String actual) throws IOException {
+        ResultScanner expectedScanner = c.getTable(TableName.valueOf(expected)).getScanner(new Scan());
+        ResultScanner actualScanner = c.getTable(TableName.valueOf(actual)).getScanner(new Scan());
+        int rows = 0;
+        int cells = 0;
+        while (true) {
+            Result expectedValue = expectedScanner.next();
+            Result actualValue = actualScanner.next();
+            if (expectedValue == null) {
+                assertNull(actualValue);
+                break;
+            }
+            rows++;
+            NavigableMap<byte[], byte[]> expectedFamily = expectedValue.getFamilyMap(GenomeHelper.COLUMN_FAMILY_BYTES);
+            NavigableMap<byte[], byte[]> actualFamily = actualValue.getFamilyMap(GenomeHelper.COLUMN_FAMILY_BYTES);
+
+            String row = SampleIndexSchema.rowKeyToString(expectedValue.getRow());
+            assertEquals(row,
+                    expectedFamily.keySet().stream().map(Bytes::toString).collect(toList()),
+                    actualFamily.keySet().stream().map(Bytes::toString).collect(toList()));
+            assertEquals(row, expectedFamily.size(), actualFamily.size());
+            cells += actualFamily.size();
+
+            for (byte[] key : expectedFamily.keySet()) {
+                byte[] expecteds = expectedFamily.get(key);
+                byte[] actuals = actualFamily.get(key);
+                try {
+                    assertArrayEquals(row + " " + Bytes.toString(key), expecteds, actuals);
+                } catch (AssertionError error) {
+                    System.out.println("Expected " + IndexUtils.bytesToString(expecteds));
+                    System.out.println("actuals " + IndexUtils.bytesToString(actuals));
+                    throw error;
+                }
+            }
+        }
+        System.out.println("rows = " + rows);
+        System.out.println("cells = " + cells);
     }
 
 

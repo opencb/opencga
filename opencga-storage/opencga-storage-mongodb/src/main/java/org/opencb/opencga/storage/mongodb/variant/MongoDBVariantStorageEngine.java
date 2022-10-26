@@ -506,6 +506,9 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         if (isValidParam(originalQuery, SAMPLE_DE_NOVO)) {
             throw VariantQueryException.unsupportedVariantQueryFilter(SAMPLE_DE_NOVO, getStorageEngineId());
         }
+        if (isValidParam(originalQuery, SAMPLE_DE_NOVO_STRICT)) {
+            throw VariantQueryException.unsupportedVariantQueryFilter(SAMPLE_DE_NOVO_STRICT, getStorageEngineId());
+        }
 
         Query query = super.preProcessQuery(originalQuery, options);
         List<String> studyNames = metadataManager.getStudyNames();
