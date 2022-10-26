@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.family.qc;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
@@ -24,6 +25,7 @@ import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
@@ -120,6 +122,7 @@ public class FamilyQcAnalysis extends OpenCgaTool {
                 .setRelatednessMethod(relatednessMethod)
                 .setRelatednessMaf(relatednessMaf)
                 .setRelatednessThresholds(relatednessThresholds)
+                .setRelatednesResourcePath(getOpencgaHome().resolve("analysis/resources").resolve(RelatednessAnalysis.ID))
                 .setQualityControl(qualityControl);
 
         // Step by step

@@ -27,6 +27,7 @@ import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.IBDRelatednessAnalysisExecutor;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 
 @ToolExecutor(id="opencga-local", tool = RelatednessAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)
@@ -36,11 +37,16 @@ public class IBDRelatednessLocalAnalysisExecutor extends IBDRelatednessAnalysisE
     public void run() throws ToolException {
         // Get managers
         VariantStorageManager variantStorageManager = getVariantStorageManager();
-        CatalogManager catalogManager = variantStorageManager.getCatalogManager();
+
+        // Sanity check to compute
+        String opencgaHome = getExecutorParams().getString("opencgaHome");
+        if (!Paths.get(opencgaHome).toFile().exists()) {
+
+        }
 
         // Run IBD/IBS computation using PLINK in docker
-        RelatednessReport report = IBDComputation.compute(getStudyId(), null, getSampleIds(), getMinorAlleleFreq(), getThresholds(),
-                getOutDir(), variantStorageManager, getToken());
+        RelatednessReport report = IBDComputation.compute(getStudyId(), getFamily(), getSampleIds(), getMinorAlleleFreq(), getThresholds(),
+                getResourcePath(), getOutDir(), variantStorageManager, getToken());
 
         // Sanity check
         if (report == null) {
