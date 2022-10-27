@@ -170,13 +170,11 @@ public class IBDComputation {
         Query query = new Query()
                 .append(VariantQueryParam.STUDY.key(), study)
                 .append(VariantQueryParam.TYPE.key(), VariantType.SNV)
-                .append(VariantQueryParam.SAMPLE.key(), child)
+                .append(VariantQueryParam.SAMPLE.key(), child  + ":0/1,1/1")
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), child + "," + father + "," + mother)
                 .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT")
-                // TODO: update when using whole genome
-                .append(VariantQueryParam.REGION.key(), "22");
-//                .append(VariantQueryParam.REGION.key(), Arrays.asList("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22"
-//                        .split(",")));
+                .append(VariantQueryParam.REGION.key(), Arrays.asList("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22"
+                        .split(",")));
 
         // MAF parameter:
         //    - For annotated population studies, e.g.: 1000G:ALL>0.3
@@ -205,9 +203,7 @@ public class IBDComputation {
         query.put(VariantQueryParam.GENOTYPE.key(), gt);
         //.append(VariantQueryParam.FILTER.key(), "PASS")
 
-        // TODO: update when using whole genome
-        //query.put(VariantQueryParam.REGION.key(), Arrays.asList("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22".split(",")));
-        query.put(VariantQueryParam.REGION.key(), "22");
+        query.put(VariantQueryParam.REGION.key(), Arrays.asList("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22".split(",")));
 
         // MAF parameter:
         //    - For annotated population studies, e.g.: 1000G:ALL>0.3
