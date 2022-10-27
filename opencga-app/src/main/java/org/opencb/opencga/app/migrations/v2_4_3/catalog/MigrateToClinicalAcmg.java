@@ -1,7 +1,7 @@
 package org.opencb.opencga.app.migrations.v2_4_3.catalog;
 
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Projections;
-import com.mongodb.client.model.UpdateOneModel;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.biodata.models.clinical.ClinicalAcmg;
@@ -93,28 +93,33 @@ classification.acmg
 review.acmg
          */
 
-        migrateCollection(
-                Arrays.asList(MongoDBAdaptorFactory.INTERPRETATION_COLLECTION, MongoDBAdaptorFactory.INTERPRETATION_ARCHIVE_COLLECTION,
-                        MongoDBAdaptorFactory.DELETED_INTERPRETATION_COLLECTION),
-                new Document(),
-                Projections.include("primaryFindings", "secondaryFindings", "modificationDate", "analyst"),
-                ((document, bulk) -> {
-                    String date = document.getString("modificationDate");
-                    String author = extractAuthor(document);
+        for (String collectionString : Arrays.asList(MongoDBAdaptorFactory.INTERPRETATION_COLLECTION,
+                MongoDBAdaptorFactory.INTERPRETATION_ARCHIVE_COLLECTION, MongoDBAdaptorFactory.DELETED_INTERPRETATION_COLLECTION)) {
+            logger.info("Migrating documents from collection '{}'", collectionString);
+            MongoCollection<Document> collection = getMongoCollection(collectionString);
+            queryMongo(collectionString,
+                    new Document(),
+                    Projections.include("primaryFindings", "secondaryFindings", "modificationDate", "analyst", "studyUid", "id"),
+                    (document) -> {
+                        String date = document.getString("modificationDate");
+                        String author = extractAuthor(document);
 
-                    Document update = new Document();
-                    processFindings(document, "primaryFindings", update, date, author);
-                    processFindings(document, "secondaryFindings", update, date, author);
+                        Document update = new Document();
+                        processFindings(document, "primaryFindings", update, date, author);
+                        processFindings(document, "secondaryFindings", update, date, author);
 
-                    if (!update.isEmpty()) {
-                        bulk.add(new UpdateOneModel<>(
-                                        eq("_id", document.get("_id")),
-                                        new Document("$set", update)
-                                )
-                        );
-                    }
-                })
-        );
+                        if (!update.isEmpty()) {
+                            try {
+                                collection.updateOne(eq("_id", document.get("_id")),
+                                        new Document("$set", update));
+                            } catch (Exception e) {
+                                logger.warn("Could not replace Acmg for ClinicalAcmg to Interpretation '{}' from study uid {}. "
+                                                + "Error message: {}", document.getString("id"), document.get("studyUid", Number.class),
+                                        e.getMessage());
+                            }
+                        }
+                    });
+        }
     }
 
 }

@@ -57,6 +57,7 @@ public class VariantSearchUtils {
                     VariantQueryParam.SAMPLE,
                     SAMPLE_MENDELIAN_ERROR,
                     SAMPLE_DE_NOVO,
+                    SAMPLE_DE_NOVO_STRICT,
                     SAMPLE_COMPOUND_HETEROZYGOUS,
                     VariantQueryParam.COHORT,
                     VariantQueryParam.STATS_MGF,

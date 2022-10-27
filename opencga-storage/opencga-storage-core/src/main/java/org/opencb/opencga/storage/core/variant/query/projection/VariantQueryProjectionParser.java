@@ -674,6 +674,13 @@ public class VariantQueryProjectionParser {
                 }
                 samples.addAll(VariantQueryUtils.splitValue(value, VariantQueryUtils.checkOperator(value)));
             }
+            if (VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO_STRICT)) {
+                String value = query.getString(VariantQueryUtils.SAMPLE_DE_NOVO_STRICT.key());
+                if (samples == null) {
+                    samples = new ArrayList<>();
+                }
+                samples.addAll(VariantQueryUtils.splitValue(value, VariantQueryUtils.checkOperator(value)));
+            }
             if (CollectionUtils.isEmpty(samples)) {
                 samples = null;
             }

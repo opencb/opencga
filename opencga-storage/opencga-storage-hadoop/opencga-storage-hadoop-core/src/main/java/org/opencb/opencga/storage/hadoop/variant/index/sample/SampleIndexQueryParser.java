@@ -46,6 +46,8 @@ import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndex
  * Created by jacobo on 06/01/19.
  */
 public class SampleIndexQueryParser {
+    public static final String INCLUDE_PARENTS_COLUMN = "includeParentsColumn";
+
     private static Logger logger = LoggerFactory.getLogger(SampleIndexQueryParser.class);
     private final VariantStorageMetadataManager metadataManager;
     private final SampleIndexSchemaFactory schemaFactory;
@@ -104,6 +106,9 @@ public class SampleIndexQueryParser {
         if (isValidParam(query, SAMPLE_DE_NOVO, true)) {
             return true;
         }
+        if (isValidParam(query, SAMPLE_DE_NOVO_STRICT, true)) {
+            return true;
+        }
         return false;
     }
 
@@ -145,7 +150,7 @@ public class SampleIndexQueryParser {
         List<String> allGenotypes = getAllLoadedGenotypes(defaultStudy);
         List<String> validGenotypes = allGenotypes.stream().filter(SampleIndexSchema::validGenotype).collect(Collectors.toList());
         List<String> mainGenotypes = GenotypeClass.MAIN_ALT.filter(validGenotypes);
-
+        boolean includeParentsField = query.getBoolean(INCLUDE_PARENTS_COLUMN);
 
         boolean partialIndex = false;
 
@@ -170,7 +175,7 @@ public class SampleIndexQueryParser {
         Map<String, boolean[]> motherFilterMap = new HashMap<>();
 
         Set<String> mendelianErrorSet = new HashSet<>();
-        boolean onlyDeNovo = false;
+        SampleIndexQuery.MendelianErrorType mendelianErrorType = null;
         boolean partialGtIndex = false;
 
         Map<String, SampleMetadata> sampleMetadatas = new HashMap<>();
@@ -227,9 +232,10 @@ public class SampleIndexQueryParser {
                 query.remove(SAMPLE.key());
             }
         } else if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
-            onlyDeNovo = false;
+            mendelianErrorType = SampleIndexQuery.MendelianErrorType.ALL;
             ParsedQuery<String> mendelianError = splitValue(query, SAMPLE_MENDELIAN_ERROR);
             mendelianErrorSet = new HashSet<>(mendelianError.getValues());
+            includeParentsField = true;
             queryOperation = mendelianError.getOperation();
             for (String s : mendelianErrorSet) {
                 // Return any genotype
@@ -240,15 +246,27 @@ public class SampleIndexQueryParser {
             // so the index is partial.
             partialIndex = true;
         } else if (isValidParam(query, SAMPLE_DE_NOVO)) {
-            onlyDeNovo = true;
+            mendelianErrorType = SampleIndexQuery.MendelianErrorType.DE_NOVO;
             ParsedQuery<String> sampleDeNovo = splitValue(query, SAMPLE_DE_NOVO);
             mendelianErrorSet = new HashSet<>(sampleDeNovo.getValues());
+            includeParentsField = true;
             queryOperation = sampleDeNovo.getOperation();
             for (String s : mendelianErrorSet) {
                 // Return any genotype
                 sampleGenotypeQuery.put(s, mainGenotypes);
             }
             query.remove(SAMPLE_DE_NOVO.key());
+        } else if (isValidParam(query, SAMPLE_DE_NOVO_STRICT)) {
+            mendelianErrorType = SampleIndexQuery.MendelianErrorType.DE_NOVO_STRICT;
+            ParsedQuery<String> sampleDeNovo = splitValue(query, SAMPLE_DE_NOVO_STRICT);
+            mendelianErrorSet = new HashSet<>(sampleDeNovo.getValues());
+            includeParentsField = true;
+            queryOperation = sampleDeNovo.getOperation();
+            for (String s : mendelianErrorSet) {
+                // Return any genotype
+                sampleGenotypeQuery.put(s, mainGenotypes);
+            }
+            query.remove(SAMPLE_DE_NOVO_STRICT.key());
         //} else if (isValidParam(query, FILE)) {
             // Add FILEs filter ?
         } else {
@@ -514,7 +532,7 @@ public class SampleIndexQueryParser {
 
         return new SampleIndexQuery(schema, regionGroups, variantTypes, study, sampleGenotypeQuery, multiFileSamples, negatedSamples,
                 fatherFilterMap, motherFilterMap,
-                fileIndexMap, annotationIndexQuery, mendelianErrorSet, onlyDeNovo, queryOperation);
+                fileIndexMap, annotationIndexQuery, mendelianErrorSet, mendelianErrorType, includeParentsField, queryOperation);
     }
 
     private Set<String> findParents(Set<String> childrenSet, Map<String, List<String>> parentsMap) {
