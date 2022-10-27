@@ -87,7 +87,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         logger.info("{}: Getting HPO for individual {}: {}", ID, individual.getId(), StringUtils.join(hpos, ","));
 
         List<String> samples = new ArrayList<>();
-        samples.add(individual.getId() + ":0/1,1/1");
+        samples.add(individual.getId());
 
         // Check multi-sample (family) analysis
         File pedigreeFile = null;
@@ -101,10 +101,10 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         File sampleFile = createSampleFile(individual, hpos, pedigree);
         if (pedigree != null) {
             if (individual.getFather() != null) {
-                samples.add(individual.getFather().getId() + ":0/0,0/1,1/1");
+                samples.add(individual.getFather().getId());
             }
             if (individual.getMother() != null) {
-                samples.add(individual.getMother().getId() + ":0/0,0/1,1/1");
+                samples.add(individual.getMother().getId());
             }
             pedigreeFile = createPedigreeFile(family, pedigree);
         }
@@ -114,9 +114,10 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         VariantQuery query = new VariantQuery()
                 .study(studyId)
+                .sample(individual.getId() + ":0/1,1/1")
+                .includeSample(samples)
                 .includeSampleData("GT")
                 .unknownGenotype("./.");
-        query.put(VariantQueryParam.SAMPLE.key(), StringUtils.join(samples, ";"));
 
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,studies.samples");
 
