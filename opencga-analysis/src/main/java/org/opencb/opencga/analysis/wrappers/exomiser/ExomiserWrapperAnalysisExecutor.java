@@ -34,6 +34,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @ToolExecutor(id = ExomiserWrapperAnalysisExecutor.ID,
         tool = ExomiserWrapperAnalysis.ID,
@@ -85,8 +86,8 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         }
         logger.info("{}: Getting HPO for individual {}: {}", ID, individual.getId(), StringUtils.join(hpos, ","));
 
-        List<String> sampleIds = new ArrayList<>();
-        sampleIds.add(individual.getId());
+        List<String> samples = new ArrayList<>();
+        samples.add(individual.getId() + ":0/1,1/1");
 
         // Check multi-sample (family) analysis
         File pedigreeFile = null;
@@ -100,29 +101,31 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         File sampleFile = createSampleFile(individual, hpos, pedigree);
         if (pedigree != null) {
             if (individual.getFather() != null) {
-                sampleIds.add(individual.getFather().getId());
+                samples.add(individual.getFather().getId() + ":0/0,0/1,1/1");
             }
             if (individual.getMother() != null) {
-                sampleIds.add(individual.getMother().getId());
+                samples.add(individual.getMother().getId() + ":0/0,0/1,1/1");
             }
-
             pedigreeFile = createPedigreeFile(family, pedigree);
         }
 
         // Export data into VCF file
         Path vcfPath = getOutDir().resolve(sampleId + ".vcf.gz");
+
         VariantQuery query = new VariantQuery()
                 .study(studyId)
-                .sample(sampleId)
-                .includeSampleId(true)
-                .includeGenotype(true);
-        query.put(VariantQueryParam.SAMPLE.key(), sampleIds);
+                .includeSampleData("GT")
+                .unknownGenotype("./.");
+        query.put(VariantQueryParam.SAMPLE.key(), StringUtils.join(samples, ";"));
+
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,studies.samples");
 
         logger.info("{}: Exomiser exports variants using the query: {}", ID, query.toJson());
+        logger.info("{}: Exomiser exports variants using the query options: {}", ID, queryOptions.toJson());
+
         try {
             getVariantStorageManager().exportData(vcfPath.toString(), VariantWriterFactory.VariantOutputFormat.VCF_GZ, null, query,
-                    new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(VariantField.ID, VariantField.STUDIES_SAMPLES,
-                            VariantField.STUDIES_FILES)), getToken());
+                    queryOptions, getToken());
         } catch (StorageEngineException | CatalogException e) {
             throw new ToolException(e);
         }
