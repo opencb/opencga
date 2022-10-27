@@ -173,8 +173,10 @@ public class IBDComputation {
                 .append(VariantQueryParam.SAMPLE.key(), child)
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), child + "," + father + "," + mother)
                 .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT")
-                .append(VariantQueryParam.REGION.key(), Arrays.asList("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22"
-                        .split(",")));
+                // TODO: update when using whole genome
+                .append(VariantQueryParam.REGION.key(), "22");
+//                .append(VariantQueryParam.REGION.key(), Arrays.asList("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22"
+//                        .split(",")));
 
         // MAF parameter:
         //    - For annotated population studies, e.g.: 1000G:ALL>0.3
@@ -203,7 +205,10 @@ public class IBDComputation {
         query.put(VariantQueryParam.GENOTYPE.key(), gt);
         //.append(VariantQueryParam.FILTER.key(), "PASS")
 
-        query.put(VariantQueryParam.REGION.key(), Arrays.asList("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22".split(",")));
+        // TODO: update when using whole genome
+        //query.put(VariantQueryParam.REGION.key(), Arrays.asList("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22".split(",")));
+        query.put(VariantQueryParam.REGION.key(), "22");
+
         // MAF parameter:
         //    - For annotated population studies, e.g.: 1000G:ALL>0.3
         //    - For cohort, e.g.: cohort:ALL>0.3
@@ -222,8 +227,8 @@ public class IBDComputation {
 
     private static void exportData(Query query, QueryOptions queryOptions, String basename, Path outDir,
                                    VariantStorageManager storageManager, String token) throws ToolException {
-        System.out.println(">>>> query = " + query.toJson());
-        System.out.println(">>>> query options = " + queryOptions.toJson());
+        System.out.println(">>>> export, query = " + query.toJson());
+        System.out.println(">>>> export, query options = " + queryOptions.toJson());
 
         File tpedFile = outDir.resolve(basename + ".tped").toFile();
         File tfamFile = outDir.resolve(basename + ".tfam").toFile();
