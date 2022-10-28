@@ -67,11 +67,11 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         configuration.getAdmin().setAlgorithm("HS256");
         catalogManager = new CatalogManager(configuration);
         if (catalogManager.existsCatalogDB()) {
-            String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
-            catalogManager.deleteCatalogDB(token);
+            catalogManager.deleteCatalogDB(TestParamConstants.ADMIN_PASSWORD);
         }
         catalogManager.installCatalogDB(PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH),
-                TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", "", true);
+                TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", "", true, false);
+
         loader = new CatalogSampleAnnotationsLoader(catalogManager);
 
         String pedFileName = "20130606_g1k.ped";
