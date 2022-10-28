@@ -125,18 +125,25 @@ public abstract class VariantStorageEngineBNDTest extends VariantStorageBaseTest
     }
 
     private void testPagination(List<String> variantsList, Query query, int batchSize) {
-        List<String> actualVariants = new ArrayList<>(variantsList.size());
+        List<String> actualVariantsGet = new ArrayList<>(variantsList.size());
+        List<String> actualVariantsIterator = new ArrayList<>(variantsList.size());
         for (int i = 0; i < variantsList.size(); i += batchSize) {
             QueryOptions options = new QueryOptions(QueryOptions.LIMIT, batchSize)
                     .append(QueryOptions.SKIP, i);
             List<Variant> results = variantStorageEngine.get(query, options).getResults();
-            System.out.println("options = " + options.toJson() + " -> " + results.size());
-            for (Variant result : results) {
-                actualVariants.add(result.toString());
-            }
+            System.out.println("get = " + options.toJson() + " -> " + results.size() + " " + results);
+            results.stream().map(Variant::toString).forEach(actualVariantsGet::add);
             assertTrue(results.size() <= batchSize);
+
+            results = new ArrayList<>(batchSize);
+            variantStorageEngine.iterator(query, options).forEachRemaining(results::add);
+            System.out.println("it  = " + options.toJson() + " -> " + results.size() + " " + results);
+            results.stream().map(Variant::toString).forEach(actualVariantsGet::add);
+            assertTrue(results.size() <= batchSize);
+
         }
-        assertEquals(variantsList, actualVariants);
+        assertEquals(variantsList, actualVariantsGet);
+        assertEquals(variantsList, actualVariantsIterator);
     }
 
     @Test

@@ -4,6 +4,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.storage.core.variant.query.Values;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.util.Arrays;
@@ -95,6 +96,10 @@ public class VariantQuery extends Query {
         return getString(VariantQueryParam.INCLUDE_STUDY.key());
     }
 
+    public VariantQuery sample(String value) {
+        return sample(VariantQueryUtils.QueryOperation.OR, value);
+    }
+
     public VariantQuery sample(String... value) {
         return sample(VariantQueryUtils.QueryOperation.OR, value);
     }
@@ -112,6 +117,16 @@ public class VariantQuery extends Query {
         put(VariantQueryParam.GENOTYPE.key(), value);
         return this;
     }
+
+    public VariantQuery genotype(VariantQueryUtils.QueryOperation op, String... value) {
+        return genotype(op, Arrays.asList(value));
+    }
+
+    public VariantQuery genotype(VariantQueryUtils.QueryOperation op, List<String> values) {
+        put(VariantQueryParam.GENOTYPE.key(), new Values<>(op, values).toQuery());
+        return this;
+    }
+
     public String genotype() {
         return getString(VariantQueryParam.GENOTYPE.key());
     }
@@ -179,8 +194,8 @@ public class VariantQuery extends Query {
         put(VariantQueryParam.INCLUDE_GENOTYPE.key(), value);
         return this;
     }
-    public String includeGenotype() {
-        return getString(VariantQueryParam.INCLUDE_GENOTYPE.key());
+    public boolean includeGenotype() {
+        return getBoolean(VariantQueryParam.INCLUDE_GENOTYPE.key());
     }
 
     public VariantQuery sampleLimit(String value) {
@@ -311,12 +326,12 @@ public class VariantQuery extends Query {
         return getString(VariantQueryParam.SCORE.key());
     }
 
-    public VariantQuery annotationExists(String value) {
+    public VariantQuery annotationExists(Boolean value) {
         put(VariantQueryParam.ANNOTATION_EXISTS.key(), value);
         return this;
     }
-    public String annotationExists() {
-        return getString(VariantQueryParam.ANNOTATION_EXISTS.key());
+    public boolean annotationExists() {
+        return getBoolean(VariantQueryParam.ANNOTATION_EXISTS.key());
     }
 
     public VariantQuery xref(String value) {
@@ -466,8 +481,8 @@ public class VariantQuery extends Query {
         return getString(VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE.key());
     }
 
-    public VariantQuery clinicalConfirmedStatus(boolean value) {
-        if (value) {
+    public VariantQuery clinicalConfirmedStatus(Boolean value) {
+        if (value != null && value) {
             put(VariantQueryParam.ANNOT_CLINICAL_CONFIRMED_STATUS.key(), value);
         } else {
             remove(VariantQueryParam.ANNOT_CLINICAL_CONFIRMED_STATUS.key());
