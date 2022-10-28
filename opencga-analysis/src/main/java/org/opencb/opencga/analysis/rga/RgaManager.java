@@ -1606,7 +1606,16 @@ public class RgaManager implements AutoCloseable {
         if (!rgaIterator.hasNext()) {
             throw RgaException.noResultsMatching();
         }
+
+        KnockoutTypeCount knockoutTypeCount = new KnockoutTypeCount(auxQuery);
         RgaDataModel rgaDataModel = rgaIterator.next();
+        if (CollectionUtils.isNotEmpty(rgaDataModel.getChPairs())) {
+            for (String chPair : rgaDataModel.getChPairs()) {
+                CodedChPairVariants codedChPairVariants = CodedChPairVariants.parseEncodedId(chPair);
+                knockoutTypeCount.processChPairFeature(codedChPairVariants);
+            }
+        }
+
 
         KnockoutByIndividual knockoutByIndividual = AbstractRgaConverter.fillIndividualInfo(rgaDataModel);
         KnockoutByIndividualSummary knockoutByIndividualSummary = new KnockoutByIndividualSummary(knockoutByIndividual);
@@ -1616,7 +1625,6 @@ public class RgaManager implements AutoCloseable {
                 .append(QueryOptions.LIMIT, -1)
                 .append(QueryOptions.FACET, RgaDataModel.VARIANT_SUMMARY);
         DataResult<FacetField> facetFieldDataResult = rgaEngine.facetedQuery(collection, auxQuery, knockoutTypeFacet);
-        KnockoutTypeCount knockoutTypeCount = new KnockoutTypeCount(auxQuery);
         for (FacetField.Bucket variantBucket : facetFieldDataResult.first().getBuckets()) {
             CodedVariant codedFeature = CodedVariant.parseEncodedId(variantBucket.getValue());
             knockoutTypeCount.processFeature(codedFeature);
