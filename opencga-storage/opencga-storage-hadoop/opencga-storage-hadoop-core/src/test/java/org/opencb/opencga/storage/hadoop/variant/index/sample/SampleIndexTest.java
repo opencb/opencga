@@ -1052,6 +1052,14 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(VariantField.ID, VariantField.STUDIES_SAMPLES)),
                 SampleIndexOnlyVariantQueryExecutor.class);
 
+        testSampleIndexOnlyVariantQueryExecutor(
+                new VariantQuery()
+                        .study(STUDY_NAME_1)
+                        .genotype(VariantQueryUtils.QueryOperation.AND, "NA19685:0/1,1/1", "NA19661:0/0,0/1,1/1", "NA19660:0/0,0/1,1/1")
+                        .includeGenotype(true),
+                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(VariantField.ID, VariantField.STUDIES_SAMPLES)),
+                SampleIndexOnlyVariantQueryExecutor.class);
+
     }
 
     private void testSampleIndexOnlyVariantQueryExecutor(VariantQuery query, QueryOptions options, Class<?> expected) {
@@ -1070,9 +1078,12 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         variantQueryExecutor.iterator(variantQuery.getQuery(), options)
                 .forEachRemaining(actualVariants::add);
 
-        long count = variantQueryExecutor.get(variantQuery.getQuery(), new QueryOptions(options)
+        VariantQueryResult<Variant> result = variantQueryExecutor.get(variantQuery.getQuery(), new QueryOptions(options)
                 .append(QueryOptions.LIMIT, 10)
-                .append(QueryOptions.COUNT, true)).getNumMatches();
+                .append(QueryOptions.COUNT, true));
+        assertEquals(10, result.getNumResults());
+        assertEquals(10, result.getResults().size());
+        long count = result.getNumMatches();
 
         expectedVariants.sort(Comparator.comparing(Variant::toString));
         actualVariants.sort(Comparator.comparing(Variant::toString));
