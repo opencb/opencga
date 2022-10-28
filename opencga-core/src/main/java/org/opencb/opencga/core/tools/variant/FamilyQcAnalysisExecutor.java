@@ -20,6 +20,9 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyQualityControl;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
+import java.nio.file.Path;
+import java.util.Map;
+
 public abstract class FamilyQcAnalysisExecutor extends OpenCgaToolExecutor {
 
     public enum QcType {
@@ -30,6 +33,8 @@ public abstract class FamilyQcAnalysisExecutor extends OpenCgaToolExecutor {
     protected Family family;
     protected String relatednessMethod;
     protected String relatednessMaf;
+    protected Map<String, Map<String, Float>> relatednessThresholds;
+    protected Path relatednessResourcePath;
 
     protected QcType qcType;
 
@@ -71,6 +76,24 @@ public abstract class FamilyQcAnalysisExecutor extends OpenCgaToolExecutor {
 
     public FamilyQcAnalysisExecutor setRelatednessMaf(String relatednessMaf) {
         this.relatednessMaf = relatednessMaf;
+        return this;
+    }
+
+    public Map<String, Map<String, Float>> getRelatednessThresholds() {
+        return relatednessThresholds;
+    }
+
+    public FamilyQcAnalysisExecutor setRelatednessThresholds(Map<String, Map<String, Float>> relatednessThresholds) {
+        this.relatednessThresholds = relatednessThresholds;
+        return this;
+    }
+
+    public Path getRelatednesResourcePath() {
+        return relatednessResourcePath;
+    }
+
+    public FamilyQcAnalysisExecutor setRelatednesResourcePath(Path relatednessResourcePath) {
+        this.relatednessResourcePath = relatednessResourcePath;
         return this;
     }
 

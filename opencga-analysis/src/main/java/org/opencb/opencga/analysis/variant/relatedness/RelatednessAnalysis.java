@@ -18,17 +18,28 @@ package org.opencb.opencga.analysis.variant.relatedness;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.analysis.AnalysisUtils;
+import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.IBDRelatednessAnalysisExecutor;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Tool(id = RelatednessAnalysis.ID, resource = Enums.Resource.VARIANT, description = RelatednessAnalysis.DESCRIPTION)
 public class RelatednessAnalysis extends OpenCgaTool {
@@ -39,10 +50,14 @@ public class RelatednessAnalysis extends OpenCgaTool {
     public static final String MAF_DEFAULT_VALUE = "1000G:ALL>0.3";
 
     private String studyId;
+    private String familyId;
     private List<String> individualIds;
     private List<String> sampleIds;
     private String method;
     private String minorAlleleFreq;
+    private Map<String, Map<String, Float>> thresholds;
+
+    private Family family;
 
     public RelatednessAnalysis() {
     }
@@ -54,6 +69,15 @@ public class RelatednessAnalysis extends OpenCgaTool {
      */
     public RelatednessAnalysis setStudyId(String studyId) {
         this.studyId = studyId;
+        return this;
+    }
+
+    public String getFamilyId() {
+        return familyId;
+    }
+
+    public RelatednessAnalysis setFamilyId(String familyId) {
+        this.familyId = familyId;
         return this;
     }
 
@@ -108,6 +132,14 @@ public class RelatednessAnalysis extends OpenCgaTool {
             throw new ToolException(e);
         }
 
+        // Check family
+        if (StringUtils.isNotEmpty(familyId)) {
+            family = IndividualQcUtils.getFamilyById(studyId, familyId, catalogManager, token);
+            if (family == null) {
+                throw new ToolException("Family '" + familyId + "' not found.");
+            }
+        }
+
         // Check individuals and samples
         if (CollectionUtils.isNotEmpty(individualIds) && CollectionUtils.isNotEmpty(sampleIds)) {
             throw new ToolException("Incorrect parameters: only a list of individuals or samples is allowed.");
@@ -130,6 +162,9 @@ public class RelatednessAnalysis extends OpenCgaTool {
         if (StringUtils.isEmpty(minorAlleleFreq)) {
             minorAlleleFreq = MAF_DEFAULT_VALUE;
         }
+
+        Path thresholdsPath = getOpencgaHome().resolve("analysis").resolve(FamilyQcAnalysis.ID).resolve("relatedness_thresholds.csv");
+        thresholds = AnalysisUtils.parseRelatednessThresholds(thresholdsPath);
     }
 
     @Override
@@ -139,8 +174,11 @@ public class RelatednessAnalysis extends OpenCgaTool {
             IBDRelatednessAnalysisExecutor relatednessExecutor = getToolExecutor(IBDRelatednessAnalysisExecutor.class);
 
             relatednessExecutor.setStudyId(studyId)
+                    .setFamily(family)
                     .setSampleIds(sampleIds)
                     .setMinorAlleleFreq(minorAlleleFreq)
+                    .setThresholds(thresholds)
+                    .setResourcePath(getOpencgaHome().resolve("analysis/resources").resolve(ID))
                     .execute();
         });
     }

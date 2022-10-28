@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.variant.io;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
@@ -47,37 +48,41 @@ public class VariantTpedWriter implements DataWriter<Variant> {
         sb.append(variant.getChromosome()).append("\t").append(variant.getId()).append("\t0\t").append(variant.getStart());
         for (SampleEntry sampleEntry : variant.getStudies().get(0).getSamples()) {
             String gtStr = sampleEntry.getData().get(0);
-            if (gtStr.equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
-                gtStr = "0/0";
-            }
+//            if (StringUtils.isEmpty(gtStr) || gtStr.equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
+//                gtStr = "0/0";
+//            }
             Genotype genotype = new Genotype(gtStr);
             sb.append("\t");
-            switch (genotype.getAllele(0)) {
-                case 0:
-                    sb.append(variant.getReference());
-//                    sb.append(1);
-                    break;
-                case 1:
-                    sb.append(variant.getAlternate());
-//                    sb.append(2);
-                    break;
-                default:
-                    sb.append(0);
-                    break;
+            try {
+                switch (genotype.getAllele(0)) {
+                    case 0:
+                        sb.append(variant.getReference());
+                        break;
+                    case 1:
+                        sb.append(variant.getAlternate());
+                        break;
+                    default:
+                        sb.append(0);
+                        break;
+                }
+            } catch (Exception e) {
+                sb.append(0);
             }
             sb.append("\t");
-            switch (genotype.getAllele(1)) {
-                case 0:
-                    sb.append(variant.getReference());
-//                    sb.append(1);
-                    break;
-                case 1:
-                    sb.append(variant.getAlternate());
-//                    sb.append(2);
-                    break;
-                default:
-                    sb.append(0);
-                    break;
+            try {
+                switch (genotype.getAllele(1)) {
+                    case 0:
+                        sb.append(variant.getReference());
+                        break;
+                    case 1:
+                        sb.append(variant.getAlternate());
+                        break;
+                    default:
+                        sb.append(0);
+                        break;
+                }
+            } catch (Exception e) {
+                sb.append(0);
             }
         }
         sb.append("\n");
