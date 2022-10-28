@@ -1,11 +1,9 @@
 package org.opencb.opencga.storage.core.variant.io;
 
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 
 import java.io.*;
 import java.util.List;
