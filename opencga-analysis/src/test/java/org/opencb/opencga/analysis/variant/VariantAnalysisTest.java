@@ -540,6 +540,29 @@ public class VariantAnalysisTest {
     }
 
     @Test
+    public void testExportTped() throws Exception {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_export_tep"));
+        System.out.println("outDir = " + outDir);
+        VariantExportParams variantExportParams = new VariantExportParams();
+        variantExportParams.setType("SNV");
+        variantExportParams.setGenotype(son + ":0/0,0/1,1/1;" + daughter + ":0/0,0/1,1/1;" + father + ":0/0,0/1,1/1;" + mother + ":0/0,0/1,1/1");
+//        variantExportParams.setGenotype(son + ":0/1,1/1;" + father + ":0/0,0/1,1/1;" + mother + ":0/0,0/1,1/1");
+        variantExportParams.appendQuery(new Query(VariantQueryParam.REGION.key(), "22"));
+        assertEquals("22", variantExportParams.getRegion());
+
+        variantExportParams.setOutputFileFormat(VariantWriterFactory.VariantOutputFormat.TPED.name());
+        variantExportParams.setOutputFileName("chr22");
+
+        variantExportParams.setInclude("id,studies.samples");
+
+        toolRunner.execute(VariantExportTool.class, variantExportParams.toObjectMap(), outDir, null, token);
+
+        System.out.println(outDir);
+        assertTrue(outDir.resolve(variantExportParams.getOutputFileName() + ".tped").toFile().exists());
+        assertTrue(outDir.resolve(variantExportParams.getOutputFileName() + ".tfam").toFile().exists());
+    }
+
+    @Test
     public void testGwas() throws Exception {
         ObjectMap executorParams = new ObjectMap();
         GwasAnalysis analysis = new GwasAnalysis();
