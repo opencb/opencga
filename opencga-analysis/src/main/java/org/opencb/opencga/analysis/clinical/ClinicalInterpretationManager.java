@@ -359,16 +359,28 @@ public class ClinicalInterpretationManager extends StorageManager {
 
     private boolean matchEvidence(ClinicalVariantEvidence ev1, ClinicalVariantEvidence ev2) {
         // Check panel ID
-        if (ev1.getPanelId() != null && ev2.getPanelId() != null && !ev1.getPanelId().equals(ev2.getPanelId())) {
+        if (StringUtils.isNotEmpty(ev1.getPanelId()) && StringUtils.isNotEmpty(ev2.getPanelId())
+                && !ev1.getPanelId().equals(ev2.getPanelId())) {
             return false;
         }
         if (StringUtils.isNotEmpty(ev1.getPanelId()) || StringUtils.isNotEmpty(ev2.getPanelId())) {
             return false;
         }
-        // Check genomic feature (gene and transcript)
+
+        // Check genomic feature
         if (ev1.getGenomicFeature() != null && ev2.getGenomicFeature() != null) {
             GenomicFeature gf1 = ev1.getGenomicFeature();
             GenomicFeature gf2 = ev2.getGenomicFeature();
+
+            // Type
+            if (StringUtils.isNotEmpty(gf1.getType()) && StringUtils.isNotEmpty(gf2.getType()) && (!gf1.getType().equals(gf2.getType()))) {
+                return false;
+            }
+            if (StringUtils.isNotEmpty(gf1.getType()) || StringUtils.isNotEmpty(gf2.getType())) {
+                return false;
+            }
+
+            // Gene and transcript
             if (StringUtils.isNotEmpty(gf1.getId()) && StringUtils.isNotEmpty(gf2.getId())
                     && StringUtils.isNotEmpty(gf1.getTranscriptId()) && StringUtils.isNotEmpty(gf2.getTranscriptId())) {
                 if (gf1.getId().equals(gf2.getId()) && gf1.getTranscriptId().equals(gf2.getTranscriptId())) {
