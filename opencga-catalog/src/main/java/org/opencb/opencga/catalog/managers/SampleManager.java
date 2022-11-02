@@ -583,13 +583,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     private OpenCGAResult<?> updateSampleInternalVariant(Sample sample, Object value, String fieldKey, String token)
             throws CatalogException {
         ObjectMap auditParams = new ObjectMap()
-                .append("sample", sample)
                 .append("field", fieldKey)
                 .append("value", value)
                 .append("token", token);
         String studyFqn = studyDBAdaptor.get(sample.getStudyUid(), StudyManager.INCLUDE_STUDY_IDS).first().getFqn();
 
         return run(auditParams, Enums.Action.UPDATE_INTERNAL, SAMPLE, studyFqn, token, null, (study, userId, rp, qOptions) -> {
+            rp.setId(sample.getId());
+            rp.setUuid(sample.getUuid());
             authorizationManager.isOwnerOrAdmin(study.getUid(), userId);
 
             ObjectMap params;
