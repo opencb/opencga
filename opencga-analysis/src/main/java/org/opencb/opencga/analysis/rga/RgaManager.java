@@ -361,9 +361,8 @@ public class RgaManager implements AutoCloseable {
                     chVariantList));
         }
 
-        // Process all possible compound filters that are not CH
+        // Process also all possible filters independently
         Set<String> knockoutTypesNoCompHet = new HashSet<>(knockoutTypes);
-        knockoutTypesNoCompHet.remove(KnockoutVariant.KnockoutType.COMP_HET.name());
         if (!knockoutTypesNoCompHet.isEmpty()) {
             List<String> knockoutList = new ArrayList<>(knockoutTypesNoCompHet.size());
             for (String knockout : knockoutTypesNoCompHet) {
