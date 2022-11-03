@@ -796,23 +796,22 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         VariantCommandOptions.MutationalSignatureCommandOptions cliOptions = variantCommandOptions.mutationalSignatureCommandOptions;
 
         // Check signature release
-        checkSignatureVersion(cliOptions.sigVersion);
+        checkSignatureVersion(cliOptions.fitSigVersion);
 
         ObjectMap params = new MutationalSignatureAnalysisParams(
                 cliOptions.id,
                 cliOptions.description,
                 cliOptions.query,
-                cliOptions.catalogues,
-                cliOptions.cataloguesContent,
+                cliOptions.fitId,
                 cliOptions.fitMethod,
-                cliOptions.nBoot,
-                cliOptions.sigVersion,
-                cliOptions.organ,
-                cliOptions.thresholdPerc,
-                cliOptions.thresholdPval,
-                cliOptions.maxRareSigs,
-                cliOptions.signaturesFile,
-                cliOptions.rareSignaturesFile,
+                cliOptions.fitNBoot,
+                cliOptions.fitSigVersion,
+                cliOptions.fitOrgan,
+                cliOptions.fitThresholdPerc,
+                cliOptions.fitThresholdPval,
+                cliOptions.fitMaxRareSigs,
+                cliOptions.fitSignaturesFile,
+                cliOptions.fitRareSignaturesFile,
                 cliOptions.outdir)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
@@ -911,7 +910,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         VariantCommandOptions.SampleQcCommandOptions cliOptions = variantCommandOptions.sampleQcCommandOptions;
 
         // Check signature release
-        checkSignatureVersion(cliOptions.signatureSigVersion);
+        checkSignatureVersion(cliOptions.signatureFitSigVersion);
 
         // Build variant query from cli options
         AnnotationVariantQueryParams variantStatsQuery = ToolParams.fromParams(AnnotationVariantQueryParams.class,
@@ -925,18 +924,21 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.signatureId,
                 cliOptions.signatureDescription,
                 cliOptions.signatureQuery,
+                cliOptions.signatureFitId,
                 cliOptions.signatureFitMethod,
-                cliOptions.signatureNBoot,
-                cliOptions.signatureSigVersion,
-                cliOptions.signatureOrgan,
-                cliOptions.signatureThresholdPerc,
-                cliOptions.signatureThresholdPval,
-                cliOptions.signatureMaxRareSigs,
-                cliOptions.signatureSignaturesFile,
-                cliOptions.signatureRareSignaturesFile,
+                cliOptions.signatureFitNBoot,
+                cliOptions.signatureFitSigVersion,
+                cliOptions.signatureFitOrgan,
+                cliOptions.signatureFitThresholdPerc,
+                cliOptions.signatureFitThresholdPval,
+                cliOptions.signatureFitMaxRareSigs,
+                cliOptions.signatureFitSignaturesFile,
+                cliOptions.signatureFitRareSignaturesFile,
                 cliOptions.genomePlotId,
                 cliOptions.genomePlotDescr,
                 cliOptions.genomePlotConfigFile,
+                cliOptions.skip,
+                cliOptions.overwrite,
                 cliOptions.outdir)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 

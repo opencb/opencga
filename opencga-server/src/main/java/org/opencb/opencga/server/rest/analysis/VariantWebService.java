@@ -958,18 +958,8 @@ public class VariantWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "panelIntersection", value = VariantCatalogQueryUtils.PANEL_INTERSECTION_DESC, dataType = "boolean", paramType = "query"),
     })
     public Response mutationalSignatureQuery(
-            // For fitting method
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_CATALOGUES_DESCRIPTION) @QueryParam("catalogues") String catalogues,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_CATALOGUES_CONTENT_DESCRIPTION) @QueryParam("cataloguesContent") String cataloguesContent,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION, defaultValue = "FitMS") @QueryParam("fitMethod") String fitMethod,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_N_BOOT_DESCRIPTION) @QueryParam("nBoot") Integer nBoot,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_SIG_VERSION_DESCRIPTION, defaultValue = "RefSigv2") @QueryParam("sigVersion") String sigVersion,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_ORGAN_DESCRIPTION) @QueryParam("organ") String organ,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PERC_DESCRIPTION, defaultValue = "5f") @QueryParam("thresholdPerc") Float thresholdPerc,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PVAL_DESCRIPTION, defaultValue = "0.05f") @QueryParam("thresholdPval") Float thresholdPval,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION, defaultValue = "1") @QueryParam("maxRareSigs") Integer maxRareSigs,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_SIGNATURES_FILE_DESCRIPTION) @QueryParam("signaturesFile") String signaturesFile,
-                    @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_RARE_SIGNATURES_FILE_DESCRIPTION) @QueryParam("rareSignaturesFile") String rareSignaturesFile
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_ID_DESCRIPTION) @QueryParam("id") String id,
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_DESCRIPTION_DESCRIPTION) @QueryParam("description") String description
     ) {
         File outDir = null;
         try {
@@ -993,18 +983,9 @@ public class VariantWebService extends AnalysisWebService {
             }
 
             MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
-            params.setQuery(query.toJson())
-                    .setCatalogues(catalogues)
-                    .setCataloguesContent(cataloguesContent)
-                    .setFitMethod(fitMethod)
-                    .setSigVersion(sigVersion)
-                    .setOrgan(organ)
-                    .setnBoot(nBoot)
-                    .setThresholdPerc(thresholdPerc)
-                    .setThresholdPval(thresholdPval)
-                    .setMaxRareSigs(maxRareSigs)
-                    .setSignaturesFile(signaturesFile)
-                    .setRareSignaturesFile(rareSignaturesFile);
+            params.setId(id)
+                    .setDescription(description)
+                    .setQuery(query.toJson());
 
             logger.info("MutationalSignatureAnalysisParams: {}", params);
 
@@ -1018,7 +999,12 @@ public class VariantWebService extends AnalysisWebService {
             mutationalSignatureAnalysis.start();
             watch.stop();
 
-            Signature signature = mutationalSignatureAnalysis.parse(outDir.toPath());
+            List<Signature.GenomeContextCount> counts = MutationalSignatureAnalysis.parseCatalogueResults(outDir.toPath());
+            Signature signature = new Signature()
+                    .setId(id)
+                    .setDescription(description)
+                    .setType("SNV")
+                    .setQuery(query).setCounts(counts);
 
             OpenCGAResult<Signature> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
                     Collections.singletonList(signature), 1);

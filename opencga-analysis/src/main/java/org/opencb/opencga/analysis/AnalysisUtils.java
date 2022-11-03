@@ -6,8 +6,11 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.*;
@@ -120,5 +123,38 @@ public class AnalysisUtils {
             }
         }
         return thresholds;
+    }
+
+    public static boolean waitFor(String jobId, String study, JobManager jobManager, String token) throws ToolException, CatalogException {
+        Query query = new Query("id", jobId);
+        OpenCGAResult<Job> result = jobManager.search(study, query, QueryOptions.empty(), token);
+        Job job = result.first();
+        String status = job.getInternal().getStatus().getId();
+
+        while (status.equals(Enums.ExecutionStatus.PENDING) || status.equals(Enums.ExecutionStatus.RUNNING)
+                || status.equals(Enums.ExecutionStatus.QUEUED) || status.equals(Enums.ExecutionStatus.READY)
+                || status.equals(Enums.ExecutionStatus.REGISTERING)) {
+            // Sleep for 1 minute
+            try {
+                Thread.sleep(60000);
+                result = jobManager.search(study, query, QueryOptions.empty(), token);
+                job = result.first();
+            } catch (CatalogException | InterruptedException e) {
+                new ToolException("Error waiting for job '" + jobId + "': " + e.getMessage());
+            }
+            status = job.getInternal().getStatus().getId();
+        }
+
+        return status.equals(Enums.ExecutionStatus.DONE) ? true : false;
+    }
+
+    public static Job getJob(String jobId, String study, JobManager jobManager, String token) throws ToolException, CatalogException {
+        Query query = new Query("id", jobId);
+        OpenCGAResult<Job> result = jobManager.search(study, query, QueryOptions.empty(), token);
+        Job job = result.first();
+        if (job == null) {
+            new ToolException("Error getting job '" + jobId + "' from study '" + study + "'.");
+        }
+        return job;
     }
 }
