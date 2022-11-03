@@ -1097,17 +1097,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("panelFeatureType", commandOptions.panelFeatureType);
         queryParams.putIfNotEmpty("panelRoleInCancer", commandOptions.panelRoleInCancer);
         queryParams.putIfNotNull("panelIntersection", commandOptions.panelIntersection);
-        queryParams.putIfNotEmpty("catalogues", commandOptions.catalogues);
-        queryParams.putIfNotEmpty("cataloguesContent", commandOptions.cataloguesContent);
-        queryParams.putIfNotEmpty("fitMethod", commandOptions.fitMethod);
-        queryParams.putIfNotNull("nBoot", commandOptions.nBoot);
-        queryParams.putIfNotEmpty("sigVersion", commandOptions.sigVersion);
-        queryParams.putIfNotEmpty("organ", commandOptions.organ);
-        queryParams.putIfNotNull("thresholdPerc", commandOptions.thresholdPerc);
-        queryParams.putIfNotNull("thresholdPval", commandOptions.thresholdPval);
-        queryParams.putIfNotNull("maxRareSigs", commandOptions.maxRareSigs);
-        queryParams.putIfNotEmpty("signaturesFile", commandOptions.signaturesFile);
-        queryParams.putIfNotEmpty("rareSignaturesFile", commandOptions.rareSignaturesFile);
+        queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("description", commandOptions.description);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
@@ -1147,17 +1138,16 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
              putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
              putNestedIfNotEmpty(beanParams, "query",commandOptions.query, true);
-             putNestedIfNotEmpty(beanParams, "catalogues",commandOptions.catalogues, true);
-             putNestedIfNotEmpty(beanParams, "cataloguesContent",commandOptions.cataloguesContent, true);
+             putNestedIfNotEmpty(beanParams, "fitId",commandOptions.fitId, true);
              putNestedIfNotEmpty(beanParams, "fitMethod",commandOptions.fitMethod, true);
-             putNestedIfNotNull(beanParams, "nBoot",commandOptions.nBoot, true);
-             putNestedIfNotEmpty(beanParams, "sigVersion",commandOptions.sigVersion, true);
-             putNestedIfNotEmpty(beanParams, "organ",commandOptions.organ, true);
-             putNestedIfNotNull(beanParams, "thresholdPerc",commandOptions.thresholdPerc, true);
-             putNestedIfNotNull(beanParams, "thresholdPval",commandOptions.thresholdPval, true);
-             putNestedIfNotNull(beanParams, "maxRareSigs",commandOptions.maxRareSigs, true);
-             putNestedIfNotEmpty(beanParams, "signaturesFile",commandOptions.signaturesFile, true);
-             putNestedIfNotEmpty(beanParams, "rareSignaturesFile",commandOptions.rareSignaturesFile, true);
+             putNestedIfNotNull(beanParams, "fitNBoot",commandOptions.fitNBoot, true);
+             putNestedIfNotEmpty(beanParams, "fitSigVersion",commandOptions.fitSigVersion, true);
+             putNestedIfNotEmpty(beanParams, "fitOrgan",commandOptions.fitOrgan, true);
+             putNestedIfNotNull(beanParams, "fitThresholdPerc",commandOptions.fitThresholdPerc, true);
+             putNestedIfNotNull(beanParams, "fitThresholdPval",commandOptions.fitThresholdPval, true);
+             putNestedIfNotNull(beanParams, "fitMaxRareSigs",commandOptions.fitMaxRareSigs, true);
+             putNestedIfNotEmpty(beanParams, "fitSignaturesFile",commandOptions.fitSignaturesFile, true);
+             putNestedIfNotEmpty(beanParams, "fitRareSignaturesFile",commandOptions.fitRareSignaturesFile, true);
              putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
  
             mutationalSignatureAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
@@ -1513,18 +1503,21 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotEmpty(beanParams, "msId",commandOptions.msId, true);
              putNestedIfNotEmpty(beanParams, "msDescription",commandOptions.msDescription, true);
              putNestedIfNotEmpty(beanParams, "msQuery",commandOptions.msQuery, true);
+             putNestedIfNotEmpty(beanParams, "msFitId",commandOptions.msFitId, true);
              putNestedIfNotEmpty(beanParams, "msFitMethod",commandOptions.msFitMethod, true);
-             putNestedIfNotNull(beanParams, "msNBoot",commandOptions.msNBoot, true);
-             putNestedIfNotEmpty(beanParams, "msSigVersion",commandOptions.msSigVersion, true);
-             putNestedIfNotEmpty(beanParams, "msOrgan",commandOptions.msOrgan, true);
-             putNestedIfNotNull(beanParams, "msThresholdPerc",commandOptions.msThresholdPerc, true);
-             putNestedIfNotNull(beanParams, "msThresholdPval",commandOptions.msThresholdPval, true);
-             putNestedIfNotNull(beanParams, "msMaxRareSigs",commandOptions.msMaxRareSigs, true);
-             putNestedIfNotEmpty(beanParams, "msSignaturesFile",commandOptions.msSignaturesFile, true);
-             putNestedIfNotEmpty(beanParams, "msRareSignaturesFile",commandOptions.msRareSignaturesFile, true);
+             putNestedIfNotNull(beanParams, "msFitNBoot",commandOptions.msFitNBoot, true);
+             putNestedIfNotEmpty(beanParams, "msFitSigVersion",commandOptions.msFitSigVersion, true);
+             putNestedIfNotEmpty(beanParams, "msFitOrgan",commandOptions.msFitOrgan, true);
+             putNestedIfNotNull(beanParams, "msFitThresholdPerc",commandOptions.msFitThresholdPerc, true);
+             putNestedIfNotNull(beanParams, "msFitThresholdPval",commandOptions.msFitThresholdPval, true);
+             putNestedIfNotNull(beanParams, "msFitMaxRareSigs",commandOptions.msFitMaxRareSigs, true);
+             putNestedIfNotEmpty(beanParams, "msFitSignaturesFile",commandOptions.msFitSignaturesFile, true);
+             putNestedIfNotEmpty(beanParams, "msFitRareSignaturesFile",commandOptions.msFitRareSignaturesFile, true);
              putNestedIfNotEmpty(beanParams, "gpId",commandOptions.gpId, true);
              putNestedIfNotEmpty(beanParams, "gpDescription",commandOptions.gpDescription, true);
              putNestedIfNotEmpty(beanParams, "gpConfigFile",commandOptions.gpConfigFile, true);
+             putNestedIfNotEmpty(beanParams, "skip",commandOptions.skip, true);
+             putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
              putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
  
             sampleQcAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()

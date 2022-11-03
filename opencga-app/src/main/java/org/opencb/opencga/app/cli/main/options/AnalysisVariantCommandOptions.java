@@ -1296,7 +1296,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--file"}, description = "Filter variants from the files specified. This will set includeFile parameter when not provided", required = false, arity = 1)
         public String file; 
     
-        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
         public String sample; 
     
         @Parameter(names = {"--include-study"}, description = "List of studies to include in the result. Accepts 'all' and 'none'.", required = false, arity = 1)
@@ -1367,38 +1367,11 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--panel-intersection"}, description = "Intersect panel genes and regions with given genes and regions from que input query. This will prevent returning variants from regions out of the panel.", required = false, help = true, arity = 0)
         public boolean panelIntersection = false; 
     
-        @Parameter(names = {"--catalogues"}, description = "File name containing mutational catalogues. Each sample catalogue is in a column, with sample names as column headers and channel.", required = false, arity = 1)
-        public String catalogues; 
+        @Parameter(names = {"--id"}, description = "Signature ID.", required = false, arity = 1)
+        public String id; 
     
-        @Parameter(names = {"--catalogues-content"}, description = "Mutational catalogues. Each sample catalogue is in a column, with sample names as column headers and channel.", required = false, arity = 1)
-        public String cataloguesContent; 
-    
-        @Parameter(names = {"--fit-method"}, description = "Either Fit or FitMS. If not specified then FitMS", required = false, arity = 1)
-        public String fitMethod = "FitMS"; 
-    
-        @Parameter(names = {"--n-boot"}, description = "Number of bootstrap to be used.", required = false, arity = 1)
-        public Integer nBoot; 
-    
-        @Parameter(names = {"--sig-version"}, description = "Either COSMICv2, COSMICv3.2, RefSigv1 or RefSigv2. If not specified RefSigv2.", required = false, arity = 1)
-        public String sigVersion = "RefSigv2"; 
-    
-        @Parameter(names = {"--organ"}, description = "When using RefSigv1 or RefSigv2 as SIGVERSION, organ-specific signatures will be used. If SIGVERSION is COSMICv2 or COSMICv3.2, then a selection of signatures found in the given organ will be used. Available organs depend on the selected SIGVERSION. For RefSigv1 or RefSigv2: Biliary, Bladder, Bone_SoftTissue, Breast, Cervix (v1 only), CNS, Colorectal, Esophagus, Head_neck, Kidney, Liver, Lung, Lymphoid, NET (v2 only), Oral_Oropharyngeal (v2 only), Ovary, Pancreas, Prostate, Skin, Stomach, Uterus.", required = false, arity = 1)
-        public String organ; 
-    
-        @Parameter(names = {"--threshold-perc"}, description = "Threshold in percentage of total mutations in a sample, only exposures larger than THRPERC are considered. If not specified 5.", required = false, arity = 1)
-        public Float thresholdPerc = 5f; 
-    
-        @Parameter(names = {"--threshold-pval"}, description = "P-value to determine the empirical probability that the exposure is lower than the threshold. If not specified then 0.05.", required = false, arity = 1)
-        public Float thresholdPval = 0.05f; 
-    
-        @Parameter(names = {"--max-rare-sigs"}, description = "Maximum number of rare signatures that are allowed to be present in each sample. If not specified 1.", required = false, arity = 1)
-        public Integer maxRareSigs = 1; 
-    
-        @Parameter(names = {"--signatures-file"}, description = "The file name containing mutational signatures. Each signature is in a column, with signature names as column hearders and channel names as row names in the first column with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are considered common signatures.", required = false, arity = 1)
-        public String signaturesFile; 
-    
-        @Parameter(names = {"--rare-signatures-file"}, description = "The file name containing mutational signatures. Each signature is in a column, with signature names as column hearders and channel names as row names in the first column with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are considered rare signatures.", required = false, arity = 1)
-        public String rareSignaturesFile; 
+        @Parameter(names = {"--description"}, description = "Signature description.", required = false, arity = 1)
+        public String description; 
     
     }
 
@@ -1438,38 +1411,35 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--query"}, description = "Signature query in JSON format, e.g: ''{\'sample\':\'NR123456_T\', \'fileData\': \'NR.123456_T_vs_NR.1234567_G.annot.vcf.gz:FILTER=PASS;CLPM<=0;ASMD>=140\'}'.", required = false, arity = 1)
         public String query;
     
-        @Parameter(names = {"--catalogues"}, description = "File name containing mutational catalogues. Each sample catalogue is in a column, with sample names as column headers and channel.", required = false, arity = 1)
-        public String catalogues;
-    
-        @Parameter(names = {"--catalogues-content"}, description = "Mutational catalogues. Each sample catalogue is in a column, with sample names as column headers and channel.", required = false, arity = 1)
-        public String cataloguesContent;
+        @Parameter(names = {"--fit-id"}, description = "Fiiting signature ID", required = false, arity = 1)
+        public String fitId = "FitMS";
     
         @Parameter(names = {"--fit-method"}, description = "Either Fit or FitMS. If not specified then FitMS", required = false, arity = 1)
         public String fitMethod = "FitMS";
     
-        @Parameter(names = {"--n-boot"}, description = "Number of bootstrap to be used.", required = false, arity = 1)
-        public Integer nBoot;
+        @Parameter(names = {"--fit-n-boot"}, description = "Number of bootstrap to be used.", required = false, arity = 1)
+        public Integer fitNBoot;
     
-        @Parameter(names = {"--sig-version"}, description = "Either COSMICv2, COSMICv3.2, RefSigv1 or RefSigv2. If not specified RefSigv2.", required = false, arity = 1)
-        public String sigVersion = "RefSigv2";
+        @Parameter(names = {"--fit-sig-version"}, description = "Either COSMICv2, COSMICv3.2, RefSigv1 or RefSigv2. If not specified RefSigv2.", required = false, arity = 1)
+        public String fitSigVersion = "RefSigv2";
     
-        @Parameter(names = {"--organ"}, description = "When using RefSigv1 or RefSigv2 as SIGVERSION, organ-specific signatures will be used. If SIGVERSION is COSMICv2 or COSMICv3.2, then a selection of signatures found in the given organ will be used. Available organs depend on the selected SIGVERSION. For RefSigv1 or RefSigv2: Biliary, Bladder, Bone_SoftTissue, Breast, Cervix (v1 only), CNS, Colorectal, Esophagus, Head_neck, Kidney, Liver, Lung, Lymphoid, NET (v2 only), Oral_Oropharyngeal (v2 only), Ovary, Pancreas, Prostate, Skin, Stomach, Uterus.", required = false, arity = 1)
-        public String organ;
+        @Parameter(names = {"--fit-organ"}, description = "When using RefSigv1 or RefSigv2 as SIGVERSION, organ-specific signatures will be used. If SIGVERSION is COSMICv2 or COSMICv3.2, then a selection of signatures found in the given organ will be used. Available organs depend on the selected SIGVERSION. For RefSigv1 or RefSigv2: Biliary, Bladder, Bone_SoftTissue, Breast, Cervix (v1 only), CNS, Colorectal, Esophagus, Head_neck, Kidney, Liver, Lung, Lymphoid, NET (v2 only), Oral_Oropharyngeal (v2 only), Ovary, Pancreas, Prostate, Skin, Stomach, Uterus.", required = false, arity = 1)
+        public String fitOrgan;
     
-        @Parameter(names = {"--threshold-perc"}, description = "Threshold in percentage of total mutations in a sample, only exposures larger than THRPERC are considered. If not specified 5.", required = false, arity = 1)
-        public Float thresholdPerc = 5f;
+        @Parameter(names = {"--fit-threshold-perc"}, description = "Threshold in percentage of total mutations in a sample, only exposures larger than THRPERC are considered. If not specified 5.", required = false, arity = 1)
+        public Float fitThresholdPerc = 5f;
     
-        @Parameter(names = {"--threshold-pval"}, description = "P-value to determine the empirical probability that the exposure is lower than the threshold. If not specified then 0.05.", required = false, arity = 1)
-        public Float thresholdPval = 0.05f;
+        @Parameter(names = {"--fit-threshold-pval"}, description = "P-value to determine the empirical probability that the exposure is lower than the threshold. If not specified then 0.05.", required = false, arity = 1)
+        public Float fitThresholdPval = 0.05f;
     
-        @Parameter(names = {"--max-rare-sigs"}, description = "Maximum number of rare signatures that are allowed to be present in each sample. If not specified 1.", required = false, arity = 1)
-        public Integer maxRareSigs = 1;
+        @Parameter(names = {"--fit-max-rare-sigs"}, description = "Maximum number of rare signatures that are allowed to be present in each sample. If not specified 1.", required = false, arity = 1)
+        public Integer fitMaxRareSigs = 1;
     
-        @Parameter(names = {"--signatures-file"}, description = "The file name containing mutational signatures. Each signature is in a column, with signature names as column hearders and channel names as row names in the first column with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are considered common signatures.", required = false, arity = 1)
-        public String signaturesFile;
+        @Parameter(names = {"--fit-signatures-file"}, description = "The file name containing mutational signatures. Each signature is in a column, with signature names as column hearders and channel names as row names in the first column with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are considered common signatures.", required = false, arity = 1)
+        public String fitSignaturesFile;
     
-        @Parameter(names = {"--rare-signatures-file"}, description = "The file name containing mutational signatures. Each signature is in a column, with signature names as column hearders and channel names as row names in the first column with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are considered rare signatures.", required = false, arity = 1)
-        public String rareSignaturesFile;
+        @Parameter(names = {"--fit-rare-signatures-file"}, description = "The file name containing mutational signatures. Each signature is in a column, with signature names as column hearders and channel names as row names in the first column with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are considered rare signatures.", required = false, arity = 1)
+        public String fitRareSignaturesFile;
     
         @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;
@@ -1577,7 +1547,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--file-data"}, description = "Filter by file data (i.e. FILTER, QUAL and INFO columns from VCF file). [{file}:]{key}{op}{value}[,;]* . If no file is specified, will use all files from 'file' filter. e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 . Many fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10,FILTER=PASS,LowDP", required = false, arity = 1)
         public String fileData; 
     
-        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
         public String sample; 
     
         @Parameter(names = {"--genotype"}, description = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1. Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT. This will automatically set 'includeSample' parameter when not provided", required = false, arity = 1)
@@ -1634,7 +1604,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--family-disorder"}, description = "Specify the disorder to use for the family segregation", required = false, arity = 1)
         public String familyDisorder; 
     
-        @Parameter(names = {"--family-segregation"}, description = "Filter by segregation mode from a given family. Accepted values: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
+        @Parameter(names = {"--family-segregation"}, description = "Filter by segregation mode from a given family. Accepted values: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
         public String familySegregation; 
     
         @Parameter(names = {"--family-members"}, description = "Sub set of the members of a given family", required = false, arity = 1)
@@ -1853,7 +1823,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--filter"}, description = "Specify the FILTER for any of the files. If 'file' filter is provided, will match the file and the filter. e.g.: PASS,LowGQX", required = false, arity = 1)
         public String filter; 
     
-        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
         public String sample; 
     
         @Parameter(names = {"--genotype"}, description = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1. Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT. This will automatically set 'includeSample' parameter when not provided", required = false, arity = 1)
@@ -1868,7 +1838,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--family-disorder"}, description = "Specify the disorder to use for the family segregation", required = false, arity = 1)
         public String familyDisorder; 
     
-        @Parameter(names = {"--family-segregation"}, description = "Filter by segregation mode from a given family. Accepted values: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
+        @Parameter(names = {"--family-segregation"}, description = "Filter by segregation mode from a given family. Accepted values: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
         public String familySegregation; 
     
         @Parameter(names = {"--family-members"}, description = "Sub set of the members of a given family", required = false, arity = 1)
@@ -1965,7 +1935,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--sample"}, description = "The body web service sample parameter", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Sample data model hosts information about any biological material, normally extracted from an _Individual_, that is used for a particular analysis. This is the main data model, it stores the most basic and important information.", required = false, arity = 1)
         public String sample;
     
         @Parameter(names = {"--vs-id"}, description = "Variant stats ID.", required = false, arity = 1)
@@ -2058,32 +2028,35 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--ms-query"}, description = "Signature query in JSON format, e.g: ''{\'sample\':\'NR123456_T\', \'fileData\': \'NR.123456_T_vs_NR.1234567_G.annot.vcf.gz:FILTER=PASS;CLPM<=0;ASMD>=140\'}'.", required = false, arity = 1)
         public String msQuery;
     
+        @Parameter(names = {"--ms-fit-id"}, description = "Either Fit or FitMS. If not specified then FitMS", required = false, arity = 1)
+        public String msFitId = "FitMS";
+    
         @Parameter(names = {"--ms-fit-method"}, description = "Either Fit or FitMS. If not specified then FitMS", required = false, arity = 1)
         public String msFitMethod = "FitMS";
     
-        @Parameter(names = {"--ms-n-boot"}, description = "Number of bootstrap to be used.", required = false, arity = 1)
-        public Integer msNBoot;
+        @Parameter(names = {"--ms-fit-n-boot"}, description = "Number of bootstrap to be used.", required = false, arity = 1)
+        public Integer msFitNBoot;
     
-        @Parameter(names = {"--ms-sig-version"}, description = "Either COSMICv2, COSMICv3.2, RefSigv1 or RefSigv2. If not specified RefSigv2.", required = false, arity = 1)
-        public String msSigVersion = "RefSigv2";
+        @Parameter(names = {"--ms-fit-sig-version"}, description = "Either COSMICv2, COSMICv3.2, RefSigv1 or RefSigv2. If not specified RefSigv2.", required = false, arity = 1)
+        public String msFitSigVersion = "RefSigv2";
     
-        @Parameter(names = {"--ms-organ"}, description = "When using RefSigv1 or RefSigv2 as SIGVERSION, organ-specific signatures will be used. If SIGVERSION is COSMICv2 or COSMICv3.2, then a selection of signatures found in the given organ will be used. Available organs depend on the selected SIGVERSION. For RefSigv1 or RefSigv2: Biliary, Bladder, Bone_SoftTissue, Breast, Cervix (v1 only), CNS, Colorectal, Esophagus, Head_neck, Kidney, Liver, Lung, Lymphoid, NET (v2 only), Oral_Oropharyngeal (v2 only), Ovary, Pancreas, Prostate, Skin, Stomach, Uterus.", required = false, arity = 1)
-        public String msOrgan;
+        @Parameter(names = {"--ms-fit-organ"}, description = "When using RefSigv1 or RefSigv2 as SIGVERSION, organ-specific signatures will be used. If SIGVERSION is COSMICv2 or COSMICv3.2, then a selection of signatures found in the given organ will be used. Available organs depend on the selected SIGVERSION. For RefSigv1 or RefSigv2: Biliary, Bladder, Bone_SoftTissue, Breast, Cervix (v1 only), CNS, Colorectal, Esophagus, Head_neck, Kidney, Liver, Lung, Lymphoid, NET (v2 only), Oral_Oropharyngeal (v2 only), Ovary, Pancreas, Prostate, Skin, Stomach, Uterus.", required = false, arity = 1)
+        public String msFitOrgan;
     
-        @Parameter(names = {"--ms-threshold-perc"}, description = "Threshold in percentage of total mutations in a sample, only exposures larger than THRPERC are considered. If not specified 5.", required = false, arity = 1)
-        public Float msThresholdPerc = 5f;
+        @Parameter(names = {"--ms-fit-threshold-perc"}, description = "Threshold in percentage of total mutations in a sample, only exposures larger than THRPERC are considered. If not specified 5.", required = false, arity = 1)
+        public Float msFitThresholdPerc = 5f;
     
-        @Parameter(names = {"--ms-threshold-pval"}, description = "P-value to determine the empirical probability that the exposure is lower than the threshold. If not specified then 0.05.", required = false, arity = 1)
-        public Float msThresholdPval = 0.05f;
+        @Parameter(names = {"--ms-fit-threshold-pval"}, description = "P-value to determine the empirical probability that the exposure is lower than the threshold. If not specified then 0.05.", required = false, arity = 1)
+        public Float msFitThresholdPval = 0.05f;
     
-        @Parameter(names = {"--ms-max-rare-sigs"}, description = "Maximum number of rare signatures that are allowed to be present in each sample. If not specified 1.", required = false, arity = 1)
-        public Integer msMaxRareSigs = 1;
+        @Parameter(names = {"--ms-fit-max-rare-sigs"}, description = "Maximum number of rare signatures that are allowed to be present in each sample. If not specified 1.", required = false, arity = 1)
+        public Integer msFitMaxRareSigs = 1;
     
-        @Parameter(names = {"--ms-signatures-file"}, description = "The file name containing mutational signatures. Each signature is in a column, with signature names as column hearders and channel names as row names in the first column with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are considered common signatures.", required = false, arity = 1)
-        public String msSignaturesFile;
+        @Parameter(names = {"--ms-fit-signatures-file"}, description = "The file name containing mutational signatures. Each signature is in a column, with signature names as column hearders and channel names as row names in the first column with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are considered common signatures.", required = false, arity = 1)
+        public String msFitSignaturesFile;
     
-        @Parameter(names = {"--ms-rare-signatures-file"}, description = "The file name containing mutational signatures. Each signature is in a column, with signature names as column hearders and channel names as row names in the first column with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are considered rare signatures.", required = false, arity = 1)
-        public String msRareSignaturesFile;
+        @Parameter(names = {"--ms-fit-rare-signatures-file"}, description = "The file name containing mutational signatures. Each signature is in a column, with signature names as column hearders and channel names as row names in the first column with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are considered rare signatures.", required = false, arity = 1)
+        public String msFitRareSignaturesFile;
     
         @Parameter(names = {"--gp-id"}, description = "Genome plot ID.", required = false, arity = 1)
         public String gpId;
@@ -2093,6 +2066,12 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--gp-config-file"}, description = "Genome plot configuration file.", required = false, arity = 1)
         public String gpConfigFile;
+    
+        @Parameter(names = {"--skip"}, description = "Quality control metrics to skip. Valid values are: stats, signature, signature-catalogue, signature-fitting, genome-plot.", required = false, arity = 1)
+        public String skip;
+    
+        @Parameter(names = {"--overwrite"}, description = "Overwrite sample quality control in OpenCGA catalog.", required = false, arity = 1)
+        public Boolean overwrite = true;
     
         @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;
