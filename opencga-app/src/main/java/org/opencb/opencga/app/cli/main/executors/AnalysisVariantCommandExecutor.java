@@ -1084,6 +1084,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("sample", commandOptions.sample);
+        queryParams.putIfNotEmpty("type", commandOptions.type);
         queryParams.putIfNotEmpty("ct", commandOptions.ct);
         queryParams.putIfNotEmpty("biotype", commandOptions.biotype);
         queryParams.putIfNotEmpty("fileData", commandOptions.fileData);
@@ -1097,8 +1098,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("panelFeatureType", commandOptions.panelFeatureType);
         queryParams.putIfNotEmpty("panelRoleInCancer", commandOptions.panelRoleInCancer);
         queryParams.putIfNotNull("panelIntersection", commandOptions.panelIntersection);
-        queryParams.putIfNotEmpty("id", commandOptions.id);
-        queryParams.putIfNotEmpty("description", commandOptions.description);
+        queryParams.putIfNotEmpty("msId", commandOptions.msId);
+        queryParams.putIfNotEmpty("msDescription", commandOptions.msDescription);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }

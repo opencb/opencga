@@ -1328,6 +1328,9 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--sample"}, description = "Sample name", required = false, arity = 1)
         public String sample; 
     
+        @Parameter(names = {"--type"}, description = "Variant type. Valid values: SNV, SV", required = false, arity = 1)
+        public String type; 
+    
         @Parameter(names = {"--ct"}, description = "List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'", required = false, arity = 1)
         public String ct; 
     
@@ -1367,11 +1370,11 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--panel-intersection"}, description = "Intersect panel genes and regions with given genes and regions from que input query. This will prevent returning variants from regions out of the panel.", required = false, help = true, arity = 0)
         public boolean panelIntersection = false; 
     
-        @Parameter(names = {"--id"}, description = "Signature ID.", required = false, arity = 1)
-        public String id; 
+        @Parameter(names = {"--ms-id"}, description = "Signature ID.", required = false, arity = 1)
+        public String msId; 
     
-        @Parameter(names = {"--description"}, description = "Signature description.", required = false, arity = 1)
-        public String description; 
+        @Parameter(names = {"--ms-description"}, description = "Signature description.", required = false, arity = 1)
+        public String msDescription; 
     
     }
 

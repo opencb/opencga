@@ -943,6 +943,7 @@ public class VariantWebService extends AnalysisWebService {
     @ApiImplicitParams({
             @ApiImplicitParam(name = "study", value = STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "sample", value = "Sample name", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "type", value = "Variant type. Valid values: SNV, SV", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "ct", value = ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "biotype", value = ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "fileData", value = FILE_DATA_DESCR, dataType = "string", paramType = "query"),
@@ -958,8 +959,8 @@ public class VariantWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "panelIntersection", value = VariantCatalogQueryUtils.PANEL_INTERSECTION_DESC, dataType = "boolean", paramType = "query"),
     })
     public Response mutationalSignatureQuery(
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_ID_DESCRIPTION) @QueryParam("id") String id,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_DESCRIPTION_DESCRIPTION) @QueryParam("description") String description
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_ID_DESCRIPTION) @QueryParam("msId") String msId,
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_DESCRIPTION_DESCRIPTION) @QueryParam("msDescription") String msDescription
     ) {
         File outDir = null;
         try {
@@ -983,9 +984,11 @@ public class VariantWebService extends AnalysisWebService {
             }
 
             MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
-            params.setId(id)
-                    .setDescription(description)
-                    .setQuery(query.toJson());
+            params.setId(msId)
+                    .setDescription(msDescription)
+                    .setQuery(query.toJson())
+                    .setSample(query.getString(SAMPLE.key()))
+                    .setSkip(MutationalSignatureAnalysisParams.SIGNATURE_FITTING_SKIP_VALUE);
 
             logger.info("MutationalSignatureAnalysisParams: {}", params);
 
@@ -999,12 +1002,14 @@ public class VariantWebService extends AnalysisWebService {
             mutationalSignatureAnalysis.start();
             watch.stop();
 
+            logger.info("Parsing mutational signature catalogue results from {}", outDir);
             List<Signature.GenomeContextCount> counts = MutationalSignatureAnalysis.parseCatalogueResults(outDir.toPath());
             Signature signature = new Signature()
-                    .setId(id)
-                    .setDescription(description)
+                    .setId(msId)
+                    .setDescription(msDescription)
                     .setType("SNV")
-                    .setQuery(query).setCounts(counts);
+                    .setQuery(query)
+                    .setCounts(counts);
 
             OpenCGAResult<Signature> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
                     Collections.singletonList(signature), 1);
@@ -1016,10 +1021,11 @@ public class VariantWebService extends AnalysisWebService {
                 // Delete temporal directory
                 try {
                     if (outDir.exists()) {
+                        logger.info("Deleting scratch directory {}", outDir);
                         FileUtils.deleteDirectory(outDir);
                     }
                 } catch (IOException e) {
-                    logger.warn("Error cleaning scratch directory " + outDir, e);
+                    logger.warn("Error cleaning scratch directory {}", outDir, e);
                 }
             }
         }
