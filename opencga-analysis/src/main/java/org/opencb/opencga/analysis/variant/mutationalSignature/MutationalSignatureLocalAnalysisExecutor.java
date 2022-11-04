@@ -73,6 +73,8 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         // Check genome context file for that sample, and create it if necessary
         // TODO: overwrite support !
         File indexFile = checkGenomeContextFile();
+        logger.info("Mutational signature analysis is using the genome context file {} for sample {}", indexFile.getAbsolutePath(),
+                getSample());
 
         if (StringUtils.isEmpty(getSkip()) || (!getSkip().contains(MutationalSignatureAnalysisParams.SIGNATURE_CATALOGUE_SKIP_VALUE))) {
             // Get first variant to check where the genome context is stored
