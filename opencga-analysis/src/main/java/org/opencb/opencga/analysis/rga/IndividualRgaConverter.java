@@ -37,7 +37,7 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
         CONVERTER_MAP.put("phenotypes", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.PHENOTYPES, RgaDataModel.PHENOTYPE_JSON));
         CONVERTER_MAP.put("disorders", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.DISORDERS, RgaDataModel.DISORDER_JSON));
         CONVERTER_MAP.put("numParents", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.NUM_PARENTS));
-        CONVERTER_MAP.put("stats", Collections.emptyList());
+        CONVERTER_MAP.put("stats", Collections.singletonList(RgaDataModel.CH_PAIRS));
         CONVERTER_MAP.put("genes.id", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID));
         CONVERTER_MAP.put("genes.name", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.GENE_NAME));
         CONVERTER_MAP.put("genes.chromosome", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.CHROMOSOME));
@@ -171,8 +171,7 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
         return result;
     }
 
-    public List<RgaDataModel> convertToStorageType(KnockoutByIndividual knockoutByIndividual)
-            throws RgaException, JsonProcessingException {
+    public List<RgaDataModel> convertToStorageType(KnockoutByIndividual knockoutByIndividual) throws RgaException, JsonProcessingException {
         if (StringUtils.isEmpty(knockoutByIndividual.getId())) {
             throw new RgaException("Missing mandatory field 'id'");
         }

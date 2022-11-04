@@ -806,6 +806,9 @@ class RgaUtils {
         private Set<String> consequenceTypeQuery;
         private List<Set<String>> popFreqQuery;
 
+        // Valid CH pair variants
+        private Map<String, Set<String>> validChPairVariants;
+
         private Set<String> ids;
         private Map<String, Set<String>> transcriptCompHetIdsMap;
         private Set<String> homIds;
@@ -820,6 +823,7 @@ class RgaUtils {
             clinicalSignificanceQuery = new HashSet<>();
             typeQuery = new HashSet<>();
             consequenceTypeQuery = new HashSet<>();
+            validChPairVariants = new HashMap<>();
             ids = new HashSet<>();
             transcriptCompHetIdsMap = new HashMap<>();
             homIds = new HashSet<>();
@@ -911,6 +915,22 @@ class RgaUtils {
             }
         }
 
+        public void processChPairFeature(RgaUtils.CodedChPairVariants codedFeature) {
+            String leftVariant = codedFeature.getMaternalCodedVariant().getId();
+            String rightVariant = codedFeature.getPaternalCodedVariant().getId();
+            if (rightVariant.compareTo(leftVariant) < 0) {
+                String auxVariant = leftVariant;
+                leftVariant = rightVariant;
+                rightVariant = auxVariant;
+            }
+
+            // Keys are always lexicographically less than variants as values
+            if (!validChPairVariants.containsKey(leftVariant)) {
+                validChPairVariants.put(leftVariant, new HashSet<>());
+            }
+            validChPairVariants.get(leftVariant).add(rightVariant);
+        }
+
         public Set<String> getIds() {
             return ids;
         }
@@ -930,23 +950,23 @@ class RgaUtils {
                 Set<String> chSet = entry.getValue();
                 if (chSet.size() > 1) {
                     if (chSet.size() > threshold) {
-                        logger.warn("Showing a -1000 value for the numPairedCompHet stats. More than {} COMP_HET variants found in"
+                        logger.warn("Showing a -1 value for the numPairedCompHet stats. More than {} COMP_HET variants found in"
                                 + " transcript {}", threshold, entry.getKey());
                         // Don't calculate this if the number of possible pairs is too big
                         return -1;
                     }
-                    ArrayList<String> chList = new ArrayList<>(chSet);
-                    for (int i = 0; i < chList.size() - 1; i++) {
-                        for (int j = i + 1; j < chList.size(); j++) {
-                            String variant1 = chList.get(i);
-                            String variant2 = chList.get(j);
-                            if (variant2.compareTo(variant1) < 0) {
-                                // Invert positions
-                                String aux = variant1;
-                                variant1 = variant2;
-                                variant2 = aux;
+
+                    // Sort variants lexicographically so we just need to check once
+                    List<String> sortedVariants = chSet.stream().sorted(String::compareTo).collect(Collectors.toList());
+                    for (int i = 0; i < sortedVariants.size() - 1; i++) {
+                        String leftVariant = sortedVariants.get(i);
+                        for (int j = i + 1; j < sortedVariants.size(); j++) {
+                            String rightVariant = sortedVariants.get(j);
+
+                            if (validChPairVariants.containsKey(leftVariant)
+                                    && validChPairVariants.get(leftVariant).contains(rightVariant)) {
+                                chPairs.add(leftVariant + "-" + rightVariant);
                             }
-                            chPairs.add(variant1 + "-" + variant2);
                         }
                     }
                 }

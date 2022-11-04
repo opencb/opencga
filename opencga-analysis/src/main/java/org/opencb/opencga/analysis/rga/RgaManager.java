@@ -361,9 +361,8 @@ public class RgaManager implements AutoCloseable {
                     chVariantList));
         }
 
-        // Process all possible compound filters that are not CH
+        // Process also all possible filters independently
         Set<String> knockoutTypesNoCompHet = new HashSet<>(knockoutTypes);
-        knockoutTypesNoCompHet.remove(KnockoutVariant.KnockoutType.COMP_HET.name());
         if (!knockoutTypesNoCompHet.isEmpty()) {
             List<String> knockoutList = new ArrayList<>(knockoutTypesNoCompHet.size());
             for (String knockout : knockoutTypesNoCompHet) {
@@ -1606,7 +1605,16 @@ public class RgaManager implements AutoCloseable {
         if (!rgaIterator.hasNext()) {
             throw RgaException.noResultsMatching();
         }
+
+        KnockoutTypeCount knockoutTypeCount = new KnockoutTypeCount(auxQuery);
         RgaDataModel rgaDataModel = rgaIterator.next();
+        if (CollectionUtils.isNotEmpty(rgaDataModel.getChPairs())) {
+            for (String chPair : rgaDataModel.getChPairs()) {
+                CodedChPairVariants codedChPairVariants = CodedChPairVariants.parseEncodedId(chPair);
+                knockoutTypeCount.processChPairFeature(codedChPairVariants);
+            }
+        }
+
 
         KnockoutByIndividual knockoutByIndividual = AbstractRgaConverter.fillIndividualInfo(rgaDataModel);
         KnockoutByIndividualSummary knockoutByIndividualSummary = new KnockoutByIndividualSummary(knockoutByIndividual);
@@ -1616,7 +1624,6 @@ public class RgaManager implements AutoCloseable {
                 .append(QueryOptions.LIMIT, -1)
                 .append(QueryOptions.FACET, RgaDataModel.VARIANT_SUMMARY);
         DataResult<FacetField> facetFieldDataResult = rgaEngine.facetedQuery(collection, auxQuery, knockoutTypeFacet);
-        KnockoutTypeCount knockoutTypeCount = new KnockoutTypeCount(auxQuery);
         for (FacetField.Bucket variantBucket : facetFieldDataResult.first().getBuckets()) {
             CodedVariant codedFeature = CodedVariant.parseEncodedId(variantBucket.getValue());
             knockoutTypeCount.processFeature(codedFeature);
