@@ -2,6 +2,7 @@ package org.opencb.opencga.core.api;
 
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
+import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -403,6 +404,7 @@ public class FieldConstants {
     // Mutational signature (sample-qc-run, mutationsl-signature-run, mutational-signature-query)
     public static final String MUTATIONAL_SIGNATURE_ID_DESCRIPTION = "Signature ID.";
     public static final String MUTATIONAL_SIGNATURE_DESCRIPTION_DESCRIPTION = "Signature description.";
+    public static final String MUTATIONAL_SIGNATURE_SAMPLE_DESCRIPTION = "Sample.";
     public static final String MUTATIONAL_SIGNATURE_QUERY_DESCRIPTION = "Signature query in JSON format, e.g: \"\"{\\\"sample\\\":"
             + "\\\"NR123456_T\\\", \\\"fileData\\\": \\\"NR.123456_T_vs_NR.1234567_G.annot.vcf.gz:FILTER=PASS;CLPM<=0;ASMD>=140\\\"}\".";
     public static final String MUTATIONAL_SIGNATURE_CATALOGUES_DESCRIPTION = "File name containing mutational catalogues. Each sample"
@@ -433,6 +435,9 @@ public class FieldConstants {
             + " Each signature is in a column, with signature names as column hearders and channel names as row names in the first column"
             + " with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures"
             + " are considered rare signatures.";
+    public static final String MUTATIONAL_SIGNATURE_SKIP_DESCRIPTION = "To skip to compute catalogue counts or the signature fitting. Use "
+            + " the following keywords: " + MutationalSignatureAnalysisParams.SIGNATURE_CATALOGUE_SKIP_VALUE + ", "
+            + MutationalSignatureAnalysisParams.SIGNATURE_FITTING_SKIP_VALUE + ".";
 
     // Genome plot (sample-qc-run)
     public static final String GENOME_PLOT_ID_DESCRIPTION = "Genome plot ID.";

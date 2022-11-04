@@ -23,7 +23,7 @@ import org.opencb.opencga.core.tools.ToolParams;
 public class SampleQcAnalysisParams extends ToolParams {
     public static final String VARIANT_STATS_SKIP_VALUE = "variant-stats";
     public static final String SIGNATURE_SKIP_VALUE = "signature";
-    public static final String SIGNATURE_CATALOGUE_SKIP_VALUE = "signature-catalog";
+    public static final String SIGNATURE_CATALOGUE_SKIP_VALUE = "signature-catalogue";
     public static final String SIGNATURE_FITTING_SKIP_VALUE = "signature-fitting";
     public static final String GENOME_PLOT_SKIP_VALUE = "genome-plot";
 
@@ -56,7 +56,7 @@ public class SampleQcAnalysisParams extends ToolParams {
     @DataField(id = "msQuery", description = FieldConstants.MUTATIONAL_SIGNATURE_QUERY_DESCRIPTION)
     private String msQuery;
 
-    @DataField(id = "msFitId", defaultValue = "FitMS", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION)
+    @DataField(id = "msFitId", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION)
     private String msFitId;
 
     @DataField(id = "msFitMethod", defaultValue = "FitMS", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION)
@@ -104,9 +104,6 @@ public class SampleQcAnalysisParams extends ToolParams {
     @DataField(id = "skip", description = FieldConstants.SAMPLE_QUALITY_CONTROL_SKIP_DESCRIPTION)
     private String skip;
 
-    @DataField(id = "overwrite", defaultValue = "true", description = FieldConstants.SAMPLE_QUALITY_CONTROL_OVERWRITE_DESCRIPTION)
-    private Boolean overwrite;
-
     @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
 
@@ -117,7 +114,7 @@ public class SampleQcAnalysisParams extends ToolParams {
                                   String msDescription, String msQuery, String msFitId, String msFitMethod, Integer msFitNBoot,
                                   String msFitSigVersion, String msFitOrgan, Float msFitThresholdPerc, Float msFitThresholdPval,
                                   Integer msFitMaxRareSigs, String msFitSignaturesFile, String msFitRareSignaturesFile, String gpId,
-                                  String gpDescription, String gpConfigFile, String skip, Boolean overwrite, String outdir) {
+                                  String gpDescription, String gpConfigFile, String skip, String outdir) {
         this.sample = sample;
         this.vsId = vsId;
         this.vsDescription = vsDescription;
@@ -139,7 +136,6 @@ public class SampleQcAnalysisParams extends ToolParams {
         this.gpDescription = gpDescription;
         this.gpConfigFile = gpConfigFile;
         this.skip = skip;
-        this.overwrite = overwrite;
         this.outdir = outdir;
     }
 
@@ -167,7 +163,6 @@ public class SampleQcAnalysisParams extends ToolParams {
         sb.append(", gpDescription='").append(gpDescription).append('\'');
         sb.append(", gpConfigFile='").append(gpConfigFile).append('\'');
         sb.append(", skip='").append(skip).append('\'');
-        sb.append(", overwrite=").append(overwrite);
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -359,15 +354,6 @@ public class SampleQcAnalysisParams extends ToolParams {
 
     public SampleQcAnalysisParams setSkip(String skip) {
         this.skip = skip;
-        return this;
-    }
-
-    public Boolean getOverwrite() {
-        return overwrite;
-    }
-
-    public SampleQcAnalysisParams setOverwrite(Boolean overwrite) {
-        this.overwrite = overwrite;
         return this;
     }
 

@@ -134,9 +134,9 @@ public class AnalysisUtils {
         while (status.equals(Enums.ExecutionStatus.PENDING) || status.equals(Enums.ExecutionStatus.RUNNING)
                 || status.equals(Enums.ExecutionStatus.QUEUED) || status.equals(Enums.ExecutionStatus.READY)
                 || status.equals(Enums.ExecutionStatus.REGISTERING)) {
-            // Sleep for 1 minute
             try {
-                Thread.sleep(60000);
+                // Sleep for 30 seconds
+                Thread.sleep(30000);
                 result = jobManager.search(study, query, QueryOptions.empty(), token);
                 job = result.first();
             } catch (CatalogException | InterruptedException e) {
@@ -144,7 +144,6 @@ public class AnalysisUtils {
             }
             status = job.getInternal().getStatus().getId();
         }
-
         return status.equals(Enums.ExecutionStatus.DONE) ? true : false;
     }
 

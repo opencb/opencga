@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.variant.mutationalSignature;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.Signature;
@@ -46,6 +47,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 @Tool(id = MutationalSignatureAnalysis.ID, resource = Enums.Resource.VARIANT)
 public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
@@ -54,21 +56,19 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
     public static final String DESCRIPTION = "Run mutational signature analysis for a given sample.";
 
     public final static String SIGNATURE_COEFFS_FILENAME = "exposures.tsv";
-    public final static String SIGNATURE_FITTING_FILENAME = "signature_summary.png";
     public final static String CATALOGUES_FILENAME_DEFAULT = "catalogues.tsv";
-
-
-    public final static String QC_UPDATE_KEYNAME = "qcUpdate";
 
     @ToolParams
     private MutationalSignatureAnalysisParams signatureParams = new MutationalSignatureAnalysisParams();
 
-    private String sample;
+    private Sample sample;
     private String assembly;
     private ObjectMap query;
-    private String catalogues;
     private String signaturesFile;
     private String rareSignaturesFile;
+
+    private boolean runCatalogue = true;
+    private boolean runFitting = true;
 
     @Override
     protected void check() throws Exception {
@@ -79,23 +79,88 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
             throw new ToolException("Missing study");
         }
 
-        // Fitting from sample/query
-        if (signatureParams.getQuery() == null) {
-            throw new ToolException("Missing signature query");
-        }
-        query = JacksonUtils.getDefaultObjectMapper().readValue(signatureParams.getQuery(), ObjectMap.class);
-        logger.info("Signagture query: {}", signatureParams.getQuery());
-        if (!query.containsKey(VariantQueryParam.SAMPLE.key())) {
-            throw new ToolException("Missing sample in the signature query");
-        }
-        if (StringUtils.isEmpty(query.getString(VariantQueryParam.SAMPLE.key()))) {
-            throw new ToolException("Sample is empty in the signature query");
+        if (StringUtils.isEmpty(signatureParams.getSample())) {
+            throw new ToolException("Missing sample. It is mandatory to run mutational signature analysis");
         }
 
-        // Get sample
-        sample = query.getString(VariantQueryParam.SAMPLE.key());
-        if (sample.contains(":")) {
-            sample = sample.split(":")[0];
+        // Check sample
+        study = catalogManager.getStudyManager().get(study, QueryOptions.empty(), token).first().getFqn();
+        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(study, signatureParams.getSample(),
+                QueryOptions.empty(), token);
+        if (sampleResult.getNumResults() != 1) {
+            throw new ToolException("Unable to compute mutational signature analysis. Sample '" + signatureParams.getSample()
+                    + "' not found");
+        }
+        sample = sampleResult.first();
+
+        if (StringUtils.isNotEmpty(signatureParams.getSkip())) {
+            if (signatureParams.getSkip().contains(MutationalSignatureAnalysisParams.SIGNATURE_CATALOGUE_SKIP_VALUE)) {
+                runCatalogue = false;
+            }
+            if (signatureParams.getSkip().contains(MutationalSignatureAnalysisParams.SIGNATURE_FITTING_SKIP_VALUE)) {
+                runFitting = false;
+            }
+        }
+
+        // Check 'catalogue' processing
+        if (runCatalogue) {
+            if (signatureParams.getQuery() == null) {
+                throw new ToolException("Missing signature query. It is mandatory to compute mutational signature catalogue");
+            }
+
+            query = JacksonUtils.getDefaultObjectMapper().readValue(signatureParams.getQuery(), ObjectMap.class);
+            if (!query.containsKey(VariantQueryParam.SAMPLE.key())
+                    || StringUtils.isEmpty(query.getString(VariantQueryParam.SAMPLE.key()))) {
+                query.put(VariantQueryParam.SAMPLE.key(), signatureParams.getQuery());
+            } else {
+                // Check mismatch sample
+                String tmpSample = query.getString(VariantQueryParam.SAMPLE.key());
+                if (tmpSample.contains(":")) {
+                    tmpSample = tmpSample.split(":")[0];
+                }
+                if (!tmpSample.equals(signatureParams.getSample())) {
+                    throw new ToolException("Mismatch sample name, from sample parameter (" + signatureParams.getSample() + ", and from"
+                            + " the query (" + query.getString(VariantQueryParam.SAMPLE.key()) + ")");
+                }
+            }
+            logger.info("Signagture query: {}", signatureParams.getQuery());
+        }
+
+        // Check 'fitting' processing
+        if (runFitting) {
+            if (StringUtils.isEmpty(signatureParams.getId())) {
+                throw new ToolException("Missing signature catalogue ID (counts ID). It is mandatory to compute signature fitting");
+            }
+
+            // Check that signature (catalogue) ID exists for the sample
+            boolean found = false;
+            if (sample.getQualityControl() != null && sample.getQualityControl().getVariant() != null
+                    && CollectionUtils.isNotEmpty(sample.getQualityControl().getVariant().getSignatures())) {
+                for (Signature signature : sample.getQualityControl().getVariant().getSignatures()) {
+                    if (signatureParams.getId().equals(signature.getId())) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            if (!found && !runCatalogue) {
+                throw new ToolException("Signature catalogue ID (counts ID) '" + signatureParams.getId() + "' not found for the sample"
+                        + "'" + signatureParams.getSample() + "'");
+            }
+
+            // Check signatures file
+            if (StringUtils.isNotEmpty(signatureParams.getFitSignaturesFile())) {
+                org.opencb.opencga.core.models.file.File catalogFile = AnalysisUtils.getCatalogFile(signatureParams.getFitSignaturesFile(),
+                        getStudy(), catalogManager.getFileManager(), getToken());
+                signaturesFile = catalogFile.getUri().getPath();
+            }
+
+            // Check rare signatures file
+            if (StringUtils.isNotEmpty(signatureParams.getFitRareSignaturesFile())) {
+                org.opencb.opencga.core.models.file.File catalogFile = AnalysisUtils.getCatalogFile(
+                        signatureParams.getFitRareSignaturesFile(), getStudy(), catalogManager.getFileManager(), getToken());
+                rareSignaturesFile = catalogFile.getUri().getPath();
+            }
         }
 
         // Get assembly
@@ -115,32 +180,11 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                 break;
         }
 
-        try {
-            // Check sample
-            study = catalogManager.getStudyManager().get(study, QueryOptions.empty(), token).first().getFqn();
-            OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(study, sample, QueryOptions.empty(), token);
-            if (sampleResult.getNumResults() != 1) {
-                throw new ToolException("Unable to compute mutational signature analysis. Sample '" + sample + "' not found");
-            }
-
-            // Check signatures file
-            if (StringUtils.isNotEmpty(signatureParams.getFitSignaturesFile())) {
-                org.opencb.opencga.core.models.file.File catalogFile = AnalysisUtils.getCatalogFile(signatureParams.getFitSignaturesFile(),
-                        getStudy(), catalogManager.getFileManager(), getToken());
-                signaturesFile = catalogFile.getUri().getPath();
-            }
-
-            // Check rare signatures file
-            if (StringUtils.isNotEmpty(signatureParams.getFitRareSignaturesFile())) {
-                org.opencb.opencga.core.models.file.File catalogFile = AnalysisUtils.getCatalogFile(
-                        signatureParams.getFitRareSignaturesFile(), getStudy(), catalogManager.getFileManager(), getToken());
-                rareSignaturesFile = catalogFile.getUri().getPath();
-            }
-        } catch (CatalogException e) {
-            throw new ToolException(e);
-        }
-
         // Log messages
+        logger.info("Signagture id: {}", signatureParams.getId());
+        logger.info("Signagture description: {}", signatureParams.getDescription());
+        logger.info("Signagture sample: {}", signatureParams.getSample());
+        logger.info("Signagture query: {}", signatureParams.getQuery());
         logger.info("Signagture fit id: {}", signatureParams.getFitId());
         logger.info("Signagture fit method: {}", signatureParams.getFitMethod());
         logger.info("Signagture fit sig. version: {}", signatureParams.getFitSigVersion());
@@ -159,12 +203,13 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
             MutationalSignatureAnalysisExecutor toolExecutor = getToolExecutor(MutationalSignatureAnalysisExecutor.class);
 
             toolExecutor.setStudy(study)
-                    .setSample(sample)
+                    .setSample(signatureParams.getSample())
                     .setAssembly(assembly)
                     .setQueryId(signatureParams.getId())
                     .setQueryDescription(signatureParams.getDescription())
+                    .setSample(signatureParams.getSample())
                     .setQuery(query)
-                    .setCatalogues(catalogues)
+                    .setFitId(signatureParams.getFitId())
                     .setFitMethod(signatureParams.getFitMethod())
                     .setSigVersion(signatureParams.getFitSigVersion())
                     .setOrgan(signatureParams.getFitOrgan())
@@ -174,29 +219,8 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                     .setMaxRareSigs(signatureParams.getFitMaxRareSigs())
                     .setSignaturesFile(signaturesFile)
                     .setRareSignaturesFile(rareSignaturesFile)
+                    .setSkip(signatureParams.getSkip())
                     .execute();
-
-            // Update quality control for the catalog sample
-//            if (signatureParams.getQuery() != null && query.containsKey(QC_UPDATE_KEYNAME)) {
-//                // Remove quality control update key
-//                query.remove(QC_UPDATE_KEYNAME);
-//
-//                OpenCGAResult<Sample> sampleResult = getCatalogManager().getSampleManager().get(getStudy(), sample, QueryOptions.empty(),
-//                        getToken());
-//                Sample sample = sampleResult.first();
-//                if (sample != null) {
-//
-//                    Signature signature = parse(getOutDir());
-//                    SampleQualityControl qc = sampleResult.first().getQualityControl();
-//                    if (qc == null) {
-//                        qc = new SampleQualityControl();
-//                    }
-//                    qc.getVariant().getSignatures().add(signature);
-//
-//                    catalogManager.getSampleManager().update(getStudy(), sample.getId(), new SampleUpdateParams().setQualityControl(qc),
-//                            QueryOptions.empty(), getToken());
-//                }
-//            }
         });
     }
 

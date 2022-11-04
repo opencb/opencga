@@ -801,6 +801,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         ObjectMap params = new MutationalSignatureAnalysisParams(
                 cliOptions.id,
                 cliOptions.description,
+                cliOptions.sample,
                 cliOptions.query,
                 cliOptions.fitId,
                 cliOptions.fitMethod,
@@ -812,6 +813,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.fitMaxRareSigs,
                 cliOptions.fitSignaturesFile,
                 cliOptions.fitRareSignaturesFile,
+                cliOptions.skip,
                 cliOptions.outdir)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
@@ -938,7 +940,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.genomePlotDescr,
                 cliOptions.genomePlotConfigFile,
                 cliOptions.skip,
-                cliOptions.overwrite,
                 cliOptions.outdir)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 

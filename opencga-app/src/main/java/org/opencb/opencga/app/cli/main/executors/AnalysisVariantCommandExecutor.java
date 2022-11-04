@@ -1137,6 +1137,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
              putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
              putNestedIfNotEmpty(beanParams, "query",commandOptions.query, true);
              putNestedIfNotEmpty(beanParams, "fitId",commandOptions.fitId, true);
              putNestedIfNotEmpty(beanParams, "fitMethod",commandOptions.fitMethod, true);
@@ -1148,6 +1149,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotNull(beanParams, "fitMaxRareSigs",commandOptions.fitMaxRareSigs, true);
              putNestedIfNotEmpty(beanParams, "fitSignaturesFile",commandOptions.fitSignaturesFile, true);
              putNestedIfNotEmpty(beanParams, "fitRareSignaturesFile",commandOptions.fitRareSignaturesFile, true);
+             putNestedIfNotEmpty(beanParams, "skip",commandOptions.skip, true);
              putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
  
             mutationalSignatureAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
@@ -1517,7 +1519,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotEmpty(beanParams, "gpDescription",commandOptions.gpDescription, true);
              putNestedIfNotEmpty(beanParams, "gpConfigFile",commandOptions.gpConfigFile, true);
              putNestedIfNotEmpty(beanParams, "skip",commandOptions.skip, true);
-             putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
              putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
  
             sampleQcAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()

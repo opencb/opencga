@@ -20,7 +20,9 @@ import htsjdk.samtools.reference.BlockCompressedIndexedFastaSequenceFile;
 import htsjdk.samtools.reference.FastaSequenceIndex;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.GZIIndex;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
@@ -29,9 +31,12 @@ import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
@@ -65,7 +70,11 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
     public void run() throws ToolException, CatalogException, IOException, StorageEngineException {
         opencgaHome = Paths.get(getExecutorParams().getString("opencgaHome"));
 
-        if (StringUtils.isEmpty(getCatalogues())) {
+        // Check genome context file for that sample, and create it if necessary
+        // TODO: overwrite support !
+        File indexFile = checkGenomeContextFile();
+
+        if (StringUtils.isEmpty(getSkip()) || (!getSkip().contains(MutationalSignatureAnalysisParams.SIGNATURE_CATALOGUE_SKIP_VALUE))) {
             // Get first variant to check where the genome context is stored
             Query query = new Query();
             if (getQuery() != null) {
@@ -88,19 +97,16 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
             // Run mutational analysis taking into account that the genome context is stored in an index file,
             // if the genome context file does not exist, it will be created !!!
-            computeFromContextFile();
+            computeSignatureCatalogue(indexFile);
         }
 
-        // Run R script for fitting signature
-        executeRScript();
-//        if (StringUtils.isEmpty(getOrgan()) && (StringUtils.isEmpty(getSigVersion()) || getSigVersion().startsWith("Ref"))) {
-//            addWarning("Since the parameter 'organ' is missing and RefSig is been used, the fitting signature will not be computed.");
-//        } else {
-//            executeRScript();
-//        }
+        if (StringUtils.isEmpty(getSkip()) || (!getSkip().contains(MutationalSignatureAnalysisParams.SIGNATURE_FITTING_SKIP_VALUE))) {
+            // Run R script for fitting signature
+            computeSignatureFitting();
+        }
     }
 
-    private void computeFromContextFile() throws ToolExecutorException {
+    private File checkGenomeContextFile() throws ToolExecutorException {
         // Context index filename
         File indexFile = null;
         String indexFilename = getContextIndexFilename();
@@ -132,47 +138,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         if (!indexFile.exists()) {
             throw new ToolExecutorException("Could not create the genome context index file for sample " + getSample());
         }
-
-        try {
-            // Read context index
-            Map<String, String> indexMap = new HashMap<>();
-            BufferedReader br = new BufferedReader(new FileReader(indexFile));
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] parts = line.split("\t");
-                indexMap.put(parts[0], parts[1]);
-            }
-
-            // Get variant iterator
-            Query query = new Query();
-            if (getQuery() != null) {
-                query.putAll(getQuery());
-            }
-            // Ovewrite study and type (SNV)
-            query.append(VariantQueryParam.STUDY.key(), getStudy()).append(VariantQueryParam.TYPE.key(), VariantType.SNV);
-
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id");
-
-            VariantDBIterator iterator = getVariantStorageManager().iterator(query, queryOptions, getToken());
-
-            Map<String, Map<String, Integer>> countMap = initCountMap();
-
-            while (iterator.hasNext()) {
-                Variant variant = iterator.next();
-
-                // Update count map
-                updateCountMap(variant, indexMap.get(variant.toString()), countMap);
-            }
-
-            // Write context counts
-            File cataloguesFile = getOutDir().resolve(CATALOGUES_FILENAME_DEFAULT).toFile();
-            writeCountMap(getSample(), countMap, cataloguesFile);
-
-            // Update the parameter catalogues
-            setCatalogues(cataloguesFile.getAbsolutePath());
-        } catch (IOException | CatalogException | StorageEngineException | ToolException e) {
-            throw new ToolExecutorException(e);
-        }
+        return indexFile;
     }
 
     private void createGenomeContextFile(File indexFile) throws ToolExecutorException {
@@ -252,13 +218,88 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         }
     }
 
-    private void executeRScript() throws IOException {
-        String inputPath = getOutDir().toString();
-        if (new File(getCatalogues()).exists()) {
-            inputPath = new File(getCatalogues()).getParent();
+    public void computeSignatureCatalogue(File indexFile) throws ToolExecutorException {
+        try {
+            // Read context index
+            Map<String, String> indexMap = new HashMap<>();
+            BufferedReader br = new BufferedReader(new FileReader(indexFile));
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split("\t");
+                indexMap.put(parts[0], parts[1]);
+            }
+
+            // Get variant iterator
+            Query query = new Query();
+            if (getQuery() != null) {
+                query.putAll(getQuery());
+            }
+            // Ovewrite study and type (SNV)
+            query.append(VariantQueryParam.STUDY.key(), getStudy()).append(VariantQueryParam.TYPE.key(), VariantType.SNV);
+
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id");
+
+            VariantDBIterator iterator = getVariantStorageManager().iterator(query, queryOptions, getToken());
+
+            Map<String, Map<String, Integer>> countMap = initCountMap();
+
+            while (iterator.hasNext()) {
+                Variant variant = iterator.next();
+
+                // Update count map
+                updateCountMap(variant, indexMap.get(variant.toString()), countMap);
+            }
+
+            // Write context counts
+            File cataloguesFile = getOutDir().resolve(CATALOGUES_FILENAME_DEFAULT).toFile();
+            writeCountMap(getSample(), countMap, cataloguesFile);
+        } catch (IOException | CatalogException | StorageEngineException | ToolException e) {
+            throw new ToolExecutorException(e);
         }
+    }
+
+    private void computeSignatureFitting() throws IOException, ToolException, CatalogException {
+        File cataloguesFile = getOutDir().resolve(CATALOGUES_FILENAME_DEFAULT).toFile();
+        if (!cataloguesFile.exists()) {
+            // Get counts from sample
+            CatalogManager catalogManager = getVariantStorageManager().getCatalogManager();
+            // Check sample
+            String study = catalogManager.getStudyManager().get(getStudy(), QueryOptions.empty(), getToken()).first().getFqn();
+            OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(study, getSample(), QueryOptions.empty(),
+                    getToken());
+            if (sampleResult.getNumResults() != 1) {
+                throw new ToolException("Unable to compute mutational signature analysis. Sample '" + getSample() + "' not found");
+            }
+            Sample sample = sampleResult.first();
+            logger.info("Searching catalogue counts from quality control for sample " + getSample());
+            if (sample.getQualityControl() != null && sample.getQualityControl().getVariant() != null
+                    && CollectionUtils.isNotEmpty(sample.getQualityControl().getVariant().getSignatures())) {
+                logger.info("Searching in " + sample.getQualityControl().getVariant().getSignatures().size() + " signatues");
+                for (Signature signature : sample.getQualityControl().getVariant().getSignatures()) {
+                    logger.info("Matching ? " + getQueryId() + " vs " + signature.getId());
+                    if (getQueryId().equals(signature.getId())) {
+                        // Write catalogue file
+                        try (PrintWriter pw = new PrintWriter(cataloguesFile)) {
+                            pw.println(getSample());
+                            for (Signature.GenomeContextCount count : signature.getCounts()) {
+                                pw.println(count.getContext() + "\t" + count.getTotal());
+                            }
+                            pw.close();
+                        } catch (Exception e) {
+                            throw new ToolException("Error writing catalogue output file: " + cataloguesFile.getName(), e);
+                        }
+                        logger.info("Found catalogue {} and written in {}", signature.getId(), cataloguesFile.getAbsolutePath());
+                        break;
+                    }
+                }
+            }
+            if (!cataloguesFile.exists()) {
+                throw new ToolException("Could not find mutational signagure catalogue (counts) file: " + cataloguesFile.getName());
+            }
+        }
+
         List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
-        inputBindings.add(new AbstractMap.SimpleEntry<>(inputPath, "/data/input"));
+        inputBindings.add(new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(), "/data/input"));
         if (StringUtils.isNotEmpty(getSignaturesFile())) {
             File signaturesFile = new File(getSignaturesFile());
             if (signaturesFile.exists()) {
@@ -275,7 +316,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                 .toAbsolutePath().toString(), "/data/output");
         StringBuilder scriptParams = new StringBuilder("R CMD Rscript --vanilla ")
                 .append("/opt/opencga/signature.tools.lib/scripts/signatureFit")
-                .append(" --catalogues=/data/input/").append(new File(getCatalogues()).getName())
+                .append(" --catalogues=/data/input/").append(cataloguesFile.getName())
                 .append(" --outdir=/data/output");
         if (StringUtils.isNotEmpty(getFitMethod())) {
             scriptParams.append(" --fitmethod=").append(getFitMethod());

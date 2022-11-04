@@ -1408,6 +1408,9 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--description"}, description = "Signature description.", required = false, arity = 1)
         public String description;
     
+        @Parameter(names = {"--sample"}, description = "Sample.", required = false, arity = 1)
+        public String sample;
+    
         @Parameter(names = {"--query"}, description = "Signature query in JSON format, e.g: ''{\'sample\':\'NR123456_T\', \'fileData\': \'NR.123456_T_vs_NR.1234567_G.annot.vcf.gz:FILTER=PASS;CLPM<=0;ASMD>=140\'}'.", required = false, arity = 1)
         public String query;
     
@@ -1440,6 +1443,9 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--fit-rare-signatures-file"}, description = "The file name containing mutational signatures. Each signature is in a column, with signature names as column hearders and channel names as row names in the first column with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are considered rare signatures.", required = false, arity = 1)
         public String fitRareSignaturesFile;
+    
+        @Parameter(names = {"--skip"}, description = "To skip to compute catalogue counts or the signature fitting. Use  the following keywords: catalogue, fitting.", required = false, arity = 1)
+        public String skip;
     
         @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;
@@ -2029,7 +2035,7 @@ public class AnalysisVariantCommandOptions {
         public String msQuery;
     
         @Parameter(names = {"--ms-fit-id"}, description = "Either Fit or FitMS. If not specified then FitMS", required = false, arity = 1)
-        public String msFitId = "FitMS";
+        public String msFitId;
     
         @Parameter(names = {"--ms-fit-method"}, description = "Either Fit or FitMS. If not specified then FitMS", required = false, arity = 1)
         public String msFitMethod = "FitMS";
@@ -2069,9 +2075,6 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--skip"}, description = "Quality control metrics to skip. Valid values are: stats, signature, signature-catalogue, signature-fitting, genome-plot.", required = false, arity = 1)
         public String skip;
-    
-        @Parameter(names = {"--overwrite"}, description = "Overwrite sample quality control in OpenCGA catalog.", required = false, arity = 1)
-        public Boolean overwrite = true;
     
         @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;

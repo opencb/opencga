@@ -1319,6 +1319,10 @@ public class VariantCommandOptions {
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
 
+        @Parameter(names = {"--sample"}, description = "Sample ID.", required = true)
+        public String sample;
+
+        // Signature catalogue
         @Parameter(names = {"--id"}, description = FieldConstants.MUTATIONAL_SIGNATURE_ID_DESCRIPTION)
         public String id;
 
@@ -1359,6 +1363,10 @@ public class VariantCommandOptions {
         @Parameter(names = {"--fit-rare-signatures-file"},
                 description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_RARE_SIGNATURES_FILE_DESCRIPTION)
         public String fitRareSignaturesFile;
+
+        // Other
+        @Parameter(names = {"--skip"}, description = FieldConstants.SAMPLE_QUALITY_CONTROL_SKIP_DESCRIPTION)
+        public String skip;
 
         @Parameter(names = {"-o", "--outdir"}, description = FieldConstants.JOB_OUT_DIR_DESCRIPTION, arity = 1, required = false)
         public String outdir;
@@ -1637,9 +1645,6 @@ public class VariantCommandOptions {
         // Other
         @Parameter(names = {"--skip"}, description = FieldConstants.SAMPLE_QUALITY_CONTROL_SKIP_DESCRIPTION)
         public String skip;
-
-        @Parameter(names = {"--overwrite"}, description = FieldConstants.SAMPLE_QUALITY_CONTROL_OVERWRITE_DESCRIPTION)
-        public Boolean overwrite;
 
         @Parameter(names = {"-o", "--outdir"}, description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
         public String outdir;

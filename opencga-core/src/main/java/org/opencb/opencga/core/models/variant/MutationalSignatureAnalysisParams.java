@@ -21,7 +21,13 @@ import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class MutationalSignatureAnalysisParams extends ToolParams {
-    public static final String DESCRIPTION = "Mutational signature analysis params";
+
+    public static final String SIGNATURE_CATALOGUE_SKIP_VALUE = "catalogue";
+    public static final String SIGNATURE_FITTING_SKIP_VALUE = "fitting";
+
+    public static final String DESCRIPTION = "Mutational signature analysis parameters to index the genome context for that sample, and"
+            + " to compute both catalogue counts and signature fitting. In order to skip one of them, , use the following keywords: "
+            + ", " + SIGNATURE_CATALOGUE_SKIP_VALUE + ", " + SIGNATURE_FITTING_SKIP_VALUE + ".";
 
     // For counts (i.e., catalogue file)
     @DataField(id = "id", description = FieldConstants.MUTATIONAL_SIGNATURE_ID_DESCRIPTION)
@@ -29,6 +35,9 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
 
     @DataField(id = "description", description = FieldConstants.MUTATIONAL_SIGNATURE_DESCRIPTION_DESCRIPTION)
     private String description;
+
+    @DataField(id = "sample", description = FieldConstants.MUTATIONAL_SIGNATURE_SAMPLE_DESCRIPTION)
+    private String sample;
 
     @DataField(id = "query", description = FieldConstants.MUTATIONAL_SIGNATURE_QUERY_DESCRIPTION)
     private String query;
@@ -65,18 +74,23 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
     @DataField(id = "fitRareSignaturesFile", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_RARE_SIGNATURES_FILE_DESCRIPTION)
     private String fitRareSignaturesFile;
 
+    // Other
+    @DataField(id = "skip", description = FieldConstants.MUTATIONAL_SIGNATURE_SKIP_DESCRIPTION)
+    private String skip;
+
     @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
 
     public MutationalSignatureAnalysisParams() {
     }
 
-    public MutationalSignatureAnalysisParams(String id, String description, String query, String fitId, String fitMethod, Integer fitNBoot,
-                                             String fitSigVersion, String fitOrgan, Float fitThresholdPerc, Float fitThresholdPval,
-                                             Integer fitMaxRareSigs, String fitSignaturesFile, String fitRareSignaturesFile,
-                                             String outdir) {
+    public MutationalSignatureAnalysisParams(String id, String description, String sample, String query, String fitId, String fitMethod,
+                                             Integer fitNBoot, String fitSigVersion, String fitOrgan, Float fitThresholdPerc,
+                                             Float fitThresholdPval, Integer fitMaxRareSigs, String fitSignaturesFile,
+                                             String fitRareSignaturesFile, String skip, String outdir) {
         this.id = id;
         this.description = description;
+        this.sample = sample;
         this.query = query;
         this.fitId = fitId;
         this.fitMethod = fitMethod;
@@ -88,6 +102,7 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
         this.fitMaxRareSigs = fitMaxRareSigs;
         this.fitSignaturesFile = fitSignaturesFile;
         this.fitRareSignaturesFile = fitRareSignaturesFile;
+        this.skip = skip;
         this.outdir = outdir;
     }
 
@@ -96,6 +111,7 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
         final StringBuilder sb = new StringBuilder("MutationalSignatureAnalysisParams{");
         sb.append("id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", sample='").append(sample).append('\'');
         sb.append(", query='").append(query).append('\'');
         sb.append(", fitId='").append(fitId).append('\'');
         sb.append(", fitMethod='").append(fitMethod).append('\'');
@@ -107,6 +123,7 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
         sb.append(", fitMaxRareSigs=").append(fitMaxRareSigs);
         sb.append(", fitSignaturesFile='").append(fitSignaturesFile).append('\'');
         sb.append(", fitRareSignaturesFile='").append(fitRareSignaturesFile).append('\'');
+        sb.append(", skip='").append(skip).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -127,6 +144,15 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
 
     public MutationalSignatureAnalysisParams setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public String getSample() {
+        return sample;
+    }
+
+    public MutationalSignatureAnalysisParams setSample(String sample) {
+        this.sample = sample;
         return this;
     }
 
@@ -226,6 +252,15 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
 
     public MutationalSignatureAnalysisParams setFitRareSignaturesFile(String fitRareSignaturesFile) {
         this.fitRareSignaturesFile = fitRareSignaturesFile;
+        return this;
+    }
+
+    public String getSkip() {
+        return skip;
+    }
+
+    public MutationalSignatureAnalysisParams setSkip(String skip) {
+        this.skip = skip;
         return this;
     }
 
