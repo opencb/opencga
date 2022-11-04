@@ -57,14 +57,6 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
     public MutationalSignatureAnalysisExecutor() {
     }
 
-    protected String getContextIndexFilename() {
-        return "OPENCGA_" + sample + "_" + assembly + "_genome_context.csv";
-    }
-
-    protected String getMutationalSignatureFilename() {
-        return "result_" + sigVersion + "_" + assembly + ".txt";
-    }
-
     protected static Map<String, Map<String, Integer>> initCountMap() {
         Map<String, Map<String, Integer>> map = new LinkedHashMap<>();
         for (String firstKey : FIRST_LEVEL_KEYS) {

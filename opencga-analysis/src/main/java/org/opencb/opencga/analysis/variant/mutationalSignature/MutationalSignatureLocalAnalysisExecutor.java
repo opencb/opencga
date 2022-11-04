@@ -110,32 +110,19 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
     private File checkGenomeContextFile() throws ToolExecutorException {
         // Context index filename
-        File indexFile = null;
-        String indexFilename = getContextIndexFilename();
+        File indexFile;
         try {
-            Query fileQuery = new Query("name", indexFilename);
-            QueryOptions fileQueryOptions = new QueryOptions("include", "uri");
-            OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult = getVariantStorageManager()
-                    .getCatalogManager()
-                    .getFileManager().search(getStudy(), fileQuery, fileQueryOptions, getToken());
-
-            long maxSize = 0;
-            for (org.opencb.opencga.core.models.file.File file : fileResult.getResults()) {
-                File auxFile = new File(file.getUri().getPath());
-                if (auxFile.exists() && auxFile.length() > maxSize) {
-                    maxSize = auxFile.length();
-                    indexFile = auxFile;
-                }
-            }
-        } catch (CatalogException e) {
-            throw new ToolExecutorException(e);
+            indexFile = MutationalSignatureAnalysis.getGenomeContextFile(getSample(), getStudy(), getVariantStorageManager().getCatalogManager(), getToken());
+        } catch (CatalogException | ToolException e) {
+            indexFile = null;
+        }
+        if (indexFile != null && indexFile.exists()) {
+            return indexFile;
         }
 
-        if (indexFile == null) {
-            // The genome context file does not exist, we have to create it !!!
-            indexFile = getOutDir().resolve(indexFilename).toFile();
-            createGenomeContextFile(indexFile);
-        }
+        // The genome context file does not exist, we have to create it !!!
+        indexFile = getOutDir().resolve(MutationalSignatureAnalysis.getContextIndexFilename(getSample(), getAssembly())).toFile();
+        createGenomeContextFile(indexFile);
 
         if (!indexFile.exists()) {
             throw new ToolExecutorException("Could not create the genome context index file for sample " + getSample());

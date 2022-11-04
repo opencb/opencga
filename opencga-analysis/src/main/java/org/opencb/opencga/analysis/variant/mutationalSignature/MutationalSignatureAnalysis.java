@@ -23,13 +23,16 @@ import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.clinical.qc.SignatureFitting;
 import org.opencb.biodata.models.clinical.qc.SignatureFittingScore;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleQualityControl;
@@ -48,6 +51,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 
 @Tool(id = MutationalSignatureAnalysis.ID, resource = Enums.Resource.VARIANT)
 public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
@@ -164,21 +169,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Get assembly
-        assembly = ResourceUtils.getAssembly(catalogManager, study, token);
-        if (StringUtils.isEmpty(assembly)) {
-            throw new ToolException("Missing assembly for study '" + study + "'");
-        }
-        // TODO: improve this
-        switch (assembly.toUpperCase()) {
-            case "GRCH37":
-                assembly = "GRCh37";
-                break;
-            case "GRCH38":
-                assembly = "GRCh38";
-                break;
-            default:
-                break;
-        }
+        assembly = getAssembly(study, catalogManager, token);
 
         // Log messages
         logger.info("Signagture id: {}", signatureParams.getId());
@@ -222,6 +213,55 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                     .setSkip(signatureParams.getSkip())
                     .execute();
         });
+    }
+
+    public static String getContextIndexFilename(String sample, String assembly) {
+        return "OPENCGA_" + sample + "_" + assembly + "_genome_context.csv";
+    }
+
+    public static String getAssembly(String study, CatalogManager catalogManager, String token) throws CatalogException, ToolException {
+        String assembly = ResourceUtils.getAssembly(catalogManager, study, token);
+        if (StringUtils.isEmpty(assembly)) {
+            throw new ToolException("Missing assembly for study '" + study + "'");
+        }
+        // TODO: improve this
+        switch (assembly.toUpperCase()) {
+            case "GRCH37":
+                assembly = "GRCh37";
+                break;
+            case "GRCH38":
+                assembly = "GRCh38";
+                break;
+            default:
+                break;
+        }
+        return assembly;
+    }
+
+    public static File getGenomeContextFile(String sample, String study, CatalogManager catalogManager, String token)
+            throws CatalogException, ToolException {
+        File indexFile = null;
+        String assembly = MutationalSignatureAnalysis.getAssembly(study, catalogManager, token);
+        String indexFilename = getContextIndexFilename(sample, assembly);
+        try {
+            Query fileQuery = new Query("name", indexFilename);
+            QueryOptions fileQueryOptions = new QueryOptions("include", "uri");
+            OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult = catalogManager.getFileManager().search(study, fileQuery,
+                    fileQueryOptions, token);
+
+            long maxSize = 0;
+            for (org.opencb.opencga.core.models.file.File file : fileResult.getResults()) {
+                File auxFile = new File(file.getUri().getPath());
+                if (auxFile.exists() && auxFile.length() > maxSize) {
+                    maxSize = auxFile.length();
+                    indexFile = auxFile;
+                }
+            }
+        } catch (CatalogException e) {
+            throw new ToolExecutorException(e);
+        }
+
+        return indexFile;
     }
 
     public static List<Signature.GenomeContextCount> parseCatalogueResults(Path dir) throws IOException {

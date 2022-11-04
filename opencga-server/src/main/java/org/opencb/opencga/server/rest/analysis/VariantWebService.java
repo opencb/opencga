@@ -61,6 +61,7 @@ import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.FieldConstants;
@@ -100,6 +101,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.SAVED_FILTER_DESCR;
+import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.geneRegionIntersect;
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -967,13 +969,23 @@ public class VariantWebService extends AnalysisWebService {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
 
+            if (!query.containsKey(STUDY.key())) {
+                return createErrorResponse(new Exception("Missing study name"));
+            }
+
             if (!query.containsKey(SAMPLE.key())) {
                 return createErrorResponse(new Exception("Missing sample name"));
             }
 
-            if (!query.containsKey(STUDY.key())) {
-                return createErrorResponse(new Exception("Missing study name"));
+            // Check for genome context index
+            File genomeContextFile = MutationalSignatureAnalysis.getGenomeContextFile(query.getString(SAMPLE.key()),
+                    query.getString(STUDY.key()), catalogManager, token);
+            if (genomeContextFile == null || !genomeContextFile.exists()) {
+                return createErrorResponse(new Exception("Build the genome context file for sample " + query.getString(SAMPLE.key())
+                        + " before running mutational signature queries. To create the genome context file you can use the command"
+                        + " mutational-signature-run."));
             }
+
 
             // Create temporal directory
             outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "mutational-signature-" + TimeUtils.getTimeMillis()).toFile();
@@ -1014,7 +1026,7 @@ public class VariantWebService extends AnalysisWebService {
             OpenCGAResult<Signature> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
                     Collections.singletonList(signature), 1);
             return createOkResponse(result);
-        } catch (ToolException | IOException e) {
+        } catch (ToolException | IOException | CatalogException e) {
             return createErrorResponse(e);
         } finally {
             if (outDir != null) {
