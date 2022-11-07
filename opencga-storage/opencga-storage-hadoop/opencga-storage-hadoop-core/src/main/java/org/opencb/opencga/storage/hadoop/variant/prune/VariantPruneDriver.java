@@ -222,8 +222,28 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
                     })
                     .walk();
 
+            for (Integer studyWithStats : studiesWithStats) {
+                if (!studies.contains(studyWithStats)) {
+                    // It might happen that a variant has stats information without study columns,
+                    // as the stats columns are not deleted while removing the study.
+
+                    // So, if the studyWithStats is not in the list of studies,
+                    //  - add it to the list of studies
+                    //  - and mark as "empty study" (if needed)
+                    studies.add(studyWithStats);
+
+                    if (!emptyStudies.contains(studyWithStats)) {
+                        emptyStudies.add(studyWithStats);
+                    }
+                    context.getCounter(COUNTER_GROUP_NAME, "orphan_stats").increment(1);
+                }
+            }
+
             if (studies.size() != studiesWithStats.size() || !studies.containsAll(studiesWithStats)) {
-                throw new IllegalStateException("Variant stats for cohort " + DEFAULT_COHORT + " not found in variant " + variant);
+                List<Integer> studiesWithoutStats = new LinkedList<>(studies);
+                studiesWithoutStats.removeAll(studiesWithStats);
+                throw new IllegalStateException("Variant stats for cohort " + DEFAULT_COHORT
+                        + " not found in variant " + variant + " for studies " + studiesWithoutStats);
             }
 
             context.getCounter(COUNTER_GROUP_NAME, "variants").increment(1);
@@ -242,7 +262,9 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
                 delete.addFamily(COLUMN_FAMILY_BYTES);
                 delete.setAttribute(ATTRIBUTE_DELETION_TYPE, ATTRIBUTE_DELETION_TYPE_FULL);
                 delete.setAttribute(ATTRIBUTE_DELETION_STUDIES,
-                        Bytes.toBytes(emptyStudies.stream().map(Object::toString).collect(Collectors.joining(","))));
+                        Bytes.toBytes(emptyStudies.stream()
+                                .map(Object::toString)
+                                .collect(Collectors.joining(","))));
                 context.write(variantsTable, delete);
             } else if (emptyStudies.isEmpty()) {
                 // skipVariant

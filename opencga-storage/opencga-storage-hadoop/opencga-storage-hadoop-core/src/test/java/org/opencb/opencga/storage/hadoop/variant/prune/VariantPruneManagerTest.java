@@ -194,6 +194,22 @@ public class VariantPruneManagerTest extends VariantStorageBaseTest implements H
         variantPrune("5_prune_dry", true, 0);
     }
 
+    @Test
+    public void testVariantPruneRemoveStudy() throws Exception {
+        load();
+
+        variantPrune("1_prune_dry", true, 0);
+
+//        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("pre-remove"));
+        engine.removeStudy(STUDY_NAME_3, outputUri);
+//        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("post-remove"));
+
+        int variantsToPrune = variantPrune("2_prune_dry", true);
+        variantPrune("3_prune_wet", false, variantsToPrune);
+//        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("post-prune"));
+        variantPrune("4_prune_dry", true, 0);
+    }
+
     private int variantPrune(String testName, boolean dryMode) throws Exception {
         return variantPrune(testName, dryMode, null);
     }
