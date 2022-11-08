@@ -304,6 +304,11 @@ public class VariantPruneManager {
             // FIXME: What if not invalid?
             //   Might happen if some samples were deleted, or when loading split files?
         }
+
+        // Discard studies without loaded files.
+        // These can't have the stats computed.
+        studiesWithoutStats.removeIf(study -> mm.getIndexedFiles(mm.getStudyId(study)).isEmpty());
+
         if (!studiesWithoutStats.isEmpty()) {
             throw new StorageEngineException("Unable to run variant prune operation. "
                     + "Please, run variant stats index on cohort '" + StudyEntry.DEFAULT_COHORT + "' for studies " + studiesWithoutStats);
