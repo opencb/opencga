@@ -23,8 +23,10 @@ import htsjdk.samtools.util.GZIIndex;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.Signature;
+import org.opencb.biodata.models.clinical.qc.SignatureFitting;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
@@ -33,6 +35,7 @@ import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -52,7 +55,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis.CATALOGUES_FILENAME_DEFAULT;
+import static org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis.*;
 
 @ToolExecutor(id="opencga-local", tool = MutationalSignatureAnalysis.ID,
         framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.STORAGE)
@@ -242,6 +245,22 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             // Write context counts
             File cataloguesFile = getOutDir().resolve(CATALOGUES_FILENAME_DEFAULT).toFile();
             writeCountMap(getSample(), countMap, cataloguesFile);
+
+            // Check catalogue file before parsing and creating the mutational signature data model
+            if (!cataloguesFile.exists()) {
+                throw new ToolExecutorException("Something wrong happened: counts file " + CATALOGUES_FILENAME_DEFAULT + " could not be"
+                        + " generated");
+            }
+            List<Signature.GenomeContextCount> genomeContextCounts = parseCatalogueResults(getOutDir());
+            Signature signature = new Signature()
+                    .setId(getQueryId())
+                    .setDescription(getQueryDescription())
+                    .setQuery(query)
+                    .setType("SNV")
+                    .setCounts(genomeContextCounts);
+
+            JacksonUtils.getDefaultObjectMapper().writerFor(Signature.class).writeValue(getOutDir()
+                    .resolve(MutationalSignatureAnalysis.MUTATIONAL_SIGNATURE_DATA_MODEL_FILENAME).toFile(), signature);
         } catch (IOException | CatalogException | StorageEngineException | ToolException e) {
             throw new ToolExecutorException(e);
         }
@@ -348,5 +367,16 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams.toString(),
                 null);
         logger.info("Docker command line: " + cmdline);
+
+        // Check fitting file before parsing and creating the mutational signature fitting data model
+        File signatureCoeffsFile = getOutDir().resolve(SIGNATURE_COEFFS_FILENAME).toFile();
+        if (!signatureCoeffsFile.exists()) {
+            throw new ToolExecutorException("Something wrong happened: signature coeffs. file " + SIGNATURE_COEFFS_FILENAME + " could not"
+                    + " be generated");
+        }
+        SignatureFitting signatureFitting = parseFittingResults(getOutDir(), getFitId(), getFitMethod(), getSigVersion(), getnBoot(),
+                getOrgan(), getThresholdPerc(), getThresholdPval(), getMaxRareSigs());
+        JacksonUtils.getDefaultObjectMapper().writerFor(SignatureFitting.class).writeValue(getOutDir()
+                .resolve(MutationalSignatureAnalysis.MUTATIONAL_SIGNATURE_FITTING_DATA_MODEL_FILENAME).toFile(), signatureFitting);
     }
 }

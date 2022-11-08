@@ -63,6 +63,9 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
     public final static String SIGNATURE_COEFFS_FILENAME = "exposures.tsv";
     public final static String CATALOGUES_FILENAME_DEFAULT = "catalogues.tsv";
 
+    public final static String MUTATIONAL_SIGNATURE_DATA_MODEL_FILENAME = "mutational_signature.json";
+    public final static String MUTATIONAL_SIGNATURE_FITTING_DATA_MODEL_FILENAME = "mutational_signature_fitting.json";
+
     @ToolParams
     private MutationalSignatureAnalysisParams signatureParams = new MutationalSignatureAnalysisParams();
 
@@ -325,7 +328,10 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
         // Set files
         List<String> files = new ArrayList<>();
         for (File file : outDir.toFile().listFiles()) {
-            if (file.getName().endsWith("pdf")) {
+            if (file.getName().equals("catalogues.pdf")) {
+                continue;
+            }
+            if (file.getName().endsWith("pdf") || file.getName().equals("fitData.rData")) {
                 files.add(file.getName());
             } else if (file.isDirectory()) {
                 for (File file2 : file.listFiles()) {

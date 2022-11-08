@@ -2076,7 +2076,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--gp-config-file"}, description = "Genome plot configuration file.", required = false, arity = 1)
         public String gpConfigFile;
     
-        @Parameter(names = {"--skip"}, description = "Quality control metrics to skip. Valid values are: stats, signature, signature-catalogue, signature-fitting, genome-plot.", required = false, arity = 1)
+        @Parameter(names = {"--skip"}, description = "Quality control metrics to skip. Valid values are:variant-stats, signature, signature-catalogue, signature-fitting, genome-plot", required = false, arity = 1)
         public String skip;
     
         @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)

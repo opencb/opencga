@@ -3,6 +3,7 @@ package org.opencb.opencga.core.api;
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
+import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -76,8 +77,10 @@ public class FieldConstants {
     public static final String SAMPLE_QUALITY_CONTROL_FILES_DESCRIPTION = "Files used for the quality control of the sample.";
     public static final String SAMPLE_QUALITY_CONTROL_COMMENTS_DESCRIPTION = "Comments for the quality control of the sample.";
     public static final String SAMPLE_QUALITY_CONTROL_VARIANT_DESCRIPTION = "Describes variant quality control.";
-    public static final String SAMPLE_QUALITY_CONTROL_SKIP_DESCRIPTION = "Quality control metrics to skip. Valid values are: stats,"
-            + " signature, signature-catalogue, signature-fitting, genome-plot.";
+    public static final String SAMPLE_QUALITY_CONTROL_SKIP_DESCRIPTION = "Quality control metrics to skip. Valid values are: "
+            + SampleQcAnalysisParams.VARIANT_STATS_SKIP_VALUE + ", " + SampleQcAnalysisParams.SIGNATURE_SKIP_VALUE + ", "
+            + SampleQcAnalysisParams.SIGNATURE_CATALOGUE_SKIP_VALUE + ", " + SampleQcAnalysisParams.SIGNATURE_FITTING_SKIP_VALUE + ", "
+            + SampleQcAnalysisParams.GENOME_PLOT_SKIP_VALUE;
     public static final String SAMPLE_QUALITY_CONTROL_OVERWRITE_DESCRIPTION = "Overwrite sample quality control in OpenCGA catalog.";
 
     //SampleVariantQualityControlMetrics

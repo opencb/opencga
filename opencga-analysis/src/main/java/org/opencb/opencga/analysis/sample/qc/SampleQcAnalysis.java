@@ -63,6 +63,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
+import static org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis.*;
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_SAMPLES;
 
 @Tool(id = SampleQcAnalysis.ID, resource = Enums.Resource.SAMPLE, description = SampleQcAnalysis.DESCRIPTION)
@@ -326,28 +327,26 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
                         Path outPath = Paths.get(job.getOutDir().getUri().getPath());
                         if (runSignatureCatalogue) {
                             // Parse mutational signature catalogue results
-                            List<Signature.GenomeContextCount> counts = MutationalSignatureAnalysis.parseCatalogueResults(outPath);
-
-                            // Prepare signature query in order to build the signatue object
-                            ObjectMap signatureQuery = JacksonUtils.getDefaultObjectMapper().readValue(analysisParams.getMsQuery(),
-                                    ObjectMap.class);
-
-                            signature = new Signature()
-                                    .setId(analysisParams.getMsId())
-                                    .setDescription(analysisParams.getMsDescription())
-                                    .setQuery(signatureQuery)
-                                    .setType("SNV")
-                                    .setCounts(counts);
-
-                            logger.info("Parsed results from mutational signagure analysis (catalogue)");
+                            java.io.File outFile = outPath.resolve(MUTATIONAL_SIGNATURE_DATA_MODEL_FILENAME).toFile();
+                            if (outFile.exists()) {
+                                signature = JacksonUtils.getDefaultObjectMapper().readerFor(Signature.class).readValue(outFile);
+                                logger.info("Parsed results from mutational signagure analysis (catalogue)");
+                            } else {
+                                logger.warn("The mutational signagure analysis (catalogue) output file {} does not exist",
+                                        MUTATIONAL_SIGNATURE_DATA_MODEL_FILENAME);
+                            }
                         }
                         if (runSignatureFitting) {
                             // Parse mutational signature fitting results
-                            signatureFitting = MutationalSignatureAnalysis.parseFittingResults(outPath, analysisParams.getMsFitId(),
-                                    analysisParams.getMsFitMethod(), analysisParams.getMsFitSigVersion(), analysisParams.getMsFitNBoot(),
-                                    analysisParams.getMsFitOrgan(), analysisParams.getMsFitThresholdPerc(),
-                                    analysisParams.getMsFitThresholdPval(), analysisParams.getMsFitMaxRareSigs());
-                            logger.info("Parsed results from mutational signagure analysis (fitting)");
+                            java.io.File outFile = outPath.resolve(MUTATIONAL_SIGNATURE_FITTING_DATA_MODEL_FILENAME).toFile();
+                            if (outFile.exists()) {
+                                signatureFitting = JacksonUtils.getDefaultObjectMapper().readerFor(SignatureFitting.class)
+                                        .readValue(outFile);
+                                logger.info("Parsed results from mutational signagure analysis (fitting)");
+                            } else {
+                                logger.warn("The mutational signagure analysis (fitting) output file {} does not exist",
+                                        MUTATIONAL_SIGNATURE_FITTING_DATA_MODEL_FILENAME);
+                            }
                         }
                     }
                 } catch (Exception e) {
