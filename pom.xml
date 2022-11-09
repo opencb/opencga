@@ -47,7 +47,7 @@
         <opencgar.version>2.4.10</opencgar.version>
         <cellbase.version>5.2.0</cellbase.version>
         <biodata.version>2.4.8</biodata.version>
-        <java-common-libs.version>4.4.2</java-common-libs.version>
+        <java-common-libs.version>4.4.3-SNAPSHOT</java-common-libs.version>
         <iva.version>2.4.10</iva.version>
         <oskar.version>0.2.0</oskar.version>
 
