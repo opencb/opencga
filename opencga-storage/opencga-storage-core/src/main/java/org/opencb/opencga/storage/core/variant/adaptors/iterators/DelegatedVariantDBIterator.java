@@ -49,6 +49,7 @@ public class DelegatedVariantDBIterator extends VariantDBIterator {
 
     @Override
     public void close() throws Exception {
+        super.close();
         delegated.close();
     }
 

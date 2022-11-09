@@ -20,6 +20,7 @@ import com.google.common.collect.Iterators;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -197,6 +198,25 @@ public abstract class VariantDBIterator extends CloseableIterator<Variant> {
 
     public VariantDBIterator localLimit(int limit) {
         return new LimitVariantDBIterator(this, limit);
+    }
+
+    @Override
+    public VariantDBIterator localLimitSkip(QueryOptions options) {
+        return localLimitSkip(options.getInt(QueryOptions.LIMIT, -1), options.getInt(QueryOptions.SKIP, -1));
+    }
+
+    @Override
+    public VariantDBIterator localLimitSkip(int limit, int skip) {
+        VariantDBIterator iterator = this;
+        // Client site limit-skip
+        if (skip > 0) {
+            iterator = iterator.localSkip(skip);
+        }
+        if (limit >= 0) {
+            return iterator.localLimit(limit);
+        } else {
+            return iterator;
+        }
     }
 
     public static VariantDBIterator emptyIterator() {
