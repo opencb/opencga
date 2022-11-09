@@ -481,8 +481,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "bamFile",commandOptions.bamFile, true);
-             putNestedIfNotEmpty(beanParams, "bedFile",commandOptions.bedFile, true);
-             putNestedIfNotEmpty(beanParams, "dictFile",commandOptions.dictFile, true);
              putNestedIfNotEmpty(beanParams, "skip",commandOptions.skip, true);
              putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
              putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
