@@ -12,6 +12,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.models.operations.variant.JulieParams;
+import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.core.tools.variant.JulieToolExecutor;
 
 import java.util.HashMap;
@@ -29,7 +30,8 @@ public class JulieTool extends OpenCgaTool {
     public static final String ID = "julie";
     public static final String DESCRIPTION = "Transform VariantStats into PopulationFrequency values and updates the VariantAnnotation.";
 
-    private JulieParams params = new JulieParams();
+    @ToolParams
+    protected JulieParams params = new JulieParams();
     private Map<String, List<String>> cohorts;
 
     @Override
@@ -46,8 +48,6 @@ public class JulieTool extends OpenCgaTool {
             }
         }
         setUpStorageEngineExecutorByProjectId(project);
-
-        params.updateParams(getParams());
 
         cohorts = new HashMap<>();
         if (CollectionUtils.isNotEmpty(params.getCohorts())) {

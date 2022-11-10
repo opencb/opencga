@@ -101,6 +101,7 @@ public class JulieToolMapper extends VariantRowMapper<ImmutableBytesWritable, Pu
             annotation.setPopulationFrequencies(populationFrequencies);
         } else {
             if (populationFrequencies.isEmpty()) {
+                context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "skip_variant").increment(1);
                 // Nothing to do, nothing to add
                 return;
             }
