@@ -44,7 +44,7 @@ public class SignatureFittingsMigration extends MigrationTool {
                             if (signature != null) {
                                 Document fitting = signature.get("fitting", Document.class);
                                 if (fitting != null) {
-                                    fitting.put("id", "");
+                                    fitting.put("id", "fitting-1");
                                     signature.put("fittings", Collections.singletonList(fitting));
                                     signature.remove("fitting");
                                 }
