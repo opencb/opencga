@@ -432,7 +432,6 @@
                  RequestEntityProcessing.CHUNKED);
          final FileDataBodyPart filePart = new FileDataBodyPart("file", new File(filePath));
          FormDataMultiPart formDataMultiPart = new FormDataMultiPart();
-
          // Add the rest of the parameters to the form
          for (Map.Entry<String, Object> stringObjectEntry : params.entrySet()) {
              formDataMultiPart.field(stringObjectEntry.getKey(), stringObjectEntry.getValue().toString());
