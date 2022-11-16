@@ -87,7 +87,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
     public void testDistinctDisorders() throws CatalogException {
         Individual individual = new Individual()
                 .setId("i1")
-                .setDisorders(Collections.singletonList(new Disorder().setId("disorder1")));
+                .setDisorders(Collections.singletonList(new Disorder().setId("disorder1").setName(null)));
         catalogManager.getIndividualManager().create(studyFqn, individual, null, token);
 
         individual = new Individual()
@@ -112,6 +112,12 @@ public class IndividualManagerTest extends AbstractManagerTest {
         result = catalogManager.getIndividualManager().distinct(studyFqn, IndividualDBAdaptor.QueryParams.DISORDERS_ID.key(),
                 new Query(IndividualDBAdaptor.QueryParams.DISORDERS.key(), "~^disor"), token);
         assertEquals(2, result.getNumResults());
+
+        result = catalogManager.getIndividualManager().distinct(studyFqn,
+                Arrays.asList(IndividualDBAdaptor.QueryParams.DISORDERS_ID.key(), IndividualDBAdaptor.QueryParams.DISORDERS_NAME.key()),
+                new Query(), token);
+        assertEquals(4, result.getNumResults());
+        assertFalse(result.getResults().contains(null));
     }
 
     @Test
