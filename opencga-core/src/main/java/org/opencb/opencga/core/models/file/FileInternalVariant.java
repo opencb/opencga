@@ -6,21 +6,23 @@ public class FileInternalVariant {
 
     private FileInternalVariantIndex index;
     private FileInternalVariantAnnotationIndex annotationIndex;
-    private FileInternalVariantSecondaryIndex secondaryIndex;
+    @Deprecated
+    private FileInternalVariantSecondaryAnnotationIndex secondaryIndex;
+    private FileInternalVariantSecondaryAnnotationIndex secondaryAnnotationIndex;
 
     public FileInternalVariant() {
     }
 
     public FileInternalVariant(FileInternalVariantIndex index, FileInternalVariantAnnotationIndex annotationIndex,
-                               FileInternalVariantSecondaryIndex secondaryIndex) {
+                               FileInternalVariantSecondaryAnnotationIndex secondaryAnnotationIndex) {
         this.index = index;
         this.annotationIndex = annotationIndex;
-        this.secondaryIndex = secondaryIndex;
+        this.secondaryAnnotationIndex = secondaryAnnotationIndex;
     }
 
     public static FileInternalVariant init() {
         return new FileInternalVariant(FileInternalVariantIndex.init(), FileInternalVariantAnnotationIndex.init(),
-                FileInternalVariantSecondaryIndex.init());
+                FileInternalVariantSecondaryAnnotationIndex.init());
     }
 
     @Override
@@ -28,7 +30,7 @@ public class FileInternalVariant {
         final StringBuilder sb = new StringBuilder("FileInternalVariant{");
         sb.append("index=").append(index);
         sb.append(", annotationIndex=").append(annotationIndex);
-        sb.append(", secondaryIndex=").append(secondaryIndex);
+        sb.append(", secondaryIndex=").append(secondaryAnnotationIndex);
         sb.append('}');
         return sb.toString();
     }
@@ -51,12 +53,27 @@ public class FileInternalVariant {
         return this;
     }
 
-    public FileInternalVariantSecondaryIndex getSecondaryIndex() {
+    @Deprecated
+    public FileInternalVariantSecondaryAnnotationIndex getSecondaryIndex() {
         return secondaryIndex;
     }
 
-    public FileInternalVariant setSecondaryIndex(FileInternalVariantSecondaryIndex secondaryIndex) {
-        this.secondaryIndex = secondaryIndex;
+    @Deprecated
+    public FileInternalVariant setSecondaryIndex(FileInternalVariantSecondaryAnnotationIndex secondaryAnnotationIndex) {
+        this.secondaryIndex = secondaryAnnotationIndex;
+        return this;
+    }
+
+    public FileInternalVariantSecondaryAnnotationIndex getSecondaryAnnotationIndex() {
+        if (secondaryAnnotationIndex == null && secondaryIndex != null) {
+            return secondaryIndex;
+        } else {
+            return secondaryAnnotationIndex;
+        }
+    }
+
+    public FileInternalVariant setSecondaryAnnotationIndex(FileInternalVariantSecondaryAnnotationIndex secondaryAnnotationIndex) {
+        this.secondaryAnnotationIndex = secondaryAnnotationIndex;
         return this;
     }
 
@@ -67,11 +84,11 @@ public class FileInternalVariant {
         FileInternalVariant that = (FileInternalVariant) o;
         return Objects.equals(index, that.index) &&
                 Objects.equals(annotationIndex, that.annotationIndex) &&
-                Objects.equals(secondaryIndex, that.secondaryIndex);
+                Objects.equals(secondaryAnnotationIndex, that.secondaryAnnotationIndex);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(index, annotationIndex, secondaryIndex);
+        return Objects.hash(index, annotationIndex, secondaryAnnotationIndex);
     }
 }

@@ -915,9 +915,13 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(3, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
         assertEquals(3, clinicalResult.getFamily().getMembers().get(1).getSamples().get(0).getVersion());   // father sample3 version
 
-        catalogManager.getSampleManager().updateSampleInternalGenotypeIndex(
+        catalogManager.getSampleManager().updateSampleInternalVariantSecondarySampleIndex(
                 catalogManager.getSampleManager().get(studyFqn, "sample3", null, token).first(),
-                new SampleInternalVariantGenotypeIndex(new IndexStatus(IndexStatus.READY, "This should be doable!")), token);
+                new SampleInternalVariantSecondarySampleIndex(
+                        new IndexStatus(IndexStatus.READY, "This should be doable!"),
+                        new IndexStatus(IndexStatus.READY, "This should be doable!"),
+                        12
+                ), token);
 
         // Update sample 2 from proband
         catalogManager.getSampleManager().update(studyFqn, "sample2", new SampleUpdateParams().setDescription("asda"),

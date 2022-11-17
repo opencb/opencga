@@ -1,27 +1,18 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.common.JacksonUtils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.List;
-import java.util.HashMap;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.OperationsVariantStorageCommandOptions;
 
-import java.lang.Object;
-import org.opencb.biodata.models.variant.metadata.Aggregation;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.job.Job;
@@ -31,9 +22,9 @@ import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationSaveParams;
 import org.opencb.opencga.core.models.operations.variant.VariantFamilyIndexParams;
-import org.opencb.opencga.core.models.operations.variant.VariantSampleIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantSecondarySampleIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantScoreIndexParams;
-import org.opencb.opencga.core.models.operations.variant.VariantSecondaryIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantSecondaryAnnotationIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsDeleteParams;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantStorageMetadataRepairToolParams;
@@ -834,16 +825,16 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantSampleIndexParams variantSampleIndexParams= null;
+        VariantSecondarySampleIndexParams variantSampleIndexParams= null;
         if (commandOptions.jsonDataModel) {
-            variantSampleIndexParams = new VariantSampleIndexParams();
+            variantSampleIndexParams = new VariantSecondarySampleIndexParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(variantSampleIndexParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variantSampleIndexParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), VariantSampleIndexParams.class);
+                    .readValue(new java.io.File(commandOptions.jsonFile), VariantSecondarySampleIndexParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
@@ -854,7 +845,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
  
             variantSampleIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), VariantSampleIndexParams.class);
+                    .readValue(beanParams.toJson(), VariantSecondarySampleIndexParams.class);
         }
         return openCGAClient.getVariantOperationClient().indexVariantSample(variantSampleIndexParams, queryParams);
     }
@@ -970,27 +961,27 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantSecondaryIndexParams variantSecondaryIndexParams= null;
+        VariantSecondaryAnnotationIndexParams variantSecondaryAnnotationIndexParams = null;
         if (commandOptions.jsonDataModel) {
-            variantSecondaryIndexParams = new VariantSecondaryIndexParams();
+            variantSecondaryAnnotationIndexParams = new VariantSecondaryAnnotationIndexParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variantSecondaryIndexParams));
+            PrintUtils.println(getObjectAsJSON(variantSecondaryAnnotationIndexParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            variantSecondaryIndexParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), VariantSecondaryIndexParams.class);
+            variantSecondaryAnnotationIndexParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), VariantSecondaryAnnotationIndexParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
              putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
              putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
  
-            variantSecondaryIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
+            variantSecondaryAnnotationIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), VariantSecondaryIndexParams.class);
+                    .readValue(beanParams.toJson(), VariantSecondaryAnnotationIndexParams.class);
         }
-        return openCGAClient.getVariantOperationClient().variantSecondaryAnnotationIndex(variantSecondaryIndexParams, queryParams);
+        return openCGAClient.getVariantOperationClient().variantSecondaryAnnotationIndex(variantSecondaryAnnotationIndexParams, queryParams);
     }
 
     private RestResponse<Job> variantSecondarySampleIndex() throws Exception {
@@ -1010,16 +1001,16 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantSampleIndexParams variantSampleIndexParams= null;
+        VariantSecondarySampleIndexParams variantSampleIndexParams= null;
         if (commandOptions.jsonDataModel) {
-            variantSampleIndexParams = new VariantSampleIndexParams();
+            variantSampleIndexParams = new VariantSecondarySampleIndexParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(variantSampleIndexParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variantSampleIndexParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), VariantSampleIndexParams.class);
+                    .readValue(new java.io.File(commandOptions.jsonFile), VariantSecondarySampleIndexParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
@@ -1030,7 +1021,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
  
             variantSampleIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), VariantSampleIndexParams.class);
+                    .readValue(beanParams.toJson(), VariantSecondarySampleIndexParams.class);
         }
         return openCGAClient.getVariantOperationClient().variantSecondarySampleIndex(variantSampleIndexParams, queryParams);
     }
@@ -1081,27 +1072,27 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantSecondaryIndexParams variantSecondaryIndexParams= null;
+        VariantSecondaryAnnotationIndexParams variantSecondaryAnnotationIndexParams = null;
         if (commandOptions.jsonDataModel) {
-            variantSecondaryIndexParams = new VariantSecondaryIndexParams();
+            variantSecondaryAnnotationIndexParams = new VariantSecondaryAnnotationIndexParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variantSecondaryIndexParams));
+            PrintUtils.println(getObjectAsJSON(variantSecondaryAnnotationIndexParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            variantSecondaryIndexParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), VariantSecondaryIndexParams.class);
+            variantSecondaryAnnotationIndexParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), VariantSecondaryAnnotationIndexParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
              putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
              putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
  
-            variantSecondaryIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
+            variantSecondaryAnnotationIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), VariantSecondaryIndexParams.class);
+                    .readValue(beanParams.toJson(), VariantSecondaryAnnotationIndexParams.class);
         }
-        return openCGAClient.getVariantOperationClient().secondaryIndexVariant(variantSecondaryIndexParams, queryParams);
+        return openCGAClient.getVariantOperationClient().secondaryIndexVariant(variantSecondaryAnnotationIndexParams, queryParams);
     }
 
     private RestResponse<Job> deleteVariantSecondaryIndex() throws Exception {

@@ -32,6 +32,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
@@ -181,6 +182,55 @@ public class CatalogStorageMetadataSynchronizer {
         }
 
         return synchronizeFiles(study, files, sessionId);
+    }
+
+    /**
+     * Updates catalog metadata from storage metadata.
+     *
+     * @param studyFqn  Study FQN
+     * @param samples   Samples to update
+     * @param sessionId User session id
+     * @return if there were modifications in catalog
+     * @throws CatalogException if there is an error with catalog
+     */
+    public boolean synchronizeCatalogSamplesFromStorage(String studyFqn, List<String> samples, String sessionId)
+            throws CatalogException {
+        StudyMetadata study = metadataManager.getStudyMetadata(studyFqn);
+        if (study == null) {
+            return false;
+        }
+        logger.info("Synchronizing samples from study " + study.getName());
+
+        List<Integer> sampleIds;
+        if (CollectionUtils.isEmpty(samples) || samples.size() == 1 && samples.get(0).equals(ParamConstants.ALL)) {
+            sampleIds = new LinkedList<>();
+            for (SampleMetadata sampleMetadata : metadataManager.sampleMetadataIterable(study.getId())) {
+                sampleIds.add(sampleMetadata.getId());
+            }
+        } else {
+            sampleIds = new ArrayList<>(samples.size());
+            for (String sample : samples) {
+                sampleIds.add(metadataManager.getSampleId(study.getId(), sample));
+            }
+        }
+
+        return synchronizeSamples(study, sampleIds, sessionId);
+    }
+
+
+    /**
+     * Synchronize all studies from storage.
+     *
+     * @param token user token
+     * @return if anything was modified
+     * @throws CatalogException on error
+     */
+    public boolean synchronizeCatalogFromStorage(String token) throws CatalogException {
+        boolean modified = false;
+        for (String study : metadataManager.getStudyNames()) {
+            modified |= synchronizeCatalogStudyFromStorage(study, token);
+        }
+        return modified;
     }
 
     public boolean synchronizeCatalogStudyFromStorage(String study, String sessionId)
@@ -381,7 +431,7 @@ public class CatalogStorageMetadataSynchronizer {
             if (fileMetadata.getAnnotationStatus() == TaskMetadata.Status.READY) {
                 annotationReadyFilesFromStorage.add(fileMetadata.getName());
             }
-            if (fileMetadata.getSecondaryIndexStatus() == TaskMetadata.Status.READY) {
+            if (fileMetadata.getSecondaryAnnotationIndexStatus() == TaskMetadata.Status.READY) {
                 secondaryIndexReadyFilesFromStorage.add(fileMetadata.getName());
             }
             if (fileMetadata.getSamples() == null) {
@@ -649,15 +699,15 @@ public class CatalogStorageMetadataSynchronizer {
             modified = true;
         }
         boolean catalogSecondaryIndexReady = InternalStatus.READY.equals(
-                secureGet(file, f -> f.getInternal().getVariant().getSecondaryIndex().getStatus().getId(), null));
+                secureGet(file, f -> f.getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId(), null));
         if (secondaryIndexReady != catalogSecondaryIndexReady) {
-            FileInternalVariantSecondaryIndex internalVariantSecondaryIndex = FileInternalVariantSecondaryIndex.init();
+            FileInternalVariantSecondaryAnnotationIndex internalVariantSecondaryIndex = FileInternalVariantSecondaryAnnotationIndex.init();
             if (secondaryIndexReady) {
                 internalVariantSecondaryIndex.setStatus(new IndexStatus(IndexStatus.READY, "Secondary index completed"));
             } else {
                 internalVariantSecondaryIndex.setStatus(new IndexStatus(IndexStatus.NONE, ""));
             }
-            catalogManager.getFileManager().updateFileInternalVariantSecondaryIndex(file, internalVariantSecondaryIndex, token);
+            catalogManager.getFileManager().updateFileInternalVariantSecondaryAnnotationIndex(file, internalVariantSecondaryIndex, token);
             modified = true;
         }
 
@@ -721,7 +771,7 @@ public class CatalogStorageMetadataSynchronizer {
         return modified;
     }
 
-    private boolean synchronizeSample(SampleMetadata sampleMetadata, Sample sample, int sampleIndexVersion, String token)
+    private boolean synchronizeSample(SampleMetadata sampleMetadata, Sample sample, int lastSampleIndexVersion, String token)
             throws CatalogException {
         boolean modified = false;
 
@@ -748,16 +798,79 @@ public class CatalogStorageMetadataSynchronizer {
             modified = true;
         }
 
+        String catalogSecondaryAnnotationIndexStatus = secureGet(sample,
+                s -> s.getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId(), null);
+        if (!sampleMetadata.getSecondaryAnnotationIndexStatus().name().equals(catalogSecondaryAnnotationIndexStatus)) {
+            catalogManager.getSampleManager()
+                    .updateSampleInternalVariantSecondaryAnnotationIndex(sample,
+                            new SampleInternalVariantSecondaryAnnotationIndex(
+                                    new IndexStatus(sampleMetadata.getSecondaryAnnotationIndexStatus().name())), token);
+            modified = true;
+        }
+
+        SampleInternalVariantSecondarySampleIndex catalogVariantSecondarySampleIndex =
+                secureGet(sample, s -> s.getInternal().getVariant().getSecondarySampleIndex(), null);
+        if (catalogVariantSecondarySampleIndex == null) {
+            catalogVariantSecondarySampleIndex = new SampleInternalVariantSecondarySampleIndex();
+        }
+        boolean catalogVariantSecondarySampleIndexModified = false;
+
+
+        // Get last valid version from this sample
+        List<Integer> sampleIndexVersions = sampleMetadata.getSampleIndexVersions();
+        List<Integer> sampleIndexAnnotationVersions = sampleMetadata.getSampleIndexAnnotationVersions();
+        Integer expectedSampleIndexVersion = CollectionUtils.intersection(sampleIndexVersions, sampleIndexAnnotationVersions)
+                .stream()
+                .max(Integer::compareTo)
+                .orElse(null);
+        int sampleIndexVersion;
+        if (expectedSampleIndexVersion == null) {
+            sampleIndexVersion = lastSampleIndexVersion;
+        } else {
+            sampleIndexVersion = expectedSampleIndexVersion;
+        }
+
         String sampleIndexStatus = sampleMetadata.getSampleIndexStatus(sampleIndexVersion) == TaskMetadata.Status.READY
                 && sampleMetadata.getSampleIndexAnnotationStatus(sampleIndexVersion) == TaskMetadata.Status.READY
                 ? IndexStatus.READY
                 : IndexStatus.NONE;
-        String catalogGenotypeIndexStatus = secureGet(sample, s -> s.getInternal().getVariant().getSampleGenotypeIndex().getStatus().getId(), null);
-        if (!sampleIndexStatus.equals(catalogGenotypeIndexStatus)) {
+        String sampleIndexMessage = "SecondarySampleIndex is "
+                + (sampleIndexStatus.equals(IndexStatus.NONE) ? "not ready" : "ready")
+                + " with version=" + sampleIndexVersion
+                + ", genotypeStatus=" + sampleMetadata.getSampleIndexStatus(sampleIndexVersion)
+                + ", annotationStatus=" + sampleMetadata.getSampleIndexAnnotationStatus(sampleIndexVersion);
+        String catalogSecondarySampleIndexStatus = secureGet(sample, s -> s.getInternal().getVariant()
+                .getSecondarySampleIndex().getStatus().getId(), null);
+        String catalogSecondarySampleIndexMessage = secureGet(sample, s -> s.getInternal().getVariant()
+                .getSecondarySampleIndex().getStatus().getDescription(), null);
+        if (!sampleIndexStatus.equals(catalogSecondarySampleIndexStatus)
+                || !sampleIndexMessage.equals(catalogSecondarySampleIndexMessage)) {
+            catalogVariantSecondarySampleIndex.setStatus(
+                    new IndexStatus(sampleIndexStatus, sampleIndexMessage));
+            catalogVariantSecondarySampleIndexModified = true;
+        }
+
+        Integer catalogSecondarySampleIndexVersion = secureGet(sample, s -> s.getInternal().getVariant().getSecondarySampleIndex().getVersion(), -1);
+
+        if (!Objects.equals(expectedSampleIndexVersion, catalogSecondarySampleIndexVersion)) {
+            catalogVariantSecondarySampleIndex.setVersion(expectedSampleIndexVersion);
+            catalogVariantSecondarySampleIndexModified = true;
+        }
+
+        String sampleIndexFamilyStatus = sampleMetadata.getFamilyIndexStatus(sampleIndexVersion).name();
+        String catalogSecondarySampleIndexFamilyStatus = secureGet(sample, s -> s.getInternal().getVariant().getSecondarySampleIndex().getFamilyStatus().getId(), null);
+        if (!sampleIndexFamilyStatus.equals(catalogSecondarySampleIndexFamilyStatus)) {
+            String message = "Family Index is "
+                    + (sampleIndexStatus.equals(IndexStatus.NONE) ? "not ready" : "ready")
+                    + " with version=" + sampleIndexVersion;
+            catalogVariantSecondarySampleIndex.setFamilyStatus(
+                    new IndexStatus(sampleIndexFamilyStatus, message));
+            catalogVariantSecondarySampleIndexModified = true;
+        }
+
+        if (catalogVariantSecondarySampleIndexModified) {
             catalogManager.getSampleManager()
-                    .updateSampleInternalGenotypeIndex(sample,
-                            new SampleInternalVariantGenotypeIndex(
-                                    new IndexStatus(sampleIndexStatus)), token);
+                    .updateSampleInternalVariantSecondarySampleIndex(sample, catalogVariantSecondarySampleIndex, token);
             modified = true;
         }
         return modified;

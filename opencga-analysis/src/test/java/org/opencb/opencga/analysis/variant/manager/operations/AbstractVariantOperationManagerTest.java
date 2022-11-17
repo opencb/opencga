@@ -153,7 +153,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
 
         DummyVariantStorageMetadataDBAdaptorFactory.clear();
 
-        variantManager = new VariantStorageManager(catalogManager, factory);
+        variantManager = opencga.getVariantStorageManager();
 
         fileMetadataReader = FileMetadataReader.get(catalogManager);
         catalogFileUtils = new FileUtils(catalogManager);

@@ -566,8 +566,10 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         final String[] acceptedObjectParams = {QueryParams.SOURCE.key(), QueryParams.COLLECTION.key(), QueryParams.PROCESSING.key(),
                 QueryParams.STATUS.key(), QueryParams.INTERNAL_STATUS.key(),
                 QueryParams.QUALITY_CONTROL.key(), QueryParams.INTERNAL_VARIANT_INDEX.key(),
-                QueryParams.INTERNAL_VARIANT_GENOTYPE_INDEX.key(), QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(),
-                QueryParams.INTERNAL_VARIANT_SECONDARY_INDEX.key()};
+                QueryParams.INTERNAL_VARIANT_SECONDARY_SAMPLE_INDEX.key(),
+                QueryParams.INTERNAL_VARIANT_GENOTYPE_INDEX.key(),
+                QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(),
+                QueryParams.INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());

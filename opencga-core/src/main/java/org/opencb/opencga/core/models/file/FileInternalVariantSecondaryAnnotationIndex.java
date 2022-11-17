@@ -4,19 +4,19 @@ import org.opencb.opencga.core.models.common.IndexStatus;
 
 import java.util.Objects;
 
-public class FileInternalVariantSecondaryIndex {
+public class FileInternalVariantSecondaryAnnotationIndex {
 
     private IndexStatus status;
 
-    public FileInternalVariantSecondaryIndex() {
+    public FileInternalVariantSecondaryAnnotationIndex() {
     }
 
-    public FileInternalVariantSecondaryIndex(IndexStatus status) {
+    public FileInternalVariantSecondaryAnnotationIndex(IndexStatus status) {
         this.status = status;
     }
 
-    public static FileInternalVariantSecondaryIndex init() {
-        return new FileInternalVariantSecondaryIndex(new IndexStatus());
+    public static FileInternalVariantSecondaryAnnotationIndex init() {
+        return new FileInternalVariantSecondaryAnnotationIndex(new IndexStatus());
     }
 
     @Override
@@ -31,7 +31,7 @@ public class FileInternalVariantSecondaryIndex {
         return status;
     }
 
-    public FileInternalVariantSecondaryIndex setStatus(IndexStatus status) {
+    public FileInternalVariantSecondaryAnnotationIndex setStatus(IndexStatus status) {
         this.status = status;
         return this;
     }
@@ -40,7 +40,7 @@ public class FileInternalVariantSecondaryIndex {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        FileInternalVariantSecondaryIndex that = (FileInternalVariantSecondaryIndex) o;
+        FileInternalVariantSecondaryAnnotationIndex that = (FileInternalVariantSecondaryAnnotationIndex) o;
         return Objects.equals(status, that.status);
     }
 

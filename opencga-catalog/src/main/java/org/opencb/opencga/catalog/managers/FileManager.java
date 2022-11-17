@@ -445,9 +445,13 @@ public class FileManager extends AnnotationSetManager<File> {
         return updateFileInternalField(file, index, FileDBAdaptor.QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(), token);
     }
 
-    public OpenCGAResult<?> updateFileInternalVariantSecondaryIndex(File file, FileInternalVariantSecondaryIndex index, String token)
+    public OpenCGAResult<?> updateFileInternalVariantSecondaryAnnotationIndex(File file, FileInternalVariantSecondaryAnnotationIndex index,
+                                                                              String token)
             throws CatalogException {
-        return updateFileInternalField(file, index, FileDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_INDEX.key(), token);
+        return updateFileInternalField(file, index, Arrays.asList(
+                FileDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX.key(),
+                FileDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_INDEX.key()
+        ), token);
     }
 
     public OpenCGAResult<?> updateFileInternalAlignmentIndex(File file, FileInternalAlignmentIndex index, String token)
@@ -456,19 +460,30 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     private OpenCGAResult<?> updateFileInternalField(File file, Object value, String fieldKey, String token) throws CatalogException {
+        return updateFileInternalField(file, value, Collections.singletonList(fieldKey), token);
+    }
+
+    private OpenCGAResult<?> updateFileInternalField(File file, Object value, List<String> fieldKeys, String token)
+            throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyDBAdaptor.get(file.getStudyUid(), StudyManager.INCLUDE_STUDY_IDS).first();
 
         ObjectMap auditParams = new ObjectMap()
                 .append("file", file)
-                .append(fieldKey, value)
                 .append("token", token);
+        for (String fieldKey : fieldKeys) {
+            auditParams.append(fieldKey, value);
+        }
 
         authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FilePermissions.WRITE);
 
         ObjectMap params;
         try {
-            params = new ObjectMap(fieldKey, new ObjectMap(getUpdateObjectMapper().writeValueAsString(value)));
+            params = new ObjectMap();
+            ObjectMap valueAsObjectMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(value));
+            for (String fieldKey : fieldKeys) {
+                params.append(fieldKey, valueAsObjectMap);
+            }
         } catch (JsonProcessingException e) {
             throw new CatalogException("Cannot parse index object: " + e.getMessage(), e);
         }

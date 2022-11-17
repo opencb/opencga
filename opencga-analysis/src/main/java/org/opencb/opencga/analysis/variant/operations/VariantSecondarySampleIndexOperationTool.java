@@ -21,23 +21,23 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.operations.variant.VariantSampleIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantSecondarySampleIndexParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Tool(id = VariantSampleIndexOperationTool.ID, description = VariantSampleIndexOperationTool.DESCRIPTION,
+@Tool(id = VariantSecondarySampleIndexOperationTool.ID, description = VariantSecondarySampleIndexOperationTool.DESCRIPTION,
         type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
-public class VariantSampleIndexOperationTool extends OperationTool {
+public class VariantSecondarySampleIndexOperationTool extends OperationTool {
 
     public static final String ID = "variant-secondary-sample-index";
     public static final String DESCRIPTION = "Build and annotate the sample index.";
     protected String study;
 
     @ToolParams
-    protected VariantSampleIndexParams sampleIndexParams;
+    protected VariantSecondarySampleIndexParams sampleIndexParams;
 
     @Override
     protected void check() throws Exception {
@@ -80,7 +80,8 @@ public class VariantSampleIndexOperationTool extends OperationTool {
         }
         if (sampleIndexParams.isFamilyIndex()) {
             step("familyIndex", () -> {
-                DataResult<List<String>> result = variantStorageManager.familyIndexBySamples(study, sampleIndexParams.getSample(), params, getToken());
+                DataResult<List<String>> result = variantStorageManager.familyIndexBySamples(study, sampleIndexParams.getSample(), params,
+                        getToken());
                 if (result.getEvents() != null) {
                     for (Event event : result.getEvents()) {
                         addEvent(event.getType(), event.getMessage());

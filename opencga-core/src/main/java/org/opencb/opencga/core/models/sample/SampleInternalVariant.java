@@ -5,28 +5,30 @@ import java.util.Objects;
 public class SampleInternalVariant {
 
     private SampleInternalVariantIndex index;
-    private SampleInternalVariantGenotypeIndex sampleGenotypeIndex;
+    @Deprecated
+    private SampleInternalVariantSecondarySampleIndex sampleGenotypeIndex;
+    private SampleInternalVariantSecondarySampleIndex secondarySampleIndex;
     private SampleInternalVariantAnnotationIndex annotationIndex;
-    private SampleInternalVariantSecondaryIndex secondaryIndex;
+    private SampleInternalVariantSecondaryAnnotationIndex secondaryAnnotationIndex;
 
     public SampleInternalVariant() {
     }
 
-    public SampleInternalVariant(SampleInternalVariantIndex index, SampleInternalVariantGenotypeIndex sampleGenotypeIndex,
-                                 SampleInternalVariantAnnotationIndex annotationIndex, SampleInternalVariantSecondaryIndex secondaryIndex) {
+    public SampleInternalVariant(SampleInternalVariantIndex index, SampleInternalVariantSecondarySampleIndex secondarySampleIndex,
+                                 SampleInternalVariantAnnotationIndex annotationIndex, SampleInternalVariantSecondaryAnnotationIndex secondaryAnnotationIndex) {
         this.index = index;
-        this.sampleGenotypeIndex = sampleGenotypeIndex;
+        this.secondarySampleIndex = secondarySampleIndex;
         this.annotationIndex = annotationIndex;
-        this.secondaryIndex = secondaryIndex;
+        this.secondaryAnnotationIndex = secondaryAnnotationIndex;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleInternalVariant{");
         sb.append("index=").append(index);
-        sb.append(", sampleGenotypeIndex=").append(sampleGenotypeIndex);
+        sb.append(", sampleGenotypeIndex=").append(secondarySampleIndex);
         sb.append(", annotationIndex=").append(annotationIndex);
-        sb.append(", secondaryIndex=").append(secondaryIndex);
+        sb.append(", secondaryIndex=").append(secondaryAnnotationIndex);
         sb.append('}');
         return sb.toString();
     }
@@ -44,12 +46,26 @@ public class SampleInternalVariant {
         return this;
     }
 
-    public SampleInternalVariantGenotypeIndex getSampleGenotypeIndex() {
+    @Deprecated
+    public SampleInternalVariantSecondarySampleIndex getSampleGenotypeIndex() {
         return sampleGenotypeIndex;
     }
 
-    public SampleInternalVariant setSampleGenotypeIndex(SampleInternalVariantGenotypeIndex sampleGenotypeIndex) {
+    @Deprecated
+    public SampleInternalVariant setSampleGenotypeIndex(SampleInternalVariantSecondarySampleIndex secondarySampleIndex) {
         this.sampleGenotypeIndex = sampleGenotypeIndex;
+        return this;
+    }
+
+    public SampleInternalVariantSecondarySampleIndex getSecondarySampleIndex() {
+        if (secondarySampleIndex == null && sampleGenotypeIndex != null) {
+            return sampleGenotypeIndex;
+        }
+        return secondarySampleIndex;
+    }
+
+    public SampleInternalVariant setSecondarySampleIndex(SampleInternalVariantSecondarySampleIndex secondarySampleIndex) {
+        this.secondarySampleIndex = secondarySampleIndex;
         return this;
     }
 
@@ -62,12 +78,12 @@ public class SampleInternalVariant {
         return this;
     }
 
-    public SampleInternalVariantSecondaryIndex getSecondaryIndex() {
-        return secondaryIndex;
+    public SampleInternalVariantSecondaryAnnotationIndex getSecondaryAnnotationIndex() {
+        return secondaryAnnotationIndex;
     }
 
-    public SampleInternalVariant setSecondaryIndex(SampleInternalVariantSecondaryIndex secondaryIndex) {
-        this.secondaryIndex = secondaryIndex;
+    public SampleInternalVariant setSecondaryAnnotationIndex(SampleInternalVariantSecondaryAnnotationIndex secondaryAnnotationIndex) {
+        this.secondaryAnnotationIndex = secondaryAnnotationIndex;
         return this;
     }
 
@@ -77,13 +93,13 @@ public class SampleInternalVariant {
         if (o == null || getClass() != o.getClass()) return false;
         SampleInternalVariant that = (SampleInternalVariant) o;
         return Objects.equals(index, that.index) &&
-                Objects.equals(sampleGenotypeIndex, that.sampleGenotypeIndex) &&
+                Objects.equals(secondarySampleIndex, that.secondarySampleIndex) &&
                 Objects.equals(annotationIndex, that.annotationIndex) &&
-                Objects.equals(secondaryIndex, that.secondaryIndex);
+                Objects.equals(secondaryAnnotationIndex, that.secondaryAnnotationIndex);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(index, sampleGenotypeIndex, annotationIndex, secondaryIndex);
+        return Objects.hash(index, secondarySampleIndex, annotationIndex, secondaryAnnotationIndex);
     }
 }

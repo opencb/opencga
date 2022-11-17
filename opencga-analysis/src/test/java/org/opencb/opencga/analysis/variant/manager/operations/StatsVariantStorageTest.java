@@ -30,6 +30,7 @@ import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
@@ -84,7 +85,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
                     .map(s -> new SampleReferenceParam().setId(s))
                     .collect(Collectors.toList());
             Cohort cohort = catalogManager.getCohortManager().create(studyId, new CohortCreateParams("coh" + i,
-                    "", Enums.CohortType.CONTROL_SET, "", null, null, sampleIds, null, null, null), null, null, null, sessionId).first();
+                    "", Enums.CohortType.CONTROL_SET, "", null, null, sampleIds, null, null, null), null, null, new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first();
             coh[i] = cohort.getId();
         }
         QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false);
@@ -137,7 +138,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
                 DataResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, new Cohort()
                         .setId(cohortName)
                         .setSamples(Collections.emptyList())
-                        .setType(Enums.CohortType.COLLECTION), null, sessionId);
+                        .setType(Enums.CohortType.COLLECTION), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId);
                 queryResults.add(cohort.first());
             } else {
                 logger.warn("cohort {} was already created", cohortName);

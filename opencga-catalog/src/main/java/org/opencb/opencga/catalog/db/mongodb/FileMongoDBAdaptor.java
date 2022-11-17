@@ -673,7 +673,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
         String[] acceptedObjectParams = {QueryParams.INTERNAL_VARIANT_INDEX.key(), QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(),
-                QueryParams.INTERNAL_VARIANT_SECONDARY_INDEX.key(), QueryParams.INTERNAL_ALIGNMENT_INDEX.key(), QueryParams.SOFTWARE.key(),
+                QueryParams.INTERNAL_VARIANT_SECONDARY_INDEX.key(), QueryParams.INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX.key(),
+                QueryParams.INTERNAL_ALIGNMENT_INDEX.key(), QueryParams.SOFTWARE.key(),
                 QueryParams.EXPERIMENT.key(), QueryParams.STATUS.key(), QueryParams.INTERNAL_MISSING_SAMPLES.key(),
                 QueryParams.QUALITY_CONTROL.key(), QueryParams.INTERNAL_STATUS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
@@ -1312,6 +1313,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     case INTERNAL_STATUS_ID:
                     case INTERNAL_VARIANT_ANNOTATION_INDEX_STATUS_ID:
                     case INTERNAL_VARIANT_SECONDARY_INDEX_STATUS_ID:
+                    case INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX_STATUS_ID:
                     case INTERNAL_ALIGNMENT_INDEX_STATUS_ID:
                         // Convert the status to a positive status
                         myQuery.put(queryParam.key(),

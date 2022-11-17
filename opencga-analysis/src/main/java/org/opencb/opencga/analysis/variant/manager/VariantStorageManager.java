@@ -220,12 +220,14 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         });
     }
 
-    public VariantSearchLoadResult secondaryIndex(String project, String region, boolean overwrite, ObjectMap params, String token)
+    public VariantSearchLoadResult secondaryAnnotationIndex(String project, String region, boolean overwrite, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
-        return secureOperationByProject(VariantSecondaryIndexOperationTool.ID, project, params, token, engine -> {
+        return secureOperationByProject(VariantSecondaryAnnotationIndexOperationTool.ID, project, params, token, engine -> {
             Query inputQuery = new Query();
             inputQuery.putIfNotEmpty(VariantQueryParam.REGION.key(), region);
-            return engine.secondaryIndex(inputQuery, new QueryOptions(params), overwrite);
+            VariantSearchLoadResult result = engine.secondaryIndex(inputQuery, new QueryOptions(params), overwrite);
+            getSynchronizer(engine).synchronizeCatalogFromStorage(token);
+            return result;
         });
     }
 
@@ -375,16 +377,20 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     public void sampleIndex(String study, List<String> samples, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
-        secureOperation(VariantSampleIndexOperationTool.ID, study, params, token, engine -> {
+        secureOperation(VariantSecondarySampleIndexOperationTool.ID, study, params, token, engine -> {
             engine.sampleIndex(getStudyFqn(study, token), samples, params);
+            CatalogStorageMetadataSynchronizer synchronizer = getSynchronizer(engine);
+            synchronizer.synchronizeCatalogSamplesFromStorage(study, samples, token);
             return null;
         });
     }
 
     public void sampleIndexAnnotate(String study, List<String> samples, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
-        secureOperation(VariantSampleIndexOperationTool.ID, study, params, token, engine -> {
+        secureOperation(VariantSecondarySampleIndexOperationTool.ID, study, params, token, engine -> {
             engine.sampleIndexAnnotate(getStudyFqn(study, token), samples, params);
+            CatalogStorageMetadataSynchronizer synchronizer = getSynchronizer(engine);
+            synchronizer.synchronizeCatalogSamplesFromStorage(study, samples, token);
             return null;
         });
     }
@@ -417,8 +423,18 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     trios.addAll(catalogUtils.getTriosFromFamily(study, family, metadataManager, skipIncompleteFamilies, token));
                 }
             }
-            return engine.familyIndex(study, trios, params);
+            DataResult<List<String>> dataResult = engine.familyIndex(study, trios, params);
+            getSynchronizer(engine).synchronizeCatalogSamplesFromStorage(study, trios.stream()
+                    .flatMap(Collection::stream)
+                    .collect(Collectors.toList()), token);
+            return dataResult;
         });
+    }
+
+    private CatalogStorageMetadataSynchronizer getSynchronizer(VariantStorageEngine engine) throws StorageEngineException {
+        CatalogStorageMetadataSynchronizer synchronizer =
+                new CatalogStorageMetadataSynchronizer(getCatalogManager(), engine.getMetadataManager());
+        return synchronizer;
     }
 
     public DataResult<List<String>> familyIndexBySamples(String study, Collection<String> samples, ObjectMap params, String token)
@@ -431,7 +447,11 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
             List<List<String>> trios = catalogUtils.getTriosFromSamples(study, engine.getMetadataManager(), thisSamples, token);
 
-            return engine.familyIndex(study, trios, params);
+            DataResult<List<String>> dataResult = engine.familyIndex(study, trios, params);
+            getSynchronizer(engine).synchronizeCatalogSamplesFromStorage(study, trios.stream()
+                    .flatMap(Collection::stream)
+                    .collect(Collectors.toList()), token);
+            return dataResult;
         });
     }
 
@@ -520,8 +540,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             } else {
                 // If changes, launch sample-index-run
                 ToolParams params =
-                        new VariantSampleIndexParams(Collections.singletonList(ParamConstants.ALL), true, true, true, false);
-                return catalogManager.getJobManager().submit(studyFqn, VariantSampleIndexOperationTool.ID, null,
+                        new VariantSecondarySampleIndexParams(Collections.singletonList(ParamConstants.ALL), true, true, true, false);
+                return catalogManager.getJobManager().submit(studyFqn, VariantSecondarySampleIndexOperationTool.ID, null,
                         params.toParams(STUDY_PARAM, studyFqn), token);
             }
         });
@@ -1064,19 +1084,36 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         storageEngineFactory.close();
     }
 
-    public boolean synchronizeCatalogStudyFromStorage(String study, List<String> files, String token)
+    public boolean synchronizeCatalogStudyFromStorage(String study, String token)
             throws CatalogException, StorageEngineException {
         String studySqn = getStudyFqn(study, token);
         return secureOperation("synchronizeCatalogStudyFromStorage", studySqn, new ObjectMap(), token, engine -> {
-            CatalogStorageMetadataSynchronizer synchronizer =
-                    new CatalogStorageMetadataSynchronizer(getCatalogManager(), engine.getMetadataManager());
-            if (CollectionUtils.isEmpty(files)) {
-                return synchronizer.synchronizeCatalogStudyFromStorage(studySqn, token);
-            } else {
-                List<File> filesFromCatalog = catalogManager.getFileManager()
-                        .get(studySqn, files, FILE_GET_QUERY_OPTIONS, token).getResults();
-                return synchronizer.synchronizeCatalogFilesFromStorage(studySqn, filesFromCatalog, token, FILE_GET_QUERY_OPTIONS);
-            }
+            CatalogStorageMetadataSynchronizer synchronizer = getSynchronizer(engine);
+            return synchronizer.synchronizeCatalogStudyFromStorage(studySqn, token);
+        });
+    }
+
+    public boolean synchronizeCatalogStudyFromStorage(String study, List<String> files, String token)
+            throws CatalogException, StorageEngineException {
+        if (CollectionUtils.isEmpty(files)) {
+            return synchronizeCatalogStudyFromStorage(study, token);
+        }
+        String studySqn = getStudyFqn(study, token);
+        return secureOperation("synchronizeCatalogStudyFromStorage", studySqn, new ObjectMap(), token, engine -> {
+            List<File> filesFromCatalog = catalogManager.getFileManager()
+                    .get(studySqn, files, FILE_GET_QUERY_OPTIONS, token).getResults();
+            return getSynchronizer(engine).synchronizeCatalogFilesFromStorage(studySqn, filesFromCatalog, token);
+        });
+    }
+
+    public boolean synchronizeCatalogStudyFromStorageSamples(String study, List<String> samples, String token)
+            throws CatalogException, StorageEngineException {
+        if (CollectionUtils.isEmpty(samples)) {
+            return synchronizeCatalogStudyFromStorage(study, token);
+        }
+        String studySqn = getStudyFqn(study, token);
+        return secureOperation("synchronizeCatalogStudyFromStorage", studySqn, new ObjectMap(), token, engine -> {
+            return getSynchronizer(engine).synchronizeCatalogSamplesFromStorage(studySqn, samples, token);
         });
     }
 

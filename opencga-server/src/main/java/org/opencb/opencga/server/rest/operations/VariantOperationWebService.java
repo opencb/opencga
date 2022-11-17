@@ -216,13 +216,13 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = VariantCatalogQueryUtils.PROJECT_DESC) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = VariantSecondaryIndexParams.DESCRIPTION) VariantSecondaryIndexParams params) {
+            @ApiParam(value = VariantSecondaryAnnotationIndexParams.DESCRIPTION) VariantSecondaryAnnotationIndexParams params) {
         return variantSecondaryAnnotationIndex(jobName, jobDescription, dependsOn, jobTags, project, study, params);
     }
 
     @POST
     @Path("/variant/secondary/annotation/index")
-    @ApiOperation(value = VariantSecondaryIndexOperationTool.DESCRIPTION + " (New!)", response = Job.class)
+    @ApiOperation(value = VariantSecondaryAnnotationIndexOperationTool.DESCRIPTION + " (New!)", response = Job.class)
     public Response variantSecondaryAnnotationIndex(
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
@@ -230,8 +230,8 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = VariantCatalogQueryUtils.PROJECT_DESC) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = VariantSecondaryIndexParams.DESCRIPTION) VariantSecondaryIndexParams params) {
-        return submitOperation(VariantSecondaryIndexOperationTool.ID, project, study, params, jobName, jobDescription, dependsOn, jobTags);
+            @ApiParam(value = VariantSecondaryAnnotationIndexParams.DESCRIPTION) VariantSecondaryAnnotationIndexParams params) {
+        return submitOperation(VariantSecondaryAnnotationIndexOperationTool.ID, project, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @DELETE
@@ -353,7 +353,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
 
     @POST
     @Path("/variant/sample/genotype/index")
-    @ApiOperation(value = VariantSampleIndexOperationTool.DESCRIPTION, hidden = true, response = Job.class)
+    @ApiOperation(value = VariantSecondarySampleIndexOperationTool.DESCRIPTION, hidden = true, response = Job.class)
     @Deprecated
     public Response sampleGenotypeIndex(
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -361,7 +361,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = VariantSampleIndexParams.DESCRIPTION) VariantSampleIndexParams params) {
+            @ApiParam(value = VariantSecondarySampleIndexParams.DESCRIPTION) VariantSecondarySampleIndexParams params) {
         return sampleIndex(jobName, jobDescription, dependsOn, jobTags, study, params);
     }
 
@@ -375,21 +375,21 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = VariantSampleIndexParams.DESCRIPTION) VariantSampleIndexParams params) {
+            @ApiParam(value = VariantSecondarySampleIndexParams.DESCRIPTION) VariantSecondarySampleIndexParams params) {
         return variantSecondarySampleIndex(jobName, jobDescription, dependsOn, jobTags, study, params);
     }
 
     @POST
     @Path("/variant/secondary/sample/index")
-    @ApiOperation(value = VariantSampleIndexOperationTool.DESCRIPTION + " (New!) ", response = Job.class)
+    @ApiOperation(value = VariantSecondarySampleIndexOperationTool.DESCRIPTION + " (New!) ", response = Job.class)
     public Response variantSecondarySampleIndex(
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = VariantSampleIndexParams.DESCRIPTION) VariantSampleIndexParams params) {
-        return submitOperation(VariantSampleIndexOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+            @ApiParam(value = VariantSecondarySampleIndexParams.DESCRIPTION) VariantSecondarySampleIndexParams params) {
+        return submitOperation(VariantSecondarySampleIndexOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST

@@ -165,6 +165,16 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
     }
 
     @JsonIgnore
+    public TaskMetadata.Status getSecondaryAnnotationIndexStatus() {
+        return getStatus("secondaryAnnotationIndex");
+    }
+
+    @JsonIgnore
+    public SampleMetadata setSecondaryAnnotationIndexStatus(TaskMetadata.Status annotationStatus) {
+        return setStatus("secondaryAnnotationIndex", annotationStatus);
+    }
+
+    @JsonIgnore
     public TaskMetadata.Status getSampleIndexStatus(int sampleIndexVersion) {
         return this.getStatus(SAMPLE_INDEX_STATUS_PREFIX + sampleIndexVersion);
     }

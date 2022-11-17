@@ -29,9 +29,9 @@ import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationSaveParams;
 import org.opencb.opencga.core.models.operations.variant.VariantFamilyIndexParams;
-import org.opencb.opencga.core.models.operations.variant.VariantSampleIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantSecondarySampleIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantScoreIndexParams;
-import org.opencb.opencga.core.models.operations.variant.VariantSecondaryIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantSecondaryAnnotationIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsDeleteParams;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantStorageMetadataRepairToolParams;
@@ -362,7 +362,7 @@ public class VariantOperationClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> indexVariantSample(VariantSampleIndexParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> indexVariantSample(VariantSecondarySampleIndexParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("operation", null, "variant/sample", null, "index", params, POST, Job.class);
@@ -440,7 +440,7 @@ public class VariantOperationClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> variantSecondaryAnnotationIndex(VariantSecondaryIndexParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> variantSecondaryAnnotationIndex(VariantSecondaryAnnotationIndexParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("operation", null, "variant/secondary/annotation", null, "index", params, POST, Job.class);
@@ -458,7 +458,7 @@ public class VariantOperationClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> variantSecondarySampleIndex(VariantSampleIndexParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> variantSecondarySampleIndex(VariantSecondarySampleIndexParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("operation", null, "variant/secondary/sample", null, "index", params, POST, Job.class);
@@ -492,7 +492,7 @@ public class VariantOperationClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> secondaryIndexVariant(VariantSecondaryIndexParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> secondaryIndexVariant(VariantSecondaryAnnotationIndexParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("operation", null, "variant", null, "secondaryIndex", params, POST, Job.class);

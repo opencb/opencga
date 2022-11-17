@@ -699,36 +699,51 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return updateSampleInternalVariant(sample, index, SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX.key(), token);
     }
 
-    public OpenCGAResult<?> updateSampleInternalGenotypeIndex(Sample sample, SampleInternalVariantGenotypeIndex index, String token)
+    public OpenCGAResult<?> updateSampleInternalVariantSecondarySampleIndex(
+            Sample sample, SampleInternalVariantSecondarySampleIndex index, String token)
             throws CatalogException {
-        return updateSampleInternalVariant(sample, index, SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_GENOTYPE_INDEX.key(), token);
+        return updateSampleInternalVariant(sample, index, Arrays.asList(
+                SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_SAMPLE_INDEX.key(),
+                SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_GENOTYPE_INDEX.key()), token);
     }
 
-    public OpenCGAResult<?> updateSampleInternalVariantAnnotationIndex(Sample sample, SampleInternalVariantAnnotationIndex index,
-                                                                       String token) throws CatalogException {
+    public OpenCGAResult<?> updateSampleInternalVariantAnnotationIndex(
+            Sample sample, SampleInternalVariantAnnotationIndex index, String token) throws CatalogException {
         return updateSampleInternalVariant(sample, index, SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(), token);
     }
 
-    public OpenCGAResult<?> updateSampleInternalVariantSecondaryIndex(Sample sample, SampleInternalVariantSecondaryIndex index,
-                                                                      String token) throws CatalogException {
-        return updateSampleInternalVariant(sample, index, SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_INDEX.key(), token);
+    public OpenCGAResult<?> updateSampleInternalVariantSecondaryAnnotationIndex(
+            Sample sample, SampleInternalVariantSecondaryAnnotationIndex index, String token) throws CatalogException {
+        return updateSampleInternalVariant(sample, index,
+                SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX.key(), token);
     }
 
     private OpenCGAResult<?> updateSampleInternalVariant(Sample sample, Object value, String fieldKey, String token)
+            throws CatalogException {
+        return updateSampleInternalVariant(sample, value, Collections.singletonList(fieldKey), token);
+    }
+
+    private OpenCGAResult<?> updateSampleInternalVariant(Sample sample, Object value, List<String> fieldKeys, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyDBAdaptor.get(sample.getStudyUid(), StudyManager.INCLUDE_STUDY_IDS).first();
 
         ObjectMap auditParams = new ObjectMap()
-                .append("sample", sample)
-                .append(fieldKey, value)
+                .append("sample", sample.getId())
                 .append("token", token);
+        for (String fieldKey : fieldKeys) {
+            auditParams.append(fieldKey, value);
+        }
 
         authorizationManager.isOwnerOrAdmin(study.getUid(), userId);
 
         ObjectMap params;
         try {
-            params = new ObjectMap(fieldKey, new ObjectMap(getUpdateObjectMapper().writeValueAsString(value)));
+            params = new ObjectMap();
+            ObjectMap valueAsObjectMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(value));
+            for (String fieldKey : fieldKeys) {
+                params.append(fieldKey, valueAsObjectMap);
+            }
         } catch (JsonProcessingException e) {
             throw new CatalogException("Cannot parse SampleInternalVariant object: " + e.getMessage(), e);
         }

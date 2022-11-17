@@ -20,7 +20,7 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
-public class VariantSampleIndexParams extends ToolParams {
+public class VariantSecondarySampleIndexParams extends ToolParams {
 
     public static final String DESCRIPTION = "Variant sample index params";
     private List<String> sample;
@@ -29,10 +29,10 @@ public class VariantSampleIndexParams extends ToolParams {
     private boolean familyIndex;
     private boolean overwrite;
 
-    public VariantSampleIndexParams() {
+    public VariantSecondarySampleIndexParams() {
     }
 
-    public VariantSampleIndexParams(List<String> sample, boolean buildIndex, boolean annotate, boolean familyIndex, boolean overwrite) {
+    public VariantSecondarySampleIndexParams(List<String> sample, boolean buildIndex, boolean annotate, boolean familyIndex, boolean overwrite) {
         this.sample = sample;
         this.buildIndex = buildIndex;
         this.annotate = annotate;
@@ -44,7 +44,7 @@ public class VariantSampleIndexParams extends ToolParams {
         return sample;
     }
 
-    public VariantSampleIndexParams setSample(List<String> sample) {
+    public VariantSecondarySampleIndexParams setSample(List<String> sample) {
         this.sample = sample;
         return this;
     }
@@ -53,7 +53,7 @@ public class VariantSampleIndexParams extends ToolParams {
         return buildIndex;
     }
 
-    public VariantSampleIndexParams setBuildIndex(boolean buildIndex) {
+    public VariantSecondarySampleIndexParams setBuildIndex(boolean buildIndex) {
         this.buildIndex = buildIndex;
         return this;
     }
@@ -62,7 +62,7 @@ public class VariantSampleIndexParams extends ToolParams {
         return annotate;
     }
 
-    public VariantSampleIndexParams setAnnotate(boolean annotate) {
+    public VariantSecondarySampleIndexParams setAnnotate(boolean annotate) {
         this.annotate = annotate;
         return this;
     }
@@ -71,7 +71,7 @@ public class VariantSampleIndexParams extends ToolParams {
         return overwrite;
     }
 
-    public VariantSampleIndexParams setOverwrite(boolean overwrite) {
+    public VariantSecondarySampleIndexParams setOverwrite(boolean overwrite) {
         this.overwrite = overwrite;
         return this;
     }
@@ -80,7 +80,7 @@ public class VariantSampleIndexParams extends ToolParams {
         return familyIndex;
     }
 
-    public VariantSampleIndexParams setFamilyIndex(boolean familyIndex) {
+    public VariantSecondarySampleIndexParams setFamilyIndex(boolean familyIndex) {
         this.familyIndex = familyIndex;
         return this;
     }

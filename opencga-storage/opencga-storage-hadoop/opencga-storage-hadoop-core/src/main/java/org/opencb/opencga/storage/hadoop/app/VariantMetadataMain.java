@@ -1,9 +1,12 @@
 package org.opencb.opencga.storage.hadoop.app;
 
 import com.google.common.collect.Iterators;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.*;
@@ -108,6 +111,12 @@ public class VariantMetadataMain extends AbstractMain {
             case "file-metadata":
                 new FileCommandExecutor(mm).exec(args, command, subCommand);
                 break;
+            case "vfm":
+            case "variant-file":
+            case "variant-files":
+            case "variant-file-metadata":
+                new VariantFileCommandExecutor(mm).exec(args, command, subCommand);
+                break;
             case "sample":
             case "samples":
             case "sample-metadata":
@@ -127,12 +136,13 @@ public class VariantMetadataMain extends AbstractMain {
             case "help":
                 println("Commands:");
                 println("  help");
-                println("  tables          [help|list]");
-                println("  study-metadata  [help|list|id|read|write] <metadata_table> ...");
-                println("  file-metadata   [help|list|id|read|write] <metadata_table> ...");
-                println("  sample-metadata [help|list|id|read|write] <metadata_table> ...");
-                println("  cohort-metadata [help|list|id|read|write] <metadata_table> ...");
-                println("  task-metadata   [help|list|id|read|write] <metadata_table> ...");
+                println("  tables                 [help|list]");
+                println("  study-metadata         [help|list|id|read|write] <metadata_table> ...");
+                println("  file-metadata          [help|list|id|read|write] <metadata_table> ...");
+                println("  variant-file-metadata  [help|list|id|read|write] <metadata_table> ...");
+                println("  sample-metadata        [help|list|id|read|write] <metadata_table> ...");
+                println("  cohort-metadata        [help|list|id|read|write] <metadata_table> ...");
+                println("  task-metadata          [help|list|id|read|write] <metadata_table> ...");
                 break;
         }
         if (mm != null) {
@@ -140,7 +150,7 @@ public class VariantMetadataMain extends AbstractMain {
         }
     }
 
-    public class FileCommandExecutor extends ResourceCommandExecutor<FileMetadata> {
+    public class FileCommandExecutor extends StudyResourceCommandExecutor<FileMetadata> {
         protected FileCommandExecutor(VariantStorageMetadataManager mm) {
             super(mm, FileMetadata.class);
         }
@@ -164,9 +174,44 @@ public class VariantMetadataMain extends AbstractMain {
         protected void write(int studyId, FileMetadata file) {
             mm.unsecureUpdateFileMetadata(studyId, file);
         }
+
     }
 
-    public class CohortCommandExecutor extends ResourceCommandExecutor<CohortMetadata> {
+    public class VariantFileCommandExecutor extends ResourceCommandExecutor<VariantFileMetadata> {
+        protected VariantFileCommandExecutor(VariantStorageMetadataManager mm) {
+            super(mm, VariantFileMetadata.class);
+        }
+
+        @Override
+        protected Iterator<VariantFileMetadata> list(int studyId) {
+            try {
+                return mm.variantFileMetadataIterator(studyId, new QueryOptions());
+            } catch (StorageEngineException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        protected int id(int studyId, Object object) {
+            return mm.getFileIdOrFail(studyId, object);
+        }
+
+        @Override
+        protected VariantFileMetadata read(int studyId, int id) {
+            try {
+                return mm.getVariantFileMetadata(studyId, id, new QueryOptions()).first();
+            } catch (StorageEngineException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        protected void write(int studyId, VariantFileMetadata file) throws StorageEngineException {
+            mm.updateVariantFileMetadata(studyId, file);
+        }
+    }
+
+    public class CohortCommandExecutor extends StudyResourceCommandExecutor<CohortMetadata> {
         protected CohortCommandExecutor(VariantStorageMetadataManager mm) {
             super(mm, CohortMetadata.class);
         }
@@ -192,7 +237,7 @@ public class VariantMetadataMain extends AbstractMain {
         }
     }
 
-    public class SampleCommandExecutor extends ResourceCommandExecutor<SampleMetadata> {
+    public class SampleCommandExecutor extends StudyResourceCommandExecutor<SampleMetadata> {
         protected SampleCommandExecutor(VariantStorageMetadataManager mm) {
             super(mm, SampleMetadata.class);
         }
@@ -262,6 +307,36 @@ public class VariantMetadataMain extends AbstractMain {
                 default:
                     return getDefaultFilters(k, v);
             }
+        }
+    }
+
+    public abstract class StudyResourceCommandExecutor<T extends StudyResourceMetadata<T>> extends ResourceCommandExecutor<T> {
+
+        protected StudyResourceCommandExecutor(VariantStorageMetadataManager mm, Class<T> clazz) {
+            super(mm, clazz);
+        }
+
+        @Override
+        protected Predicate<T> getFilter(String k, String v) throws NoSuchMethodException {
+            if (k.startsWith("status.")) {
+                String statusKey = StringUtils.removeStart(k, "status.");
+                TaskMetadata.Status expectedStatus = TaskMetadata.Status.valueOf(v.toUpperCase(Locale.ROOT));
+                return (t) -> expectedStatus == t.getStatus(statusKey);
+            }
+            switch (k.toLowerCase(Locale.ROOT)) {
+                case "id":
+                    int expectedId = Integer.parseInt(v);
+                    return (t) -> t.getId() == expectedId;
+                case "studyid":
+                case "study":
+                    int expectedStudy = Integer.parseInt(v);
+                    return (t) -> t.getStudyId() == expectedStudy;
+                case "name":
+                    return (t) -> t.getName().equals(v);
+                default:
+                    return super.getFilter(k, v);
+            }
+
         }
     }
 

@@ -80,7 +80,7 @@ public class RgaManagerTest {
             opencga.before();
 
             catalogManager = opencga.getCatalogManager();
-            variantStorageManager = new VariantStorageManager(catalogManager, opencga.getStorageEngineFactory());
+            variantStorageManager = opencga.getVariantStorageManager();
 
             opencga.clearStorageDB(DB_NAME);
 
@@ -147,7 +147,7 @@ public class RgaManagerTest {
         }
 
         catalogManager = opencga.getCatalogManager();
-        variantStorageManager = new VariantStorageManager(catalogManager, opencga.getStorageEngineFactory());
+        variantStorageManager = opencga.getVariantStorageManager();
         rgaManager = new RgaManager(catalogManager, variantStorageManager, rgaEngine);
 
         if (!indexed) {

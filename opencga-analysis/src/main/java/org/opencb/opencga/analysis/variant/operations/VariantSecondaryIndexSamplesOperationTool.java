@@ -17,21 +17,22 @@
 package org.opencb.opencga.analysis.variant.operations;
 
 import org.opencb.opencga.core.tools.annotations.Tool;
-import org.opencb.opencga.core.models.operations.variant.VariantSecondaryIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantSecondaryAnnotationIndexParams;
 import org.opencb.opencga.core.models.common.Enums;
 
 @Tool(id = VariantSecondaryIndexSamplesOperationTool.ID,
         type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
+@Deprecated
 public class VariantSecondaryIndexSamplesOperationTool extends OperationTool {
 
     public static final String ID = "variant-search-index-samples";
-    private VariantSecondaryIndexParams indexParams;
+    private VariantSecondaryAnnotationIndexParams indexParams;
     private String studyFqn;
 
     @Override
     protected void check() throws Exception {
         super.check();
-        indexParams = VariantSecondaryIndexParams.fromParams(VariantSecondaryIndexParams.class, params);
+        indexParams = VariantSecondaryAnnotationIndexParams.fromParams(VariantSecondaryAnnotationIndexParams.class, params);
         studyFqn = getStudyFqn();
     }
 

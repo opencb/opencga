@@ -2,7 +2,6 @@ package org.opencb.opencga.app.cli.internal.executors;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.file.*;
-import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.app.cli.internal.options.FileCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -104,8 +103,7 @@ public class FileCommandExecutor extends InternalCommandExecutor {
 
         Path outDir = Paths.get(options.outDir);
 
-        toolRunner.execute(FetchAndRegisterTask.class, new FileFetch(options.url, options.path),
-                new ObjectMap(), outDir, null, options.commonOptions.token);
+        toolRunner.execute(FetchAndRegisterTask.class, new FileFetch(options.url, options.path), outDir, null, options.commonOptions.token);
     }
 
     private void secondaryIndex() throws ToolException {

@@ -89,7 +89,11 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         INTERNAL_VARIANT_INDEX_STATUS_ID("internal.variant.index.status.id", TEXT_ARRAY, ""),
         INTERNAL_VARIANT_ANNOTATION_INDEX("internal.variant.annotationIndex", TEXT_ARRAY, ""),
         INTERNAL_VARIANT_ANNOTATION_INDEX_STATUS_ID("internal.variant.annotationIndex.status.id", TEXT_ARRAY, ""),
+        INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX("internal.variant.secondaryAnnotationIndex", TEXT_ARRAY, ""),
+        INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX_STATUS_ID("internal.variant.secondaryAnnotationIndex.status.id", TEXT_ARRAY, ""),
+        @Deprecated // use INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX
         INTERNAL_VARIANT_SECONDARY_INDEX("internal.variant.secondaryIndex", TEXT_ARRAY, ""),
+        @Deprecated // Deprecated filter. Should use INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX_STATUS_ID once the migration is completed
         INTERNAL_VARIANT_SECONDARY_INDEX_STATUS_ID("internal.variant.secondaryIndex.status.id", TEXT_ARRAY, ""),
         INTERNAL_ALIGNMENT_INDEX("internal.alignment.index", TEXT_ARRAY, ""),
         INTERNAL_ALIGNMENT_INDEX_STATUS_ID("internal.alignment.index.status.id", TEXT_ARRAY, ""),
