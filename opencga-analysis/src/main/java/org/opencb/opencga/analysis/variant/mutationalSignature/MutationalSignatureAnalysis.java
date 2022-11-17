@@ -66,6 +66,19 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
     public final static String MUTATIONAL_SIGNATURE_DATA_MODEL_FILENAME = "mutational_signature.json";
     public final static String MUTATIONAL_SIGNATURE_FITTING_DATA_MODEL_FILENAME = "mutational_signature_fitting.json";
 
+    public static final String CLUSTERED = "clustered";
+    public static final String NON_CLUSTERED = "non-clustered";
+    public static final String LENGTH_NA = "na";
+    public static final String LENGTH_1_10Kb= "1-10Kb";
+    public static final String LENGTH_10Kb_100Kb = "10Kb-100Kb";
+    public static final String LENGTH_100Kb_1Mb = "100Kb-1Mb";
+    public static final String LENGTH_1Mb_10Mb = "1Mb-10Mb";
+    public static final String LENGTH_10Mb = ">10Mb";
+    public static final String TYPE_DEL = "del";
+    public static final String TYPE_TDS = "tds";
+    public static final String TYPE_INV = "inv";
+    public static final String TYPE_TR = "tr";
+
     @ToolParams
     private MutationalSignatureAnalysisParams signatureParams = new MutationalSignatureAnalysisParams();
 

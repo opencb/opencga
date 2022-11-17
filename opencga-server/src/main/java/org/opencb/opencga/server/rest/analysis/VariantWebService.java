@@ -66,6 +66,7 @@ import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.VersionException;
@@ -964,7 +965,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_ID_DESCRIPTION) @QueryParam("msId") String msId,
             @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_DESCRIPTION_DESCRIPTION) @QueryParam("msDescription") String msDescription
     ) {
-        File outDir = null;
+        java.nio.file.Path outDir = null;
         try {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
@@ -988,9 +989,9 @@ public class VariantWebService extends AnalysisWebService {
 
 
             // Create temporal directory
-            outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "mutational-signature-" + TimeUtils.getTimeMillis()).toFile();
+            outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "mutational-signature-" + TimeUtils.getTimeMillis());
             try {
-                FileUtils.forceMkdir(outDir);
+                FileUtils.forceMkdir(outDir.toFile());
             } catch (IOException e) {
                 throw new IOException("Error creating temporal directory for mutational-signature/query analysis. " + e.getMessage(), e);
             }
@@ -1005,8 +1006,8 @@ public class VariantWebService extends AnalysisWebService {
             logger.info("MutationalSignatureAnalysisParams: {}", params);
 
             MutationalSignatureAnalysis mutationalSignatureAnalysis = new MutationalSignatureAnalysis();
-            mutationalSignatureAnalysis.setUp(opencgaHome.toString(), catalogManager, storageEngineFactory, new ObjectMap(),
-                    outDir.toPath(), null, token);
+            mutationalSignatureAnalysis.setUp(opencgaHome.toString(), catalogManager, storageEngineFactory, new ObjectMap(), outDir, null,
+                    token);
             mutationalSignatureAnalysis.setStudy(query.getString(STUDY.key()));
             mutationalSignatureAnalysis.setSignatureParams(params);
 
@@ -1015,26 +1016,24 @@ public class VariantWebService extends AnalysisWebService {
             watch.stop();
 
             logger.info("Parsing mutational signature catalogue results from {}", outDir);
-            List<Signature.GenomeContextCount> counts = MutationalSignatureAnalysis.parseCatalogueResults(outDir.toPath());
-            Signature signature = new Signature()
-                    .setId(msId)
-                    .setDescription(msDescription)
-                    .setType("SNV")
-                    .setQuery(query)
-                    .setCounts(counts);
-
-            OpenCGAResult<Signature> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
-                    Collections.singletonList(signature), 1);
-            return createOkResponse(result);
+            File signatureFile = outDir.resolve(MutationalSignatureAnalysis.MUTATIONAL_SIGNATURE_DATA_MODEL_FILENAME).toFile();
+            if (outDir.resolve(MutationalSignatureAnalysis.MUTATIONAL_SIGNATURE_DATA_MODEL_FILENAME).toFile().exists()) {
+                Signature signature = JacksonUtils.getDefaultObjectMapper().readerFor(Signature.class).readValue(signatureFile);
+                OpenCGAResult<Signature> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
+                        Collections.singletonList(signature), 1);
+                return createOkResponse(result);
+            } else {
+                return createErrorResponse(new ToolException("Something wrong happened: it could not find the signature output file"));
+            }
         } catch (ToolException | IOException | CatalogException e) {
             return createErrorResponse(e);
         } finally {
             if (outDir != null) {
                 // Delete temporal directory
                 try {
-                    if (outDir.exists()) {
+                    if (outDir.toFile().exists()) {
                         logger.info("Deleting scratch directory {}", outDir);
-                        FileUtils.deleteDirectory(outDir);
+                        FileUtils.deleteDirectory(outDir.toFile());
                     }
                 } catch (IOException e) {
                     logger.warn("Error cleaning scratch directory {}", outDir, e);

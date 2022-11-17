@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.variant.mutationalSignature;
 
+import com.google.errorprone.annotations.Var;
 import htsjdk.samtools.reference.BlockCompressedIndexedFastaSequenceFile;
 import htsjdk.samtools.reference.FastaSequenceIndex;
 import htsjdk.samtools.reference.ReferenceSequence;
@@ -25,8 +26,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.clinical.qc.SignatureFitting;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.BreakendMate;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
@@ -85,24 +87,33 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             if (getQuery() != null) {
                 query.putAll(getQuery());
             }
-            // Ovewrite study and type (SNV)
-            query.append(VariantQueryParam.STUDY.key(), getStudy()).append(VariantQueryParam.TYPE.key(), VariantType.SNV);
+            // Overwrite study and type (SNV)
+            String type = query.getString(VariantQueryParam.TYPE.key());
+            if (type.equals(VariantType.SNV.name())) {
+                // SNV
+                logger.info("Computing catalogue for SNV variants");
+                query.append(VariantQueryParam.STUDY.key(), getStudy()).append(VariantQueryParam.TYPE.key(), VariantType.SNV);
 
-            QueryOptions queryOptions = new QueryOptions();
-            queryOptions.append(QueryOptions.INCLUDE, "id");
-            queryOptions.append(QueryOptions.LIMIT, "1");
+                QueryOptions queryOptions = new QueryOptions();
+                queryOptions.append(QueryOptions.INCLUDE, "id");
+                queryOptions.append(QueryOptions.LIMIT, "1");
 
-            VariantQueryResult<Variant> variantQueryResult = getVariantStorageManager().get(query, queryOptions, getToken());
-            Variant variant = variantQueryResult.first();
-            if (variant == null) {
-                // Nothing to do
-                addWarning("None variant found for that mutational signature query");
-                return;
+                VariantQueryResult<Variant> variantQueryResult = getVariantStorageManager().get(query, queryOptions, getToken());
+                Variant variant = variantQueryResult.first();
+                if (variant == null) {
+                    // Nothing to do
+                    addWarning("None variant found for that mutational signature query");
+                    return;
+                }
+
+                // Run mutational analysis taking into account that the genome context is stored in an index file,
+                // if the genome context file does not exist, it will be created !!!
+                computeSignatureCatalogueSNV(indexFile);
+            } else {
+                // SV
+                logger.info("Computing catalogue for SV variants");
+                computeSignatureCatalogueSV();
             }
-
-            // Run mutational analysis taking into account that the genome context is stored in an index file,
-            // if the genome context file does not exist, it will be created !!!
-            computeSignatureCatalogue(indexFile);
         }
 
         if (StringUtils.isEmpty(getSkip()) || (!getSkip().contains(MutationalSignatureAnalysisParams.SIGNATURE_FITTING_SKIP_VALUE))) {
@@ -210,7 +221,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         }
     }
 
-    public void computeSignatureCatalogue(File indexFile) throws ToolExecutorException {
+    public void computeSignatureCatalogueSNV(File indexFile) throws ToolExecutorException {
         try {
             // Read context index
             Map<String, String> indexMap = new HashMap<>();
@@ -264,6 +275,135 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         } catch (IOException | CatalogException | StorageEngineException | ToolException e) {
             throw new ToolExecutorException(e);
         }
+    }
+
+    public void computeSignatureCatalogueSV() throws ToolExecutorException {
+        try {
+            // Get variant iterator
+            Query query = new Query();
+            if (getQuery() != null) {
+                query.putAll(getQuery());
+            }
+            // Overwrite study and types related to SV
+            query.put(VariantQueryParam.STUDY.key(), getStudy());
+            query.put(VariantQueryParam.TYPE.key(), VariantType.DELETION + "," + VariantType.BREAKEND + "," + VariantType.DUPLICATION  + ","
+                    + VariantType.TANDEM_DUPLICATION + "," + VariantType.INVERSION + "," + VariantType.TRANSLOCATION);
+
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,sv,studies");
+
+            logger.info("Query: {}", query.toJson());
+            logger.info("Query options: {}", queryOptions.toJson());
+            VariantDBIterator iterator = getVariantStorageManager().iterator(query, queryOptions, getToken());
+
+            Map<String, Integer> countMap = new HashMap<>();
+
+            while (iterator.hasNext()) {
+                Variant variant = iterator.next();
+
+                // Update count map
+                String clusteredKey = getClusteredKey(variant);
+                String typeKey = getTypeKey(variant);
+                if (typeKey == null) {
+//                    logger.info("Skipping variant {}: SV type not supported {}", variant.toStringSimple(), variant.getType());
+                    continue;
+                }
+                String lengthKey = getLengthKey(variant);
+                if (lengthKey == null) {
+//                    logger.info("Skipping variant {}: it could not compute the distance to the variant mate", variant.toStringSimple());
+                    continue;
+                }
+                String key = clusteredKey + "__" + typeKey + "__" + lengthKey;
+                if (countMap.containsKey(key)) {
+                    countMap.put(key, 1 + countMap.get(key));
+                } else {
+                    countMap.put(key, 1);
+                }
+            }
+
+            logger.info("Count map size = {}", countMap.size());
+            for (Map.Entry<String, Integer> entry : countMap.entrySet()) {
+                logger.info("context = {}, count = {}", entry.getKey(), entry.getValue());
+            }
+
+            List<Signature.GenomeContextCount> genomeContextCounts = new LinkedList<>();
+            for (String clustered: new LinkedList<>(Arrays.asList(CLUSTERED, NON_CLUSTERED))) {
+                for (String type: new LinkedList<>(Arrays.asList(TYPE_DEL, TYPE_TDS, TYPE_INV))) {
+                    for (String length : new LinkedList<>(Arrays.asList(LENGTH_1_10Kb, LENGTH_10Kb_100Kb, LENGTH_100Kb_1Mb, LENGTH_1Mb_10Mb,
+                            LENGTH_10Mb))) {
+                        String key = clustered + "__" + type + "__" + length;
+                        genomeContextCounts.add(new Signature.GenomeContextCount(key, countMap.containsKey(key) ? countMap.get(key) : 0));
+                    }
+                }
+                String key = clustered + "__" + TYPE_TR + "__" + LENGTH_NA;
+                genomeContextCounts.add(new Signature.GenomeContextCount(key, countMap.containsKey(key) ? countMap.get(key) : 0));
+            }
+
+            Signature signature = new Signature()
+                    .setId(getQueryId())
+                    .setDescription(getQueryDescription())
+                    .setQuery(query)
+                    .setType("SV")
+                    .setCounts(genomeContextCounts);
+
+            JacksonUtils.getDefaultObjectMapper().writerFor(Signature.class).writeValue(getOutDir()
+                    .resolve(MutationalSignatureAnalysis.MUTATIONAL_SIGNATURE_DATA_MODEL_FILENAME).toFile(), signature);
+        } catch (IOException | CatalogException | StorageEngineException | ToolException e) {
+            throw new ToolExecutorException(e);
+        }
+    }
+
+    private String getClusteredKey(Variant variant) {
+        return NON_CLUSTERED;
+    }
+
+    private String getTypeKey(Variant variant) {
+        String variantType = variant.getType() != null ? variant.getType().name() : "";
+        if (CollectionUtils.isNotEmpty(variant.getStudies()) && CollectionUtils.isNotEmpty(variant.getStudies().get(0).getFiles())) {
+            for (FileEntry file : variant.getStudies().get(0).getFiles()) {
+                if (file.getData() != null && file.getData().containsKey("EXT_SVTYPE")) {
+                    variantType = file.getData().get("EXT_SVTYPE");
+                    break;
+                }
+            }
+        }
+
+        switch (variantType) {
+            case "DELETION":
+                return TYPE_DEL;
+            case "DUPLICATION":
+            case "TANDEM_DUPLICATION":
+                return TYPE_TDS;
+            case "INVERSION":
+                return TYPE_INV;
+            case "TRANSLOCATION":
+                return TYPE_TR;
+        }
+        return null;
+    }
+
+    private String getLengthKey(Variant variant) {
+        if (variant.getSv() == null || variant.getSv().getBreakend() == null || variant.getSv().getBreakend().getMate() == null) {
+            return null;
+        }
+        BreakendMate mate = variant.getSv().getBreakend().getMate();
+        if (variant.getChromosome().equals(mate.getChromosome())) {
+            int length = Math.abs(mate.getPosition() - variant.getStart());
+            if (length <= 10000) {
+                return LENGTH_1_10Kb;
+            } else if (length <= 100000) {
+                return LENGTH_10Kb_100Kb;
+            } else if (length <= 1000000) {
+                return LENGTH_100Kb_1Mb;
+            } else if (length <= 10000000) {
+                return LENGTH_1Mb_10Mb;
+            }
+            return LENGTH_10Mb;
+        } else {
+            if (variant.getType() == VariantType.TRANSLOCATION) {
+                return LENGTH_NA;
+            }
+        }
+        return null;
     }
 
     private void computeSignatureFitting() throws IOException, ToolException, CatalogException {
