@@ -744,7 +744,7 @@ public class CatalogStorageMetadataSynchronizer {
         int sampleIndexVersion = study.getSampleIndexConfigurationLatest().getVersion();
         int modifiedSamples = 0;
         int batchSize = 2000;
-        ProgressLogger progressLogger = new ProgressLogger("Synchronizing samples", samples.size()).setBatchSize(batchSize);
+        ProgressLogger progressLogger = new ProgressLogger("Synchronizing samples", samples.size());
         logger.info("Synchronize {} samples", samples.size());
 
         for (List<Integer> sampleIdsBatch : BatchUtils.splitBatches(new ArrayList<>(samples), batchSize)) {
@@ -835,7 +835,7 @@ public class CatalogStorageMetadataSynchronizer {
                 ? IndexStatus.READY
                 : IndexStatus.NONE;
         String sampleIndexMessage = "SecondarySampleIndex is "
-                + (sampleIndexStatus.equals(IndexStatus.NONE) ? "not ready" : "ready")
+                + (sampleIndexStatus.equals(IndexStatus.READY) ? "ready" : "not ready")
                 + " with version=" + sampleIndexVersion
                 + ", genotypeStatus=" + sampleMetadata.getSampleIndexStatus(sampleIndexVersion)
                 + ", annotationStatus=" + sampleMetadata.getSampleIndexAnnotationStatus(sampleIndexVersion);
@@ -861,7 +861,7 @@ public class CatalogStorageMetadataSynchronizer {
         String catalogSecondarySampleIndexFamilyStatus = secureGet(sample, s -> s.getInternal().getVariant().getSecondarySampleIndex().getFamilyStatus().getId(), null);
         if (!sampleIndexFamilyStatus.equals(catalogSecondarySampleIndexFamilyStatus)) {
             String message = "Family Index is "
-                    + (sampleIndexStatus.equals(IndexStatus.NONE) ? "not ready" : "ready")
+                    + (sampleIndexFamilyStatus.equals(IndexStatus.READY) ? "ready" : "not ready")
                     + " with version=" + sampleIndexVersion;
             catalogVariantSecondarySampleIndex.setFamilyStatus(
                     new IndexStatus(sampleIndexFamilyStatus, message));
