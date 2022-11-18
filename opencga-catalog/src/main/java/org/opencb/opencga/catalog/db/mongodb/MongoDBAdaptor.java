@@ -50,7 +50,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String PRIVATE_MONGO_ID = "_id";
     static final String ID = "id";
     static final String PRIVATE_FQN = "fqn";
-    static final String PRIVATE_PROJECT = "_project";
+    public static final String PRIVATE_PROJECT = "_project";
     static final String PRIVATE_PROJECT_ID = PRIVATE_PROJECT + '.' + ID;
     static final String PRIVATE_PROJECT_UID = PRIVATE_PROJECT + '.' + PRIVATE_UID;
     static final String PRIVATE_PROJECT_UUID = PRIVATE_PROJECT + '.' + PRIVATE_UUID;
@@ -357,7 +357,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
      * @param keys    Keys that always need to be included in the response.
      * @return A new QueryOptions object containing the mandatory fields.
      */
-    protected QueryOptions filterQueryOptions(QueryOptions options, List<String> keys) {
+    public static QueryOptions filterQueryOptions(QueryOptions options, List<String> keys) {
         if (options == null) {
             return null;
         }

@@ -32,12 +32,6 @@ public class ProjectConverter extends OpenCgaMongoConverter<Project> {
     }
 
     @Override
-    public Project convertToDataModelType(Document object) {
-        Document projects = (Document) object.get("projects");
-        return super.convertToDataModelType(projects);
-    }
-
-    @Override
     public Document convertToStorageType(Project object) {
         Document document = super.convertToStorageType(object);
         document.put("uid", document.getInteger("uid").longValue());

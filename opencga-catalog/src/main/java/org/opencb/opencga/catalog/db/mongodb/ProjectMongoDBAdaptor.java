@@ -36,18 +36,16 @@ import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
-import org.opencb.opencga.catalog.db.mongodb.iterators.CatalogMongoDBIterator;
+import org.opencb.opencga.catalog.db.mongodb.iterators.ProjectCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.UuidUtils;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
-import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -594,22 +592,6 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             queryResult = endQuery(startTime, dbIterator);
         }
 
-        if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
-                || (!options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")
-                && !options.getAsStringList(QueryOptions.EXCLUDE).contains("studies"))) {
-            QueryOptions studyOptions = options == null ? QueryOptions.empty() : extractNestedOptions(options, "studies");
-            for (Project project : queryResult.getResults()) {
-                Query studyQuery = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
-                try {
-                    OpenCGAResult<Study> studyDataResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(clientSession, studyQuery,
-                            studyOptions);
-                    project.setStudies(studyDataResult.getResults());
-                } catch (CatalogDBException e) {
-                    logger.error("{}", e.getMessage(), e);
-                }
-            }
-        }
-
         return queryResult;
     }
 
@@ -623,21 +605,6 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             // We don't want to raise permission exceptions in methods where general lookups are done. That should only apply if you specify
             queryResult = OpenCGAResult.empty(Project.class);
 //            queryResult.setEvents(Collections.singletonList(new Event(Event.Type.ERROR, e.getMessage())));
-        }
-
-        if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
-                || (!options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")
-                && !options.getAsStringList(QueryOptions.EXCLUDE).contains("studies"))) {
-            for (Project project : queryResult.getResults()) {
-                Query studyQuery = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
-                try {
-                    OpenCGAResult<Study> studyDataResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(studyQuery, options, user);
-                    project.setStudies(studyDataResult.getResults());
-                } catch (CatalogDBException | CatalogAuthorizationException e) {
-                    logger.error("{}", e.getMessage(), e);
-                    queryResult.setEvents(Collections.singletonList(new Event(Event.Type.WARNING, e.getMessage())));
-                }
-            }
         }
 
         return queryResult;
@@ -667,7 +634,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     public DBIterator<Project> iterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options);
-        return new CatalogMongoDBIterator<>(mongoCursor, projectConverter);
+        return new ProjectCatalogMongoDBIterator<>(mongoCursor, clientSession, projectConverter, dbAdaptorFactory, options, null);
     }
 
     @Override
@@ -676,14 +643,14 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         queryOptions.put(NATIVE_QUERY, true);
 
         MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, queryOptions);
-        return new CatalogMongoDBIterator<>(mongoCursor);
+        return new ProjectCatalogMongoDBIterator<>(mongoCursor, null, null, dbAdaptorFactory, options, null);
     }
 
     @Override
     public DBIterator<Project> iterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, options, user);
-        return new CatalogMongoDBIterator<>(mongoCursor, projectConverter);
+        return new ProjectCatalogMongoDBIterator<>(mongoCursor, null, projectConverter, dbAdaptorFactory, options, user);
     }
 
     @Override
@@ -693,72 +660,86 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         queryOptions.put(NATIVE_QUERY, true);
 
         MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, queryOptions, user);
-        return new CatalogMongoDBIterator(mongoCursor);
+        return new ProjectCatalogMongoDBIterator<>(mongoCursor, null, null, dbAdaptorFactory, options, user);
     }
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
-        // Fetch all the studies that the user can see
-        List<Long> projectUids = query.getAsLongList(QueryParams.UID.key());
-        Query studyQuery = new Query();
-        if (projectUids != null && projectUids.size() > 0) {
-            studyQuery.append(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), projectUids);
-        }
-        List<String> projectIds = query.getAsStringList(QueryParams.ID.key());
-        if (projectIds != null && projectIds.size() > 0) {
-            studyQuery.append(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectIds);
-        }
-
-        studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.UID.key(), query.getString(QueryParams.STUDY_UID.key()));
-        studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.ID.key(), query.getString(QueryParams.STUDY_ID.key()));
-        studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.OWNER.key(), query.getString(QueryParams.USER_ID.key()));
-        OpenCGAResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(clientSession, studyQuery,
-                new QueryOptions(), user);
-
-        query.remove(QueryParams.STUDY_UID.key());
-        query.remove(QueryParams.STUDY_ID.key());
-
-        // We build a map of projectId - list<studies>
-//        Map<Long, List<Study>> studyMap = new HashMap<>();
-//        StudyConverter studyConverter = new StudyConverter();
-//        for (Document studyDocument : queryResult.getResults()) {
-//            Long projectId = studyDocument.getLong("_projectId");
-//            if (!studyMap.containsKey(projectId)) {
-//                studyMap.put(projectId, new ArrayList<>());
-//            }
-//            studyMap.get(projectId).add(studyConverter.convertToDataModelType(studyDocument));
-//        }
-
-        if (queryResult.getNumResults() == 0) {
-            // It might be that the owner of the study is asking for its own projects but no studies have been created yet. Just in case,
-            // we check if any study matches the query. If that's the case, the user does not have proper permissions. Otherwise, he might
-            // be the owner...
-            if (!studyQuery.containsKey(StudyDBAdaptor.QueryParams.OWNER.key())) {
-                // We discard opencga study from the query
-                studyQuery.put(StudyDBAdaptor.QueryParams.OWNER.key(), "!" + ParamConstants.OPENCGA_USER_ID);
-            }
-            if (dbAdaptorFactory.getCatalogStudyDBAdaptor().count(clientSession, studyQuery).getNumMatches() == 0) {
-                if (!StringUtils.isEmpty(query.getString(QueryParams.USER_ID.key()))
-                        && !user.equals(query.getString(QueryParams.USER_ID.key()))) {
-                    // User does not have proper permissions
-                    throw CatalogAuthorizationException.deny(user, "view", "project", -1, "");
-                }
-                query.put(QueryParams.USER_ID.key(), user);
+        String requestedUser = query.getString(QueryParams.USER_ID.key());
+        if (StringUtils.isNotEmpty(requestedUser)) {
+            if (requestedUser.equals(user)) {
+                // My own projects (no permissions check)
+                return getMongoCursor(clientSession, query, options);
             } else {
-                // User does not have proper permissions
-                throw CatalogAuthorizationException.deny(user, "view", "project", -1, "");
+                // Other user projects (permissions check)
+                List<Long> projectUids = query.getAsLongList(QueryParams.UID.key());
+                Query studyQuery = new Query();
+                if (projectUids != null && projectUids.size() > 0) {
+                    studyQuery.append(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), projectUids);
+                }
+                List<String> projectIds = query.getAsStringList(QueryParams.ID.key());
+                if (projectIds != null && projectIds.size() > 0) {
+                    studyQuery.append(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectIds);
+                }
+
+                studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.UID.key(), query.getString(QueryParams.STUDY_UID.key()));
+                studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.ID.key(), query.getString(QueryParams.STUDY_ID.key()));
+                studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.OWNER.key(), query.getString(QueryParams.USER_ID.key()));
+                OpenCGAResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(clientSession, studyQuery,
+                        new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), user);
+
+                if (queryResult.getNumResults() > 0) {
+                    Set<String> projectFqn = new HashSet<>();
+                    for (Document result : queryResult.getResults()) {
+                        projectFqn.add(result.getString(StudyDBAdaptor.QueryParams.FQN.key()).split(":")[0]);
+                    }
+                    query.put(QueryParams.FQN.key(), new ArrayList<>(projectFqn));
+                    return getMongoCursor(clientSession, query, options);
+                } else {
+                    return new MongoDBIterator<>(MongoDBIterator.EMPTY_MONGO_CURSOR_ITERATOR, 0);
+                }
+
             }
         } else {
-            // We get all the projects the user can see
-            projectUids = queryResult.getResults().stream()
-                    .map(document -> ((Document) document.get("_project")).getLong("uid"))
-                    .collect(Collectors.toList());
-        }
-        if (projectUids != null && !projectUids.isEmpty()) {
-            query.put(QueryParams.UID.key(), projectUids);
-        }
+            // 1. Get all projects matching the query and extract own projects and external projects
+            MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query,
+                    new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(QueryParams.FQN.key(), QueryParams.UID.key())));
+            ProjectCatalogMongoDBIterator<Project> iterator = new ProjectCatalogMongoDBIterator<>(mongoCursor, clientSession,
+                    projectConverter, dbAdaptorFactory, options, user);
+            List<String> ownerFqns = new ArrayList<>();  // FQNs from projects owned by the user "user"
+            List<Long> externalUids = new ArrayList<>(); // Project uids from projects owned by a user other than "user"
+            while (iterator.hasNext()) {
+                Project project = iterator.next();
+                if (project.getFqn().startsWith(user + "@")) {
+                    ownerFqns.add(project.getFqn());
+                } else {
+                    externalUids.add(project.getUid());
+                }
+            }
 
-        return getMongoCursor(clientSession, query, options);
+            // 2. Extract external projects and check permissions by querying their studies
+            List<String> externalFqns = new ArrayList<>();
+            if (!externalUids.isEmpty()) {
+                Query studyQuery = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), externalUids);
+                OpenCGAResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(clientSession, studyQuery,
+                        new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), user);
+                if (queryResult.getNumResults() > 0) {
+                    Set<String> projectFqn = new HashSet<>();
+                    for (Document result : queryResult.getResults()) {
+                        projectFqn.add(result.getString(StudyDBAdaptor.QueryParams.FQN.key().split(":")[0]));
+                    }
+                    externalFqns.addAll(projectFqn);
+                }
+            }
+
+            // 3. Query based on the final projects the user can see
+            List<String> allFqns = new ArrayList<>(ownerFqns.size() + externalFqns.size());
+            allFqns.addAll(ownerFqns);
+            allFqns.addAll(externalFqns);
+            query.put(QueryParams.FQN.key(), allFqns);
+
+            return getMongoCursor(clientSession, query, options);
+        }
     }
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)
@@ -775,12 +756,16 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         aggregates.add(Aggregates.match(bsonQuery));
 
         // Check include
+        QueryOptions qOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         List<String> includeList = new ArrayList<>();
         if (options != null && options.get(QueryOptions.INCLUDE) != null) {
             List<String> optionsAsStringList = options.getAsStringList(QueryOptions.INCLUDE);
             includeList.addAll(optionsAsStringList.stream().collect(Collectors.toList()));
             if (!includeList.contains(QueryParams.UID.key())) {
                 includeList.add(QueryParams.UID.key());
+            }
+            if (!includeList.contains(QueryParams.FQN.key())) {
+                includeList.add(QueryParams.FQN.key());
             }
 
             // Check if they start with projects.
@@ -790,15 +775,11 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                     includeList.set(i, param);
                 }
             }
+            qOptions.put(QueryOptions.INCLUDE, includeList);
         }
 
         for (Bson aggregate : aggregates) {
             logger.debug("Get project: Aggregate : {}", aggregate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        }
-
-        QueryOptions qOptions = new QueryOptions();
-        if (!includeList.isEmpty()) {
-            qOptions.put(QueryOptions.INCLUDE, includeList);
         }
 
         return userCollection.iterator(clientSession, aggregates, qOptions);

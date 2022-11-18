@@ -43,6 +43,8 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.project.ProjectCreateParams;
+import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.user.Account;
@@ -457,6 +459,23 @@ public class CatalogManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not found");
         catalogManager.getProjectManager().update(projectId, options, null, token);
+    }
+
+    @Test
+    public void testLimitProjects() throws CatalogException {
+        for (int i = 0; i < 20; i++) {
+            catalogManager.getProjectManager().create(new ProjectCreateParams()
+                    .setId("project_" + i)
+                    .setOrganism(new ProjectOrganism("a", "b")), QueryOptions.empty(), token);
+            for (int j = 0; j < 2; j++) {
+                catalogManager.getStudyManager().create("project_" + i, new Study().setId("study_" + i + "_" + j), QueryOptions.empty(),
+                        token);
+            }
+        }
+
+        OpenCGAResult<Project> results = catalogManager.getProjectManager().search(new Query(), new QueryOptions(QueryOptions.LIMIT, 10),
+                token);
+        assertEquals(10, results.getNumResults());
     }
 
     /**
