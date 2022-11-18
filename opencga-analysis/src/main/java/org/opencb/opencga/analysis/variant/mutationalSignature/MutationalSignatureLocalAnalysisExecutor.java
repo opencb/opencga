@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.analysis.variant.mutationalSignature;
 
-import com.google.errorprone.annotations.Var;
 import htsjdk.samtools.reference.BlockCompressedIndexedFastaSequenceFile;
 import htsjdk.samtools.reference.FastaSequenceIndex;
 import htsjdk.samtools.reference.ReferenceSequence;
@@ -76,10 +75,14 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         opencgaHome = Paths.get(getExecutorParams().getString("opencgaHome"));
 
         // Check genome context file for that sample, and create it if necessary
-        // TODO: overwrite support !
-        File indexFile = checkGenomeContextFile();
-        logger.info("Mutational signature analysis is using the genome context file {} for sample {}", indexFile.getAbsolutePath(),
-                getSample());
+        if (StringUtils.isNotEmpty(getSkip())
+                && getSkip().contains(MutationalSignatureAnalysisParams.SIGNATURE_CATALOGUE_SKIP_VALUE)
+                && getSkip().contains(MutationalSignatureAnalysisParams.SIGNATURE_FITTING_SKIP_VALUE)) {
+            // Only compute genome context file
+            // TODO: overwrite support !
+            File indexFile = checkGenomeContextFile();
+            logger.info("Checking genome context file {} for sample {}", indexFile.getAbsolutePath(), getSample());
+        }
 
         if (StringUtils.isEmpty(getSkip()) || (!getSkip().contains(MutationalSignatureAnalysisParams.SIGNATURE_CATALOGUE_SKIP_VALUE))) {
             // Get first variant to check where the genome context is stored
@@ -91,7 +94,13 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             String type = query.getString(VariantQueryParam.TYPE.key());
             if (type.equals(VariantType.SNV.name())) {
                 // SNV
-                logger.info("Computing catalogue for SNV variants");
+                logger.info("Computing catalogue (mutational signature) for SNV variants");
+
+                // TODO: overwrite support !
+                File indexFile = checkGenomeContextFile();
+                logger.info("Mutational signature analysis is using the genome context file {} for sample {}", indexFile.getAbsolutePath(),
+                        getSample());
+
                 query.append(VariantQueryParam.STUDY.key(), getStudy()).append(VariantQueryParam.TYPE.key(), VariantType.SNV);
 
                 QueryOptions queryOptions = new QueryOptions();
@@ -111,7 +120,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                 computeSignatureCatalogueSNV(indexFile);
             } else {
                 // SV
-                logger.info("Computing catalogue for SV variants");
+                logger.info("Computing catalogue (mutational signature) for SV variants");
                 computeSignatureCatalogueSV();
             }
         }
@@ -312,7 +321,10 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 //                    logger.info("Skipping variant {}: it could not compute the distance to the variant mate", variant.toStringSimple());
                     continue;
                 }
-                String key = clusteredKey + "__" + typeKey + "__" + lengthKey;
+                String key = clusteredKey + "_" + typeKey;
+                if (!lengthKey.equals(LENGTH_NA)) {
+                    key += ("_" + lengthKey);
+                }
                 if (countMap.containsKey(key)) {
                     countMap.put(key, 1 + countMap.get(key));
                 } else {
@@ -330,13 +342,22 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                 for (String type: new LinkedList<>(Arrays.asList(TYPE_DEL, TYPE_TDS, TYPE_INV))) {
                     for (String length : new LinkedList<>(Arrays.asList(LENGTH_1_10Kb, LENGTH_10Kb_100Kb, LENGTH_100Kb_1Mb, LENGTH_1Mb_10Mb,
                             LENGTH_10Mb))) {
-                        String key = clustered + "__" + type + "__" + length;
+                        String key = clustered + "_" + type + "_" + length;
                         genomeContextCounts.add(new Signature.GenomeContextCount(key, countMap.containsKey(key) ? countMap.get(key) : 0));
                     }
                 }
-                String key = clustered + "__" + TYPE_TR + "__" + LENGTH_NA;
+                String key = clustered + "_" + TYPE_TR;
                 genomeContextCounts.add(new Signature.GenomeContextCount(key, countMap.containsKey(key) ? countMap.get(key) : 0));
             }
+
+            // Write catalogue file
+            PrintWriter pw = new PrintWriter(getOutDir().resolve(CATALOGUES_FILENAME_DEFAULT).toFile());
+            pw.write(query.getString(VariantQueryParam.SAMPLE.key()));
+            pw.write("\n");
+            for (Signature.GenomeContextCount counts : genomeContextCounts) {
+                pw.write(counts.getContext() + "\t" + counts.getTotal() + "\n");
+            }
+            pw.close();
 
             Signature signature = new Signature()
                     .setId(getQueryId())
