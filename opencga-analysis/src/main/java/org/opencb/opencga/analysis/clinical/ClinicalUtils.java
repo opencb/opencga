@@ -23,9 +23,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.biodata.models.clinical.interpretation.Interpretation;
+import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
@@ -309,5 +307,59 @@ public class ClinicalUtils {
             }
         }
         return null;
+    }
+
+    public static boolean matchEvidence(ClinicalVariantEvidence ev1, ClinicalVariantEvidence ev2) {
+        // Check panel ID
+        if (StringUtils.isNotEmpty(ev1.getPanelId()) && StringUtils.isNotEmpty(ev2.getPanelId())) {
+            if (!ev1.getPanelId().equals(ev2.getPanelId())) {
+                return false;
+            }
+        } else if (StringUtils.isNotEmpty(ev1.getPanelId()) || StringUtils.isNotEmpty(ev2.getPanelId())) {
+            return false;
+        }
+
+        // Check genomic feature
+        if (ev1.getGenomicFeature() != null && ev2.getGenomicFeature() != null) {
+            GenomicFeature gf1 = ev1.getGenomicFeature();
+            GenomicFeature gf2 = ev2.getGenomicFeature();
+
+            // Type
+            if (StringUtils.isNotEmpty(gf1.getType()) && StringUtils.isNotEmpty(gf2.getType())) {
+                if (!gf1.getType().equals(gf2.getType())) {
+                    return false;
+                }
+            } else if (StringUtils.isNotEmpty(gf1.getType()) || StringUtils.isNotEmpty(gf2.getType())) {
+                return false;
+            }
+
+            // Gene and transcript
+            if (StringUtils.isNotEmpty(gf1.getId()) && StringUtils.isNotEmpty(gf2.getId())
+                    && StringUtils.isNotEmpty(gf1.getTranscriptId()) && StringUtils.isNotEmpty(gf2.getTranscriptId())) {
+                if (gf1.getId().equals(gf2.getId()) && gf1.getTranscriptId().equals(gf2.getTranscriptId())) {
+                    return true;
+                }
+            } else {
+                if (StringUtils.isNotEmpty(gf1.getId()) && StringUtils.isNotEmpty(gf2.getId())) {
+                    if (gf1.getId().equals(gf2.getId())) {
+                        return true;
+                    }
+                } else if (StringUtils.isNotEmpty(gf1.getId()) || StringUtils.isNotEmpty(gf2.getId())) {
+                    return false;
+                }
+
+
+                if (StringUtils.isNotEmpty(gf1.getTranscriptId()) && StringUtils.isNotEmpty(gf2.getTranscriptId())) {
+                    if (gf1.getTranscriptId().equals(gf2.getTranscriptId())) {
+                        return true;
+                    } else if (StringUtils.isNotEmpty(gf1.getTranscriptId()) || StringUtils.isNotEmpty(gf2.getTranscriptId())) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        }
+        return false;
     }
 }
