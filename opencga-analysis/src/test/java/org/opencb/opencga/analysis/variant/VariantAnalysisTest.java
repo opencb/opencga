@@ -27,7 +27,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.clinical.qc.QualityControlFile;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
+import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -70,6 +72,7 @@ import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.Location;
 import org.opencb.opencga.core.models.operations.variant.VariantSampleIndexParams;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleQualityControl;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.user.Account;
@@ -90,6 +93,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -98,6 +102,7 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.*;
+import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 @RunWith(Parameterized.class)
 public class VariantAnalysisTest {
@@ -720,8 +725,8 @@ public class VariantAnalysisTest {
     }
 
     @Test
-    public void testMutationalSignatureSV() throws Exception {
-        Path outDir = Paths.get(opencga.createTmpOutdir("_export"));
+    public void testMutationalSignatureCatalogueSV() throws Exception {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_mutational_signature_catalogue"));
         System.out.println("outDir = " + outDir);
 
         MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
@@ -743,6 +748,46 @@ public class VariantAnalysisTest {
         assertTrue(catalogueFile.exists());
 
         java.io.File signatureFile = outDir.resolve(MutationalSignatureAnalysis.MUTATIONAL_SIGNATURE_DATA_MODEL_FILENAME).toFile();
+        bytes = Files.readAllBytes(signatureFile.toPath());
+        System.out.println(new String(bytes));
+        assertTrue(signatureFile.exists());
+    }
+
+//    @Test
+    public void testMutationalSignatureFittingSV() throws Exception {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_mutational_signature_fitting"));
+        System.out.println("outDir = " + outDir);
+
+        URI uri = getResourceUri("mutational-signature-sv.json");
+        Path path = Paths.get(uri.getPath());
+        Signature signature = JacksonUtils.getDefaultObjectMapper().readerFor(Signature.class).readValue(path.toFile());
+        SampleQualityControl qc = new SampleQualityControl();
+        qc.getVariant().setSignatures(Collections.singletonList(signature));
+        SampleUpdateParams updateParams = new SampleUpdateParams().setQualityControl(qc);
+        catalogManager.getSampleManager().update(STUDY, son, updateParams, null, token);
+
+        MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
+        params.setSample(son);
+        params.setId(signature.getId());
+        params.setFitId("fitting-1");
+        params.setFitMethod("FitMS");
+        params.setFitSigVersion("RefSigv2");
+        params.setFitOrgan("Breast");
+        params.setFitNBoot(200);
+        params.setFitThresholdPerc(5.0f);
+        params.setFitThresholdPval(0.05f);
+        params.setFitMaxRareSigs(1);
+        params.setSkip("catalogue");
+
+        toolRunner.execute(MutationalSignatureAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY),
+                outDir, null, token);
+
+        java.io.File catalogueFile = outDir.resolve(MutationalSignatureAnalysis.SIGNATURE_COEFFS_FILENAME).toFile();
+        byte[] bytes = Files.readAllBytes(catalogueFile.toPath());
+        System.out.println(new String(bytes));
+        assertTrue(catalogueFile.exists());
+
+        java.io.File signatureFile = outDir.resolve(MutationalSignatureAnalysis.MUTATIONAL_SIGNATURE_FITTING_DATA_MODEL_FILENAME).toFile();
         bytes = Files.readAllBytes(signatureFile.toPath());
         System.out.println(new String(bytes));
         assertTrue(signatureFile.exists());
