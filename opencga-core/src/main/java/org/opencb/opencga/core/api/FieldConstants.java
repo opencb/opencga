@@ -2,6 +2,7 @@ package org.opencb.opencga.core.api;
 
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
+import org.opencb.commons.annotations.DataField;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -424,6 +425,14 @@ public class FieldConstants {
             + " Each signature is in a column, with signature names as column hearders and channel names as row names in the first column"
             + " with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures"
             + " are considered rare signatures.";
+
+    // HRDetect analysis
+    public static final String HRDETECT_ID_DESCRIPTION = "ID to identify the HRDetect results.";
+    public static final String HRDETECT_DESCRIPTION_DESCRIPTION = "Decription for these particular HRDetect results.";
+    public static final String HRDETECT_SNV_FITTING_ID_DESCRIPTION = "Mutational signature fitting ID for SNV.";
+    public static final String HRDETECT_SV_FITTING_ID_DESCRIPTION = "Mutational signature fitting ID for SV.";
+    public static final String HRDETECT_CNV_QUERY_DESCRIPTION = "CNV query";
+    public static final String HRDETECT_INDEL_QUERY_DESCRIPTION = "INDEL query";
 
     // Genome plot (sample-qc-run)
     public static final String GENOME_PLOT_ID_DESCRIPTION = "Genome plot ID.";
