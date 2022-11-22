@@ -35,6 +35,7 @@ import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
+import org.opencb.opencga.core.tools.variant.HRDetectAnalysisExecutor;
 import org.opencb.opencga.core.tools.variant.MutationalSignatureAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -51,11 +52,13 @@ import static org.opencb.opencga.analysis.variant.mutationalSignature.Mutational
 
 @ToolExecutor(id="opencga-local", tool = HRDetectAnalysis.ID,
         framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.STORAGE)
-public class HRDetectLocalAnalysisExecutor extends MutationalSignatureAnalysisExecutor
+public class HRDetectLocalAnalysisExecutor extends HRDetectAnalysisExecutor
         implements StorageToolExecutor {
 
-    public final static String R_DOCKER_IMAGE = "opencb/opencga-ext-tools:"
-            + GitRepositoryState.get().getBuildVersion();
+    public final static String R_DOCKER_IMAGE = "opencb/opencga-ext-tools:" + GitRepositoryState.get().getBuildVersion();
+
+    private final static String CNV_FILENAME = "cnv.bed";
+    private final static String INDEL_FILENAME = "indel.bed";
 
     private Path opencgaHome;
 
@@ -65,258 +68,54 @@ public class HRDetectLocalAnalysisExecutor extends MutationalSignatureAnalysisEx
     public void run() throws ToolException, CatalogException, IOException, StorageEngineException {
         opencgaHome = Paths.get(getExecutorParams().getString("opencgaHome"));
 
-        if (StringUtils.isEmpty(getCatalogues())) {
-            // Get first variant to check where the genome context is stored
-            Query query = new Query();
-            if (getQuery() != null) {
-                query.putAll(getQuery());
-            }
-            // Ovewrite study and type (SNV)
-            query.append(VariantQueryParam.STUDY.key(), getStudy()).append(VariantQueryParam.TYPE.key(), VariantType.SNV);
+        // Prepare CNV data
+        prepareCNVData();
 
-            QueryOptions queryOptions = new QueryOptions();
-            queryOptions.append(QueryOptions.INCLUDE, "id");
-            queryOptions.append(QueryOptions.LIMIT, "1");
-
-            VariantQueryResult<Variant> variantQueryResult = getVariantStorageManager().get(query, queryOptions, getToken());
-            Variant variant = variantQueryResult.first();
-            if (variant == null) {
-                // Nothing to do
-                addWarning("None variant found for that mutational signature query");
-                return;
-            }
-
-            // Run mutational analysis taking into account that the genome context is stored in an index file,
-            // if the genome context file does not exist, it will be created !!!
-            computeFromContextFile();
-        }
+        // Prepare INDEL data
+        prepareINDELData();
 
         // Run R script for fitting signature
         executeRScript();
-//        if (StringUtils.isEmpty(getOrgan()) && (StringUtils.isEmpty(getSigVersion()) || getSigVersion().startsWith("Ref"))) {
-//            addWarning("Since the parameter 'organ' is missing and RefSig is been used, the fitting signature will not be computed.");
-//        } else {
-//            executeRScript();
-//        }
     }
 
-    private void computeFromContextFile() throws ToolExecutorException {
-        // Context index filename
-        File indexFile = null;
-        String indexFilename = getContextIndexFilename();
-        try {
-            Query fileQuery = new Query("name", indexFilename);
-            QueryOptions fileQueryOptions = new QueryOptions("include", "uri");
-            OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult = getVariantStorageManager()
-                    .getCatalogManager()
-                    .getFileManager().search(getStudy(), fileQuery, fileQueryOptions, getToken());
-
-            long maxSize = 0;
-            for (org.opencb.opencga.core.models.file.File file : fileResult.getResults()) {
-                File auxFile = new File(file.getUri().getPath());
-                if (auxFile.exists() && auxFile.length() > maxSize) {
-                    maxSize = auxFile.length();
-                    indexFile = auxFile;
-                }
-            }
-        } catch (CatalogException e) {
-            throw new ToolExecutorException(e);
-        }
-
-        if (indexFile == null) {
-            // The genome context file does not exist, we have to create it !!!
-            indexFile = getOutDir().resolve(indexFilename).toFile();
-            createGenomeContextFile(indexFile);
-        }
-
-        if (!indexFile.exists()) {
-            throw new ToolExecutorException("Could not create the genome context index file for sample " + getSample());
-        }
-
-        try {
-            // Read context index
-            Map<String, String> indexMap = new HashMap<>();
-            BufferedReader br = new BufferedReader(new FileReader(indexFile));
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] parts = line.split("\t");
-                indexMap.put(parts[0], parts[1]);
-            }
-
-            // Get variant iterator
-            Query query = new Query();
-            if (getQuery() != null) {
-                query.putAll(getQuery());
-            }
-            // Ovewrite study and type (SNV)
-            query.append(VariantQueryParam.STUDY.key(), getStudy()).append(VariantQueryParam.TYPE.key(), VariantType.SNV);
-
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id");
-
-            VariantDBIterator iterator = getVariantStorageManager().iterator(query, queryOptions, getToken());
-
-            Map<String, Map<String, Integer>> countMap = initCountMap();
-
-            while (iterator.hasNext()) {
-                Variant variant = iterator.next();
-
-                // Update count map
-                updateCountMap(variant, indexMap.get(variant.toString()), countMap);
-            }
-
-            // Write context counts
-            File cataloguesFile = getOutDir().resolve(CATALOGUES_FILENAME_DEFAULT).toFile();
-            writeCountMap(getSample(), countMap, cataloguesFile);
-
-            // Update the parameter catalogues
-            setCatalogues(cataloguesFile.getAbsolutePath());
-        } catch (IOException | CatalogException | StorageEngineException | ToolException e) {
-            throw new ToolExecutorException(e);
+    private void prepareCNVData() throws ToolExecutorException, StorageEngineException, CatalogException {
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.append(QueryOptions.INCLUDE, "id");
+        VariantDBIterator iterator = getVariantStorageManager().iterator(new Query(getCnvQuery()), queryOptions, getToken());
+        while (iterator.hasNext()) {
+            Variant variant = iterator.next();
         }
     }
 
-    private void createGenomeContextFile(File indexFile) throws ToolExecutorException {
-        try {
-            // First,
-            ResourceUtils.DownloadedRefGenome refGenome = ResourceUtils.downloadRefGenome(getAssembly(), getOutDir(),
-                    opencgaHome);
-
-            if (refGenome == null) {
-                throw new ToolExecutorException("Something wrong happened accessing reference genome, check local path"
-                        + " and public repository");
-            }
-
-            Path refGenomePath = refGenome.getGzFile().toPath();
-
-            // Compute signature profile: contextual frequencies of each type of base substitution
-
-            Query query = new Query()
-                    .append(VariantQueryParam.STUDY.key(), getStudy())
-                    .append(VariantQueryParam.SAMPLE.key(), getSample())
-                    .append(VariantQueryParam.TYPE.key(), VariantType.SNV);
-
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id");
-
-            // Get variant iterator
-            VariantDBIterator iterator = getVariantStorageManager().iterator(query, queryOptions, getToken());
-
-            // Read mutation context from reference genome (.gz, .gz.fai and .gz.gzi files)
-            String base = refGenomePath.toAbsolutePath().toString();
-
-            try (PrintWriter pw = new PrintWriter(indexFile);
-                 BlockCompressedIndexedFastaSequenceFile indexed = new BlockCompressedIndexedFastaSequenceFile(
-                         refGenomePath, new FastaSequenceIndex(new File(base + ".fai")),
-                         GZIIndex.loadIndex(Paths.get(base + ".gzi")))) {
-                while (iterator.hasNext()) {
-                    Variant variant = iterator.next();
-
-                    try {
-                        // Accessing to the context sequence and write it into the context index file
-                        ReferenceSequence refSeq = indexed.getSubsequenceAt(variant.getChromosome(), variant.getStart() - 1,
-                                variant.getEnd() + 1);
-                        String sequence = new String(refSeq.getBases());
-
-                        // Write context index
-                        pw.println(variant.toString() + "\t" + sequence);
-                    } catch (Exception e) {
-                        logger.warn("When creating genome context file for mutational signature analysis, ignoring variant "
-                                + variant.toStringSimple() + ". " + e.getMessage());
-                    }
-                }
-            }
-
-        } catch (IOException | CatalogException | ToolException | StorageEngineException e) {
-            throw new ToolExecutorException(e);
-        }
-    }
-
-    private void updateCountMap(Variant variant, String sequence, Map<String, Map<String, Integer>> countMap) {
-        try {
-            String k, seq;
-
-            String key = variant.getReference() + ">" + variant.getAlternate();
-
-            if (countMap.containsKey(key)) {
-                k = key;
-                seq = sequence;
-            } else {
-                k = MutationalSignatureAnalysisExecutor.complement(key);
-                seq = MutationalSignatureAnalysisExecutor.reverseComplement(sequence);
-            }
-            if (countMap.get(k).containsKey(seq)) {
-                countMap.get(k).put(seq, countMap.get(k).get(seq) + 1);
-            }
-        } catch (Exception e) {
-            logger.warn("When counting mutational signature substitutions, ignoring variant " + variant.toStringSimple()
-                    + " with sequence " + sequence + ". " + e.getMessage());
+    private  void prepareINDELData() throws ToolExecutorException, StorageEngineException, CatalogException {
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.append(QueryOptions.INCLUDE, "id");
+        VariantDBIterator iterator = getVariantStorageManager().iterator(new Query(getIndelQuery()), queryOptions, getToken());
+        while (iterator.hasNext()) {
+            Variant variant = iterator.next();
         }
     }
 
     private void executeRScript() throws IOException {
-        String inputPath = getOutDir().toString();
-        if (new File(getCatalogues()).exists()) {
-            inputPath = new File(getCatalogues()).getParent();
-        }
+        // Input
         List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
-        inputBindings.add(new AbstractMap.SimpleEntry<>(inputPath, "/data/input"));
-        if (StringUtils.isNotEmpty(getSignaturesFile())) {
-            File signaturesFile = new File(getSignaturesFile());
-            if (signaturesFile.exists()) {
-                inputBindings.add(new AbstractMap.SimpleEntry<>(signaturesFile.getParent(), "/data/signaturesFile"));
-            }
-        }
-        if (StringUtils.isNotEmpty(getRareSignaturesFile())) {
-            File rareSignaturesFile = new File(getRareSignaturesFile());
-            if (rareSignaturesFile.exists()) {
-                inputBindings.add(new AbstractMap.SimpleEntry<>(rareSignaturesFile.getParent(), "/data/rareSignaturesFile"));
-            }
-        }
+        inputBindings.add(new AbstractMap.SimpleEntry<>(getSnvRDataPath().toFile().getParent(), "/snv"));
+        inputBindings.add(new AbstractMap.SimpleEntry<>(getSvRDataPath().toFile().getParent(), "/sv"));
+
+        // Output
         AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir()
-                .toAbsolutePath().toString(), "/data/output");
+                .toAbsolutePath().toString(), "/data");
+
+        // Command
         StringBuilder scriptParams = new StringBuilder("R CMD Rscript --vanilla ")
                 .append("/opt/opencga/signature.tools.lib/scripts/signatureFit")
-                .append(" --catalogues=/data/input/").append(new File(getCatalogues()).getName())
-                .append(" --outdir=/data/output");
-        if (StringUtils.isNotEmpty(getFitMethod())) {
-            scriptParams.append(" --fitmethod=").append(getFitMethod());
-        }
-        if (StringUtils.isNotEmpty(getSigVersion())) {
-            scriptParams.append(" --sigversion=").append(getSigVersion());
-        }
-        if (StringUtils.isNotEmpty(getOrgan())) {
-            scriptParams.append(" --organ=").append(getOrgan());
-        }
-        if (getThresholdPerc() != null) {
-            scriptParams.append(" --thresholdperc=").append(getThresholdPerc());
-        }
-        if (getThresholdPval() != null) {
-            scriptParams.append(" --thresholdpval=").append(getThresholdPval());
-        }
-        if (getMaxRareSigs() != null) {
-            scriptParams.append(" --maxraresigs=").append(getMaxRareSigs());
-        }
-        if (getnBoot() != null) {
-            scriptParams.append(" -b --nboot=").append(getnBoot());
-        }
-        if (StringUtils.isNotEmpty(getSignaturesFile()) && new File(getSignaturesFile()).exists()) {
-            scriptParams.append(" --signaturesfile=/data/signaturesFile/").append(new File(getSignaturesFile()).getName());
-        }
-        if (StringUtils.isNotEmpty(getRareSignaturesFile()) && new File(getRareSignaturesFile()).exists()) {
-            scriptParams.append(" --raresignaturesfile=/data/rareSignaturesFile/").append(new File(getRareSignaturesFile()).getName());
-        }
-        switch (getAssembly()) {
-            case "GRCh37": {
-                scriptParams.append(" --genomev=hg19");
-                break;
-            }
-            case "GRCh38": {
-                scriptParams.append(" --genomev=hg38");
-                break;
-            }
-        }
+                .append(" --snv=/snv/").append(getSnvRDataPath().toFile().getName())
+                .append(" --sv=/sv/").append(getSvRDataPath().toFile().getName())
+                .append(" --cnv=/data/").append(CNV_FILENAME)
+                .append(" --indel=/data/").append(INDEL_FILENAME)
+                .append(" --outdir=/data");
 
-        String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams.toString(),
-                null);
+        String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams.toString(), null);
         logger.info("Docker command line: " + cmdline);
     }
 }

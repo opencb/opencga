@@ -18,11 +18,19 @@ package org.opencb.opencga.analysis.sample.qc;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
+import org.opencb.biodata.formats.alignment.picard.HsMetrics;
+import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
+import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
+import org.opencb.biodata.formats.sequence.fastqc.FastQcMetrics;
+import org.opencb.biodata.models.clinical.qc.*;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentFastQcMetricsAnalysis;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentFlagStatsAnalysis;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentHsMetricsAnalysis;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentStatsAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.analysis.variant.genomePlot.GenomePlotAnalysis;
@@ -32,10 +40,17 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.alignment.AlignmentFileQualityControl;
+import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileQualityControl;
+import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleQualityControl;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.sample.SampleVariantQualityControlMetrics;
 import org.opencb.opencga.core.models.variant.GenomePlotAnalysisParams;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
@@ -46,9 +61,9 @@ import org.opencb.opencga.core.tools.annotations.ToolParams;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.Map;
+import java.util.*;
 
+import static org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis.*;
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_SAMPLES;
 
 @Tool(id = SampleQcAnalysis.ID, resource = Enums.Resource.SAMPLE, description = SampleQcAnalysis.DESCRIPTION)
@@ -64,7 +79,8 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
     private Path genomePlotConfigPath;
 
     private boolean runVariantStats = true;
-    private boolean runSignature = true;
+    private boolean runSignatureCatalogue = true;
+    private boolean runSignatureFitting = true;
     private boolean runGenomePlot = true;
 
     @Override
@@ -94,38 +110,51 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
             throw new ToolException("Sample '" + analysisParams.getSample() + "' not found.");
         }
 
-        String msg;
-        
+        // Prepare flags
+        String skip = null;
+        if (StringUtils.isNotEmpty(analysisParams.getSkip())) {
+            skip = analysisParams.getSkip().toLowerCase().replace(" ", "");
+        }
+        if (StringUtils.isNotEmpty(skip)) {
+            Set<String> skipValues = new HashSet<>(Arrays.asList(skip.split(",")));
+            if (skipValues.contains(SampleQcAnalysisParams.VARIANT_STATS_SKIP_VALUE)) {
+                runVariantStats = false;
+            }
+            if (skipValues.contains(SampleQcAnalysisParams.SIGNATURE_SKIP_VALUE)
+                    || skipValues.contains(SampleQcAnalysisParams.SIGNATURE_CATALOGUE_SKIP_VALUE)) {
+                runSignatureCatalogue = false;
+            }
+            if (skipValues.contains(SampleQcAnalysisParams.SIGNATURE_SKIP_VALUE)
+                    || skipValues.contains(SampleQcAnalysisParams.SIGNATURE_FITTING_SKIP_VALUE)) {
+                runSignatureFitting = false;
+            }
+            if (skipValues.contains(SampleQcAnalysisParams.GENOME_PLOT_SKIP_VALUE)) {
+                runGenomePlot = false;
+            }
+        }
+
         // Check variant stats
-        final String OPENCGA_ALL = "ALL";
-        if (OPENCGA_ALL.equals(analysisParams.getVsId())) {
-            msg = "Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a variant stats ID";
-            addWarning(msg);
-            logger.warn(msg);
-            runVariantStats = false;
-        }
+        if (runVariantStats) {
+            final String OPENCGA_ALL = "ALL";
+            if (OPENCGA_ALL.equals(analysisParams.getVsId())) {
+                new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a variant stats ID");
+            }
 
-        if (StringUtils.isEmpty(analysisParams.getVsId()) && analysisParams.getVsQuery() != null
-                && !analysisParams.getVsQuery().toParams().isEmpty()) {
-            msg = "Invalid parameters: if variant stats ID is empty, variant stats query must be empty";
-            addWarning(msg);
-            logger.warn(msg);
-            runVariantStats = false;
-        }
-        if (StringUtils.isNotEmpty(analysisParams.getVsId())
-                && (analysisParams.getVsQuery() == null || analysisParams.getVsQuery().toParams().isEmpty())) {
-            msg = "Invalid parameters: if you provide a variant stats ID, variant stats query can not be empty";
-            addWarning(msg);
-            logger.warn(msg);
-            runVariantStats = false;
-        }
-        if (StringUtils.isEmpty(analysisParams.getVsId())) {
-            analysisParams.setVsId(OPENCGA_ALL);
-        }
+            if (StringUtils.isEmpty(analysisParams.getVsId()) && analysisParams.getVsQuery() != null
+                    && !analysisParams.getVsQuery().toParams().isEmpty()) {
+                new ToolException("Invalid parameters: if variant stats ID is empty, variant stats query must be empty");
+            }
+            if (StringUtils.isNotEmpty(analysisParams.getVsId())
+                    && (analysisParams.getVsQuery() == null || analysisParams.getVsQuery().toParams().isEmpty())) {
+                new ToolException("Invalid parameters: if you provide a variant stats ID, variant stats query can not be empty");
+            }
+            if (StringUtils.isEmpty(analysisParams.getVsId())) {
+                analysisParams.setVsId(OPENCGA_ALL);
+            }
 
-        if (analysisParams.getVsQuery() == null) {
-            runVariantStats = false;
-        } else {
+            if (analysisParams.getVsQuery() == null) {
+                new ToolException("Invalid parameters: variant stats query is empty");
+            }
             if (sample.getQualityControl() != null && sample.getQualityControl().getVariant() != null) {
                 if (CollectionUtils.isNotEmpty(sample.getQualityControl().getVariant().getVariantStats())
                         && OPENCGA_ALL.equals(analysisParams.getVsId())) {
@@ -133,10 +162,8 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
                 } else {
                     for (SampleQcVariantStats variantStats : sample.getQualityControl().getVariant().getVariantStats()) {
                         if (variantStats.getId().equals(analysisParams.getVsId())) {
-                            msg = "Invalid parameters: variant stats ID '" + analysisParams.getVsId() + "' is already used";
-                            addWarning(msg);
-                            logger.warn(msg);
-                            runVariantStats = false;
+                            throw new ToolException("Invalid parameters: variant stats ID '" + analysisParams.getVsId()
+                                    + "' is already used");
                         }
                     }
                 }
@@ -144,23 +171,33 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Check mutational signature
-        if (StringUtils.isEmpty(analysisParams.getMsQuery())) {
-            runSignature = false;
+        if (runSignatureCatalogue) {
+            if (StringUtils.isEmpty(analysisParams.getMsQuery())) {
+                new ToolException("Invalid parameters: mutational signature query is empty");
+            }
         }
 
-        if (runSignature && !sample.isSomatic()) {
-            msg = "Skipping mutational signature: sample '" + sample.getId() + "' is not somatic.";
+        if (runSignatureCatalogue && !sample.isSomatic()) {
+            String msg = "Skipping mutational signature catalog analysis: sample '" + sample.getId() + "' is not somatic.";
             addWarning(msg);
             logger.warn(msg);
-            runSignature = false;
+            runSignatureCatalogue = false;
+        }
+
+        if (runSignatureFitting && !sample.isSomatic()) {
+            String msg = "Skipping mutational signature fitting analysis: sample '" + sample.getId() + "' is not somatic.";
+            addWarning(msg);
+            logger.warn(msg);
+            runSignatureFitting = false;
         }
 
         // Check genome plot
-        if (StringUtils.isEmpty(analysisParams.getGpConfigFile())) {
-            runGenomePlot = false;
-        } else {
+        if (runGenomePlot) {
+            if (StringUtils.isEmpty(analysisParams.getGpConfigFile())) {
+                new ToolException("Invalid parameters: genome plot configuration file is empty");
+            }
             if (runGenomePlot && !sample.isSomatic()) {
-                msg = "Skipping genome plot: sample '" + sample.getId() + "' is not somatic.";
+                String msg = "Skipping genome plot: sample '" + sample.getId() + "' is not somatic.";
                 addWarning(msg);
                 logger.warn(msg);
                 runGenomePlot = false;
@@ -169,25 +206,21 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
                         catalogManager.getFileManager(), getToken());
                 genomePlotConfigPath = Paths.get(genomePlotConfFile.getUri().getPath());
                 if (!genomePlotConfigPath.toFile().exists()) {
-                    msg = "Invalid parameters: genome plot configuration file does not exist (" + genomePlotConfigPath + ")";
-                    addWarning(msg);
-                    logger.warn(msg);
-                    runGenomePlot = false;
+                    new ToolException("Invalid parameters: genome plot configuration file does not exist (" + genomePlotConfigPath + ")");
                 }
             }
         }
-
     }
 
     @Override
     protected void run() throws ToolException {
         step(() -> {
-            try {
-                Map<String, Object> params;
-                OpenCGAResult<Job> variantStatsJobResult;
-                OpenCGAResult<Job> signatureJobResult;
-                OpenCGAResult<Job> genomePlotJobResult;
+            Map<String, Object> params;
+            String variantStatsJobId = null;
+            String signatureJobId = null;
+            String genomePlotJobId = null;
 
+            try {
                 if (runVariantStats) {
                     // Run variant stats
                     params = new SampleVariantStatsAnalysisParams(Collections.singletonList(analysisParams.getSample()), null, null, true,
@@ -195,64 +228,202 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
                             analysisParams.getVsQuery())
                             .toParams(new ObjectMap(ParamConstants.STUDY_PARAM, getStudy()));
 
-                    variantStatsJobResult = catalogManager.getJobManager()
-                            .submit(getStudy(), SampleVariantStatsAnalysis.ID, Enums.Priority.MEDIUM, params, null, "Job generated by "
+                    OpenCGAResult<Job> variantStatsJobResult = catalogManager.getJobManager()
+                            .submit(study, SampleVariantStatsAnalysis.ID, Enums.Priority.MEDIUM, params, null, "Job generated by "
                                     + getId() + " - " + getJobId(), Collections.emptyList(), Collections.emptyList(), token);
-                    addEvent(Event.Type.INFO, "Submit job " + variantStatsJobResult.first().getId() + " to compute sample variant stats ("
-                            + SampleVariantStatsAnalysis.ID + ")");
+                    variantStatsJobId = variantStatsJobResult.first().getId();
+                    addEvent(Event.Type.INFO, "Submit job " + variantStatsJobId + " to compute stats (" + SampleVariantStatsAnalysis.ID
+                            + ")");
                 }
+            } catch (CatalogException e) {
+                addWarning("Error launching job for sample variant stats analysis: " + e.getMessage());
+                variantStatsJobId = null;
+            }
 
-                if (runSignature) {
+            try {
+                if (runSignatureCatalogue || runSignatureFitting) {
                     // Run mutational signature
+                    logger.info("Preparing to submit the mutational signature analysis job");
 
-                    // Be sure to update sample quality control
-                    ObjectMap query = JacksonUtils.getDefaultObjectMapper().readValue(analysisParams.getMsQuery(), ObjectMap.class);
-                    query.append(MutationalSignatureAnalysis.QC_UPDATE_KEYNAME, true);
-                    String queryString = query.toJson();
+                    String skip = null;
+                    if (!runSignatureCatalogue) {
+                        skip = MutationalSignatureAnalysisParams.SIGNATURE_CATALOGUE_SKIP_VALUE;
+                    } else if (!runSignatureFitting) {
+                        skip = MutationalSignatureAnalysisParams.SIGNATURE_FITTING_SKIP_VALUE;
+                    }
 
                     params = new MutationalSignatureAnalysisParams()
                             .setId(analysisParams.getMsId())
                             .setDescription(analysisParams.getMsDescription())
-                            .setQuery(queryString)
+                            .setSample(analysisParams.getSample())
+                            .setQuery(analysisParams.getMsQuery())
+                            .setFitId(analysisParams.getMsFitId())
                             .setFitMethod(analysisParams.getMsFitMethod())
-                            .setSigVersion(analysisParams.getMsSigVersion())
-                            .setOrgan(analysisParams.getMsOrgan())
-                            .setnBoot(analysisParams.getMsNBoot())
-                            .setThresholdPerc(analysisParams.getMsThresholdPerc())
-                            .setThresholdPval(analysisParams.getMsThresholdPval())
-                            .setMaxRareSigs(analysisParams.getMsMaxRareSigs())
-                            .setSignaturesFile(analysisParams.getMsSignaturesFile())
-                            .setRareSignaturesFile(analysisParams.getMsRareSignaturesFile())
+                            .setFitSigVersion(analysisParams.getMsFitSigVersion())
+                            .setFitOrgan(analysisParams.getMsFitOrgan())
+                            .setFitNBoot(analysisParams.getMsFitNBoot())
+                            .setFitThresholdPerc(analysisParams.getMsFitThresholdPerc())
+                            .setFitThresholdPval(analysisParams.getMsFitThresholdPval())
+                            .setFitMaxRareSigs(analysisParams.getMsFitMaxRareSigs())
+                            .setFitSignaturesFile(analysisParams.getMsFitSignaturesFile())
+                            .setFitRareSignaturesFile(analysisParams.getMsFitRareSignaturesFile())
+                            .setSkip(skip)
                             .toParams(new ObjectMap(ParamConstants.STUDY_PARAM, getStudy()));
 
-                    signatureJobResult = catalogManager.getJobManager()
+                    OpenCGAResult<Job> signatureJobResult = catalogManager.getJobManager()
                             .submit(getStudy(), MutationalSignatureAnalysis.ID, Enums.Priority.MEDIUM, params, null, "Job generated by "
                                     + getId() + " - " + getJobId(), Collections.emptyList(), Collections.emptyList(), token);
-                    addEvent(Event.Type.INFO, "Submit job " + signatureJobResult.first().getId() + " to compute the mutational signature ("
+                    signatureJobId = signatureJobResult.first().getId();
+                    logger.info("Submitted job {} to compute the mutational signature analysis {}", signatureJobId,
+                            MutationalSignatureAnalysis.ID);
+                    addEvent(Event.Type.INFO, "Submit job " + signatureJobId + " to compute the mutational signature ("
                             + MutationalSignatureAnalysis.ID + ")");
                 }
+            } catch (CatalogException e) {
+                throw new ToolException(e);
+            }
 
+
+            try {
                 if (runGenomePlot) {
                     // Run genome plot
                     params = new GenomePlotAnalysisParams(analysisParams.getSample(), analysisParams.getGpId(),
                             analysisParams.getGpDescription(), analysisParams.getGpConfigFile(), null)
                             .toParams(new ObjectMap(ParamConstants.STUDY_PARAM, getStudy()));
 
-                    genomePlotJobResult = catalogManager.getJobManager()
+                    OpenCGAResult<Job> genomePlotJobResult = catalogManager.getJobManager()
                             .submit(getStudy(), GenomePlotAnalysis.ID, Enums.Priority.MEDIUM, params, null,
                                     "Job generated by " + getId() + " - " + getJobId(), Collections.emptyList(), Collections.emptyList(),
                                     token);
-                    addEvent(Event.Type.INFO, "Submit job " + genomePlotJobResult.first().getId() + " to compute genome plot ("
-                            + GenomePlotAnalysis.ID + ")");
+                    genomePlotJobId = genomePlotJobResult.first().getId();
+                    addEvent(Event.Type.INFO, "Submit job " + genomePlotJobId + " to compute genome plot (" + GenomePlotAnalysis.ID
+                            + ")");
                 }
-
-
-                // Wait for those jobs ???
-//                waitFor(variantStatsJobResult.first().getId());
-//                waitFor(signatureJobResult.first().getId());
-//                waitFor(genomePlotJobResult.first().getId());
             } catch (CatalogException e) {
-                throw new ToolException(e);
+                addWarning("Error launching job for sample genome plot analysis: " + e.getMessage());
+                genomePlotJobId = null;
+            }
+
+
+            // Wait for those jobs before saving QC
+            Signature signature = null;
+            SignatureFitting signatureFitting = null;
+            GenomePlot genomePlot = null;
+
+            if (variantStatsJobId != null) {
+                try {
+                    AnalysisUtils.waitFor(variantStatsJobId, getStudy(), catalogManager.getJobManager(), getToken());
+                } catch (Exception e) {
+                    addWarning("Error waiting for job '" + variantStatsJobId + "' (sample variant stats): " + e.getMessage());
+                }
+            }
+
+            if (signatureJobId != null) {
+                try {
+                    logger.info("Waiting for mutational signature job: {} ...", signatureJobId);
+                    if (AnalysisUtils.waitFor(signatureJobId, getStudy(), catalogManager.getJobManager(), getToken())) {
+                        logger.info("End of waiting for mutational signature job: {}", signatureJobId);
+                        Job job = AnalysisUtils.getJob(signatureJobId, getStudy(), catalogManager.getJobManager(), getToken());
+                        Path outPath = Paths.get(job.getOutDir().getUri().getPath());
+                        if (runSignatureCatalogue) {
+                            // Parse mutational signature catalogue results
+                            java.io.File outFile = outPath.resolve(MUTATIONAL_SIGNATURE_DATA_MODEL_FILENAME).toFile();
+                            if (outFile.exists()) {
+                                signature = JacksonUtils.getDefaultObjectMapper().readerFor(Signature.class).readValue(outFile);
+                                logger.info("Parsed results from mutational signagure analysis (catalogue)");
+                            } else {
+                                logger.warn("The mutational signagure analysis (catalogue) output file {} does not exist",
+                                        MUTATIONAL_SIGNATURE_DATA_MODEL_FILENAME);
+                            }
+                        }
+                        if (runSignatureFitting) {
+                            // Parse mutational signature fitting results
+                            java.io.File outFile = outPath.resolve(MUTATIONAL_SIGNATURE_FITTING_DATA_MODEL_FILENAME).toFile();
+                            if (outFile.exists()) {
+                                signatureFitting = JacksonUtils.getDefaultObjectMapper().readerFor(SignatureFitting.class)
+                                        .readValue(outFile);
+                                logger.info("Parsed results from mutational signagure analysis (fitting)");
+                            } else {
+                                logger.warn("The mutational signagure analysis (fitting) output file {} does not exist",
+                                        MUTATIONAL_SIGNATURE_FITTING_DATA_MODEL_FILENAME);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    addWarning("Error waiting for job '" + signatureJobId + "' (mutational signature analysis): " + e.getMessage());
+                }
+            }
+
+            if (genomePlotJobId != null) {
+                try {
+                    if (AnalysisUtils.waitFor(genomePlotJobId, getStudy(), catalogManager.getJobManager(), getToken())) {
+                        Job job = AnalysisUtils.getJob(genomePlotJobId, getStudy(), catalogManager.getJobManager(), getToken());
+
+                        // Parse configuration file
+                        GenomePlotConfig plotConfig = JacksonUtils.getDefaultObjectMapper().readerFor(GenomePlotConfig.class)
+                                .readValue(genomePlotConfigPath.toFile());
+
+                        // Parse genome plot results
+                        genomePlot = GenomePlotAnalysis.parseResults(Paths.get(job.getOutDir().getUri().getPath()),
+                                analysisParams.getGpDescription(), plotConfig);
+                    }
+                } catch (Exception e) {
+                    addWarning("Error waiting for job '" + genomePlotJobId + "' (genome plot analysis): " + e.getMessage());
+                }
+            }
+
+            // Update quality control for the sample
+            logger.info("Preparing to save quality control for sample {}", analysisParams.getSample());
+            Sample sample = IndividualQcUtils.getValidSampleById(getStudy(), analysisParams.getSample(), catalogManager, token);
+            if (sample == null) {
+                throw new ToolException("Can not access to the sample " + analysisParams.getSample() + " in order to save quality control");
+            }
+            SampleQualityControl qc = sample.getQualityControl();
+
+            // Sanity check
+            if (qc == null) {
+                qc = new SampleQualityControl();
+            } else if (qc.getVariant() == null) {
+                qc.setVariant(new SampleVariantQualityControlMetrics());
+            }
+
+            boolean saveQc = false;
+            // Variant stats of the quality control are updated in the variant stats analysis itself !!!
+            if (signature != null) {
+                if (qc.getVariant().getSignatures() == null) {
+                    qc.getVariant().setSignatures(new ArrayList<>());
+                }
+                logger.info("Adding new mutational siganture to the signature data model before saving quality control");
+                qc.getVariant().getSignatures().add(signature);
+                saveQc = true;
+            }
+            if (signatureFitting != null) {
+                if (qc.getVariant().getSignatures() == null) {
+                    // Never have to be here
+                } else {
+                    for (Signature sig : qc.getVariant().getSignatures()) {
+                        if (sig.getId().equals(analysisParams.getMsId())) {
+                            if (CollectionUtils.isEmpty(sig.getFittings())) {
+                                sig.setFittings(new ArrayList<>());
+                            }
+                            logger.info("Fitting {} was added to the mutational siganture {} before saving quality control",
+                                    analysisParams.getMsFitId(), analysisParams.getMsId());
+                            sig.getFittings().add(signatureFitting);
+                            saveQc = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (genomePlot != null) {
+                qc.getVariant().setGenomePlot(genomePlot);
+                saveQc = true;
+            }
+
+            if (saveQc) {
+                catalogManager.getSampleManager().update(getStudy(), sample.getId(), new SampleUpdateParams().setQualityControl(qc),
+                        QueryOptions.empty(), getToken());
+                logger.info("Quality control saved for sample {}", sample.getId());
             }
         });
     }
