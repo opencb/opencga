@@ -44,6 +44,21 @@ public class HRDetectAnalysisParams extends ToolParams {
     @DataField(id = "indelQuery", description = FieldConstants.HRDETECT_INDEL_QUERY_DESCRIPTION)
     private String indelQuery;
 
+    @DataField(id = "snv3CustomName", description = FieldConstants.HRDETECT_SNV3_CUSTOM_NAME_DESCRIPTION)
+    private String snv3CustomName;
+
+    @DataField(id = "snv8CustomName", description = FieldConstants.HRDETECT_SNV8_CUSTOM_NAME_DESCRIPTION)
+    private String snv8CustomName;
+
+    @DataField(id = "sv3CustomName", description = FieldConstants.HRDETECT_SV3_CUSTOM_NAME_DESCRIPTION)
+    private String sv3CustomName;
+
+    @DataField(id = "sv8CustomName", description = FieldConstants.HRDETECT_SV8_CUSTOM_NAME_DESCRIPTION)
+    private String sv8CustomName;
+
+    @DataField(id = "bootstrap", description = FieldConstants.HRDETECT_BOOTSTRAP_DESCRIPTION)
+    private Boolean bootstrap;
+
     @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
 
@@ -51,7 +66,8 @@ public class HRDetectAnalysisParams extends ToolParams {
     }
 
     public HRDetectAnalysisParams(String id, String description, String sampleId, String snvFittingId, String svFittingId, String cnvQuery,
-                                  String indelQuery, String outdir) {
+                                  String indelQuery, String snv3CustomName, String snv8CustomName, String sv3CustomName,
+                                  String sv8CustomName, Boolean bootstrap, String outdir) {
         this.id = id;
         this.description = description;
         this.sampleId = sampleId;
@@ -59,6 +75,11 @@ public class HRDetectAnalysisParams extends ToolParams {
         this.svFittingId = svFittingId;
         this.cnvQuery = cnvQuery;
         this.indelQuery = indelQuery;
+        this.snv3CustomName = snv3CustomName;
+        this.snv8CustomName = snv8CustomName;
+        this.sv3CustomName = sv3CustomName;
+        this.sv8CustomName = sv8CustomName;
+        this.bootstrap = bootstrap;
         this.outdir = outdir;
     }
 
@@ -72,6 +93,11 @@ public class HRDetectAnalysisParams extends ToolParams {
         sb.append(", svFittingId='").append(svFittingId).append('\'');
         sb.append(", cnvQuery='").append(cnvQuery).append('\'');
         sb.append(", indelQuery='").append(indelQuery).append('\'');
+        sb.append(", snv3CustomName='").append(snv3CustomName).append('\'');
+        sb.append(", snv8CustomName='").append(snv8CustomName).append('\'');
+        sb.append(", sv3CustomName='").append(sv3CustomName).append('\'');
+        sb.append(", sv8CustomName='").append(sv8CustomName).append('\'');
+        sb.append(", bootstrap=").append(bootstrap);
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -137,6 +163,51 @@ public class HRDetectAnalysisParams extends ToolParams {
 
     public HRDetectAnalysisParams setIndelQuery(String indelQuery) {
         this.indelQuery = indelQuery;
+        return this;
+    }
+
+    public String getSnv3CustomName() {
+        return snv3CustomName;
+    }
+
+    public HRDetectAnalysisParams setSnv3CustomName(String snv3CustomName) {
+        this.snv3CustomName = snv3CustomName;
+        return this;
+    }
+
+    public String getSnv8CustomName() {
+        return snv8CustomName;
+    }
+
+    public HRDetectAnalysisParams setSnv8CustomName(String snv8CustomName) {
+        this.snv8CustomName = snv8CustomName;
+        return this;
+    }
+
+    public String getSv3CustomName() {
+        return sv3CustomName;
+    }
+
+    public HRDetectAnalysisParams setSv3CustomName(String sv3CustomName) {
+        this.sv3CustomName = sv3CustomName;
+        return this;
+    }
+
+    public String getSv8CustomName() {
+        return sv8CustomName;
+    }
+
+    public HRDetectAnalysisParams setSv8CustomName(String sv8CustomName) {
+        this.sv8CustomName = sv8CustomName;
+        return this;
+    }
+
+    public Boolean isBootstrap() {
+        return bootstrap;
+    }
+
+    public HRDetectAnalysisParams setBootstrap(Boolean bootstrap) {
+        this.bootstrap = bootstrap;
         return this;
     }
 

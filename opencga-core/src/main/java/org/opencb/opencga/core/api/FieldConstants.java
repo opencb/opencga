@@ -444,6 +444,15 @@ public class FieldConstants {
     public static final String HRDETECT_SV_FITTING_ID_DESCRIPTION = "Mutational signature fitting ID for SV.";
     public static final String HRDETECT_CNV_QUERY_DESCRIPTION = "CNV query";
     public static final String HRDETECT_INDEL_QUERY_DESCRIPTION = "INDEL query";
+    public static final String HRDETECT_SNV3_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SNV3 input for"
+        + " HRDetect.";
+    public static final String HRDETECT_SNV8_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SNV8 input for"
+            + " HRDetect.";
+    public static final String HRDETECT_SV3_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SV3 input for"
+            + " HRDetect.";
+    public static final String HRDETECT_SV8_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SV8 input for"
+            + " HRDetect.";
+    public static final String HRDETECT_BOOTSTRAP_DESCRIPTION = "Request HRDetect with bootstrap.";
 
     // Genome plot (sample-qc-run)
     public static final String GENOME_PLOT_ID_DESCRIPTION = "Genome plot ID.";

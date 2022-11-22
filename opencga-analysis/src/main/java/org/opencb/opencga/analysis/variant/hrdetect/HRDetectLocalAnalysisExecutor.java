@@ -20,11 +20,14 @@ import htsjdk.samtools.reference.BlockCompressedIndexedFastaSequenceFile;
 import htsjdk.samtools.reference.FastaSequenceIndex;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.GZIIndex;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResultWriter;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
@@ -40,6 +43,7 @@ import org.opencb.opencga.core.tools.variant.MutationalSignatureAnalysisExecutor
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,8 +61,9 @@ public class HRDetectLocalAnalysisExecutor extends HRDetectAnalysisExecutor
 
     public final static String R_DOCKER_IMAGE = "opencb/opencga-ext-tools:" + GitRepositoryState.get().getBuildVersion();
 
-    private final static String CNV_FILENAME = "cnv.bed";
-    private final static String INDEL_FILENAME = "indel.bed";
+    private final static String CNV_FILENAME = "cnv.tsv";
+    private final static String INDEL_FILENAME = "indel.vcf.gz";
+    private final static String INPUT_TABLE_FILENAME = "inputTable.tsv";
 
     private Path opencgaHome;
 
@@ -74,26 +79,77 @@ public class HRDetectLocalAnalysisExecutor extends HRDetectAnalysisExecutor
         // Prepare INDEL data
         prepareINDELData();
 
+        // Prepare input table
+        prepareInputTable();
+
         // Run R script for fitting signature
         executeRScript();
     }
 
-    private void prepareCNVData() throws ToolExecutorException, StorageEngineException, CatalogException {
+    private void prepareCNVData() throws ToolExecutorException, StorageEngineException, CatalogException, FileNotFoundException {
+        Query query = new Query(getCnvQuery());
+        query.put(VariantQueryParam.SAMPLE.key(), getSomaticSample() + "," + getGermlineSample());
+
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.append(QueryOptions.INCLUDE, "id");
-        VariantDBIterator iterator = getVariantStorageManager().iterator(new Query(getCnvQuery()), queryOptions, getToken());
+        queryOptions.append(QueryOptions.INCLUDE, "id,studies");
+
+        PrintWriter pwOut = new PrintWriter(getOutDir().resolve("cnvs.discarded").toFile());
+
+        PrintWriter pw = new PrintWriter(getOutDir().resolve(CNV_FILENAME).toAbsolutePath().toString());
+        pw.println("seg_no\tChromosome\tchromStart\tchromEnd\ttotal.copy.number.inNormal\tminor.copy.number.inNormal\t"
+                + "total.copy.number.inTumour\tminor.copy.number.inTumour");
+
+        VariantDBIterator iterator = getVariantStorageManager().iterator(query, queryOptions, getToken());
+        int count = 0;
         while (iterator.hasNext()) {
             Variant variant = iterator.next();
+
+            if (CollectionUtils.isEmpty(variant.getStudies())) {
+                pwOut.println(variant.toStringSimple() + "\tStudies is empty");
+            } else {
+                StudyEntry studyEntry = variant.getStudies().get(0);
+                try {
+                    StringBuilder sb = new StringBuilder(++count)
+                            .append("\t").append(variant.getChromosome())
+                            .append("\t").append(variant.getStart())
+                            .append("\t").append(variant.getEnd())
+                            .append("\t").append(Integer.parseInt(studyEntry.getSampleData(getGermlineSample(), "TCN")))
+                            .append("\t").append(Integer.parseInt(studyEntry.getSampleData(getGermlineSample(), "MCN")))
+                            .append("\t").append(Integer.parseInt(studyEntry.getSampleData(getSomaticSample(), "TCN")))
+                            .append("\t").append(Integer.parseInt(studyEntry.getSampleData(getSomaticSample(), "MCN")));
+
+                    pw.println(sb);
+                } catch (NumberFormatException e) {
+                    pwOut.println(variant.toStringSimple() + "\tError parsing TCN/MCN values: " + e.getMessage());
+                }
+            }
+        }
+
+        pw.close();
+        pwOut.close();
+
+        if (!getOutDir().resolve(INDEL_FILENAME).toFile().exists()) {
+            new ToolExecutorException("Error exporting VCF file with INDEL variants");
         }
     }
 
-    private  void prepareINDELData() throws ToolExecutorException, StorageEngineException, CatalogException {
+    private void prepareINDELData() throws ToolExecutorException, StorageEngineException, CatalogException {
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.append(QueryOptions.INCLUDE, "id");
-        VariantDBIterator iterator = getVariantStorageManager().iterator(new Query(getIndelQuery()), queryOptions, getToken());
-        while (iterator.hasNext()) {
-            Variant variant = iterator.next();
+        queryOptions.append(QueryOptions.INCLUDE, "id,studies");
+
+        getVariantStorageManager().exportData(getOutDir().resolve(INDEL_FILENAME).toAbsolutePath().toString(),
+                VariantWriterFactory.VariantOutputFormat.VCF_GZ, null, new Query(getIndelQuery()), queryOptions, getToken());
+
+        if (!getOutDir().resolve(INDEL_FILENAME).toFile().exists()) {
+            new ToolExecutorException("Error exporting VCF file with INDEL variants");
         }
+    }
+
+    private void prepareInputTable() throws FileNotFoundException {
+        PrintWriter pw = new PrintWriter(getOutDir().resolve(INPUT_TABLE_FILENAME).toAbsolutePath().toString());
+        pw.println("sample\tIndels_vcf_files\tCNV_tab_files");
+        pw.println(getSomaticSample() + "\t" + INDEL_FILENAME + "\t" + CNV_FILENAME);
+        pw.close();
     }
 
     private void executeRScript() throws IOException {
@@ -109,11 +165,26 @@ public class HRDetectLocalAnalysisExecutor extends HRDetectAnalysisExecutor
         // Command
         StringBuilder scriptParams = new StringBuilder("R CMD Rscript --vanilla ")
                 .append("/opt/opencga/signature.tools.lib/scripts/signatureFit")
-                .append(" --snv=/snv/").append(getSnvRDataPath().toFile().getName())
-                .append(" --sv=/sv/").append(getSvRDataPath().toFile().getName())
-                .append(" --cnv=/data/").append(CNV_FILENAME)
-                .append(" --indel=/data/").append(INDEL_FILENAME)
-                .append(" --outdir=/data");
+                .append(" -x /snv/").append(getSnvRDataPath().toFile().getName())
+                .append(" -X /sv/").append(getSvRDataPath().toFile().getName())
+                .append(" -i /data/").append(INPUT_TABLE_FILENAME)
+                .append(" -o /data");
+
+        if (StringUtils.isNotEmpty(getSnv3CustomName())) {
+            scriptParams.append(" -y ").append(getSnv3CustomName());
+        }
+        if (StringUtils.isNotEmpty(getSnv8CustomName())) {
+            scriptParams.append(" -z ").append(getSnv8CustomName());
+        }
+        if (StringUtils.isNotEmpty(getSv3CustomName())) {
+            scriptParams.append(" -Y ").append(getSv3CustomName());
+        }
+        if (StringUtils.isNotEmpty(getSv8CustomName())) {
+            scriptParams.append(" -Z ").append(getSv3CustomName());
+        }
+        if (getBootstrap() != null) {
+            scriptParams.append(" -b");
+        }
 
         String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams.toString(), null);
         logger.info("Docker command line: " + cmdline);

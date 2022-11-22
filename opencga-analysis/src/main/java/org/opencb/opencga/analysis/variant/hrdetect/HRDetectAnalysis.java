@@ -60,7 +60,9 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
     @ToolParams
     private HRDetectAnalysisParams hrdetectParams = new HRDetectAnalysisParams();
 
-    private Sample sample;
+    private Sample somaticSample;
+    private Sample germlineSample;
+    private String assembly;
     private Path pathSnvFittingRData;
     private Path pathSvFittingRData;
     private ObjectMap cnvQuery;
@@ -73,6 +75,11 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
 
         if (StringUtils.isEmpty(getStudy())) {
             throw new ToolException("Missing study");
+        }
+
+        assembly = ResourceUtils.getAssembly(catalogManager, study, token);
+        if (StringUtils.isEmpty(assembly)) {
+            throw new ToolException("Missing assembly for study '" + study + "'");
         }
 
         if (StringUtils.isEmpty(hrdetectParams.getSampleId())) {
@@ -96,11 +103,14 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Check sample
-        sample = checkSample();
+        somaticSample = checkSample(hrdetectParams.getSampleId());
+        if (!somaticSample.isSomatic()) {
+            throw new ToolException("Mismatch sample from CNV query '" + somaticSample.getId() + "' must be somatic");
+        }
 
         SignatureFitting snvFitting = null;
         SignatureFitting svFitting = null;
-        List<Signature> signatures = sample.getQualityControl().getVariant().getSignatures();
+        List<Signature> signatures = somaticSample.getQualityControl().getVariant().getSignatures();
         for (Signature signature : signatures) {
             if (CollectionUtils.isNotEmpty(signature.getFittings())) {
                 for (SignatureFitting fitting : signature.getFittings()) {
@@ -139,32 +149,54 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
         // Check CNV query
         cnvQuery = JacksonUtils.getDefaultObjectMapper().readValue(hrdetectParams.getCnvQuery(), ObjectMap.class);
         if (!cnvQuery.containsKey(VariantQueryParam.SAMPLE.key())) {
-            logger.info("Setting sample in CNV query");
-            cnvQuery.put(VariantQueryParam.SAMPLE.key(), sample.getId());
-        }
-        if (!sample.getId().equals(cnvQuery.getString(VariantQueryParam.SAMPLE.key()))) {
-            throw new ToolException("Mismatch sample from CNV query '" + cnvQuery.getString(VariantQueryParam.SAMPLE.key())+ "' and"
-                    + " sample '" + sample.getId() + "'");
+            throw new ToolException("Unable to compute HRDetect analysis. No samples found in CNV query. It must contain somatic and"
+                    + " germline sample IDs");
+        } else {
+            List<String> samples = cnvQuery.getAsStringList(VariantQueryParam.SAMPLE.key());
+            if (samples.size() != 2) {
+                throw new ToolException("CNV query must contain two samples: somatic and germline ('"
+                        + cnvQuery.getString(VariantQueryParam.SAMPLE.key()));
+            }
+            if (samples.get(0).equals(hrdetectParams.getSampleId())) {
+                germlineSample = checkSample(samples.get(1));
+            } else if (samples.get(0).equals(hrdetectParams.getSampleId())) {
+                germlineSample = checkSample(samples.get(0));
+            } else {
+                throw new ToolException("Mismatch sample from CNV query '" + cnvQuery.getString(VariantQueryParam.SAMPLE.key())+ "' and"
+                        + " sample '" + hrdetectParams.getSampleId() + "'");
+            }
+            if (germlineSample.isSomatic()) {
+                throw new ToolException("Mismatch sample from CNV query '" + germlineSample.getId() + "' must be germline");
+            }
         }
 
         // Check INDEL query
         indelQuery = JacksonUtils.getDefaultObjectMapper().readValue(hrdetectParams.getIndelQuery(), ObjectMap.class);
         if (!indelQuery.containsKey(VariantQueryParam.SAMPLE.key())) {
             logger.info("Setting sample in INDEL query");
-            indelQuery.put(VariantQueryParam.SAMPLE.key(), sample.getId());
+            indelQuery.put(VariantQueryParam.SAMPLE.key(), somaticSample.getId());
         }
-        if (!sample.getId().equals(indelQuery.getString(VariantQueryParam.SAMPLE.key()))) {
+        if (!somaticSample.getId().equals(indelQuery.getString(VariantQueryParam.SAMPLE.key()))) {
             throw new ToolException("Mismatch sample from INDEL query '" + cnvQuery.getString(VariantQueryParam.SAMPLE.key())+ "' and"
-                    + " sample '" + sample.getId() + "'");
+                    + " sample '" + somaticSample.getId() + "'");
         }
 
         // Log messages
+        logger.info(">>>> Params:");
         logger.info("HRDetect ID: {}", hrdetectParams.getId());
-        logger.info("Sample ID: {}", hrdetectParams.getSampleId());
+        logger.info("Study: {}", study);
+        logger.info("Assembly: {}", assembly);
+        logger.info("Somatatic sample ID: {}", somaticSample.getId());
+        logger.info("Germline sample ID: {}", germlineSample.getId());
         logger.info("Signature fitting ID for SNV: {}", hrdetectParams.getSnvFittingId());
         logger.info("Signature fitting ID for SV: {}", hrdetectParams.getSvFittingId());
         logger.info("CNV query: {}", cnvQuery.toJson());
         logger.info("INDEL query: {}", indelQuery.toJson());
+        logger.info("y (SNV3): {}", hrdetectParams.getSnv3CustomName());
+        logger.info("z (SNV8): {}", hrdetectParams.getSnv8CustomName());
+        logger.info("Y (SV3): {}", hrdetectParams.getSv3CustomName());
+        logger.info("Z (SV8): {}", hrdetectParams.getSv8CustomName());
+        logger.info("Bootstrap: {}", hrdetectParams.isBootstrap());
     }
 
     @Override
@@ -173,15 +205,23 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
             HRDetectAnalysisExecutor toolExecutor = getToolExecutor(HRDetectAnalysisExecutor.class);
 
             toolExecutor.setStudy(study)
-                    .setSample(sample.getId())
+                    .setSomaticSample(somaticSample.getId())
+                    .setGermlineSample(germlineSample.getId())
+                    .setAssembly(assembly)
                     .setSnvRDataPath(pathSnvFittingRData)
                     .setSvRDataPath(pathSvFittingRData)
                     .setCnvQuery(cnvQuery)
                     .setIndelQuery(indelQuery)
+                    .setSnv3CustomName(hrdetectParams.getSnv3CustomName())
+                    .setSnv8CustomName(hrdetectParams.getSnv8CustomName())
+                    .setSv3CustomName(hrdetectParams.getSv3CustomName())
+                    .setSv8CustomName(hrdetectParams.getSv8CustomName())
+                    .setBootstrap(hrdetectParams.isBootstrap())
                     .execute();
 
             // Parse results and update quality control for the catalog sample
-            sample = checkSample();
+            Sample sample = checkSample(hrdetectParams.getSampleId());
+//            toolExecutor.parseResult(getOutDir())
             SampleQualityControl qc = sample.getQualityControl();
             catalogManager.getSampleManager().update(getStudy(), sample.getId(), new SampleUpdateParams().setQualityControl(qc),
                     QueryOptions.empty(), getToken());
@@ -278,19 +318,21 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
 //        return result;
 //    }
 
-    private Sample checkSample() throws ToolException, CatalogException {
+    private Sample checkSample(String sampleId) throws ToolException, CatalogException {
         study = catalogManager.getStudyManager().get(study, QueryOptions.empty(), token).first().getFqn();
-        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(study, hrdetectParams.getSampleId(),
-                QueryOptions.empty(), token);
+        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(study, sampleId, QueryOptions.empty(), token);
         if (sampleResult.getNumResults() != 1) {
             throw new ToolException("Unable to compute HRDetect analysis. Sample '" + hrdetectParams.getSampleId() + "' not found");
         }
 
         Sample sample = sampleResult.first();
-        if (sample.getQualityControl() == null || sample.getQualityControl().getVariant() == null ||
-                CollectionUtils.isEmpty(sample.getQualityControl().getVariant().getSignatures())) {
-            throw new ToolException("Unable to compute HRDetect analysis. No mutational signatures found for sample '"
-                    + hrdetectParams.getSampleId() + "'");
+        if (sample.isSomatic()) {
+            // Check signatures are present in the quality control (only for somatic sample)
+            if (sample.getQualityControl() == null || sample.getQualityControl().getVariant() == null ||
+                    CollectionUtils.isEmpty(sample.getQualityControl().getVariant().getSignatures())) {
+                throw new ToolException("Unable to compute HRDetect analysis. No mutational signatures found for sample '"
+                        + hrdetectParams.getSampleId() + "'");
+            }
         }
 
         return sample;
