@@ -48,10 +48,14 @@ public class RgaEngine implements Closeable {
     }
 
     public RgaEngine(StorageConfiguration storageConfiguration) {
+        this(storageConfiguration, RgaQueryParams.CompHetQueryMode.SINGLE);
+    }
+
+    public RgaEngine(StorageConfiguration storageConfiguration, RgaQueryParams.CompHetQueryMode compHetQueryMode) {
         this.individualRgaConverter = new IndividualRgaConverter();
         this.geneConverter = new GeneRgaConverter();
         this.variantConverter = new VariantRgaConverter();
-        this.parser = new RgaQueryParser();
+        this.parser = new RgaQueryParser(compHetQueryMode);
         this.storageConfiguration = storageConfiguration;
 
         this.solrManager = new SolrManager(storageConfiguration.getRga().getHosts(), storageConfiguration.getRga().getMode(),

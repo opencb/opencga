@@ -23,9 +23,18 @@ import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.pr
 public class RgaQueryParser {
 
     private static final Pattern FACET_RANGE_PATTERN = Pattern.compile("([_a-zA-Z]+)\\[([_a-zA-Z]+):([.a-zA-Z0-9]+)\\]:([.0-9]+)$");
+    private final CompHetQueryMode compHetQueryMode;
     public static final String SEPARATOR = "__";
 
     protected static Logger logger = LoggerFactory.getLogger(RgaQueryParser.class);
+
+    public RgaQueryParser() {
+        this(CompHetQueryMode.SINGLE);
+    }
+
+    public RgaQueryParser(CompHetQueryMode compHetQueryMode) {
+        this.compHetQueryMode = compHetQueryMode != null ? compHetQueryMode : CompHetQueryMode.SINGLE;
+    }
 
     /**
      * Create a SolrQuery object from Query and QueryOptions for the main RGA collection.
@@ -156,7 +165,7 @@ public class RgaQueryParser {
                 }
             }
         } else if (count > 1) {
-            parseCompoundFilters(knockoutValues, filterValue, ctValues, popFreqValues, filterList);
+            buildComplexQueryFilter(filterList, knockoutValues, filterValue, ctValues, popFreqValues);
         }
     }
 
@@ -194,7 +203,7 @@ public class RgaQueryParser {
             }
         }
         if (complexFilter) {
-            parseCompoundFilters(knockoutValues, "", ctValues, popFreqValues, filterList);
+            buildComplexQueryFilter(filterList, knockoutValues, "", ctValues, popFreqValues);
         }
     }
 
@@ -225,50 +234,6 @@ public class RgaQueryParser {
 
             query.put(CONSEQUENCE_TYPE.key(), StringUtils.join(result, separator));
         }
-    }
-
-    private void parseCompoundFilters(List<String> knockoutValues, String filterValue, List<String> ctValues, List<String> popFreqValues,
-                                      List<String> filterList) throws RgaException {
-        if (knockoutValues.size() == 1 && KnockoutVariant.KnockoutType.COMP_HET.name().equals(knockoutValues.get(0).toUpperCase())) {
-            // COMP_HET complex filter
-            buildCompHetComplexQueryFilter(filterList, filterValue, ctValues, popFreqValues);
-        } else {
-            // Complex filter
-            buildComplexQueryFilter(filterList, knockoutValues, filterValue, ctValues, popFreqValues);
-        }
-    }
-
-    private void buildCompHetComplexQueryFilter(List<String> filterList, String filterValue, List<String> ctList, List<String> popFreqList)
-            throws RgaException {
-        String koValue = RgaUtils.encode(COMP_HET.name());
-
-        // Filter
-        List<String> filterValues;
-        if (StringUtils.isEmpty(filterValue)) {
-            filterValues = Arrays.asList("PASS", "NOT_PASS");
-        } else {
-            filterValues = Collections.singletonList(filterValue);
-        }
-        filterValues = RgaUtils.parseFilterQuery(filterValues);
-
-        // CT
-        List<String> ctValues;
-        if (!ctList.isEmpty()) {
-            ctValues = new ArrayList<>(ctList.size());
-            for (String ctValue : ctList) {
-                String encodedValue = String.valueOf(VariantQueryUtils.parseConsequenceType(ctValue));
-                ctValues.add(encodedValue);
-            }
-        } else {
-            ctValues = Collections.emptyList();
-        }
-
-        // Pop. freq
-        Map<String, List<String>> popFreqQueryList = RgaUtils.parsePopulationFrequencyQuery(popFreqList);
-
-        buildComplexQuery(Collections.singletonList(koValue), generateSortedCombinations(filterValues),
-                generateSortedCombinations(ctValues), popFreqQueryList, filterList);
-
     }
 
     private void buildComplexQueryFilter(List<String> filterList, List<String> knockoutList, String filterValue, List<String> ctList,
@@ -313,12 +278,23 @@ public class RgaQueryParser {
     }
 
     private void buildComplexQuery(List<String> koValues, List<String> filterValues, List<String> ctValues,
-                                   Map<String, List<String>> popFreqQueryList, List<String> filterList) {
+                                   Map<String, List<String>> popFreqQueryList, List<String> filterList) throws RgaException {
+        String encodedChString = RgaUtils.encode(COMP_HET.name());
+
+        List<String> chFilterValues = filterValues;
+        List<String> chCtValues = ctValues;
+        if (compHetQueryMode.equals(CompHetQueryMode.PAIR)) {
+            // To generate pairs to query for complete COMP_HET variants
+            chFilterValues = generateSortedCombinations(filterValues);
+            chCtValues = generateSortedCombinations(ctValues);
+        }
+
         if (ctValues.isEmpty() && popFreqQueryList.isEmpty()) {
             // KT + FILTER
             List<String> orFilterList = new LinkedList<>();
             for (String koValue : koValues) {
-                for (String filterVal : filterValues) {
+                List<String> finalFilterValues = koValue.equals(encodedChString) ? chFilterValues : filterValues;
+                for (String filterVal : finalFilterValues) {
                     orFilterList.add(koValue + SEPARATOR + filterVal);
                 }
             }
@@ -333,8 +309,10 @@ public class RgaQueryParser {
                 for (List<String> sortedPopFreq : sortedPopFreqs) {
                     List<String> orQueryList = new LinkedList<>();
                     for (String koValue : koValues) {
-                        for (String filterVal : filterValues) {
-                            for (String ctValue : ctValues) {
+                        List<String> finalFilterValues = koValue.equals(encodedChString) ? chFilterValues : filterValues;
+                        List<String> finalCtValues = koValue.equals(encodedChString) ? chCtValues : ctValues;
+                        for (String filterVal : finalFilterValues) {
+                            for (String ctValue : finalCtValues) {
                                 orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR + sortedPopFreq.get(0)
                                         + SEPARATOR + sortedPopFreq.get(1));
                             }
@@ -347,9 +325,16 @@ public class RgaQueryParser {
                     List<String> orQueryList = new LinkedList<>();
                     for (String popFreq : tmpPopFreqList) {
                         for (String koValue : koValues) {
-                            for (String filterVal : filterValues) {
-                                for (String ctValue : ctValues) {
-                                    orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR + popFreq);
+                            List<String> finalFilterValues = koValue.equals(encodedChString) ? chFilterValues : filterValues;
+                            List<String> finalCtValues = koValue.equals(encodedChString) ? chCtValues : ctValues;
+                            for (String filterVal : finalFilterValues) {
+                                for (String ctValue : finalCtValues) {
+                                    if (compHetQueryMode.equals(CompHetQueryMode.PAIR) && koValue.equals(encodedChString)) {
+                                        orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR + popFreq
+                                                + SEPARATOR + popFreq);
+                                    } else {
+                                        orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR + popFreq);
+                                    }
                                 }
                             }
                         }
@@ -362,8 +347,10 @@ public class RgaQueryParser {
             // KT + FILTER + CT
             List<String> orFilterList = new LinkedList<>();
             for (String koValue : koValues) {
-                for (String filterVal : filterValues) {
-                    for (String ctValue : ctValues) {
+                List<String> finalFilterValues = koValue.equals(encodedChString) ? chFilterValues : filterValues;
+                List<String> finalCtValues = koValue.equals(encodedChString) ? chCtValues : ctValues;
+                for (String filterVal : finalFilterValues) {
+                    for (String ctValue : finalCtValues) {
                         orFilterList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue);
                     }
                 }
@@ -379,7 +366,8 @@ public class RgaQueryParser {
                 List<String> orQueryList = new LinkedList<>();
                 for (List<String> sortedPopFreq : sortedPopFreqs) {
                     for (String koValue : koValues) {
-                        for (String filterVal : filterValues) {
+                        List<String> finalFilterValues = koValue.equals(encodedChString) ? chFilterValues : filterValues;
+                        for (String filterVal : finalFilterValues) {
                             orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + sortedPopFreq.get(0) + SEPARATOR
                                     + sortedPopFreq.get(1));
 
@@ -392,7 +380,8 @@ public class RgaQueryParser {
                     List<String> orQueryList = new LinkedList<>();
                     for (String popFreq : tmpPopFreqList) {
                         for (String koValue : koValues) {
-                            for (String filterVal : filterValues) {
+                            List<String> finalFilterValues = koValue.equals(encodedChString) ? chFilterValues : filterValues;
+                            for (String filterVal : finalFilterValues) {
                                 orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + popFreq);
                             }
                         }
@@ -405,6 +394,9 @@ public class RgaQueryParser {
     }
 
     public static List<String> generateSortedCombinations(List<String> list) {
+        if (CollectionUtils.isEmpty(list)) {
+            return list;
+        }
         Set<String> results = new HashSet<>();
         for (String term1 : list) {
             for (String term2 : list) {
