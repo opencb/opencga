@@ -346,7 +346,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                         genomeContextCounts.add(new Signature.GenomeContextCount(key, countMap.containsKey(key) ? countMap.get(key) : 0));
                     }
                 }
-                String key = clustered + "_" + TYPE_TR;
+                String key = clustered + "_" + TYPE_TRANS;
                 genomeContextCounts.add(new Signature.GenomeContextCount(key, countMap.containsKey(key) ? countMap.get(key) : 0));
             }
 
@@ -397,7 +397,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             case "INVERSION":
                 return TYPE_INV;
             case "TRANSLOCATION":
-                return TYPE_TR;
+                return TYPE_TRANS;
         }
         return null;
     }

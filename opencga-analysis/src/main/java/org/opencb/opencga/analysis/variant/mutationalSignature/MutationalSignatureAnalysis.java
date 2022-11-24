@@ -78,7 +78,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
     public static final String TYPE_DEL = "del";
     public static final String TYPE_TDS = "tds";
     public static final String TYPE_INV = "inv";
-    public static final String TYPE_TR = "tr";
+    public static final String TYPE_TRANS = "trans";
 
     @ToolParams
     private MutationalSignatureAnalysisParams signatureParams = new MutationalSignatureAnalysisParams();
