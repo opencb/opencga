@@ -37,6 +37,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleQualityControl;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.sample.SampleVariantQualityControlMetrics;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
@@ -229,6 +230,72 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                     .setSkip(signatureParams.getSkip())
                     .execute();
         });
+
+        // Get sample quality control again in case it was updated during the mutational signature analysis
+        OpenCGAResult<Sample> sampleResult;
+        try {
+            sampleResult = catalogManager.getSampleManager().get(study, signatureParams.getSample(),
+                    QueryOptions.empty(), token);
+        } catch (CatalogException e) {
+            throw new ToolException("After mutational signature analysis, it could not get sample from OpenCGA catalog", e);
+        }
+        if (sampleResult.getNumResults() != 1) {
+            throw new ToolException("After mutational signature analysis, it could not get sample '" + signatureParams.getSample() + "'"
+                    + " from OpenCGA catalog: number of occurrences found: " + sampleResult.getNumResults());
+        }
+        sample = sampleResult.first();
+        SampleQualityControl qc = sample.getQualityControl();
+
+        // Sanity check
+        if (qc == null) {
+            qc = new SampleQualityControl();
+        }
+        if (qc.getVariant() == null) {
+            qc.setVariant(new SampleVariantQualityControlMetrics());
+        }
+        if (qc.getVariant().getSignatures() == null) {
+            qc.getVariant().setSignatures(new ArrayList<>());
+        }
+
+        Signature signature = null;
+        SignatureFitting signatureFitting = null;
+        try {
+            File signatureFile = getOutDir().resolve(MUTATIONAL_SIGNATURE_DATA_MODEL_FILENAME).toFile();
+            if (signatureFile.exists()) {
+                signature = JacksonUtils.getDefaultObjectMapper().readerFor(Signature.class).readValue(signatureFile);
+            }
+            File signatureFittingFile = getOutDir().resolve(MUTATIONAL_SIGNATURE_FITTING_DATA_MODEL_FILENAME).toFile();
+            if (signatureFittingFile.exists()) {
+                signatureFitting = JacksonUtils.getDefaultObjectMapper().readerFor(SignatureFitting.class).readValue(signatureFittingFile);
+            }
+        } catch (IOException e) {
+            throw new ToolException("Something happened when parsing result files from mutational signature (or fitting)", e);
+        }
+        if (signature != null) {
+            logger.info("Adding new mutational signature to the signature data model before saving quality control");
+            qc.getVariant().getSignatures().add(signature);
+        }
+        if (signatureFitting != null) {
+            for (Signature sig : qc.getVariant().getSignatures()) {
+                if (sig.getId().equals(signatureParams.getId())) {
+                    if (CollectionUtils.isEmpty(sig.getFittings())) {
+                        sig.setFittings(new ArrayList<>());
+                    }
+                    logger.info("Fitting {} was added to the mutational siganture {} before saving quality control",
+                            signatureParams.getFitId(), signatureParams.getId());
+                    sig.getFittings().add(signatureFitting);
+                    break;
+                }
+            }
+        }
+        // Update sample quelity control
+        try {
+            catalogManager.getSampleManager().update(getStudy(), sample.getId(), new SampleUpdateParams().setQualityControl(qc),
+                    QueryOptions.empty(), getToken());
+            logger.info("Quality control saved for sample {}", sample.getId());
+        } catch (CatalogException e) {
+            throw new ToolException("Something happened when saving sample quality control", e);
+        }
     }
 
     public static String getContextIndexFilename(String sample, String assembly) {
