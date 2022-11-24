@@ -23,15 +23,46 @@ function printUsage() {
 
 }
 
+function check_repo(){
+  GIT_STATUS=$(git status --short)
+  if [ -n "$GIT_STATUS" ]; then
+  	echo "Repository is not clean:"
+  	echo "$GIT_STATUS"
+    exit
+  else
+    git pull
+  fi
+}
+
+function get_new_version(){
+  if [[ "$CURRENT_VERSION" == *"$1"* ]]; then
+    NEW_VERSION=${CURRENT_VERSION/"$1-"}
+  else
+    CLEAN_RELEASE_VERSION=$(echo "$CURRENT_VERSION" | cut -d "-" -f 1)
+    TAGS_VERSION=$(echo "$CURRENT_VERSION" | cut -d "-" -f 2)
+    NEW_VERSION="$CLEAN_RELEASE_VERSION-$1-$TAGS_VERSION"
+  fi
+}
+
+function update_dependency(){
+  cd "$1" || exit 2
+  check_repo
+  git co "$3"
+  check_repo
+  mvn versions:set -DnewVersion="$2" -DgenerateBackupPoms=false
+  git commit -am "Update version to $2"
+}
 
 if [ -z "$1" ]; then
   printUsage
   exit 1
 fi
 
-
 while [[ $# -gt 0 ]]; do
   key="$1"
+  if [ -n "$2" ]; then
+    DEPENDENCY_REPO="$2"
+  fi
   case $key in
   -h | --help)
     printUsage
@@ -39,10 +70,16 @@ while [[ $# -gt 0 ]]; do
     ;;
   -j | --java-common-libs)
     LIB="JAVA_COMMONS_LIB"
+    if [ -z "$DEPENDENCY_REPO" ]; then
+      DEPENDENCY_REPO="../java-common-libs"
+    fi
     shift # past argument
     ;;
   -b | --biodata)
      LIB="BIODATA"
+     if [ -z "$DEPENDENCY_REPO" ]; then
+       DEPENDENCY_REPO="../biodata"
+     fi
     shift # past argument
     ;;
   *) # unknown option
@@ -55,30 +92,30 @@ done
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CURRENT_DIR=$PWD
-cd $SCRIPT_DIR
+cd "$SCRIPT_DIR" || exit 2
 cd ..
+BRANCH_NAME=$(git branch --show-current)
+check_repo
+
+
 if [ "$LIB" = "JAVA_COMMONS_LIB" ];then
   CURRENT_VERSION=$(grep -m 1 java-common-libs.version pom.xml | cut -d ">" -f 2 | cut -d "<" -f 1)
+  get_new_version "$BRANCH_NAME"
+  update_dependency "$DEPENDENCY_REPO" "$NEW_VERSION" "$BRANCH_NAME"
+  cd "$SCRIPT_DIR" || exit 2
+  cd ..
+  mvn versions:set-property -Dproperty=java-common-libs.version -DnewVersion="$NEW_VERSION" -DgenerateBackupPoms=false
+  git commit -am "Update java-common-libs dependency to $NEW_VERSION"
 fi
 if [ "$LIB" = "BIODATA" ];then
   CURRENT_VERSION=$(grep -m 1 biodata.version pom.xml | cut -d ">" -f 2 | cut -d "<" -f 1)
-fi
-BRANCH_NAME=$(git branch --show-current)
-
-if [[ "$CURRENT_VERSION" == *"$BRANCH_NAME"* ]]; then
-  NEW_VERSION=${CURRENT_VERSION/"$BRANCH_NAME-"}
-else
-  CLEAN_RELEASE_VERSION=$(echo "$CURRENT_VERSION" | cut -d "-" -f 1)
-  TAGS_VERSION=$(echo "$CURRENT_VERSION" | cut -d "-" -f 2)
-  NEW_VERSION="$CLEAN_RELEASE_VERSION-$BRANCH_NAME-$TAGS_VERSION"
-fi
-
-if [ "$LIB" = "JAVA_COMMONS_LIB" ];then
-  mvn versions:set-property -Dproperty=java-common-libs.version -DnewVersion="$NEW_VERSION" -DgenerateBackupPoms=false
-fi
-if [ "$LIB" = "BIODATA" ];then
+  get_new_version "$BRANCH_NAME"
+  update_dependency "$DEPENDENCY_REPO" "$NEW_VERSION" "$BRANCH_NAME"
+  cd "$SCRIPT_DIR" || exit 2
+  cd ..
   mvn versions:set-property -Dproperty=biodata.version -DnewVersion="$NEW_VERSION" -DgenerateBackupPoms=false
+  git commit -am "Update biodata dependency to $NEW_VERSION"
 fi
 
-yellow "The NEW_VERSION in pom.xml is $NEW_VERSION"
+yellow "The new dependency version is $NEW_VERSION"
 cd "$CURRENT_DIR" || exit 2
