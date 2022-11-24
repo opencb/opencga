@@ -910,7 +910,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             }
         }
 
-        if (interpretation.isLocked() && parameters.getBoolean(InterpretationDBAdaptor.QueryParams.LOCKED.key(), true)) {
+        if (!parameters.isEmpty() && interpretation.isLocked()
+                && parameters.getBoolean(InterpretationDBAdaptor.QueryParams.LOCKED.key(), true)) {
             throw new CatalogException("Could not update the Interpretation. Interpretation '" + interpretation.getId()
                     + " is locked. Please, unlock it first.");
         }

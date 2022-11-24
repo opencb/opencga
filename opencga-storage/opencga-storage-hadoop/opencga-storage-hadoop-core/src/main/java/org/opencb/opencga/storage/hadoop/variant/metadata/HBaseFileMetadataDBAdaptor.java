@@ -34,7 +34,6 @@ import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMetadataUtils.*;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
@@ -54,10 +53,6 @@ import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMet
 public class HBaseFileMetadataDBAdaptor extends AbstractHBaseDBAdaptor implements FileMetadataDBAdaptor {
 
     protected static Logger logger = LoggerFactory.getLogger(HBaseFileMetadataDBAdaptor.class);
-
-    public HBaseFileMetadataDBAdaptor(VariantTableHelper helper) {
-        super(helper);
-    }
 
     @Deprecated
     public HBaseFileMetadataDBAdaptor(Configuration configuration) {

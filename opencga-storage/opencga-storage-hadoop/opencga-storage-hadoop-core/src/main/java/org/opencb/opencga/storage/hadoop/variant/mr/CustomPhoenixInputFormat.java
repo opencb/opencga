@@ -21,6 +21,7 @@ import org.apache.phoenix.query.KeyRange;
 import org.apache.phoenix.query.QueryServices;
 import org.apache.phoenix.util.PhoenixRuntime;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -47,26 +48,49 @@ public class CustomPhoenixInputFormat<T extends DBWritable> extends InputFormat<
         final QueryPlan queryPlan = getQueryPlan(context, configuration);
         @SuppressWarnings("unchecked") final Class<T> inputClass = (Class<T>) PhoenixConfigurationUtil.getInputClass(configuration);
 
+        PhoenixRecordReader<T> phoenixRecordReader;
         try {
             // hdp2.6
             Constructor<PhoenixRecordReader> constructor = PhoenixRecordReader.class
                     .getConstructor(Class.class, Configuration.class, QueryPlan.class, MapReduceParallelScanGrouper.class);
             constructor.setAccessible(true);
-            return constructor.newInstance(inputClass, configuration, queryPlan, MapReduceParallelScanGrouper.getInstance());
+            phoenixRecordReader = constructor.newInstance(inputClass, configuration, queryPlan, MapReduceParallelScanGrouper.getInstance());
         } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new IOException(e);
         } catch (NoSuchMethodException ignore) {
             // Search other constructor
+            try {
+                // emg5.31
+                Constructor<PhoenixRecordReader> constructor = PhoenixRecordReader.class
+                        .getConstructor(Class.class, Configuration.class, QueryPlan.class);
+                constructor.setAccessible(true);
+                phoenixRecordReader = constructor.newInstance(inputClass, configuration, queryPlan);
+            } catch (InstantiationException | InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+                throw new IOException(e);
+            }
         }
 
-        try {
-            // emg5.31
-            Constructor<PhoenixRecordReader> constructor = PhoenixRecordReader.class
-                    .getConstructor(Class.class, Configuration.class, QueryPlan.class);
-            constructor.setAccessible(true);
-            return constructor.newInstance(inputClass, configuration, queryPlan);
-        } catch (InstantiationException | InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
-            throw new IOException(e);
+        return new CloseValueRecordReader<>(phoenixRecordReader);
+    }
+
+    public static class CloseValueRecordReader<K, V> extends TransformInputFormat.RecordReaderTransform<K, V, V> {
+
+        public CloseValueRecordReader(RecordReader<K, V> recordReader) {
+            super(recordReader, v -> v);
+        }
+
+        @Override
+        public void close() throws IOException {
+            V currentValue;
+            try {
+                currentValue = getCurrentValue();
+            } catch (InterruptedException e) {
+                throw new IOException(e);
+            }
+            if (currentValue instanceof Closeable) {
+                ((Closeable) currentValue).close();
+            }
+            super.close();
         }
     }
 
