@@ -72,6 +72,8 @@ while [[ $# -gt 0 ]]; do
     LIB="JAVA_COMMONS_LIB"
     if [ -z "$DEPENDENCY_REPO" ]; then
       DEPENDENCY_REPO="../java-common-libs"
+    else
+      shift
     fi
     shift # past argument
     ;;
@@ -79,6 +81,8 @@ while [[ $# -gt 0 ]]; do
      LIB="BIODATA"
      if [ -z "$DEPENDENCY_REPO" ]; then
        DEPENDENCY_REPO="../biodata"
+     else
+       shift
      fi
     shift # past argument
     ;;
