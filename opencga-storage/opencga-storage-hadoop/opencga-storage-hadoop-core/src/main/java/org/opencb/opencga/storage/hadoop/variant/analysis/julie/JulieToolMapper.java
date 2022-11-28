@@ -7,6 +7,7 @@ import org.opencb.biodata.models.variant.avro.PopulationFrequency;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.converters.avro.VariantStatsToPopulationFrequencyConverter;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
@@ -30,6 +31,7 @@ public class JulieToolMapper extends VariantRowMapper<ImmutableBytesWritable, Pu
     private VariantStatsToPopulationFrequencyConverter popFreqConverter;
     private Map<Integer, String> studyIdMap;
     private Map<Integer, Map<Integer, String>> cohortIdMap;
+    private ProgressLogger progressLogger;
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
@@ -38,6 +40,7 @@ public class JulieToolMapper extends VariantRowMapper<ImmutableBytesWritable, Pu
         toHBaseConverter = new VariantAnnotationToHBaseConverter();
         overwrite = context.getConfiguration().getBoolean(JulieToolDriver.OVERWRITE, false);
         popFreqConverter = new VariantStatsToPopulationFrequencyConverter();
+        progressLogger = new ProgressLogger("Processing variants");
         try (VariantStorageMetadataManager metadataManager = new VariantStorageMetadataManager(
                 new HBaseVariantStorageMetadataDBAdaptorFactory(getHelper()))) {
             studyIdMap = new HashMap<>();
@@ -118,6 +121,7 @@ public class JulieToolMapper extends VariantRowMapper<ImmutableBytesWritable, Pu
         }
 
         context.write(((ImmutableBytesWritable) key), toHBaseConverter.convert(annotation));
+        progressLogger.increment(1, () -> "up to variant " + variant.toString());
 
     }
 }
