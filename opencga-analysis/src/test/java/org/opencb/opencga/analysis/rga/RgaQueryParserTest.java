@@ -15,7 +15,7 @@ public class RgaQueryParserTest {
 
     @Before
     public void setUp() throws Exception {
-        parser = new RgaQueryParser();
+        parser = new RgaQueryParser(RgaQueryParams.CompHetQueryMode.SINGLE);
     }
 
     @Test

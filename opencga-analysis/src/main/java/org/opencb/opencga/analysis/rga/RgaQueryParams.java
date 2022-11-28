@@ -136,4 +136,9 @@ public class RgaQueryParams implements QueryParam {
 
         return query;
     }
+
+    public enum CompHetQueryMode {
+        SINGLE,
+        PAIR
+    }
 }

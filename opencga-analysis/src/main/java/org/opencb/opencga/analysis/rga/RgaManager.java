@@ -77,7 +77,8 @@ public class RgaManager implements AutoCloseable {
     public RgaManager(CatalogManager catalogManager, VariantStorageManager variantStorageManager) {
         this.catalogManager = catalogManager;
         this.storageConfiguration = variantStorageManager.getStorageConfiguration();
-        this.rgaEngine = new RgaEngine(this.storageConfiguration);
+        // TODO: Add CompHetQueryMode to configuration file in v2.5.0
+        this.rgaEngine = new RgaEngine(this.storageConfiguration, RgaQueryParams.CompHetQueryMode.PAIR);
         this.variantStorageManager = variantStorageManager;
 
         this.individualRgaConverter = new IndividualRgaConverter();
