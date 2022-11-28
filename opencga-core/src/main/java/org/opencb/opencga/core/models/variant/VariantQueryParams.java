@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models.variant;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.opencb.commons.datastore.core.Query;
 
 /**
@@ -79,7 +80,9 @@ public class VariantQueryParams extends BasicVariantQueryParams {
     private String customAnnotation;
 
     private String unknownGenotype;
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private boolean sampleMetadata = false;
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private boolean sort = false;
 
 
