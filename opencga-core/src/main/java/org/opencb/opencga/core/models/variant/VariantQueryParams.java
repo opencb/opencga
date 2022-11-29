@@ -35,8 +35,8 @@ public class VariantQueryParams extends BasicVariantQueryParams {
     private String includeSample;
     private String includeFile;
     private String includeSampleData;
-    private String includeSampleId;
-    private String includeGenotype;
+    private boolean includeSampleId;
+    private boolean includeGenotype;
 
     private String file;
     private String qual;
@@ -179,20 +179,20 @@ public class VariantQueryParams extends BasicVariantQueryParams {
         return this;
     }
 
-    public String getIncludeGenotype() {
+    public boolean getIncludeGenotype() {
         return includeGenotype;
     }
 
-    public VariantQueryParams setIncludeGenotype(String includeGenotype) {
+    public VariantQueryParams setIncludeGenotype(boolean includeGenotype) {
         this.includeGenotype = includeGenotype;
         return this;
     }
 
-    public String getIncludeSampleId() {
+    public boolean getIncludeSampleId() {
         return includeSampleId;
     }
 
-    public VariantQueryParams setIncludeSampleId(String includeSampleId) {
+    public VariantQueryParams setIncludeSampleId(boolean includeSampleId) {
         this.includeSampleId = includeSampleId;
         return this;
     }
