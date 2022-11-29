@@ -1,8 +1,6 @@
 package org.opencb.opencga.storage.core.utils;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -27,6 +25,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -54,7 +53,8 @@ public class CellBaseUtilsTest {
 //                new Object[]{"http://ws.opencb.org/cellbase-4.8.3/", "v4", "grch37"},
 //                new Object[]{"http://ws.opencb.org/cellbase-4.9.0/", "v4", "grch37"},
 //                new Object[]{"http://ws.opencb.org/cellbase/", "v4", "grch37"},
-                new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5", "grch38"});
+                new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5", "grch38"},
+                new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5.1", "grch38"});
     }
 
     @Parameter(0)
@@ -99,6 +99,23 @@ public class CellBaseUtilsTest {
     }
 
     @Test
+    public void testGetGeneByTranscriptId() {
+        assertNotNull(cellBaseUtils.getGeneRegion(Arrays.asList("ENST00000380152"), false).get(0));
+    }
+
+    @Test
+    public void testGetGeneByTranscriptName() {
+        Assume.assumeTrue(version.startsWith("v5"));
+        assertNotNull(cellBaseUtils.getGeneRegion(Arrays.asList("BRCA2-206"), false).get(0));
+    }
+
+    @Test
+    public void convertGeneToRegionHGNC() {
+        Assume.assumeTrue(version.startsWith("v5"));
+        assertNotNull(cellBaseUtils.getGeneRegion("HGNC:12363"));
+    }
+
+    @Test
     public void testGetMissing() {
         List<Region> list = cellBaseUtils.getGeneRegion(Arrays.asList(UNKNOWN_GENE), true);
         assertEquals(0, list.size());
@@ -133,6 +150,7 @@ public class CellBaseUtilsTest {
     }
 
     @Test
+    @Ignore
     public void testGetVariant() throws Exception {
         assertEquals(new Variant("19:44934489:G:A"), cellBaseUtils.getVariant("rs2571174"));
         assertEquals(Arrays.asList(new Variant("19:44934489:G:A"), new Variant("1:7797503:C:G")),
@@ -162,7 +180,7 @@ public class CellBaseUtilsTest {
         CellBaseDataResponse<VariantAnnotation> v = cellBaseClient.getVariantClient()
                 .getAnnotationByVariantIds(Collections.singletonList("1:26644214:T:C"), new QueryOptions());
         VariantAnnotation variantAnnotation = v.firstResult();
-        System.out.println("variantAnnotation = " + variantAnnotation);
+//        System.out.println("variantAnnotation = " + variantAnnotation);
         boolean withTranscriptFlags = false;
         for (ConsequenceType consequenceType : variantAnnotation.getConsequenceTypes()) {
             if (consequenceType.getTranscriptFlags() != null) {

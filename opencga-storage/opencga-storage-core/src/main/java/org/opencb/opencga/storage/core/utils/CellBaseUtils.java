@@ -98,7 +98,7 @@ public class CellBaseUtils {
             QueryOptions options = new QueryOptions(GENE_QUERY_OPTIONS); // Copy options. DO NOT REUSE QUERY OPTIONS
             options.append(QueryOptions.LIMIT, ParentRestClient.REST_CALL_BATCH_SIZE * 2);
 
-            CellBaseDataResponse<Gene> response = checkNulls(cellBaseClient.getGeneClient().get(geneStrs, options));
+            CellBaseDataResponse<Gene> response = checkNulls(cellBaseClient.getGeneClient().get(geneStrs, new QueryOptions(options)));
             logger.info("Query genes from CellBase " + cellBaseClient.getSpecies() + ":" + assembly + " " + geneStrs + "  -> "
                     + (System.currentTimeMillis() - ts) / 1000.0 + "s ");
             List<String> missingGenes = null;
@@ -131,14 +131,24 @@ public class CellBaseUtils {
                 }
                 if (gene == null) {
                     Query query = new Query();
-                    if (geneStr.startsWith("ENSG")) {
-                        query.put("id", geneStr);
-                    } else if (geneStr.startsWith("ENST")) {
-                        query.put("transcripts.id", geneStr);
+                    if (cellBaseClient.getClientConfiguration().getVersion().startsWith("v5")) {
+                        // Filter by XREF is only available starting in CellBase V5
+                        query.put("xref", geneStr);
                     } else {
-                        query.put("name", geneStr);
+                        if (geneStr.startsWith("ENSG")) {
+                            query.put("id", geneStr);
+                        } else if (geneStr.startsWith("ENST")) {
+                            query.put("transcripts.id", geneStr);
+                        } else {
+                            query.put("name", geneStr);
+                        }
                     }
-                    gene = cellBaseClient.getGeneClient().search(query, options).firstResult();
+                    QueryOptions searchQueryOptions = new QueryOptions(options).append(QueryOptions.LIMIT, 2);
+                    CellBaseDataResponse<Gene> thisGeneResponse = cellBaseClient.getGeneClient().search(query, searchQueryOptions);
+                    if (thisGeneResponse.first() != null && thisGeneResponse.first().getNumMatches() > 1) {
+                        logger.warn("Found {} matches for gene '{}'", thisGeneResponse.first().getNumMatches(), geneStr);
+                    }
+                    gene = thisGeneResponse.firstResult();
                 }
                 if (gene == null) {
                     if (missingGenes == null) {
