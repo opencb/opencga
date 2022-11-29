@@ -306,13 +306,13 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
 
             // Wait for those jobs before saving QC
-            Signature signature = null;
-            SignatureFitting signatureFitting = null;
             GenomePlot genomePlot = null;
 
             if (variantStatsJobId != null) {
                 try {
+                    logger.info("Waiting for variant stats job: {} ...", variantStatsJobId);
                     AnalysisUtils.waitFor(variantStatsJobId, getStudy(), catalogManager.getJobManager(), getToken());
+                    // Sample quality control is updated in the variant stats analysis, nothing more to do here
                 } catch (Exception e) {
                     addWarning("Error waiting for job '" + variantStatsJobId + "' (sample variant stats): " + e.getMessage());
                 }
@@ -321,34 +321,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
             if (signatureJobId != null) {
                 try {
                     logger.info("Waiting for mutational signature job: {} ...", signatureJobId);
-                    if (AnalysisUtils.waitFor(signatureJobId, getStudy(), catalogManager.getJobManager(), getToken())) {
-                        logger.info("End of waiting for mutational signature job: {}", signatureJobId);
-                        Job job = AnalysisUtils.getJob(signatureJobId, getStudy(), catalogManager.getJobManager(), getToken());
-                        Path outPath = Paths.get(job.getOutDir().getUri().getPath());
-                        if (runSignatureCatalogue) {
-                            // Parse mutational signature catalogue results
-                            java.io.File outFile = outPath.resolve(MUTATIONAL_SIGNATURE_DATA_MODEL_FILENAME).toFile();
-                            if (outFile.exists()) {
-                                signature = JacksonUtils.getDefaultObjectMapper().readerFor(Signature.class).readValue(outFile);
-                                logger.info("Parsed results from mutational signagure analysis (catalogue)");
-                            } else {
-                                logger.warn("The mutational signagure analysis (catalogue) output file {} does not exist",
-                                        MUTATIONAL_SIGNATURE_DATA_MODEL_FILENAME);
-                            }
-                        }
-                        if (runSignatureFitting) {
-                            // Parse mutational signature fitting results
-                            java.io.File outFile = outPath.resolve(MUTATIONAL_SIGNATURE_FITTING_DATA_MODEL_FILENAME).toFile();
-                            if (outFile.exists()) {
-                                signatureFitting = JacksonUtils.getDefaultObjectMapper().readerFor(SignatureFitting.class)
-                                        .readValue(outFile);
-                                logger.info("Parsed results from mutational signagure analysis (fitting)");
-                            } else {
-                                logger.warn("The mutational signagure analysis (fitting) output file {} does not exist",
-                                        MUTATIONAL_SIGNATURE_FITTING_DATA_MODEL_FILENAME);
-                            }
-                        }
-                    }
+                    AnalysisUtils.waitFor(signatureJobId, getStudy(), catalogManager.getJobManager(), getToken());
                 } catch (Exception e) {
                     addWarning("Error waiting for job '" + signatureJobId + "' (mutational signature analysis): " + e.getMessage());
                 }
@@ -387,40 +360,9 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
                 qc.setVariant(new SampleVariantQualityControlMetrics());
             }
 
-            boolean saveQc = false;
-            // Variant stats of the quality control are updated in the variant stats analysis itself !!!
-            if (signature != null) {
-                if (qc.getVariant().getSignatures() == null) {
-                    qc.getVariant().setSignatures(new ArrayList<>());
-                }
-                logger.info("Adding new mutational siganture to the signature data model before saving quality control");
-                qc.getVariant().getSignatures().add(signature);
-                saveQc = true;
-            }
-            if (signatureFitting != null) {
-                if (qc.getVariant().getSignatures() == null) {
-                    // Never have to be here
-                } else {
-                    for (Signature sig : qc.getVariant().getSignatures()) {
-                        if (sig.getId().equals(analysisParams.getMsId())) {
-                            if (CollectionUtils.isEmpty(sig.getFittings())) {
-                                sig.setFittings(new ArrayList<>());
-                            }
-                            logger.info("Fitting {} was added to the mutational siganture {} before saving quality control",
-                                    analysisParams.getMsFitId(), analysisParams.getMsId());
-                            sig.getFittings().add(signatureFitting);
-                            saveQc = true;
-                            break;
-                        }
-                    }
-                }
-            }
             if (genomePlot != null) {
                 qc.getVariant().setGenomePlot(genomePlot);
-                saveQc = true;
-            }
 
-            if (saveQc) {
                 catalogManager.getSampleManager().update(getStudy(), sample.getId(), new SampleUpdateParams().setQualityControl(qc),
                         QueryOptions.empty(), getToken());
                 logger.info("Quality control saved for sample {}", sample.getId());

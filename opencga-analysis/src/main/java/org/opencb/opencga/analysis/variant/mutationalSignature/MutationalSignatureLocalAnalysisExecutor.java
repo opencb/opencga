@@ -31,6 +31,7 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -302,27 +303,28 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
             logger.info("Query: {}", query.toJson());
             logger.info("Query options: {}", queryOptions.toJson());
-            VariantDBIterator iterator = getVariantStorageManager().iterator(query, queryOptions, getToken());
 
+            File clusteredFile = computeClusteredFile(query, queryOptions);
+
+            BufferedReader br = FileUtils.newBufferedReader(clusteredFile.toPath());
+            // Skip header line
+            // chrom1	start1	end1	chrom2	start2	end2	length   type   sample	id	is.clustered
+            //   0        1      2        3       4       5        6       7       8     9      10
             Map<String, Integer> countMap = new HashMap<>();
-
-            while (iterator.hasNext()) {
-                Variant variant = iterator.next();
-
-                // Update count map
-                String clusteredKey = getClusteredKey(variant);
-                String typeKey = getTypeKey(variant);
-                if (typeKey == null) {
-//                    logger.info("Skipping variant {}: SV type not supported {}", variant.toStringSimple(), variant.getType());
+            // Skip first line
+            String line = br.readLine();
+            while ((line = br.readLine()) != null) {
+                String[] split = line.split("\t");
+                if (split.length != 11) {
+                    logger.warn("Skipping line {}: it does not contain 11 elements", line);
                     continue;
                 }
-                String lengthKey = getLengthKey(variant);
-                if (lengthKey == null) {
-//                    logger.info("Skipping variant {}: it could not compute the distance to the variant mate", variant.toStringSimple());
-                    continue;
-                }
+                String clusteredKey = split[9].equals("FALSE") ? NON_CLUSTERED : CLUSTERED;
+                String lengthKey = split[6];
+                String typeKey = split[7];
+
                 String key = clusteredKey + "_" + typeKey;
-                if (!lengthKey.equals(LENGTH_NA)) {
+                if (!typeKey.equals(TYPE_TRANS)) {
                     key += ("_" + lengthKey);
                 }
                 if (countMap.containsKey(key)) {
@@ -332,11 +334,12 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                 }
             }
 
-            logger.info("Count map size = {}", countMap.size());
-            for (Map.Entry<String, Integer> entry : countMap.entrySet()) {
-                logger.info("context = {}, count = {}", entry.getKey(), entry.getValue());
-            }
+//            logger.info("Count map size = {}", countMap.size());
+//            for (Map.Entry<String, Integer> entry : countMap.entrySet()) {
+//                logger.info("context = {}, count = {}", entry.getKey(), entry.getValue());
+//            }
 
+            // Build teh genome context counts object for SV
             List<Signature.GenomeContextCount> genomeContextCounts = new LinkedList<>();
             for (String clustered: new LinkedList<>(Arrays.asList(CLUSTERED, NON_CLUSTERED))) {
                 for (String type: new LinkedList<>(Arrays.asList(TYPE_DEL, TYPE_TDS, TYPE_INV))) {
@@ -346,11 +349,11 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                         genomeContextCounts.add(new Signature.GenomeContextCount(key, countMap.containsKey(key) ? countMap.get(key) : 0));
                     }
                 }
-                String key = clustered + "_" + TYPE_TR;
+                String key = clustered + "_" + TYPE_TRANS;
                 genomeContextCounts.add(new Signature.GenomeContextCount(key, countMap.containsKey(key) ? countMap.get(key) : 0));
             }
 
-            // Write catalogue file
+            // Write catalogue file from the genome context counts
             PrintWriter pw = new PrintWriter(getOutDir().resolve(CATALOGUES_FILENAME_DEFAULT).toFile());
             pw.write(query.getString(VariantQueryParam.SAMPLE.key()));
             pw.write("\n");
@@ -373,6 +376,60 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         }
     }
 
+    private File computeClusteredFile(Query query, QueryOptions queryOptions) throws ToolException, StorageEngineException,
+            CatalogException {
+        VariantDBIterator iterator = getVariantStorageManager().iterator(query, queryOptions, getToken());
+
+        // $ Rscript sv_clustering.R ./test.bedpe ./out.bedpe
+        File inputFile = getOutDir().resolve("in.clustered.bedpe").toFile();
+        File outputFile = getOutDir().resolve("out.clustered.bedpe").toFile();
+        try {
+            PrintWriter pw = new PrintWriter(inputFile);
+            pw.println("chrom1\tstart1\tend1\tchrom2\tstart2\tend2\tlength\ttype\tsample");
+            while (iterator.hasNext()) {
+                Variant variant = iterator.next();
+                if (variant.getSv() == null || variant.getSv().getBreakend() == null || variant.getSv().getBreakend().getMate() == null) {
+                    continue;
+                }
+                String typeKey = getTypeKey(variant);
+                String lengthKey = getLengthKey(variant);
+                if (typeKey != null && lengthKey != null) {
+                    BreakendMate mate = variant.getSv().getBreakend().getMate();
+                    pw.println(variant.getChromosome() + "\t" + variant.getStart() + "\t" + variant.getEnd() + "\t"
+                            + mate.getChromosome() + "\t" + mate.getPosition() + "\t" + mate.getPosition() + "\t"
+                            + lengthKey + "\t" + typeKey + "\t" + getSample());
+                }
+            }
+            pw.close();
+
+            // Build command line to run R script via docker image
+            // Input binding
+            List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
+            inputBindings.add(new AbstractMap.SimpleEntry<>(opencgaHome.resolve("analysis/" + MutationalSignatureAnalysis.ID)
+                    .toAbsolutePath().toString(), "/script"));
+
+            // Output binding
+            AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),
+                    "/jobdir");
+
+            String rParams = "R CMD Rscript --vanilla /script/sv_clustering.R"
+                    + " /jobdir/" + inputFile.getName()
+                    + " /jobdir/" + outputFile.getName();
+
+            // Execute R script in docker
+            DockerUtils.run(MutationalSignatureLocalAnalysisExecutor.R_DOCKER_IMAGE, inputBindings, outputBinding, rParams, null);
+        } catch (Exception e) {
+            throw new ToolException(e);
+        }
+
+        // Check output file
+        if (!outputFile.exists()) {
+            throw new ToolException("Something wrong when computing the clustered values.");
+        }
+
+        return outputFile;
+    }
+
     private String getClusteredKey(Variant variant) {
         return NON_CLUSTERED;
     }
@@ -381,23 +438,34 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         String variantType = variant.getType() != null ? variant.getType().name() : "";
         if (CollectionUtils.isNotEmpty(variant.getStudies()) && CollectionUtils.isNotEmpty(variant.getStudies().get(0).getFiles())) {
             for (FileEntry file : variant.getStudies().get(0).getFiles()) {
-                if (file.getData() != null && file.getData().containsKey("EXT_SVTYPE")) {
-                    variantType = file.getData().get("EXT_SVTYPE");
-                    break;
+                if (file.getData() != null) {
+                    if (file.getData().containsKey("EXT_SVTYPE")) {
+                        variantType = file.getData().get("EXT_SVTYPE").toUpperCase(Locale.ROOT);
+                        break;
+                    } else if (file.getData().containsKey("SVCLASS")) {
+                        variantType = file.getData().get("SVCLASS").toUpperCase(Locale.ROOT);
+                        break;
+                    }
                 }
             }
         }
 
         switch (variantType) {
+            case "DEL":
             case "DELETION":
                 return TYPE_DEL;
+            case "DUP":
+            case "TDS":
             case "DUPLICATION":
             case "TANDEM_DUPLICATION":
                 return TYPE_TDS;
+            case "INV":
             case "INVERSION":
                 return TYPE_INV;
+            case "TR":
+            case "TRANS":
             case "TRANSLOCATION":
-                return TYPE_TR;
+                return TYPE_TRANS;
         }
         return null;
     }
@@ -443,7 +511,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             logger.info("Searching catalogue counts from quality control for sample " + getSample());
             if (sample.getQualityControl() != null && sample.getQualityControl().getVariant() != null
                     && CollectionUtils.isNotEmpty(sample.getQualityControl().getVariant().getSignatures())) {
-                logger.info("Searching in " + sample.getQualityControl().getVariant().getSignatures().size() + " signatues");
+                logger.info("Searching in " + sample.getQualityControl().getVariant().getSignatures().size() + " signatures");
                 for (Signature signature : sample.getQualityControl().getVariant().getSignatures()) {
                     logger.info("Matching ? " + getQueryId() + " vs " + signature.getId());
                     if (getQueryId().equals(signature.getId())) {

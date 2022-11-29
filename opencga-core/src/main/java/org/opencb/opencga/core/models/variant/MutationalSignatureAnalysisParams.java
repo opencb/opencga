@@ -43,7 +43,7 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
     private String query;
 
     // For fitting method
-    @DataField(id = "fitId", defaultValue = "FitMS", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_ID_DESCRIPTION)
+    @DataField(id = "fitId", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_ID_DESCRIPTION)
     private String fitId;
 
     @DataField(id = "fitMethod", defaultValue = "FitMS", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION)
