@@ -118,11 +118,11 @@ public class AnnotationVariantQueryParams extends ToolParams {
         return this;
     }
 
-    public Boolean getPanelIntersection() {
+    public boolean getPanelIntersection() {
         return panelIntersection;
     }
 
-    public AnnotationVariantQueryParams setPanelIntersection(Boolean panelIntersection) {
+    public AnnotationVariantQueryParams setPanelIntersection(boolean panelIntersection) {
         this.panelIntersection = panelIntersection;
         return this;
     }
