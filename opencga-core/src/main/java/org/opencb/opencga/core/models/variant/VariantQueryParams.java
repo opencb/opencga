@@ -20,7 +20,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import org.opencb.commons.datastore.core.Query;
 
 /**
- * Do not use native values (like boolean or int), so they are null by default.
+ * When using native values (like boolean or int), set add
+ * {@code @JsonInclude(JsonInclude.Include.NON_DEFAULT)} so they are null by default.
  */
 public class VariantQueryParams extends BasicVariantQueryParams {
 
@@ -35,7 +36,9 @@ public class VariantQueryParams extends BasicVariantQueryParams {
     private String includeSample;
     private String includeFile;
     private String includeSampleData;
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private boolean includeSampleId;
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private boolean includeGenotype;
 
     private String file;
