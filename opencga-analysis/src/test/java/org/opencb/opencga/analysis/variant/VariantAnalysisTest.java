@@ -119,7 +119,7 @@ public class VariantAnalysisTest {
     public static Object[][] parameters() {
         return new Object[][]{
                 {MongoDBVariantStorageEngine.STORAGE_ENGINE_ID},
-//                {HadoopVariantStorageEngine.STORAGE_ENGINE_ID}
+                {HadoopVariantStorageEngine.STORAGE_ENGINE_ID}
         };
     }
 
