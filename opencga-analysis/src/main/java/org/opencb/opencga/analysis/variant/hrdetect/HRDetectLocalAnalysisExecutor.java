@@ -62,8 +62,13 @@ public class HRDetectLocalAnalysisExecutor extends HRDetectAnalysisExecutor
     public final static String R_DOCKER_IMAGE = "opencb/opencga-ext-tools:" + GitRepositoryState.get().getBuildVersion();
 
     private final static String CNV_FILENAME = "cnv.tsv";
-    private final static String INDEL_FILENAME = "indel.vcf.gz";
+    private final static String INDEL_FILENAME = "indel.vcf";
+    private final static String INDEL_GZ_FILENAME = "indel.vcf.gz";
     private final static String INPUT_TABLE_FILENAME = "inputTable.tsv";
+
+    private final static String VIRTUAL_VOLUMEN_DATA = "/data/";
+    private final static String VIRTUAL_VOLUMEN_SNV = "/snv/";
+    private final static String VIRTUAL_VOLUMEN_SV = "/sv/";
 
     private Path opencgaHome;
 
@@ -88,10 +93,14 @@ public class HRDetectLocalAnalysisExecutor extends HRDetectAnalysisExecutor
 
     private void prepareCNVData() throws ToolExecutorException, StorageEngineException, CatalogException, FileNotFoundException {
         Query query = new Query(getCnvQuery());
+        query.put(VariantQueryParam.STUDY.key(), getStudy());
         query.put(VariantQueryParam.SAMPLE.key(), getSomaticSample() + "," + getGermlineSample());
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.append(QueryOptions.INCLUDE, "id,studies");
+
+        logger.info("CNV query: {}", query);
+        logger.info("CNV query options: {}", queryOptions);
 
         PrintWriter pwOut = new PrintWriter(getOutDir().resolve("cnvs.discarded").toFile());
 
@@ -127,48 +136,60 @@ public class HRDetectLocalAnalysisExecutor extends HRDetectAnalysisExecutor
 
         pw.close();
         pwOut.close();
-
-        if (!getOutDir().resolve(INDEL_FILENAME).toFile().exists()) {
-            new ToolExecutorException("Error exporting VCF file with INDEL variants");
-        }
     }
 
-    private void prepareINDELData() throws ToolExecutorException, StorageEngineException, CatalogException {
+    private void prepareINDELData() throws ToolExecutorException, StorageEngineException, CatalogException, IOException {
+        Query query = new Query(getIndelQuery());
+        query.put(VariantQueryParam.STUDY.key(), getStudy());
+
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.append(QueryOptions.INCLUDE, "id,studies");
 
+        logger.info("INDEL query: {}", query);
+        logger.info("INDEL query options: {}", queryOptions);
+
         getVariantStorageManager().exportData(getOutDir().resolve(INDEL_FILENAME).toAbsolutePath().toString(),
-                VariantWriterFactory.VariantOutputFormat.VCF_GZ, null, new Query(getIndelQuery()), queryOptions, getToken());
+                VariantWriterFactory.VariantOutputFormat.VCF, null, query, queryOptions, getToken());
 
         if (!getOutDir().resolve(INDEL_FILENAME).toFile().exists()) {
             new ToolExecutorException("Error exporting VCF file with INDEL variants");
         }
+
+        // BGZIP
+        AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir()
+                .toAbsolutePath().toString(), VIRTUAL_VOLUMEN_DATA);
+        String cmdline = DockerUtils.run(R_DOCKER_IMAGE, null, outputBinding, "bgzip " + VIRTUAL_VOLUMEN_DATA + INDEL_FILENAME, null);
+        logger.info("Docker command line: " + cmdline);
+
+        // TABIX
+        cmdline = DockerUtils.run(R_DOCKER_IMAGE, null, outputBinding, "tabix -p vcf " + VIRTUAL_VOLUMEN_DATA + INDEL_GZ_FILENAME, null);
+        logger.info("Docker command line: " + cmdline);
     }
 
     private void prepareInputTable() throws FileNotFoundException {
         PrintWriter pw = new PrintWriter(getOutDir().resolve(INPUT_TABLE_FILENAME).toAbsolutePath().toString());
         pw.println("sample\tIndels_vcf_files\tCNV_tab_files");
-        pw.println(getSomaticSample() + "\t" + INDEL_FILENAME + "\t" + CNV_FILENAME);
+        pw.println(getSomaticSample() + "\t" + VIRTUAL_VOLUMEN_DATA + INDEL_GZ_FILENAME + "\t" + VIRTUAL_VOLUMEN_DATA + CNV_FILENAME);
         pw.close();
     }
 
     private void executeRScript() throws IOException {
         // Input
         List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
-        inputBindings.add(new AbstractMap.SimpleEntry<>(getSnvRDataPath().toFile().getParent(), "/snv"));
-        inputBindings.add(new AbstractMap.SimpleEntry<>(getSvRDataPath().toFile().getParent(), "/sv"));
+        inputBindings.add(new AbstractMap.SimpleEntry<>(getSnvRDataPath().toFile().getParent(), VIRTUAL_VOLUMEN_SNV));
+        inputBindings.add(new AbstractMap.SimpleEntry<>(getSvRDataPath().toFile().getParent(), VIRTUAL_VOLUMEN_SV));
 
         // Output
         AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir()
-                .toAbsolutePath().toString(), "/data");
+                .toAbsolutePath().toString(), VIRTUAL_VOLUMEN_DATA);
 
         // Command
         StringBuilder scriptParams = new StringBuilder("R CMD Rscript --vanilla ")
-                .append("/opt/opencga/signature.tools.lib/scripts/signatureFit")
-                .append(" -x /snv/").append(getSnvRDataPath().toFile().getName())
-                .append(" -X /sv/").append(getSvRDataPath().toFile().getName())
-                .append(" -i /data/").append(INPUT_TABLE_FILENAME)
-                .append(" -o /data");
+                .append("/opt/opencga/signature.tools.lib/scripts/hrDetect")
+                .append(" -x ").append(VIRTUAL_VOLUMEN_SNV).append(getSnvRDataPath().toFile().getName())
+                .append(" -X ").append(VIRTUAL_VOLUMEN_SV).append(getSvRDataPath().toFile().getName())
+                .append(" -i ").append(VIRTUAL_VOLUMEN_DATA).append(INPUT_TABLE_FILENAME)
+                .append(" -o ").append(VIRTUAL_VOLUMEN_DATA);
 
         if (StringUtils.isNotEmpty(getSnv3CustomName())) {
             scriptParams.append(" -y ").append(getSnv3CustomName());
@@ -184,6 +205,17 @@ public class HRDetectLocalAnalysisExecutor extends HRDetectAnalysisExecutor
         }
         if (getBootstrap() != null) {
             scriptParams.append(" -b");
+        }
+
+        switch (getAssembly()) {
+            case "GRCh37": {
+                scriptParams.append(" --genomev=hg19");
+                break;
+            }
+            case "GRCh38": {
+                scriptParams.append(" --genomev=hg38");
+                break;
+            }
         }
 
         String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams.toString(), null);

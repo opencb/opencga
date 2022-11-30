@@ -13,7 +13,7 @@ WORKDIR /opt/opencga/signature.tools.lib
 RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt-get install -y \
     libcurl4 git libgmp-dev libcurl4-openssl-dev libgit2-dev libssl-dev libssh-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev \
     libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
-    gnuplot pandoc samtools bcftools fastqc plink1.9 bwa r-base && \
+    gnuplot pandoc samtools bcftools tabix fastqc plink1.9 bwa r-base && \
     ## Installation dependencies using R install.packages() is slower than apt-get but final size is 400GB smaller.
     R -e "install.packages(c('BiocManager', 'RCircos', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr'))" && \
     R -e "BiocManager::install('BiocStyle')" && \
@@ -21,8 +21,10 @@ RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt
     R -e 'install.packages(c("devtools", "getopt"), repos="https://www.stats.bris.ac.uk/R/")' && \
     git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib && \
     git checkout d3d73db497b5b83abc55d6cd55840c34ed542628 && \
-    sed -i '/BSgenome/d' DESCRIPTION && \
-    R -e 'devtools::install(repos="https://www.stats.bris.ac.uk/R/")' && \
+    sed -i '/Mmusculus/d' DESCRIPTION && \
+    sed -i '/Cfamiliaris/d' DESCRIPTION && \
+    sed -i '/1000genomes/d' DESCRIPTION && \
+    R -e 'options(timeout = 300);devtools::install(repos="https://www.stats.bris.ac.uk/R/")' && \
     ## Clean up
     rm -rf /var/lib/apt/lists/* /tmp/* /opt/opencga/signature.tools.lib/.git && \
     strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5

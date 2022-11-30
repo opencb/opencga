@@ -1,6 +1,7 @@
 package org.opencb.opencga.core.models.sample;
 
 import org.opencb.biodata.models.clinical.qc.GenomePlot;
+import org.opencb.biodata.models.clinical.qc.HRDetect;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.commons.annotations.DataField;
@@ -23,19 +24,24 @@ public class SampleVariantQualityControlMetrics {
             description = FieldConstants.SAMPLE_QUALITY_CONTROL_METRICS_GENOME_PLOT_DESCRIPTION)
     private GenomePlot genomePlot;
 
+    @DataField(id = "hrDetects",
+            description = FieldConstants.SAMPLE_QUALITY_CONTROL_METRICS_HRDETEC_DESCRIPTION)
+    private List<HRDetect> hrDetects;;
+
     @DataField(id = "files", name = "files",
             description = FieldConstants.SAMPLE_QUALITY_CONTROL_METRICS_FILES_DESCRIPTION)
     private List<String> files;
 
     public SampleVariantQualityControlMetrics() {
-        this(new ArrayList<>(), new ArrayList<>(), null, new ArrayList<>());
+        this(new ArrayList<>(), new ArrayList<>(), null, new ArrayList<>(), new ArrayList<>());
     }
 
-    public SampleVariantQualityControlMetrics(List<SampleQcVariantStats> variantStats, List<Signature> signatures,
-                                              GenomePlot genomePlot, List<String> files) {
+    public SampleVariantQualityControlMetrics(List<SampleQcVariantStats> variantStats, List<Signature> signatures, GenomePlot genomePlot,
+                                              List<HRDetect> hrDetects, List<String> files) {
         this.variantStats = variantStats;
         this.signatures = signatures;
         this.genomePlot = genomePlot;
+        this.hrDetects = hrDetects;
         this.files = files;
     }
 
@@ -45,6 +51,7 @@ public class SampleVariantQualityControlMetrics {
         sb.append("variantStats=").append(variantStats);
         sb.append(", signatures=").append(signatures);
         sb.append(", genomePlot=").append(genomePlot);
+        sb.append(", hrDetects=").append(hrDetects);
         sb.append(", files=").append(files);
         sb.append('}');
         return sb.toString();
@@ -74,6 +81,15 @@ public class SampleVariantQualityControlMetrics {
 
     public SampleVariantQualityControlMetrics setGenomePlot(GenomePlot genomePlot) {
         this.genomePlot = genomePlot;
+        return this;
+    }
+
+    public List<HRDetect> getHrDetects() {
+        return hrDetects;
+    }
+
+    public SampleVariantQualityControlMetrics setHrDetects(List<HRDetect> hrDetects) {
+        this.hrDetects = hrDetects;
         return this;
     }
 

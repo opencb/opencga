@@ -79,11 +79,13 @@ public class FieldConstants {
     public static final String SAMPLE_QUALITY_CONTROL_OVERWRITE_DESCRIPTION = "Overwrite sample quality control in OpenCGA catalog.";
 
     //SampleVariantQualityControlMetrics
-    public static final String SAMPLE_QUALITY_CONTROL_METRICS_VARIANT_STATS_DESCRIPTION = "Variant stats for the quality control of the "
-            + "sample.";
-    public static final String SAMPLE_QUALITY_CONTROL_METRICS_SIGNATURES_DESCRIPTION = "Signature for the quality control of the sample.";
+    public static final String SAMPLE_QUALITY_CONTROL_METRICS_VARIANT_STATS_DESCRIPTION = "Variant stats for the quality control of the"
+            + " sample.";
+    public static final String SAMPLE_QUALITY_CONTROL_METRICS_SIGNATURES_DESCRIPTION = "List of signature for the quality control of the"
+            + " sample.";
     public static final String SAMPLE_QUALITY_CONTROL_METRICS_GENOME_PLOT_DESCRIPTION = "Genome plot for the quality control of the"
             + " sample.";
+    public static final String SAMPLE_QUALITY_CONTROL_METRICS_HRDETEC_DESCRIPTION  = "List of HRDetect results for a given sample";
     public static final String SAMPLE_QUALITY_CONTROL_METRICS_FILES_DESCRIPTION = "File for the quality control metrics of the "
             + "sample.";
 

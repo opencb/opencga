@@ -18,22 +18,27 @@ package org.opencb.opencga.analysis.variant.hrdetect;
 
 import com.mongodb.client.ListCollectionsIterable;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.qc.HRDetect;
 import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.clinical.qc.SignatureFitting;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.ResourceUtils;
+import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleQualityControl;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.sample.SampleVariantQualityControlMetrics;
 import org.opencb.opencga.core.models.variant.HRDetectAnalysisParams;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -49,6 +54,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 @Tool(id = HRDetectAnalysis.ID, resource = Enums.Resource.VARIANT)
@@ -56,6 +62,8 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
 
     public static final String ID = "hrdetect";
     public static final String DESCRIPTION = "Run HRDetect analysis for a given sample.";
+
+    public final static String HRDETECT_SCORES_FILENAME_DEFAULT = "data_matrix.tsv";
 
     @ToolParams
     private HRDetectAnalysisParams hrdetectParams = new HRDetectAnalysisParams();
@@ -107,6 +115,7 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
         if (!somaticSample.isSomatic()) {
             throw new ToolException("Mismatch sample from CNV query '" + somaticSample.getId() + "' must be somatic");
         }
+        checkSampleQualityControl(somaticSample);
 
         SignatureFitting snvFitting = null;
         SignatureFitting svFitting = null;
@@ -134,13 +143,13 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
                     + "' found for sample '" + hrdetectParams.getSampleId() + "'");
         }
 
-        Path pathSnvFittingRData = getFittingRDataFile(snvFitting.getFiles());
+        pathSnvFittingRData = getFittingRDataFile(snvFitting.getFiles());
         if (!pathSnvFittingRData.toFile().exists()) {
             throw new ToolException("Unable to compute HRDetect analysis. No .rData file found for SNV fitting with ID '"
                     + hrdetectParams.getSvFittingId() + "' for sample '" + hrdetectParams.getSampleId() + "'");
         }
 
-        Path pathSvFittingRData = getFittingRDataFile(svFitting.getFiles());
+        pathSvFittingRData = getFittingRDataFile(svFitting.getFiles());
         if (!pathSvFittingRData.toFile().exists()) {
             throw new ToolException("Unable to compute HRDetect analysis. No .rData file found for SV fitting with ID '"
                     + hrdetectParams.getSvFittingId() + "' for sample '" + hrdetectParams.getSampleId() + "'");
@@ -148,26 +157,26 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
 
         // Check CNV query
         cnvQuery = JacksonUtils.getDefaultObjectMapper().readValue(hrdetectParams.getCnvQuery(), ObjectMap.class);
-        if (!cnvQuery.containsKey(VariantQueryParam.SAMPLE.key())) {
-            throw new ToolException("Unable to compute HRDetect analysis. No samples found in CNV query. It must contain somatic and"
-                    + " germline sample IDs");
-        } else {
-            List<String> samples = cnvQuery.getAsStringList(VariantQueryParam.SAMPLE.key());
-            if (samples.size() != 2) {
-                throw new ToolException("CNV query must contain two samples: somatic and germline ('"
-                        + cnvQuery.getString(VariantQueryParam.SAMPLE.key()));
+        Individual individual = IndividualQcUtils.getIndividualBySampleId(getStudy(), hrdetectParams.getSampleId(), getCatalogManager(),
+                getToken());
+        if (individual == null) {
+            throw new ToolException("Unable to compute HRDetect analysis. No individual found for sample '"
+                    + hrdetectParams.getSampleId() + "', that individual must have at least two samples: somatic and germline");
+        }
+        List<Sample> samples = individual.getSamples();
+        if (samples.size() < 2) {
+            throw new ToolException("For CNV query processing, individual (" + individual.getId() + ") must have at least two"
+                    + " samples: somatic and germline");
+        }
+        for (Sample sample : samples) {
+            if (!sample.isSomatic()) {
+                germlineSample = sample;
+                break;
             }
-            if (samples.get(0).equals(hrdetectParams.getSampleId())) {
-                germlineSample = checkSample(samples.get(1));
-            } else if (samples.get(0).equals(hrdetectParams.getSampleId())) {
-                germlineSample = checkSample(samples.get(0));
-            } else {
-                throw new ToolException("Mismatch sample from CNV query '" + cnvQuery.getString(VariantQueryParam.SAMPLE.key())+ "' and"
-                        + " sample '" + hrdetectParams.getSampleId() + "'");
-            }
-            if (germlineSample.isSomatic()) {
-                throw new ToolException("Mismatch sample from CNV query '" + germlineSample.getId() + "' must be germline");
-            }
+        }
+        if (germlineSample == null) {
+            throw new ToolException("Germline sample not found for individual '" + individual.getId() + "', it is mandatory for CNV query"
+                    + " processing");
         }
 
         // Check INDEL query
@@ -182,7 +191,6 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Log messages
-        logger.info(">>>> Params:");
         logger.info("HRDetect ID: {}", hrdetectParams.getId());
         logger.info("Study: {}", study);
         logger.info("Assembly: {}", assembly);
@@ -221,102 +229,76 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
 
             // Parse results and update quality control for the catalog sample
             Sample sample = checkSample(hrdetectParams.getSampleId());
-//            toolExecutor.parseResult(getOutDir())
+            HRDetect hrDetect = parseResult(getOutDir());
             SampleQualityControl qc = sample.getQualityControl();
+            if (qc == null) {
+                qc = new SampleQualityControl();
+            }
+            if (qc.getVariant() == null) {
+                qc.setVariant(new SampleVariantQualityControlMetrics());
+            }
+            if (qc.getVariant().getHrDetects() == null) {
+                qc.getVariant().setHrDetects(new ArrayList<>());
+            }
+            qc.getVariant().getHrDetects().add(hrDetect);
             catalogManager.getSampleManager().update(getStudy(), sample.getId(), new SampleUpdateParams().setQualityControl(qc),
                     QueryOptions.empty(), getToken());
         });
     }
 
-//    public Signature parse(Path dir) throws IOException {
-//        Signature result = new Signature(signatureParams.getId(), signatureParams.getDescription(), query, "SNV", null, null, null);
-//
-//        // Context counts
-//        File contextFile = dir.resolve(CATALOGUES_FILENAME_DEFAULT).toFile();
-//        if (contextFile.exists()) {
-//            List<String> lines = FileUtils.readLines(contextFile, Charset.defaultCharset());
-//            List<Signature.GenomeContextCount> sigCounts = new ArrayList<>(lines.size() - 1);
-//            for (int i = 1; i < lines.size(); i++) {
-//                String[] fields = lines.get(i).split("\t");
-//                sigCounts.add(new Signature.GenomeContextCount(fields[0], Math.round(Float.parseFloat((fields[1])))));
-//            }
-//            result.setCounts(sigCounts);
-//        }
-//
-//        // Signature fitting
-//        File coeffsFile = dir.resolve(SIGNATURE_COEFFS_FILENAME).toFile();
-//        if (coeffsFile.exists()) {
-//            SignatureFitting fitting = new SignatureFitting()
-//                    .setMethod(signatureParams.getFitMethod())
-//                    .setSignatureVersion(signatureParams.getSigVersion());
-//
-//            // Set source from fit method
-//            if (StringUtils.isNotEmpty(getSignatureParams().getSigVersion())) {
-//                if (getSignatureParams().getSigVersion().startsWith("COSMIC")) {
-//                    fitting.setSignatureSource("COSMIC");
-//                } else if (getSignatureParams().getSigVersion().startsWith("RefSig")) {
-//                    fitting.setSignatureSource("RefSig");
-//                }
-//            }
-//
-//            // Set fitting scores
-//            List<String> lines = FileUtils.readLines(coeffsFile, Charset.defaultCharset());
-//            String[] labels = lines.get(0).split("\t");
-//            String[] values = lines.get(1).split("\t");
-//            List<SignatureFitting.Score> scores = new ArrayList<>(labels.length);
-//            for (int i = 0; i < labels.length; i++) {
-//                String label = labels[i];
-//                if (label.contains("_")) {
-//                    String[] splits = label.split("_");
-//                    label = splits[splits.length - 1];
-//                }
-//                scores.add(new SignatureFitting.Score(label, Double.parseDouble(values[i + 1])));
-//            }
-//            fitting.setScores(scores);
-//
-//            // Set files
-//            List<String> files = new ArrayList<>();
-//            for (File file : getOutDir().toFile().listFiles()) {
-//                if (file.getName().endsWith("pdf")) {
-//                    files.add(file.getName());
-//                } else if (file.isDirectory()) {
-//                    for (File file2 : file.listFiles()) {
-//                        if (file2.getName().endsWith("pdf")) {
-//                            files.add(file.getName() + "/" + file2.getName());
-//                        }
-//                    }
-//                }
-//            }
-//            fitting.setFiles(files);
-//
-//            // Set params
-//            ObjectMap params = new ObjectMap();
-//            if (signatureParams.getnBoot() != null) {
-//                params.append("nBoot", signatureParams.getnBoot());
-//            }
-//            if (StringUtils.isNotEmpty(signatureParams.getOrgan())) {
-//                params.append("organ", signatureParams.getOrgan());
-//            }
-//            if (signatureParams.getThresholdPerc() != null) {
-//                params.append("thresholdPerc", signatureParams.getThresholdPerc());
-//            }
-//            if (signatureParams.getThresholdPval() != null) {
-//                params.append("thresholdPval", signatureParams.getThresholdPval());
-//            }
-//            if (signatureParams.getMaxRareSigs() != null) {
-//                params.append("maxRareSigs", signatureParams.getMaxRareSigs());
-//            }
-//            if (params.size() > 0) {
-//                fitting.setParams(params);
-//            }
-//            fitting.setParams(params);
-//
-//            // Set fitting signature
-//            result.setFitting(fitting);
-//        }
-//
-//        return result;
-//    }
+    public HRDetect parseResult(Path dir) throws IOException {
+        HRDetect result = new HRDetect()
+                .setId(hrdetectParams.getId())
+                .setDescription(hrdetectParams.getDescription())
+                .setSnvFittingId(hrdetectParams.getSnvFittingId())
+                .setSvFittingId(hrdetectParams.getSvFittingId())
+//                .setCnvQuery(JacksonUtils.getDefaultObjectMapper().readValue(hrdetectParams.getCnvQuery(), ObjectMap.class))
+//                .setIndelQuery(JacksonUtils.getDefaultObjectMapper().readValue(hrdetectParams.getIndelQuery(), ObjectMap.class));
+                ;
+
+        // Set other params
+        ObjectMap params = new ObjectMap();
+        if (StringUtils.isNotEmpty(hrdetectParams.getSnv3CustomName())) {
+            params.append("snv3CustomName", hrdetectParams.getSnv3CustomName());
+        }
+        if (StringUtils.isNotEmpty(hrdetectParams.getSnv8CustomName())) {
+            params.append("snv8CustomName", hrdetectParams.getSnv8CustomName());
+        }
+        if (StringUtils.isNotEmpty(hrdetectParams.getSv3CustomName())) {
+            params.append("sv3CustomName", hrdetectParams.getSv3CustomName());
+        }
+        if (StringUtils.isNotEmpty(hrdetectParams.getSv8CustomName())) {
+            params.append("sv8CustomName", hrdetectParams.getSv8CustomName());
+        }
+        if (params.size() > 0) {
+            result.setParams(params);
+        }
+
+        // Read scores
+        ObjectMap scores = new ObjectMap();
+        File scoresFile = dir.resolve(HRDETECT_SCORES_FILENAME_DEFAULT).toFile();
+        if (scoresFile.exists()) {
+            List<String> lines = FileUtils.readLines(scoresFile, Charset.defaultCharset());
+            if (lines.size() > 1) {
+                String[] labels = lines.get(0).split("\t");
+                String[] values = lines.get(1).split("\t");
+                for (int i = 0; i < labels.length; i++) {
+                    try {
+                        scores.put(labels[i], Float.parseFloat(values[i + 1]));
+                    } catch (NumberFormatException e) {
+                        scores.put(labels[i], Float.NaN);
+                    }
+                }
+            }
+        }
+        if (MapUtils.isNotEmpty(scores)) {
+            result.setScores(scores);
+        }
+
+        // TODO: files to be added ?
+
+        return result;
+    }
 
     private Sample checkSample(String sampleId) throws ToolException, CatalogException {
         study = catalogManager.getStudyManager().get(study, QueryOptions.empty(), token).first().getFqn();
@@ -325,7 +307,10 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
             throw new ToolException("Unable to compute HRDetect analysis. Sample '" + hrdetectParams.getSampleId() + "' not found");
         }
 
-        Sample sample = sampleResult.first();
+        return sampleResult.first();
+    }
+
+    private void checkSampleQualityControl(Sample sample) throws ToolException {
         if (sample.isSomatic()) {
             // Check signatures are present in the quality control (only for somatic sample)
             if (sample.getQualityControl() == null || sample.getQualityControl().getVariant() == null ||
@@ -334,8 +319,6 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
                         + hrdetectParams.getSampleId() + "'");
             }
         }
-
-        return sample;
     }
 
     private Path getFittingRDataFile(List<String> files) {
@@ -344,7 +327,7 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
         }
         for (String file : files) {
             if (file.endsWith("rData")) {
-                return getOutDir().resolve(file);
+                return getOutDir().getParent().resolve(file);
             }
         }
         return null;
