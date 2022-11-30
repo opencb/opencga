@@ -23,36 +23,48 @@ function printUsage() {
 
 }
 
-function check_repo(){
+## Check if the repo status is clean.
+function check_repo_clean() {
   GIT_STATUS=$(git status --short)
   if [ -n "$GIT_STATUS" ]; then
-  	echo "Repository is not clean:"
-  	echo "$GIT_STATUS"
+  	yellow "Repository is not clean:"
+  	yellow "$GIT_STATUS"
     exit
-  else
-    git pull
   fi
 }
 
-function get_new_version(){
-  if [[ "$CURRENT_VERSION" == *"$1"* ]]; then
-    NEW_VERSION=${CURRENT_VERSION/"$1-"}
+## This function removes TASK-XXX- if exists, otherwise it adds it.
+function toggle_version() {
+  local BRANCH=$1
+  ## Remove TASK-XXX- from the current version
+  if [[ "$CURRENT_VERSION" == *"$BRANCH"* ]]; then
+    NEW_VERSION=${CURRENT_VERSION/"$BRANCH-"}
   else
+    ## Add TASK-XXX- to the current version
     CLEAN_RELEASE_VERSION=$(echo "$CURRENT_VERSION" | cut -d "-" -f 1)
-    TAGS_VERSION=$(echo "$CURRENT_VERSION" | cut -d "-" -f 2)
-    NEW_VERSION="$CLEAN_RELEASE_VERSION-$1-$TAGS_VERSION"
+    TAG_VERSION=$(echo "$CURRENT_VERSION" | cut -d "-" -f 2)
+    NEW_VERSION="$CLEAN_RELEASE_VERSION-$BRANCH-$TAG_VERSION"
   fi
 }
 
-function update_dependency(){
+## Change version in the dependency.
+## Usage: update_dependency "$DEPENDENCY_REPO" "$NEW_VERSION" "$BRANCH_NAME"
+function update_dependency() {
   cd "$1" || exit 2
-  check_repo
-  git co "$3"
-  check_repo
+  check_repo_clean
+  git checkout "$3"
+  ## Check branch exists
+  local BRANCH=$(git branch --show-current)
+  if [ "$BRANCH" != "$3" ]; then
+    yellow "Branch '$3' does not exist"
+    exit
+  fi
+  ## Rename and commit new version
   mvn versions:set -DnewVersion="$2" -DgenerateBackupPoms=false
   git commit -am "Update version to $2"
 }
 
+## At least one parameter is required.
 if [ -z "$1" ]; then
   printUsage
   exit 1
@@ -99,12 +111,12 @@ CURRENT_DIR=$PWD
 cd "$SCRIPT_DIR" || exit 2
 cd ..
 BRANCH_NAME=$(git branch --show-current)
-check_repo
+check_repo_clean
 
 
 if [ "$LIB" = "JAVA_COMMONS_LIB" ];then
   CURRENT_VERSION=$(grep -m 1 java-common-libs.version pom.xml | cut -d ">" -f 2 | cut -d "<" -f 1)
-  get_new_version "$BRANCH_NAME"
+  toggle_version "$BRANCH_NAME"
   update_dependency "$DEPENDENCY_REPO" "$NEW_VERSION" "$BRANCH_NAME"
   cd "$SCRIPT_DIR" || exit 2
   cd ..
@@ -113,7 +125,7 @@ if [ "$LIB" = "JAVA_COMMONS_LIB" ];then
 fi
 if [ "$LIB" = "BIODATA" ];then
   CURRENT_VERSION=$(grep -m 1 biodata.version pom.xml | cut -d ">" -f 2 | cut -d "<" -f 1)
-  get_new_version "$BRANCH_NAME"
+  toggle_version "$BRANCH_NAME"
   update_dependency "$DEPENDENCY_REPO" "$NEW_VERSION" "$BRANCH_NAME"
   cd "$SCRIPT_DIR" || exit 2
   cd ..
