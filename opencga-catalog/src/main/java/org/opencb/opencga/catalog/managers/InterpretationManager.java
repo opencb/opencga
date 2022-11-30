@@ -24,6 +24,7 @@ import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationStats;
 import org.opencb.biodata.models.common.Status;
@@ -295,16 +296,20 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         } else {
             if (clinicalAnalysis.isPanelLock()) {
                 // Check the panels are the same provided in the Clinical Analysis
-                Set<String> clinicalPanelIds = clinicalAnalysis.getPanels().stream().map(Panel::getId).collect(Collectors.toSet());
-                Set<String> interpretationPanelIds = interpretation.getPanels().stream().map(Panel::getId).collect(Collectors.toSet());
+                Map<String, Panel> clinicalPanelIds = clinicalAnalysis.getPanels().stream()
+                        .collect(Collectors.toMap(DiseasePanel::getId, panel -> panel));
 
-                if (clinicalPanelIds.size() != interpretationPanelIds.size() || !clinicalPanelIds.containsAll(interpretationPanelIds)) {
-                    throw new CatalogException("'panelLock' from ClinicalAnalysis is set to True. Please, leave list of panels empty so "
-                            + "they can be inherited or pass the same panels defined in the Clinical Analysis.");
+                List<Panel> panelList = new ArrayList<>(clinicalPanelIds.size());
+                for (Panel panel : interpretation.getPanels()) {
+                    if (!clinicalPanelIds.containsKey(panel.getId())) {
+                        throw new CatalogException("'panelLock' from ClinicalAnalysis is set to True. Please, leave list of panels empty"
+                                + " so they can be inherited or pass at least a subset of the panels defined in the Clinical Analysis.");
+                    }
+                    panelList.add(clinicalPanelIds.get(panel.getId()));
                 }
 
                 // Use panels from Clinical Analysis. No need to validate the panels
-                interpretation.setPanels(clinicalAnalysis.getPanels());
+                interpretation.setPanels(panelList);
             } else {
                 // Validate and get panels
                 Set<String> panelIds = interpretation.getPanels().stream().map(Panel::getId).collect(Collectors.toSet());
