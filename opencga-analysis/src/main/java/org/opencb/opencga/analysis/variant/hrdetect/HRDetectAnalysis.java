@@ -60,8 +60,8 @@ import java.util.List;
 @Tool(id = HRDetectAnalysis.ID, resource = Enums.Resource.VARIANT)
 public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
 
-    public static final String ID = "hrdetect";
-    public static final String DESCRIPTION = "Run HRDetect analysis for a given sample.";
+    public static final String ID = "hr-detect";
+    public static final String DESCRIPTION = "Run HRDetect analysis for a given somatic sample.";
 
     public final static String HRDETECT_SCORES_FILENAME_DEFAULT = "data_matrix.tsv";
 
