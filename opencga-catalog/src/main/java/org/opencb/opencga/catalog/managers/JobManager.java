@@ -544,7 +544,6 @@ public class JobManager extends ResourceManager<Job> {
 
     /**
      * Check if the job is eligible to be reused, and if so, try to find an equivalent job.
-     *
      * Eligible job:
      *  - Not enforced jobId
      *  - Tool.id within list of "tools-to-reuse"
@@ -569,20 +568,13 @@ public class JobManager extends ResourceManager<Job> {
 
         // Get candidates
         Query query = new Query()
-                .append(
-                        JobDBAdaptor.QueryParams.TOOL_ID.key(),
-                        job.getTool().getId())
-                .append(
-                        JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(),
+                .append(JobDBAdaptor.QueryParams.TOOL_ID.key(), job.getTool().getId())
+                .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(),
                         Arrays.asList(Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED));
 
         QueryOptions options = new QueryOptions()
-                .append(
-                        QueryOptions.LIMIT,
-                        10)
-                .append(
-                        QueryOptions.INCLUDE,
-                        Arrays.asList(JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.PARAMS.key()));
+                .append(QueryOptions.LIMIT, 10)
+                .append(QueryOptions.INCLUDE, Arrays.asList(JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.PARAMS.key()));
 
         DBIterator<Job> it = iterator(study.getId(), query, options, token);
         while (it.hasNext()) {
@@ -591,9 +583,9 @@ public class JobManager extends ResourceManager<Job> {
             if (new HashMap<>(job.getParams()).equals(new HashMap<>(candidateJob.getParams()))) {
                 // This is a valid candidate!
                 OpenCGAResult<Job> result = jobDBAdaptor.get(candidateJob.getUid(), new QueryOptions());
-                result.addEvent(new Event(Event.Type.INFO,
-                        "reuse",
-                        "Refuse creating a new job. Reuse an existing equivalent job instead."));
+                result.addEvent(new Event(Event.Type.WARNING, "reuse",
+                        "Another job which is pending execution was already created using the exact same parameters. "
+                                + "Returning that job instead of creating a new one."));
                 return result;
             }
         }

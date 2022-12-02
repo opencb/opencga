@@ -878,6 +878,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyId, toolId, null, new ObjectMap("key2", 2).append("key", 1),
                 "", "", Collections.emptyList(), Collections.emptyList(), token);
         assertEquals(job1, result.first().getId());
+        assertEquals(1, result.getEvents().size());
+        assertEquals("reuse", result.getEvents().get(0).getId());
 
         // Same params, different values
         result = catalogManager.getJobManager().submit(studyId, toolId, null, new ObjectMap("key2", 2).append("key", 2), token);
