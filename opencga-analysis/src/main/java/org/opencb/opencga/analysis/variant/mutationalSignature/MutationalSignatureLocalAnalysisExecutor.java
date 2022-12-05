@@ -319,7 +319,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                     logger.warn("Skipping line {}: it does not contain 11 elements", line);
                     continue;
                 }
-                String clusteredKey = split[9].equals("FALSE") ? NON_CLUSTERED : CLUSTERED;
+                String clusteredKey = split[10].equals("FALSE") ? NON_CLUSTERED : CLUSTERED;
                 String lengthKey = split[6];
                 String typeKey = split[7];
 
