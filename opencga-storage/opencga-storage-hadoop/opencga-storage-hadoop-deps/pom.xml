@@ -82,7 +82,7 @@
         <commons-httpclient.version>3.1</commons-httpclient.version>
         <commons-compress.version>1.4.1</commons-compress.version>
         <commons-io.version>2.5</commons-io.version>
-        <commons-net.version>3.1</commons-net.version>
+        <commons-net.version>3.9.0</commons-net.version>
         <curator.version>2.7.1</curator.version>
         <apacheds-kerberos-codec.version>2.0.0-M15</apacheds-kerberos-codec.version>
         <leveldbjni-all.version>1.8</leveldbjni-all.version>
