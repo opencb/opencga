@@ -2352,7 +2352,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                 ParamUtils.AclAction.ADD, this.token);
 
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("view study");
+        thrown.expectMessage("view any study");
         catalogManager.getStudyManager().get(studyFqn, QueryOptions.empty(), "");
     }
 
