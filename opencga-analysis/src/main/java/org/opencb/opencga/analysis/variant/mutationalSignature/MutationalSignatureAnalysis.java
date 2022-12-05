@@ -133,7 +133,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
             query = JacksonUtils.getDefaultObjectMapper().readValue(signatureParams.getQuery(), ObjectMap.class);
             if (!query.containsKey(VariantQueryParam.SAMPLE.key())
                     || StringUtils.isEmpty(query.getString(VariantQueryParam.SAMPLE.key()))) {
-                query.put(VariantQueryParam.SAMPLE.key(), signatureParams.getQuery());
+                query.put(VariantQueryParam.SAMPLE.key(), signatureParams.getSample());
             } else {
                 // Check mismatch sample
                 String tmpSample = query.getString(VariantQueryParam.SAMPLE.key());
@@ -243,6 +243,13 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
             throw new ToolException("After mutational signature analysis, it could not get sample '" + signatureParams.getSample() + "'"
                     + " from OpenCGA catalog: number of occurrences found: " + sampleResult.getNumResults());
         }
+
+        if (StringUtils.isEmpty(signatureParams.getId())) {
+            // Nothing to do
+            return;
+        }
+
+        // Only save results in sample quality control, if the signature ID is not empty
         sample = sampleResult.first();
         SampleQualityControl qc = sample.getQualityControl();
 
@@ -277,14 +284,16 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
         }
         if (signatureFitting != null) {
             for (Signature sig : qc.getVariant().getSignatures()) {
-                if (sig.getId().equals(signatureParams.getId())) {
-                    if (CollectionUtils.isEmpty(sig.getFittings())) {
-                        sig.setFittings(new ArrayList<>());
+                if (StringUtils.isNotEmpty(sig.getId())) {
+                    if (sig.getId().equals(signatureParams.getId())) {
+                        if (CollectionUtils.isEmpty(sig.getFittings())) {
+                            sig.setFittings(new ArrayList<>());
+                        }
+                        logger.info("Fitting {} was added to the mutational siganture {} before saving quality control",
+                                signatureParams.getFitId(), signatureParams.getId());
+                        sig.getFittings().add(signatureFitting);
+                        break;
                     }
-                    logger.info("Fitting {} was added to the mutational siganture {} before saving quality control",
-                            signatureParams.getFitId(), signatureParams.getId());
-                    sig.getFittings().add(signatureFitting);
-                    break;
                 }
             }
         }

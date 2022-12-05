@@ -988,11 +988,11 @@ public class VariantWebService extends AnalysisWebService {
                         + " mutational-signature-run."));
             }
 
-
             // Create temporal directory
             outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "mutational-signature-" + TimeUtils.getTimeMillis());
             try {
                 FileUtils.forceMkdir(outDir.toFile());
+                Runtime.getRuntime().exec("chmod 777 " + outDir.toAbsolutePath());
             } catch (IOException e) {
                 throw new IOException("Error creating temporal directory for mutational-signature/query analysis. " + e.getMessage(), e);
             }
