@@ -1,16 +1,16 @@
 #!/bin/bash
 
-function yellow () {
+function yellow (){
    echo "$(tput setaf 3)$1$(tput setaf 7)"
 }
-function green () {
+function green (){
    echo "$(tput setaf 2)$1$(tput setaf 7)"
 }
-function cyan () {
+function cyan (){
    echo "$(tput setaf 6)$1$(tput setaf 7)"
 }
 
-function printUsage() {
+function printUsage(){
   echo ""
   yellow "Release an OpenCB project."
   echo ""
