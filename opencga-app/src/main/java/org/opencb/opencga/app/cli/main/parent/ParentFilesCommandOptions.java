@@ -43,24 +43,36 @@ public class ParentFilesCommandOptions {
         @Parameter(names = {"-i", "--input"}, description = "Input file", required = true, arity = 1)
         public String inputFile;
 
-        @Parameter(names = {"--file-format"}, description = "Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)",
+        @Parameter(names = {"--file-format"}, description = "[DEPRECATED] Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)",
                 arity = 1)
         public String fileFormat;
+
+        @Parameter(names = {"--format"}, description = "Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)",
+                arity = 1)
+        public String format;
 
         @Parameter(names = {"--bioformat"}, description = "Bioformat of the file (VARIANT, ALIGNMENT, SEQUENCE, PEDIGREE...NONE)",
                 arity = 1)
         public String bioformat;
 
-        @Parameter(names = {"--catalog-path"}, description = "Path within catalog where the file will be located (Default: root folder)",
+        @Parameter(names = {"--catalog-path"}, description = "[DEPRECATED] Path within catalog where the file will be located (Default: root folder)",
                 arity = 1)
         public String catalogPath;
+
+        @Parameter(names = {"--path"}, description = "Path within catalog where the file will be located (Default: root folder)",
+                arity = 1)
+        public String path;
 
         @Parameter(names = {"--description"}, description = "Description of the file", arity = 1)
         public String description;
 
-        @Parameter(names = {"--file-name"}, description = "Name of the file by which it will be stored in catalog", required = false,
+        @Parameter(names = {"--file-name"}, description = "[DEPRECATED] Name of the file by which it will be stored in catalog", required = false,
                 arity = 1)
         public String fileName;
+
+        @Parameter(names = {"--name"}, description = "Name of the file by which it will be stored in catalog", required = false,
+                arity = 1)
+        public String name;
 
         @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
         public boolean parents;

@@ -71,7 +71,7 @@
      private static final int DEFAULT_LIMIT = 2000;
      private static final int DEFAULT_SKIP = 0;
      private static final int DEFAULT_CONNECT_TIMEOUT = 1000;
-     private static final int DEFAULT_READ_TIMEOUT = 120000;
+     private static final int DEFAULT_READ_TIMEOUT = 5400000;
      protected final Client client;
      protected final ObjectMapper jsonObjectMapper;
      private final ClientConfiguration clientConfiguration;
@@ -426,7 +426,8 @@
          params.remove("file");
          params.remove("body");
 
-         path.property(ClientProperties.READ_TIMEOUT, DEFAULT_READ_TIMEOUT * 100);
+         path.property(ClientProperties.READ_TIMEOUT, 5400000);
+         client.property(ClientProperties.READ_TIMEOUT, 5400000);
          path.register(MultiPartFeature.class);
          path.property(ClientProperties.REQUEST_ENTITY_PROCESSING,
                  RequestEntityProcessing.CHUNKED);
