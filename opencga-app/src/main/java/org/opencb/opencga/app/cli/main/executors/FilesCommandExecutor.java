@@ -329,6 +329,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
              putNestedIfNotEmpty(beanParams, "software.repository",commandOptions.softwareRepository, true);
              putNestedIfNotEmpty(beanParams, "software.commit",commandOptions.softwareCommit, true);
              putNestedIfNotEmpty(beanParams, "software.website",commandOptions.softwareWebsite, true);
+             putNestedIfNotNull(beanParams, "software.params",commandOptions.softwareParams, true);
              putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
              putNestedIfNotEmpty(beanParams, "jobId",commandOptions.jobId, true);
              putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
@@ -336,6 +337,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
              putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
              putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
              putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
  
             fileCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -465,6 +467,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
              putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
              putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
              putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+             putNestedIfNotNull(beanParams, "internal.sampleMap",commandOptions.internalSampleMap, true);
  
             fileLinkParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -716,6 +719,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
              putNestedIfNotEmpty(beanParams, "software.repository",commandOptions.softwareRepository, true);
              putNestedIfNotEmpty(beanParams, "software.commit",commandOptions.softwareCommit, true);
              putNestedIfNotEmpty(beanParams, "software.website",commandOptions.softwareWebsite, true);
+             putNestedIfNotNull(beanParams, "software.params",commandOptions.softwareParams, true);
              putNestedIfNotNull(beanParams, "experiment.technology",commandOptions.experimentTechnology, true);
              putNestedIfNotNull(beanParams, "experiment.method",commandOptions.experimentMethod, true);
              putNestedIfNotNull(beanParams, "experiment.nucleicAcidType",commandOptions.experimentNucleicAcidType, true);
@@ -727,12 +731,15 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
              putNestedIfNotEmpty(beanParams, "experiment.lab",commandOptions.experimentLab, true);
              putNestedIfNotEmpty(beanParams, "experiment.responsible",commandOptions.experimentResponsible, true);
              putNestedIfNotEmpty(beanParams, "experiment.description",commandOptions.experimentDescription, true);
+             putNestedIfNotNull(beanParams, "experiment.attributes",commandOptions.experimentAttributes, true);
              putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
              putNestedIfNotNull(beanParams, "size",commandOptions.size, true);
              putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
              putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
              putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
              putNestedIfNotNull(beanParams, "qualityControl.files",commandOptions.qualityControlFiles, true);
+             putNestedIfNotNull(beanParams, "stats",commandOptions.stats, true);
+             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
  
             fileUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
