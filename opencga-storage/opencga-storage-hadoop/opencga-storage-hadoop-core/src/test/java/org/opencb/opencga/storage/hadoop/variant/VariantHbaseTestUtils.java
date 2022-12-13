@@ -137,7 +137,7 @@ public class VariantHbaseTestUtils {
 
     public static void printVariantsFromVariantsTable(VariantHadoopDBAdaptor dbAdaptor, Path dir) throws IOException {
         String tableName = HBaseVariantTableNameGenerator.getVariantTableName(VariantStorageBaseTest.DB_NAME, dbAdaptor.getConfiguration());
-        HBaseManager hm = new HBaseManager(configuration.get());
+        HBaseManager hm = dbAdaptor.getHBaseManager();
         if (!hm.tableExists(tableName)) {
             System.out.println("Table " + tableName + " does not exist!");
             return;

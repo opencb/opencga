@@ -10,4 +10,4 @@ minExomiserGeneScore: 0.7
 outputPrefix: /jobdir/exomiser_output
 #out-format options: HTML, JSON, TSV_GENE, TSV_VARIANT, VCF (default: HTML)
 #outputFormats: [HTML, JSON, TSV_GENE, TSV_VARIANT, VCF]
-outputFormats: [VCF]
+outputFormats: [VCF, HTML]

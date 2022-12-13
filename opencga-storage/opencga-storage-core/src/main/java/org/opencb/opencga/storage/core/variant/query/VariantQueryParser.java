@@ -9,10 +9,10 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
-import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -272,6 +272,11 @@ public class VariantQueryParser {
             query.put(TYPE.key(), new ArrayList<>(types));
         }
 
+        if (VariantQueryUtils.isValidParam(query, ANNOT_CLINICAL_CONFIRMED_STATUS)
+                && !query.getBoolean(ANNOT_CLINICAL_CONFIRMED_STATUS.key())) {
+            // Remove false value if exists
+            query.remove(ANNOT_CLINICAL_CONFIRMED_STATUS.key());
+        }
         if (VariantQueryUtils.isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE)) {
             String v = query.getString(ANNOT_CLINICAL_SIGNIFICANCE.key());
             QueryOperation operator = VariantQueryUtils.checkOperator(v);
@@ -716,6 +721,10 @@ public class VariantQueryParser {
             formats = Collections.singletonList(NONE);
         }
 
+        if (VariantQueryUtils.isValidParam(query, SAMPLE_METADATA) && !query.getBoolean(SAMPLE_METADATA.key())) {
+            // Remove false value if exists
+            query.remove(SAMPLE_METADATA.key());
+        }
         query.put(INCLUDE_SAMPLE_DATA.key(), formats);
         query.remove(INCLUDE_GENOTYPE.key(), formats);
     }

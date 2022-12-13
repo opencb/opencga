@@ -115,6 +115,34 @@ public class IndividualManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testSearchDisordersWithCommas() throws CatalogException {
+        Individual individual = new Individual()
+                .setId("i1")
+                .setDisorders(Collections.singletonList(new Disorder().setId("disorder1, description 1")));
+        catalogManager.getIndividualManager().create(studyFqn, individual, null, token);
+
+        individual = new Individual()
+                .setId("i2")
+                .setDisorders(Collections.singletonList(new Disorder().setId("disorder2, description 2")));
+        catalogManager.getIndividualManager().create(studyFqn, individual, null, token);
+
+        individual = new Individual()
+                .setId("i3")
+                .setDisorders(Collections.singletonList(new Disorder().setId("disorder2")));
+        catalogManager.getIndividualManager().create(studyFqn, individual, null, token);
+
+        OpenCGAResult<?> result = catalogManager.getIndividualManager().distinct(studyFqn,
+                IndividualDBAdaptor.QueryParams.DISORDERS_ID.key(), new Query(), token);
+        assertEquals(3, result.getNumResults());
+
+        OpenCGAResult<Individual> search = catalogManager.getIndividualManager().search(studyFqn,
+                new Query(IndividualDBAdaptor.QueryParams.DISORDERS.key(), "disorder1, description 1,disorder2, description 2"),
+                IndividualManager.INCLUDE_INDIVIDUAL_IDS, token);
+        assertEquals(2, search.getNumResults());
+        assertTrue(Arrays.asList("i1", "i2").containsAll(search.getResults().stream().map(Individual::getId).collect(Collectors.toList())));
+    }
+
+    @Test
     public void testUpdatePhenotypes() throws CatalogException {
         Individual individual = new Individual().setId("i1");
         catalogManager.getIndividualManager().create(studyFqn, individual, null, token);
