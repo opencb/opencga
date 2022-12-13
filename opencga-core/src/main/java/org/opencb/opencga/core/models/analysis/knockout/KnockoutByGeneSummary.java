@@ -10,14 +10,14 @@ public class KnockoutByGeneSummary {
     private String strand;
     private String biotype;
 
-    private IndividualKnockoutStats individualStats;
+    private GlobalIndividualKnockoutStats individualStats;
     private VariantKnockoutStats variantStats;
 
     public KnockoutByGeneSummary() {
     }
 
     public KnockoutByGeneSummary(String id, String name, String chromosome, int start, int end, String strand, String biotype,
-                                 IndividualKnockoutStats individualStats, VariantKnockoutStats variantStats) {
+                                 GlobalIndividualKnockoutStats individualStats, VariantKnockoutStats variantStats) {
         this.id = id;
         this.name = name;
         this.chromosome = chromosome;
@@ -108,11 +108,11 @@ public class KnockoutByGeneSummary {
         return this;
     }
 
-    public IndividualKnockoutStats getIndividualStats() {
+    public GlobalIndividualKnockoutStats getIndividualStats() {
         return individualStats;
     }
 
-    public KnockoutByGeneSummary setIndividualStats(IndividualKnockoutStats individualStats) {
+    public KnockoutByGeneSummary setIndividualStats(GlobalIndividualKnockoutStats individualStats) {
         this.individualStats = individualStats;
         return this;
     }

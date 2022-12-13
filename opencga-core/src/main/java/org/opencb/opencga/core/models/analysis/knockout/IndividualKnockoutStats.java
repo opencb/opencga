@@ -2,58 +2,47 @@ package org.opencb.opencga.core.models.analysis.knockout;
 
 public class IndividualKnockoutStats extends KnockoutStats {
 
-    private KnockoutStats missingParents;
-    private KnockoutStats singleParent;
-    private KnockoutStats bothParents;
+    private int numHomAltCompHet;
+    private int numCompHetDelOverlap;
 
     public IndividualKnockoutStats() {
     }
 
-    public IndividualKnockoutStats(KnockoutStats missingParents, KnockoutStats singleParent, KnockoutStats bothParents) {
-        super(missingParents.getCount() + singleParent.getCount() + bothParents.getCount(),
-                missingParents.getNumHomAlt() + singleParent.getNumHomAlt() + bothParents.getNumHomAlt(),
-                missingParents.getNumCompHet() + singleParent.getNumCompHet() + bothParents.getNumCompHet(),
-                missingParents.getNumHetAlt() + singleParent.getNumHetAlt() + bothParents.getNumHetAlt(),
-                missingParents.getNumDelOverlap() + singleParent.getNumDelOverlap() + bothParents.getNumDelOverlap());
-        this.missingParents = missingParents;
-        this.singleParent = singleParent;
-        this.bothParents = bothParents;
+    public IndividualKnockoutStats(int count, int numHomAlt, int numCompHet, int numHetAlt, int numDelOverlap, int numHomAltCompHet,
+                                   int numCompHetDelOverlap) {
+        super(count, numHomAlt, numCompHet, numHetAlt, numDelOverlap);
+        this.numHomAltCompHet = numHomAltCompHet;
+        this.numCompHetDelOverlap = numCompHetDelOverlap;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("IndividualStats{");
-        sb.append("missingParents=").append(missingParents);
-        sb.append(", singleParent=").append(singleParent);
-        sb.append(", bothParents=").append(bothParents);
+        final StringBuilder sb = new StringBuilder("IndividualKnockoutStats{");
+        sb.append("count=").append(count);
+        sb.append(", numHomAlt=").append(numHomAlt);
+        sb.append(", numCompHet=").append(numCompHet);
+        sb.append(", numHetAlt=").append(numHetAlt);
+        sb.append(", numDelOverlap=").append(numDelOverlap);
+        sb.append(", numHomAltCompHet=").append(numHomAltCompHet);
+        sb.append(", numCompHetDelOverlap=").append(numCompHetDelOverlap);
         sb.append('}');
         return sb.toString();
     }
 
-    public KnockoutStats getMissingParents() {
-        return missingParents;
+    public int getNumHomAltCompHet() {
+        return numHomAltCompHet;
     }
 
-    public IndividualKnockoutStats setMissingParents(KnockoutStats missingParents) {
-        this.missingParents = missingParents;
-        return this;
+    public void setNumHomAltCompHet(int numHomAltCompHet) {
+        this.numHomAltCompHet = numHomAltCompHet;
     }
 
-    public KnockoutStats getSingleParent() {
-        return singleParent;
+    public int getNumCompHetDelOverlap() {
+        return numCompHetDelOverlap;
     }
 
-    public IndividualKnockoutStats setSingleParent(KnockoutStats singleParent) {
-        this.singleParent = singleParent;
-        return this;
-    }
-
-    public KnockoutStats getBothParents() {
-        return bothParents;
-    }
-
-    public IndividualKnockoutStats setBothParents(KnockoutStats bothParents) {
-        this.bothParents = bothParents;
+    public IndividualKnockoutStats setNumCompHetDelOverlap(int numCompHetDelOverlap) {
+        this.numCompHetDelOverlap = numCompHetDelOverlap;
         return this;
     }
 }

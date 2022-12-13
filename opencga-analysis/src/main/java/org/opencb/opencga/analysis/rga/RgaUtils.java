@@ -986,6 +986,18 @@ class RgaUtils {
             return delOverlapIds.size();
         }
 
+        public int getNumHomAltCompHetIds() {
+            Set<String> ids = new HashSet<>(homIds);
+            ids.addAll(transcriptCompHetIdsMap.values().stream().flatMap(Set::stream).collect(Collectors.toSet()));
+            return ids.size();
+        }
+
+        public int getNumCompHetDelOverlapIds() {
+            Set<String> ids = new HashSet<>(delOverlapIds);
+            ids.addAll(transcriptCompHetIdsMap.values().stream().flatMap(Set::stream).collect(Collectors.toSet()));
+            return ids.size();
+        }
+
         public Map<String, List<String>> getTranscriptCompHetIdsMap() {
             Map<String, List<String>> compHetMap = new HashMap<>();
             for (Map.Entry<String, Set<String>> entry : transcriptCompHetIdsMap.entrySet()) {

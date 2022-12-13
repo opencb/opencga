@@ -1452,14 +1452,23 @@ public class RgaManager implements AutoCloseable {
 
             auxKnockoutType.processFeature(codedIndividual);
         }
-        KnockoutStats noParentIndividualStats = new KnockoutStats(noParentsCount.getNumIds(), noParentsCount.getNumHomIds(),
-                noParentsCount.getNumCompHetIds(), noParentsCount.getNumHetIds(), noParentsCount.getNumDelOverlapIds());
-        KnockoutStats singleParentIndividualStats = new KnockoutStats(singleParentCount.getNumIds(), singleParentCount.getNumHomIds(),
-                singleParentCount.getNumCompHetIds(), singleParentCount.getNumHetIds(), singleParentCount.getNumDelOverlapIds());
-        KnockoutStats bothParentIndividualStats = new KnockoutStats(bothParentsCount.getNumIds(), bothParentsCount.getNumHomIds(),
-                bothParentsCount.getNumCompHetIds(), bothParentsCount.getNumHetIds(), bothParentsCount.getNumDelOverlapIds());
+        IndividualKnockoutStats noParentIndividualStats = new IndividualKnockoutStats(noParentsCount.getNumIds(),
+                noParentsCount.getNumHomIds(), noParentsCount.getNumCompHetIds(), noParentsCount.getNumHetIds(),
+                noParentsCount.getNumDelOverlapIds(), noParentsCount.getNumHomAltCompHetIds(),
+                noParentsCount.getNumCompHetDelOverlapIds()
+        );
+        IndividualKnockoutStats singleParentIndividualStats = new IndividualKnockoutStats(singleParentCount.getNumIds(),
+                singleParentCount.getNumHomIds(), singleParentCount.getNumCompHetIds(), singleParentCount.getNumHetIds(),
+                singleParentCount.getNumDelOverlapIds(), singleParentCount.getNumHomAltCompHetIds(),
+                singleParentCount.getNumCompHetDelOverlapIds()
+        );
+        IndividualKnockoutStats bothParentIndividualStats = new IndividualKnockoutStats(bothParentsCount.getNumIds(),
+                bothParentsCount.getNumHomIds(), bothParentsCount.getNumCompHetIds(), bothParentsCount.getNumHetIds(),
+                bothParentsCount.getNumDelOverlapIds(), bothParentsCount.getNumHomAltCompHetIds(),
+                bothParentsCount.getNumCompHetDelOverlapIds()
+        );
 
-        knockoutByVariantSummary.setIndividualStats(new IndividualKnockoutStats(noParentIndividualStats, singleParentIndividualStats,
+        knockoutByVariantSummary.setIndividualStats(new GlobalIndividualKnockoutStats(noParentIndividualStats, singleParentIndividualStats,
                 bothParentIndividualStats));
 
         // 3. Get allele pairs and CT from Variant summary
@@ -1579,14 +1588,22 @@ public class RgaManager implements AutoCloseable {
 
             auxKnockoutType.processFeature(codedIndividual);
         }
-        KnockoutStats noParentIndividualStats = new KnockoutStats(noParentsCount.getNumIds(), noParentsCount.getNumHomIds(),
-                noParentsCount.getNumCompHetIds(), noParentsCount.getNumHetIds(), noParentsCount.getNumDelOverlapIds());
-        KnockoutStats singleParentIndividualStats = new KnockoutStats(singleParentCount.getNumIds(), singleParentCount.getNumHomIds(),
-                singleParentCount.getNumCompHetIds(), singleParentCount.getNumHetIds(), singleParentCount.getNumDelOverlapIds());
-        KnockoutStats bothParentIndividualStats = new KnockoutStats(bothParentsCount.getNumIds(), bothParentsCount.getNumHomIds(),
-                bothParentsCount.getNumCompHetIds(), bothParentsCount.getNumHetIds(), bothParentsCount.getNumDelOverlapIds());
+        IndividualKnockoutStats noParentIndividualStats = new IndividualKnockoutStats(noParentsCount.getNumIds(),
+                noParentsCount.getNumHomIds(), noParentsCount.getNumCompHetIds(), noParentsCount.getNumHetIds(),
+                noParentsCount.getNumDelOverlapIds(), noParentsCount.getNumHomAltCompHetIds(), noParentsCount.getNumCompHetDelOverlapIds()
+        );
+        IndividualKnockoutStats singleParentIndividualStats = new IndividualKnockoutStats(singleParentCount.getNumIds(),
+                singleParentCount.getNumHomIds(), singleParentCount.getNumCompHetIds(), singleParentCount.getNumHetIds(),
+                singleParentCount.getNumDelOverlapIds(), singleParentCount.getNumHomAltCompHetIds(),
+                singleParentCount.getNumCompHetDelOverlapIds()
+        );
+        IndividualKnockoutStats bothParentIndividualStats = new IndividualKnockoutStats(bothParentsCount.getNumIds(),
+                bothParentsCount.getNumHomIds(), bothParentsCount.getNumCompHetIds(), bothParentsCount.getNumHetIds(),
+                bothParentsCount.getNumDelOverlapIds(), bothParentsCount.getNumHomAltCompHetIds(),
+                bothParentsCount.getNumCompHetDelOverlapIds()
+        );
 
-        geneSummary.setIndividualStats(new IndividualKnockoutStats(noParentIndividualStats, singleParentIndividualStats,
+        geneSummary.setIndividualStats(new GlobalIndividualKnockoutStats(noParentIndividualStats, singleParentIndividualStats,
                 bothParentIndividualStats));
 
         return geneSummary;

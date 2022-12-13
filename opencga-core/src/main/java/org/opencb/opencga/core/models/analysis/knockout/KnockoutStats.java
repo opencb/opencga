@@ -1,12 +1,12 @@
 package org.opencb.opencga.core.models.analysis.knockout;
 
-public class KnockoutStats {
+public abstract class KnockoutStats {
 
-    private int count;
-    private int numHomAlt;
-    private int numCompHet;
-    private int numHetAlt;
-    private int numDelOverlap;
+    protected int count;
+    protected int numHomAlt;
+    protected int numCompHet;
+    protected int numHetAlt;
+    protected int numDelOverlap;
 
     public KnockoutStats() {
     }
