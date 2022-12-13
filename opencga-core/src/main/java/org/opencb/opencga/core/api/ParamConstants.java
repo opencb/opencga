@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.core.api;
 
+import org.opencb.biodata.models.clinical.ClinicalProperty;
+import org.opencb.opencga.core.models.variant.VariantQueryParams;
+
 public class ParamConstants {
 
     public static final String NONE = "none";
@@ -1527,14 +1530,21 @@ public class ParamConstants {
     public static final String CLINICAL_ANALYSIS_ALIGNMENT_QC_GENE_COVERAGE_STATS_DESCRIPTION = "The body geneCoverageStats ClinicalAnalysisAlignmentQc web service parameter";
     public static final String CLINICAL_ANALYSIS_ALIGNMENT_QC_FILES_DESCRIPTION = "The body files ClinicalAnalysisAlignmentQc web service parameter";
 
+    // Commons for clinical analysis
+    public static final String CLINICAL_ANALYSIS_ID_DESCRIPTION = "Clinical analysis ID";
+    public static final String CLINICAL_ANALYSIS_PANELS_DESCRIPTION = "List of panel IDs";
+    public static final String CLINICAL_ANALYSIS_FAMILY_SEGREGATION_DESCRIPTION = "Family segregation";
+    public static final String CLINICAL_ANALYSIS_PENETRANCE_DESCRIPTION = "Penetrance: COMPLETE, INCOMPLETE";
+    public static final String CLINICAL_ANALYSIS_PRIMARY_DESCRIPTION = "Save as primary interpretation";
 
-    public static final String CANCER_TIERING_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_ANALYSIS_DESCRIPTION = "The body clinicalAnalysis CancerTieringInterpretationAnalysisParams web service parameter";
-    public static final String CANCER_TIERING_INTERPRETATION_ANALYSIS_PARAMS_DISCARDED_VARIANTS_DESCRIPTION = "The body discardedVariants CancerTieringInterpretationAnalysisParams web service parameter";
-    public static final String CANCER_TIERING_INTERPRETATION_ANALYSIS_PARAMS_PRIMARY_DESCRIPTION = "The body primary CancerTieringInterpretationAnalysisParams web service parameter";
+
+    public static final String CANCER_TIERING_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_ANALYSIS_DESCRIPTION = CLINICAL_ANALYSIS_ID_DESCRIPTION;
+    public static final String CANCER_TIERING_INTERPRETATION_ANALYSIS_PARAMS_DISCARDED_VARIANTS_DESCRIPTION = "List of variant IDs to discard";
+    public static final String CANCER_TIERING_INTERPRETATION_ANALYSIS_PARAMS_PRIMARY_DESCRIPTION = CLINICAL_ANALYSIS_PRIMARY_DESCRIPTION;
 
 
-    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_ANALYSIS_DESCRIPTION = "The body clinicalAnalysis ZettaInterpretationAnalysisParams web service parameter";
-    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_ID_DESCRIPTION = "The body id ZettaInterpretationAnalysisParams web service parameter";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_ANALYSIS_DESCRIPTION = "Clinical analysis description";
+    public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_ID_DESCRIPTION = CLINICAL_ANALYSIS_ID_DESCRIPTION;
     public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_REGION_DESCRIPTION = "The body region ZettaInterpretationAnalysisParams web service parameter";
     public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_TYPE_DESCRIPTION = "The body type ZettaInterpretationAnalysisParams web service parameter";
     public static final String ZETTA_INTERPRETATION_ANALYSIS_PARAMS_STUDY_DESCRIPTION = "The body study ZettaInterpretationAnalysisParams web service parameter";
@@ -1635,12 +1645,10 @@ public class ParamConstants {
     public static final String PRIORITY_PARAM_ID_DESCRIPTION = "The body id PriorityParam web service parameter";
 
 
-
-
-    public static final String TEAM_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_ANALYSIS_DESCRIPTION = "The body clinicalAnalysis TeamInterpretationAnalysisParams web service parameter";
-    public static final String TEAM_INTERPRETATION_ANALYSIS_PARAMS_PANELS_DESCRIPTION = "The body panels TeamInterpretationAnalysisParams web service parameter";
-    public static final String TEAM_INTERPRETATION_ANALYSIS_PARAMS_FAMILY_SEGREGATION_DESCRIPTION = "The body familySegregation TeamInterpretationAnalysisParams web service parameter";
-    public static final String TEAM_INTERPRETATION_ANALYSIS_PARAMS_PRIMARY_DESCRIPTION = "The body primary TeamInterpretationAnalysisParams web service parameter";
+    public static final String TEAM_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_ANALYSIS_DESCRIPTION = CLINICAL_ANALYSIS_ID_DESCRIPTION;
+    public static final String TEAM_INTERPRETATION_ANALYSIS_PARAMS_PANELS_DESCRIPTION = CLINICAL_ANALYSIS_PANELS_DESCRIPTION;
+    public static final String TEAM_INTERPRETATION_ANALYSIS_PARAMS_FAMILY_SEGREGATION_DESCRIPTION = CLINICAL_ANALYSIS_FAMILY_SEGREGATION_DESCRIPTION;
+    public static final String TEAM_INTERPRETATION_ANALYSIS_PARAMS_PRIMARY_DESCRIPTION = CLINICAL_ANALYSIS_PRIMARY_DESCRIPTION;
 
 
     public static final String CLINICAL_CONSENT_PRIMARY_FINDINGS_DESCRIPTION = "The body primaryFindings ClinicalConsent web service parameter";
@@ -1704,13 +1712,13 @@ public class ParamConstants {
     public static final String INTERPRETATION_MERGE_PARAMS_SECONDARY_FINDINGS_DESCRIPTION = "The body secondaryFindings InterpretationMergeParams web service parameter";
 
 
-    public static final String TIERING_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_ANALYSIS_DESCRIPTION = "The body clinicalAnalysis TieringInterpretationAnalysisParams web service parameter";
-    public static final String TIERING_INTERPRETATION_ANALYSIS_PARAMS_PANELS_DESCRIPTION = "The body panels TieringInterpretationAnalysisParams web service parameter";
-    public static final String TIERING_INTERPRETATION_ANALYSIS_PARAMS_PENETRANCE_DESCRIPTION = "The body penetrance TieringInterpretationAnalysisParams web service parameter";
-    public static final String TIERING_INTERPRETATION_ANALYSIS_PARAMS_PRIMARY_DESCRIPTION = "The body primary TieringInterpretationAnalysisParams web service parameter";
+    public static final String TIERING_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_ANALYSIS_DESCRIPTION = CLINICAL_ANALYSIS_ID_DESCRIPTION;
+    public static final String TIERING_INTERPRETATION_ANALYSIS_PARAMS_PANELS_DESCRIPTION = CLINICAL_ANALYSIS_PANELS_DESCRIPTION;
+    public static final String TIERING_INTERPRETATION_ANALYSIS_PARAMS_PENETRANCE_DESCRIPTION = CLINICAL_ANALYSIS_PENETRANCE_DESCRIPTION;
+    public static final String TIERING_INTERPRETATION_ANALYSIS_PARAMS_PRIMARY_DESCRIPTION = CLINICAL_ANALYSIS_PRIMARY_DESCRIPTION;
 
 
-    public static final String EXOMISER_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_ANALYSIS_DESCRIPTION = "The body clinicalAnalysis ExomiserInterpretationAnalysisParams web service parameter";
+    public static final String EXOMISER_INTERPRETATION_ANALYSIS_PARAMS_CLINICAL_ANALYSIS_DESCRIPTION = CLINICAL_ANALYSIS_ID_DESCRIPTION;
 
 
     public static final String INTERPRETATION_CREATE_PARAMS_CLINICAL_ANALYSIS_ID_DESCRIPTION = "The body clinicalAnalysisId InterpretationCreateParams web service parameter";

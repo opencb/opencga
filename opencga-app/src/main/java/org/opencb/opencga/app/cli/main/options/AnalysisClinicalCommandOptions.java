@@ -525,13 +525,13 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--clinical-analysis"}, description = "The body clinicalAnalysis CancerTieringInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis ID", required = false, arity = 1)
         public String clinicalAnalysis;
     
-        @Parameter(names = {"--discarded-variants"}, description = "The body discardedVariants CancerTieringInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--discarded-variants"}, description = "List of variant IDs to discard", required = false, arity = 1)
         public String discardedVariants;
     
-        @Parameter(names = {"--primary"}, description = "The body primary CancerTieringInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--primary"}, description = "Save as primary interpretation", required = false, arity = 1)
         public Boolean primary;
     
     }
@@ -563,7 +563,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--clinical-analysis"}, description = "The body clinicalAnalysis ExomiserInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis ID", required = false, arity = 1)
         public String clinicalAnalysis;
     
     }
@@ -595,16 +595,16 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--clinical-analysis"}, description = "The body clinicalAnalysis TeamInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis ID", required = false, arity = 1)
         public String clinicalAnalysis;
     
-        @Parameter(names = {"--panels"}, description = "The body panels TeamInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--panels"}, description = "List of panel IDs", required = false, arity = 1)
         public String panels;
     
-        @Parameter(names = {"--family-segregation"}, description = "The body familySegregation TeamInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--family-segregation"}, description = "Family segregation", required = false, arity = 1)
         public String familySegregation;
     
-        @Parameter(names = {"--primary"}, description = "The body primary TeamInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--primary"}, description = "Save as primary interpretation", required = false, arity = 1)
         public Boolean primary;
     
     }
@@ -636,16 +636,16 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--clinical-analysis"}, description = "The body clinicalAnalysis TieringInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis ID", required = false, arity = 1)
         public String clinicalAnalysis;
     
-        @Parameter(names = {"--panels"}, description = "The body panels TieringInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--panels"}, description = "List of panel IDs", required = false, arity = 1)
         public String panels;
     
-        @Parameter(names = {"--penetrance"}, description = "The body penetrance TieringInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--penetrance"}, description = "Penetrance: COMPLETE, INCOMPLETE", required = false, arity = 1)
         public String penetrance;
     
-        @Parameter(names = {"--primary"}, description = "The body primary TieringInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--primary"}, description = "Save as primary interpretation", required = false, arity = 1)
         public Boolean primary;
     
     }
@@ -677,10 +677,10 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--body_clinical-analysis"}, description = "The body clinicalAnalysis ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--body_clinical-analysis"}, description = "Clinical analysis description", required = false, arity = 1)
         public String bodyClinicalAnalysis;
     
-        @Parameter(names = {"--body_id"}, description = "The body id ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--body_id"}, description = "Clinical analysis ID", required = false, arity = 1)
         public String bodyId;
     
         @Parameter(names = {"--body_region"}, description = "The body region ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
