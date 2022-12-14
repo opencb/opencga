@@ -1699,8 +1699,8 @@ public class ParamConstants {
     public static final String CLINICAL_ANALYSIS_ACL_UPDATE_PARAMS_CLINICAL_ANALYSIS_DESCRIPTION = "The body clinicalAnalysis ClinicalAnalysisAclUpdateParams web service parameter";
 
 
-    public static final String EXOMISER_WRAPPER_PARAMS_SAMPLE_DESCRIPTION = "The body sample ExomiserWrapperParams web service parameter";
-    public static final String EXOMISER_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = "The body outdir ExomiserWrapperParams web service parameter";
+    public static final String EXOMISER_WRAPPER_PARAMS_SAMPLE_DESCRIPTION = SAMPLE_ID_DESCRIPTION;
+    public static final String EXOMISER_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = OUTPUT_DIRECTORY_DESCRIPTION;
 
 
 
@@ -2424,34 +2424,14 @@ public class ParamConstants {
     public static final String FAMILY_CREATE_PARAMS_EXPECTED_SIZE_DESCRIPTION = "The body expectedSize FamilyCreateParams web service parameter";
     public static final String FAMILY_CREATE_PARAMS_ANNOTATION_SETS_DESCRIPTION = "The body annotationSets FamilyCreateParams web service parameter";
 
-
-
-
-    public static final String GATK_WRAPPER_PARAMS_COMMAND_DESCRIPTION = "The body command GatkWrapperParams web service parameter";
-    public static final String GATK_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = "The body outdir GatkWrapperParams web service parameter";
-    public static final String GATK_WRAPPER_PARAMS_GATK_PARAMS_DESCRIPTION = "The body gatkParams GatkWrapperParams web service parameter";
-
-
-
-
-    public static final String FAMILY_QC_ANALYSIS_PARAMS_FAMILY_DESCRIPTION = "The body family FamilyQcAnalysisParams web service parameter";
-    public static final String FAMILY_QC_ANALYSIS_PARAMS_RELATEDNESS_METHOD_DESCRIPTION = "The body relatednessMethod FamilyQcAnalysisParams web service parameter";
-    public static final String FAMILY_QC_ANALYSIS_PARAMS_RELATEDNESS_MAF_DESCRIPTION = "The body relatednessMaf FamilyQcAnalysisParams web service parameter";
-    public static final String FAMILY_QC_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir FamilyQcAnalysisParams web service parameter";
-
+    public static final String GATK_WRAPPER_PARAMS_COMMAND_DESCRIPTION = GATK_COMMAND_DESCRIPTION;
+    public static final String GATK_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = OUTPUT_DIRECTORY_DESCRIPTION;
+    public static final String GATK_WRAPPER_PARAMS_GATK_PARAMS_DESCRIPTION = "Other parameters";
 
     public static final String VARIANT_FILE_QUALITY_CONTROL_VARIANT_SET_METRICS_DESCRIPTION = "The body variantSetMetrics VariantFileQualityControl web service parameter";
     public static final String VARIANT_FILE_QUALITY_CONTROL_ASCAT_METRICS_DESCRIPTION = "The body ascatMetrics VariantFileQualityControl web service parameter";
 
-
-    public static final String GENOME_PLOT_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION = "The body sample GenomePlotAnalysisParams web service parameter";
-    public static final String GENOME_PLOT_ANALYSIS_PARAMS_ID_DESCRIPTION = "The body id GenomePlotAnalysisParams web service parameter";
-    public static final String GENOME_PLOT_ANALYSIS_PARAMS_CONFIG_FILE_DESCRIPTION = "The body configFile GenomePlotAnalysisParams web service parameter";
-    public static final String GENOME_PLOT_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir GenomePlotAnalysisParams web service parameter";
-
-
     public static final String VARIANT_STUDY_DELETE_PARAMS_RESUME_DESCRIPTION = "The body resume VariantStudyDeleteParams web service parameter";
-
 
     public static final String VARIANT_INDEX_PARAMS_FILE_DESCRIPTION = "The body file VariantIndexParams web service parameter";
     public static final String VARIANT_INDEX_PARAMS_RESUME_DESCRIPTION = "The body resume VariantIndexParams web service parameter";
@@ -2505,30 +2485,40 @@ public class ParamConstants {
     public static final String VARIANT_SAMPLE_DELETE_PARAMS_FORCE_DESCRIPTION = "The body force VariantSampleDeleteParams web service parameter";
     public static final String VARIANT_SAMPLE_DELETE_PARAMS_RESUME_DESCRIPTION = "The body resume VariantSampleDeleteParams web service parameter";
 
+    public static final String MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION = SAMPLE_ID_DESCRIPTION;
+    public static final String MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_ID_DESCRIPTION = "Mutational signature ID";
+    public static final String MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_QUERY_DESCRIPTION = "Mutational signature query";
+    public static final String MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_RELEASE_DESCRIPTION = "Mutational signature release";
+    public static final String MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_FITTING_DESCRIPTION = "Compute signature fitting";
+    public static final String MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = OUTPUT_DIRECTORY_DESCRIPTION;
 
-    public static final String SAMPLE_QC_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION = "The body sample SampleQcAnalysisParams web service parameter";
-    public static final String SAMPLE_QC_ANALYSIS_PARAMS_VARIANT_STATS_ID_DESCRIPTION = "The body variantStatsId SampleQcAnalysisParams web service parameter";
-    public static final String SAMPLE_QC_ANALYSIS_PARAMS_VARIANT_STATS_DESCRIPTION_DESCRIPTION = "The body variantStatsDescription SampleQcAnalysisParams web service parameter";
-    public static final String SAMPLE_QC_ANALYSIS_PARAMS_VARIANT_STATS_QUERY_DESCRIPTION = "The body variantStatsQuery SampleQcAnalysisParams web service parameter";
-    public static final String SAMPLE_QC_ANALYSIS_PARAMS_SIGNATURE_ID_DESCRIPTION = "The body signatureId SampleQcAnalysisParams web service parameter";
-    public static final String SAMPLE_QC_ANALYSIS_PARAMS_SIGNATURE_DESCRIPTION_DESCRIPTION = "The body signatureDescription SampleQcAnalysisParams web service parameter";
-    public static final String SAMPLE_QC_ANALYSIS_PARAMS_SIGNATURE_QUERY_DESCRIPTION = "The body signatureQuery SampleQcAnalysisParams web service parameter";
-    public static final String SAMPLE_QC_ANALYSIS_PARAMS_SIGNATURE_RELEASE_DESCRIPTION = "The body signatureRelease SampleQcAnalysisParams web service parameter";
-    public static final String SAMPLE_QC_ANALYSIS_PARAMS_GENOME_PLOT_ID_DESCRIPTION = "The body genomePlotId SampleQcAnalysisParams web service parameter";
-    public static final String SAMPLE_QC_ANALYSIS_PARAMS_GENOME_PLOT_DESCRIPTION_DESCRIPTION = "The body genomePlotDescription SampleQcAnalysisParams web service parameter";
-    public static final String SAMPLE_QC_ANALYSIS_PARAMS_GENOME_PLOT_CONFIG_FILE_DESCRIPTION = "The body genomePlotConfigFile SampleQcAnalysisParams web service parameter";
-    public static final String SAMPLE_QC_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir SampleQcAnalysisParams web service parameter";
+    public static final String GENOME_PLOT_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION = SAMPLE_ID_DESCRIPTION;
+    public static final String GENOME_PLOT_ANALYSIS_PARAMS_ID_DESCRIPTION = "Genome plot ID";
+    public static final String GENOME_PLOT_ANALYSIS_PARAMS_CONFIG_FILE_DESCRIPTION = "Genome plot configuration file ID";
+    public static final String GENOME_PLOT_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = OUTPUT_DIRECTORY_DESCRIPTION;
+
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION = SAMPLE_ID_DESCRIPTION;
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_VARIANT_STATS_ID_DESCRIPTION = "Variant stats ID";
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_VARIANT_STATS_DESCRIPTION_DESCRIPTION = "Variant stats description";
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_VARIANT_STATS_QUERY_DESCRIPTION = "Variant stats query";
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_SIGNATURE_ID_DESCRIPTION = MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_ID_DESCRIPTION;
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_SIGNATURE_DESCRIPTION_DESCRIPTION = "Mutational signature description";
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_SIGNATURE_QUERY_DESCRIPTION = MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_QUERY_DESCRIPTION;
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_SIGNATURE_RELEASE_DESCRIPTION = MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_RELEASE_DESCRIPTION;
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_GENOME_PLOT_ID_DESCRIPTION = GENOME_PLOT_ANALYSIS_PARAMS_ID_DESCRIPTION;
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_GENOME_PLOT_DESCRIPTION_DESCRIPTION = "Genome plot description";
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_GENOME_PLOT_CONFIG_FILE_DESCRIPTION = GENOME_PLOT_ANALYSIS_PARAMS_CONFIG_FILE_DESCRIPTION;
+    public static final String SAMPLE_QC_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = OUTPUT_DIRECTORY_DESCRIPTION;
+
+    public static final String MENDELIAN_ERROR_ANALYSIS_PARAMS_FAMILY_DESCRIPTION = "Family ID";
+    public static final String MENDELIAN_ERROR_ANALYSIS_PARAMS_INDIVIDUAL_DESCRIPTION = "Individual ID";
+    public static final String MENDELIAN_ERROR_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION = SAMPLE_ID_DESCRIPTION;
+    public static final String MENDELIAN_ERROR_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = OUTPUT_DIRECTORY_DESCRIPTION;
 
 
-    public static final String MENDELIAN_ERROR_ANALYSIS_PARAMS_FAMILY_DESCRIPTION = "The body family MendelianErrorAnalysisParams web service parameter";
-    public static final String MENDELIAN_ERROR_ANALYSIS_PARAMS_INDIVIDUAL_DESCRIPTION = "The body individual MendelianErrorAnalysisParams web service parameter";
-    public static final String MENDELIAN_ERROR_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION = "The body sample MendelianErrorAnalysisParams web service parameter";
-    public static final String MENDELIAN_ERROR_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir MendelianErrorAnalysisParams web service parameter";
-
-
-    public static final String INFERRED_SEX_ANALYSIS_PARAMS_INDIVIDUAL_DESCRIPTION = "The body individual InferredSexAnalysisParams web service parameter";
-    public static final String INFERRED_SEX_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION = "The body sample InferredSexAnalysisParams web service parameter";
-    public static final String INFERRED_SEX_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir InferredSexAnalysisParams web service parameter";
+    public static final String INFERRED_SEX_ANALYSIS_PARAMS_INDIVIDUAL_DESCRIPTION = "Individual ID";
+    public static final String INFERRED_SEX_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION = SAMPLE_ID_DESCRIPTION;
+    public static final String INFERRED_SEX_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = OUTPUT_DIRECTORY_DESCRIPTION;
 
 
     public static final String VARIANT_QUERY_PARAMS_SAVED_FILTER_DESCRIPTION = "The body savedFilter VariantQueryParams web service parameter";
@@ -2599,15 +2589,6 @@ public class ParamConstants {
     public static final String COHORT_VARIANT_STATS_ANALYSIS_PARAMS_SAMPLE_ANNOTATION_DESCRIPTION = "The body sampleAnnotation CohortVariantStatsAnalysisParams web service parameter";
     public static final String COHORT_VARIANT_STATS_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir CohortVariantStatsAnalysisParams web service parameter";
 
-
-    public static final String MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION = "The body sample MutationalSignatureAnalysisParams web service parameter";
-    public static final String MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_ID_DESCRIPTION = "The body id MutationalSignatureAnalysisParams web service parameter";
-    public static final String MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_QUERY_DESCRIPTION = "The body query MutationalSignatureAnalysisParams web service parameter";
-    public static final String MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_RELEASE_DESCRIPTION = "The body release MutationalSignatureAnalysisParams web service parameter";
-    public static final String MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_FITTING_DESCRIPTION = "The body fitting MutationalSignatureAnalysisParams web service parameter";
-    public static final String MUTATIONAL_SIGNATURE_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir MutationalSignatureAnalysisParams web service parameter";
-
-
     public static final String BASIC_VARIANT_QUERY_PARAMS_PROJECT_DESCRIPTION = "The body project BasicVariantQueryParams web service parameter";
     public static final String BASIC_VARIANT_QUERY_PARAMS_STUDY_DESCRIPTION = "The body study BasicVariantQueryParams web service parameter";
 
@@ -2645,26 +2626,25 @@ public class ParamConstants {
     public static final String SAMPLE_VARIANT_FILTER_PARAMS_SAMPLES_IN_ALL_VARIANTS_DESCRIPTION = "The body samplesInAllVariants SampleVariantFilterParams web service parameter";
     public static final String SAMPLE_VARIANT_FILTER_PARAMS_MAX_VARIANTS_DESCRIPTION = "The body maxVariants SampleVariantFilterParams web service parameter";
 
+    public static final String PLINK_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = OUTPUT_DIRECTORY_DESCRIPTION;
+    public static final String PLINK_WRAPPER_PARAMS_PLINK_PARAMS_DESCRIPTION = "Plink parameters";
 
-    public static final String PLINK_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = "The body outdir PlinkWrapperParams web service parameter";
-    public static final String PLINK_WRAPPER_PARAMS_PLINK_PARAMS_DESCRIPTION = "The body plinkParams PlinkWrapperParams web service parameter";
+    public static final String RELATEDNESS_ANALYSIS_PARAMS_INDIVIDUALS_DESCRIPTION = "List of individual IDs";
+    public static final String RELATEDNESS_ANALYSIS_PARAMS_SAMPLES_DESCRIPTION = "List of sample IDs";
+    public static final String RELATEDNESS_ANALYSIS_PARAMS_MINOR_ALLELE_FREQ_DESCRIPTION = "Population frequency alternate, e.g.: 1000G:ALL>=0.05";
+    public static final String RELATEDNESS_ANALYSIS_PARAMS_METHOD_DESCRIPTION = "Relatedness method: PLINK/IBD";
+    public static final String RELATEDNESS_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = OUTPUT_DIRECTORY_DESCRIPTION;
 
+    public static final String FAMILY_QC_ANALYSIS_PARAMS_FAMILY_DESCRIPTION = "Family ID";
+    public static final String FAMILY_QC_ANALYSIS_PARAMS_RELATEDNESS_METHOD_DESCRIPTION = RELATEDNESS_ANALYSIS_PARAMS_METHOD_DESCRIPTION;
+    public static final String FAMILY_QC_ANALYSIS_PARAMS_RELATEDNESS_MAF_DESCRIPTION = RELATEDNESS_ANALYSIS_PARAMS_MINOR_ALLELE_FREQ_DESCRIPTION;
+    public static final String FAMILY_QC_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = OUTPUT_DIRECTORY_DESCRIPTION;
 
-    public static final String RELATEDNESS_ANALYSIS_PARAMS_INDIVIDUALS_DESCRIPTION = "The body individuals RelatednessAnalysisParams web service parameter";
-    public static final String RELATEDNESS_ANALYSIS_PARAMS_SAMPLES_DESCRIPTION = "The body samples RelatednessAnalysisParams web service parameter";
-    public static final String RELATEDNESS_ANALYSIS_PARAMS_MINOR_ALLELE_FREQ_DESCRIPTION = "The body minorAlleleFreq RelatednessAnalysisParams web service parameter";
-    public static final String RELATEDNESS_ANALYSIS_PARAMS_METHOD_DESCRIPTION = "The body method RelatednessAnalysisParams web service parameter";
-    public static final String RELATEDNESS_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir RelatednessAnalysisParams web service parameter";
-
-
-    public static final String CIRCOS_ANALYSIS_PARAMS_TITLE_DESCRIPTION = "The body title CircosAnalysisParams web service parameter";
-    public static final String CIRCOS_ANALYSIS_PARAMS_DENSITY_DESCRIPTION = "The body density CircosAnalysisParams web service parameter";
-    public static final String CIRCOS_ANALYSIS_PARAMS_QUERY_DESCRIPTION = "The body query CircosAnalysisParams web service parameter";
-    public static final String CIRCOS_ANALYSIS_PARAMS_TRACKS_DESCRIPTION = "The body tracks CircosAnalysisParams web service parameter";
-    public static final String CIRCOS_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir CircosAnalysisParams web service parameter";
-
-
-
+    public static final String CIRCOS_ANALYSIS_PARAMS_TITLE_DESCRIPTION = "Circos plot title";
+    public static final String CIRCOS_ANALYSIS_PARAMS_DENSITY_DESCRIPTION = "Density plot: LOW, MEDIUM, HIGH";
+    public static final String CIRCOS_ANALYSIS_PARAMS_QUERY_DESCRIPTION = "Circos query";
+    public static final String CIRCOS_ANALYSIS_PARAMS_TRACKS_DESCRIPTION = "List of Circos tracks";
+    public static final String CIRCOS_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = OUTPUT_DIRECTORY_DESCRIPTION;
 
     public static final String VARIANT_FILE_INDEX_JOB_LAUNCHER_PARAMS_NAME_DESCRIPTION = "The body name VariantFileIndexJobLauncherParams web service parameter";
     public static final String VARIANT_FILE_INDEX_JOB_LAUNCHER_PARAMS_DIRECTORY_DESCRIPTION = "The body directory VariantFileIndexJobLauncherParams web service parameter";
@@ -2673,14 +2653,11 @@ public class ParamConstants {
     public static final String VARIANT_FILE_INDEX_JOB_LAUNCHER_PARAMS_MAX_JOBS_DESCRIPTION = "The body maxJobs VariantFileIndexJobLauncherParams web service parameter";
     public static final String VARIANT_FILE_INDEX_JOB_LAUNCHER_PARAMS_INDEX_PARAMS_DESCRIPTION = "The body indexParams VariantFileIndexJobLauncherParams web service parameter";
 
-
-    public static final String RVTESTS_WRAPPER_PARAMS_COMMAND_DESCRIPTION = "The body command RvtestsWrapperParams web service parameter";
-    public static final String RVTESTS_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = "The body outdir RvtestsWrapperParams web service parameter";
-    public static final String RVTESTS_WRAPPER_PARAMS_RVTESTS_PARAMS_DESCRIPTION = "The body rvtestsParams RvtestsWrapperParams web service parameter";
-
+    public static final String RVTESTS_WRAPPER_PARAMS_COMMAND_DESCRIPTION = RVTESTS_COMMAND_DESCRIPTION;
+    public static final String RVTESTS_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = OUTPUT_DIRECTORY_DESCRIPTION;
+    public static final String RVTESTS_WRAPPER_PARAMS_RVTESTS_PARAMS_DESCRIPTION = "Other Rvtests parameters";
 
     public static final String VARIANT_CONFIGURE_PARAMS_CONFIGURATION_DESCRIPTION = "The body configuration VariantConfigureParams web service parameter";
-
 
     public static final String VARIANT_EXPORT_PARAMS_OUTDIR_DESCRIPTION = "The body outdir VariantExportParams web service parameter";
     public static final String VARIANT_EXPORT_PARAMS_OUTPUT_FILE_NAME_DESCRIPTION = "The body outputFileName VariantExportParams web service parameter";
@@ -2693,11 +2670,9 @@ public class ParamConstants {
     public static final String VARIANT_EXPORT_PARAMS_SKIP_DESCRIPTION = "The body skip VariantExportParams web service parameter";
     public static final String VARIANT_EXPORT_PARAMS_SUMMARY_DESCRIPTION = "The body summary VariantExportParams web service parameter";
 
-
     public static final String SAMPLE_ELIGIBILITY_ANALYSIS_PARAMS_QUERY_DESCRIPTION = "The body query SampleEligibilityAnalysisParams web service parameter";
     public static final String SAMPLE_ELIGIBILITY_ANALYSIS_PARAMS_INDEX_DESCRIPTION = "The body index SampleEligibilityAnalysisParams web service parameter";
     public static final String SAMPLE_ELIGIBILITY_ANALYSIS_PARAMS_COHORT_ID_DESCRIPTION = "The body cohortId SampleEligibilityAnalysisParams web service parameter";
-
 
     public static final String ANNOTATION_VARIANT_QUERY_PARAMS_ID_DESCRIPTION = "The body id AnnotationVariantQueryParams web service parameter";
     public static final String ANNOTATION_VARIANT_QUERY_PARAMS_REGION_DESCRIPTION = "The body region AnnotationVariantQueryParams web service parameter";
@@ -2726,9 +2701,9 @@ public class ParamConstants {
     public static final String ANNOTATION_VARIANT_QUERY_PARAMS_CLINICAL_CONFIRMED_STATUS_DESCRIPTION = "The body clinicalConfirmedStatus AnnotationVariantQueryParams web service parameter";
 
 
-    public static final String CIRCOS_TRACK_ID_DESCRIPTION = "The body id CircosTrack web service parameter";
-    public static final String CIRCOS_TRACK_TYPE_DESCRIPTION = "The body type CircosTrack web service parameter";
-    public static final String CIRCOS_TRACK_QUERY_DESCRIPTION = "The body query CircosTrack web service parameter";
+    public static final String CIRCOS_TRACK_ID_DESCRIPTION = "Circos track ID";
+    public static final String CIRCOS_TRACK_TYPE_DESCRIPTION = "Circos track type";
+    public static final String CIRCOS_TRACK_QUERY_DESCRIPTION = "Circos track query";
 
 
     public static final String VARIANT_STORAGE_METADATA_SYNCHRONIZE_PARAMS_STUDY_DESCRIPTION = "The body study VariantStorageMetadataSynchronizeParams web service parameter";
@@ -2745,10 +2720,10 @@ public class ParamConstants {
     public static final String VARIANT_STATS_ANALYSIS_PARAMS_AGGREGATION_MAPPING_FILE_DESCRIPTION = "The body aggregationMappingFile VariantStatsAnalysisParams web service parameter";
 
 
-    public static final String INDIVIDUAL_QC_ANALYSIS_PARAMS_INDIVIDUAL_DESCRIPTION = "The body individual IndividualQcAnalysisParams web service parameter";
-    public static final String INDIVIDUAL_QC_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION = "The body sample IndividualQcAnalysisParams web service parameter";
-    public static final String INDIVIDUAL_QC_ANALYSIS_PARAMS_INFERRED_SEX_METHOD_DESCRIPTION = "The body inferredSexMethod IndividualQcAnalysisParams web service parameter";
-    public static final String INDIVIDUAL_QC_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir IndividualQcAnalysisParams web service parameter";
+    public static final String INDIVIDUAL_QC_ANALYSIS_PARAMS_INDIVIDUAL_DESCRIPTION = "Individual ID";
+    public static final String INDIVIDUAL_QC_ANALYSIS_PARAMS_SAMPLE_DESCRIPTION = SAMPLE_ID_DESCRIPTION;
+    public static final String INDIVIDUAL_QC_ANALYSIS_PARAMS_INFERRED_SEX_METHOD_DESCRIPTION = "Inferred sex method: CoverageRatio";
+    public static final String INDIVIDUAL_QC_ANALYSIS_PARAMS_OUTDIR_DESCRIPTION = OUTPUT_DIRECTORY_DESCRIPTION;
 
 
     public static final String TOOL_ID_DESCRIPTION = "The body id Tool web service parameter";

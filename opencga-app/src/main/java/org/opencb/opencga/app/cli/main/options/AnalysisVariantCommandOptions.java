@@ -295,13 +295,13 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "study", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--title"}, description = "The body title CircosAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--title"}, description = "Circos plot title", required = false, arity = 1)
         public String title;
     
-        @Parameter(names = {"--density"}, description = "The body density CircosAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--density"}, description = "Density plot: LOW, MEDIUM, HIGH", required = false, arity = 1)
         public String density;
     
-        @Parameter(names = {"--outdir"}, description = "The body outdir CircosAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
     
     }
@@ -405,10 +405,10 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--sample"}, description = "The body sample ExomiserWrapperParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Sample ID", required = false, arity = 1)
         public String sample;
     
-        @Parameter(names = {"--outdir"}, description = "The body outdir ExomiserWrapperParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
     
     }
@@ -759,16 +759,16 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--family"}, description = "The body family FamilyQcAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--family"}, description = "Family ID", required = false, arity = 1)
         public String family;
     
-        @Parameter(names = {"--relatedness-method"}, description = "The body relatednessMethod FamilyQcAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--relatedness-method"}, description = "Relatedness method: PLINK/IBD", required = false, arity = 1)
         public String relatednessMethod;
     
-        @Parameter(names = {"--relatedness-maf"}, description = "The body relatednessMaf FamilyQcAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--relatedness-maf"}, description = "Population frequency alternate, e.g.: 1000G:ALL>=0.05", required = false, arity = 1)
         public String relatednessMaf;
     
-        @Parameter(names = {"--outdir"}, description = "The body outdir FamilyQcAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
     
     }
@@ -829,10 +829,10 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--command"}, description = "The body command GatkWrapperParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--command"}, description = "Supported Gatk commands: HaplotypeCaller", required = false, arity = 1)
         public String command;
     
-        @Parameter(names = {"--outdir"}, description = "The body outdir GatkWrapperParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
     
     }
@@ -864,19 +864,19 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--sample"}, description = "The body sample GenomePlotAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Sample ID", required = false, arity = 1)
         public String sample;
     
-        @Parameter(names = {"--id"}, description = "The body id GenomePlotAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Genome plot ID", required = false, arity = 1)
         public String id;
     
         @Parameter(names = {"--description"}, description = "Field to store information of the item", required = false, arity = 1)
         public String description;
     
-        @Parameter(names = {"--config-file"}, description = "The body configFile GenomePlotAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--config-file"}, description = "Genome plot configuration file ID", required = false, arity = 1)
         public String configFile;
     
-        @Parameter(names = {"--outdir"}, description = "The body outdir GenomePlotAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
     
     }
@@ -1089,16 +1089,16 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--individual"}, description = "The body individual IndividualQcAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--individual"}, description = "Individual ID", required = false, arity = 1)
         public String individual;
     
-        @Parameter(names = {"--sample"}, description = "The body sample IndividualQcAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Sample ID", required = false, arity = 1)
         public String sample;
     
-        @Parameter(names = {"--inferred-sex-method"}, description = "The body inferredSexMethod IndividualQcAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--inferred-sex-method"}, description = "Inferred sex method: CoverageRatio", required = false, arity = 1)
         public String inferredSexMethod;
     
-        @Parameter(names = {"--outdir"}, description = "The body outdir IndividualQcAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
     
     }
@@ -1130,13 +1130,13 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--individual"}, description = "The body individual InferredSexAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--individual"}, description = "Individual ID", required = false, arity = 1)
         public String individual;
     
-        @Parameter(names = {"--sample"}, description = "The body sample InferredSexAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Sample ID", required = false, arity = 1)
         public String sample;
     
-        @Parameter(names = {"--outdir"}, description = "The body outdir InferredSexAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
     
     }
@@ -1267,16 +1267,16 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--family"}, description = "The body family MendelianErrorAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--family"}, description = "Family ID", required = false, arity = 1)
         public String family;
     
-        @Parameter(names = {"--individual"}, description = "The body individual MendelianErrorAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--individual"}, description = "Individual ID", required = false, arity = 1)
         public String individual;
     
-        @Parameter(names = {"--sample"}, description = "The body sample MendelianErrorAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Sample ID", required = false, arity = 1)
         public String sample;
     
-        @Parameter(names = {"--outdir"}, description = "The body outdir MendelianErrorAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
     
     }
@@ -1399,22 +1399,22 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--sample"}, description = "The body sample MutationalSignatureAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Sample ID", required = false, arity = 1)
         public String sample;
     
-        @Parameter(names = {"--id"}, description = "The body id MutationalSignatureAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Mutational signature ID", required = false, arity = 1)
         public String id;
     
         @Parameter(names = {"--description"}, description = "Field to store information of the item", required = false, arity = 1)
         public String description;
     
-        @Parameter(names = {"--release"}, description = "The body release MutationalSignatureAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--release"}, description = "Mutational signature release", required = false, arity = 1)
         public String release;
     
-        @Parameter(names = {"--fitting"}, description = "The body fitting MutationalSignatureAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--fitting"}, description = "Compute signature fitting", required = false, arity = 1)
         public Boolean fitting;
     
-        @Parameter(names = {"--outdir"}, description = "The body outdir MutationalSignatureAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
     
     }
@@ -1446,7 +1446,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--outdir"}, description = "The body outdir PlinkWrapperParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
     
     }
@@ -1717,19 +1717,19 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--individuals"}, description = "The body individuals RelatednessAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--individuals"}, description = "List of individual IDs", required = false, arity = 1)
         public String individuals;
     
-        @Parameter(names = {"--samples"}, description = "The body samples RelatednessAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--samples"}, description = "List of sample IDs", required = false, arity = 1)
         public String samples;
     
-        @Parameter(names = {"--minor-allele-freq"}, description = "The body minorAlleleFreq RelatednessAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--minor-allele-freq"}, description = "Population frequency alternate, e.g.: 1000G:ALL>=0.05", required = false, arity = 1)
         public String minorAlleleFreq;
     
-        @Parameter(names = {"--method"}, description = "The body method RelatednessAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--method"}, description = "Relatedness method: PLINK/IBD", required = false, arity = 1)
         public String method;
     
-        @Parameter(names = {"--outdir"}, description = "The body outdir RelatednessAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
     
     }
@@ -1761,10 +1761,10 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--command"}, description = "The body command RvtestsWrapperParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--command"}, description = "Supported RvTests commands: rvtest, vcf2kinship", required = false, arity = 1)
         public String command;
     
-        @Parameter(names = {"--outdir"}, description = "The body outdir RvtestsWrapperParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
     
     }
@@ -1908,13 +1908,13 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--sample"}, description = "The body sample SampleQcAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Sample ID", required = false, arity = 1)
         public String sample;
     
-        @Parameter(names = {"--variant-stats-id"}, description = "The body variantStatsId SampleQcAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-stats-id"}, description = "Variant stats ID", required = false, arity = 1)
         public String variantStatsId;
     
-        @Parameter(names = {"--variant-stats-description"}, description = "The body variantStatsDescription SampleQcAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--variant-stats-description"}, description = "Variant stats description", required = false, arity = 1)
         public String variantStatsDescription;
     
         @Parameter(names = {"--variant-stats-query-id"}, description = "The body id AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
@@ -1992,25 +1992,25 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--variant-stats-query-clinical-confirmed-status"}, description = "The body clinicalConfirmedStatus AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
         public String variantStatsQueryClinicalConfirmedStatus;
     
-        @Parameter(names = {"--signature-id"}, description = "The body signatureId SampleQcAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--signature-id"}, description = "Mutational signature ID", required = false, arity = 1)
         public String signatureId;
     
-        @Parameter(names = {"--signature-description"}, description = "The body signatureDescription SampleQcAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--signature-description"}, description = "Mutational signature description", required = false, arity = 1)
         public String signatureDescription;
     
-        @Parameter(names = {"--signature-release"}, description = "The body signatureRelease SampleQcAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--signature-release"}, description = "Mutational signature release", required = false, arity = 1)
         public String signatureRelease;
     
-        @Parameter(names = {"--genome-plot-id"}, description = "The body genomePlotId SampleQcAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--genome-plot-id"}, description = "Genome plot ID", required = false, arity = 1)
         public String genomePlotId;
     
-        @Parameter(names = {"--genome-plot-description"}, description = "The body genomePlotDescription SampleQcAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--genome-plot-description"}, description = "Genome plot description", required = false, arity = 1)
         public String genomePlotDescription;
     
-        @Parameter(names = {"--genome-plot-config-file"}, description = "The body genomePlotConfigFile SampleQcAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--genome-plot-config-file"}, description = "Genome plot configuration file ID", required = false, arity = 1)
         public String genomePlotConfigFile;
     
-        @Parameter(names = {"--outdir"}, description = "The body outdir SampleQcAnalysisParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
     
     }
