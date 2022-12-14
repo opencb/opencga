@@ -3099,82 +3099,82 @@ public class ParamConstants {
 
 
 
-    public static final String SAMTOOLS_WRAPPER_PARAMS_COMMAND_DESCRIPTION = "The body command SamtoolsWrapperParams web service parameter";
-    public static final String SAMTOOLS_WRAPPER_PARAMS_INPUT_FILE_DESCRIPTION = "The body inputFile SamtoolsWrapperParams web service parameter";
-    public static final String SAMTOOLS_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = "The body outdir SamtoolsWrapperParams web service parameter";
-    public static final String SAMTOOLS_WRAPPER_PARAMS_SAMTOOLS_PARAMS_DESCRIPTION = "The body samtoolsParams SamtoolsWrapperParams web service parameter";
+    public static final String SAMTOOLS_WRAPPER_PARAMS_COMMAND_DESCRIPTION = SAMTOOLS_COMMAND_DESCRIPTION;
+    public static final String SAMTOOLS_WRAPPER_PARAMS_INPUT_FILE_DESCRIPTION = "Input file ID";
+    public static final String SAMTOOLS_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = OUTPUT_DIRECTORY_DESCRIPTION;
+    public static final String SAMTOOLS_WRAPPER_PARAMS_SAMTOOLS_PARAMS_DESCRIPTION = "Other Samtools parameters";
 
 
-    public static final String ALIGNMENT_HS_METRICS_PARAMS_BAM_FILE_DESCRIPTION = "The body bamFile AlignmentHsMetricsParams web service parameter";
-    public static final String ALIGNMENT_HS_METRICS_PARAMS_BED_FILE_DESCRIPTION = "The body bedFile AlignmentHsMetricsParams web service parameter";
-    public static final String ALIGNMENT_HS_METRICS_PARAMS_DICT_FILE_DESCRIPTION = "The body dictFile AlignmentHsMetricsParams web service parameter";
-    public static final String ALIGNMENT_HS_METRICS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir AlignmentHsMetricsParams web service parameter";
+    public static final String ALIGNMENT_HS_METRICS_PARAMS_BAM_FILE_DESCRIPTION = "Input BAM file ID";
+    public static final String ALIGNMENT_HS_METRICS_PARAMS_BED_FILE_DESCRIPTION = "Input BED file ID";
+    public static final String ALIGNMENT_HS_METRICS_PARAMS_DICT_FILE_DESCRIPTION = "Input dictionary file ID";
+    public static final String ALIGNMENT_HS_METRICS_PARAMS_OUTDIR_DESCRIPTION = OUTPUT_DIRECTORY_DESCRIPTION;
 
 
-    public static final String ALIGNMENT_FILE_QUALITY_CONTROL_FAST_QC_METRICS_DESCRIPTION = "The body fastQcMetrics AlignmentFileQualityControl web service parameter";
-    public static final String ALIGNMENT_FILE_QUALITY_CONTROL_SAMTOOLS_STATS_DESCRIPTION = "The body samtoolsStats AlignmentFileQualityControl web service parameter";
-    public static final String ALIGNMENT_FILE_QUALITY_CONTROL_SAMTOOLS_FLAG_STATS_DESCRIPTION = "The body samtoolsFlagStats AlignmentFileQualityControl web service parameter";
-    public static final String ALIGNMENT_FILE_QUALITY_CONTROL_HS_METRICS_DESCRIPTION = "The body hsMetrics AlignmentFileQualityControl web service parameter";
+    public static final String ALIGNMENT_FILE_QUALITY_CONTROL_FAST_QC_METRICS_DESCRIPTION = "FastQC metrics";
+    public static final String ALIGNMENT_FILE_QUALITY_CONTROL_SAMTOOLS_STATS_DESCRIPTION = "Samtools stats";
+    public static final String ALIGNMENT_FILE_QUALITY_CONTROL_SAMTOOLS_FLAG_STATS_DESCRIPTION = "Samtools flag stats";
+    public static final String ALIGNMENT_FILE_QUALITY_CONTROL_HS_METRICS_DESCRIPTION = "HS metrics";
 
 
-    public static final String ALIGNMENT_FLAG_STATS_PARAMS_FILE_DESCRIPTION = "The body file AlignmentFlagStatsParams web service parameter";
-    public static final String ALIGNMENT_FLAG_STATS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir AlignmentFlagStatsParams web service parameter";
+    public static final String ALIGNMENT_FLAG_STATS_PARAMS_FILE_DESCRIPTION = "Input file ID";
+    public static final String ALIGNMENT_FLAG_STATS_PARAMS_OUTDIR_DESCRIPTION = OUTPUT_DIRECTORY_DESCRIPTION;
 
 
-    public static final String PICARD_WRAPPER_PARAMS_COMMAND_DESCRIPTION = "The body command PicardWrapperParams web service parameter";
-    public static final String PICARD_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = "The body outdir PicardWrapperParams web service parameter";
-    public static final String PICARD_WRAPPER_PARAMS_PICARD_PARAMS_DESCRIPTION = "The body picardParams PicardWrapperParams web service parameter";
+    public static final String PICARD_WRAPPER_PARAMS_COMMAND_DESCRIPTION = PICARD_COMMAND_DESCRIPTION;
+    public static final String PICARD_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = OUTPUT_DIRECTORY_DESCRIPTION;
+    public static final String PICARD_WRAPPER_PARAMS_PICARD_PARAMS_DESCRIPTION = "Other Picard parameters";
 
 
-    public static final String ALIGNMENT_FAST_QC_METRICS_PARAMS_FILE_DESCRIPTION = "The body file AlignmentFastQcMetricsParams web service parameter";
-    public static final String ALIGNMENT_FAST_QC_METRICS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir AlignmentFastQcMetricsParams web service parameter";
+    public static final String ALIGNMENT_FAST_QC_METRICS_PARAMS_FILE_DESCRIPTION = "Input file ID";
+    public static final String ALIGNMENT_FAST_QC_METRICS_PARAMS_OUTDIR_DESCRIPTION = OUTPUT_DIRECTORY_DESCRIPTION;
 
 
-    public static final String ALIGNMENT_INDEX_PARAMS_FILE_DESCRIPTION = "The body file AlignmentIndexParams web service parameter";
-    public static final String ALIGNMENT_INDEX_PARAMS_OVERWRITE_DESCRIPTION = "The body overwrite AlignmentIndexParams web service parameter";
+    public static final String ALIGNMENT_INDEX_PARAMS_FILE_DESCRIPTION = "Input BAM/CRAM file ID";
+    public static final String ALIGNMENT_INDEX_PARAMS_OVERWRITE_DESCRIPTION = "Overwrite if index file is already computed";
 
 
-    public static final String FASTQC_WRAPPER_PARAMS_INPUT_FILE_DESCRIPTION = "The body inputFile FastqcWrapperParams web service parameter";
-    public static final String FASTQC_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = "The body outdir FastqcWrapperParams web service parameter";
-    public static final String FASTQC_WRAPPER_PARAMS_FASTQC_PARAMS_DESCRIPTION = "The body fastqcParams FastqcWrapperParams web service parameter";
+    public static final String FASTQC_WRAPPER_PARAMS_INPUT_FILE_DESCRIPTION = "Input file ID";
+    public static final String FASTQC_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = OUTPUT_DIRECTORY_DESCRIPTION;
+    public static final String FASTQC_WRAPPER_PARAMS_FASTQC_PARAMS_DESCRIPTION = "Other FastQC parameters";
 
 
-    public static final String BWA_WRAPPER_PARAMS_COMMAND_DESCRIPTION = "The body command BwaWrapperParams web service parameter";
-    public static final String BWA_WRAPPER_PARAMS_FASTA_FILE_DESCRIPTION = "The body fastaFile BwaWrapperParams web service parameter";
-    public static final String BWA_WRAPPER_PARAMS_FASTQ1FILE_DESCRIPTION = "The body fastq1File BwaWrapperParams web service parameter";
-    public static final String BWA_WRAPPER_PARAMS_FASTQ2FILE_DESCRIPTION = "The body fastq2File BwaWrapperParams web service parameter";
-    public static final String BWA_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = "The body outdir BwaWrapperParams web service parameter";
-    public static final String BWA_WRAPPER_PARAMS_BWA_PARAMS_DESCRIPTION = "The body bwaParams BwaWrapperParams web service parameter";
+    public static final String BWA_WRAPPER_PARAMS_COMMAND_DESCRIPTION = BWA_COMMAND_DESCRIPTION;
+    public static final String BWA_WRAPPER_PARAMS_FASTA_FILE_DESCRIPTION = "Fasta base file name (for command 'index')";
+    public static final String BWA_WRAPPER_PARAMS_FASTQ1FILE_DESCRIPTION = "FastQ file #1 ID (for command 'mem')";
+    public static final String BWA_WRAPPER_PARAMS_FASTQ2FILE_DESCRIPTION = "FastQ file #2 ID (for command 'mem')";
+    public static final String BWA_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = OUTPUT_DIRECTORY_DESCRIPTION;
+    public static final String BWA_WRAPPER_PARAMS_BWA_PARAMS_DESCRIPTION = "Other BWA parammeters";
 
 
     public static final String ALIGNMENT_STATS_PARAMS_FILE_DESCRIPTION = "The body file AlignmentStatsParams web service parameter";
     public static final String ALIGNMENT_STATS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir AlignmentStatsParams web service parameter";
 
 
-    public static final String DEEPTOOLS_WRAPPER_PARAMS_COMMAND_DESCRIPTION = "The body command DeeptoolsWrapperParams web service parameter";
-    public static final String DEEPTOOLS_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = "The body outdir DeeptoolsWrapperParams web service parameter";
-    public static final String DEEPTOOLS_WRAPPER_PARAMS_DEEPTOOLS_PARAMS_DESCRIPTION = "The body deeptoolsParams DeeptoolsWrapperParams web service parameter";
+    public static final String DEEPTOOLS_WRAPPER_PARAMS_COMMAND_DESCRIPTION = DEEPTOOLS_COMMAND_DESCRIPTION;
+    public static final String DEEPTOOLS_WRAPPER_PARAMS_OUTDIR_DESCRIPTION = OUTPUT_DIRECTORY_DESCRIPTION;
+    public static final String DEEPTOOLS_WRAPPER_PARAMS_DEEPTOOLS_PARAMS_DESCRIPTION = "Other Deeptools parameters";
 
 
-    public static final String ALIGNMENT_QC_PARAMS_BAM_FILE_DESCRIPTION = "The body bamFile AlignmentQcParams web service parameter";
-    public static final String ALIGNMENT_QC_PARAMS_BED_FILE_DESCRIPTION = "The body bedFile AlignmentQcParams web service parameter";
-    public static final String ALIGNMENT_QC_PARAMS_DICT_FILE_DESCRIPTION = "The body dictFile AlignmentQcParams web service parameter";
-    public static final String ALIGNMENT_QC_PARAMS_SKIP_DESCRIPTION = "The body skip AlignmentQcParams web service parameter";
-    public static final String ALIGNMENT_QC_PARAMS_OVERWRITE_DESCRIPTION = "The body overwrite AlignmentQcParams web service parameter";
-    public static final String ALIGNMENT_QC_PARAMS_OUTDIR_DESCRIPTION = "The body outdir AlignmentQcParams web service parameter";
+    public static final String ALIGNMENT_QC_PARAMS_BAM_FILE_DESCRIPTION = "Input BAM file ID";
+    public static final String ALIGNMENT_QC_PARAMS_BED_FILE_DESCRIPTION = "Input BED file ID (only for HS metrics)";
+    public static final String ALIGNMENT_QC_PARAMS_DICT_FILE_DESCRIPTION = "Input dictionary file ID (only for HS metrics)";
+    public static final String ALIGNMENT_QC_PARAMS_SKIP_DESCRIPTION = "Skip metrics to compute. Valid values: stats, flagstats, fastqc and hsmetrics";
+    public static final String ALIGNMENT_QC_PARAMS_OVERWRITE_DESCRIPTION = "Overwrite if quality control is already computed";
+    public static final String ALIGNMENT_QC_PARAMS_OUTDIR_DESCRIPTION = OUTPUT_DIRECTORY_DESCRIPTION;
 
 
-    public static final String ALIGNMENT_GENE_COVERAGE_STATS_PARAMS_BAM_FILE_DESCRIPTION = "The body bamFile AlignmentGeneCoverageStatsParams web service parameter";
-    public static final String ALIGNMENT_GENE_COVERAGE_STATS_PARAMS_GENES_DESCRIPTION = "The body genes AlignmentGeneCoverageStatsParams web service parameter";
-    public static final String ALIGNMENT_GENE_COVERAGE_STATS_PARAMS_OUTDIR_DESCRIPTION = "The body outdir AlignmentGeneCoverageStatsParams web service parameter";
+    public static final String ALIGNMENT_GENE_COVERAGE_STATS_PARAMS_BAM_FILE_DESCRIPTION = "Input BAM file ID";
+    public static final String ALIGNMENT_GENE_COVERAGE_STATS_PARAMS_GENES_DESCRIPTION = "List of genes";
+    public static final String ALIGNMENT_GENE_COVERAGE_STATS_PARAMS_OUTDIR_DESCRIPTION = OUTPUT_DIRECTORY_DESCRIPTION;
 
 
-    public static final String COVERAGE_INDEX_PARAMS_FILE_DESCRIPTION = "The body file CoverageIndexParams web service parameter";
-    public static final String COVERAGE_INDEX_PARAMS_WINDOW_SIZE_DESCRIPTION = "The body windowSize CoverageIndexParams web service parameter";
-    public static final String COVERAGE_INDEX_PARAMS_OVERWRITE_DESCRIPTION = "The body overwrite CoverageIndexParams web service parameter";
+    public static final String COVERAGE_INDEX_PARAMS_FILE_DESCRIPTION = "Input file ID";
+    public static final String COVERAGE_INDEX_PARAMS_WINDOW_SIZE_DESCRIPTION = "Window size";
+    public static final String COVERAGE_INDEX_PARAMS_OVERWRITE_DESCRIPTION = "Overwrite if coverage is already computed";
 
 
-    public static final String COVERAGE_FILE_QUALITY_CONTROL_GENE_COVERAGE_STATS_DESCRIPTION = "The body geneCoverageStats CoverageFileQualityControl web service parameter";
+    public static final String COVERAGE_FILE_QUALITY_CONTROL_GENE_COVERAGE_STATS_DESCRIPTION = "List of gene coverage stats";
 
 
 

@@ -95,19 +95,19 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--command"}, description = "The body command BwaWrapperParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--command"}, description = "Supported BWA commands: index, mem", required = false, arity = 1)
         public String command;
     
-        @Parameter(names = {"--fasta-file"}, description = "The body fastaFile BwaWrapperParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--fasta-file"}, description = "Fasta base file name (for command 'index')", required = false, arity = 1)
         public String fastaFile;
     
-        @Parameter(names = {"--fastq1file"}, description = "The body fastq1File BwaWrapperParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--fastq1file"}, description = "FastQ file #1 ID (for command 'mem')", required = false, arity = 1)
         public String fastq1File;
     
-        @Parameter(names = {"--fastq2file"}, description = "The body fastq2File BwaWrapperParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--fastq2file"}, description = "FastQ file #2 ID (for command 'mem')", required = false, arity = 1)
         public String fastq2File;
     
-        @Parameter(names = {"--outdir"}, description = "The body outdir BwaWrapperParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
     
     }
@@ -139,13 +139,13 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--file"}, description = "The body file CoverageIndexParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--file"}, description = "Input file ID", required = false, arity = 1)
         public String file;
     
-        @Parameter(names = {"--window-size"}, description = "The body windowSize CoverageIndexParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--window-size"}, description = "Window size", required = false, arity = 1)
         public Integer windowSize;
     
-        @Parameter(names = {"--overwrite"}, description = "The body overwrite CoverageIndexParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--overwrite"}, description = "Overwrite if coverage is already computed", required = false, arity = 1)
         public Boolean overwrite;
     
     }
@@ -177,13 +177,13 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--bam-file"}, description = "The body bamFile AlignmentGeneCoverageStatsParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--bam-file"}, description = "Input BAM file ID", required = false, arity = 1)
         public String bamFile;
     
-        @Parameter(names = {"--genes"}, description = "The body genes AlignmentGeneCoverageStatsParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--genes"}, description = "List of genes", required = false, arity = 1)
         public String genes;
     
-        @Parameter(names = {"--outdir"}, description = "The body outdir AlignmentGeneCoverageStatsParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
     
     }
@@ -308,10 +308,10 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--command"}, description = "The body command DeeptoolsWrapperParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--command"}, description = "Supported Deeptools commands: bamCoverage, bamCompare", required = false, arity = 1)
         public String command;
     
-        @Parameter(names = {"--outdir"}, description = "The body outdir DeeptoolsWrapperParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
     
     }
@@ -343,10 +343,10 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--input-file"}, description = "The body inputFile FastqcWrapperParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--input-file"}, description = "Input file ID", required = false, arity = 1)
         public String inputFile;
     
-        @Parameter(names = {"--outdir"}, description = "The body outdir FastqcWrapperParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
     
     }
@@ -378,10 +378,10 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--file"}, description = "The body file AlignmentIndexParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--file"}, description = "Input BAM/CRAM file ID", required = false, arity = 1)
         public String file;
     
-        @Parameter(names = {"--overwrite"}, description = "The body overwrite AlignmentIndexParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--overwrite"}, description = "Overwrite if index file is already computed", required = false, arity = 1)
         public Boolean overwrite;
     
     }
@@ -413,10 +413,10 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--command"}, description = "The body command PicardWrapperParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--command"}, description = "Supported Picard commands: CollectHsMetrics, CollectWgsMetrics, BedToIntervalList", required = false, arity = 1)
         public String command;
     
-        @Parameter(names = {"--outdir"}, description = "The body outdir PicardWrapperParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
     
     }
@@ -448,22 +448,22 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--bam-file"}, description = "The body bamFile AlignmentQcParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--bam-file"}, description = "Input BAM file ID", required = false, arity = 1)
         public String bamFile;
     
-        @Parameter(names = {"--bed-file"}, description = "The body bedFile AlignmentQcParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--bed-file"}, description = "Input BED file ID (only for HS metrics)", required = false, arity = 1)
         public String bedFile;
     
-        @Parameter(names = {"--dict-file"}, description = "The body dictFile AlignmentQcParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--dict-file"}, description = "Input dictionary file ID (only for HS metrics)", required = false, arity = 1)
         public String dictFile;
     
-        @Parameter(names = {"--skip"}, description = "The body skip AlignmentQcParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--skip"}, description = "Skip metrics to compute. Valid values: stats, flagstats, fastqc and hsmetrics", required = false, arity = 1)
         public String skip;
     
-        @Parameter(names = {"--overwrite"}, description = "The body overwrite AlignmentQcParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--overwrite"}, description = "Overwrite if quality control is already computed", required = false, arity = 1)
         public Boolean overwrite;
     
-        @Parameter(names = {"--outdir"}, description = "The body outdir AlignmentQcParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
     
     }
@@ -563,13 +563,13 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--command"}, description = "The body command SamtoolsWrapperParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--command"}, description = "Supported Samtools commands: sort, index, view, stats, flagstat, dict, faidx, depth, plot-bamstats", required = false, arity = 1)
         public String command;
     
-        @Parameter(names = {"--input-file"}, description = "The body inputFile SamtoolsWrapperParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--input-file"}, description = "Input file ID", required = false, arity = 1)
         public String inputFile;
     
-        @Parameter(names = {"--outdir"}, description = "The body outdir SamtoolsWrapperParams web service parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
     
     }
