@@ -131,10 +131,7 @@ public class CellBaseUtils {
                 }
                 if (gene == null) {
                     Query query = new Query();
-                    if (cellBaseClient.getClientConfiguration().getVersion().startsWith("v5")) {
-                        // Filter by XREF is only available starting in CellBase V5
-                        query.put("xref", geneStr);
-                    } else {
+                    if (cellBaseClient.getClientConfiguration().getVersion().startsWith("v4")) {
                         if (geneStr.startsWith("ENSG")) {
                             query.put("id", geneStr);
                         } else if (geneStr.startsWith("ENST")) {
@@ -142,6 +139,9 @@ public class CellBaseUtils {
                         } else {
                             query.put("name", geneStr);
                         }
+                    } else {
+                        // Filter by XREF is only available starting in CellBase V5
+                        query.put("xref", geneStr);
                     }
                     QueryOptions searchQueryOptions = new QueryOptions(options).append(QueryOptions.LIMIT, 2);
                     CellBaseDataResponse<Gene> thisGeneResponse = cellBaseClient.getGeneClient().search(query, searchQueryOptions);
