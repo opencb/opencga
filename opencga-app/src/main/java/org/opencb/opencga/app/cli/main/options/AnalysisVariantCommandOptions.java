@@ -473,8 +473,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--panel-role-in-cancer"}, description = "The body web service panelRoleInCancer parameter", required = false, arity = 1)
         public String panelRoleInCancer;
     
-        @Parameter(names = {"--panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, arity = 1)
-        public Boolean panelIntersection;
+        @Parameter(names = {"--panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, help = true, arity = 0)
+        public boolean panelIntersection = false;
     
         @Parameter(names = {"--cohort-stats-ref"}, description = "The body web service cohortStatsRef parameter", required = false, arity = 1)
         public String cohortStatsRef;
@@ -557,11 +557,11 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--include-sample-data"}, description = "The body web service includeSampleData parameter", required = false, arity = 1)
         public String includeSampleData;
     
-        @Parameter(names = {"--include-sample-id"}, description = "The body web service includeSampleId parameter", required = false, arity = 1)
-        public String includeSampleId;
+        @Parameter(names = {"--include-sample-id"}, description = "The body web service includeSampleId parameter", required = false, help = true, arity = 0)
+        public boolean includeSampleId = false;
     
-        @Parameter(names = {"--include-genotype"}, description = "The body web service includeGenotype parameter", required = false, arity = 1)
-        public String includeGenotype;
+        @Parameter(names = {"--include-genotype"}, description = "The body web service includeGenotype parameter", required = false, help = true, arity = 0)
+        public boolean includeGenotype = false;
     
         @Parameter(names = {"--file"}, description = "The body web service file parameter", required = false, arity = 1)
         public String file;
@@ -1418,7 +1418,7 @@ public class AnalysisVariantCommandOptions {
         public String query;
     
         @Parameter(names = {"--fit-id"}, description = "Fiiting signature ID", required = false, arity = 1)
-        public String fitId = "FitMS";
+        public String fitId;
     
         @Parameter(names = {"--fit-method"}, description = "Either Fit or FitMS. If not specified then FitMS", required = false, arity = 1)
         public String fitMethod = "FitMS";
@@ -1977,8 +1977,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--vs-query-panel-role-in-cancer"}, description = "The body web service panelRoleInCancer parameter", required = false, arity = 1)
         public String vsQueryPanelRoleInCancer;
     
-        @Parameter(names = {"--vs-query-panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, arity = 1)
-        public Boolean vsQueryPanelIntersection;
+        @Parameter(names = {"--vs-query-panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, help = true, arity = 0)
+        public boolean vsQueryPanelIntersection = false;
     
         @Parameter(names = {"--vs-query-cohort-stats-ref"}, description = "The body web service cohortStatsRef parameter", required = false, arity = 1)
         public String vsQueryCohortStatsRef;
@@ -2076,7 +2076,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--gp-config-file"}, description = "Genome plot configuration file.", required = false, arity = 1)
         public String gpConfigFile;
     
-        @Parameter(names = {"--skip"}, description = "Quality control metrics to skip. Valid values are:variant-stats, signature, signature-catalogue, signature-fitting, genome-plot", required = false, arity = 1)
+        @Parameter(names = {"--skip"}, description = "Quality control metrics to skip. Valid values are: variant-stats, signature, signature-catalogue, signature-fitting, genome-plot", required = false, arity = 1)
         public String skip;
     
         @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
@@ -2158,8 +2158,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--panel-role-in-cancer"}, description = "The body web service panelRoleInCancer parameter", required = false, arity = 1)
         public String panelRoleInCancer;
     
-        @Parameter(names = {"--panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, arity = 1)
-        public Boolean panelIntersection;
+        @Parameter(names = {"--panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, help = true, arity = 0)
+        public boolean panelIntersection = false;
     
         @Parameter(names = {"--cohort-stats-ref"}, description = "The body web service cohortStatsRef parameter", required = false, arity = 1)
         public String cohortStatsRef;
@@ -2333,8 +2333,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--variant-query-panel-role-in-cancer"}, description = "The body web service panelRoleInCancer parameter", required = false, arity = 1)
         public String variantQueryPanelRoleInCancer;
     
-        @Parameter(names = {"--variant-query-panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, arity = 1)
-        public Boolean variantQueryPanelIntersection;
+        @Parameter(names = {"--variant-query-panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, help = true, arity = 0)
+        public boolean variantQueryPanelIntersection = false;
     
         @Parameter(names = {"--variant-query-cohort-stats-ref"}, description = "The body web service cohortStatsRef parameter", required = false, arity = 1)
         public String variantQueryCohortStatsRef;
