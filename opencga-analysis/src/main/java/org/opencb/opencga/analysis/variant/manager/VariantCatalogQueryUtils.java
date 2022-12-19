@@ -719,6 +719,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 panelGenes.addAll(xrefs.getGenes());
                 query.put(GENE.key(), panelGenes);
                 query.put(SKIP_MISSING_GENES, true);
+
+                // Remove "false" value if exists
+                query.remove(PANEL_INTERSECTION.key());
             } else {
                 logger.info("Panel intersection");
                 // Intersect panel with query!

@@ -517,8 +517,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotEmpty(beanParams, "includeSample",commandOptions.includeSample, true);
              putNestedIfNotEmpty(beanParams, "includeFile",commandOptions.includeFile, true);
              putNestedIfNotEmpty(beanParams, "includeSampleData",commandOptions.includeSampleData, true);
-             putNestedIfNotEmpty(beanParams, "includeSampleId",commandOptions.includeSampleId, true);
-             putNestedIfNotEmpty(beanParams, "includeGenotype",commandOptions.includeGenotype, true);
+             putNestedIfNotNull(beanParams, "includeSampleId",commandOptions.includeSampleId, true);
+             putNestedIfNotNull(beanParams, "includeGenotype",commandOptions.includeGenotype, true);
              putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
              putNestedIfNotEmpty(beanParams, "qual",commandOptions.qual, true);
              putNestedIfNotEmpty(beanParams, "filter",commandOptions.filter, true);
