@@ -101,7 +101,6 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
     protected final String userId = "user";
 
     protected String projectId;
-    protected String projectAlias;
     protected String studyId;
     protected String studyFqn;
     protected String outputId;
@@ -162,9 +161,9 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
 
         User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "userACME1.", "ACME", null, Account.AccountType.FULL, null).first();
         sessionId = catalogManager.getUserManager().login(userId, "userACME1.").getToken();
-        projectAlias = "p1";
-        projectId = catalogManager.getProjectManager().create(projectAlias, projectAlias, "Project 1", "Homo sapiens",
-                null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first().getId();
+        projectId = "p1";
+        catalogManager.getProjectManager().create(projectId, projectId, "Project 1", "Homo sapiens",
+                null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId);
         Study study = catalogManager.getStudyManager().create(projectId, "s1", "s1", "s1",
                         "Study 1", null, null, null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), null, sessionId)
                 .first();
@@ -443,11 +442,10 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
 
     protected DummyVariantStorageEngine mockVariantStorageManager() {
         DummyVariantStorageEngine vsm = spy(new DummyVariantStorageEngine());
-        vsm.setConfiguration(opencga.getStorageConfiguration(), DummyVariantStorageEngine.STORAGE_ENGINE_ID,
-                VariantStorageManager.buildDatabaseName(catalogManager.getConfiguration().getDatabasePrefix(), userId, projectAlias));
-        StorageEngineFactory.get(opencga.getStorageConfiguration()).registerVariantStorageEngine(vsm);
-        vsm.setConfiguration(opencga.getStorageConfiguration(), DummyVariantStorageEngine.STORAGE_ENGINE_ID, DB_NAME);
-        StorageEngineFactory.get(opencga.getStorageConfiguration()).registerVariantStorageEngine(vsm);
+        String dbName = VariantStorageManager.buildDatabaseName(catalogManager.getConfiguration().getDatabasePrefix(), userId, projectId);
+        vsm.setConfiguration(opencga.getStorageConfiguration(), DummyVariantStorageEngine.STORAGE_ENGINE_ID, dbName);
+        StorageEngineFactory.get(opencga.getStorageConfiguration()).registerVariantStorageEngine(vsm, dbName, null);
+        StorageEngineFactory.get(opencga.getStorageConfiguration()).registerVariantStorageEngine(vsm, dbName, studyFqn);
         return vsm;
     }
 

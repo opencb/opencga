@@ -46,7 +46,7 @@ import static org.opencb.opencga.storage.hadoop.utils.PersistentResultScanner.is
  */
 public class HBaseManager implements AutoCloseable {
     protected static final Logger LOGGER = LoggerFactory.getLogger(HBaseManager.class);
-    //    public static final Set<Connection> CONNECTIONS = new ConcurrentHashSet<>();
+//    public static final List<Pair<String, Connection>> CONNECTIONS = new ArrayList<>();
     private static final AtomicInteger OPEN_CONNECTIONS = new AtomicInteger(0);
     private final AtomicBoolean closeConnection = new AtomicBoolean(false);
     private final AtomicReference<Connection> connection = new AtomicReference<>(null);
@@ -104,6 +104,14 @@ public class HBaseManager implements AutoCloseable {
         return OPEN_CONNECTIONS.get();
     }
 
+//    public static void printOpenConnections() {
+//        LOGGER.info(CONNECTIONS.size() + " opened connections at:");
+//        int i = 0;
+//        for (Pair<String, Connection> connection : CONNECTIONS) {
+//            LOGGER.info("[" + (i++) + "] " + connection.getKey());
+//        }
+//    }
+
     @Override
     public void close() throws IOException {
         if (this.closeConnection.get()) {
@@ -114,7 +122,7 @@ public class HBaseManager implements AutoCloseable {
                     con.close();
                     OPEN_CONNECTIONS.decrementAndGet();
                     LOGGER.info("Remaining HBase open connections: {}", getOpenConnections());
-//                CONNECTIONS.remove(con);
+//                    CONNECTIONS.removeIf(p -> p.getValue() == con);
                 }
             }
         }
@@ -132,8 +140,9 @@ public class HBaseManager implements AutoCloseable {
                         throw new IllegalStateException("Problems opening connection to DB", e);
                     }
                     OPEN_CONNECTIONS.incrementAndGet();
-                    //                    CONNECTIONS.add(con);
-                    LOGGER.info("Opened Hadoop DB connection {} called from {}", con, ExceptionUtils.getOpencbStackTrace());
+                    String stackTrace = ExceptionUtils.getOpencbStackTrace().toString();
+//                    CONNECTIONS.add(Pair.of(stackTrace, con));
+                    LOGGER.info("Opened Hadoop DB connection {} called from {}", con, stackTrace);
                     this.connection.set(con);
                 }
             }

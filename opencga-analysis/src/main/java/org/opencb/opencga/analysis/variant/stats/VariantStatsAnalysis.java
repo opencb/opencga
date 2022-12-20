@@ -374,9 +374,26 @@ public class VariantStatsAnalysis extends OpenCgaToolScopeStudy {
      */
     public static Aggregation getAggregation(CatalogManager catalogManager, String studyId, ObjectMap options, String sessionId)
             throws CatalogException {
+        return getAggregation(catalogManager, studyId, options.get(VariantStorageOptions.STATS_AGGREGATION.key(), Aggregation.class, Aggregation.NONE), sessionId);
+    }
+
+    /**
+     * If the study is aggregated and a mapping file is provided, pass it to
+     * and create in catalog the cohorts described in the mapping file.
+     *
+     * If the study aggregation was not defined, updateStudy with the provided aggregation type
+     *
+     * @param catalogManager CatalogManager
+     * @param studyId   StudyId where calculate stats
+     * @param argsAggregation Input aggregation value
+     * @param token Users sessionId
+     * @return          Effective study aggregation type
+     * @throws CatalogException if something is wrong with catalog
+     */
+    public static Aggregation getAggregation(CatalogManager catalogManager, String studyId, Aggregation argsAggregation, String token)
+            throws CatalogException {
         QueryOptions include = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ATTRIBUTES.key());
-        Study study = catalogManager.getStudyManager().get(studyId, include, sessionId).first();
-        Aggregation argsAggregation = options.get(VariantStorageOptions.STATS_AGGREGATION.key(), Aggregation.class, Aggregation.NONE);
+        Study study = catalogManager.getStudyManager().get(studyId, include, token).first();
         Object studyAggregationObj = study.getAttributes().get(STATS_AGGREGATION_CATALOG);
         Aggregation studyAggregation = null;
         if (studyAggregationObj != null) {
@@ -397,7 +414,7 @@ public class VariantStatsAnalysis extends OpenCgaToolScopeStudy {
                 Map<String, Object> attributes = Collections.singletonMap(STATS_AGGREGATION_CATALOG, argsAggregation);
                 StudyUpdateParams updateParams = new StudyUpdateParams()
                         .setAttributes(attributes);
-                catalogManager.getStudyManager().update(studyId, updateParams, null, sessionId);
+                catalogManager.getStudyManager().update(studyId, updateParams, null, token);
             }
         } else {
             if (studyAggregation == null) {

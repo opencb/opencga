@@ -166,7 +166,11 @@ public final class StorageEngineFactory {
     }
 
     public void registerVariantStorageEngine(VariantStorageEngine variantStorageEngine) {
-        String key = buildStorageEngineKey(variantStorageEngine.getStorageEngineId(), variantStorageEngine.dbName, null);
+        registerVariantStorageEngine(variantStorageEngine, variantStorageEngine.dbName, null);
+    }
+
+    public void registerVariantStorageEngine(VariantStorageEngine variantStorageEngine, String dbName, String alias) {
+        String key = buildStorageEngineKey(variantStorageEngine.getStorageEngineId(), dbName, alias);
         variantStorageEngineMap.put(key, variantStorageEngine);
     }
 

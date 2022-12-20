@@ -6,6 +6,8 @@ import org.opencb.opencga.storage.core.metadata.adaptors.VariantStorageMetadataD
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 
+import java.io.IOException;
+
 /**
  * Created on 02/05/18.
  *
@@ -20,7 +22,7 @@ public class HBaseVariantStorageMetadataDBAdaptorFactory implements VariantStora
     public HBaseVariantStorageMetadataDBAdaptorFactory(VariantTableHelper helper) {
         configuration = helper.getConf();
         metaTableName = helper.getMetaTableAsString();
-        hBaseManager = null;
+        hBaseManager = new HBaseManager(configuration);
     }
 
     public HBaseVariantStorageMetadataDBAdaptorFactory(HBaseManager hBaseManager, String metaTableName, Configuration configuration) {
@@ -64,5 +66,10 @@ public class HBaseVariantStorageMetadataDBAdaptorFactory implements VariantStora
     @Override
     public HBaseTaskMetadataDBAdaptor buildTaskDBAdaptor() {
         return new HBaseTaskMetadataDBAdaptor(hBaseManager, metaTableName, configuration);
+    }
+
+    @Override
+    public void close() throws IOException {
+        this.hBaseManager.close();
     }
 }
