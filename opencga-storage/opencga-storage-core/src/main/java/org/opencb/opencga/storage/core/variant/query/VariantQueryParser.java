@@ -234,7 +234,7 @@ public class VariantQueryParser {
         convertGoToGeneQuery(query, cellBaseUtils);
         convertExpressionToGeneQuery(query, cellBaseUtils);
 
-        preProcessXrefs(query);
+        preProcessXrefs(query, cellBaseUtils);
 
         if (VariantQueryUtils.isValidParam(query, TYPE)) {
             Set<VariantType> types = new HashSet<>();
@@ -778,7 +778,7 @@ public class VariantQueryParser {
         return genotypes;
     }
 
-    public static ParsedVariantQuery.VariantQueryXref preProcessXrefs(Query query) {
+    public static ParsedVariantQuery.VariantQueryXref preProcessXrefs(Query query, CellBaseUtils cellBaseUtils) {
         ParsedVariantQuery.VariantQueryXref xrefs = parseXrefs(query);
         List<String> allIds = new ArrayList<>(xrefs.getIds().size() + xrefs.getVariants().size());
         allIds.addAll(xrefs.getIds());
@@ -793,7 +793,11 @@ public class VariantQueryParser {
         if (xrefs.getGenes().isEmpty()) {
             query.remove(GENE.key());
         } else {
-            query.put(GENE.key(), xrefs.getGenes());
+            List<String> genes = xrefs.getGenes();
+            if (cellBaseUtils != null) {
+                genes = cellBaseUtils.validateGenes(genes, query.getBoolean(SKIP_MISSING_GENES, false));
+            }
+            query.put(GENE.key(), genes);
         }
         if (xrefs.getOtherXrefs().isEmpty()) {
             query.remove(ANNOT_XREF.key());
