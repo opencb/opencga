@@ -150,6 +150,13 @@ public class CellBaseUtilsTest {
     }
 
     @Test
+    public void validateGeneNames() {
+        Assume.assumeTrue(!version.startsWith("v4"));
+        List<String> validated = cellBaseUtils.validateGenes(Arrays.asList("BRCA2", "NonExistingGene", "HGNC:12363"), true);
+        assertEquals(Arrays.asList("BRCA2", "TSC2"), validated);
+    }
+
+    @Test
     @Ignore
     public void testGetVariant() throws Exception {
         assertEquals(new Variant("19:44934489:G:A"), cellBaseUtils.getVariant("rs2571174"));

@@ -750,6 +750,25 @@ public class VariantCatalogQueryUtilsTest {
         assertEquals(set(new Region(singlePositionRegion)), set(query, REGION));
     }
 
+    @Test
+    public void queryByPanelsWithGeneXrefs() throws Exception {
+        //  PANEL
+        String geneXref = "HGNC:12363";
+        String geneName = "TSC2";
+        Panel myPanelWithXrefGenes = new Panel("myPanelWithXrefGenes", "myPanelWithXrefGenes", 1)
+                .setGenes(Arrays.asList(new GenePanel().setName(geneXref)));
+        catalog.getPanelManager().create("s1", myPanelWithXrefGenes, null, sessionId);
+
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), myPanelWithXrefGenes.getId()), null, cellBaseUtils, sessionId);
+        assertEquals(set(geneName), set(query, GENE));
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(GENE.key(), geneXref), null, cellBaseUtils, sessionId);
+        assertEquals(set(geneName), set(query, GENE));
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(ANNOT_XREF.key(), geneXref), null, cellBaseUtils, sessionId);
+        assertEquals(set(geneName), set(query, GENE));
+    }
+
     private <T> Set<String> set(T... values) {
         return set(Arrays.asList(values));
     }
