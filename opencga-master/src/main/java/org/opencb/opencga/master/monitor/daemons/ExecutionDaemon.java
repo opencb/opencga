@@ -727,7 +727,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         // Check if the user already has permissions set in his folder
         OpenCGAResult<AclEntryList<FilePermissions>> result = fileManager.getAcls(job.getStudy().getId(),
                 Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(), true, token);
-        if (result.getNumResults() == 0 || result.first().isEmpty() || CollectionUtils.isEmpty(result.first().get(0).getPermissions())) {
+        if (result.getNumResults() == 0 || result.first().getAcl().isEmpty()
+                || CollectionUtils.isEmpty(result.first().getAcl().get(0).getPermissions())) {
             // Add permissions to do anything under that path to the user launching the job
             String allFilePermissions = EnumSet.allOf(FilePermissions.class)
                     .stream()
@@ -764,22 +765,26 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             String key = entry.getKey();
             String param = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_HYPHEN, key);
             if (entry.getValue() instanceof Map) {
-                Map<String, String> dynamicParams = (Map<String, String>) entry.getValue();
-                for (Map.Entry<String, String> dynamicEntry : dynamicParams.entrySet()) {
-                    cliBuilder.append(" ").append("--").append(param).append(" ");
-                    escapeCliArg(cliBuilder, dynamicEntry.getKey());
-                    cliBuilder.append("=");
-                    escapeCliArg(cliBuilder, dynamicEntry.getValue());
+                Map<String, ?> dynamicParams = (Map<String, ?>) entry.getValue();
+                for (Map.Entry<String, ?> dynamicEntry : dynamicParams.entrySet()) {
+                    if (dynamicEntry.getValue() != null) {
+                        cliBuilder.append(" ").append("--").append(param).append(" ");
+                        escapeCliArg(cliBuilder, dynamicEntry.getKey());
+                        cliBuilder.append("=");
+                        escapeCliArg(cliBuilder, dynamicEntry.getValue().toString());
+                    }
                 }
             } else {
-                if (!StringUtils.isAlphanumeric(StringUtils.replaceChars(key, "-_", ""))) {
-                    // This should never happen
-                    throw new IllegalArgumentException("Invalid job param key '" + key + "'");
+                if (entry.getValue() != null) {
+                    if (!StringUtils.isAlphanumeric(StringUtils.replaceChars(key, "-_", ""))) {
+                        // This should never happen
+                        throw new IllegalArgumentException("Invalid job param key '" + key + "'");
+                    }
+                    cliBuilder
+                            .append(" --").append(param)
+                            .append(" ");
+                    escapeCliArg(cliBuilder, entry.getValue().toString());
                 }
-                cliBuilder
-                        .append(" --").append(param)
-                        .append(" ");
-                escapeCliArg(cliBuilder, entry.getValue().toString());
             }
         }
         return cliBuilder.toString();
@@ -1018,6 +1023,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         if (analysisResultPath != null) {
             execution = readExecutionResult(analysisResultPath);
             if (execution != null) {
+                if (execution.getEnd() == null) {
+                    // This could happen if the job finished abruptly
+                    logger.info("[{}] Missing end date at ExecutionResult", job.getId());
+                    execution.setEnd(Date.from(Instant.now()));
+                    execution.getEvents().add(new Event(Event.Type.WARNING, "missing-execution-end-date",
+                            "Missing execution field 'end'. Using an approximate end date."));
+                }
                 PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setExecution(execution);
                 try {
                     jobManager.update(job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);

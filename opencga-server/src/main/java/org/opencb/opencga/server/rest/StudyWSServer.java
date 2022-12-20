@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.server.rest;
 
-import org.opencb.opencga.core.models.AclEntryList;
-import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
@@ -32,11 +30,13 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.annotations.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -74,7 +74,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     })
     public Response createStudyPOST(
             @ApiParam(value = ParamConstants.PROJECT_DESCRIPTION) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
-            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = ParamConstants.STUDY_PARAM, required = true) StudyCreateParams study) {
         try {
             return createOkResponse(catalogManager.getStudyManager().create(project, study != null ? study.toStudy() : new Study(),
@@ -140,7 +140,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     })
     public Response updateByPost(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "JSON containing the params to be updated.", required = true) StudyUpdateParams updateParams) {
         try {
             ObjectUtils.defaultIfNull(updateParams, new StudyUpdateParams());
@@ -266,7 +266,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response updatePermissionRules(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Entity where the permission rules should be applied to", required = true) @QueryParam("entity")
-                    Enums.Entity entity,
+            Enums.Entity entity,
             @ApiParam(value = "Action to be performed: ADD to add a new permission rule; REMOVE to remove all permissions assigned by an "
                     + "existing permission rule (even if it overlaps any manual permission); REVERT to remove all permissions assigned by"
                     + " an existing permission rule (keep manual overlaps); NONE to remove an existing permission rule without removing "
@@ -319,7 +319,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/acl/{members}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", response = AclEntryList.class)
+    @ApiOperation(value = "Update the set of permissions granted for the member", response = StudyAclEntryList.class)
     public Response updateAcl(
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true, defaultValue = "ADD") @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,

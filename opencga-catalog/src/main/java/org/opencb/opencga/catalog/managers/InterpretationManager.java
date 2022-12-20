@@ -911,7 +911,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             }
         }
 
-        if (interpretation.isLocked() && parameters.getBoolean(InterpretationDBAdaptor.QueryParams.LOCKED.key(), true)) {
+        if (!parameters.isEmpty() && interpretation.isLocked()
+                && parameters.getBoolean(InterpretationDBAdaptor.QueryParams.LOCKED.key(), true)) {
             throw new CatalogException("Could not update the Interpretation. Interpretation '" + interpretation.getId()
                     + " is locked. Please, unlock it first.");
         }
@@ -1202,7 +1203,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     @Override
-    public OpenCGAResult<?> distinct(String studyId, String field, Query query, String token) throws CatalogException {
+    public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(token);
@@ -1210,20 +1211,14 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
-                .append("field", new Query(query))
+                .append("fields", fields)
                 .append("query", new Query(query))
                 .append("token", token);
         try {
-            InterpretationDBAdaptor.QueryParams param = InterpretationDBAdaptor.QueryParams.getParam(field);
-            if (param == null) {
-                throw new CatalogException("Unknown '" + field + "' parameter.");
-            }
-            Class<?> clazz = getTypeClass(param.type());
-
             fixQueryObject(study, query, userId);
 
             query.append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<?> result = interpretationDBAdaptor.distinct(study.getUid(), field, query, userId, clazz);
+            OpenCGAResult<?> result = interpretationDBAdaptor.distinct(study.getUid(), fields, query, userId);
 
             auditManager.auditDistinct(userId, Enums.Resource.INTERPRETATION, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));

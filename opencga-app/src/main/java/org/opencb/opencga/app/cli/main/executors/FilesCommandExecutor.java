@@ -28,7 +28,6 @@ import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
-import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.alignment.AlignmentFileQualityControl;
 import org.opencb.opencga.core.models.alignment.CoverageFileQualityControl;
 import org.opencb.opencga.core.models.common.StatusParams;
@@ -36,6 +35,7 @@ import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.file.File.Bioformat;
 import org.opencb.opencga.core.models.file.File.Format;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileAclEntryList;
 import org.opencb.opencga.core.models.file.FileAclUpdateParams;
 import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.core.models.file.FileCreateParams;
@@ -62,9 +62,8 @@ import org.opencb.opencga.core.models.variant.VariantFileQualityControl;
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
+*  
 */
-
-
 /**
  * This class contains methods for the Files command line.
  *    PATH: /{apiVersion}/files
@@ -178,7 +177,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
 
     }
 
-    private RestResponse<AclEntryList> updateAcl() throws Exception {
+    private RestResponse<FileAclEntryList> updateAcl() throws Exception {
 
         logger.debug("Executing updateAcl in Files command line");
 
@@ -194,7 +193,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         FileAclUpdateParams fileAclUpdateParams= null;
         if (commandOptions.jsonDataModel) {
             fileAclUpdateParams = new FileAclUpdateParams();
-            RestResponse<AclEntryList> res = new RestResponse<>();
+            RestResponse<FileAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(fileAclUpdateParams));
             return res;
@@ -609,7 +608,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
 
     }
 
-    private RestResponse<AclEntryList> acl() throws Exception {
+    private RestResponse<FileAclEntryList> acl() throws Exception {
 
         logger.debug("Executing acl in Files command line");
 

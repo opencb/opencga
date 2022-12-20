@@ -16,13 +16,16 @@
 
 package org.opencb.opencga.app.cli.main.io;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.utils.PrintUtils;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.AclEntry;
+import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -41,6 +44,8 @@ import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.time.Instant;
@@ -56,6 +61,7 @@ import static org.opencb.opencga.core.models.common.InternalStatus.READY;
  */
 public class TextOutputWriter extends AbstractOutputWriter {
 
+    private static final Logger logger = LoggerFactory.getLogger(TextOutputWriter.class);
     public static final String SIMPLE_DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
     public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat(SIMPLE_DATE_PATTERN);
 
@@ -75,20 +81,29 @@ public class TextOutputWriter extends AbstractOutputWriter {
 
     @Override
     public void print(RestResponse queryResponse) {
-        if (queryResponse != null && queryResponse.getType().equals(QueryType.VOID)) {
-            if (queryResponse.getEvents() != null) {
-                for (Event event : ((RestResponse<?>) queryResponse).getEvents()) {
-                    if (StringUtils.isNotEmpty(event.getMessage())) {
-                        if (event.getType().equals(Event.Type.ERROR)) {
-                            PrintUtils.printError(event.getMessage());
-                        } else {
-                            PrintUtils.printInfo(event.getMessage());
-                        }
+        try {
+            logger.info(JacksonUtils.getDefaultObjectMapper().writeValueAsString(queryResponse));
+            logger.info(String.valueOf(queryResponse));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
+     /*   //   if (queryResponse != null && queryResponse.getType().equals(QueryType.VOID)) {
+        if (queryResponse.getEvents() != null) {
+            for (Event event : ((RestResponse<Object>)queryResponse.getResponses().get(0)).getEvents()) {
+                if (StringUtils.isNotEmpty(event.getMessage())) {
+                    if (event.getType().equals(Event.Type.ERROR)) {
+                        PrintUtils.printError(event.getMessage());
+                    } else {
+                        PrintUtils.printInfo(event.getMessage());
                     }
+                } else {
+                    PrintUtils.printError(event.getMessage());
                 }
             }
-            return;
         }
+        // return;
+        //  }
         if (checkErrors(queryResponse) && queryResponse.allResultsSize() == 0) {
             return;
         }
@@ -96,28 +111,22 @@ public class TextOutputWriter extends AbstractOutputWriter {
         if (checkLogin(queryResponse) && queryResponse.allResultsSize() == 0) {
             return;
         }
-        if (queryResponse.getResponses().size() == 0 || ((OpenCGAResult) queryResponse.getResponses().get(0)).getNumResults() == 0) {
-            if (queryResponse.getResponses().size() == 1 && queryResponse.first().getNumMatches() > 0) {
-                // count
-                PrintUtils.println(String.valueOf(queryResponse.first().getNumMatches()));
-            } else {
 
-                if (CollectionUtils.isNotEmpty(queryResponse.getEvents())) {
-                    for (Event event : ((RestResponse<?>) queryResponse).getEvents()) {
-                        if (StringUtils.isNotEmpty(event.getMessage())) {
-                            PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("EVENT: ", event.getMessage()));
-                        }
-                    }
-                }
 
-                PrintUtils.printInfo("No results found for the query.");
-            }
+        ps.print(printMetadata(queryResponse));
+*/
+        List<DataResult> queryResultList = queryResponse.getResponses();
+
+
+        if (CollectionUtils.isNotEmpty(queryResultList) && ((OpenCGAResult) queryResultList.get(0)) != null
+                && ((OpenCGAResult) queryResultList.get(0)).getNumMatches() > -1 && !isEdition(queryResultList)) {
+            PrintUtils.print("Number of matches: ", PrintUtils.Color.YELLOW);
+            PrintUtils.println(String.valueOf(((OpenCGAResult) queryResultList.get(0)).getNumMatches()), PrintUtils.Color.GREEN);
+        } else if (queryResultList.size() == 0 || ((OpenCGAResult) queryResultList.get(0)).getNumResults() == 0) {
+            processResponse(queryResponse);
             return;
         }
 
-        ps.print(printMetadata(queryResponse));
-
-        List<DataResult> queryResultList = queryResponse.getResponses();
         String clazz;
         if (queryResultList.get(0).getResultType() == null) {
             clazz = "";
@@ -125,7 +134,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
             String[] split = queryResultList.get(0).getResultType().split("\\.");
             clazz = split[split.length - 1];
         }
-
+        logger.info("Print results type " + clazz);
         switch (clazz) {
             case "User":
                 printUser(queryResponse.getResponses());
@@ -163,11 +172,105 @@ public class TextOutputWriter extends AbstractOutputWriter {
             case "String":
                 ps.println(StringUtils.join((List<String>) queryResponse.first().getResults(), ", "));
                 break;
+            case "":
+                printResponseResults(queryResponse.getResponses());
+                break;
             default:
                 PrintUtils.printWarn(clazz + " results not yet supported in text format. Using YAML format");
                 YamlOutputWriter yamlOutputWriter = new YamlOutputWriter(writerConfiguration);
                 yamlOutputWriter.print(queryResponse, false);
                 break;
+        }
+    }
+
+    private boolean isEdition(List<DataResult> queryResultList) {
+        OpenCGAResult openCGAResult = (OpenCGAResult) queryResultList.get(0);
+        if ((openCGAResult.getNumInserted() > 0) || (openCGAResult.getNumDeleted() > 0)
+                || (openCGAResult.getNumUpdated() > 0))
+            return true;
+        return false;
+    }
+
+    private void printResponseResults(List<DataResult> responses) {
+        for (Object o : responses) {
+            DataResult response = (DataResult) o;
+            List results = response.getResults();
+
+            //   PrintUtils.println(String.valueOf(response), PrintUtils.Color.GREEN);
+            if (CollectionUtils.isNotEmpty(results)) {
+                for (Object result : results) {
+                    if (result instanceof AclEntryList) {
+                        AclEntryList entries = (AclEntryList) result;
+                        // PrintUtils.println(entries.toString(), PrintUtils.Color.CYAN);
+                        PrintUtils.println(" - " + entries.getId(), PrintUtils.Color.GREEN);
+                        for (int i = 0; i < entries.getAcl().size(); i++) {
+                            PrintUtils.println("\t- " + ((AclEntry) entries.getAcl().get(i)).getMember()
+                                    + ": " + ((AclEntry) entries.getAcl().get(i)).getPermissions(), PrintUtils.Color.YELLOW);
+                        }
+                        if (CollectionUtils.isEmpty(entries.getAcl())) {
+                            PrintUtils.println("\t----", PrintUtils.Color.YELLOW);
+                        }
+                        PrintUtils.println("", PrintUtils.Color.YELLOW);
+                    } else {
+                        PrintUtils.print(result.getClass() + ": " + result, PrintUtils.Color.YELLOW);
+
+                    }
+                }
+            }
+        }
+
+    }
+
+    private void processResponse(RestResponse queryResponse) {
+
+        if (queryResponse.getEvents() != null && queryResponse.getEvents().size() > 0) {
+            for (Object o : queryResponse.getEvents()) {
+                Event event = (Event) o;
+                if (event.getType().equals(Event.Type.ERROR)) {
+                    queryResponse.setType(QueryType.VOID);
+                    PrintUtils.printError(event.getName() + (event.getMessage() != null ? " : " + event.getMessage() : ""));
+                }
+            }
+        }
+
+        OpenCGAResult result = queryResponse.first();
+        if (queryResponse.getResponses().size() == 1 && result.getNumMatches() > 0) {
+            for (Object o : result.getEvents()) {
+                Event event = (Event) o;
+                if (StringUtils.isNotEmpty(event.getMessage())) {
+                    if (event.getType().equals(Event.Type.ERROR)) {
+                        PrintUtils.printError(event.getMessage());
+                    } else {
+                        PrintUtils.printInfo(event.getMessage());
+                    }
+                }
+            }
+
+            long deleted = result.getNumDeleted();
+            long updated = result.getNumUpdated();
+            long created = result.getNumInserted();
+            String message = "Items processed:";
+            if (deleted > 0) {
+                message += " " + deleted + " deleted";
+            }
+            if (updated > 0) {
+                message += " " + updated + " updated";
+            }
+            if (created > 0) {
+                message += " " + created + " created";
+            }
+            PrintUtils.printInfo(message);
+        } else {
+            if (CollectionUtils.isNotEmpty(queryResponse.getEvents())) {
+                for (Event event : ((RestResponse<?>) queryResponse).getEvents()) {
+                    if (StringUtils.isNotEmpty(event.getMessage()) && !queryResponse.getType().equals(QueryType.VOID)) {
+                        PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("EVENT: ", event.getMessage()));
+                    }
+                }
+            }
+            if (!queryResponse.getType().equals(QueryType.VOID)) {
+                PrintUtils.printInfo("No results found for the query.");
+            }
         }
     }
 

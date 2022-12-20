@@ -20,8 +20,8 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
+*  
 */
-
 
 /**
  * This class contains methods for the Analysis - Variant command line.
@@ -223,8 +223,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--clinical-significance"}, description = "Clinical significance: benign, likely_benign, likely_pathogenic, pathogenic", required = false, arity = 1)
         public String clinicalSignificance; 
     
-        @Parameter(names = {"--clinical-confirmed-status"}, description = "Clinical confirmed status", required = false, arity = 1)
-        public Boolean clinicalConfirmedStatus; 
+        @Parameter(names = {"--clinical-confirmed-status"}, description = "Clinical confirmed status", required = false, help = true, arity = 0)
+        public boolean clinicalConfirmedStatus = false; 
     
         @Parameter(names = {"--custom-annotation"}, description = "Custom annotation: {key}[<|>|<=|>=]{number} or {key}[~=|=]{text}", required = false, arity = 1)
         public String customAnnotation; 
@@ -367,8 +367,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--samples"}, description = "The body samples CohortVariantStatsAnalysisParams web service parameter", required = false, arity = 1)
         public String samples;
     
-        @Parameter(names = {"--index"}, description = "The body index CohortVariantStatsAnalysisParams web service parameter", required = false, arity = 1)
-        public Boolean index;
+        @Parameter(names = {"--index"}, description = "The body index CohortVariantStatsAnalysisParams web service parameter", required = false, help = true, arity = 0)
+        public boolean index = false;
     
         @Parameter(names = {"--sample-annotation"}, description = "The body sampleAnnotation CohortVariantStatsAnalysisParams web service parameter", required = false, arity = 1)
         public String sampleAnnotation;
@@ -449,80 +449,80 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--body_id"}, description = "The body id AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyId;
+        @Parameter(names = {"--id"}, description = "The body id AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String id;
     
-        @Parameter(names = {"--body_region"}, description = "The body region AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyRegion;
+        @Parameter(names = {"--region"}, description = "The body region AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String region;
     
-        @Parameter(names = {"--body_gene"}, description = "The body gene AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyGene;
+        @Parameter(names = {"--gene"}, description = "The body gene AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String gene;
     
-        @Parameter(names = {"--body_type"}, description = "The body type AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyType;
+        @Parameter(names = {"--type"}, description = "The body type AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String type;
     
-        @Parameter(names = {"--body_panel"}, description = "The body panel AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyPanel;
+        @Parameter(names = {"--panel"}, description = "The body panel AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String panel;
     
-        @Parameter(names = {"--body_panel-mode-of-inheritance"}, description = "The body panelModeOfInheritance AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyPanelModeOfInheritance;
+        @Parameter(names = {"--panel-mode-of-inheritance"}, description = "The body panelModeOfInheritance AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String panelModeOfInheritance;
     
-        @Parameter(names = {"--body_panel-confidence"}, description = "The body panelConfidence AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyPanelConfidence;
+        @Parameter(names = {"--panel-confidence"}, description = "The body panelConfidence AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String panelConfidence;
     
-        @Parameter(names = {"--body_panel-role-in-cancer"}, description = "The body panelRoleInCancer AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyPanelRoleInCancer;
+        @Parameter(names = {"--panel-role-in-cancer"}, description = "The body panelRoleInCancer AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String panelRoleInCancer;
     
-        @Parameter(names = {"--body_panel-intersection"}, description = "The body panelIntersection AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public Boolean bodyPanelIntersection;
+        @Parameter(names = {"--panel-intersection"}, description = "The body panelIntersection AnnotationVariantQueryParams web service parameter", required = false, help = true, arity = 0)
+        public boolean panelIntersection = false;
     
-        @Parameter(names = {"--body_cohort-stats-ref"}, description = "The body cohortStatsRef AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyCohortStatsRef;
+        @Parameter(names = {"--cohort-stats-ref"}, description = "The body cohortStatsRef AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String cohortStatsRef;
     
-        @Parameter(names = {"--body_cohort-stats-alt"}, description = "The body cohortStatsAlt AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyCohortStatsAlt;
+        @Parameter(names = {"--cohort-stats-alt"}, description = "The body cohortStatsAlt AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String cohortStatsAlt;
     
-        @Parameter(names = {"--body_cohort-stats-maf"}, description = "The body cohortStatsMaf AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyCohortStatsMaf;
+        @Parameter(names = {"--cohort-stats-maf"}, description = "The body cohortStatsMaf AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String cohortStatsMaf;
     
-        @Parameter(names = {"--body_ct"}, description = "The body ct AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyCt;
+        @Parameter(names = {"--ct"}, description = "The body ct AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String ct;
     
-        @Parameter(names = {"--body_xref"}, description = "The body xref AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyXref;
+        @Parameter(names = {"--xref"}, description = "The body xref AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String xref;
     
-        @Parameter(names = {"--body_biotype"}, description = "The body type AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyBiotype;
+        @Parameter(names = {"--biotype"}, description = "The body type AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String biotype;
     
-        @Parameter(names = {"--body_protein-substitution"}, description = "The body proteinSubstitution AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyProteinSubstitution;
+        @Parameter(names = {"--protein-substitution"}, description = "The body proteinSubstitution AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String proteinSubstitution;
     
-        @Parameter(names = {"--body_conservation"}, description = "The body conservation AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyConservation;
+        @Parameter(names = {"--conservation"}, description = "The body conservation AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String conservation;
     
-        @Parameter(names = {"--body_population-frequency-maf"}, description = "The body populationFrequencyMaf AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyPopulationFrequencyMaf;
+        @Parameter(names = {"--population-frequency-maf"}, description = "The body populationFrequencyMaf AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String populationFrequencyMaf;
     
-        @Parameter(names = {"--body_population-frequency-alt"}, description = "The body populationFrequencyAlt AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyPopulationFrequencyAlt;
+        @Parameter(names = {"--population-frequency-alt"}, description = "The body populationFrequencyAlt AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String populationFrequencyAlt;
     
-        @Parameter(names = {"--body_population-frequency-ref"}, description = "The body populationFrequencyRef AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyPopulationFrequencyRef;
+        @Parameter(names = {"--population-frequency-ref"}, description = "The body populationFrequencyRef AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String populationFrequencyRef;
     
-        @Parameter(names = {"--body_transcript-flag"}, description = "The body transcriptFlag AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyTranscriptFlag;
+        @Parameter(names = {"--transcript-flag"}, description = "The body transcriptFlag AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String transcriptFlag;
     
-        @Parameter(names = {"--body_functional-score"}, description = "The body functionalScore AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyFunctionalScore;
+        @Parameter(names = {"--functional-score"}, description = "The body functionalScore AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String functionalScore;
     
-        @Parameter(names = {"--body_clinical"}, description = "The body clinical AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyClinical;
+        @Parameter(names = {"--clinical"}, description = "The body clinical AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String clinical;
     
-        @Parameter(names = {"--body_clinical-significance"}, description = "The body clinicalSignificance AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyClinicalSignificance;
+        @Parameter(names = {"--clinical-significance"}, description = "The body clinicalSignificance AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String clinicalSignificance;
     
-        @Parameter(names = {"--body_clinical-confirmed-status"}, description = "The body clinicalConfirmedStatus AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyClinicalConfirmedStatus;
+        @Parameter(names = {"--clinical-confirmed-status"}, description = "The body clinicalConfirmedStatus AnnotationVariantQueryParams web service parameter", required = false, help = true, arity = 0)
+        public boolean clinicalConfirmedStatus = false;
     
         @Parameter(names = {"--body_project"}, description = "The body project BasicVariantQueryParams web service parameter", required = false, arity = 1)
         public String bodyProject;
@@ -530,164 +530,164 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--body_study"}, description = "The body study BasicVariantQueryParams web service parameter", required = false, arity = 1)
         public String bodyStudy;
     
-        @Parameter(names = {"--body_saved-filter"}, description = "The body savedFilter VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodySavedFilter;
+        @Parameter(names = {"--saved-filter"}, description = "The body savedFilter VariantQueryParams web service parameter", required = false, arity = 1)
+        public String savedFilter;
     
-        @Parameter(names = {"--body_chromosome"}, description = "The body chromosome VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyChromosome;
+        @Parameter(names = {"--chromosome"}, description = "The body chromosome VariantQueryParams web service parameter", required = false, arity = 1)
+        public String chromosome;
     
-        @Parameter(names = {"--body_reference"}, description = "The body reference VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyReference;
+        @Parameter(names = {"--reference"}, description = "The body reference VariantQueryParams web service parameter", required = false, arity = 1)
+        public String reference;
     
-        @Parameter(names = {"--body_alternate"}, description = "The body alternate VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyAlternate;
+        @Parameter(names = {"--alternate"}, description = "The body alternate VariantQueryParams web service parameter", required = false, arity = 1)
+        public String alternate;
     
-        @Parameter(names = {"--body_release"}, description = "The body release VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyRelease;
+        @Parameter(names = {"--release"}, description = "The body release VariantQueryParams web service parameter", required = false, arity = 1)
+        public String release;
     
-        @Parameter(names = {"--body_include-study"}, description = "The body includeStudy VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyIncludeStudy;
+        @Parameter(names = {"--include-study"}, description = "The body includeStudy VariantQueryParams web service parameter", required = false, arity = 1)
+        public String includeStudy;
     
-        @Parameter(names = {"--body_include-sample"}, description = "The body includeSample VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyIncludeSample;
+        @Parameter(names = {"--include-sample"}, description = "The body includeSample VariantQueryParams web service parameter", required = false, arity = 1)
+        public String includeSample;
     
-        @Parameter(names = {"--body_include-file"}, description = "The body includeFile VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyIncludeFile;
+        @Parameter(names = {"--include-file"}, description = "The body includeFile VariantQueryParams web service parameter", required = false, arity = 1)
+        public String includeFile;
     
-        @Parameter(names = {"--body_include-sample-data"}, description = "The body includeSampleData VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyIncludeSampleData;
+        @Parameter(names = {"--include-sample-data"}, description = "The body includeSampleData VariantQueryParams web service parameter", required = false, arity = 1)
+        public String includeSampleData;
     
-        @Parameter(names = {"--body_include-sample-id"}, description = "The body includeSampleId VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyIncludeSampleId;
+        @Parameter(names = {"--include-sample-id"}, description = "The body includeSampleId VariantQueryParams web service parameter", required = false, help = true, arity = 0)
+        public boolean includeSampleId = false;
     
-        @Parameter(names = {"--body_include-genotype"}, description = "The body includeGenotype VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyIncludeGenotype;
+        @Parameter(names = {"--include-genotype"}, description = "The body includeGenotype VariantQueryParams web service parameter", required = false, help = true, arity = 0)
+        public boolean includeGenotype = false;
     
-        @Parameter(names = {"--body_file"}, description = "The body file VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyFile;
+        @Parameter(names = {"--file"}, description = "The body file VariantQueryParams web service parameter", required = false, arity = 1)
+        public String file;
     
-        @Parameter(names = {"--body_qual"}, description = "The body qual VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyQual;
+        @Parameter(names = {"--qual"}, description = "The body qual VariantQueryParams web service parameter", required = false, arity = 1)
+        public String qual;
     
-        @Parameter(names = {"--body_filter"}, description = "The body filter VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyFilter;
+        @Parameter(names = {"--filter"}, description = "The body filter VariantQueryParams web service parameter", required = false, arity = 1)
+        public String filter;
     
-        @Parameter(names = {"--body_file-data"}, description = "The body fileData VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyFileData;
+        @Parameter(names = {"--file-data"}, description = "The body fileData VariantQueryParams web service parameter", required = false, arity = 1)
+        public String fileData;
     
-        @Parameter(names = {"--body_genotype"}, description = "The body genotype VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyGenotype;
+        @Parameter(names = {"--genotype"}, description = "The body genotype VariantQueryParams web service parameter", required = false, arity = 1)
+        public String genotype;
     
-        @Parameter(names = {"--body_sample"}, description = "The body sample VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodySample;
+        @Parameter(names = {"--sample"}, description = "The body sample VariantQueryParams web service parameter", required = false, arity = 1)
+        public String sample;
     
-        @Parameter(names = {"--body_sample-limit"}, description = "The body sampleLimit VariantQueryParams web service parameter", required = false, arity = 1)
-        public Integer bodySampleLimit;
+        @Parameter(names = {"--sample-limit"}, description = "The body sampleLimit VariantQueryParams web service parameter", required = false, arity = 1)
+        public Integer sampleLimit;
     
-        @Parameter(names = {"--body_sample-skip"}, description = "The body sampleSkip VariantQueryParams web service parameter", required = false, arity = 1)
-        public Integer bodySampleSkip;
+        @Parameter(names = {"--sample-skip"}, description = "The body sampleSkip VariantQueryParams web service parameter", required = false, arity = 1)
+        public Integer sampleSkip;
     
-        @Parameter(names = {"--body_sample-data"}, description = "The body sampleData VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodySampleData;
+        @Parameter(names = {"--sample-data"}, description = "The body sampleData VariantQueryParams web service parameter", required = false, arity = 1)
+        public String sampleData;
     
-        @Parameter(names = {"--body_sample-annotation"}, description = "The body sampleAnnotation VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodySampleAnnotation;
+        @Parameter(names = {"--sample-annotation"}, description = "The body sampleAnnotation VariantQueryParams web service parameter", required = false, arity = 1)
+        public String sampleAnnotation;
     
-        @Parameter(names = {"--body_family"}, description = "The body family VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyFamily;
+        @Parameter(names = {"--family"}, description = "The body family VariantQueryParams web service parameter", required = false, arity = 1)
+        public String family;
     
-        @Parameter(names = {"--body_family-members"}, description = "The body familyMembers VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyFamilyMembers;
+        @Parameter(names = {"--family-members"}, description = "The body familyMembers VariantQueryParams web service parameter", required = false, arity = 1)
+        public String familyMembers;
     
-        @Parameter(names = {"--body_family-disorder"}, description = "The body familyDisorder VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyFamilyDisorder;
+        @Parameter(names = {"--family-disorder"}, description = "The body familyDisorder VariantQueryParams web service parameter", required = false, arity = 1)
+        public String familyDisorder;
     
-        @Parameter(names = {"--body_family-proband"}, description = "The body familyProband VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyFamilyProband;
+        @Parameter(names = {"--family-proband"}, description = "The body familyProband VariantQueryParams web service parameter", required = false, arity = 1)
+        public String familyProband;
     
-        @Parameter(names = {"--body_family-segregation"}, description = "The body familySegregation VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyFamilySegregation;
+        @Parameter(names = {"--family-segregation"}, description = "The body familySegregation VariantQueryParams web service parameter", required = false, arity = 1)
+        public String familySegregation;
     
-        @Parameter(names = {"--body_cohort"}, description = "The body cohort VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyCohort;
+        @Parameter(names = {"--cohort"}, description = "The body cohort VariantQueryParams web service parameter", required = false, arity = 1)
+        public String cohort;
     
-        @Parameter(names = {"--body_cohort-stats-pass"}, description = "The body cohortStatsPass VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyCohortStatsPass;
+        @Parameter(names = {"--cohort-stats-pass"}, description = "The body cohortStatsPass VariantQueryParams web service parameter", required = false, arity = 1)
+        public String cohortStatsPass;
     
-        @Parameter(names = {"--body_cohort-stats-mgf"}, description = "The body cohortStatsMgf VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyCohortStatsMgf;
+        @Parameter(names = {"--cohort-stats-mgf"}, description = "The body cohortStatsMgf VariantQueryParams web service parameter", required = false, arity = 1)
+        public String cohortStatsMgf;
     
-        @Parameter(names = {"--body_missing-alleles"}, description = "The body missingAlleles VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyMissingAlleles;
+        @Parameter(names = {"--missing-alleles"}, description = "The body missingAlleles VariantQueryParams web service parameter", required = false, arity = 1)
+        public String missingAlleles;
     
-        @Parameter(names = {"--body_missing-genotypes"}, description = "The body missingGenotypes VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyMissingGenotypes;
+        @Parameter(names = {"--missing-genotypes"}, description = "The body missingGenotypes VariantQueryParams web service parameter", required = false, arity = 1)
+        public String missingGenotypes;
     
-        @Parameter(names = {"--body_annotation-exists"}, description = "The body annotationExists VariantQueryParams web service parameter", required = false, arity = 1)
-        public Boolean bodyAnnotationExists;
+        @Parameter(names = {"--annotation-exists"}, description = "The body annotationExists VariantQueryParams web service parameter", required = false, arity = 1)
+        public Boolean annotationExists;
     
-        @Parameter(names = {"--body_score"}, description = "The body score VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyScore;
+        @Parameter(names = {"--score"}, description = "The body score VariantQueryParams web service parameter", required = false, arity = 1)
+        public String score;
     
-        @Parameter(names = {"--body_polyphen"}, description = "The body polyphen VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyPolyphen;
+        @Parameter(names = {"--polyphen"}, description = "The body polyphen VariantQueryParams web service parameter", required = false, arity = 1)
+        public String polyphen;
     
-        @Parameter(names = {"--body_sift"}, description = "The body sift VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodySift;
+        @Parameter(names = {"--sift"}, description = "The body sift VariantQueryParams web service parameter", required = false, arity = 1)
+        public String sift;
     
-        @Parameter(names = {"--body_gene-trait-id"}, description = "The body geneTraitId VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyGeneTraitId;
+        @Parameter(names = {"--gene-trait-id"}, description = "The body geneTraitId VariantQueryParams web service parameter", required = false, arity = 1)
+        public String geneTraitId;
     
-        @Parameter(names = {"--body_gene-trait-name"}, description = "The body geneTraitName VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyGeneTraitName;
+        @Parameter(names = {"--gene-trait-name"}, description = "The body geneTraitName VariantQueryParams web service parameter", required = false, arity = 1)
+        public String geneTraitName;
     
-        @Parameter(names = {"--body_trait"}, description = "The body trait VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyTrait;
+        @Parameter(names = {"--trait"}, description = "The body trait VariantQueryParams web service parameter", required = false, arity = 1)
+        public String trait;
     
-        @Parameter(names = {"--body_cosmic"}, description = "The body cosmic VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyCosmic;
+        @Parameter(names = {"--cosmic"}, description = "The body cosmic VariantQueryParams web service parameter", required = false, arity = 1)
+        public String cosmic;
     
-        @Parameter(names = {"--body_clinvar"}, description = "The body clinvar VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyClinvar;
+        @Parameter(names = {"--clinvar"}, description = "The body clinvar VariantQueryParams web service parameter", required = false, arity = 1)
+        public String clinvar;
     
-        @Parameter(names = {"--body_hpo"}, description = "The body hpo VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyHpo;
+        @Parameter(names = {"--hpo"}, description = "The body hpo VariantQueryParams web service parameter", required = false, arity = 1)
+        public String hpo;
     
-        @Parameter(names = {"--body_go"}, description = "The body go VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyGo;
+        @Parameter(names = {"--go"}, description = "The body go VariantQueryParams web service parameter", required = false, arity = 1)
+        public String go;
     
-        @Parameter(names = {"--body_expression"}, description = "The body expression VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyExpression;
+        @Parameter(names = {"--expression"}, description = "The body expression VariantQueryParams web service parameter", required = false, arity = 1)
+        public String expression;
     
-        @Parameter(names = {"--body_protein-keyword"}, description = "The body proteinKeyword VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyProteinKeyword;
+        @Parameter(names = {"--protein-keyword"}, description = "The body proteinKeyword VariantQueryParams web service parameter", required = false, arity = 1)
+        public String proteinKeyword;
     
-        @Parameter(names = {"--body_drug"}, description = "The body drug VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyDrug;
+        @Parameter(names = {"--drug"}, description = "The body drug VariantQueryParams web service parameter", required = false, arity = 1)
+        public String drug;
     
-        @Parameter(names = {"--body_custom-annotation"}, description = "The body customAnnotation VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyCustomAnnotation;
+        @Parameter(names = {"--custom-annotation"}, description = "The body customAnnotation VariantQueryParams web service parameter", required = false, arity = 1)
+        public String customAnnotation;
     
-        @Parameter(names = {"--body_unknown-genotype"}, description = "The body unknownGenotype VariantQueryParams web service parameter", required = false, arity = 1)
-        public String bodyUnknownGenotype;
+        @Parameter(names = {"--unknown-genotype"}, description = "The body unknownGenotype VariantQueryParams web service parameter", required = false, arity = 1)
+        public String unknownGenotype;
     
-        @Parameter(names = {"--body_sample-metadata"}, description = "The body web service sampleMetadata parameter", required = false, arity = 1)
-        public Boolean bodySampleMetadata;
+        @Parameter(names = {"--sample-metadata"}, description = "The body web service sampleMetadata parameter", required = false, help = true, arity = 0)
+        public boolean sampleMetadata = false;
     
-        @Parameter(names = {"--body_sort"}, description = "The body web service sort parameter", required = false, arity = 1)
-        public Boolean bodySort;
+        @Parameter(names = {"--sort"}, description = "The body web service sort parameter", required = false, help = true, arity = 0)
+        public boolean sort = false;
     
-        @Parameter(names = {"--body_outdir"}, description = "The body outdir VariantExportParams web service parameter", required = false, arity = 1)
-        public String bodyOutdir;
+        @Parameter(names = {"--outdir"}, description = "The body outdir VariantExportParams web service parameter", required = false, arity = 1)
+        public String outdir;
     
-        @Parameter(names = {"--body_output-file-name"}, description = "The body outputFileName VariantExportParams web service parameter", required = false, arity = 1)
-        public String bodyOutputFileName;
+        @Parameter(names = {"--output-file-name"}, description = "The body outputFileName VariantExportParams web service parameter", required = false, arity = 1)
+        public String outputFileName;
     
-        @Parameter(names = {"--body_output-file-format"}, description = "The body outputFileFormat VariantExportParams web service parameter", required = false, arity = 1)
-        public String bodyOutputFileFormat;
+        @Parameter(names = {"--output-file-format"}, description = "The body outputFileFormat VariantExportParams web service parameter", required = false, arity = 1)
+        public String outputFileFormat;
     
-        @Parameter(names = {"--body_variants-file"}, description = "The body variantsFile VariantExportParams web service parameter", required = false, arity = 1)
-        public String bodyVariantsFile;
+        @Parameter(names = {"--variants-file"}, description = "The body variantsFile VariantExportParams web service parameter", required = false, arity = 1)
+        public String variantsFile;
     
         @Parameter(names = {"--body_include"}, description = "The body include VariantExportParams web service parameter", required = false, arity = 1)
         public String bodyInclude;
@@ -695,14 +695,14 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--body_exclude"}, description = "The body exclude VariantExportParams web service parameter", required = false, arity = 1)
         public String bodyExclude;
     
-        @Parameter(names = {"--body_limit"}, description = "The body limit VariantExportParams web service parameter", required = false, arity = 1)
-        public Integer bodyLimit;
+        @Parameter(names = {"--limit"}, description = "The body limit VariantExportParams web service parameter", required = false, arity = 1)
+        public Integer limit;
     
-        @Parameter(names = {"--body_skip"}, description = "The body skip VariantExportParams web service parameter", required = false, arity = 1)
-        public Integer bodySkip;
+        @Parameter(names = {"--skip"}, description = "The body skip VariantExportParams web service parameter", required = false, arity = 1)
+        public Integer skip;
     
-        @Parameter(names = {"--body_summary"}, description = "The body summary VariantExportParams web service parameter", required = false, arity = 1)
-        public Boolean bodySummary;
+        @Parameter(names = {"--summary"}, description = "The body summary VariantExportParams web service parameter", required = false, help = true, arity = 0)
+        public boolean summary = false;
     
     }
 
@@ -722,10 +722,10 @@ public class AnalysisVariantCommandOptions {
         public String clinicalAnalysis; 
     
         @Parameter(names = {"--mode-of-inheritance"}, description = "Mode of inheritance", required = true, arity = 1)
-        public String modeOfInheritance; 
+        public String modeOfInheritance = "MONOALLELIC"; 
     
         @Parameter(names = {"--penetrance"}, description = "Penetrance", required = false, arity = 1)
-        public String penetrance; 
+        public String penetrance = "COMPLETE"; 
     
         @Parameter(names = {"--disorder"}, description = "Disorder id", required = false, arity = 1)
         public String disorder; 
@@ -797,8 +797,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--file"}, description = "Files to remove", required = false, arity = 1)
         public String file; 
     
-        @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation", required = false, arity = 1)
-        public Boolean resume; 
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation", required = false, help = true, arity = 0)
+        public boolean resume = false; 
     
     }
 
@@ -976,20 +976,20 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--file"}, description = "The body file VariantIndexParams web service parameter", required = false, arity = 1)
         public String file;
     
-        @Parameter(names = {"--resume"}, description = "The body resume VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean resume;
+        @Parameter(names = {"--resume"}, description = "The body resume VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean resume = false;
     
         @Parameter(names = {"--outdir"}, description = "The body outdir VariantIndexParams web service parameter", required = false, arity = 1)
         public String outdir;
     
-        @Parameter(names = {"--transform"}, description = "The body transform VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean transform;
+        @Parameter(names = {"--transform"}, description = "The body transform VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean transform = false;
     
-        @Parameter(names = {"--gvcf"}, description = "The body gvcf VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean gvcf;
+        @Parameter(names = {"--gvcf"}, description = "The body gvcf VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean gvcf = false;
     
-        @Parameter(names = {"--normalization-skip"}, description = "The body normalizationSkip VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean normalizationSkip;
+        @Parameter(names = {"--normalization-skip"}, description = "The body normalizationSkip VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean normalizationSkip = false;
     
         @Parameter(names = {"--reference-genome"}, description = "The body referenceGenome VariantIndexParams web service parameter", required = false, arity = 1)
         public String referenceGenome;
@@ -997,20 +997,20 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--fail-on-malformed-lines"}, description = "The body failOnMalformedLines VariantIndexParams web service parameter", required = false, arity = 1)
         public String failOnMalformedLines;
     
-        @Parameter(names = {"--family"}, description = "The body family VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean family;
+        @Parameter(names = {"--family"}, description = "The body family VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean family = false;
     
-        @Parameter(names = {"--somatic"}, description = "The body somatic VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean somatic;
+        @Parameter(names = {"--somatic"}, description = "The body somatic VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean somatic = false;
     
-        @Parameter(names = {"--load"}, description = "The body load VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean load;
+        @Parameter(names = {"--load"}, description = "The body load VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean load = false;
     
         @Parameter(names = {"--load-split-data"}, description = "The body loadSplitData VariantIndexParams web service parameter", required = false, arity = 1)
         public String loadSplitData;
     
-        @Parameter(names = {"--load-multi-file-data"}, description = "The body loadMultiFileData VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean loadMultiFileData;
+        @Parameter(names = {"--load-multi-file-data"}, description = "The body loadMultiFileData VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean loadMultiFileData = false;
     
         @Parameter(names = {"--load-sample-index"}, description = "The body loadSampleIndex VariantIndexParams web service parameter", required = false, arity = 1)
         public String loadSampleIndex;
@@ -1036,8 +1036,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--deduplication-policy"}, description = "The body deduplicationPolicy VariantIndexParams web service parameter", required = false, arity = 1)
         public String deduplicationPolicy;
     
-        @Parameter(names = {"--calculate-stats"}, description = "The body calculateStats VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean calculateStats;
+        @Parameter(names = {"--calculate-stats"}, description = "The body calculateStats VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean calculateStats = false;
     
         @Parameter(names = {"--aggregated"}, description = "The body web service aggregated parameter", required = false, arity = 1)
         public String aggregated;
@@ -1045,20 +1045,20 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--aggregation-mapping-file"}, description = "The body aggregationMappingFile VariantIndexParams web service parameter", required = false, arity = 1)
         public String aggregationMappingFile;
     
-        @Parameter(names = {"--annotate"}, description = "The body annotate VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean annotate;
+        @Parameter(names = {"--annotate"}, description = "The body annotate VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean annotate = false;
     
         @Parameter(names = {"--annotator"}, description = "The body annotator VariantIndexParams web service parameter", required = false, arity = 1)
         public String annotator;
     
-        @Parameter(names = {"--overwrite-annotations"}, description = "The body overwriteAnnotations VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean overwriteAnnotations;
+        @Parameter(names = {"--overwrite-annotations"}, description = "The body overwriteAnnotations VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean overwriteAnnotations = false;
     
-        @Parameter(names = {"--index-search"}, description = "The body indexSearch VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean indexSearch;
+        @Parameter(names = {"--index-search"}, description = "The body indexSearch VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean indexSearch = false;
     
-        @Parameter(names = {"--skip-indexed-files"}, description = "The body skipIndexedFiles VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean skipIndexedFiles;
+        @Parameter(names = {"--skip-indexed-files"}, description = "The body skipIndexedFiles VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean skipIndexedFiles = false;
     
     }
 
@@ -1229,14 +1229,14 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--qual"}, description = "The body qual KnockoutAnalysisParams web service parameter", required = false, arity = 1)
         public String qual;
     
-        @Parameter(names = {"--skip-genes-file"}, description = "The body skipGenesFile KnockoutAnalysisParams web service parameter", required = false, arity = 1)
-        public Boolean skipGenesFile;
+        @Parameter(names = {"--skip-genes-file"}, description = "The body skipGenesFile KnockoutAnalysisParams web service parameter", required = false, help = true, arity = 0)
+        public boolean skipGenesFile = false;
     
         @Parameter(names = {"--outdir"}, description = "The body outdir KnockoutAnalysisParams web service parameter", required = false, arity = 1)
         public String outdir;
     
-        @Parameter(names = {"--index"}, description = "The body index KnockoutAnalysisParams web service parameter", required = false, arity = 1)
-        public Boolean index;
+        @Parameter(names = {"--index"}, description = "The body index KnockoutAnalysisParams web service parameter", required = false, help = true, arity = 0)
+        public boolean index = false;
     
     }
 
@@ -1296,7 +1296,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--file"}, description = "Filter variants from the files specified. This will set includeFile parameter when not provided", required = false, arity = 1)
         public String file; 
     
-        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
         public String sample; 
     
         @Parameter(names = {"--include-study"}, description = "List of studies to include in the result. Accepts 'all' and 'none'.", required = false, arity = 1)
@@ -1364,11 +1364,41 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--panel-role-in-cancer"}, description = "Filter genes from specific panels that match certain role in cancer. Accepted values : [ both, oncogene, tumorSuppressorGene, fusion ]", required = false, arity = 1)
         public String panelRoleInCancer; 
     
-        @Parameter(names = {"--panel-intersection"}, description = "Intersect panel genes and regions with given genes and regions from que input query. This will prevent returning variants from regions out of the panel.", required = false, arity = 1)
-        public Boolean panelIntersection; 
+        @Parameter(names = {"--panel-intersection"}, description = "Intersect panel genes and regions with given genes and regions from que input query. This will prevent returning variants from regions out of the panel.", required = false, help = true, arity = 0)
+        public boolean panelIntersection = false; 
     
-        @Parameter(names = {"--fitting"}, description = "Compute the relative proportions of the different mutational signatures demonstrated by the tumour", required = false, arity = 1)
-        public Boolean fitting; 
+        @Parameter(names = {"--catalogues"}, description = "File name containing mutational catalogues. Each sample catalogue is in a column, with sample names as column headers and channel.", required = false, arity = 1)
+        public String catalogues; 
+    
+        @Parameter(names = {"--catalogues-content"}, description = "Mutational catalogues. Each sample catalogue is in a column, with sample names as column headers and channel.", required = false, arity = 1)
+        public String cataloguesContent; 
+    
+        @Parameter(names = {"--fit-method"}, description = "Either Fit or FitMS. If not specified then FitMS", required = false, arity = 1)
+        public String fitMethod = "FitMS"; 
+    
+        @Parameter(names = {"--n-boot"}, description = "Number of bootstrap to be used.", required = false, arity = 1)
+        public Integer nBoot; 
+    
+        @Parameter(names = {"--sig-version"}, description = "Either COSMICv2, COSMICv3.2, RefSigv1 or RefSigv2. If not specified RefSigv2.", required = false, arity = 1)
+        public String sigVersion = "RefSigv2"; 
+    
+        @Parameter(names = {"--organ"}, description = "When using RefSigv1 or RefSigv2 as SIGVERSION, organ-specific signatures will be used. If SIGVERSION is COSMICv2 or COSMICv3.2, then a selection of signatures found in the given organ will be used. Available organs depend on the selected SIGVERSION. For RefSigv1 or RefSigv2: Biliary, Bladder, Bone_SoftTissue, Breast, Cervix (v1 only), CNS, Colorectal, Esophagus, Head_neck, Kidney, Liver, Lung, Lymphoid, NET (v2 only), Oral_Oropharyngeal (v2 only), Ovary, Pancreas, Prostate, Skin, Stomach, Uterus.", required = false, arity = 1)
+        public String organ; 
+    
+        @Parameter(names = {"--threshold-perc"}, description = "Threshold in percentage of total mutations in a sample, only exposures larger than THRPERC are considered. If not specified 5.", required = false, arity = 1)
+        public Float thresholdPerc = 5f; 
+    
+        @Parameter(names = {"--threshold-pval"}, description = "P-value to determine the empirical probability that the exposure is lower than the threshold. If not specified then 0.05.", required = false, arity = 1)
+        public Float thresholdPval = 0.05f; 
+    
+        @Parameter(names = {"--max-rare-sigs"}, description = "Maximum number of rare signatures that are allowed to be present in each sample. If not specified 1.", required = false, arity = 1)
+        public Integer maxRareSigs = 1; 
+    
+        @Parameter(names = {"--signatures-file"}, description = "The file name containing mutational signatures. Each signature is in a column, with signature names as column hearders and channel names as row names in the first column with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are considered common signatures.", required = false, arity = 1)
+        public String signaturesFile; 
+    
+        @Parameter(names = {"--rare-signatures-file"}, description = "The file name containing mutational signatures. Each signature is in a column, with signature names as column hearders and channel names as row names in the first column with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are considered rare signatures.", required = false, arity = 1)
+        public String rareSignaturesFile; 
     
     }
 
@@ -1399,22 +1429,49 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--sample"}, description = "Sample ID", required = false, arity = 1)
-        public String sample;
-    
         @Parameter(names = {"--id"}, description = "Mutational signature ID", required = false, arity = 1)
         public String id;
     
         @Parameter(names = {"--description"}, description = "Field to store information of the item", required = false, arity = 1)
         public String description;
     
-        @Parameter(names = {"--release"}, description = "Mutational signature release", required = false, arity = 1)
-        public String release;
+        @Parameter(names = {"--query"}, description = "Mutational signature query", required = false, arity = 1)
+        public String query;
     
-        @Parameter(names = {"--fitting"}, description = "Compute signature fitting", required = false, arity = 1)
-        public Boolean fitting;
+        @Parameter(names = {"--catalogues"}, description = "File name containing mutational catalogues. Each sample catalogue is in a column, with sample names as column headers and channel.", required = false, arity = 1)
+        public String catalogues;
     
-        @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
+        @Parameter(names = {"--catalogues-content"}, description = "Mutational catalogues. Each sample catalogue is in a column, with sample names as column headers and channel.", required = false, arity = 1)
+        public String cataloguesContent;
+    
+        @Parameter(names = {"--fit-method"}, description = "Either Fit or FitMS. If not specified then FitMS", required = false, arity = 1)
+        public String fitMethod = "FitMS";
+    
+        @Parameter(names = {"--n-boot"}, description = "Number of bootstrap to be used.", required = false, arity = 1)
+        public Integer nBoot;
+    
+        @Parameter(names = {"--sig-version"}, description = "Either COSMICv2, COSMICv3.2, RefSigv1 or RefSigv2. If not specified RefSigv2.", required = false, arity = 1)
+        public String sigVersion = "RefSigv2";
+    
+        @Parameter(names = {"--organ"}, description = "When using RefSigv1 or RefSigv2 as SIGVERSION, organ-specific signatures will be used. If SIGVERSION is COSMICv2 or COSMICv3.2, then a selection of signatures found in the given organ will be used. Available organs depend on the selected SIGVERSION. For RefSigv1 or RefSigv2: Biliary, Bladder, Bone_SoftTissue, Breast, Cervix (v1 only), CNS, Colorectal, Esophagus, Head_neck, Kidney, Liver, Lung, Lymphoid, NET (v2 only), Oral_Oropharyngeal (v2 only), Ovary, Pancreas, Prostate, Skin, Stomach, Uterus.", required = false, arity = 1)
+        public String organ;
+    
+        @Parameter(names = {"--threshold-perc"}, description = "Threshold in percentage of total mutations in a sample, only exposures larger than THRPERC are considered. If not specified 5.", required = false, arity = 1)
+        public Float thresholdPerc = 5f;
+    
+        @Parameter(names = {"--threshold-pval"}, description = "P-value to determine the empirical probability that the exposure is lower than the threshold. If not specified then 0.05.", required = false, arity = 1)
+        public Float thresholdPval = 0.05f;
+    
+        @Parameter(names = {"--max-rare-sigs"}, description = "Maximum number of rare signatures that are allowed to be present in each sample. If not specified 1.", required = false, arity = 1)
+        public Integer maxRareSigs = 1;
+    
+        @Parameter(names = {"--signatures-file"}, description = "The file name containing mutational signatures. Each signature is in a column, with signature names as column hearders and channel names as row names in the first column with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are considered common signatures.", required = false, arity = 1)
+        public String signaturesFile;
+    
+        @Parameter(names = {"--rare-signatures-file"}, description = "The file name containing mutational signatures. Each signature is in a column, with signature names as column hearders and channel names as row names in the first column with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are considered rare signatures.", required = false, arity = 1)
+        public String rareSignaturesFile;
+    
+        @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;
     
     }
@@ -1469,17 +1526,17 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
         public Integer skip; 
     
-        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, arity = 1)
-        public Boolean count; 
+        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
+        public boolean count = false; 
     
-        @Parameter(names = {"--sort"}, description = "Sort the results", required = false, arity = 1)
-        public Boolean sort; 
+        @Parameter(names = {"--sort"}, description = "Sort the results", required = false, help = true, arity = 0)
+        public boolean sort = false; 
     
-        @Parameter(names = {"--summary"}, description = "Fast fetch of main variant parameters", required = false, arity = 1)
-        public Boolean summary; 
+        @Parameter(names = {"--summary"}, description = "Fast fetch of main variant parameters", required = false, help = true, arity = 0)
+        public boolean summary = false; 
     
-        @Parameter(names = {"--approximate-count"}, description = "Get an approximate count, instead of an exact total count. Reduces execution time", required = false, arity = 1)
-        public Boolean approximateCount; 
+        @Parameter(names = {"--approximate-count"}, description = "Get an approximate count, instead of an exact total count. Reduces execution time", required = false, help = true, arity = 0)
+        public boolean approximateCount = false; 
     
         @Parameter(names = {"--approximate-count-sampling-size"}, description = "Sampling size to get the approximate count. Larger values increase accuracy but also increase execution time", required = false, arity = 1)
         public Integer approximateCountSamplingSize; 
@@ -1520,7 +1577,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--file-data"}, description = "Filter by file data (i.e. FILTER, QUAL and INFO columns from VCF file). [{file}:]{key}{op}{value}[,;]* . If no file is specified, will use all files from 'file' filter. e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 . Many fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10,FILTER=PASS,LowDP", required = false, arity = 1)
         public String fileData; 
     
-        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
         public String sample; 
     
         @Parameter(names = {"--genotype"}, description = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1. Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT. This will automatically set 'includeSample' parameter when not provided", required = false, arity = 1)
@@ -1532,8 +1589,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--sample-annotation"}, description = "Selects some samples using metadata information from Catalog. e.g. age>20;phenotype=hpo:123,hpo:456;name=smith", required = false, arity = 1)
         public String sampleAnnotation; 
     
-        @Parameter(names = {"--sample-metadata"}, description = "Return the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.", required = false, arity = 1)
-        public Boolean sampleMetadata; 
+        @Parameter(names = {"--sample-metadata"}, description = "Return the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.", required = false, help = true, arity = 0)
+        public boolean sampleMetadata = false; 
     
         @Parameter(names = {"--unknown-genotype"}, description = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]", required = false, arity = 1)
         public String unknownGenotype; 
@@ -1577,7 +1634,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--family-disorder"}, description = "Specify the disorder to use for the family segregation", required = false, arity = 1)
         public String familyDisorder; 
     
-        @Parameter(names = {"--family-segregation"}, description = "Filter by segregation mode from a given family. Accepted values: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
+        @Parameter(names = {"--family-segregation"}, description = "Filter by segregation mode from a given family. Accepted values: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
         public String familySegregation; 
     
         @Parameter(names = {"--family-members"}, description = "Sub set of the members of a given family", required = false, arity = 1)
@@ -1661,8 +1718,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--clinical-significance"}, description = "Clinical significance: benign, likely_benign, likely_pathogenic, pathogenic", required = false, arity = 1)
         public String clinicalSignificance; 
     
-        @Parameter(names = {"--clinical-confirmed-status"}, description = "Clinical confirmed status", required = false, arity = 1)
-        public Boolean clinicalConfirmedStatus; 
+        @Parameter(names = {"--clinical-confirmed-status"}, description = "Clinical confirmed status", required = false, help = true, arity = 0)
+        public boolean clinicalConfirmedStatus = false; 
     
         @Parameter(names = {"--custom-annotation"}, description = "Custom annotation: {key}[<|>|<=|>=]{number} or {key}[~=|=]{text}", required = false, arity = 1)
         public String customAnnotation; 
@@ -1682,8 +1739,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--panel-feature-type"}, description = "Filter elements from specific panels by type. Accepted values : [ gene, region, str, variant ]", required = false, arity = 1)
         public String panelFeatureType; 
     
-        @Parameter(names = {"--panel-intersection"}, description = "Intersect panel genes and regions with given genes and regions from que input query. This will prevent returning variants from regions out of the panel.", required = false, arity = 1)
-        public Boolean panelIntersection; 
+        @Parameter(names = {"--panel-intersection"}, description = "Intersect panel genes and regions with given genes and regions from que input query. This will prevent returning variants from regions out of the panel.", required = false, help = true, arity = 0)
+        public boolean panelIntersection = false; 
     
         @Parameter(names = {"--trait"}, description = "List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...", required = false, arity = 1)
         public String trait; 
@@ -1796,7 +1853,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--filter"}, description = "Specify the FILTER for any of the files. If 'file' filter is provided, will match the file and the filter. e.g.: PASS,LowGQX", required = false, arity = 1)
         public String filter; 
     
-        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
         public String sample; 
     
         @Parameter(names = {"--genotype"}, description = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1. Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT. This will automatically set 'includeSample' parameter when not provided", required = false, arity = 1)
@@ -1811,7 +1868,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--family-disorder"}, description = "Specify the disorder to use for the family segregation", required = false, arity = 1)
         public String familyDisorder; 
     
-        @Parameter(names = {"--family-segregation"}, description = "Filter by segregation mode from a given family. Accepted values: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
+        @Parameter(names = {"--family-segregation"}, description = "Filter by segregation mode from a given family. Accepted values: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
         public String familySegregation; 
     
         @Parameter(names = {"--family-members"}, description = "Sub set of the members of a given family", required = false, arity = 1)
@@ -1835,8 +1892,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--clinical-significance"}, description = "Clinical significance: benign, likely_benign, likely_pathogenic, pathogenic", required = false, arity = 1)
         public String clinicalSignificance; 
     
-        @Parameter(names = {"--clinical-confirmed-status"}, description = "Clinical confirmed status", required = false, arity = 1)
-        public Boolean clinicalConfirmedStatus; 
+        @Parameter(names = {"--clinical-confirmed-status"}, description = "Clinical confirmed status", required = false, help = true, arity = 0)
+        public boolean clinicalConfirmedStatus = false; 
     
         @Parameter(names = {"--field"}, description = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: chromosome>>type . Accepted values: chromosome, type, genotype, consequenceType, biotype, clinicalSignificance, dp, qual, filter", required = false, arity = 1)
         public String field; 
@@ -1873,8 +1930,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--query"}, description = "The body query SampleEligibilityAnalysisParams web service parameter", required = false, arity = 1)
         public String query;
     
-        @Parameter(names = {"--index"}, description = "The body index SampleEligibilityAnalysisParams web service parameter", required = false, arity = 1)
-        public Boolean index;
+        @Parameter(names = {"--index"}, description = "The body index SampleEligibilityAnalysisParams web service parameter", required = false, help = true, arity = 0)
+        public boolean index = false;
     
         @Parameter(names = {"--cohort-id"}, description = "The body cohortId SampleEligibilityAnalysisParams web service parameter", required = false, arity = 1)
         public String cohortId;
@@ -1911,106 +1968,133 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--sample"}, description = "Sample ID", required = false, arity = 1)
         public String sample;
     
-        @Parameter(names = {"--variant-stats-id"}, description = "Variant stats ID", required = false, arity = 1)
-        public String variantStatsId;
+        @Parameter(names = {"--vs-id"}, description = "Variant stats ID.", required = false, arity = 1)
+        public String vsId;
     
-        @Parameter(names = {"--variant-stats-description"}, description = "Variant stats description", required = false, arity = 1)
-        public String variantStatsDescription;
+        @Parameter(names = {"--vs-description"}, description = "Variant stats description.", required = false, arity = 1)
+        public String vsDescription;
     
-        @Parameter(names = {"--variant-stats-query-id"}, description = "The body id AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryId;
+        @Parameter(names = {"--vs-query-id"}, description = "The body id AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String vsQueryId;
     
-        @Parameter(names = {"--variant-stats-query-region"}, description = "The body region AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryRegion;
+        @Parameter(names = {"--vs-query-region"}, description = "The body region AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String vsQueryRegion;
     
-        @Parameter(names = {"--variant-stats-query-gene"}, description = "The body gene AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryGene;
+        @Parameter(names = {"--vs-query-gene"}, description = "The body gene AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String vsQueryGene;
     
-        @Parameter(names = {"--variant-stats-query-type"}, description = "The body type AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryType;
+        @Parameter(names = {"--vs-query-type"}, description = "The body type AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String vsQueryType;
     
-        @Parameter(names = {"--variant-stats-query-panel"}, description = "The body panel AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryPanel;
+        @Parameter(names = {"--vs-query-panel"}, description = "The body panel AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String vsQueryPanel;
     
-        @Parameter(names = {"--variant-stats-query-panel-mode-of-inheritance"}, description = "The body panelModeOfInheritance AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryPanelModeOfInheritance;
+        @Parameter(names = {"--vs-query-panel-mode-of-inheritance"}, description = "The body panelModeOfInheritance AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String vsQueryPanelModeOfInheritance;
     
-        @Parameter(names = {"--variant-stats-query-panel-confidence"}, description = "The body panelConfidence AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryPanelConfidence;
+        @Parameter(names = {"--vs-query-panel-confidence"}, description = "The body panelConfidence AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String vsQueryPanelConfidence;
     
-        @Parameter(names = {"--variant-stats-query-panel-role-in-cancer"}, description = "The body panelRoleInCancer AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryPanelRoleInCancer;
+        @Parameter(names = {"--vs-query-panel-role-in-cancer"}, description = "The body panelRoleInCancer AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String vsQueryPanelRoleInCancer;
     
-        @Parameter(names = {"--variant-stats-query-panel-intersection"}, description = "The body panelIntersection AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public Boolean variantStatsQueryPanelIntersection;
+        @Parameter(names = {"--vs-query-panel-intersection"}, description = "The body panelIntersection AnnotationVariantQueryParams web service parameter", required = false, help = true, arity = 0)
+        public boolean vsQueryPanelIntersection = false;
     
-        @Parameter(names = {"--variant-stats-query-cohort-stats-ref"}, description = "The body cohortStatsRef AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryCohortStatsRef;
+        @Parameter(names = {"--vs-query-cohort-stats-ref"}, description = "The body cohortStatsRef AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String vsQueryCohortStatsRef;
     
-        @Parameter(names = {"--variant-stats-query-cohort-stats-alt"}, description = "The body cohortStatsAlt AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryCohortStatsAlt;
+        @Parameter(names = {"--vs-query-cohort-stats-alt"}, description = "The body cohortStatsAlt AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String vsQueryCohortStatsAlt;
     
-        @Parameter(names = {"--variant-stats-query-cohort-stats-maf"}, description = "The body cohortStatsMaf AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryCohortStatsMaf;
+        @Parameter(names = {"--vs-query-cohort-stats-maf"}, description = "The body cohortStatsMaf AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String vsQueryCohortStatsMaf;
     
-        @Parameter(names = {"--variant-stats-query-ct"}, description = "The body ct AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryCt;
+        @Parameter(names = {"--vs-query-ct"}, description = "The body ct AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String vsQueryCt;
     
-        @Parameter(names = {"--variant-stats-query-xref"}, description = "The body xref AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryXref;
+        @Parameter(names = {"--vs-query-xref"}, description = "The body xref AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String vsQueryXref;
     
-        @Parameter(names = {"--variant-stats-query-biotype"}, description = "The body type AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryBiotype;
+        @Parameter(names = {"--vs-query-biotype"}, description = "The body type AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String vsQueryBiotype;
     
-        @Parameter(names = {"--variant-stats-query-protein-substitution"}, description = "The body proteinSubstitution AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryProteinSubstitution;
+        @Parameter(names = {"--vs-query-protein-substitution"}, description = "The body proteinSubstitution AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String vsQueryProteinSubstitution;
     
-        @Parameter(names = {"--variant-stats-query-conservation"}, description = "The body conservation AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryConservation;
+        @Parameter(names = {"--vs-query-conservation"}, description = "The body conservation AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String vsQueryConservation;
     
-        @Parameter(names = {"--variant-stats-query-population-frequency-maf"}, description = "The body populationFrequencyMaf AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryPopulationFrequencyMaf;
+        @Parameter(names = {"--vs-query-population-frequency-maf"}, description = "The body populationFrequencyMaf AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String vsQueryPopulationFrequencyMaf;
     
-        @Parameter(names = {"--variant-stats-query-population-frequency-alt"}, description = "The body populationFrequencyAlt AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryPopulationFrequencyAlt;
+        @Parameter(names = {"--vs-query-population-frequency-alt"}, description = "The body populationFrequencyAlt AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String vsQueryPopulationFrequencyAlt;
     
-        @Parameter(names = {"--variant-stats-query-population-frequency-ref"}, description = "The body populationFrequencyRef AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryPopulationFrequencyRef;
+        @Parameter(names = {"--vs-query-population-frequency-ref"}, description = "The body populationFrequencyRef AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String vsQueryPopulationFrequencyRef;
     
-        @Parameter(names = {"--variant-stats-query-transcript-flag"}, description = "The body transcriptFlag AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryTranscriptFlag;
+        @Parameter(names = {"--vs-query-transcript-flag"}, description = "The body transcriptFlag AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String vsQueryTranscriptFlag;
     
-        @Parameter(names = {"--variant-stats-query-functional-score"}, description = "The body functionalScore AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryFunctionalScore;
+        @Parameter(names = {"--vs-query-functional-score"}, description = "The body functionalScore AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String vsQueryFunctionalScore;
     
-        @Parameter(names = {"--variant-stats-query-clinical"}, description = "The body clinical AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryClinical;
+        @Parameter(names = {"--vs-query-clinical"}, description = "The body clinical AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String vsQueryClinical;
     
-        @Parameter(names = {"--variant-stats-query-clinical-significance"}, description = "The body clinicalSignificance AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryClinicalSignificance;
+        @Parameter(names = {"--vs-query-clinical-significance"}, description = "The body clinicalSignificance AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
+        public String vsQueryClinicalSignificance;
     
-        @Parameter(names = {"--variant-stats-query-clinical-confirmed-status"}, description = "The body clinicalConfirmedStatus AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantStatsQueryClinicalConfirmedStatus;
+        @Parameter(names = {"--vs-query-clinical-confirmed-status"}, description = "The body clinicalConfirmedStatus AnnotationVariantQueryParams web service parameter", required = false, help = true, arity = 0)
+        public boolean vsQueryClinicalConfirmedStatus = false;
     
-        @Parameter(names = {"--signature-id"}, description = "Mutational signature ID", required = false, arity = 1)
-        public String signatureId;
+        @Parameter(names = {"--ms-id"}, description = "Signature ID.", required = false, arity = 1)
+        public String msId;
     
-        @Parameter(names = {"--signature-description"}, description = "Mutational signature description", required = false, arity = 1)
-        public String signatureDescription;
+        @Parameter(names = {"--ms-description"}, description = "Signature description.", required = false, arity = 1)
+        public String msDescription;
     
-        @Parameter(names = {"--signature-release"}, description = "Mutational signature release", required = false, arity = 1)
-        public String signatureRelease;
+        @Parameter(names = {"--ms-query"}, description = "Signature query in JSON format, e.g: ''{\'sample\':\'NR123456_T\', \'fileData\': \'NR.123456_T_vs_NR.1234567_G.annot.vcf.gz:FILTER=PASS;CLPM<=0;ASMD>=140\'}'.", required = false, arity = 1)
+        public String msQuery;
     
-        @Parameter(names = {"--genome-plot-id"}, description = "Genome plot ID", required = false, arity = 1)
-        public String genomePlotId;
+        @Parameter(names = {"--ms-fit-method"}, description = "Either Fit or FitMS. If not specified then FitMS", required = false, arity = 1)
+        public String msFitMethod = "FitMS";
     
-        @Parameter(names = {"--genome-plot-description"}, description = "Genome plot description", required = false, arity = 1)
-        public String genomePlotDescription;
+        @Parameter(names = {"--ms-n-boot"}, description = "Number of bootstrap to be used.", required = false, arity = 1)
+        public Integer msNBoot;
     
-        @Parameter(names = {"--genome-plot-config-file"}, description = "Genome plot configuration file ID", required = false, arity = 1)
-        public String genomePlotConfigFile;
+        @Parameter(names = {"--ms-sig-version"}, description = "Either COSMICv2, COSMICv3.2, RefSigv1 or RefSigv2. If not specified RefSigv2.", required = false, arity = 1)
+        public String msSigVersion = "RefSigv2";
     
-        @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
+        @Parameter(names = {"--ms-organ"}, description = "When using RefSigv1 or RefSigv2 as SIGVERSION, organ-specific signatures will be used. If SIGVERSION is COSMICv2 or COSMICv3.2, then a selection of signatures found in the given organ will be used. Available organs depend on the selected SIGVERSION. For RefSigv1 or RefSigv2: Biliary, Bladder, Bone_SoftTissue, Breast, Cervix (v1 only), CNS, Colorectal, Esophagus, Head_neck, Kidney, Liver, Lung, Lymphoid, NET (v2 only), Oral_Oropharyngeal (v2 only), Ovary, Pancreas, Prostate, Skin, Stomach, Uterus.", required = false, arity = 1)
+        public String msOrgan;
+    
+        @Parameter(names = {"--ms-threshold-perc"}, description = "Threshold in percentage of total mutations in a sample, only exposures larger than THRPERC are considered. If not specified 5.", required = false, arity = 1)
+        public Float msThresholdPerc = 5f;
+    
+        @Parameter(names = {"--ms-threshold-pval"}, description = "P-value to determine the empirical probability that the exposure is lower than the threshold. If not specified then 0.05.", required = false, arity = 1)
+        public Float msThresholdPval = 0.05f;
+    
+        @Parameter(names = {"--ms-max-rare-sigs"}, description = "Maximum number of rare signatures that are allowed to be present in each sample. If not specified 1.", required = false, arity = 1)
+        public Integer msMaxRareSigs = 1;
+    
+        @Parameter(names = {"--ms-signatures-file"}, description = "The file name containing mutational signatures. Each signature is in a column, with signature names as column hearders and channel names as row names in the first column with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are considered common signatures.", required = false, arity = 1)
+        public String msSignaturesFile;
+    
+        @Parameter(names = {"--ms-rare-signatures-file"}, description = "The file name containing mutational signatures. Each signature is in a column, with signature names as column hearders and channel names as row names in the first column with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are considered rare signatures.", required = false, arity = 1)
+        public String msRareSignaturesFile;
+    
+        @Parameter(names = {"--gp-id"}, description = "Genome plot ID.", required = false, arity = 1)
+        public String gpId;
+    
+        @Parameter(names = {"--gp-description"}, description = "Genome plot description.", required = false, arity = 1)
+        public String gpDescription;
+    
+        @Parameter(names = {"--gp-config-file"}, description = "Genome plot configuration file.", required = false, arity = 1)
+        public String gpConfigFile;
+    
+        @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;
     
     }
@@ -2089,8 +2173,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--panel-role-in-cancer"}, description = "The body panelRoleInCancer AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
         public String panelRoleInCancer;
     
-        @Parameter(names = {"--panel-intersection"}, description = "The body panelIntersection AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public Boolean panelIntersection;
+        @Parameter(names = {"--panel-intersection"}, description = "The body panelIntersection AnnotationVariantQueryParams web service parameter", required = false, help = true, arity = 0)
+        public boolean panelIntersection = false;
     
         @Parameter(names = {"--cohort-stats-ref"}, description = "The body cohortStatsRef AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
         public String cohortStatsRef;
@@ -2137,8 +2221,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--clinical-significance"}, description = "The body clinicalSignificance AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
         public String clinicalSignificance;
     
-        @Parameter(names = {"--clinical-confirmed-status"}, description = "The body clinicalConfirmedStatus AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String clinicalConfirmedStatus;
+        @Parameter(names = {"--clinical-confirmed-status"}, description = "The body clinicalConfirmedStatus AnnotationVariantQueryParams web service parameter", required = false, help = true, arity = 0)
+        public boolean clinicalConfirmedStatus = false;
     
         @Parameter(names = {"--genotypes"}, description = "The body web service genotypes parameter", required = false, arity = 1)
         public String genotypes;
@@ -2146,8 +2230,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--sample"}, description = "The body sample SampleVariantFilterParams web service parameter", required = false, arity = 1)
         public String sample;
     
-        @Parameter(names = {"--samples-in-all-variants"}, description = "The body web service samplesInAllVariants parameter", required = false, arity = 1)
-        public Boolean samplesInAllVariants;
+        @Parameter(names = {"--samples-in-all-variants"}, description = "The body web service samplesInAllVariants parameter", required = false, help = true, arity = 0)
+        public boolean samplesInAllVariants = false;
     
         @Parameter(names = {"--max-variants"}, description = "The body web service maxVariants parameter", required = false, arity = 1)
         public Integer maxVariants;
@@ -2196,11 +2280,11 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--clinical-significance"}, description = "Clinical significance: benign, likely_benign, likely_pathogenic, pathogenic", required = false, arity = 1)
         public String clinicalSignificance; 
     
-        @Parameter(names = {"--clinical-confirmed-status"}, description = "Clinical confirmed status", required = false, arity = 1)
-        public Boolean clinicalConfirmedStatus; 
+        @Parameter(names = {"--clinical-confirmed-status"}, description = "Clinical confirmed status", required = false, help = true, arity = 0)
+        public boolean clinicalConfirmedStatus = false; 
     
-        @Parameter(names = {"--filter-transcript"}, description = "Do filter transcripts when obtaining transcript counts", required = false, arity = 1)
-        public Boolean filterTranscript; 
+        @Parameter(names = {"--filter-transcript"}, description = "Do filter transcripts when obtaining transcript counts", required = false, help = true, arity = 0)
+        public boolean filterTranscript = false; 
     
         @Parameter(names = {"--sample"}, description = "Sample ID", required = true, arity = 1)
         public String sample; 
@@ -2264,8 +2348,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--variant-query-panel-role-in-cancer"}, description = "The body panelRoleInCancer AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
         public String variantQueryPanelRoleInCancer;
     
-        @Parameter(names = {"--variant-query-panel-intersection"}, description = "The body panelIntersection AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public Boolean variantQueryPanelIntersection;
+        @Parameter(names = {"--variant-query-panel-intersection"}, description = "The body panelIntersection AnnotationVariantQueryParams web service parameter", required = false, help = true, arity = 0)
+        public boolean variantQueryPanelIntersection = false;
     
         @Parameter(names = {"--variant-query-cohort-stats-ref"}, description = "The body cohortStatsRef AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
         public String variantQueryCohortStatsRef;
@@ -2312,8 +2396,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--variant-query-clinical-significance"}, description = "The body clinicalSignificance AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
         public String variantQueryClinicalSignificance;
     
-        @Parameter(names = {"--variant-query-clinical-confirmed-status"}, description = "The body clinicalConfirmedStatus AnnotationVariantQueryParams web service parameter", required = false, arity = 1)
-        public String variantQueryClinicalConfirmedStatus;
+        @Parameter(names = {"--variant-query-clinical-confirmed-status"}, description = "The body clinicalConfirmedStatus AnnotationVariantQueryParams web service parameter", required = false, help = true, arity = 0)
+        public boolean variantQueryClinicalConfirmedStatus = false;
     
         @Parameter(names = {"--variant-query-sample-data"}, description = "The body web service sampleData parameter", required = false, arity = 1)
         public String variantQuerySampleData;
@@ -2324,11 +2408,11 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--outdir"}, description = "The body outdir SampleVariantStatsAnalysisParams web service parameter", required = false, arity = 1)
         public String outdir;
     
-        @Parameter(names = {"--index"}, description = "The body index SampleVariantStatsAnalysisParams web service parameter", required = false, arity = 1)
-        public Boolean index;
+        @Parameter(names = {"--index"}, description = "The body index SampleVariantStatsAnalysisParams web service parameter", required = false, help = true, arity = 0)
+        public boolean index = false;
     
-        @Parameter(names = {"--index-overwrite"}, description = "The body indexOverwrite SampleVariantStatsAnalysisParams web service parameter", required = false, arity = 1)
-        public Boolean indexOverwrite;
+        @Parameter(names = {"--index-overwrite"}, description = "The body indexOverwrite SampleVariantStatsAnalysisParams web service parameter", required = false, help = true, arity = 0)
+        public boolean indexOverwrite = false;
     
         @Parameter(names = {"--index-id"}, description = "The body indexId SampleVariantStatsAnalysisParams web service parameter", required = false, arity = 1)
         public String indexId;

@@ -374,8 +374,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         DataResult<AclEntryList<StudyPermissions.Permissions>> permissions = catalogManager.getStudyManager().updateAcl(
                 Collections.singletonList("user@1000G:phase1"), "@group_cancer_some_thing_else",
                 new StudyAclParams("", "view_only"), ParamUtils.AclAction.SET, token);
-        assertEquals("@group_cancer_some_thing_else", permissions.first().get(0).getMember());
-        assertFalse(permissions.first().get(0).getPermissions().isEmpty());
+        assertEquals("@group_cancer_some_thing_else", permissions.first().getAcl().get(0).getMember());
+        assertFalse(permissions.first().getAcl().get(0).getPermissions().isEmpty());
 
         String token = catalogManager.getUserManager().login("test", TestParamConstants.PASSWORD).getToken();
         DataResult<Study> studyDataResult = catalogManager.getStudyManager().get("user@1000G:phase1", QueryOptions.empty(), token);
@@ -719,12 +719,12 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 sampleIds, "user2,user3", sampleAclParams, ParamUtils.AclAction.SET, token);
         assertEquals(sampleIds.size(), sampleAclResult.getNumResults());
         for (AclEntryList<SamplePermissions> result : sampleAclResult.getResults()) {
-            assertEquals(2, result.size());
-            assertTrue(result.stream().map(AclEntry::getMember).collect(Collectors.toList()).containsAll(Arrays.asList("user2", "user3")));
-            assertEquals("user2", result.get(0).getMember());
-            assertTrue(result.get(0).getPermissions().containsAll(Arrays.asList(SamplePermissions.VIEW,
+            assertEquals(2, result.getAcl().size());
+            assertTrue(result.getAcl().stream().map(AclEntry::getMember).collect(Collectors.toList()).containsAll(Arrays.asList("user2", "user3")));
+            assertEquals("user2", result.getAcl().get(0).getMember());
+            assertTrue(result.getAcl().get(0).getPermissions().containsAll(Arrays.asList(SamplePermissions.VIEW,
                     SamplePermissions.WRITE)));
-            assertTrue(result.get(1).getPermissions().containsAll(Arrays.asList(SamplePermissions.VIEW,
+            assertTrue(result.getAcl().get(1).getPermissions().containsAll(Arrays.asList(SamplePermissions.VIEW,
                     SamplePermissions.WRITE)));
         }
 
@@ -740,15 +740,15 @@ public class CatalogManagerTest extends AbstractManagerTest {
                     catalogManager.getAuthorizationManager().getAcl("user", studyUid, sampleUid, Collections.singletonList("user2"),
                             Enums.Resource.SAMPLE, SamplePermissions.class);
             assertEquals(1, sampleAcl.getNumResults());
-            assertEquals(1, sampleAcl.first().size());
-            assertEquals("user2", sampleAcl.first().get(0).getMember());
-            assertNull(sampleAcl.first().get(0).getPermissions());
+            assertEquals(1, sampleAcl.first().getAcl().size());
+            assertEquals("user2", sampleAcl.first().getAcl().get(0).getMember());
+            assertNull(sampleAcl.first().getAcl().get(0).getPermissions());
             sampleAcl = catalogManager.getAuthorizationManager().getAcl("user", studyUid, sampleUid, Collections.singletonList("user3"),
                     Enums.Resource.SAMPLE, SamplePermissions.class);
             assertEquals(1, sampleAcl.getNumResults());
-            assertEquals(1, sampleAcl.first().size());
-            assertEquals("user3", sampleAcl.first().get(0).getMember());
-            assertNull(sampleAcl.first().get(0).getPermissions());
+            assertEquals(1, sampleAcl.first().getAcl().size());
+            assertEquals("user3", sampleAcl.first().getAcl().get(0).getMember());
+            assertNull(sampleAcl.first().getAcl().get(0).getPermissions());
         }
     }
 
@@ -776,12 +776,12 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 sampleIds, "user2,user3", sampleAclParams, ParamUtils.AclAction.SET, token);
         assertEquals(sampleIds.size(), sampleAclResult.getNumResults());
         for (AclEntryList<SamplePermissions> result : sampleAclResult.getResults()) {
-            assertEquals(2, result.size());
-            assertTrue(result.stream().map(AclEntry::getMember).collect(Collectors.toList()).containsAll(Arrays.asList("user2", "user3")));
-            assertEquals("user2", result.get(0).getMember());
-            assertTrue(result.get(0).getPermissions().containsAll(Arrays.asList(SamplePermissions.VIEW,
+            assertEquals(2, result.getAcl().size());
+            assertTrue(result.getAcl().stream().map(AclEntry::getMember).collect(Collectors.toList()).containsAll(Arrays.asList("user2", "user3")));
+            assertEquals("user2", result.getAcl().get(0).getMember());
+            assertTrue(result.getAcl().get(0).getPermissions().containsAll(Arrays.asList(SamplePermissions.VIEW,
                     SamplePermissions.WRITE)));
-            assertTrue(result.get(1).getPermissions().containsAll(Arrays.asList(SamplePermissions.VIEW,
+            assertTrue(result.getAcl().get(1).getPermissions().containsAll(Arrays.asList(SamplePermissions.VIEW,
                     SamplePermissions.WRITE)));
         }
 
@@ -794,16 +794,16 @@ public class CatalogManagerTest extends AbstractManagerTest {
         OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> studyAcl = catalogManager.getAuthorizationManager()
                 .getStudyAcl(userId1, study3.getUid(), "user2");
         assertEquals(1, studyAcl.getNumResults());
-        assertEquals(1, studyAcl.first().size());
-        assertEquals("user2", studyAcl.first().get(0).getMember());
-        assertNull(studyAcl.first().get(0).getPermissions());
+        assertEquals(1, studyAcl.first().getAcl().size());
+        assertEquals("user2", studyAcl.first().getAcl().get(0).getMember());
+        assertNull(studyAcl.first().getAcl().get(0).getPermissions());
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study1 = catalogManager.getStudyManager().resolveId(studyFqn, userId);
         studyAcl = catalogManager.getAuthorizationManager().getStudyAcl(userId, study1.getUid(), "user3");
         assertEquals(1, studyAcl.getNumResults());
-        assertEquals(1, studyAcl.first().size());
-        assertEquals("user3", studyAcl.first().get(0).getMember());
-        assertNull(studyAcl.first().get(0).getPermissions());
+        assertEquals(1, studyAcl.first().getAcl().size());
+        assertEquals("user3", studyAcl.first().getAcl().get(0).getMember());
+        assertNull(studyAcl.first().getAcl().get(0).getPermissions());
 
         groupDataResult = catalogManager.getStudyManager().getGroup(studyFqn, null, token);
         for (Group group : groupDataResult.getResults()) {
@@ -816,15 +816,15 @@ public class CatalogManagerTest extends AbstractManagerTest {
                     catalogManager.getAuthorizationManager().getAcl("user", studyUid, sample.getUid(), Collections.singletonList("user2"),
                             Enums.Resource.SAMPLE, SamplePermissions.class);
             assertEquals(1, sampleAcl.getNumResults());
-            assertEquals(1, sampleAcl.first().size());
-            assertEquals("user2", sampleAcl.first().get(0).getMember());
-            assertNull(sampleAcl.first().get(0).getPermissions());
+            assertEquals(1, sampleAcl.first().getAcl().size());
+            assertEquals("user2", sampleAcl.first().getAcl().get(0).getMember());
+            assertNull(sampleAcl.first().getAcl().get(0).getPermissions());
             sampleAcl = catalogManager.getAuthorizationManager().getAcl("user", studyUid, sample.getUid(), Collections.singletonList("user3"),
                     Enums.Resource.SAMPLE, SamplePermissions.class);
             assertEquals(1, sampleAcl.getNumResults());
-            assertEquals(1, sampleAcl.first().size());
-            assertEquals("user3", sampleAcl.first().get(0).getMember());
-            assertNull(sampleAcl.first().get(0).getPermissions());
+            assertEquals(1, sampleAcl.first().getAcl().size());
+            assertEquals("user3", sampleAcl.first().getAcl().get(0).getMember());
+            assertNull(sampleAcl.first().getAcl().get(0).getPermissions());
         }
     }
 
@@ -862,6 +862,39 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getJobManager().create(studyId,
                 new Job().setId("job5").setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.PENDING))),
                 QueryOptions.empty(), token);
+    }
+
+    @Test
+    public void testCreateJobAndReuse() throws CatalogException {
+        Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user");
+        String studyId = catalogManager.getStudyManager().search(query, null, token).first().getId();
+//        catalogManager.getConfiguration().getAnalysis().getExecution().getOptions()
+//                .put("jobs.reuse.tools", "command-subcommand");
+//        String toolId = "command-subcommand";
+        String toolId = "variant-index";
+        String job1 = catalogManager.getJobManager().submit(studyId, toolId, null, new ObjectMap("key", 1).append("key2", 2), token).first().getId();
+
+        // Same params, different order, empty jobId
+        OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyId, toolId, null, new ObjectMap("key2", 2).append("key", 1),
+                "", "", Collections.emptyList(), Collections.emptyList(), token);
+        assertEquals(job1, result.first().getId());
+        assertEquals(1, result.getEvents().size());
+        assertEquals("reuse", result.getEvents().get(0).getId());
+
+        // Same params, different values
+        result = catalogManager.getJobManager().submit(studyId, toolId, null, new ObjectMap("key2", 2).append("key", 2), token);
+        assertNotEquals(job1, result.first().getId());
+
+        // Same params, but with jobId
+        result = catalogManager.getJobManager().submit(studyId, toolId, null, new ObjectMap("key2", 2).append("key", 2), "MyJobId", "",
+                Collections.emptyList(), Collections.emptyList(), token);
+        assertNotEquals(job1, result.first().getId());
+        assertEquals("MyJobId", result.first().getId());
+
+        // Same params, but with dependencies
+        result = catalogManager.getJobManager().submit(studyId, toolId, null, new ObjectMap("key2", 2).append("key", 2), "", "",
+                Collections.singletonList(job1), Collections.emptyList(), token);
+        assertNotEquals(job1, result.first().getId());
     }
 
     @Test
@@ -938,12 +971,12 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void submitJobWithDependencies() throws CatalogException {
-        Job job1 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), token).first();
-        Job job2 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), token).first();
+        Job job1 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file1"), token).first();
+        Job job2 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file2"), token).first();
 
-        Job job3 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), null, null,
+        Job job3 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file3"), null, null,
                 Arrays.asList(job1.getId(), job2.getId()), null, token).first();
-        Job job4 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), null, null,
+        Job job4 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file4"), null, null,
                 Arrays.asList(job1.getUuid(), job2.getUuid()), null, token).first();
 
         assertEquals(2, job3.getDependsOn().size());

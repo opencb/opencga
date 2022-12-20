@@ -4,8 +4,6 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 import org.opencb.commons.utils.PrintUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,7 +33,15 @@ public abstract class CliOptionsParser {
     }
 
     public void parse(String[] args) throws ParameterException {
-        jCommander.parse(args);
+        if (org.opencb.opencga.app.cli.main.utils.CommandLineUtils.isNotHelpCommand(args)) {
+            jCommander.parse(args);
+        } else {
+            try {
+                jCommander.parse(args);
+            } catch (Exception e) {
+                //The exception should not be thrown
+            }
+        }
     }
 
     public String getCommand() {

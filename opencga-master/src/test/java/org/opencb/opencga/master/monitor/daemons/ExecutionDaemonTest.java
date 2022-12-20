@@ -92,19 +92,24 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         params.put("key", "value");
         params.put("camelCaseKey", "value");
         params.put("flag", "");
-        params.put("boolean", "true");
+        params.put("boolean", true);
         params.put("outdir", "/tmp/folder");
         params.put("paramWithSpaces", "This could be a description");
         params.put("paramWithSingleQuotes", "This could 'be' a description");
         params.put("paramWithDoubleQuotes", "This could \"be\" a description");
+        params.put("nullShouldBeIgnored", null);
 
-        Map<String, String> dynamic1 = new LinkedHashMap<>();
+        Map<String, Object> dynamic1 = new LinkedHashMap<>();
         dynamic1.put("dynamic", "It's true");
         dynamic1.put("param with spaces", "Fuc*!");
+        dynamic1.put("boolean", false);
+        dynamic1.put("number", 2354.23);
+        dynamic1.put("nullShouldBeIgnored", null);
 
         params.put("dynamicParam1", dynamic1);
         params.put("dynamicNested2", dynamic1);
         String cli = ExecutionDaemon.buildCli("opencga-internal.sh", "variant index-run", params);
+//        System.out.println("cli = " + cli);
         assertEquals("opencga-internal.sh variant index-run "
                 + "--key value "
                 + "--camel-case-key value "
@@ -116,8 +121,12 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
                 + "--param-with-double-quotes 'This could \"be\" a description' "
                 + "--dynamic-param1 dynamic='It'\"'\"'s true' "
                 + "--dynamic-param1 'param with spaces'='Fuc*!' "
+                + "--dynamic-param1 boolean=false "
+                + "--dynamic-param1 number='2354.23' "
                 + "--dynamic-nested2 dynamic='It'\"'\"'s true' "
-                + "--dynamic-nested2 'param with spaces'='Fuc*!'", cli);
+                + "--dynamic-nested2 'param with spaces'='Fuc*!' "
+                + "--dynamic-nested2 boolean=false "
+                + "--dynamic-nested2 number='2354.23'", cli);
     }
 
     @Test

@@ -608,7 +608,7 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    public OpenCGAResult<?> distinct(String studyId, String field, Query query, String token) throws CatalogException {
+    public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(token);
@@ -616,21 +616,15 @@ public class PanelManager extends ResourceManager<Panel> {
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
-                .append("field", new Query(query))
+                .append("fields", fields)
                 .append("query", new Query(query))
                 .append("token", token);
         fixQueryObject(query);
         try {
-            PanelDBAdaptor.QueryParams param = PanelDBAdaptor.QueryParams.getParam(field);
-            if (param == null) {
-                throw new CatalogException("Unknown '" + field + "' parameter.");
-            }
-            Class<?> clazz = getTypeClass(param.type());
-
             fixQueryObject(query);
 
             query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<?> result = panelDBAdaptor.distinct(study.getUid(), field, query, userId, clazz);
+            OpenCGAResult<?> result = panelDBAdaptor.distinct(study.getUid(), fields, query, userId);
 
             auditManager.auditDistinct(userId, Enums.Resource.DISEASE_PANEL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -877,7 +871,8 @@ public class PanelManager extends ResourceManager<Panel> {
     // **************************   ACLs  ******************************** //
     public OpenCGAResult<AclEntryList<PanelPermissions>> getAcls(String studyId, List<String> panelList, String member,
                                                                  boolean ignoreException, String token) throws CatalogException {
-        return getAcls(studyId, panelList, Collections.singletonList(member), ignoreException, token);
+        return getAcls(studyId, panelList, StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(),
+                ignoreException, token);
     }
 
     public OpenCGAResult<AclEntryList<PanelPermissions>> getAcls(String studyId, List<String> panelList, List<String> members,
@@ -933,6 +928,9 @@ public class PanelManager extends ResourceManager<Panel> {
                                     new Error(0, "", missingMap.get(panelId).getErrorMsg())), new ObjectMap());
                 }
             }
+            for (int i = 0; i < queryResult.getResults().size(); i++) {
+                panelAcls.getResults().get(i).setId(queryResult.getResults().get(i).getId());
+            }
             panelAcls.setResults(resultList);
             panelAcls.setEvents(eventList);
         } catch (CatalogException e) {
@@ -946,7 +944,7 @@ public class PanelManager extends ResourceManager<Panel> {
             } else {
                 for (String panelId : panelList) {
                     Event event = new Event(Event.Type.ERROR, panelId, e.getMessage());
-                    panelAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, new AclEntryList<>(), 0));
+                    panelAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 }
             }
         } finally {
@@ -1025,7 +1023,9 @@ public class PanelManager extends ResourceManager<Panel> {
             }
             OpenCGAResult<AclEntryList<PanelPermissions>> queryResultList = authorizationManager.getAcls(study.getUid(),
                     panelUids, members, Enums.Resource.DISEASE_PANEL, PanelPermissions.class);
-
+            for (int i = 0; i < queryResultList.getResults().size(); i++) {
+                queryResultList.getResults().get(i).setId(panelDataResult.getResults().get(i).getId());
+            }
             for (Panel panel : panelDataResult.getResults()) {
                 auditManager.audit(operationId, user, Enums.Action.UPDATE_ACLS, Enums.Resource.DISEASE_PANEL, panel.getId(),
                         panel.getUuid(), study.getId(), study.getUuid(), auditParams,

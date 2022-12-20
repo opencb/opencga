@@ -20,8 +20,8 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
+*  
 */
-
 
 /**
  * This class contains methods for the Cohorts command line.
@@ -85,7 +85,7 @@ public class CohortsCommandOptions {
         public String members; 
     
         @Parameter(names = {"--action"}, description = "Action to be performed [ADD, SET, REMOVE or RESET].", required = true, arity = 1)
-        public String action; 
+        public String action = "ADD"; 
     
         @Parameter(names = {"--permissions"}, description = "The body web service permissions parameter", required = true, arity = 1)
         public String permissions;
@@ -131,8 +131,8 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", required = false, arity = 1)
         public String annotation; 
     
-        @Parameter(names = {"--default"}, description = "Calculate default stats", required = false, arity = 1)
-        public Boolean default_values; 
+        @Parameter(names = {"--default"}, description = "Calculate default stats", required = false, help = true, arity = 0)
+        public boolean default_values = false; 
     
         @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1", required = false, arity = 1)
         public String field; 
@@ -160,8 +160,8 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--path"}, description = "Path where the TSV file is located in OpenCGA or where it should be located.", required = true, arity = 1)
         public String path; 
     
-        @Parameter(names = {"--parents"}, description = "Flag indicating whether to create parent directories if they don't exist (only when TSV file was not previously associated).", required = false, arity = 1)
-        public Boolean parents; 
+        @Parameter(names = {"--parents"}, description = "Flag indicating whether to create parent directories if they don't exist (only when TSV file was not previously associated).", required = false, help = true, arity = 0)
+        public boolean parents = false; 
     
         @Parameter(names = {"--annotation-set-id"}, description = "Annotation set id. If not provided, variableSetId will be used.", required = false, arity = 1)
         public String annotationSetId; 
@@ -199,7 +199,7 @@ public class CohortsCommandOptions {
         public String variable; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1, hidden = true)
-        public Boolean includeResult= true; 
+        public boolean includeResult= true; 
     
         @Parameter(names = {"--id"}, description = "The body id CohortCreateParams web service parameter", required = true, arity = 1)
         public String id;
@@ -257,8 +257,8 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--modification-date", "--md"}, description = "modificationDate", required = false, arity = 1)
         public String modificationDate; 
     
-        @Parameter(names = {"--deleted"}, description = "deleted", required = false, arity = 1)
-        public Boolean deleted; 
+        @Parameter(names = {"--deleted"}, description = "deleted", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
     
         @Parameter(names = {"--status"}, description = "status", required = false, arity = 1)
         public String status; 
@@ -281,7 +281,7 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--release"}, description = "release", required = false, arity = 1)
         public String release; 
     
-        @Parameter(names = {"--field"}, description = "Field for which to obtain the distinct values", required = true, arity = 1)
+        @Parameter(names = {"--field"}, description = "Comma separated list of fields for which to obtain the distinct values", required = true, arity = 1)
         public String field; 
     
     }
@@ -346,20 +346,20 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--snapshot"}, description = "Snapshot value (Latest version of the entry in the specified release)", required = false, arity = 1)
         public Integer snapshot; 
     
-        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1)
-        public Boolean includeResult; 
+        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
+        public boolean includeResult = false; 
     
         @Parameter(names = {"--body_id"}, description = "The body id CohortGenerateParams web service parameter", required = false, arity = 1)
         public String bodyId;
     
-        @Parameter(names = {"--body_name"}, description = "The body name CohortGenerateParams web service parameter", required = false, arity = 1)
-        public String bodyName;
+        @Parameter(names = {"--name", "-n"}, description = "The body name CohortGenerateParams web service parameter", required = false, arity = 1)
+        public String name;
     
-        @Parameter(names = {"--body_type"}, description = "The body type CohortGenerateParams web service parameter", required = false, arity = 1)
-        public String bodyType;
+        @Parameter(names = {"--type"}, description = "The body type CohortGenerateParams web service parameter", required = false, arity = 1)
+        public String type;
     
-        @Parameter(names = {"--body_description"}, description = "Field to store information of the item", required = false, arity = 1)
-        public String bodyDescription;
+        @Parameter(names = {"--description"}, description = "Field to store information of the item", required = false, arity = 1)
+        public String description;
     
         @Parameter(names = {"--body_creation-date"}, description = "The creation date of the item", required = false, arity = 1)
         public String bodyCreationDate;
@@ -396,11 +396,11 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
         public Integer skip; 
     
-        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, arity = 1)
-        public Boolean count; 
+        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
+        public boolean count = false; 
     
-        @Parameter(names = {"--flatten-annotations"}, description = "Flatten the annotations?", required = false, arity = 1)
-        public Boolean flattenAnnotations; 
+        @Parameter(names = {"--flatten-annotations"}, description = "Flatten the annotations?", required = false, help = true, arity = 0)
+        public boolean flattenAnnotations = false; 
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
@@ -423,8 +423,8 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--modification-date", "--md"}, description = "modificationDate", required = false, arity = 1)
         public String modificationDate; 
     
-        @Parameter(names = {"--deleted"}, description = "deleted", required = false, arity = 1)
-        public Boolean deleted; 
+        @Parameter(names = {"--deleted"}, description = "deleted", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
     
         @Parameter(names = {"--status"}, description = "status", required = false, arity = 1)
         public String status; 
@@ -464,8 +464,8 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--member"}, description = "User or group id", required = false, arity = 1)
         public String member; 
     
-        @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, arity = 1)
-        public Boolean silent; 
+        @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, help = true, arity = 0)
+        public boolean silent = false; 
     
     }
 
@@ -495,8 +495,8 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
         public String exclude; 
     
-        @Parameter(names = {"--flatten-annotations"}, description = "Flatten the annotations?", required = false, arity = 1)
-        public Boolean flattenAnnotations; 
+        @Parameter(names = {"--flatten-annotations"}, description = "Flatten the annotations?", required = false, help = true, arity = 0)
+        public boolean flattenAnnotations = false; 
     
         @Parameter(names = {"--cohorts"}, description = "Comma separated list of cohort IDs or UUIDs up to a maximum of 100", required = true, arity = 1)
         public String cohorts; 
@@ -504,8 +504,8 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted cohorts", required = false, arity = 1)
-        public Boolean deleted; 
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted cohorts", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
     
     }
 
@@ -534,7 +534,7 @@ public class CohortsCommandOptions {
         public String study; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1, hidden = true)
-        public Boolean includeResult= true; 
+        public boolean includeResult= true; 
     
         @Parameter(names = {"--id"}, description = "The body id CohortUpdateParams web service parameter", required = false, arity = 1)
         public String id;
@@ -587,7 +587,7 @@ public class CohortsCommandOptions {
         public String annotationSet; 
     
         @Parameter(names = {"--action"}, description = "Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value configured in the corresponding variables of the VariableSet if any.", required = false, arity = 1)
-        public String action; 
+        public String action = "ADD"; 
     
     }
 

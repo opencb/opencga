@@ -22,8 +22,8 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
+*  
 */
-
 
 /**
  * This class contains methods for the Files command line.
@@ -114,7 +114,7 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         public String members; 
     
         @Parameter(names = {"--action"}, description = "Action to be performed [ADD, SET, REMOVE or RESET].", required = true, arity = 1)
-        public String action; 
+        public String action = "ADD"; 
     
         @Parameter(names = {"--permissions"}, description = "The body web service permissions parameter", required = true, arity = 1)
         public String permissions;
@@ -187,8 +187,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", required = false, arity = 1)
         public String annotation; 
     
-        @Parameter(names = {"--default"}, description = "Calculate default stats", required = false, arity = 1)
-        public Boolean default_values; 
+        @Parameter(names = {"--default"}, description = "Calculate default stats", required = false, help = true, arity = 0)
+        public boolean default_values = false; 
     
         @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1", required = false, arity = 1)
         public String field; 
@@ -216,8 +216,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--path"}, description = "Path where the TSV file is located in OpenCGA or where it should be located.", required = true, arity = 1)
         public String path; 
     
-        @Parameter(names = {"--parents"}, description = "Flag indicating whether to create parent directories if they don't exist (only when TSV file was not previously associated).", required = false, arity = 1)
-        public Boolean parents; 
+        @Parameter(names = {"--parents"}, description = "Flag indicating whether to create parent directories if they don't exist (only when TSV file was not previously associated).", required = false, help = true, arity = 0)
+        public boolean parents = false; 
     
         @Parameter(names = {"--annotation-set-id"}, description = "Annotation set id. If not provided, variableSetId will be used.", required = false, arity = 1)
         public String annotationSetId; 
@@ -250,8 +250,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--parents"}, description = "Create the parent directories if they do not exist", required = false, arity = 1)
-        public Boolean parents; 
+        @Parameter(names = {"--parents"}, description = "Create the parent directories if they do not exist", required = false, help = true, arity = 0)
+        public boolean parents = false; 
     
         @Parameter(names = {"--content"}, description = "The body content FileCreateParams web service parameter", required = false, arity = 1)
         public String content;
@@ -390,13 +390,13 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--acl"}, description = "Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. ", required = false, arity = 1)
         public String acl; 
     
-        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, arity = 1)
-        public Boolean deleted; 
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
     
         @Parameter(names = {"--release"}, description = "Release when it was created", required = false, arity = 1)
         public String release; 
     
-        @Parameter(names = {"--field"}, description = "Field for which to obtain the distinct values", required = true, arity = 1)
+        @Parameter(names = {"--field"}, description = "Comma separated list of fields for which to obtain the distinct values", required = true, arity = 1)
         public String field; 
     
     }
@@ -459,8 +459,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--parents"}, description = "Create the parent directories if they do not exist", required = false, arity = 1)
-        public Boolean parents; 
+        @Parameter(names = {"--parents"}, description = "Create the parent directories if they do not exist", required = false, help = true, arity = 0)
+        public boolean parents = false; 
     
         @Parameter(names = {"--uri", "--input", "-i"}, description = "The body uri FileLinkParams web service parameter", required = false, arity = 1)
         public String uri;
@@ -524,11 +524,11 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--description"}, description = "Field to store information of the item", required = false, arity = 1)
         public String description;
     
-        @Parameter(names = {"--parents"}, description = "The body parents FileLinkToolParams web service parameter", required = false, arity = 1)
-        public Boolean parents;
+        @Parameter(names = {"--parents"}, description = "The body parents FileLinkToolParams web service parameter", required = false, help = true, arity = 0)
+        public boolean parents = false;
     
-        @Parameter(names = {"--skip-post-link"}, description = "The body web service skipPostLink parameter", required = false, arity = 1)
-        public Boolean skipPostLink;
+        @Parameter(names = {"--skip-post-link"}, description = "The body web service skipPostLink parameter", required = false, help = true, arity = 0)
+        public boolean skipPostLink = false;
     
     }
 
@@ -585,11 +585,11 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
         public Integer skip; 
     
-        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, arity = 1)
-        public Boolean count; 
+        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
+        public boolean count = false; 
     
-        @Parameter(names = {"--flatten-annotations"}, description = "Boolean indicating to flatten the annotations.", required = false, arity = 1)
-        public Boolean flattenAnnotations; 
+        @Parameter(names = {"--flatten-annotations"}, description = "Boolean indicating to flatten the annotations.", required = false, help = true, arity = 0)
+        public boolean flattenAnnotations = false; 
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
@@ -663,8 +663,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--acl"}, description = "Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. ", required = false, arity = 1)
         public String acl; 
     
-        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, arity = 1)
-        public Boolean deleted; 
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
     
         @Parameter(names = {"--release"}, description = "Release when it was created", required = false, arity = 1)
         public String release; 
@@ -686,8 +686,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--member"}, description = "User or group id", required = false, arity = 1)
         public String member; 
     
-        @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, arity = 1)
-        public Boolean silent; 
+        @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, help = true, arity = 0)
+        public boolean silent = false; 
     
     }
 
@@ -703,8 +703,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--files"}, description = "Comma separated list of file ids, names or paths.", required = true, arity = 1)
         public String files; 
     
-        @Parameter(names = {"--skip-trash"}, description = "Skip trash and delete the files/folders from disk directly (CANNOT BE RECOVERED)", required = false, arity = 1)
-        public Boolean skipTrash; 
+        @Parameter(names = {"--skip-trash"}, description = "Skip trash and delete the files/folders from disk directly (CANNOT BE RECOVERED)", required = false, help = true, arity = 0)
+        public boolean skipTrash = false; 
     
     }
 
@@ -720,8 +720,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
         public String exclude; 
     
-        @Parameter(names = {"--flatten-annotations"}, description = "Flatten the annotations?", required = false, arity = 1)
-        public Boolean flattenAnnotations; 
+        @Parameter(names = {"--flatten-annotations"}, description = "Flatten the annotations?", required = false, help = true, arity = 0)
+        public boolean flattenAnnotations = false; 
     
         @Parameter(names = {"--files"}, description = "Comma separated list of file IDs or names up to a maximum of 100", required = true, arity = 1)
         public String files; 
@@ -729,8 +729,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted files", required = false, arity = 1)
-        public Boolean deleted; 
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted files", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
     
     }
 
@@ -773,7 +773,7 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         public String study; 
     
         @Parameter(names = {"--sample-ids-action"}, description = "Action to be performed if the array of samples is being updated.", required = false, arity = 1)
-        public String sampleIdsAction; 
+        public String sampleIdsAction = "ADD"; 
     
         @Parameter(names = {"--name", "-n"}, description = "The body name FileUpdateParams web service parameter", required = false, arity = 1)
         public String name;
@@ -889,7 +889,7 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         public String annotationSet; 
     
         @Parameter(names = {"--action"}, description = "Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value configured in the corresponding variables of the VariableSet if any.", required = false, arity = 1)
-        public String action; 
+        public String action = "ADD"; 
     
     }
 
@@ -922,8 +922,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--pattern"}, description = "String pattern", required = false, arity = 1)
         public String pattern; 
     
-        @Parameter(names = {"--ignore-case"}, description = "Flag to perform a case insensitive search", required = false, arity = 1)
-        public Boolean ignoreCase; 
+        @Parameter(names = {"--ignore-case"}, description = "Flag to perform a case insensitive search", required = false, help = true, arity = 0)
+        public boolean ignoreCase = false; 
     
         @Parameter(names = {"--max-count"}, description = "Stop reading a file after 'n' matching lines. 0 means no limit.", required = false, arity = 1)
         public Integer maxCount; 
@@ -946,7 +946,7 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         public Long offset; 
     
         @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned up to a maximum of 1000", required = false, arity = 1)
-        public Integer lines; 
+        public Integer lines = 20; 
     
     }
 
@@ -991,7 +991,7 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         public String study; 
     
         @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned up to a maximum of 1000", required = false, arity = 1)
-        public Integer lines; 
+        public Integer lines = 20; 
     
     }
 
@@ -1013,8 +1013,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
         public Integer skip; 
     
-        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, arity = 1)
-        public Boolean count; 
+        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
+        public boolean count = false; 
     
         @Parameter(names = {"--folder"}, description = "Folder ID, name or path", required = true, arity = 1)
         public String folder; 

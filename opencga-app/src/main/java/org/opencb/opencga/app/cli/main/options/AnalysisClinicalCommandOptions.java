@@ -20,8 +20,8 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
+*  
 */
-
 
 /**
  * This class contains methods for the Analysis - Clinical command line.
@@ -54,7 +54,6 @@ public class AnalysisClinicalCommandOptions {
         public QueryRgaVariantCommandOptions queryRgaVariantCommandOptions;
         public SummaryRgaVariantCommandOptions summaryRgaVariantCommandOptions;
         public SearchCommandOptions searchCommandOptions;
-        public ActionableVariantCommandOptions actionableVariantCommandOptions;
         public QueryVariantCommandOptions queryVariantCommandOptions;
         public AclCommandOptions aclCommandOptions;
         public DeleteCommandOptions deleteCommandOptions;
@@ -92,7 +91,6 @@ public class AnalysisClinicalCommandOptions {
         this.queryRgaVariantCommandOptions = new QueryRgaVariantCommandOptions();
         this.summaryRgaVariantCommandOptions = new SummaryRgaVariantCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
-        this.actionableVariantCommandOptions = new ActionableVariantCommandOptions();
         this.queryVariantCommandOptions = new QueryVariantCommandOptions();
         this.aclCommandOptions = new AclCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
@@ -125,10 +123,10 @@ public class AnalysisClinicalCommandOptions {
         public String members; 
     
         @Parameter(names = {"--action"}, description = "Action to be performed [ADD, SET, REMOVE or RESET].", required = true, arity = 1)
-        public String action; 
+        public String action = "ADD"; 
     
-        @Parameter(names = {"--propagate"}, description = "Propagate permissions to related families, individuals, samples and files", required = false, arity = 1)
-        public Boolean propagate; 
+        @Parameter(names = {"--propagate"}, description = "Propagate permissions to related families, individuals, samples and files", required = false, help = true, arity = 0)
+        public boolean propagate = false; 
     
         @Parameter(names = {"--permissions"}, description = "The body web service permissions parameter", required = true, arity = 1)
         public String permissions;
@@ -176,11 +174,11 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--skip-create-default-interpretation"}, description = "Flag to skip creating and initialise an empty default primary interpretation (Id will be '{clinicalAnalysisId}.1'). This flag is only considered if no Interpretation object is passed.", required = false, arity = 1)
-        public Boolean skipCreateDefaultInterpretation; 
+        @Parameter(names = {"--skip-create-default-interpretation"}, description = "Flag to skip creating and initialise an empty default primary interpretation (Id will be '{clinicalAnalysisId}.1'). This flag is only considered if no Interpretation object is passed.", required = false, help = true, arity = 0)
+        public boolean skipCreateDefaultInterpretation = false; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1, hidden = true)
-        public Boolean includeResult= true; 
+        public boolean includeResult= true; 
     
         @Parameter(names = {"--id"}, description = "The body id ClinicalAnalysisCreateParams web service parameter", required = true, arity = 1)
         public String id;
@@ -346,10 +344,10 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--internal-status"}, description = "Filter by internal status", required = false, arity = 1)
         public String internalStatus; 
     
-        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, arity = 1)
-        public Boolean deleted; 
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
     
-        @Parameter(names = {"--field"}, description = "Field for which to obtain the distinct values", required = true, arity = 1)
+        @Parameter(names = {"--field"}, description = "Comma separated list of fields for which to obtain the distinct values", required = true, arity = 1)
         public String field; 
     
     }
@@ -402,7 +400,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--release"}, description = "Release when it was created", required = false, arity = 1)
         public String release; 
     
-        @Parameter(names = {"--field"}, description = "Field for which to obtain the distinct values", required = true, arity = 1)
+        @Parameter(names = {"--field"}, description = "Comma separated list of fields for which to obtain the distinct values", required = true, arity = 1)
         public String field; 
     
     }
@@ -425,8 +423,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
         public Integer skip; 
     
-        @Parameter(names = {"--sort"}, description = "Sort the results", required = false, arity = 1)
-        public Boolean sort; 
+        @Parameter(names = {"--sort"}, description = "Sort the results", required = false, help = true, arity = 0)
+        public boolean sort = false; 
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
@@ -493,8 +491,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--version"}, description = "Comma separated list of interpretation versions. 'all' to get all the interpretation versions. Not supported if multiple interpretation ids are provided.", required = false, arity = 1)
         public String version; 
     
-        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, arity = 1)
-        public Boolean deleted; 
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
     
     }
 
@@ -531,8 +529,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--discarded-variants"}, description = "List of variant IDs to discard", required = false, arity = 1)
         public String discardedVariants;
     
-        @Parameter(names = {"--primary"}, description = "Save as primary interpretation", required = false, arity = 1)
-        public Boolean primary;
+        @Parameter(names = {"--primary"}, description = "Save as primary interpretation", required = false, help = true, arity = 0)
+        public boolean primary = false;
     
     }
 
@@ -604,8 +602,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--family-segregation"}, description = "Family segregation", required = false, arity = 1)
         public String familySegregation;
     
-        @Parameter(names = {"--primary"}, description = "Save as primary interpretation", required = false, arity = 1)
-        public Boolean primary;
+        @Parameter(names = {"--primary"}, description = "Save as primary interpretation", required = false, help = true, arity = 0)
+        public boolean primary = false;
     
     }
 
@@ -645,8 +643,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--penetrance"}, description = "Penetrance: COMPLETE, INCOMPLETE", required = false, arity = 1)
         public String penetrance;
     
-        @Parameter(names = {"--primary"}, description = "Save as primary interpretation", required = false, arity = 1)
-        public Boolean primary;
+        @Parameter(names = {"--primary"}, description = "Save as primary interpretation", required = false, help = true, arity = 0)
+        public boolean primary = false;
     
     }
 
@@ -677,158 +675,158 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--body_clinical-analysis"}, description = "Clinical analysis description", required = false, arity = 1)
-        public String bodyClinicalAnalysis;
+        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis description", required = false, arity = 1)
+        public String clinicalAnalysis;
     
-        @Parameter(names = {"--body_id"}, description = "Clinical analysis ID", required = false, arity = 1)
-        public String bodyId;
+        @Parameter(names = {"--id"}, description = "Clinical analysis ID", required = false, arity = 1)
+        public String id;
     
-        @Parameter(names = {"--body_region"}, description = "The body region ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyRegion;
+        @Parameter(names = {"--region"}, description = "The body region ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String region;
     
-        @Parameter(names = {"--body_type"}, description = "The body type ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyType;
+        @Parameter(names = {"--type"}, description = "The body type ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String type;
     
         @Parameter(names = {"--body_study"}, description = "The body study ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
         public String bodyStudy;
     
-        @Parameter(names = {"--body_file"}, description = "The body file ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyFile;
+        @Parameter(names = {"--file"}, description = "The body file ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String file;
     
-        @Parameter(names = {"--body_filter"}, description = "The body filter ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyFilter;
+        @Parameter(names = {"--filter"}, description = "The body filter ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String filter;
     
-        @Parameter(names = {"--body_qual"}, description = "The body qual ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyQual;
+        @Parameter(names = {"--qual"}, description = "The body qual ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String qual;
     
-        @Parameter(names = {"--body_file-data"}, description = "The body fileData ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyFileData;
+        @Parameter(names = {"--file-data"}, description = "The body fileData ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String fileData;
     
-        @Parameter(names = {"--body_sample"}, description = "The body sample ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodySample;
+        @Parameter(names = {"--sample"}, description = "The body sample ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String sample;
     
-        @Parameter(names = {"--body_sample-data"}, description = "The body sampleData ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodySampleData;
+        @Parameter(names = {"--sample-data"}, description = "The body sampleData ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String sampleData;
     
-        @Parameter(names = {"--body_sample-annotation"}, description = "The body sampleAnnotation ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodySampleAnnotation;
+        @Parameter(names = {"--sample-annotation"}, description = "The body sampleAnnotation ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String sampleAnnotation;
     
-        @Parameter(names = {"--body_sample-metadata"}, description = "The body sampleMetadata ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodySampleMetadata;
+        @Parameter(names = {"--sample-metadata"}, description = "The body sampleMetadata ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String sampleMetadata;
     
-        @Parameter(names = {"--body_cohort"}, description = "The body cohort ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyCohort;
+        @Parameter(names = {"--cohort"}, description = "The body cohort ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String cohort;
     
-        @Parameter(names = {"--body_cohort-stats-ref"}, description = "The body cohortStatsRef ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyCohortStatsRef;
+        @Parameter(names = {"--cohort-stats-ref"}, description = "The body cohortStatsRef ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String cohortStatsRef;
     
-        @Parameter(names = {"--body_cohort-stats-alt"}, description = "The body cohortStatsAlt ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyCohortStatsAlt;
+        @Parameter(names = {"--cohort-stats-alt"}, description = "The body cohortStatsAlt ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String cohortStatsAlt;
     
-        @Parameter(names = {"--body_cohort-stats-maf"}, description = "The body cohortStatsMaf ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyCohortStatsMaf;
+        @Parameter(names = {"--cohort-stats-maf"}, description = "The body cohortStatsMaf ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String cohortStatsMaf;
     
-        @Parameter(names = {"--body_cohort-stats-mgf"}, description = "The body cohortStatsMgf ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyCohortStatsMgf;
+        @Parameter(names = {"--cohort-stats-mgf"}, description = "The body cohortStatsMgf ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String cohortStatsMgf;
     
-        @Parameter(names = {"--body_cohort-stats-pass"}, description = "The body cohortStatsPass ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyCohortStatsPass;
+        @Parameter(names = {"--cohort-stats-pass"}, description = "The body cohortStatsPass ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String cohortStatsPass;
     
-        @Parameter(names = {"--body_score"}, description = "The body score ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyScore;
+        @Parameter(names = {"--score"}, description = "The body score ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String score;
     
-        @Parameter(names = {"--body_family"}, description = "The body family ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyFamily;
+        @Parameter(names = {"--family"}, description = "The body family ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String family;
     
-        @Parameter(names = {"--body_family-disorder"}, description = "The body familyDisorder ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyFamilyDisorder;
+        @Parameter(names = {"--family-disorder"}, description = "The body familyDisorder ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String familyDisorder;
     
-        @Parameter(names = {"--body_family-segregation"}, description = "The body familySegregation ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyFamilySegregation;
+        @Parameter(names = {"--family-segregation"}, description = "The body familySegregation ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String familySegregation;
     
-        @Parameter(names = {"--body_family-members"}, description = "The body familyMembers ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyFamilyMembers;
+        @Parameter(names = {"--family-members"}, description = "The body familyMembers ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String familyMembers;
     
-        @Parameter(names = {"--body_family-proband"}, description = "The body familyProband ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyFamilyProband;
+        @Parameter(names = {"--family-proband"}, description = "The body familyProband ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String familyProband;
     
-        @Parameter(names = {"--body_gene"}, description = "The body gene ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyGene;
+        @Parameter(names = {"--gene"}, description = "The body gene ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String gene;
     
-        @Parameter(names = {"--body_ct"}, description = "The body ct ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyCt;
+        @Parameter(names = {"--ct"}, description = "The body ct ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String ct;
     
-        @Parameter(names = {"--body_xref"}, description = "The body xref ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyXref;
+        @Parameter(names = {"--xref"}, description = "The body xref ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String xref;
     
-        @Parameter(names = {"--body_biotype"}, description = "The body type ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyBiotype;
+        @Parameter(names = {"--biotype"}, description = "The body type ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String biotype;
     
-        @Parameter(names = {"--body_protein-substitution"}, description = "The body proteinSubstitution ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyProteinSubstitution;
+        @Parameter(names = {"--protein-substitution"}, description = "The body proteinSubstitution ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String proteinSubstitution;
     
-        @Parameter(names = {"--body_conservation"}, description = "The body conservation ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyConservation;
+        @Parameter(names = {"--conservation"}, description = "The body conservation ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String conservation;
     
-        @Parameter(names = {"--body_population-frequency-alt"}, description = "The body populationFrequencyAlt ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyPopulationFrequencyAlt;
+        @Parameter(names = {"--population-frequency-alt"}, description = "The body populationFrequencyAlt ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String populationFrequencyAlt;
     
-        @Parameter(names = {"--body_population-frequency-ref"}, description = "The body populationFrequencyRef ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyPopulationFrequencyRef;
+        @Parameter(names = {"--population-frequency-ref"}, description = "The body populationFrequencyRef ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String populationFrequencyRef;
     
-        @Parameter(names = {"--body_population-frequency-maf"}, description = "The body populationFrequencyMaf ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyPopulationFrequencyMaf;
+        @Parameter(names = {"--population-frequency-maf"}, description = "The body populationFrequencyMaf ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String populationFrequencyMaf;
     
-        @Parameter(names = {"--body_transcript-flag"}, description = "The body transcriptFlag ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyTranscriptFlag;
+        @Parameter(names = {"--transcript-flag"}, description = "The body transcriptFlag ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String transcriptFlag;
     
-        @Parameter(names = {"--body_gene-trait-id"}, description = "The body geneTraitId ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyGeneTraitId;
+        @Parameter(names = {"--gene-trait-id"}, description = "The body geneTraitId ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String geneTraitId;
     
-        @Parameter(names = {"--body_go"}, description = "The body go ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyGo;
+        @Parameter(names = {"--go"}, description = "The body go ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String go;
     
-        @Parameter(names = {"--body_expression"}, description = "The body expression ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyExpression;
+        @Parameter(names = {"--expression"}, description = "The body expression ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String expression;
     
-        @Parameter(names = {"--body_protein-keyword"}, description = "The body proteinKeyword ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyProteinKeyword;
+        @Parameter(names = {"--protein-keyword"}, description = "The body proteinKeyword ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String proteinKeyword;
     
-        @Parameter(names = {"--body_drug"}, description = "The body drug ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyDrug;
+        @Parameter(names = {"--drug"}, description = "The body drug ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String drug;
     
-        @Parameter(names = {"--body_functional-score"}, description = "The body functionalScore ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyFunctionalScore;
+        @Parameter(names = {"--functional-score"}, description = "The body functionalScore ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String functionalScore;
     
-        @Parameter(names = {"--body_clinical"}, description = "The body clinical ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyClinical;
+        @Parameter(names = {"--clinical"}, description = "The body clinical ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String clinical;
     
-        @Parameter(names = {"--body_clinical-significance"}, description = "The body clinicalSignificance ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyClinicalSignificance;
+        @Parameter(names = {"--clinical-significance"}, description = "The body clinicalSignificance ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String clinicalSignificance;
     
-        @Parameter(names = {"--body_clinical-confirmed-status"}, description = "The body clinicalConfirmedStatus ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public Boolean bodyClinicalConfirmedStatus;
+        @Parameter(names = {"--clinical-confirmed-status"}, description = "The body clinicalConfirmedStatus ZettaInterpretationAnalysisParams web service parameter", required = false, help = true, arity = 0)
+        public boolean clinicalConfirmedStatus = false;
     
-        @Parameter(names = {"--body_custom-annotation"}, description = "The body customAnnotation ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyCustomAnnotation;
+        @Parameter(names = {"--custom-annotation"}, description = "The body customAnnotation ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String customAnnotation;
     
-        @Parameter(names = {"--body_panel"}, description = "The body panel ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyPanel;
+        @Parameter(names = {"--panel"}, description = "The body panel ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String panel;
     
-        @Parameter(names = {"--body_panel-mode-of-inheritance"}, description = "The body panelModeOfInheritance ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyPanelModeOfInheritance;
+        @Parameter(names = {"--panel-mode-of-inheritance"}, description = "The body panelModeOfInheritance ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String panelModeOfInheritance;
     
-        @Parameter(names = {"--body_panel-confidence"}, description = "The body panelConfidence ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyPanelConfidence;
+        @Parameter(names = {"--panel-confidence"}, description = "The body panelConfidence ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String panelConfidence;
     
-        @Parameter(names = {"--body_panel-role-in-cancer"}, description = "The body panelRoleInCancer ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyPanelRoleInCancer;
+        @Parameter(names = {"--panel-role-in-cancer"}, description = "The body panelRoleInCancer ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String panelRoleInCancer;
     
-        @Parameter(names = {"--body_trait"}, description = "The body trait ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public String bodyTrait;
+        @Parameter(names = {"--trait"}, description = "The body trait ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
+        public String trait;
     
-        @Parameter(names = {"--body_primary"}, description = "The body primary ZettaInterpretationAnalysisParams web service parameter", required = false, arity = 1)
-        public Boolean bodyPrimary;
+        @Parameter(names = {"--primary"}, description = "The body primary ZettaInterpretationAnalysisParams web service parameter", required = false, help = true, arity = 0)
+        public boolean primary = false;
     
     }
 
@@ -930,8 +928,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
         public Integer skip; 
     
-        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, arity = 1)
-        public Boolean count; 
+        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
+        public boolean count = false; 
     
         @Parameter(names = {"--include-individual"}, description = "Include only the comma separated list of individuals to the response", required = false, arity = 1)
         public String includeIndividual; 
@@ -1019,8 +1017,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
         public Integer skip; 
     
-        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, arity = 1)
-        public Boolean count; 
+        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
+        public boolean count = false; 
     
         @Parameter(names = {"--sample-id"}, description = "Filter by sample id.", required = false, arity = 1)
         public String sampleId; 
@@ -1114,8 +1112,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--auxiliar-index"}, description = "Index auxiliar collection to improve performance assuming RGA is completely indexed.", required = false, arity = 1)
-        public Boolean auxiliarIndex; 
+        @Parameter(names = {"--auxiliar-index"}, description = "Index auxiliar collection to improve performance assuming RGA is completely indexed.", required = false, help = true, arity = 0)
+        public boolean auxiliarIndex = false; 
     
         @Parameter(names = {"--file"}, description = "The body file RgaAnalysisParams web service parameter", required = false, arity = 1)
         public String file;
@@ -1140,8 +1138,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
         public Integer skip; 
     
-        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, arity = 1)
-        public Boolean count; 
+        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
+        public boolean count = false; 
     
         @Parameter(names = {"--sample-id"}, description = "Filter by sample id.", required = false, arity = 1)
         public String sampleId; 
@@ -1220,8 +1218,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
         public Integer skip; 
     
-        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, arity = 1)
-        public Boolean count; 
+        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
+        public boolean count = false; 
     
         @Parameter(names = {"--sample-id"}, description = "Filter by sample id.", required = false, arity = 1)
         public String sampleId; 
@@ -1306,8 +1304,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
         public Integer skip; 
     
-        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, arity = 1)
-        public Boolean count; 
+        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
+        public boolean count = false; 
     
         @Parameter(names = {"--include-individual"}, description = "Include only the comma separated list of individuals to the response", required = false, arity = 1)
         public String includeIndividual; 
@@ -1395,8 +1393,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
         public Integer skip; 
     
-        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, arity = 1)
-        public Boolean count; 
+        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
+        public boolean count = false; 
     
         @Parameter(names = {"--sample-id"}, description = "Filter by sample id.", required = false, arity = 1)
         public String sampleId; 
@@ -1481,8 +1479,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
         public Integer skip; 
     
-        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, arity = 1)
-        public Boolean count; 
+        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
+        public boolean count = false; 
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
@@ -1559,22 +1557,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--internal-status"}, description = "Filter by internal status", required = false, arity = 1)
         public String internalStatus; 
     
-        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, arity = 1)
-        public Boolean deleted; 
-    
-    }
-
-    @Parameters(commandNames = {"variant-actionable"}, commandDescription ="Fetch actionable clinical variants")
-    public class ActionableVariantCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
-        public String study; 
-    
-        @Parameter(names = {"--sample"}, description = "Sample ID", required = false, arity = 1)
-        public String sample; 
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
     
     }
 
@@ -1596,11 +1580,11 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
         public Integer skip; 
     
-        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, arity = 1)
-        public Boolean count; 
+        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
+        public boolean count = false; 
     
-        @Parameter(names = {"--approximate-count"}, description = "Get an approximate count, instead of an exact total count. Reduces execution time", required = false, arity = 1)
-        public Boolean approximateCount; 
+        @Parameter(names = {"--approximate-count"}, description = "Get an approximate count, instead of an exact total count. Reduces execution time", required = false, help = true, arity = 0)
+        public boolean approximateCount = false; 
     
         @Parameter(names = {"--approximate-count-sampling-size"}, description = "Sampling size to get the approximate count. Larger values increase accuracy but also increase execution time", required = false, arity = 1)
         public Integer approximateCountSamplingSize; 
@@ -1635,7 +1619,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--file-data"}, description = "Filter by file data (i.e. FILTER, QUAL and INFO columns from VCF file). [{file}:]{key}{op}{value}[,;]* . If no file is specified, will use all files from 'file' filter. e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 . Many fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10,FILTER=PASS,LowDP", required = false, arity = 1)
         public String fileData; 
     
-        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
         public String sample; 
     
         @Parameter(names = {"--sample-data"}, description = "Filter by any SampleData field from samples. [{sample}:]{key}{op}{value}[,;]* . If no sample is specified, will use all samples from 'sample' or 'genotype' filter. e.g. DP>200 or HG0097:DP>200,HG0098:DP<10 . Many FORMAT fields can be combined. e.g. HG0097:DP>200;GT=1/1,0/1,HG0098:DP<10", required = false, arity = 1)
@@ -1677,7 +1661,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--family-disorder"}, description = "Specify the disorder to use for the family segregation", required = false, arity = 1)
         public String familyDisorder; 
     
-        @Parameter(names = {"--family-segregation"}, description = "Filter by segregation mode from a given family. Accepted values: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
+        @Parameter(names = {"--family-segregation"}, description = "Filter by segregation mode from a given family. Accepted values: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
         public String familySegregation; 
     
         @Parameter(names = {"--family-members"}, description = "Sub set of the members of a given family", required = false, arity = 1)
@@ -1740,8 +1724,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--clinical-significance"}, description = "Clinical significance: benign, likely_benign, likely_pathogenic, pathogenic", required = false, arity = 1)
         public String clinicalSignificance; 
     
-        @Parameter(names = {"--clinical-confirmed-status"}, description = "Clinical confirmed status", required = false, arity = 1)
-        public Boolean clinicalConfirmedStatus; 
+        @Parameter(names = {"--clinical-confirmed-status"}, description = "Clinical confirmed status", required = false, help = true, arity = 0)
+        public boolean clinicalConfirmedStatus = false; 
     
         @Parameter(names = {"--custom-annotation"}, description = "Custom annotation: {key}[<|>|<=|>=]{number} or {key}[~=|=]{text}", required = false, arity = 1)
         public String customAnnotation; 
@@ -1761,8 +1745,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--panel-feature-type"}, description = "Filter elements from specific panels by type. Accepted values : [ gene, region, str, variant ]", required = false, arity = 1)
         public String panelFeatureType; 
     
-        @Parameter(names = {"--panel-intersection"}, description = "Intersect panel genes and regions with given genes and regions from que input query. This will prevent returning variants from regions out of the panel.", required = false, arity = 1)
-        public Boolean panelIntersection; 
+        @Parameter(names = {"--panel-intersection"}, description = "Intersect panel genes and regions with given genes and regions from que input query. This will prevent returning variants from regions out of the panel.", required = false, help = true, arity = 0)
+        public boolean panelIntersection = false; 
     
         @Parameter(names = {"--trait"}, description = "List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...", required = false, arity = 1)
         public String trait; 
@@ -1784,8 +1768,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--member"}, description = "User or group ID", required = false, arity = 1)
         public String member; 
     
-        @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, arity = 1)
-        public Boolean silent; 
+        @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, help = true, arity = 0)
+        public boolean silent = false; 
     
     }
 
@@ -1798,8 +1782,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--force"}, description = "Force deletion if the ClinicalAnalysis contains interpretations or is locked", required = false, arity = 1)
-        public Boolean force; 
+        @Parameter(names = {"--force"}, description = "Force deletion if the ClinicalAnalysis contains interpretations or is locked", required = false, help = true, arity = 0)
+        public boolean force = false; 
     
         @Parameter(names = {"--clinical-analyses"}, description = "Comma separated list of clinical analysis IDs or names up to a maximum of 100", required = true, arity = 1)
         public String clinicalAnalyses; 
@@ -1831,7 +1815,7 @@ public class AnalysisClinicalCommandOptions {
         public String study; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1, hidden = true)
-        public Boolean includeResult= true; 
+        public boolean includeResult= true; 
     
         @Parameter(names = {"--id"}, description = "The body id ClinicalAnalysisUpdateParams web service parameter", required = false, arity = 1)
         public String id;
@@ -1919,8 +1903,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, arity = 1)
-        public Boolean deleted; 
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
     
     }
 
@@ -1949,10 +1933,10 @@ public class AnalysisClinicalCommandOptions {
         public String study; 
     
         @Parameter(names = {"--set-as"}, description = "Set interpretation as", required = false, arity = 1)
-        public String setAs; 
+        public String setAs = "SECONDARY"; 
     
-        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1)
-        public Boolean includeResult; 
+        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
+        public boolean includeResult = false; 
     
         @Parameter(names = {"--description"}, description = "Field to store information of the item", required = false, arity = 1)
         public String description;
@@ -2088,8 +2072,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--interpretation"}, description = "Interpretation ID", required = true, arity = 1)
         public String interpretation; 
     
-        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1)
-        public Boolean includeResult; 
+        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
+        public boolean includeResult = false; 
     
         @Parameter(names = {"--description"}, description = "Field to store information of the item", required = false, arity = 1)
         public String description;

@@ -22,8 +22,8 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
+*  
 */
-
 
 /**
  * This class contains methods for the Studies command line.
@@ -95,7 +95,7 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         public String members; 
     
         @Parameter(names = {"--action"}, description = "Action to be performed [ADD, SET, REMOVE or RESET].", required = true, arity = 1)
-        public String action; 
+        public String action = "ADD"; 
     
         @Parameter(names = {"--study", "-s"}, description = "The body study StudyAclUpdateParams web service parameter", required = false, arity = 1)
         public String study;
@@ -130,7 +130,7 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         public String project; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1, hidden = true)
-        public Boolean includeResult= true; 
+        public boolean includeResult= true; 
     
         @Parameter(names = {"--id"}, description = "The body id StudyCreateParams web service parameter", required = true, arity = 1)
         public String id;
@@ -145,7 +145,7 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         public String typeId;
     
         @Parameter(names = {"--type-description"}, description = "Users may provide a description for the entry.", required = false, arity = 1)
-        public String typeDescription;
+        public String typeDescription = "No description available";
     
         @Parameter(names = {"--description"}, description = "Field to store information of the item", required = false, arity = 1)
         public String description;
@@ -185,8 +185,8 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
         public Integer skip; 
     
-        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, arity = 1)
-        public Boolean count; 
+        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
+        public boolean count = false; 
     
         @Parameter(names = {"--project", "-p"}, description = "Project [user@]project where project can be either the ID or the alias", required = true, arity = 1)
         public String project; 
@@ -235,8 +235,8 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--member"}, description = "User or group id", required = false, arity = 1)
         public String member; 
     
-        @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, arity = 1)
-        public Boolean silent; 
+        @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, help = true, arity = 0)
+        public boolean silent = false; 
     
     }
 
@@ -250,7 +250,7 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         public String studies; 
     
         @Parameter(names = {"--default"}, description = "Calculate default stats", required = false, arity = 1)
-        public Boolean default_values; 
+        public Boolean default_values = true; 
     
         @Parameter(names = {"--file-fields"}, description = "List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type", required = false, arity = 1)
         public String fileFields; 
@@ -307,8 +307,8 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
         public Integer skip; 
     
-        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, arity = 1)
-        public Boolean count; 
+        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
+        public boolean count = false; 
     
         @Parameter(names = {"--study", "-s"}, description = "Study ID", required = true, arity = 1)
         public String study; 
@@ -351,8 +351,8 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--id"}, description = "Group id. If provided, it will only fetch information for the provided group.", required = false, arity = 1)
         public String id; 
     
-        @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, arity = 1)
-        public Boolean silent; 
+        @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, help = true, arity = 0)
+        public boolean silent = false; 
     
     }
 
@@ -372,7 +372,7 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         public String study; 
     
         @Parameter(names = {"--action"}, description = "Action to be performed: ADD or REMOVE a group", required = false, arity = 1)
-        public String action; 
+        public String action = "ADD"; 
     
         @Parameter(names = {"--id"}, description = "The body id GroupCreateParams web service parameter", required = false, arity = 1)
         public String id;
@@ -401,7 +401,7 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         public String group; 
     
         @Parameter(names = {"--action"}, description = "Action to be performed: ADD, SET or REMOVE users to/from a group", required = false, arity = 1)
-        public String action; 
+        public String action = "ADD"; 
     
         @Parameter(names = {"--users"}, description = "The body users GroupUpdateParams web service parameter", required = false, arity = 1)
         public String users;
@@ -441,7 +441,7 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         public String entity; 
     
         @Parameter(names = {"--action"}, description = "Action to be performed: ADD to add a new permission rule; REMOVE to remove all permissions assigned by an existing permission rule (even if it overlaps any manual permission); REVERT to remove all permissions assigned by an existing permission rule (keep manual overlaps); NONE to remove an existing permission rule without removing any permissions that could have been assigned already by the permission rule.", required = false, arity = 1)
-        public String action; 
+        public String action = "ADD"; 
     
         @Parameter(names = {"--id"}, description = "Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.", required = true, arity = 1)
         public String id;
@@ -493,7 +493,7 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         public String study; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1, hidden = true)
-        public Boolean includeResult= true; 
+        public boolean includeResult= true; 
     
         @Parameter(names = {"--name", "-n"}, description = "The body name StudyUpdateParams web service parameter", required = false, arity = 1)
         public String name;
@@ -505,7 +505,7 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         public String typeId;
     
         @Parameter(names = {"--type-description"}, description = "Users may provide a description for the entry.", required = false, arity = 1)
-        public String typeDescription;
+        public String typeDescription = "No description available";
     
         @Parameter(names = {"--description"}, description = "Field to store information of the item", required = false, arity = 1)
         public String description;
@@ -557,7 +557,7 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         public String study; 
     
         @Parameter(names = {"--action"}, description = "Action to be performed: ADD, REMOVE or FORCE_REMOVE a variableSet", required = false, arity = 1)
-        public String action; 
+        public String action = "ADD"; 
     
         @Parameter(names = {"--id"}, description = "The body id VariableSetCreateParams web service parameter", required = false, arity = 1)
         public String id;
@@ -595,40 +595,40 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         public String variableSet; 
     
         @Parameter(names = {"--action"}, description = "Action to be performed: ADD or REMOVE a variable", required = false, arity = 1)
-        public String action; 
+        public String action = "ADD"; 
     
-        @Parameter(names = {"--body_id"}, description = "The body id Variable web service parameter", required = false, arity = 1)
-        public String bodyId;
+        @Parameter(names = {"--id"}, description = "The body id Variable web service parameter", required = false, arity = 1)
+        public String id;
     
-        @Parameter(names = {"--body_name"}, description = "The body name Variable web service parameter", required = false, arity = 1)
-        public String bodyName;
+        @Parameter(names = {"--name", "-n"}, description = "The body name Variable web service parameter", required = false, arity = 1)
+        public String name;
     
-        @Parameter(names = {"--body_category"}, description = "The body category Variable web service parameter", required = false, arity = 1)
-        public String bodyCategory;
+        @Parameter(names = {"--category"}, description = "The body category Variable web service parameter", required = false, arity = 1)
+        public String category;
     
-        @Parameter(names = {"--body_type"}, description = "The body type Variable web service parameter", required = false, arity = 1)
-        public String bodyType;
+        @Parameter(names = {"--type"}, description = "The body type Variable web service parameter", required = false, arity = 1)
+        public String type;
     
-        @Parameter(names = {"--body_required"}, description = "The body required Variable web service parameter", required = false, arity = 1)
-        public Boolean bodyRequired;
+        @Parameter(names = {"--required"}, description = "The body required Variable web service parameter", required = false, help = true, arity = 0)
+        public boolean required = false;
     
-        @Parameter(names = {"--body_multi-value"}, description = "The body multiValue Variable web service parameter", required = false, arity = 1)
-        public Boolean bodyMultiValue;
+        @Parameter(names = {"--multi-value"}, description = "The body multiValue Variable web service parameter", required = false, help = true, arity = 0)
+        public boolean multiValue = false;
     
-        @Parameter(names = {"--body_allowed-values"}, description = "The body allowedValues Variable web service parameter", required = false, arity = 1)
-        public String bodyAllowedValues;
+        @Parameter(names = {"--allowed-values"}, description = "The body allowedValues Variable web service parameter", required = false, arity = 1)
+        public String allowedValues;
     
-        @Parameter(names = {"--body_allowed-keys"}, description = "The body allowedKeys Variable web service parameter", required = false, arity = 1)
-        public String bodyAllowedKeys;
+        @Parameter(names = {"--allowed-keys"}, description = "The body allowedKeys Variable web service parameter", required = false, arity = 1)
+        public String allowedKeys;
     
-        @Parameter(names = {"--body_rank"}, description = "The body rank Variable web service parameter", required = false, arity = 1)
-        public Long bodyRank;
+        @Parameter(names = {"--rank"}, description = "The body rank Variable web service parameter", required = false, arity = 1)
+        public Long rank;
     
-        @Parameter(names = {"--body_depends-on"}, description = "The body dependsOn Variable web service parameter", required = false, arity = 1)
-        public String bodyDependsOn;
+        @Parameter(names = {"--depends-on"}, description = "The body dependsOn Variable web service parameter", required = false, arity = 1)
+        public String dependsOn;
     
-        @Parameter(names = {"--body_description"}, description = "Field to store information of the item", required = false, arity = 1)
-        public String bodyDescription;
+        @Parameter(names = {"--description"}, description = "Field to store information of the item", required = false, arity = 1)
+        public String description;
     
     }
 

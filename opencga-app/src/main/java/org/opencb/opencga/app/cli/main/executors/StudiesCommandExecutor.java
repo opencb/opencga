@@ -44,6 +44,7 @@ import org.opencb.opencga.core.models.study.GroupCreateParams;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.PermissionRule;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclEntryList;
 import org.opencb.opencga.core.models.study.StudyAclUpdateParams;
 import org.opencb.opencga.core.models.study.StudyCreateParams;
 import org.opencb.opencga.core.models.study.StudyNotification;
@@ -62,9 +63,8 @@ import org.opencb.opencga.core.models.study.VariableSetCreateParams;
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
+*  
 */
-
-
 /**
  * This class contains methods for the Studies command line.
  *    PATH: /{apiVersion}/studies
@@ -154,7 +154,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
 
     }
 
-    private RestResponse<AclEntryList> updateAcl() throws Exception {
+    private RestResponse<StudyAclEntryList> updateAcl() throws Exception {
 
         logger.debug("Executing updateAcl in Studies command line");
 
@@ -163,7 +163,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         StudyAclUpdateParams studyAclUpdateParams= null;
         if (commandOptions.jsonDataModel) {
             studyAclUpdateParams = new StudyAclUpdateParams();
-            RestResponse<AclEntryList> res = new RestResponse<>();
+            RestResponse<StudyAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(studyAclUpdateParams));
             return res;
@@ -580,17 +580,17 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), Variable.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.bodyId, true);
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.bodyName, true);
-            putNestedIfNotEmpty(beanParams, "category",commandOptions.bodyCategory, true);
-            putNestedIfNotNull(beanParams, "type",commandOptions.bodyType, true);
-            putNestedIfNotNull(beanParams, "required",commandOptions.bodyRequired, true);
-            putNestedIfNotNull(beanParams, "multiValue",commandOptions.bodyMultiValue, true);
-            putNestedIfNotNull(beanParams, "allowedValues",commandOptions.bodyAllowedValues, true);
-            putNestedIfNotNull(beanParams, "allowedKeys",commandOptions.bodyAllowedKeys, true);
-            putNestedIfNotNull(beanParams, "rank",commandOptions.bodyRank, true);
-            putNestedIfNotEmpty(beanParams, "dependsOn",commandOptions.bodyDependsOn, true);
-            putNestedIfNotEmpty(beanParams, "description",commandOptions.bodyDescription, true);
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "category",commandOptions.category, true);
+            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
+            putNestedIfNotNull(beanParams, "required",commandOptions.required, true);
+            putNestedIfNotNull(beanParams, "multiValue",commandOptions.multiValue, true);
+            putNestedIfNotNull(beanParams, "allowedValues",commandOptions.allowedValues, true);
+            putNestedIfNotNull(beanParams, "allowedKeys",commandOptions.allowedKeys, true);
+            putNestedIfNotNull(beanParams, "rank",commandOptions.rank, true);
+            putNestedIfNotEmpty(beanParams, "dependsOn",commandOptions.dependsOn, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
 
             variable = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

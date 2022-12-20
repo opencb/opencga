@@ -17,6 +17,7 @@
 package org.opencb.opencga.core.models.variant;
 
 import org.opencb.commons.annotations.DataField;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.api.ParamConstants;
 
@@ -48,8 +49,8 @@ public class VariantExportParams extends VariantQueryParams {
 
     @DataField(description = ParamConstants.VARIANT_EXPORT_PARAMS_SKIP_DESCRIPTION)
     private Integer skip;
-
     @DataField(description = ParamConstants.VARIANT_EXPORT_PARAMS_SUMMARY_DESCRIPTION)
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private boolean summary;
 
     public VariantExportParams() {

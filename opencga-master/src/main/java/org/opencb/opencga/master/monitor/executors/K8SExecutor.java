@@ -49,6 +49,7 @@ public class K8SExecutor implements BatchExecutor {
     public static final String K8S_IMAGE_PULL_POLICY = "k8s.imagePullPolicy";
     public static final String K8S_IMAGE_PULL_SECRETS = "k8s.imagePullSecrets";
     public static final String K8S_TTL_SECONDS_AFTER_FINISHED = "k8s.ttlSecondsAfterFinished";
+    public static final String K8S_DIND_ROOTLESS = "k8s.dind.rootless";
     public static final String K8S_DIND_IMAGE_NAME = "k8s.dind.imageName";
     public static final String K8S_REQUESTS = "k8s.requests";
     public static final String K8S_LIMITS = "k8s.limits";
@@ -83,7 +84,6 @@ public class K8SExecutor implements BatchExecutor {
             .build();
     private static final String DIND_DONE_FILE = "/usr/share/pod/done";
 
-    private final String k8sClusterMaster;
     private final String namespace;
     private final String imageName;
     private final List<VolumeMount> volumeMounts;
@@ -101,13 +101,13 @@ public class K8SExecutor implements BatchExecutor {
     private final Map<String, Pair<Instant, String>> jobStatusCache = new ConcurrentHashMap<>();
     private final Watch podsWatcher;
     private final Watch jobsWatcher;
-    private String imagePullPolicy;
-    private List<LocalObjectReference> imagePullSecrets;
-    private int ttlSecondsAfterFinished;
+    private final String imagePullPolicy;
+    private final List<LocalObjectReference> imagePullSecrets;
+    private final int ttlSecondsAfterFinished;
 
     public K8SExecutor(Configuration configuration) {
         Execution execution = configuration.getAnalysis().getExecution();
-        this.k8sClusterMaster = execution.getOptions().getString(K8S_MASTER_NODE);
+        String k8sClusterMaster = execution.getOptions().getString(K8S_MASTER_NODE);
         this.namespace = execution.getOptions().getString(K8S_NAMESPACE);
         this.imageName = execution.getOptions().getString(K8S_IMAGE_NAME);
         this.volumeMounts = buildVolumeMounts(execution.getOptions().getList(K8S_VOLUME_MOUNTS));
@@ -171,13 +171,25 @@ public class K8SExecutor implements BatchExecutor {
         }
 
         String dindImageName = execution.getOptions().getString(K8S_DIND_IMAGE_NAME, "docker:dind-rootless");
+        boolean rootless;
+        if (execution.getOptions().containsKey(K8S_DIND_ROOTLESS)) {
+            rootless = execution.getOptions().getBoolean(K8S_DIND_ROOTLESS);
+        } else {
+            rootless = dindImageName.contains("dind-rootless");
+        }
+        SecurityContext dindSecurityContext;
+        if (rootless) {
+            dindSecurityContext = new SecurityContextBuilder()
+                    .withRunAsNonRoot(true)
+                    .withRunAsUser(1000L)
+                    .withPrivileged(true).build();
+        } else {
+            dindSecurityContext = new SecurityContextBuilder().withPrivileged(true).build();
+        }
         dockerDaemonSidecar = new ContainerBuilder()
                 .withName("dind-daemon")
                 .withImage(dindImageName)
-                .withSecurityContext(new SecurityContextBuilder()
-                        .withRunAsNonRoot(true)
-                        .withRunAsUser(1000L)
-                        .withPrivileged(true).build())
+                .withSecurityContext(dindSecurityContext)
                 .withEnv(new EnvVar("DOCKER_TLS_CERTDIR", "", null))
 //                .withResources(resources) // TODO: Should we add resources here?
                 .withCommand("/bin/sh", "-c")

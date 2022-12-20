@@ -20,8 +20,8 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
+*  
 */
-
 
 /**
  * This class contains methods for the Disease Panels command line.
@@ -79,7 +79,7 @@ public class DiseasePanelsCommandOptions {
         public String members; 
     
         @Parameter(names = {"--action"}, description = "Action to be performed [ADD, SET, REMOVE or RESET].", required = true, arity = 1)
-        public String action; 
+        public String action = "ADD"; 
     
         @Parameter(names = {"--permissions"}, description = "The body web service permissions parameter", required = true, arity = 1)
         public String permissions;
@@ -111,7 +111,7 @@ public class DiseasePanelsCommandOptions {
         public String study; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1, hidden = true)
-        public Boolean includeResult= true; 
+        public boolean includeResult= true; 
     
         @Parameter(names = {"--id"}, description = "The body id PanelCreateParams web service parameter", required = true, arity = 1)
         public String id;
@@ -187,8 +187,8 @@ public class DiseasePanelsCommandOptions {
         @Parameter(names = {"--tags"}, description = "Panel tags", required = false, arity = 1)
         public String tags; 
     
-        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, arity = 1)
-        public Boolean deleted; 
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
     
         @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
         public String status; 
@@ -208,7 +208,7 @@ public class DiseasePanelsCommandOptions {
         @Parameter(names = {"--snapshot"}, description = "Snapshot value (Latest version of the entry in the specified release)", required = false, arity = 1)
         public Integer snapshot; 
     
-        @Parameter(names = {"--field"}, description = "Field for which to obtain the distinct values", required = true, arity = 1)
+        @Parameter(names = {"--field"}, description = "Comma separated list of fields for which to obtain the distinct values", required = true, arity = 1)
         public String field; 
     
     }
@@ -266,8 +266,8 @@ public class DiseasePanelsCommandOptions {
         @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
         public Integer skip; 
     
-        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, arity = 1)
-        public Boolean count; 
+        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
+        public boolean count = false; 
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
@@ -305,8 +305,8 @@ public class DiseasePanelsCommandOptions {
         @Parameter(names = {"--tags"}, description = "Panel tags", required = false, arity = 1)
         public String tags; 
     
-        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, arity = 1)
-        public Boolean deleted; 
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
     
         @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
         public String status; 
@@ -343,8 +343,8 @@ public class DiseasePanelsCommandOptions {
         @Parameter(names = {"--member"}, description = "User or group id", required = false, arity = 1)
         public String member; 
     
-        @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, arity = 1)
-        public Boolean silent; 
+        @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, help = true, arity = 0)
+        public boolean silent = false; 
     
     }
 
@@ -383,8 +383,8 @@ public class DiseasePanelsCommandOptions {
         @Parameter(names = {"--version"}, description = "Comma separated list of panel versions. 'all' to get all the panel versions. Not supported if multiple panel ids are provided", required = false, arity = 1)
         public String version; 
     
-        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted panels", required = false, arity = 1)
-        public Boolean deleted; 
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted panels", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
     
     }
 
@@ -413,7 +413,7 @@ public class DiseasePanelsCommandOptions {
         public String panels; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1, hidden = true)
-        public Boolean includeResult= true; 
+        public boolean includeResult= true; 
     
         @Parameter(names = {"--id"}, description = "The body id PanelUpdateParams web service parameter", required = false, arity = 1)
         public String id;

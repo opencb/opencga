@@ -20,8 +20,8 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
+*  
 */
-
 
 /**
  * This class contains methods for the Admin command line.
@@ -64,11 +64,11 @@ public class AdminCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--count"}, description = "Count the number of elements matching the group", required = false, arity = 1)
-        public Boolean count; 
+        @Parameter(names = {"--count"}, description = "Count the number of elements matching the group", required = false, help = true, arity = 0)
+        public boolean count = false; 
     
         @Parameter(names = {"--limit"}, description = "Maximum number of documents (groups) to be returned", required = false, arity = 1)
-        public Integer limit; 
+        public Integer limit = 50; 
     
         @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
         public String fields; 
@@ -229,8 +229,8 @@ public class AdminCommandOptions {
         @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
         public Integer skip; 
     
-        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, arity = 1)
-        public Boolean count; 
+        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
+        public boolean count = false; 
     
         @Parameter(names = {"--user", "-u"}, description = "User ID", required = false, arity = 1)
         public String user; 
@@ -267,14 +267,14 @@ public class AdminCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "The body study GroupSyncParams web service parameter", required = false, arity = 1)
         public String study;
     
-        @Parameter(names = {"--sync-all"}, description = "The body syncAll GroupSyncParams web service parameter", required = false, arity = 1)
-        public Boolean syncAll;
+        @Parameter(names = {"--sync-all"}, description = "The body syncAll GroupSyncParams web service parameter", required = false, help = true, arity = 0)
+        public boolean syncAll = false;
     
         @Parameter(names = {"--type"}, description = "The body type GroupSyncParams web service parameter", required = false, arity = 1)
         public String type;
     
-        @Parameter(names = {"--force"}, description = "The body force GroupSyncParams web service parameter", required = false, arity = 1)
-        public Boolean force;
+        @Parameter(names = {"--force"}, description = "The body force GroupSyncParams web service parameter", required = false, help = true, arity = 0)
+        public boolean force = false;
     
     }
 

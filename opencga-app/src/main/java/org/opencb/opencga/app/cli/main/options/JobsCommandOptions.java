@@ -22,8 +22,8 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
+*  
 */
-
 
 /**
  * This class contains methods for the Jobs command line.
@@ -83,7 +83,7 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         public String members; 
     
         @Parameter(names = {"--action"}, description = "Action to be performed [ADD, SET, REMOVE or RESET].", required = true, arity = 1)
-        public String action; 
+        public String action = "ADD"; 
     
         @Parameter(names = {"--permissions"}, description = "The body web service permissions parameter", required = true, arity = 1)
         public String permissions;
@@ -147,8 +147,8 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         @Parameter(names = {"--release"}, description = "Release", required = false, arity = 1)
         public String release; 
     
-        @Parameter(names = {"--default"}, description = "Calculate default stats", required = false, arity = 1)
-        public Boolean default_values; 
+        @Parameter(names = {"--default"}, description = "Calculate default stats", required = false, help = true, arity = 0)
+        public boolean default_values = false; 
     
         @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1", required = false, arity = 1)
         public String field; 
@@ -180,16 +180,16 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         public String toolId;
     
         @Parameter(names = {"--tool-description"}, description = "Users may provide a description for the entry.", required = false, arity = 1)
-        public String toolDescription;
+        public String toolDescription = "No description available";
     
         @Parameter(names = {"--tool-scope"}, description = "Tool info scope can have the values GLOBAL, PROJECT and STUDY.", required = false, arity = 1)
-        public String toolScope;
+        public String toolScope = "No description available";
     
         @Parameter(names = {"--tool-type"}, description = "Tool info type can have the values OPERATION and ANALYSIS.", required = false, arity = 1)
-        public String toolType;
+        public String toolType = "No description available";
     
         @Parameter(names = {"--tool-resource"}, description = "Tool info resource can have the values AUDIT, USER, PROJECT, STUDY, FILE, SAMPLE, JOB, INDIVIDUAL, COHORT, DISEASE_PANEL, FAMILY, CLINICAL_ANALYSIS, INTERPRETATION, VARIANT, ALIGNMENT, CLINICAL, EXPRESSION, RGA and FUNCTIONAL.", required = false, arity = 1)
-        public String toolResource;
+        public String toolResource = "No description available";
     
         @Parameter(names = {"--priority"}, description = "The body priority JobCreateParams web service parameter", required = false, arity = 1)
         public String priority;
@@ -229,8 +229,8 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--other-studies"}, description = "Flag indicating the entries being queried can belong to any related study, not just the primary one.", required = false, arity = 1)
-        public Boolean otherStudies; 
+        @Parameter(names = {"--other-studies"}, description = "Flag indicating the entries being queried can belong to any related study, not just the primary one.", required = false, help = true, arity = 0)
+        public boolean otherStudies = false; 
     
         @Parameter(names = {"--id"}, description = "Comma separated list of job IDs up to a maximum of 100", required = false, arity = 1)
         public String id; 
@@ -280,10 +280,10 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         @Parameter(names = {"--release"}, description = "Release when it was created", required = false, arity = 1)
         public String release; 
     
-        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, arity = 1)
-        public Boolean deleted; 
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
     
-        @Parameter(names = {"--field"}, description = "Field for which to obtain the distinct values", required = true, arity = 1)
+        @Parameter(names = {"--field"}, description = "Comma separated list of fields for which to obtain the distinct values", required = true, arity = 1)
         public String field; 
     
     }
@@ -318,8 +318,8 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         @Parameter(names = {"--job"}, description = "The body job JobRetryParams web service parameter", required = false, arity = 1)
         public String job;
     
-        @Parameter(names = {"--force"}, description = "The body force JobRetryParams web service parameter", required = false, arity = 1)
-        public Boolean force;
+        @Parameter(names = {"--force"}, description = "The body force JobRetryParams web service parameter", required = false, help = true, arity = 0)
+        public boolean force = false;
     
     }
 
@@ -341,14 +341,14 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
         public Integer skip; 
     
-        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, arity = 1)
-        public Boolean count; 
+        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
+        public boolean count = false; 
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--other-studies"}, description = "Flag indicating the entries being queried can belong to any related study, not just the primary one.", required = false, arity = 1)
-        public Boolean otherStudies; 
+        @Parameter(names = {"--other-studies"}, description = "Flag indicating the entries being queried can belong to any related study, not just the primary one.", required = false, help = true, arity = 0)
+        public boolean otherStudies = false; 
     
         @Parameter(names = {"--id"}, description = "Comma separated list of job IDs up to a maximum of 100", required = false, arity = 1)
         public String id; 
@@ -398,8 +398,8 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         @Parameter(names = {"--release"}, description = "Release when it was created", required = false, arity = 1)
         public String release; 
     
-        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, arity = 1)
-        public Boolean deleted; 
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
     
     }
 
@@ -415,8 +415,8 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         @Parameter(names = {"--member"}, description = "User or group id", required = false, arity = 1)
         public String member; 
     
-        @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, arity = 1)
-        public Boolean silent; 
+        @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, help = true, arity = 0)
+        public boolean silent = false; 
     
     }
 
@@ -452,8 +452,8 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted jobs", required = false, arity = 1)
-        public Boolean deleted; 
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted jobs", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
     
     }
 
@@ -482,7 +482,7 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         public String study; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1, hidden = true)
-        public Boolean includeResult= true; 
+        public boolean includeResult= true; 
     
         @Parameter(names = {"--description"}, description = "Field to store information of the item", required = false, arity = 1)
         public String description;
@@ -511,7 +511,7 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         public Long offset; 
     
         @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned up to a maximum of 1000", required = false, arity = 1)
-        public Integer lines; 
+        public Integer lines = 20; 
     
         @Parameter(names = {"--type"}, description = "Log file to be shown (stdout or stderr)", required = false, arity = 1)
         public String type; 
@@ -531,7 +531,7 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         public String study; 
     
         @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned up to a maximum of 1000", required = false, arity = 1)
-        public Integer lines; 
+        public Integer lines = 20; 
     
         @Parameter(names = {"--type"}, description = "Log file to be shown (stdout or stderr)", required = false, arity = 1)
         public String type; 

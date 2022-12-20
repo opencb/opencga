@@ -20,8 +20,8 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
+*  
 */
-
 
 /**
  * This class contains methods for the Individuals command line.
@@ -85,10 +85,10 @@ public class IndividualsCommandOptions {
         public String members; 
     
         @Parameter(names = {"--action"}, description = "Action to be performed [ADD, SET, REMOVE or RESET].", required = true, arity = 1)
-        public String action; 
+        public String action = "ADD"; 
     
-        @Parameter(names = {"--propagate"}, description = "Propagate individual permissions to related samples", required = false, arity = 1)
-        public Boolean propagate; 
+        @Parameter(names = {"--propagate"}, description = "Propagate individual permissions to related samples", required = false, help = true, arity = 0)
+        public boolean propagate = false; 
     
         @Parameter(names = {"--permissions"}, description = "The body web service permissions parameter", required = true, arity = 1)
         public String permissions;
@@ -164,8 +164,8 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", required = false, arity = 1)
         public String annotation; 
     
-        @Parameter(names = {"--default"}, description = "Calculate default stats", required = false, arity = 1)
-        public Boolean default_values; 
+        @Parameter(names = {"--default"}, description = "Calculate default stats", required = false, help = true, arity = 0)
+        public boolean default_values = false; 
     
         @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1", required = false, arity = 1)
         public String field; 
@@ -193,8 +193,8 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--path"}, description = "Path where the TSV file is located in OpenCGA or where it should be located.", required = true, arity = 1)
         public String path; 
     
-        @Parameter(names = {"--parents"}, description = "Flag indicating whether to create parent directories if they don't exist (only when TSV file was not previously associated).", required = false, arity = 1)
-        public Boolean parents; 
+        @Parameter(names = {"--parents"}, description = "Flag indicating whether to create parent directories if they don't exist (only when TSV file was not previously associated).", required = false, help = true, arity = 0)
+        public boolean parents = false; 
     
         @Parameter(names = {"--annotation-set-id"}, description = "Annotation set id. If not provided, variableSetId will be used.", required = false, arity = 1)
         public String annotationSetId; 
@@ -231,11 +231,11 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1, hidden = true)
         public Boolean includeResult= true; 
     
-        @Parameter(names = {"--body_id"}, description = "The body id IndividualCreateParams web service parameter", required = false, arity = 1)
-        public String bodyId;
+        @Parameter(names = {"--id"}, description = "The body id IndividualCreateParams web service parameter", required = true, arity = 1)
+        public String id;
     
-        @Parameter(names = {"--body_name"}, description = "The body name IndividualCreateParams web service parameter", required = false, arity = 1)
-        public String bodyName;
+        @Parameter(names = {"--name", "-n"}, description = "The body name IndividualCreateParams web service parameter", required = false, arity = 1)
+        public String name;
     
         @Parameter(names = {"--father-id"}, description = "The body id IndividualReferenceParam web service parameter", required = false, arity = 1)
         public String fatherId;
@@ -243,11 +243,11 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--mother-id"}, description = "The body id IndividualReferenceParam web service parameter", required = false, arity = 1)
         public String motherId;
     
-        @Parameter(names = {"--body_creation-date"}, description = "The creation date of the item", required = false, arity = 1)
-        public String bodyCreationDate;
+        @Parameter(names = {"--creation-date", "--cd"}, description = "The creation date of the item", required = false, arity = 1)
+        public String creationDate;
     
-        @Parameter(names = {"--body_modification-date"}, description = "The last modification date of the item", required = false, arity = 1)
-        public String bodyModificationDate;
+        @Parameter(names = {"--modification-date", "--md"}, description = "The last modification date of the item", required = false, arity = 1)
+        public String modificationDate;
     
         @Parameter(names = {"--location-address"}, description = "Location address.", required = false, arity = 1)
         public String locationAddress;
@@ -294,8 +294,8 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--ethnicity-url"}, description = "Ontology url", required = false, arity = 1)
         public String ethnicityUrl;
     
-        @Parameter(names = {"--body_parental-consanguinity"}, description = "The body parentalConsanguinity IndividualCreateParams web service parameter", required = false, arity = 1)
-        public Boolean bodyParentalConsanguinity;
+        @Parameter(names = {"--parental-consanguinity"}, description = "The body parentalConsanguinity IndividualCreateParams web service parameter", required = false, arity = 1)
+        public Boolean parentalConsanguinity;
     
         @Parameter(names = {"--population-name"}, description = "Name of the individual population.", required = false, arity = 1)
         public String populationName;
@@ -306,14 +306,14 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--population-description"}, description = "Description of the individual population.", required = false, arity = 1)
         public String populationDescription;
     
-        @Parameter(names = {"--body_date-of-birth"}, description = "The body dateOfBirth IndividualCreateParams web service parameter", required = false, arity = 1)
-        public String bodyDateOfBirth;
+        @Parameter(names = {"--date-of-birth"}, description = "The body dateOfBirth IndividualCreateParams web service parameter", required = false, arity = 1)
+        public String dateOfBirth;
     
-        @Parameter(names = {"--body_karyotypic-sex"}, description = "The body karyotypicSex IndividualCreateParams web service parameter", required = false, arity = 1)
-        public String bodyKaryotypicSex;
+        @Parameter(names = {"--karyotypic-sex"}, description = "The body karyotypicSex IndividualCreateParams web service parameter", required = false, arity = 1)
+        public String karyotypicSex;
     
-        @Parameter(names = {"--body_life-status"}, description = "The body lifeStatus IndividualCreateParams web service parameter", required = false, arity = 1)
-        public String bodyLifeStatus;
+        @Parameter(names = {"--life-status"}, description = "The body lifeStatus IndividualCreateParams web service parameter", required = false, arity = 1)
+        public String lifeStatus;
     
         @Parameter(names = {"--status-id"}, description = "The body id StatusParams web service parameter", required = false, arity = 1)
         public String statusId;
@@ -389,8 +389,8 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
         public String status; 
     
-        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, arity = 1)
-        public Boolean deleted; 
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
     
         @Parameter(names = {"--creation-date", "--cd"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
         public String creationDate; 
@@ -410,7 +410,7 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--snapshot"}, description = "Snapshot value (Latest version of the entry in the specified release)", required = false, arity = 1)
         public Integer snapshot; 
     
-        @Parameter(names = {"--field"}, description = "Field for which to obtain the distinct values", required = true, arity = 1)
+        @Parameter(names = {"--field"}, description = "Comma separated list of fields for which to obtain the distinct values", required = true, arity = 1)
         public String field; 
     
     }
@@ -433,11 +433,11 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
         public Integer skip; 
     
-        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, arity = 1)
-        public Boolean count; 
+        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
+        public boolean count = false; 
     
-        @Parameter(names = {"--flatten-annotations"}, description = "Flatten the annotations?", required = false, arity = 1)
-        public Boolean flattenAnnotations; 
+        @Parameter(names = {"--flatten-annotations"}, description = "Flatten the annotations?", required = false, help = true, arity = 0)
+        public boolean flattenAnnotations = false; 
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
@@ -496,8 +496,8 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
         public String status; 
     
-        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, arity = 1)
-        public Boolean deleted; 
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
     
         @Parameter(names = {"--creation-date", "--cd"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
         public String creationDate; 
@@ -534,8 +534,8 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--member"}, description = "User or group id", required = false, arity = 1)
         public String member; 
     
-        @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, arity = 1)
-        public Boolean silent; 
+        @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, help = true, arity = 0)
+        public boolean silent = false; 
     
     }
 
@@ -545,8 +545,8 @@ public class IndividualsCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--force"}, description = "Force the deletion of individuals that already belong to families", required = false, arity = 1)
-        public Boolean force; 
+        @Parameter(names = {"--force"}, description = "Force the deletion of individuals that already belong to families", required = false, help = true, arity = 0)
+        public boolean force = false; 
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
@@ -568,8 +568,8 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
         public String exclude; 
     
-        @Parameter(names = {"--flatten-annotations"}, description = "Flatten the annotations?", required = false, arity = 1)
-        public Boolean flattenAnnotations; 
+        @Parameter(names = {"--flatten-annotations"}, description = "Flatten the annotations?", required = false, help = true, arity = 0)
+        public boolean flattenAnnotations = false; 
     
         @Parameter(names = {"--individuals"}, description = "Comma separated list of individual IDs, names or UUIDs up to a maximum of 100", required = true, arity = 1)
         public String individuals; 
@@ -580,8 +580,8 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--version"}, description = "Comma separated list of individual versions. 'all' to get all the individual versions. Not supported if multiple individual ids are provided", required = false, arity = 1)
         public String version; 
     
-        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted individuals", required = false, arity = 1)
-        public Boolean deleted; 
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted individuals", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
     
     }
 
@@ -610,7 +610,7 @@ public class IndividualsCommandOptions {
         public String study; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1, hidden = true)
-        public Boolean includeResult= true; 
+        public boolean includeResult= true; 
     
         @Parameter(names = {"--id"}, description = "The body id IndividualUpdateParams web service parameter", required = false, arity = 1)
         public String id;
@@ -732,7 +732,7 @@ public class IndividualsCommandOptions {
         public String annotationSet; 
     
         @Parameter(names = {"--action"}, description = "Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value configured in the corresponding variables of the VariableSet if any.", required = false, arity = 1)
-        public String action; 
+        public String action = "ADD"; 
     
     }
 
@@ -748,8 +748,8 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
         public String exclude; 
     
-        @Parameter(names = {"--flatten-annotations"}, description = "Flatten the annotations?", required = false, arity = 1)
-        public Boolean flattenAnnotations; 
+        @Parameter(names = {"--flatten-annotations"}, description = "Flatten the annotations?", required = false, help = true, arity = 0)
+        public boolean flattenAnnotations = false; 
     
         @Parameter(names = {"--individual"}, description = "Individual ID, name or UUID", required = true, arity = 1)
         public String individual; 
@@ -758,7 +758,7 @@ public class IndividualsCommandOptions {
         public String study; 
     
         @Parameter(names = {"--degree"}, description = "Pedigree degree", required = false, arity = 1)
-        public Integer degree; 
+        public Integer degree = 2; 
     
     }
 

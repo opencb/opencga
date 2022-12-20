@@ -16,10 +16,12 @@
 
 package org.opencb.opencga.core.models.variant;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.opencb.commons.datastore.core.Query;
 
 /**
- * Do not use native values (like boolean or int), so they are null by default.
+ * When using native values (like boolean or int), set add
+ * {@code @JsonInclude(JsonInclude.Include.NON_DEFAULT)} so they are null by default.
  */
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -47,9 +49,11 @@ public class VariantQueryParams extends BasicVariantQueryParams {
     @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_INCLUDE_SAMPLE_DATA_DESCRIPTION)
     private String includeSampleData;
     @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_INCLUDE_SAMPLE_ID_DESCRIPTION)
-    private String includeSampleId;
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+    private boolean includeSampleId;
     @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_INCLUDE_GENOTYPE_DESCRIPTION)
-    private String includeGenotype;
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+    private boolean includeGenotype;
 
     @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_FILE_DESCRIPTION)
     private String file;
@@ -129,7 +133,9 @@ public class VariantQueryParams extends BasicVariantQueryParams {
 
     @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_UNKNOWN_GENOTYPE_DESCRIPTION)
     private String unknownGenotype;
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private boolean sampleMetadata = false;
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private boolean sort = false;
 
 
@@ -226,20 +232,20 @@ public class VariantQueryParams extends BasicVariantQueryParams {
         return this;
     }
 
-    public String getIncludeGenotype() {
+    public boolean getIncludeGenotype() {
         return includeGenotype;
     }
 
-    public VariantQueryParams setIncludeGenotype(String includeGenotype) {
+    public VariantQueryParams setIncludeGenotype(boolean includeGenotype) {
         this.includeGenotype = includeGenotype;
         return this;
     }
 
-    public String getIncludeSampleId() {
+    public boolean getIncludeSampleId() {
         return includeSampleId;
     }
 
-    public VariantQueryParams setIncludeSampleId(String includeSampleId) {
+    public VariantQueryParams setIncludeSampleId(boolean includeSampleId) {
         this.includeSampleId = includeSampleId;
         return this;
     }

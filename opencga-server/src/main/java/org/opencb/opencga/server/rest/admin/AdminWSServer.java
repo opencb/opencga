@@ -267,7 +267,7 @@ public class AdminWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing the mandatory parameters", required = true) InstallationParams installParams) {
         try {
             catalogManager.installCatalogDB(installParams.getSecretKey(), installParams.getPassword(), installParams.getEmail(),
-                    installParams.getOrganization());
+                    installParams.getOrganization(), false, true);
             return createOkResponse(DataResult.empty());
         } catch (Exception e) {
             return createErrorResponse(e);

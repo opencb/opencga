@@ -132,7 +132,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         CatalogManagerExternalResource.clearCatalog(configuration);
 
         catalogManager = new CatalogManager(configuration);
-        catalogManager.installCatalogDB(configuration.getAdmin().getSecretKey(), "4dMiNiStR4t0R.", "opencga@admin.com", "", true);
+        catalogManager.installCatalogDB(configuration.getAdmin().getSecretKey(), TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", "", true, false);
+
         fileManager = catalogManager.getFileManager();
 
         catalogManager.getUserManager().create(ownerUser, ownerUser, "email@ccc.ccc", TestParamConstants.PASSWORD, "ASDF", null, Account.AccountType.FULL, null);
@@ -386,11 +387,11 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> studyAcls = catalogManager.getAuthorizationManager()
                 .getStudyAcl(studyAdminUser1, studyUid, group);
         assertEquals(1, studyAcls.getNumResults());
-        assertEquals(group, studyAcls.first().get(0).getMember());
+        assertEquals(group, studyAcls.first().getAcl().get(0).getMember());
 
-        assertEquals(AuthorizationManager.getAnalystAcls().size(), studyAcls.first().get(0).getPermissions().size());
+        assertEquals(AuthorizationManager.getAnalystAcls().size(), studyAcls.first().getAcl().get(0).getPermissions().size());
         for (StudyPermissions.Permissions analystAcl : AuthorizationManager.getAnalystAcls()) {
-            assertTrue(studyAcls.first().get(0).getPermissions().contains(analystAcl));
+            assertTrue(studyAcls.first().getAcl().get(0).getPermissions().contains(analystAcl));
         }
     }
 
@@ -419,8 +420,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
                 .getAcls(Collections.singletonList(studyFqn), externalUser, false, studyAdmin1SessionId);
 
         assertEquals(1, studyAcls.getNumResults());
-        assertEquals(1, studyAcls.first().size());
-        assertEquals(externalUser, studyAcls.first().get(0).getMember());
+        assertEquals(1, studyAcls.first().getAcl().size());
+        assertEquals(externalUser, studyAcls.first().getAcl().get(0).getMember());
 
         // Change role
         StudyAclParams aclParams1 = new StudyAclParams(null, null);
@@ -434,11 +435,11 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
                 studyAdmin1SessionId);
 
         assertEquals(1, studyAcls.getNumResults());
-        assertEquals(1, studyAcls.first().size());
-        assertEquals(externalUser, studyAcls.first().get(0).getMember());
-        assertEquals(AuthorizationManager.getAnalystAcls().size(), studyAcls.first().get(0).getPermissions().size());
+        assertEquals(1, studyAcls.first().getAcl().size());
+        assertEquals(externalUser, studyAcls.first().getAcl().get(0).getMember());
+        assertEquals(AuthorizationManager.getAnalystAcls().size(), studyAcls.first().getAcl().get(0).getPermissions().size());
         for (StudyPermissions.Permissions analystAcl : AuthorizationManager.getAnalystAcls()) {
-            assertTrue(studyAcls.first().get(0).getPermissions().contains(analystAcl));
+            assertTrue(studyAcls.first().getAcl().get(0).getPermissions().contains(analystAcl));
         }
     }
 
@@ -455,9 +456,9 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> studyAcls = catalogManager.getStudyManager().getAcls(
                 Collections.singletonList(studyFqn), externalUser, false, studyAdmin1SessionId);
         assertEquals(1, studyAcls.getNumResults());
-        assertEquals(1, studyAcls.first().size());
-        assertEquals(externalUser, studyAcls.first().get(0).getMember());
-        assertNull(studyAcls.first().get(0).getPermissions());
+        assertEquals(1, studyAcls.first().getAcl().size());
+        assertEquals(externalUser, studyAcls.first().getAcl().get(0).getMember());
+        assertNull(studyAcls.first().getAcl().get(0).getPermissions());
     }
 
     // A user with proper permissions removes an existing user from a role
@@ -469,10 +470,10 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> studyAcls = catalogManager.getStudyManager().getAcls(
                 Collections.singletonList(studyFqn), externalUser, false, studyAdmin1SessionId);
         assertEquals(1, studyAcls.getNumResults());
-        assertEquals(1, studyAcls.first().size());
-        assertEquals(externalUser, studyAcls.first().get(0).getMember());
-        assertEquals(1, studyAcls.first().get(0).getPermissions().size());
-        assertTrue(studyAcls.first().get(0).getPermissions().contains(StudyPermissions.Permissions.NONE));
+        assertEquals(1, studyAcls.first().getAcl().size());
+        assertEquals(externalUser, studyAcls.first().getAcl().get(0).getMember());
+        assertEquals(1, studyAcls.first().getAcl().get(0).getPermissions().size());
+        assertTrue(studyAcls.first().getAcl().get(0).getPermissions().contains(StudyPermissions.Permissions.NONE));
     }
 
     // A user with no permissions tries to remove an existing user from a role
@@ -494,11 +495,11 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> studyAcls = catalogManager.getAuthorizationManager().getStudyAcl(studyAdminUser1,
                 study.getUid(), group);
         assertEquals(1, studyAcls.getNumResults());
-        assertEquals(group, studyAcls.first().get(0).getMember());
+        assertEquals(group, studyAcls.first().getAcl().get(0).getMember());
 
-        assertEquals(AuthorizationManager.getAdminAcls().size(), studyAcls.first().get(0).getPermissions().size());
+        assertEquals(AuthorizationManager.getAdminAcls().size(), studyAcls.first().getAcl().get(0).getPermissions().size());
         for (StudyPermissions.Permissions adminAcl : AuthorizationManager.getAdminAcls()) {
-            assertTrue(studyAcls.first().get(0).getPermissions().contains(adminAcl));
+            assertTrue(studyAcls.first().getAcl().get(0).getPermissions().contains(adminAcl));
         }
 
         StudyAclParams aclParams = new StudyAclParams(null, null);
@@ -506,9 +507,9 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         String userId = catalogManager.getUserManager().getUserId(ownerSessionId);
         studyAcls = catalogManager.getAuthorizationManager().getStudyAcl(userId, study.getUid(), group);
         assertEquals(1, studyAcls.getNumResults());
-        assertEquals(1, studyAcls.first().size());
-        assertEquals(group, studyAcls.first().get(0).getMember());
-        assertNull(studyAcls.first().get(0).getPermissions());
+        assertEquals(1, studyAcls.first().getAcl().size());
+        assertEquals(group, studyAcls.first().getAcl().get(0).getMember());
+        assertNull(studyAcls.first().getAcl().get(0).getPermissions());
     }
 
     @Test
@@ -955,9 +956,9 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> acls = studyManager.getAcls(Collections.singletonList(studyFqn), externalUser, false,
                 externalSessionId);
         assertEquals(1, acls.getNumResults());
-        assertEquals(1, acls.first().size());
-        assertEquals(externalUser, acls.first().get(0).getMember());
-        assertEquals(1, acls.first().get(0).getGroups().stream().filter(g -> "@group1".equals(g.getId())).count());
+        assertEquals(1, acls.first().getAcl().size());
+        assertEquals(externalUser, acls.first().getAcl().get(0).getMember());
+        assertEquals(1, acls.first().getAcl().get(0).getGroups().stream().filter(g -> "@group1".equals(g.getId())).count());
 //        assertTrue(acls.first().keySet().containsAll(Arrays.asList(externalUser, "@group1")));
 
         studyManager.updateAcl(Collections.singletonList(studyFqn), "@group2",
@@ -965,14 +966,14 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         acls = studyManager.getAcls(Collections.singletonList(studyFqn), externalUser, false,
                 externalSessionId);
         assertEquals(1, acls.getNumResults());
-        assertEquals(1, acls.first().size());
-        assertEquals(externalUser, acls.first().get(0).getMember());
-        assertEquals(2, acls.first().get(0).getGroups().stream()
+        assertEquals(1, acls.first().getAcl().size());
+        assertEquals(externalUser, acls.first().getAcl().get(0).getMember());
+        assertEquals(2, acls.first().getAcl().get(0).getGroups().stream()
                 .filter(g -> "@group1".equals(g.getId()) || "@group2".equals(g.getId()))
                 .count());
 
-        assertTrue(acls.first().get(0).getPermissions().contains(StudyPermissions.Permissions.VIEW_FILES));
-        for (AclEntry.GroupAclEntry<StudyPermissions.Permissions> group : acls.first().get(0).getGroups()) {
+        assertTrue(acls.first().getAcl().get(0).getPermissions().contains(StudyPermissions.Permissions.VIEW_FILES));
+        for (AclEntry.GroupAclEntry<StudyPermissions.Permissions> group : acls.first().getAcl().get(0).getGroups()) {
             switch (group.getId()) {
                 case "@group1":
                     assertTrue(group.getPermissions().contains(StudyPermissions.Permissions.VIEW_COHORTS));

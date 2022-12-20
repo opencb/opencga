@@ -333,7 +333,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    public OpenCGAResult<?> distinct(String studyId, String field, Query query, String token) throws CatalogException {
+    public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(token);
@@ -342,22 +342,16 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
-                .append("field", new Query(query))
+                .append("fields", fields)
                 .append("query", new Query(query))
                 .append("token", token);
         try {
-            FamilyDBAdaptor.QueryParams param = FamilyDBAdaptor.QueryParams.getParam(field);
-            if (param == null) {
-                throw new CatalogException("Unknown '" + field + "' parameter.");
-            }
-            Class<?> clazz = getTypeClass(param.type());
-
             fixQueryObject(study, query, userId);
             // Fix query if it contains any annotation
             AnnotationUtils.fixQueryAnnotationSearch(study, query);
 
             query.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<?> result = familyDBAdaptor.distinct(study.getUid(), field, query, userId, clazz);
+            OpenCGAResult<?> result = familyDBAdaptor.distinct(study.getUid(), fields, query, userId);
 
             auditManager.auditDistinct(userId, Enums.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -972,7 +966,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                     FamilyPermissions.WRITE);
         }
 
-        if (updateParams != null && StringUtils.isNotEmpty(updateParams.getId())) {
+        if (updateParams != null && updateParams.getId() != null) {
             ParamUtils.checkIdentifier(updateParams.getId(), FamilyDBAdaptor.QueryParams.ID.key());
         }
 
@@ -1103,7 +1097,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     // **************************   ACLs  ******************************** //
     public OpenCGAResult<AclEntryList<FamilyPermissions>> getAcls(String studyId, List<String> familyList, String member,
                                                                   boolean ignoreException, String token) throws CatalogException {
-        return getAcls(studyId, familyList, Collections.singletonList(member), ignoreException, token);
+        return getAcls(studyId, familyList, StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(),
+                ignoreException, token);
     }
 
     public OpenCGAResult<AclEntryList<FamilyPermissions>> getAcls(String studyId, List<String> familyList, List<String> members,
@@ -1159,6 +1154,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                                     new Error(0, "", missingMap.get(familyId).getErrorMsg())), new ObjectMap());
                 }
             }
+            for (int i = 0; i < queryResult.getResults().size(); i++) {
+                familyAcls.getResults().get(i).setId(queryResult.getResults().get(i).getId());
+            }
             familyAcls.setResults(resultList);
             familyAcls.setEvents(eventList);
         } catch (CatalogException e) {
@@ -1172,7 +1170,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             } else {
                 for (String familyId : familyList) {
                     Event event = new Event(Event.Type.ERROR, familyId, e.getMessage());
-                    familyAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, new AclEntryList<>(), 0));
+                    familyAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 }
             }
         } finally {
@@ -1312,7 +1310,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             OpenCGAResult<AclEntryList<FamilyPermissions>> remainingAcls = authorizationManager.getAcls(study.getUid(),
                     familyUids, members, Enums.Resource.FAMILY, FamilyPermissions.class);
-
+            for (int i = 0; i < remainingAcls.getResults().size(); i++) {
+                remainingAcls.getResults().get(i).setId(familyList.get(i).getId());
+            }
             for (Family family : familyList) {
                 auditManager.audit(operationUUID, user, Enums.Action.UPDATE_ACLS, Enums.Resource.FAMILY, family.getId(),
                         family.getUuid(), study.getId(), study.getUuid(), auditParams,
@@ -1438,31 +1438,21 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 membersMap.put(String.valueOf(individual.getUid()), individual);
             }
 
-            String parentsKey = null;
+            String parentsKey = "";
             if (individual.getMother() != null) {
-                if (individual.getMother().getUid() > 0) {
-                    individual.getMother().setId(String.valueOf(individual.getMother().getUid()));
-                }
                 if (!StringUtils.isEmpty(individual.getMother().getId())) {
-                    parentsKey = individual.getMother().getId() + "||F";
+                    parentsKey += individual.getMother().getId() + "__" + individual.getMother().getUid() + "||F";
                 }
             }
             if (individual.getFather() != null) {
-                if (parentsKey != null) {
+                if (StringUtils.isNotEmpty(parentsKey)) {
                     parentsKey += "---";
                 }
-                if (individual.getFather().getUid() > 0) {
-                    individual.getFather().setId(String.valueOf(individual.getFather().getUid()));
-                }
                 if (!StringUtils.isEmpty(individual.getFather().getId())) {
-                    if (parentsKey != null) {
-                        parentsKey += individual.getFather().getId() + "||M";
-                    } else {
-                        parentsKey = individual.getFather().getId() + "||M";
-                    }
+                    parentsKey += individual.getFather().getId() + "__" + individual.getFather().getUid() + "||M";
                 }
             }
-            if (parentsKey == null) {
+            if (StringUtils.isEmpty(parentsKey)) {
                 noParentsSet.add(individual.getId());
             } else {
                 if (!parentsMap.containsKey(parentsKey)) {
@@ -1474,32 +1464,31 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         // 2. Loop over the parentsMap object. We will be emptying the noParentsSet as soon as we find a parent in the set. Once,
         // everything finishes, that set should be empty. Otherwise, it will mean that parent is not in use
-        // On the other hand, all the parents should exist in the membersMap, otherwise it will mean that is missing in the family
         for (Map.Entry<String, List<Individual>> parentListEntry : parentsMap.entrySet()) {
             String[] split = parentListEntry.getKey().split("---");
             for (String parentName : split) {
                 String[] splitNameSex = parentName.split("\\|\\|");
-                String name = splitNameSex[0];
+                String[] splitIdUid = splitNameSex[0].split("__");
+                String parentId = splitIdUid[0];
+                String parentUid = splitIdUid[1];
                 SexOntologyTermAnnotation sexTerm = splitNameSex[1].equals("F")
                         ? SexOntologyTermAnnotation.initFemale()
                         : SexOntologyTermAnnotation.initMale();
                 IndividualProperty.Sex sex = sexTerm.getSex();
 
-                if (!membersMap.containsKey(name)) {
-                    throw new CatalogException("The parent " + name + " is not present in the members list");
-                } else {
+                if (membersMap.containsKey(parentUid)) {
                     // Check if the sex is correct
-                    IndividualProperty.Sex sex1 = membersMap.get(name).getSex() != null
-                            ? membersMap.get(name).getSex().getSex()
+                    IndividualProperty.Sex sex1 = membersMap.get(parentUid).getSex() != null
+                            ? membersMap.get(parentUid).getSex().getSex()
                             : IndividualProperty.Sex.UNKNOWN;
                     if (sex1 != null && sex1 != sex && sex1 != IndividualProperty.Sex.UNKNOWN) {
-                        throw new CatalogException("Sex of parent " + name + " is incorrect or the relationship is incorrect. In "
+                        throw new CatalogException("Sex of parent '" + parentId + "' is incorrect or the relationship is incorrect. In "
                                 + "principle, it should be " + sexTerm);
                     }
-                    membersMap.get(name).setSex(sexTerm);
+                    membersMap.get(parentUid).setSex(sexTerm);
 
                     // We attempt to remove the individual from the noParentsSet
-                    noParentsSet.remove(membersMap.get(name).getId());
+                    noParentsSet.remove(membersMap.get(parentUid).getId());
                 }
             }
         }

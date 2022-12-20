@@ -796,15 +796,23 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         VariantCommandOptions.MutationalSignatureCommandOptions cliOptions = variantCommandOptions.mutationalSignatureCommandOptions;
 
         // Check signature release
-        checkSignatureRelease(cliOptions.release);
+        checkSignatureVersion(cliOptions.sigVersion);
 
         ObjectMap params = new MutationalSignatureAnalysisParams(
-                cliOptions.sample,
                 cliOptions.id,
                 cliOptions.description,
-                new ObjectMap(cliOptions.query),
-                cliOptions.release,
-                cliOptions.fitting,
+                cliOptions.query,
+                cliOptions.catalogues,
+                cliOptions.cataloguesContent,
+                cliOptions.fitMethod,
+                cliOptions.nBoot,
+                cliOptions.sigVersion,
+                cliOptions.organ,
+                cliOptions.thresholdPerc,
+                cliOptions.thresholdPval,
+                cliOptions.maxRareSigs,
+                cliOptions.signaturesFile,
+                cliOptions.rareSignaturesFile,
                 cliOptions.outdir)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
@@ -903,7 +911,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         VariantCommandOptions.SampleQcCommandOptions cliOptions = variantCommandOptions.sampleQcCommandOptions;
 
         // Check signature release
-        checkSignatureRelease(cliOptions.signatureRelease);
+        checkSignatureVersion(cliOptions.signatureSigVersion);
 
         // Build variant query from cli options
         AnnotationVariantQueryParams variantStatsQuery = ToolParams.fromParams(AnnotationVariantQueryParams.class,
@@ -916,8 +924,16 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 variantStatsQuery,
                 cliOptions.signatureId,
                 cliOptions.signatureDescription,
-                new ObjectMap(cliOptions.signatureQuery),
-                cliOptions.signatureRelease,
+                cliOptions.signatureQuery,
+                cliOptions.signatureFitMethod,
+                cliOptions.signatureNBoot,
+                cliOptions.signatureSigVersion,
+                cliOptions.signatureOrgan,
+                cliOptions.signatureThresholdPerc,
+                cliOptions.signatureThresholdPval,
+                cliOptions.signatureMaxRareSigs,
+                cliOptions.signatureSignaturesFile,
+                cliOptions.signatureRareSignaturesFile,
                 cliOptions.genomePlotId,
                 cliOptions.genomePlotDescr,
                 cliOptions.genomePlotConfigFile,
@@ -975,16 +991,16 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         toolRunner.execute(ExomiserWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
-    private void checkSignatureRelease(String release) throws ClientException {
-        switch (release) {
-            case "2":
-            case "3":
-            case "3.1":
-            case "3.2":
+    private void checkSignatureVersion(String sigVersion) throws ClientException {
+        switch (sigVersion) {
+            case "COSMICv2":
+            case "COSMICv3.2":
+            case "RefSigv1":
+            case "RefSigv2":
                 break;
             default:
-                throw new ClientException("Invalid value " + release + " for the mutational signature release. "
-                        + "Valid values are: 2, 3, 3.1 and 3.2");
+                throw new ClientException("Invalid value " + sigVersion + " for the mutational signature version. "
+                        + "Valid values are: COSMICv2, COSMICv3.2, RefSigv1 and RefSigv2");
         }
     }
 

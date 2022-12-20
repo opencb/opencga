@@ -20,9 +20,9 @@ import org.opencb.opencga.app.cli.main.options.DiseasePanelsCommandOptions;
 
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
-import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.panel.PanelAclEntryList;
 import org.opencb.opencga.core.models.panel.PanelAclUpdateParams;
 import org.opencb.opencga.core.models.panel.PanelCreateParams;
 import org.opencb.opencga.core.models.panel.PanelImportParams;
@@ -36,9 +36,8 @@ import org.opencb.opencga.core.models.panel.PanelUpdateParams;
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
+*  
 */
-
-
 /**
  * This class contains methods for the Disease Panels command line.
  *    PATH: /{apiVersion}/panels
@@ -98,7 +97,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private RestResponse<AclEntryList> updateAcl() throws Exception {
+    private RestResponse<PanelAclEntryList> updateAcl() throws Exception {
 
         logger.debug("Executing updateAcl in Disease Panels command line");
 
@@ -114,7 +113,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         PanelAclUpdateParams panelAclUpdateParams= null;
         if (commandOptions.jsonDataModel) {
             panelAclUpdateParams = new PanelAclUpdateParams();
-            RestResponse<AclEntryList> res = new RestResponse<>();
+            RestResponse<PanelAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(panelAclUpdateParams));
             return res;
@@ -289,7 +288,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getDiseasePanelClient().search(queryParams);
     }
 
-    private RestResponse<AclEntryList> acl() throws Exception {
+    private RestResponse<PanelAclEntryList> acl() throws Exception {
 
         logger.debug("Executing acl in Disease Panels command line");
 

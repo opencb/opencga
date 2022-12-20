@@ -24,13 +24,13 @@ import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
-import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.common.ExternalSource;
 import org.opencb.opencga.core.models.common.RgaIndex.Status;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleAclEntryList;
 import org.opencb.opencga.core.models.sample.SampleAclUpdateParams;
 import org.opencb.opencga.core.models.sample.SampleCollection;
 import org.opencb.opencga.core.models.sample.SampleCreateParams;
@@ -47,9 +47,8 @@ import org.opencb.opencga.core.models.sample.SampleVariantQualityControlMetrics;
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
+*  
 */
-
-
 /**
  * This class contains methods for the Samples command line.
  *    PATH: /{apiVersion}/samples
@@ -118,7 +117,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private RestResponse<AclEntryList> updateAcl() throws Exception {
+    private RestResponse<SampleAclEntryList> updateAcl() throws Exception {
 
         logger.debug("Executing updateAcl in Samples command line");
 
@@ -134,7 +133,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         SampleAclUpdateParams sampleAclUpdateParams= null;
         if (commandOptions.jsonDataModel) {
             sampleAclUpdateParams = new SampleAclUpdateParams();
-            RestResponse<AclEntryList> res = new RestResponse<>();
+            RestResponse<SampleAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(sampleAclUpdateParams));
             return res;
@@ -408,7 +407,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getSampleClient().search(queryParams);
     }
 
-    private RestResponse<AclEntryList> acl() throws Exception {
+    private RestResponse<SampleAclEntryList> acl() throws Exception {
 
         logger.debug("Executing acl in Samples command line");
 

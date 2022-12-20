@@ -54,9 +54,8 @@ import org.opencb.opencga.core.models.variant.VariantStudyDeleteParams;
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
+*  
 */
-
-
 /**
  * This class contains methods for the Operations - Variant Storage command line.
  *    PATH: /{apiVersion}/operation
@@ -733,7 +732,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "study",commandOptions.bodyStudy, true);
-            putNestedIfNotNull(beanParams, "files",commandOptions.bodyFiles, true);
+            putNestedIfNotNull(beanParams, "files",commandOptions.files, true);
 
             variantStorageMetadataSynchronizeParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

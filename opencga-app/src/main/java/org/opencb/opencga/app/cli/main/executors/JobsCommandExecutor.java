@@ -24,10 +24,10 @@ import java.util.Date;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
-import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobAclEntryList;
 import org.opencb.opencga.core.models.job.JobAclUpdateParams;
 import org.opencb.opencga.core.models.job.JobCreateParams;
 import org.opencb.opencga.core.models.job.JobRetryParams;
@@ -47,9 +47,8 @@ import org.opencb.opencga.core.tools.result.Status;
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
+*  
 */
-
-
 /**
  * This class contains methods for the Jobs command line.
  *    PATH: /{apiVersion}/jobs
@@ -124,7 +123,7 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
 
     }
 
-    private RestResponse<AclEntryList> updateAcl() throws Exception {
+    private RestResponse<JobAclEntryList> updateAcl() throws Exception {
 
         logger.debug("Executing updateAcl in Jobs command line");
 
@@ -133,7 +132,7 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
         JobAclUpdateParams jobAclUpdateParams= null;
         if (commandOptions.jsonDataModel) {
             jobAclUpdateParams = new JobAclUpdateParams();
-            RestResponse<AclEntryList> res = new RestResponse<>();
+            RestResponse<JobAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(jobAclUpdateParams));
             return res;
@@ -351,7 +350,7 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
 
     }
 
-    private RestResponse<AclEntryList> acl() throws Exception {
+    private RestResponse<JobAclEntryList> acl() throws Exception {
 
         logger.debug("Executing acl in Jobs command line");
 

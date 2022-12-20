@@ -240,7 +240,6 @@ public class OpenCGAWSServer {
             logger.error(errorMessage);
             throw new IllegalStateException(errorMessage);
         }
-//        ActionableVariantManager.init(opencgaHome);
 
         logger.info("| OpenCGA REST successfully started!");
         logger.info("| - Version " + GitRepositoryState.get().getBuildVersion());
@@ -471,6 +470,21 @@ public class OpenCGAWSServer {
                 .header("Access-Control-Allow-Credentials", "true")
                 .header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
                 .build();
+    }
+
+    protected static List<String> split(String values) throws CatalogParameterException {
+        return split(values, "", false);
+    }
+
+    protected static List<String> split(String values, String field, boolean failOnEmptyValues) throws CatalogParameterException {
+        if (StringUtils.isEmpty(values)) {
+            if (failOnEmptyValues) {
+                throw CatalogParameterException.isNull(field);
+            }
+            return Collections.emptyList();
+        } else {
+            return Arrays.asList(values.split(","));
+        }
     }
 
     protected static List<String> checkUniqueList(String ids) throws WebServiceException {

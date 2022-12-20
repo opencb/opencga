@@ -20,8 +20,8 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
+*  
 */
-
 
 /**
  * This class contains methods for the Operations - Variant Storage command line.
@@ -113,8 +113,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--project", "-p"}, description = "Project [user@]project where project can be either the ID or the alias", required = false, arity = 1)
         public String project; 
     
-        @Parameter(names = {"--annotation-update"}, description = "Create and load variant annotations into the database", required = false, arity = 1)
-        public Boolean annotationUpdate; 
+        @Parameter(names = {"--annotation-update"}, description = "Create and load variant annotations into the database", required = false, help = true, arity = 0)
+        public boolean annotationUpdate = false; 
     
         @Parameter(names = {"--annotation-save-id"}, description = "Save a copy of the current variant annotation at the database", required = false, arity = 1)
         public String annotationSaveId; 
@@ -157,11 +157,11 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--overwrite"}, description = "The body overwrite VariantAggregateParams web service parameter", required = false, arity = 1)
-        public Boolean overwrite;
+        @Parameter(names = {"--overwrite"}, description = "The body overwrite VariantAggregateParams web service parameter", required = false, help = true, arity = 0)
+        public boolean overwrite = false;
     
-        @Parameter(names = {"--resume"}, description = "The body resume VariantAggregateParams web service parameter", required = false, arity = 1)
-        public Boolean resume;
+        @Parameter(names = {"--resume"}, description = "The body resume VariantAggregateParams web service parameter", required = false, help = true, arity = 0)
+        public boolean resume = false;
     
     }
 
@@ -230,14 +230,14 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--annotator"}, description = "The body annotator VariantAnnotationIndexParams web service parameter", required = false, arity = 1)
         public String annotator;
     
-        @Parameter(names = {"--overwrite-annotations"}, description = "The body overwriteAnnotations VariantAnnotationIndexParams web service parameter", required = false, arity = 1)
-        public Boolean overwriteAnnotations;
+        @Parameter(names = {"--overwrite-annotations"}, description = "The body overwriteAnnotations VariantAnnotationIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean overwriteAnnotations = false;
     
         @Parameter(names = {"--region"}, description = "The body region VariantAnnotationIndexParams web service parameter", required = false, arity = 1)
         public String region;
     
-        @Parameter(names = {"--create"}, description = "The body create VariantAnnotationIndexParams web service parameter", required = false, arity = 1)
-        public Boolean create;
+        @Parameter(names = {"--create"}, description = "The body create VariantAnnotationIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean create = false;
     
         @Parameter(names = {"--load"}, description = "The body load VariantAnnotationIndexParams web service parameter", required = false, arity = 1)
         public String load;
@@ -332,8 +332,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--file"}, description = "The body file VariantFileDeleteParams web service parameter", required = false, arity = 1)
         public String file;
     
-        @Parameter(names = {"--resume"}, description = "The body resume VariantFileDeleteParams web service parameter", required = false, arity = 1)
-        public Boolean resume;
+        @Parameter(names = {"--resume"}, description = "The body resume VariantFileDeleteParams web service parameter", required = false, help = true, arity = 0)
+        public boolean resume = false;
     
     }
 
@@ -370,8 +370,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--gaps-genotype"}, description = "The body gapsGenotype VariantAggregateFamilyParams web service parameter", required = false, arity = 1)
         public String gapsGenotype;
     
-        @Parameter(names = {"--resume"}, description = "The body resume VariantAggregateFamilyParams web service parameter", required = false, arity = 1)
-        public Boolean resume;
+        @Parameter(names = {"--resume"}, description = "The body resume VariantAggregateFamilyParams web service parameter", required = false, help = true, arity = 0)
+        public boolean resume = false;
     
     }
 
@@ -405,14 +405,14 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--family"}, description = "The body family VariantFamilyIndexParams web service parameter", required = false, arity = 1)
         public String family;
     
-        @Parameter(names = {"--overwrite"}, description = "The body overwrite VariantFamilyIndexParams web service parameter", required = false, arity = 1)
-        public Boolean overwrite;
+        @Parameter(names = {"--overwrite"}, description = "The body overwrite VariantFamilyIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean overwrite = false;
     
-        @Parameter(names = {"--update-index"}, description = "The body updateIndex VariantFamilyIndexParams web service parameter", required = false, arity = 1)
-        public Boolean updateIndex;
+        @Parameter(names = {"--update-index"}, description = "The body updateIndex VariantFamilyIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean updateIndex = false;
     
-        @Parameter(names = {"--skip-incomplete-families"}, description = "The body skipIncompleteFamilies VariantFamilyIndexParams web service parameter", required = false, arity = 1)
-        public Boolean skipIncompleteFamilies;
+        @Parameter(names = {"--skip-incomplete-families"}, description = "The body skipIncompleteFamilies VariantFamilyIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean skipIncompleteFamilies = false;
     
     }
 
@@ -446,20 +446,20 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--file"}, description = "The body file VariantIndexParams web service parameter", required = false, arity = 1)
         public String file;
     
-        @Parameter(names = {"--resume"}, description = "The body resume VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean resume;
+        @Parameter(names = {"--resume"}, description = "The body resume VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean resume = false;
     
         @Parameter(names = {"--outdir"}, description = "The body outdir VariantIndexParams web service parameter", required = false, arity = 1)
         public String outdir;
     
-        @Parameter(names = {"--transform"}, description = "The body transform VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean transform;
+        @Parameter(names = {"--transform"}, description = "The body transform VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean transform = false;
     
-        @Parameter(names = {"--gvcf"}, description = "The body gvcf VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean gvcf;
+        @Parameter(names = {"--gvcf"}, description = "The body gvcf VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean gvcf = false;
     
-        @Parameter(names = {"--normalization-skip"}, description = "The body normalizationSkip VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean normalizationSkip;
+        @Parameter(names = {"--normalization-skip"}, description = "The body normalizationSkip VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean normalizationSkip = false;
     
         @Parameter(names = {"--reference-genome"}, description = "The body referenceGenome VariantIndexParams web service parameter", required = false, arity = 1)
         public String referenceGenome;
@@ -467,20 +467,20 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--fail-on-malformed-lines"}, description = "The body failOnMalformedLines VariantIndexParams web service parameter", required = false, arity = 1)
         public String failOnMalformedLines;
     
-        @Parameter(names = {"--family"}, description = "The body family VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean family;
+        @Parameter(names = {"--family"}, description = "The body family VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean family = false;
     
-        @Parameter(names = {"--somatic"}, description = "The body somatic VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean somatic;
+        @Parameter(names = {"--somatic"}, description = "The body somatic VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean somatic = false;
     
-        @Parameter(names = {"--load"}, description = "The body load VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean load;
+        @Parameter(names = {"--load"}, description = "The body load VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean load = false;
     
         @Parameter(names = {"--load-split-data"}, description = "The body loadSplitData VariantIndexParams web service parameter", required = false, arity = 1)
         public String loadSplitData;
     
-        @Parameter(names = {"--load-multi-file-data"}, description = "The body loadMultiFileData VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean loadMultiFileData;
+        @Parameter(names = {"--load-multi-file-data"}, description = "The body loadMultiFileData VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean loadMultiFileData = false;
     
         @Parameter(names = {"--load-sample-index"}, description = "The body loadSampleIndex VariantIndexParams web service parameter", required = false, arity = 1)
         public String loadSampleIndex;
@@ -506,8 +506,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--deduplication-policy"}, description = "The body deduplicationPolicy VariantIndexParams web service parameter", required = false, arity = 1)
         public String deduplicationPolicy;
     
-        @Parameter(names = {"--calculate-stats"}, description = "The body calculateStats VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean calculateStats;
+        @Parameter(names = {"--calculate-stats"}, description = "The body calculateStats VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean calculateStats = false;
     
         @Parameter(names = {"--aggregated"}, description = "Enum param allowed values: NONE, BASIC, EVS, EXAC", required = false, arity = 1)
         public String aggregated;
@@ -515,20 +515,20 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--aggregation-mapping-file"}, description = "The body aggregationMappingFile VariantIndexParams web service parameter", required = false, arity = 1)
         public String aggregationMappingFile;
     
-        @Parameter(names = {"--annotate"}, description = "The body annotate VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean annotate;
+        @Parameter(names = {"--annotate"}, description = "The body annotate VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean annotate = false;
     
         @Parameter(names = {"--annotator"}, description = "The body annotator VariantIndexParams web service parameter", required = false, arity = 1)
         public String annotator;
     
-        @Parameter(names = {"--overwrite-annotations"}, description = "The body overwriteAnnotations VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean overwriteAnnotations;
+        @Parameter(names = {"--overwrite-annotations"}, description = "The body overwriteAnnotations VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean overwriteAnnotations = false;
     
-        @Parameter(names = {"--index-search"}, description = "The body indexSearch VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean indexSearch;
+        @Parameter(names = {"--index-search"}, description = "The body indexSearch VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean indexSearch = false;
     
-        @Parameter(names = {"--skip-indexed-files"}, description = "The body skipIndexedFiles VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean skipIndexedFiles;
+        @Parameter(names = {"--skip-indexed-files"}, description = "The body skipIndexedFiles VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean skipIndexedFiles = false;
     
     }
 
@@ -565,11 +565,11 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--directory"}, description = "The body directory VariantFileIndexJobLauncherParams web service parameter", required = false, arity = 1)
         public String directory;
     
-        @Parameter(names = {"--resume-failed"}, description = "The body resumeFailed VariantFileIndexJobLauncherParams web service parameter", required = false, arity = 1)
-        public Boolean resumeFailed;
+        @Parameter(names = {"--resume-failed"}, description = "The body resumeFailed VariantFileIndexJobLauncherParams web service parameter", required = false, help = true, arity = 0)
+        public boolean resumeFailed = false;
     
-        @Parameter(names = {"--ignore-failed"}, description = "The body ignoreFailed VariantFileIndexJobLauncherParams web service parameter", required = false, arity = 1)
-        public Boolean ignoreFailed;
+        @Parameter(names = {"--ignore-failed"}, description = "The body ignoreFailed VariantFileIndexJobLauncherParams web service parameter", required = false, help = true, arity = 0)
+        public boolean ignoreFailed = false;
     
         @Parameter(names = {"--max-jobs"}, description = "The body web service maxJobs parameter", required = false, arity = 1)
         public Integer maxJobs;
@@ -577,20 +577,20 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--index-params-file"}, description = "The body file VariantIndexParams web service parameter", required = false, arity = 1)
         public String indexParamsFile;
     
-        @Parameter(names = {"--index-params-resume"}, description = "The body resume VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean indexParamsResume;
+        @Parameter(names = {"--index-params-resume"}, description = "The body resume VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean indexParamsResume = false;
     
         @Parameter(names = {"--index-params-outdir"}, description = "The body outdir VariantIndexParams web service parameter", required = false, arity = 1)
         public String indexParamsOutdir;
     
-        @Parameter(names = {"--index-params-transform"}, description = "The body transform VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean indexParamsTransform;
+        @Parameter(names = {"--index-params-transform"}, description = "The body transform VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean indexParamsTransform = false;
     
-        @Parameter(names = {"--index-params-gvcf"}, description = "The body gvcf VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean indexParamsGvcf;
+        @Parameter(names = {"--index-params-gvcf"}, description = "The body gvcf VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean indexParamsGvcf = false;
     
-        @Parameter(names = {"--index-params-normalization-skip"}, description = "The body normalizationSkip VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean indexParamsNormalizationSkip;
+        @Parameter(names = {"--index-params-normalization-skip"}, description = "The body normalizationSkip VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean indexParamsNormalizationSkip = false;
     
         @Parameter(names = {"--index-params-reference-genome"}, description = "The body referenceGenome VariantIndexParams web service parameter", required = false, arity = 1)
         public String indexParamsReferenceGenome;
@@ -598,20 +598,20 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--index-params-fail-on-malformed-lines"}, description = "The body failOnMalformedLines VariantIndexParams web service parameter", required = false, arity = 1)
         public String indexParamsFailOnMalformedLines;
     
-        @Parameter(names = {"--index-params-family"}, description = "The body family VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean indexParamsFamily;
+        @Parameter(names = {"--index-params-family"}, description = "The body family VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean indexParamsFamily = false;
     
-        @Parameter(names = {"--index-params-somatic"}, description = "The body somatic VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean indexParamsSomatic;
+        @Parameter(names = {"--index-params-somatic"}, description = "The body somatic VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean indexParamsSomatic = false;
     
-        @Parameter(names = {"--index-params-load"}, description = "The body load VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean indexParamsLoad;
+        @Parameter(names = {"--index-params-load"}, description = "The body load VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean indexParamsLoad = false;
     
         @Parameter(names = {"--index-params-load-split-data"}, description = "The body loadSplitData VariantIndexParams web service parameter", required = false, arity = 1)
         public String indexParamsLoadSplitData;
     
-        @Parameter(names = {"--index-params-load-multi-file-data"}, description = "The body loadMultiFileData VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean indexParamsLoadMultiFileData;
+        @Parameter(names = {"--index-params-load-multi-file-data"}, description = "The body loadMultiFileData VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean indexParamsLoadMultiFileData = false;
     
         @Parameter(names = {"--index-params-load-sample-index"}, description = "The body loadSampleIndex VariantIndexParams web service parameter", required = false, arity = 1)
         public String indexParamsLoadSampleIndex;
@@ -637,8 +637,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--index-params-deduplication-policy"}, description = "The body deduplicationPolicy VariantIndexParams web service parameter", required = false, arity = 1)
         public String indexParamsDeduplicationPolicy;
     
-        @Parameter(names = {"--index-params-calculate-stats"}, description = "The body calculateStats VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean indexParamsCalculateStats;
+        @Parameter(names = {"--index-params-calculate-stats"}, description = "The body calculateStats VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean indexParamsCalculateStats = false;
     
         @Parameter(names = {"--index-params-aggregated"}, description = "Enum param allowed values: NONE, BASIC, EVS, EXAC", required = false, arity = 1)
         public String indexParamsAggregated;
@@ -646,20 +646,20 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--index-params-aggregation-mapping-file"}, description = "The body aggregationMappingFile VariantIndexParams web service parameter", required = false, arity = 1)
         public String indexParamsAggregationMappingFile;
     
-        @Parameter(names = {"--index-params-annotate"}, description = "The body annotate VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean indexParamsAnnotate;
+        @Parameter(names = {"--index-params-annotate"}, description = "The body annotate VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean indexParamsAnnotate = false;
     
         @Parameter(names = {"--index-params-annotator"}, description = "The body annotator VariantIndexParams web service parameter", required = false, arity = 1)
         public String indexParamsAnnotator;
     
-        @Parameter(names = {"--index-params-overwrite-annotations"}, description = "The body overwriteAnnotations VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean indexParamsOverwriteAnnotations;
+        @Parameter(names = {"--index-params-overwrite-annotations"}, description = "The body overwriteAnnotations VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean indexParamsOverwriteAnnotations = false;
     
-        @Parameter(names = {"--index-params-index-search"}, description = "The body indexSearch VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean indexParamsIndexSearch;
+        @Parameter(names = {"--index-params-index-search"}, description = "The body indexSearch VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean indexParamsIndexSearch = false;
     
-        @Parameter(names = {"--index-params-skip-indexed-files"}, description = "The body skipIndexedFiles VariantIndexParams web service parameter", required = false, arity = 1)
-        public Boolean indexParamsSkipIndexedFiles;
+        @Parameter(names = {"--index-params-skip-indexed-files"}, description = "The body skipIndexedFiles VariantIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean indexParamsSkipIndexedFiles = false;
     
     }
 
@@ -696,8 +696,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--region"}, description = "The body region JulieParams web service parameter", required = false, arity = 1)
         public String region;
     
-        @Parameter(names = {"--overwrite"}, description = "The body overwrite JulieParams web service parameter", required = false, arity = 1)
-        public Boolean overwrite;
+        @Parameter(names = {"--overwrite"}, description = "The body overwrite JulieParams web service parameter", required = false, help = true, arity = 0)
+        public boolean overwrite = false;
     
     }
 
@@ -763,8 +763,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--body_study"}, description = "The body study VariantStorageMetadataSynchronizeParams web service parameter", required = false, arity = 1)
         public String bodyStudy;
     
-        @Parameter(names = {"--body_files"}, description = "The body files VariantStorageMetadataSynchronizeParams web service parameter", required = false, arity = 1)
-        public String bodyFiles;
+        @Parameter(names = {"--files"}, description = "The body files VariantStorageMetadataSynchronizeParams web service parameter", required = false, arity = 1)
+        public String files;
     
     }
 
@@ -795,11 +795,11 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--project", "-p"}, description = "The body project VariantPruneParams web service parameter", required = false, arity = 1)
         public String project;
     
-        @Parameter(names = {"--dry-run"}, description = "The body dryRun VariantPruneParams web service parameter", required = false, arity = 1)
-        public Boolean dryRun;
+        @Parameter(names = {"--dry-run"}, description = "The body dryRun VariantPruneParams web service parameter", required = false, help = true, arity = 0)
+        public boolean dryRun = false;
     
-        @Parameter(names = {"--resume"}, description = "The body resume VariantPruneParams web service parameter", required = false, arity = 1)
-        public Boolean resume;
+        @Parameter(names = {"--resume"}, description = "The body resume VariantPruneParams web service parameter", required = false, help = true, arity = 0)
+        public boolean resume = false;
     
     }
 
@@ -833,11 +833,11 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--sample"}, description = "The body sample VariantSampleDeleteParams web service parameter", required = false, arity = 1)
         public String sample;
     
-        @Parameter(names = {"--force"}, description = "The body force VariantSampleDeleteParams web service parameter", required = false, arity = 1)
-        public Boolean force;
+        @Parameter(names = {"--force"}, description = "The body force VariantSampleDeleteParams web service parameter", required = false, help = true, arity = 0)
+        public boolean force = false;
     
-        @Parameter(names = {"--resume"}, description = "The body resume VariantSampleDeleteParams web service parameter", required = false, arity = 1)
-        public Boolean resume;
+        @Parameter(names = {"--resume"}, description = "The body resume VariantSampleDeleteParams web service parameter", required = false, help = true, arity = 0)
+        public boolean resume = false;
     
     }
 
@@ -871,17 +871,17 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--sample"}, description = "The body sample VariantSampleIndexParams web service parameter", required = false, arity = 1)
         public String sample;
     
-        @Parameter(names = {"--build-index"}, description = "The body buildIndex VariantSampleIndexParams web service parameter", required = false, arity = 1)
-        public Boolean buildIndex;
+        @Parameter(names = {"--build-index"}, description = "The body buildIndex VariantSampleIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean buildIndex = false;
     
-        @Parameter(names = {"--annotate"}, description = "The body annotate VariantSampleIndexParams web service parameter", required = false, arity = 1)
-        public Boolean annotate;
+        @Parameter(names = {"--annotate"}, description = "The body annotate VariantSampleIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean annotate = false;
     
-        @Parameter(names = {"--family-index"}, description = "The body familyIndex VariantSampleIndexParams web service parameter", required = false, arity = 1)
-        public Boolean familyIndex;
+        @Parameter(names = {"--family-index"}, description = "The body familyIndex VariantSampleIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean familyIndex = false;
     
-        @Parameter(names = {"--overwrite"}, description = "The body overwrite VariantSampleIndexParams web service parameter", required = false, arity = 1)
-        public Boolean overwrite;
+        @Parameter(names = {"--overwrite"}, description = "The body overwrite VariantSampleIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean overwrite = false;
     
     }
 
@@ -900,8 +900,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--skip-rebuild"}, description = "Skip sample index re-build", required = false, arity = 1)
-        public Boolean skipRebuild; 
+        @Parameter(names = {"--skip-rebuild"}, description = "Skip sample index re-build", required = false, help = true, arity = 0)
+        public boolean skipRebuild = false; 
     
     }
 
@@ -929,11 +929,11 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--name", "-n"}, description = "Unique name of the score within the study", required = false, arity = 1)
         public String name; 
     
-        @Parameter(names = {"--resume"}, description = "Resume a previously failed remove", required = false, arity = 1)
-        public Boolean resume; 
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed remove", required = false, help = true, arity = 0)
+        public boolean resume = false; 
     
-        @Parameter(names = {"--force"}, description = "Force remove of partially indexed scores", required = false, arity = 1)
-        public Boolean force; 
+        @Parameter(names = {"--force"}, description = "Force remove of partially indexed scores", required = false, help = true, arity = 0)
+        public boolean force = false; 
     
     }
 
@@ -979,8 +979,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--input-columns"}, description = "The body inputColumns VariantScoreIndexParams web service parameter", required = false, arity = 1)
         public String inputColumns;
     
-        @Parameter(names = {"--resume"}, description = "The body resume VariantScoreIndexParams web service parameter", required = false, arity = 1)
-        public Boolean resume;
+        @Parameter(names = {"--resume"}, description = "The body resume VariantScoreIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean resume = false;
     
     }
 
@@ -1020,8 +1020,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--sample"}, description = "The body sample VariantSecondaryIndexParams web service parameter", required = false, arity = 1)
         public String sample;
     
-        @Parameter(names = {"--overwrite"}, description = "The body overwrite VariantSecondaryIndexParams web service parameter", required = false, arity = 1)
-        public Boolean overwrite;
+        @Parameter(names = {"--overwrite"}, description = "The body overwrite VariantSecondaryIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean overwrite = false;
     
     }
 
@@ -1055,17 +1055,17 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--sample"}, description = "The body sample VariantSampleIndexParams web service parameter", required = false, arity = 1)
         public String sample;
     
-        @Parameter(names = {"--build-index"}, description = "The body buildIndex VariantSampleIndexParams web service parameter", required = false, arity = 1)
-        public Boolean buildIndex;
+        @Parameter(names = {"--build-index"}, description = "The body buildIndex VariantSampleIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean buildIndex = false;
     
-        @Parameter(names = {"--annotate"}, description = "The body annotate VariantSampleIndexParams web service parameter", required = false, arity = 1)
-        public Boolean annotate;
+        @Parameter(names = {"--annotate"}, description = "The body annotate VariantSampleIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean annotate = false;
     
-        @Parameter(names = {"--family-index"}, description = "The body familyIndex VariantSampleIndexParams web service parameter", required = false, arity = 1)
-        public Boolean familyIndex;
+        @Parameter(names = {"--family-index"}, description = "The body familyIndex VariantSampleIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean familyIndex = false;
     
-        @Parameter(names = {"--overwrite"}, description = "The body overwrite VariantSampleIndexParams web service parameter", required = false, arity = 1)
-        public Boolean overwrite;
+        @Parameter(names = {"--overwrite"}, description = "The body overwrite VariantSampleIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean overwrite = false;
     
     }
 
@@ -1084,8 +1084,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--skip-rebuild"}, description = "Skip sample index re-build", required = false, arity = 1)
-        public Boolean skipRebuild; 
+        @Parameter(names = {"--skip-rebuild"}, description = "Skip sample index re-build", required = false, help = true, arity = 0)
+        public boolean skipRebuild = false; 
     
     }
 
@@ -1125,8 +1125,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--sample"}, description = "The body sample VariantSecondaryIndexParams web service parameter", required = false, arity = 1)
         public String sample;
     
-        @Parameter(names = {"--overwrite"}, description = "The body overwrite VariantSecondaryIndexParams web service parameter", required = false, arity = 1)
-        public Boolean overwrite;
+        @Parameter(names = {"--overwrite"}, description = "The body overwrite VariantSecondaryIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean overwrite = false;
     
     }
 
@@ -1186,8 +1186,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--cohort"}, description = "The body cohort VariantStatsDeleteParams web service parameter", required = false, arity = 1)
         public String cohort;
     
-        @Parameter(names = {"--force"}, description = "The body force VariantStatsDeleteParams web service parameter", required = false, arity = 1)
-        public Boolean force;
+        @Parameter(names = {"--force"}, description = "The body force VariantStatsDeleteParams web service parameter", required = false, help = true, arity = 0)
+        public boolean force = false;
     
     }
 
@@ -1224,11 +1224,11 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--region"}, description = "The body region VariantStatsIndexParams web service parameter", required = false, arity = 1)
         public String region;
     
-        @Parameter(names = {"--overwrite-stats"}, description = "The body overwriteStats VariantStatsIndexParams web service parameter", required = false, arity = 1)
-        public Boolean overwriteStats;
+        @Parameter(names = {"--overwrite-stats"}, description = "The body overwriteStats VariantStatsIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean overwriteStats = false;
     
-        @Parameter(names = {"--resume"}, description = "The body resume VariantStatsIndexParams web service parameter", required = false, arity = 1)
-        public Boolean resume;
+        @Parameter(names = {"--resume"}, description = "The body resume VariantStatsIndexParams web service parameter", required = false, help = true, arity = 0)
+        public boolean resume = false;
     
         @Parameter(names = {"--aggregated"}, description = "The body aggregated VariantStatsIndexParams web service parameter", required = false, arity = 1)
         public String aggregated;
@@ -1265,8 +1265,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--resume"}, description = "The body resume VariantStudyDeleteParams web service parameter", required = false, arity = 1)
-        public Boolean resume;
+        @Parameter(names = {"--resume"}, description = "The body resume VariantStudyDeleteParams web service parameter", required = false, help = true, arity = 0)
+        public boolean resume = false;
     
     }
 

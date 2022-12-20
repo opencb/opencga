@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.core.models.individual;
 
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.common.Status;
@@ -167,18 +166,16 @@ public class IndividualCreateParams {
             }
         }
 
-        String individualId = StringUtils.isEmpty(id) ? name : id;
-        String individualName = StringUtils.isEmpty(name) ? individualId : name;
         Individual father = this.father != null
                 ? new Individual().setId(this.father.getId()).setUuid(this.father.getUuid())
                 : null;
         Individual mother = this.mother != null
                 ? new Individual().setId(this.mother.getId()).setUuid(this.mother.getUuid())
                 : null;
-        return new Individual(individualId, individualName, father, mother, Collections.emptyList(), location, null, sex,
-                karyotypicSex, ethnicity, population, dateOfBirth, 1, 1, creationDate, modificationDate, lifeStatus, phenotypes, disorders,
-                sampleList, parentalConsanguinity != null ? parentalConsanguinity : false,
-                annotationSets, status != null ? status.toStatus() : new Status(), null, attributes);
+        return new Individual(id, name, father, mother, Collections.emptyList(), location, null, sex, karyotypicSex, ethnicity, population,
+                dateOfBirth, 1, 1, creationDate, modificationDate, lifeStatus, phenotypes, disorders, sampleList,
+                parentalConsanguinity != null ? parentalConsanguinity : false, annotationSets,
+                status != null ? status.toStatus() : new Status(), null, attributes);
     }
 
     public String getId() {

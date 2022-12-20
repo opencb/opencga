@@ -5,6 +5,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
@@ -13,6 +14,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFi
 import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexEntryIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.query.LocusQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleFileIndexQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry.SampleIndexGtEntry;
 import org.slf4j.Logger;
@@ -55,6 +57,24 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
             true,  /* |  10   |        |  0/0   | 1/1  |   true  | */
             false, /* |  11   |   1/1  |        | 0/0  |         | */
             true,  /* |  12   |   0/0  |        | 1/1  |   true  | */
+
+    };
+
+    private static final boolean[] DE_NOVO_STRICT_MENDELIAN_ERROR_CODES = new boolean[]{
+                    /* | Code  |   Dad  | Mother | Kid  |  deNovo | deNovoStrict | */
+            false,  /* |   0   |        |        |      |         |              | */
+            false,  /* |   1   |   1/1  |  1/1   | 0/1  |         |              | */
+            true,   /* |   2   |   0/0  |  0/0   | 0/1  |   true  |    true      | */
+            false,  /* |   3   |   0/0  | !0/0   | 1/1  |   true  |              | */
+            false,  /* |   4   |  !0/0  |  0/0   | 1/1  |   true  |              | */
+            true,   /* |   5   |   0/0  |  0/0   | 1/1  |   true  |    true      | */
+            false,  /* |   6   |   1/1  | !1/1   | 0/0  |         |              | */
+            false,  /* |   7   |  !1/1  |  1/1   | 0/0  |         |              | */
+            false,  /* |   8   |   1/1  |  1/1   | 0/0  |         |              | */
+            false,  /* |   9   |        |  1/1   | 0/0  |         |              | */
+            false,  /* |  10   |        |  0/0   | 1/1  |   true  |              | */
+            false,  /* |  11   |   1/1  |        | 0/0  |         |              | */
+            false,  /* |  12   |   0/0  |        | 1/1  |   true  |              | */
 
     };
 
@@ -108,7 +128,8 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
         if (iterator != null) {
             while (iterator.hasNext()) {
                 int mendelianErrorCode = iterator.nextMendelianErrorCode();
-                if (query.isOnlyDeNovo() && !isDeNovo(mendelianErrorCode)) {
+                String genotype = iterator.nextGenotype();
+                if (!testDeNovo(mendelianErrorCode, genotype)) {
                     iterator.skip();
                 } else {
                     T variant = filter(iterator);
@@ -121,8 +142,40 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
         return variants;
     }
 
+    private boolean testDeNovo(int mendelianErrorCode, String genotype) {
+        return testDeNovo(mendelianErrorCode, genotype, query.getMendelianErrorType());
+    }
+
+    public static boolean testDeNovo(int mendelianErrorCode, String genotype,
+                                     SampleIndexQuery.MendelianErrorType mendelianErrorType) {
+        boolean isDeNovo = isDeNovo(mendelianErrorCode);
+        if (isDeNovo) {
+            // Discard those de-novo variants where the GT does not contain the main alternate
+            if (!GenotypeClass.MAIN_ALT.test(genotype)) {
+                return false;
+            }
+        }
+
+        switch (mendelianErrorType) {
+            case ALL:
+                // Either mendelian-error or valid de-novo
+                return true;
+            case DE_NOVO:
+                // accept any valid de-novo variant
+                return isDeNovo;
+            case DE_NOVO_STRICT:
+                return isDeNovoStrict(mendelianErrorCode);
+            default:
+                throw new IllegalArgumentException("Unknown MendelianErrorType " + mendelianErrorType);
+        }
+    }
+
     public static boolean isDeNovo(int mendelianErrorCode) {
         return DE_NOVO_MENDELIAN_ERROR_CODES[mendelianErrorCode];
+    }
+
+    public static boolean isDeNovoStrict(int mendelianErrorCode) {
+        return DE_NOVO_STRICT_MENDELIAN_ERROR_CODES[mendelianErrorCode];
     }
 
     private Collection<T> filter(SampleIndexEntry entry, boolean count) {

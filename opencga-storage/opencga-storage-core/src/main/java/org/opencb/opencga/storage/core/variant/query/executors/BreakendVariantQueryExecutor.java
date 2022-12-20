@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.variant.query.executors;
 
 import com.google.common.collect.Iterators;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -61,11 +62,7 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
         if (getIterator) {
             VariantDBIterator iterator = delegatedQueryExecutor.iterator(query, options);
             iterator = iterator.mapBuffered(l -> getBreakendPairs(0, baseQuery, variantLocalFilter, l), 100);
-            Iterators.advance(iterator, skip);
-            iterator = iterator.localSkip(skip);
-            if (limit > 0) {
-                iterator = iterator.localLimit(limit);
-            }
+            iterator = iterator.localLimitSkip(limit, skip);
             return iterator;
         } else {
             // Copy to avoid modifications to input options
@@ -150,8 +147,14 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
         List<Region> regions = new ArrayList<>(variants.size());
         for (Variant variant : variants) {
             BreakendMate mate = variant.getSv().getBreakend().getMate();
-            int buffer = 50;
-            regions.add(new Region(mate.getChromosome(), mate.getPosition() - buffer, mate.getPosition() + buffer));
+            String homlen = variant.getStudies().get(0).getFiles().get(0).getData().get("HOMLEN");
+            int buffer = 50; // get from configuration
+            if (homlen != null) {
+                if (StringUtils.isNumeric(homlen)) {
+                    buffer = 10 + Integer.parseInt(homlen);
+                }
+            }
+            regions.add(new Region(mate.getChromosome(), Math.max(1, mate.getPosition() - buffer), mate.getPosition() + buffer));
         }
         baseQuery.put(VariantQueryParam.REGION.key(), regions);
 

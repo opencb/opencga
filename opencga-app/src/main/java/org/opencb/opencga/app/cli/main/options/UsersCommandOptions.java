@@ -22,8 +22,8 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
+*  
 */
-
 
 /**
  * This class contains methods for the Users command line.
@@ -163,7 +163,7 @@ public class UsersCommandOptions extends ParentUsersCommandOptions {
         public String user; 
     
         @Parameter(names = {"--action"}, description = "Action to be performed: ADD or REMOVE a group", required = false, arity = 1)
-        public String action; 
+        public String action = "ADD"; 
     
         @Parameter(names = {"--id"}, description = "Config id (Required)", required = true, arity = 1)
         public String id;
@@ -240,7 +240,7 @@ public class UsersCommandOptions extends ParentUsersCommandOptions {
         public String user; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1, hidden = true)
-        public Boolean includeResult= true; 
+        public boolean includeResult= true; 
     
         @Parameter(names = {"--name", "-n"}, description = "The body name UserUpdateParams web service parameter", required = false, arity = 1)
         public String name;

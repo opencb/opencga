@@ -244,7 +244,7 @@ public class UserWSServer extends OpenCGAWSServer {
     })
     public Response updateByPost(
             @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
-            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "JSON containing the params to be updated.", required = true) UserUpdateParams parameters) {
         try {
             ObjectUtils.defaultIfNull(parameters, new UserUpdateParams());

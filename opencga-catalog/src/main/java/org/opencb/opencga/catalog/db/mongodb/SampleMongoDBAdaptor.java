@@ -26,6 +26,7 @@ import com.mongodb.client.model.Updates;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.biodata.models.clinical.Phenotype;
@@ -49,10 +50,7 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.InternalStatus;
-import org.opencb.opencga.core.models.common.RgaIndex;
+import org.opencb.opencga.core.models.common.*;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
@@ -63,10 +61,11 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
-import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.*;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
@@ -576,12 +575,13 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         if (parameters.containsKey(QueryParams.ID.key())) {
             // That can only be done to one sample...
-
             Query tmpQuery = new Query(query);
             // We take out ALL_VERSION from query just in case we get multiple results...
             tmpQuery.remove(Constants.ALL_VERSIONS);
 
-            OpenCGAResult<Sample> sampleDataResult = get(clientSession, tmpQuery, new QueryOptions());
+            OpenCGAResult<Sample> sampleDataResult = get(clientSession, tmpQuery,
+                    new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                            QueryParams.STUDY_UID.key(), QueryParams.ID.key(), QueryParams.INTERNAL_VARIANT.key())));
             if (sampleDataResult.getNumResults() == 0) {
                 throw new CatalogDBException("Update sample: No sample found to be updated");
             }
@@ -590,8 +590,17 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                         + "found to be updated.");
             }
 
+            Sample sample = sampleDataResult.first();
+            // Check the sample is not indexed
+            if (sample.getInternal().getVariant() != null && sample.getInternal().getVariant().getIndex() != null
+                    && sample.getInternal().getVariant().getIndex().getStatus() != null
+                    && !sample.getInternal().getVariant().getIndex().getStatus().getId().equals(IndexStatus.NONE)) {
+                throw new CatalogDBException("Cannot update the '" + QueryParams.ID.key() + "' of the sample '" + sample.getId() + "'. "
+                        + "The sample variant index status is '" + sample.getInternal().getVariant().getIndex().getStatus().getId() + "'.");
+            }
+
             // Check that the new sample name is still unique
-            long studyId = sampleDataResult.first().getStudyUid();
+            long studyId = sample.getStudyUid();
 
             tmpQuery = new Query()
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
@@ -1071,12 +1080,29 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
+    public OpenCGAResult distinct(long studyUid, String field, Query query, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query finalQuery = query != null ? new Query(query) : new Query();
         finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
         Bson bson = parseQuery(finalQuery, userId);
-        return new OpenCGAResult<>(sampleCollection.distinct(field, bson, clazz));
+        return new OpenCGAResult<>(sampleCollection.distinct(field, bson));
+    }
+
+    @Override
+    public OpenCGAResult<?> distinct(long studyUid, List<String> fields, Query query, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        StopWatch stopWatch = StopWatch.createStarted();
+        Query finalQuery = query != null ? new Query(query) : new Query();
+        finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
+        Bson bson = parseQuery(finalQuery, userId);
+
+        Set<String> results = new LinkedHashSet<>();
+        for (String field : fields) {
+            results.addAll(sampleCollection.distinct(field, bson, String.class).getResults());
+        }
+
+        return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), Collections.emptyList(), results.size(),
+                new ArrayList<>(results), -1);
     }
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, String user)

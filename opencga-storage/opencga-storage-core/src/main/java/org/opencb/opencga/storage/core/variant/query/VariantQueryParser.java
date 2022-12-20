@@ -9,10 +9,10 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
-import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -72,7 +72,7 @@ public class VariantQueryParser {
             return Collections.emptyList();
         }
         Values<String> clinicalSources = splitValues(query.getString(ANNOT_CLINICAL.key()));
-        if (QueryOperation.AND.equals(clinicalSources.getOperation()) && clinicalSources.getValues().size() > 1) {
+        if (QueryOperation.AND == clinicalSources.getOperation() && clinicalSources.getValues().size() > 1) {
             List<List<String>> combinationsPerSource = new ArrayList<>(clinicalSources.getValues().size());
             for (String source : clinicalSources.getValues()) {
                 combinationsPerSource.add(clinicalCombinationSet.stream().filter(s -> s.contains(source)).collect(Collectors.toList()));
@@ -272,6 +272,11 @@ public class VariantQueryParser {
             query.put(TYPE.key(), new ArrayList<>(types));
         }
 
+        if (VariantQueryUtils.isValidParam(query, ANNOT_CLINICAL_CONFIRMED_STATUS)
+                && !query.getBoolean(ANNOT_CLINICAL_CONFIRMED_STATUS.key())) {
+            // Remove false value if exists
+            query.remove(ANNOT_CLINICAL_CONFIRMED_STATUS.key());
+        }
         if (VariantQueryUtils.isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE)) {
             String v = query.getString(ANNOT_CLINICAL_SIGNIFICANCE.key());
             QueryOperation operator = VariantQueryUtils.checkOperator(v);
@@ -442,6 +447,9 @@ public class VariantQueryParser {
         if (isValidParam(query, SAMPLE_DE_NOVO)) {
             sampleParamsList.add(SAMPLE_DE_NOVO);
         }
+        if (isValidParam(query, SAMPLE_DE_NOVO_STRICT)) {
+            sampleParamsList.add(SAMPLE_DE_NOVO_STRICT);
+        }
         if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
             sampleParamsList.add(SAMPLE_MENDELIAN_ERROR);
         }
@@ -458,7 +466,10 @@ public class VariantQueryParser {
                 QueryParam newSampleParam;
                 String expectedValue = null;
 
-                if (sampleValue.toLowerCase().contains(IS + "denovo")) {
+                if (sampleValue.toLowerCase().contains(IS + "denovostrict")) {
+                    newSampleParam = SAMPLE_DE_NOVO_STRICT;
+                    expectedValue = "denovostrict";
+                } else if (sampleValue.toLowerCase().contains(IS + "denovo")) {
                     newSampleParam = SAMPLE_DE_NOVO;
                     expectedValue = "denovo";
                 } else if (sampleValue.toLowerCase().contains(IS + "mendelianerror")) {
@@ -560,16 +571,28 @@ public class VariantQueryParser {
             throw VariantQueryException.mixedAndOrOperators(SAMPLE_DATA, genotypeParam);
         }
 
-        if (isValidParam(query, SAMPLE_MENDELIAN_ERROR) || isValidParam(query, SAMPLE_DE_NOVO)) {
-            QueryParam param;
-            if (isValidParam(query, SAMPLE_MENDELIAN_ERROR) && isValidParam(query, SAMPLE_DE_NOVO)) {
-                throw VariantQueryException.unsupportedParamsCombination(
-                        SAMPLE_MENDELIAN_ERROR, query.getString(SAMPLE_MENDELIAN_ERROR.key()),
-                        SAMPLE_DE_NOVO, query.getString(SAMPLE_DE_NOVO.key()));
-            } else if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
+        if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)
+                || isValidParam(query, SAMPLE_DE_NOVO)
+                || isValidParam(query, SAMPLE_DE_NOVO_STRICT)) {
+            QueryParam param = null;
+            if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
                 param = SAMPLE_MENDELIAN_ERROR;
-            } else {
+            }
+            if (isValidParam(query, SAMPLE_DE_NOVO)) {
+                if (param != null) {
+                    throw VariantQueryException.unsupportedParamsCombination(
+                            param, query.getString(param.key()),
+                            SAMPLE_DE_NOVO, query.getString(SAMPLE_DE_NOVO.key()));
+                }
                 param = SAMPLE_DE_NOVO;
+            }
+            if (isValidParam(query, SAMPLE_DE_NOVO_STRICT)) {
+                if (param != null) {
+                    throw VariantQueryException.unsupportedParamsCombination(
+                            param, query.getString(param.key()),
+                            SAMPLE_DE_NOVO_STRICT, query.getString(SAMPLE_DE_NOVO_STRICT.key()));
+                }
+                param = SAMPLE_DE_NOVO_STRICT;
             }
             if (defaultStudy == null) {
                 throw VariantQueryException.missingStudyForSamples(query.getAsStringList(param.key()),
@@ -698,6 +721,10 @@ public class VariantQueryParser {
             formats = Collections.singletonList(NONE);
         }
 
+        if (VariantQueryUtils.isValidParam(query, SAMPLE_METADATA) && !query.getBoolean(SAMPLE_METADATA.key())) {
+            // Remove false value if exists
+            query.remove(SAMPLE_METADATA.key());
+        }
         query.put(INCLUDE_SAMPLE_DATA.key(), formats);
         query.remove(INCLUDE_GENOTYPE.key(), formats);
     }

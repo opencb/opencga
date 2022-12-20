@@ -18,7 +18,6 @@ package org.opencb.opencga.core.models.variant;
 
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import org.opencb.commons.annotations.DataField;
@@ -118,7 +117,7 @@ public class VariantIndexParams extends ToolParams {
     private String postLoadCheck;
     @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_INCLUDE_GENOTYPES_DESCRIPTION)
     private String includeGenotypes;
-    private String includeSampleData = ParamConstants.ALL;
+    private String includeSampleData;
     @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_MERGE_DESCRIPTION)
     private String merge;
     @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_DEDUPLICATION_POLICY_DESCRIPTION)
@@ -126,10 +125,9 @@ public class VariantIndexParams extends ToolParams {
 
     @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_CALCULATE_STATS_DESCRIPTION)
     private boolean calculateStats;
-    private Aggregation aggregated = Aggregation.NONE;
+    private Aggregation aggregated;
     @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_AGGREGATION_MAPPING_FILE_DESCRIPTION)
     private String aggregationMappingFile;
-
     @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_ANNOTATE_DESCRIPTION)
     private boolean annotate;
     @DataField(description = ParamConstants.VARIANT_INDEX_PARAMS_ANNOTATOR_DESCRIPTION)

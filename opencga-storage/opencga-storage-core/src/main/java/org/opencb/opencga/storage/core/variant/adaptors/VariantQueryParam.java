@@ -91,7 +91,7 @@ public final class VariantQueryParam implements QueryParam {
             + "3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted."
             + "Accepted segregation modes: "
             + "[ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, "
-            + "deNovo, mendelianError, compoundHeterozygous ]. Value is case insensitive."
+            + "deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive."
             + " e.g. HG0097:DeNovo "
             + "Sample must have parents defined and indexed. ";
     public static final VariantQueryParam SAMPLE = new VariantQueryParam("sample", TEXT_ARRAY, SAMPLE_DESCR);
@@ -125,7 +125,7 @@ public final class VariantQueryParam implements QueryParam {
 
     public static final String SAMPLE_METADATA_DESCR
             = "Return the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.";
-    public static final VariantQueryParam SAMPLE_METADATA = new VariantQueryParam("sampleMetadata", TEXT_ARRAY, SAMPLE_METADATA_DESCR);
+    public static final VariantQueryParam SAMPLE_METADATA = new VariantQueryParam("sampleMetadata", BOOLEAN, SAMPLE_METADATA_DESCR);
 
     public static final String INCLUDE_SAMPLE_DATA_DESCR
             = "List of Sample Data keys (i.e. FORMAT column from VCF file) from Sample Data to include in the output. e.g: DP,AD. "
@@ -308,7 +308,7 @@ public final class VariantQueryParam implements QueryParam {
     public static final String ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR
             = "Clinical confirmed status";
     public static final VariantQueryParam ANNOT_CLINICAL_CONFIRMED_STATUS =
-            new VariantQueryParam("clinicalConfirmedStatus", TEXT_ARRAY, ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR);
+            new VariantQueryParam("clinicalConfirmedStatus", BOOLEAN, ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR);
 
     @Deprecated
     public static final String ANNOT_CLINVAR_DESCR

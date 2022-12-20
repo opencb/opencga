@@ -5,10 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.parquet.hadoop.metadata.CompressionCodecName;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.io.managers.IOConnector;
@@ -42,6 +45,8 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.getSearchEngineQuery;
@@ -54,6 +59,7 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
  */
 public class HadoopVariantExporter extends VariantExporter {
 
+    private final HadoopVariantStorageEngine engine;
     private final MRExecutor mrExecutor;
     private final Logger logger = LoggerFactory.getLogger(HadoopVariantExporter.class);
 
@@ -61,12 +67,13 @@ public class HadoopVariantExporter extends VariantExporter {
                                  IOConnectorProvider ioConnectorProvider)
             throws StorageEngineException {
         super(engine, metadataFactory, ioConnectorProvider);
+        this.engine = engine;
         this.mrExecutor = mrExecutor;
     }
 
     @Override
-    public URI export(@Nullable URI outputFileUri, VariantWriterFactory.VariantOutputFormat outputFormat, URI variantsFile,
-                      ParsedVariantQuery variantQuery)
+    public List<URI> export(@Nullable URI outputFileUri, VariantWriterFactory.VariantOutputFormat outputFormat, URI variantsFile,
+                            ParsedVariantQuery variantQuery)
             throws IOException, StorageEngineException {
         VariantHadoopDBAdaptor dbAdaptor = ((VariantHadoopDBAdaptor) engine.getDBAdaptor());
         IOConnector ioConnector = ioConnectorProvider.get(outputFileUri);
@@ -108,6 +115,7 @@ public class HadoopVariantExporter extends VariantExporter {
                                 EXPORT_SMALL_QUERY_SAMPLE_INDEX_VARIANTS_THRESHOLD.key(),
                                 EXPORT_SMALL_QUERY_SAMPLE_INDEX_VARIANTS_THRESHOLD.defaultValue());
                         try {
+                            logger.info("Count number of matches from the export from query {}", VariantQueryUtils.printQuery(query));
                             long numMatches = engine.get(new Query(query), new QueryOptions(queryOptions)
                                     .append(QueryOptions.LIMIT, 1)
                                     .append(QueryOptions.SKIP, 0)
@@ -224,11 +232,24 @@ public class HadoopVariantExporter extends VariantExporter {
             writeMetadata(metadata, metadataPath.toUri());
             //writeMetadataInHdfs(metadata, metadataPath, fileSystem);
 
-            logger.info("Output file : " + outputPath.toString());
-            logger.info("Output metadata file : " + metadataPath.toString());
-        }
+            logger.info("Output file : " + outputPath);
+            logger.info("Output metadata file : " + metadataPath);
 
-        return outputFileUri;
+            return Arrays.asList(outputFileUri, metadataPath.toUri());
+        }
+    }
+
+    @Override
+    protected DataWriter<Variant> newVariantDataWriter(URI outputFile, OutputStream outputStream,
+                                                       VariantWriterFactory.VariantOutputFormat outputFormat,
+                                                       Query query, QueryOptions queryOptions) throws IOException {
+        if (outputFormat == VariantWriterFactory.VariantOutputFormat.PARQUET) {
+            return new VariantParquetWriter(outputFile, CompressionCodecName.UNCOMPRESSED, engine.getConf());
+        } else if (outputFormat == VariantWriterFactory.VariantOutputFormat.PARQUET_GZ) {
+            return new VariantParquetWriter(outputFile, CompressionCodecName.GZIP, engine.getConf());
+        } else {
+            return super.newVariantDataWriter(outputFile, outputStream, outputFormat, query, queryOptions);
+        }
     }
 
     protected void writeMetadataInHdfs(VariantMetadata metadata, Path metadataPath, FileSystem fileSystem) throws IOException {

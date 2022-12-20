@@ -228,9 +228,9 @@ public class TemplateManager {
                 }
             }
         }
-        if (CollectionUtils.isNotEmpty(tmplStudy.getAcl())) {
+        if (CollectionUtils.isNotEmpty(tmplStudy.getAcl().getAcl())) {
             // Set permissions
-            for (AclEntry<StudyPermissions.Permissions> studyAclEntry : tmplStudy.getAcl()) {
+            for (AclEntry<StudyPermissions.Permissions> studyAclEntry : tmplStudy.getAcl().getAcl()) {
                 logger.info("Setting permissions for '{}'", studyAclEntry.getMember());
                 catalogManager.getStudyManager().updateAcl(fqn, studyAclEntry.getMember(),
                         new StudyAclParams(StringUtils.join(studyAclEntry.getPermissions(), ","), ""), ParamUtils.AclAction.SET, token);

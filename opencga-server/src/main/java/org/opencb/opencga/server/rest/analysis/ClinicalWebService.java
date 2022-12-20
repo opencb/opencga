@@ -16,14 +16,12 @@
 
 package org.opencb.opencga.server.rest.analysis;
 
-import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
-import org.opencb.opencga.core.models.AclEntryList;
-import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
+import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
@@ -47,6 +45,7 @@ import org.opencb.opencga.core.models.analysis.knockout.*;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
+import org.opencb.opencga.core.tools.annotations.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
@@ -146,10 +145,10 @@ public class ClinicalWebService extends AnalysisWebService {
     public Response create(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.CLINICAL_ANALYSIS_SKIP_CREATE_DEFAULT_INTERPRETATION_DESCRIPTION)
-            @QueryParam(ParamConstants.CLINICAL_ANALYSIS_SKIP_CREATE_DEFAULT_INTERPRETATION_PARAM) Boolean skipCreateInterpretation,
-            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @QueryParam(ParamConstants.CLINICAL_ANALYSIS_SKIP_CREATE_DEFAULT_INTERPRETATION_PARAM) boolean skipCreateInterpretation,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true)
-                    ClinicalAnalysisCreateParams params) {
+            ClinicalAnalysisCreateParams params) {
         try {
             return createOkResponse(clinicalManager.create(studyStr, params.toClinicalAnalysis(), skipCreateInterpretation, queryOptions,
                     token));
@@ -183,7 +182,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
 
             @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true)
-                    ClinicalAnalysisUpdateParams params) {
+            ClinicalAnalysisUpdateParams params) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             return createOkResponse(clinicalManager.update(studyStr, query, params, true, queryOptions, token));
@@ -213,7 +212,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @QueryParam("filesAction") ParamUtils.BasicUpdateAction filesAction,
             @ApiParam(value = "Action to be performed if the array of panels is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
             @QueryParam("panelsAction") ParamUtils.BasicUpdateAction panelsAction,
-            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true) ClinicalAnalysisUpdateParams params) {
         try {
             if (commentsAction == null) {
@@ -318,7 +317,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.CLINICAL_RELEASE_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_RELEASE_PARAM) String release,
             @ApiParam(value = ParamConstants.CLINICAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_STATUS_PARAM) String status,
             @ApiParam(value = ParamConstants.CLINICAL_INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_INTERNAL_STATUS_PARAM) String internalStatus,
-            @ApiParam(value = ParamConstants.DELETED_DESCRIPTION) @QueryParam(ParamConstants.DELETED_PARAM) Boolean deleted) {
+            @ApiParam(value = ParamConstants.DELETED_DESCRIPTION) @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             DataResult<ClinicalAnalysis> queryResult = clinicalManager.search(studyStr, query, queryOptions, token);
@@ -357,12 +356,13 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.CLINICAL_RELEASE_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_RELEASE_PARAM) String release,
             @ApiParam(value = ParamConstants.CLINICAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_STATUS_PARAM) String status,
             @ApiParam(value = ParamConstants.CLINICAL_INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_INTERNAL_STATUS_PARAM) String internalStatus,
-            @ApiParam(value = ParamConstants.DELETED_DESCRIPTION) @QueryParam(ParamConstants.DELETED_PARAM) Boolean deleted,
+            @ApiParam(value = ParamConstants.DELETED_DESCRIPTION) @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted,
             @ApiParam(value = ParamConstants.DISTINCT_FIELD_DESCRIPTION, required = true) @QueryParam(ParamConstants.DISTINCT_FIELD_PARAM) String field) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
-            return createOkResponse(clinicalManager.distinct(studyStr, field, query, token));
+            List<String> fields = split(field, ParamConstants.DISTINCT_FIELD_PARAM, true);
+            return createOkResponse(clinicalManager.distinct(studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -371,7 +371,7 @@ public class ClinicalWebService extends AnalysisWebService {
     @GET
     @Path("/{clinicalAnalyses}/acl")
     @ApiOperation(value = "Returns the acl of the clinical analyses. If member is provided, it will only return the acl for the member.",
-            response = AclEntryList.class)
+            response = ClinicalAnalysisAclEntryList.class)
     public Response getAcls(
             @ApiParam(value = ParamConstants.CLINICAL_ANALYSES_DESCRIPTION, required = true)
             @PathParam("clinicalAnalyses") String clinicalAnalysis,
@@ -389,7 +389,7 @@ public class ClinicalWebService extends AnalysisWebService {
 
     @POST
     @Path("/acl/{members}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", response = AclEntryList.class)
+    @ApiOperation(value = "Update the set of permissions granted for the member", response = ClinicalAnalysisAclEntryList.class)
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group IDs", required = true) @PathParam("members") String memberId,
@@ -441,9 +441,9 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "[[user@]project:]study id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Set interpretation as", allowableValues = "PRIMARY,SECONDARY", defaultValue = "SECONDARY")
             @QueryParam("setAs") ParamUtils.SaveInterpretationAs setAs,
-            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(name = "body", value = "JSON containing clinical interpretation information", required = true)
-                    InterpretationCreateParams params) {
+            InterpretationCreateParams params) {
         try {
             if (setAs == null) {
                 setAs = ParamUtils.SaveInterpretationAs.SECONDARY;
@@ -479,13 +479,13 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Action to be performed if the array of comments is being updated. To REMOVE or REPLACE, the date will need to be provided to identify the comment.",
                     allowableValues = "ADD,REMOVE,REPLACE", defaultValue = "ADD") @QueryParam("commentsAction") ParamUtils.AddRemoveReplaceAction commentsAction,
             @ApiParam(value = "Action to be performed if the array of panels is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("panelsAction") ParamUtils.BasicUpdateAction panelsAction,
+            @QueryParam("panelsAction") ParamUtils.BasicUpdateAction panelsAction,
             @ApiParam(value = "Set interpretation as", allowableValues = "PRIMARY,SECONDARY") @QueryParam("setAs") ParamUtils.SaveInterpretationAs setAs,
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
             @ApiParam(value = "Interpretation ID") @PathParam("interpretation") String interpretationId,
-            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(name = "body", value = "JSON containing clinical interpretation information", required = true)
-                    InterpretationUpdateParams params) {
+            InterpretationUpdateParams params) {
         try {
             if (primaryFindingsAction == null) {
                 primaryFindingsAction = ParamUtils.UpdateAction.ADD;
@@ -686,8 +686,9 @@ public class ClinicalWebService extends AnalysisWebService {
             query.putIfNotEmpty(ParamConstants.INTERPRETATION_METHOD_NAME_PARAM, clinicalAnalyst);
             query.remove("analyst");
             query.remove("methods");
+            List<String> fields = split(field, ParamConstants.DISTINCT_FIELD_PARAM, true);
 
-            return createOkResponse(catalogInterpretationManager.distinct(studyStr, field, query, token));
+            return createOkResponse(catalogInterpretationManager.distinct(studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1142,19 +1143,6 @@ public class ClinicalWebService extends AnalysisWebService {
 
             return clinicalInterpretationManager.get(query, queryOptions, token);
         });
-    }
-
-    @GET
-    @Path("/variant/actionable")
-    @ApiOperation(value = "Fetch actionable clinical variants", response = ClinicalVariant.class)
-    public Response variantActionable(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.SAMPLE_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PARAM) String sample) {
-        try {
-            return createOkResponse(clinicalInterpretationManager.getActionableVariants(study, sample, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
     }
 
     //-------------------------------------------------------------------------

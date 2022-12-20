@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.family;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 
@@ -167,6 +168,21 @@ public class GenotypeCodec {
 
     public static String decode(int i) {
         return GENOTYPES[i];
+    }
+
+    public static Pair<String, String> decodeParents(byte code) {
+        byte[] split = split(code);
+        return Pair.of(decode(split[0]), decode(split[1]));
+    }
+
+    public static String decodeMother(byte code) {
+        byte[] split = split(code);
+        return decode(split[1]);
+    }
+
+    public static String decodeFather(byte code) {
+        byte[] split = split(code);
+        return decode(split[0]);
     }
 
     public static boolean isAmbiguousCode(int i) {

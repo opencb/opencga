@@ -29,7 +29,6 @@ import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveReplaceAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.SaveInterpretationAs;
 import org.opencb.opencga.catalog.utils.ParamUtils.UpdateAction;
-import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGeneSummary;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividualSummary;
@@ -38,6 +37,7 @@ import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariantSummary
 import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
 import org.opencb.opencga.core.models.clinical.CancerTieringInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntryList;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisCreateParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisQualityControl;
@@ -72,9 +72,8 @@ import org.opencb.opencga.core.models.study.configuration.InterpretationStudyCon
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
+*  
 */
-
-
 /**
  * This class contains methods for the Analysis - Clinical command line.
  *    PATH: /{apiVersion}/analysis/clinical
@@ -161,9 +160,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             case "search":
                 queryResponse = search();
                 break;
-            case "variant-actionable":
-                queryResponse = actionableVariant();
-                break;
             case "variant-query":
                 queryResponse = queryVariant();
                 break;
@@ -203,7 +199,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private RestResponse<AclEntryList> updateAcl() throws Exception {
+    private RestResponse<ClinicalAnalysisAclEntryList> updateAcl() throws Exception {
 
         logger.debug("Executing updateAcl in Analysis - Clinical command line");
 
@@ -220,7 +216,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         ClinicalAnalysisAclUpdateParams clinicalAnalysisAclUpdateParams= null;
         if (commandOptions.jsonDataModel) {
             clinicalAnalysisAclUpdateParams = new ClinicalAnalysisAclUpdateParams();
-            RestResponse<AclEntryList> res = new RestResponse<>();
+            RestResponse<ClinicalAnalysisAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(clinicalAnalysisAclUpdateParams));
             return res;
@@ -637,57 +633,57 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), ZettaInterpretationAnalysisParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "clinicalAnalysis",commandOptions.bodyClinicalAnalysis, true);
-            putNestedIfNotNull(beanParams, "id",commandOptions.bodyId, true);
-            putNestedIfNotEmpty(beanParams, "region",commandOptions.bodyRegion, true);
-            putNestedIfNotEmpty(beanParams, "type",commandOptions.bodyType, true);
+            putNestedIfNotEmpty(beanParams, "clinicalAnalysis",commandOptions.clinicalAnalysis, true);
+            putNestedIfNotNull(beanParams, "id",commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
+            putNestedIfNotEmpty(beanParams, "type",commandOptions.type, true);
             putNestedIfNotEmpty(beanParams, "study",commandOptions.bodyStudy, true);
-            putNestedIfNotEmpty(beanParams, "file",commandOptions.bodyFile, true);
-            putNestedIfNotEmpty(beanParams, "filter",commandOptions.bodyFilter, true);
-            putNestedIfNotEmpty(beanParams, "qual",commandOptions.bodyQual, true);
-            putNestedIfNotEmpty(beanParams, "fileData",commandOptions.bodyFileData, true);
-            putNestedIfNotEmpty(beanParams, "sample",commandOptions.bodySample, true);
-            putNestedIfNotEmpty(beanParams, "sampleData",commandOptions.bodySampleData, true);
-            putNestedIfNotEmpty(beanParams, "sampleAnnotation",commandOptions.bodySampleAnnotation, true);
-            putNestedIfNotEmpty(beanParams, "sampleMetadata",commandOptions.bodySampleMetadata, true);
-            putNestedIfNotEmpty(beanParams, "cohort",commandOptions.bodyCohort, true);
-            putNestedIfNotEmpty(beanParams, "cohortStatsRef",commandOptions.bodyCohortStatsRef, true);
-            putNestedIfNotEmpty(beanParams, "cohortStatsAlt",commandOptions.bodyCohortStatsAlt, true);
-            putNestedIfNotEmpty(beanParams, "cohortStatsMaf",commandOptions.bodyCohortStatsMaf, true);
-            putNestedIfNotEmpty(beanParams, "cohortStatsMgf",commandOptions.bodyCohortStatsMgf, true);
-            putNestedIfNotEmpty(beanParams, "cohortStatsPass",commandOptions.bodyCohortStatsPass, true);
-            putNestedIfNotEmpty(beanParams, "score",commandOptions.bodyScore, true);
-            putNestedIfNotEmpty(beanParams, "family",commandOptions.bodyFamily, true);
-            putNestedIfNotEmpty(beanParams, "familyDisorder",commandOptions.bodyFamilyDisorder, true);
-            putNestedIfNotEmpty(beanParams, "familySegregation",commandOptions.bodyFamilySegregation, true);
-            putNestedIfNotEmpty(beanParams, "familyMembers",commandOptions.bodyFamilyMembers, true);
-            putNestedIfNotEmpty(beanParams, "familyProband",commandOptions.bodyFamilyProband, true);
-            putNestedIfNotEmpty(beanParams, "gene",commandOptions.bodyGene, true);
-            putNestedIfNotEmpty(beanParams, "ct",commandOptions.bodyCt, true);
-            putNestedIfNotEmpty(beanParams, "xref",commandOptions.bodyXref, true);
-            putNestedIfNotEmpty(beanParams, "biotype",commandOptions.bodyBiotype, true);
-            putNestedIfNotEmpty(beanParams, "proteinSubstitution",commandOptions.bodyProteinSubstitution, true);
-            putNestedIfNotEmpty(beanParams, "conservation",commandOptions.bodyConservation, true);
-            putNestedIfNotEmpty(beanParams, "populationFrequencyAlt",commandOptions.bodyPopulationFrequencyAlt, true);
-            putNestedIfNotEmpty(beanParams, "populationFrequencyRef",commandOptions.bodyPopulationFrequencyRef, true);
-            putNestedIfNotEmpty(beanParams, "populationFrequencyMaf",commandOptions.bodyPopulationFrequencyMaf, true);
-            putNestedIfNotEmpty(beanParams, "transcriptFlag",commandOptions.bodyTranscriptFlag, true);
-            putNestedIfNotEmpty(beanParams, "geneTraitId",commandOptions.bodyGeneTraitId, true);
-            putNestedIfNotEmpty(beanParams, "go",commandOptions.bodyGo, true);
-            putNestedIfNotEmpty(beanParams, "expression",commandOptions.bodyExpression, true);
-            putNestedIfNotEmpty(beanParams, "proteinKeyword",commandOptions.bodyProteinKeyword, true);
-            putNestedIfNotEmpty(beanParams, "drug",commandOptions.bodyDrug, true);
-            putNestedIfNotEmpty(beanParams, "functionalScore",commandOptions.bodyFunctionalScore, true);
-            putNestedIfNotEmpty(beanParams, "clinical",commandOptions.bodyClinical, true);
-            putNestedIfNotEmpty(beanParams, "clinicalSignificance",commandOptions.bodyClinicalSignificance, true);
-            putNestedIfNotNull(beanParams, "clinicalConfirmedStatus",commandOptions.bodyClinicalConfirmedStatus, true);
-            putNestedIfNotEmpty(beanParams, "customAnnotation",commandOptions.bodyCustomAnnotation, true);
-            putNestedIfNotEmpty(beanParams, "panel",commandOptions.bodyPanel, true);
-            putNestedIfNotEmpty(beanParams, "panelModeOfInheritance",commandOptions.bodyPanelModeOfInheritance, true);
-            putNestedIfNotEmpty(beanParams, "panelConfidence",commandOptions.bodyPanelConfidence, true);
-            putNestedIfNotEmpty(beanParams, "panelRoleInCancer",commandOptions.bodyPanelRoleInCancer, true);
-            putNestedIfNotEmpty(beanParams, "trait",commandOptions.bodyTrait, true);
-            putNestedIfNotNull(beanParams, "primary",commandOptions.bodyPrimary, true);
+            putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
+            putNestedIfNotEmpty(beanParams, "filter",commandOptions.filter, true);
+            putNestedIfNotEmpty(beanParams, "qual",commandOptions.qual, true);
+            putNestedIfNotEmpty(beanParams, "fileData",commandOptions.fileData, true);
+            putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
+            putNestedIfNotEmpty(beanParams, "sampleData",commandOptions.sampleData, true);
+            putNestedIfNotEmpty(beanParams, "sampleAnnotation",commandOptions.sampleAnnotation, true);
+            putNestedIfNotEmpty(beanParams, "sampleMetadata",commandOptions.sampleMetadata, true);
+            putNestedIfNotEmpty(beanParams, "cohort",commandOptions.cohort, true);
+            putNestedIfNotEmpty(beanParams, "cohortStatsRef",commandOptions.cohortStatsRef, true);
+            putNestedIfNotEmpty(beanParams, "cohortStatsAlt",commandOptions.cohortStatsAlt, true);
+            putNestedIfNotEmpty(beanParams, "cohortStatsMaf",commandOptions.cohortStatsMaf, true);
+            putNestedIfNotEmpty(beanParams, "cohortStatsMgf",commandOptions.cohortStatsMgf, true);
+            putNestedIfNotEmpty(beanParams, "cohortStatsPass",commandOptions.cohortStatsPass, true);
+            putNestedIfNotEmpty(beanParams, "score",commandOptions.score, true);
+            putNestedIfNotEmpty(beanParams, "family",commandOptions.family, true);
+            putNestedIfNotEmpty(beanParams, "familyDisorder",commandOptions.familyDisorder, true);
+            putNestedIfNotEmpty(beanParams, "familySegregation",commandOptions.familySegregation, true);
+            putNestedIfNotEmpty(beanParams, "familyMembers",commandOptions.familyMembers, true);
+            putNestedIfNotEmpty(beanParams, "familyProband",commandOptions.familyProband, true);
+            putNestedIfNotEmpty(beanParams, "gene",commandOptions.gene, true);
+            putNestedIfNotEmpty(beanParams, "ct",commandOptions.ct, true);
+            putNestedIfNotEmpty(beanParams, "xref",commandOptions.xref, true);
+            putNestedIfNotEmpty(beanParams, "biotype",commandOptions.biotype, true);
+            putNestedIfNotEmpty(beanParams, "proteinSubstitution",commandOptions.proteinSubstitution, true);
+            putNestedIfNotEmpty(beanParams, "conservation",commandOptions.conservation, true);
+            putNestedIfNotEmpty(beanParams, "populationFrequencyAlt",commandOptions.populationFrequencyAlt, true);
+            putNestedIfNotEmpty(beanParams, "populationFrequencyRef",commandOptions.populationFrequencyRef, true);
+            putNestedIfNotEmpty(beanParams, "populationFrequencyMaf",commandOptions.populationFrequencyMaf, true);
+            putNestedIfNotEmpty(beanParams, "transcriptFlag",commandOptions.transcriptFlag, true);
+            putNestedIfNotEmpty(beanParams, "geneTraitId",commandOptions.geneTraitId, true);
+            putNestedIfNotEmpty(beanParams, "go",commandOptions.go, true);
+            putNestedIfNotEmpty(beanParams, "expression",commandOptions.expression, true);
+            putNestedIfNotEmpty(beanParams, "proteinKeyword",commandOptions.proteinKeyword, true);
+            putNestedIfNotEmpty(beanParams, "drug",commandOptions.drug, true);
+            putNestedIfNotEmpty(beanParams, "functionalScore",commandOptions.functionalScore, true);
+            putNestedIfNotEmpty(beanParams, "clinical",commandOptions.clinical, true);
+            putNestedIfNotEmpty(beanParams, "clinicalSignificance",commandOptions.clinicalSignificance, true);
+            putNestedIfNotNull(beanParams, "clinicalConfirmedStatus",commandOptions.clinicalConfirmedStatus, true);
+            putNestedIfNotEmpty(beanParams, "customAnnotation",commandOptions.customAnnotation, true);
+            putNestedIfNotEmpty(beanParams, "panel",commandOptions.panel, true);
+            putNestedIfNotEmpty(beanParams, "panelModeOfInheritance",commandOptions.panelModeOfInheritance, true);
+            putNestedIfNotEmpty(beanParams, "panelConfidence",commandOptions.panelConfidence, true);
+            putNestedIfNotEmpty(beanParams, "panelRoleInCancer",commandOptions.panelRoleInCancer, true);
+            putNestedIfNotEmpty(beanParams, "trait",commandOptions.trait, true);
+            putNestedIfNotNull(beanParams, "primary",commandOptions.primary, true);
 
             zettaInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -1057,22 +1053,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getClinicalAnalysisClient().search(queryParams);
     }
 
-    private RestResponse<ClinicalVariant> actionableVariant() throws Exception {
-
-        logger.debug("Executing actionableVariant in Analysis - Clinical command line");
-
-        AnalysisClinicalCommandOptions.ActionableVariantCommandOptions commandOptions = analysisClinicalCommandOptions.actionableVariantCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("sample", commandOptions.sample);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-        return openCGAClient.getClinicalAnalysisClient().actionableVariant(queryParams);
-    }
-
     private RestResponse<ClinicalVariant> queryVariant() throws Exception {
 
         logger.debug("Executing queryVariant in Analysis - Clinical command line");
@@ -1148,7 +1128,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getClinicalAnalysisClient().queryVariant(queryParams);
     }
 
-    private RestResponse<AclEntryList> acl() throws Exception {
+    private RestResponse<ClinicalAnalysisAclEntryList> acl() throws Exception {
 
         logger.debug("Executing acl in Analysis - Clinical command line");
 

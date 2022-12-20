@@ -14,6 +14,9 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -27,6 +30,7 @@ import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProj
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
@@ -98,6 +102,7 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
     @Override
     protected Object getOrIterator(Query inputQuery, QueryOptions options, boolean iterator) {
         Query query = new Query(inputQuery);
+        query.put(SampleIndexQueryParser.INCLUDE_PARENTS_COLUMN, true);
         SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
 
         logger.info("HBase SampleIndex, skip variants table");
@@ -148,12 +153,12 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
             logger.info("Using sample index raw iterator Iterator<SampleVariantIndexEntry>");
             CloseableIterator<SampleVariantIndexEntry> rawIterator;
             try {
-                rawIterator = sampleIndexDBAdaptor.rawIterator(sampleIndexQuery);
+                rawIterator = sampleIndexDBAdaptor.rawIterator(sampleIndexQuery, options);
             } catch (IOException e) {
                 throw VariantQueryException.internalException(e).setQuery(inputQuery);
             }
             SampleVariantIndexEntryToVariantConverter converter =
-                    new SampleVariantIndexEntryToVariantConverter(parseQuery, sampleIndexQuery);
+                    new SampleVariantIndexEntryToVariantConverter(parseQuery, sampleIndexQuery, dbAdaptor.getMetadataManager());
             variantIterator = VariantDBIterator.wrapper(Iterators.transform(rawIterator, converter::convert));
             variantIterator.addCloseable(rawIterator);
         }
@@ -175,7 +180,8 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
 
     private boolean isQueryCovered(Query query) {
         if (VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_MENDELIAN_ERROR)
-                || VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO)) {
+                || VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO)
+                || VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO_STRICT)) {
             // Can't use with special filters.
             return false;
         }
@@ -207,18 +213,16 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
         }
         if (projection.getStudyIds().size() == 1) {
             VariantQueryProjection.StudyVariantQueryProjection study = projection.getStudy(projection.getStudyIds().get(0));
-            if (study.getSamples().size() != 1) {
-                // Only one sample can be returned
-                return false;
-            }
-            Integer sampleId = study.getSamples().get(0);
-            String sampleName = metadataManager.getSampleName(study.getId(), sampleId);
-            if (!sampleIndexQuery.getSamplesMap().containsKey(sampleName)) {
-                // Sample query does not include the sample to be returned
-                return false;
-            }
+
             if (sampleIndexQuery.getSamplesMap().size() != 1) {
                 // Can only filter by one sample
+                return false;
+            }
+            String sampleName = sampleIndexQuery.getSamplesMap().keySet().iterator().next();
+            Integer sampleId = metadataManager.getSampleId(study.getId(), sampleName);
+
+            if (!study.getSamples().contains(sampleId)) {
+                // Sample query does not include the sample to be returned
                 return false;
             }
 
@@ -236,6 +240,24 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                 // It must return only GT
                 return false;
             }
+
+            if (study.getSamples().size() > 1) {
+                // Ensure that all includedSamples are members of the same family
+                LinkedList<Integer> samplesAux = new LinkedList<>(study.getSamples());
+                SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(study.getId(), sampleId);
+                samplesAux.remove(sampleId);
+                samplesAux.remove(sampleMetadata.getMother());
+                samplesAux.remove(sampleMetadata.getFather());
+                if (samplesAux.size() != 0) {
+                    // Sample query include some samples that are not the parents
+                    return false;
+                }
+                if (sampleMetadata.getFamilyIndexStatus(sampleIndexQuery.getSchema().getVersion()) != TaskMetadata.Status.READY) {
+                    // Unable to return parents if the family index is not ready
+                    return false;
+                }
+            }
+
             return true;
         }
         // Either one or none studies can be returned.
@@ -243,30 +265,72 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
     }
 
 
-    private class SampleVariantIndexEntryToVariantConverter implements Converter<SampleVariantIndexEntry, Variant> {
+    private static class SampleVariantIndexEntryToVariantConverter implements Converter<SampleVariantIndexEntry, Variant> {
+
+        enum FamilyRole {
+            MOTHER,
+            FATHER,
+            SAMPLE
+        }
 
         private final boolean includeStudy;
         private String studyName;
+        private List<FamilyRole> familyRoleOrder;
         private String sampleName;
+        private String motherName;
+        private String fatherName;
         private LinkedHashMap<String, Integer> samplesPosition;
 
-        SampleVariantIndexEntryToVariantConverter(ParsedVariantQuery parseQuery, SampleIndexQuery sampleIndexQuery) {
+        SampleVariantIndexEntryToVariantConverter(ParsedVariantQuery parseQuery, SampleIndexQuery sampleIndexQuery,
+                                                  VariantStorageMetadataManager metadataManager) {
             VariantQueryProjection projection = parseQuery.getProjection();
             includeStudy = !projection.getStudyIds().isEmpty();
             if (includeStudy) {
                 int studyId = projection.getStudyIds().get(0); // only one study
                 VariantQueryProjection.StudyVariantQueryProjection projectionStudy = projection.getStudy(studyId);
                 studyName = projectionStudy.getStudyMetadata().getName();
-                List<Integer> samples = projectionStudy.getSamples();
-                if (samples.size() != 1) {
+
+                if (sampleIndexQuery.getSamplesMap().size() != 1) {
                     // This should never happen
-                    throw new IllegalStateException("Unexpected number of samples. Expected one, found " + samples);
+                    throw new IllegalStateException("Unexpected number of samples. Expected one, found "
+                            + sampleIndexQuery.getSamplesMap().keySet());
                 }
-                String sampleName = dbAdaptor.getMetadataManager().getSampleName(studyId, samples.get(0));
+                sampleName = sampleIndexQuery.getSamplesMap().keySet().iterator().next();
+                Integer sampleId = metadataManager.getSampleId(studyId, sampleName);
+
+
+                familyRoleOrder = new ArrayList<>();
                 samplesPosition = new LinkedHashMap<>();
-                samplesPosition.put(sampleName, 0);
-                if (parseQuery.getInputQuery().getBoolean(VariantQueryParam.INCLUDE_SAMPLE_ID.key())) {
-                    this.sampleName = sampleName;
+                SampleMetadata sampleMetadata = null; // lazy init
+                List<Integer> includeSamples = projectionStudy.getSamples();
+                for (Integer includeSampleId : includeSamples) {
+                    if (includeSampleId.equals(sampleId)) {
+                        familyRoleOrder.add(FamilyRole.SAMPLE);
+                        samplesPosition.put(sampleName, samplesPosition.size());
+                    } else {
+                        if (sampleMetadata == null) {
+                            sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
+                        }
+                        if (includeSampleId.equals(sampleMetadata.getMother())) {
+                            familyRoleOrder.add(FamilyRole.MOTHER);
+                            motherName = metadataManager.getSampleName(studyId, includeSampleId);
+                            samplesPosition.put(motherName, samplesPosition.size());
+                        } else if (includeSampleId.equals(sampleMetadata.getFather())) {
+                            familyRoleOrder.add(FamilyRole.FATHER);
+                            fatherName = metadataManager.getSampleName(studyId, includeSampleId);
+                            samplesPosition.put(fatherName, samplesPosition.size());
+                        } else {
+                            String unknownSampleName = metadataManager.getSampleName(studyId, includeSampleId);
+                            throw new IllegalStateException("Unexpected include sample '" + unknownSampleName + "'"
+                                    + " not related with sample '" + sampleName + "'");
+                        }
+                    }
+                }
+
+                if (!parseQuery.getInputQuery().getBoolean(VariantQueryParam.INCLUDE_SAMPLE_ID.key())) {
+                    this.sampleName = null;
+                    this.motherName = null;
+                    this.fatherName = null;
                 }
 
             }
@@ -280,8 +344,25 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                 StudyEntry studyEntry = new StudyEntry();
                 studyEntry.setStudyId(studyName);
                 studyEntry.setSampleDataKeys(Collections.singletonList("GT"));
-                studyEntry.setSamples(Collections.singletonList(
-                        new SampleEntry(sampleName, null, Collections.singletonList(entry.getGenotype()))));
+                studyEntry.setSamples(new ArrayList<>(familyRoleOrder.size()));
+                for (FamilyRole role : familyRoleOrder) {
+                    switch (role) {
+                        case MOTHER:
+                            studyEntry.getSamples().add(new SampleEntry(motherName, null,
+                                    Collections.singletonList(GenotypeCodec.decodeMother(entry.getParentsCode()))));
+                            break;
+                        case FATHER:
+                            studyEntry.getSamples().add(new SampleEntry(fatherName, null,
+                                    Collections.singletonList(GenotypeCodec.decodeFather(entry.getParentsCode()))));
+                            break;
+                        case SAMPLE:
+                            studyEntry.getSamples().add(new SampleEntry(sampleName, null,
+                                    Collections.singletonList(entry.getGenotype())));
+                            break;
+                        default:
+                            throw new IllegalStateException("Unexpected value: " + role);
+                    }
+                }
                 studyEntry.setSortedSamplesPosition(samplesPosition);
                 v.setStudies(Collections.singletonList(studyEntry));
             }

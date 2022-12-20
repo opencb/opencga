@@ -27,10 +27,10 @@ import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
-import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualAclEntryList;
 import org.opencb.opencga.core.models.individual.IndividualAclUpdateParams;
 import org.opencb.opencga.core.models.individual.IndividualCreateParams;
 import org.opencb.opencga.core.models.individual.IndividualPopulation;
@@ -48,9 +48,8 @@ import org.opencb.opencga.core.models.job.Job;
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
+*  
 */
-
-
 /**
  * This class contains methods for the Individuals command line.
  *    PATH: /{apiVersion}/individuals
@@ -119,7 +118,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private RestResponse<AclEntryList> updateAcl() throws Exception {
+    private RestResponse<IndividualAclEntryList> updateAcl() throws Exception {
 
         logger.debug("Executing updateAcl in Individuals command line");
 
@@ -136,7 +135,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         IndividualAclUpdateParams individualAclUpdateParams= null;
         if (commandOptions.jsonDataModel) {
             individualAclUpdateParams = new IndividualAclUpdateParams();
-            RestResponse<AclEntryList> res = new RestResponse<>();
+            RestResponse<IndividualAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(individualAclUpdateParams));
             return res;
@@ -256,12 +255,12 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), IndividualCreateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.bodyId, true);
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.bodyName, true);
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
             putNestedIfNotEmpty(beanParams, "father.id",commandOptions.fatherId, true);
             putNestedIfNotEmpty(beanParams, "mother.id",commandOptions.motherId, true);
-            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.bodyCreationDate, true);
-            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.bodyModificationDate, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
             putNestedIfNotEmpty(beanParams, "location.address",commandOptions.locationAddress, true);
             putNestedIfNotEmpty(beanParams, "location.postalCode",commandOptions.locationPostalCode, true);
             putNestedIfNotEmpty(beanParams, "location.city",commandOptions.locationCity, true);
@@ -277,13 +276,13 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "ethnicity.description",commandOptions.ethnicityDescription, true);
             putNestedIfNotEmpty(beanParams, "ethnicity.source",commandOptions.ethnicitySource, true);
             putNestedIfNotEmpty(beanParams, "ethnicity.url",commandOptions.ethnicityUrl, true);
-            putNestedIfNotNull(beanParams, "parentalConsanguinity",commandOptions.bodyParentalConsanguinity, true);
+            putNestedIfNotNull(beanParams, "parentalConsanguinity",commandOptions.parentalConsanguinity, true);
             putNestedIfNotEmpty(beanParams, "population.name",commandOptions.populationName, true);
             putNestedIfNotEmpty(beanParams, "population.subpopulation",commandOptions.populationSubpopulation, true);
             putNestedIfNotEmpty(beanParams, "population.description",commandOptions.populationDescription, true);
-            putNestedIfNotEmpty(beanParams, "dateOfBirth",commandOptions.bodyDateOfBirth, true);
-            putNestedIfNotNull(beanParams, "karyotypicSex",commandOptions.bodyKaryotypicSex, true);
-            putNestedIfNotNull(beanParams, "lifeStatus",commandOptions.bodyLifeStatus, true);
+            putNestedIfNotEmpty(beanParams, "dateOfBirth",commandOptions.dateOfBirth, true);
+            putNestedIfNotNull(beanParams, "karyotypicSex",commandOptions.karyotypicSex, true);
+            putNestedIfNotNull(beanParams, "lifeStatus",commandOptions.lifeStatus, true);
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
@@ -381,7 +380,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getIndividualClient().search(queryParams);
     }
 
-    private RestResponse<AclEntryList> acl() throws Exception {
+    private RestResponse<IndividualAclEntryList> acl() throws Exception {
 
         logger.debug("Executing acl in Individuals command line");
 

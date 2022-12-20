@@ -204,8 +204,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
-    public void createIndexes(boolean uniqueIndexesOnly) throws CatalogDBException {
-        metaDBAdaptor.createIndexes(uniqueIndexesOnly);
+    public void createIndexes(boolean wholeIndexes) {
+        metaDBAdaptor.createIndexes(wholeIndexes);
     }
 
     @Override

@@ -20,8 +20,8 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
+*  
 */
-
 
 /**
  * This class contains methods for the Projects command line.
@@ -75,7 +75,7 @@ public class ProjectsCommandOptions {
         public String exclude; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1, hidden = true)
-        public Boolean includeResult= true; 
+        public boolean includeResult= true; 
     
         @Parameter(names = {"--id"}, description = "The body id ProjectCreateParams web service parameter", required = true, arity = 1)
         public String id;
@@ -175,7 +175,7 @@ public class ProjectsCommandOptions {
         public String projects; 
     
         @Parameter(names = {"--default"}, description = "Calculate default stats", required = false, arity = 1)
-        public Boolean default_values; 
+        public Boolean default_values = true; 
     
         @Parameter(names = {"--file-fields"}, description = "List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type", required = false, arity = 1)
         public String fileFields; 
@@ -276,7 +276,7 @@ public class ProjectsCommandOptions {
         public String project; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1, hidden = true)
-        public Boolean includeResult= true; 
+        public boolean includeResult= true; 
     
         @Parameter(names = {"--name", "-n"}, description = "The body name ProjectUpdateParams web service parameter", required = false, arity = 1)
         public String name;

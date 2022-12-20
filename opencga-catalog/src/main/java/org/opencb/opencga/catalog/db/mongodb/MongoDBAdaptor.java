@@ -145,10 +145,11 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
      */
     protected MongoDBCollection getQueryCollection(Query query, MongoDBCollection collection, MongoDBCollection archiveCollection,
                                                    MongoDBCollection deleteCollection) {
-        if (query.containsKey(ParamConstants.DELETED_PARAM)) {
+        if (query.getBoolean(ParamConstants.DELETED_PARAM, false)) {
             return deleteCollection;
         }
-        if (query.containsKey(Constants.ALL_VERSIONS) || query.containsKey(VERSION) || query.containsKey(ParamConstants.SNAPSHOT_PARAM)) {
+        if (query.getBoolean(Constants.ALL_VERSIONS, false) || query.containsKey(VERSION)
+                || query.containsKey(ParamConstants.SNAPSHOT_PARAM)) {
             return archiveCollection;
         }
         return collection;
@@ -212,7 +213,13 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
      */
     protected void addAutoOrQuery(String mongoDbField, String queryParam, Query query, QueryParam.Type paramType, List<Bson> andBsonList) {
         if (query != null && query.getString(queryParam) != null) {
-            Bson filter = MongoDBQueryUtils.createAutoFilter(mongoDbField, queryParam, query, paramType);
+            Bson filter;
+            if (paramType == QueryParam.Type.STRING || paramType == QueryParam.Type.TEXT || paramType == QueryParam.Type.TEXT_ARRAY) {
+                filter = MongoDBQueryUtils.createStringFilter(mongoDbField, queryParam, query,
+                        ObjectMap.COMMA_SEPARATED_LIST_SPLIT_PATTERN);
+            } else {
+                filter = MongoDBQueryUtils.createAutoFilter(mongoDbField, queryParam, query, paramType);
+            }
             if (filter != null) {
                 andBsonList.add(filter);
             }

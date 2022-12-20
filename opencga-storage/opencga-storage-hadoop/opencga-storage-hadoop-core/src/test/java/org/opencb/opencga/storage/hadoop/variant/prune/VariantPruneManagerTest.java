@@ -7,14 +7,12 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers;
-import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
@@ -111,7 +109,7 @@ public class VariantPruneManagerTest extends VariantStorageBaseTest implements H
 
 
         // ---------------- Annotate
-        this.variantStorageEngine.annotate(new Query(), new QueryOptions(DefaultVariantAnnotationManager.OUT_DIR, outputUri));
+        this.variantStorageEngine.annotate(outputUri, new QueryOptions());
 
         VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
     }
@@ -194,6 +192,43 @@ public class VariantPruneManagerTest extends VariantStorageBaseTest implements H
         int variantsToPrune = variantPrune("3_prune_dry", true);
         variantPrune("4_prune_wet", false, variantsToPrune);
         variantPrune("5_prune_dry", true, 0);
+    }
+
+    @Test
+    public void testVariantPruneRemoveStudy() throws Exception {
+        load();
+
+        variantPrune("remove_study_1_prune_dry", true, 0);
+
+//        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("pre-remove"));
+        engine.removeStudy(STUDY_NAME_3, outputUri);
+//        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("post-remove"));
+
+        int variantsToPrune = variantPrune("remove_study_2_prune_dry", true);
+        variantPrune("remove_study_3_prune_wet", false, variantsToPrune);
+//        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("post-prune"));
+        variantPrune("remove_study_4_prune_dry", true, 0);
+    }
+
+    @Test
+    public void testVariantPruneRemoveStudyAndLoad() throws Exception {
+        load();
+
+        variantPrune("remove_study_and_load_1_prune_dry", true, 0);
+
+//        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("pre-remove"));
+        engine.removeStudy(STUDY_NAME_3, outputUri);
+        ObjectMap params = new ObjectMap()
+                .append(VariantStorageOptions.STUDY.key(), STUDY_NAME_3)
+                .append(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), true);
+        runETL(engine, getPlatinumFile(8), outputUri, params, true, true, true);
+//        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("post-remove"));
+
+        int variantsToPrune = variantPrune("remove_study_and_load_2_prune_dry", true);
+        variantPrune("remove_study_and_load_3_prune_wet", false, variantsToPrune);
+//        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("post-prune"));
+        variantPrune("remove_study_and_load_4_prune_dry", true, 0);
     }
 
     private int variantPrune(String testName, boolean dryMode) throws Exception {

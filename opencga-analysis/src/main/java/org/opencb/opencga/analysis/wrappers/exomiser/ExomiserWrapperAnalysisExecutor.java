@@ -5,6 +5,10 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
+
+import org.opencb.biodata.models.clinical.pedigree.Member;
+import org.opencb.biodata.models.clinical.pedigree.Pedigree;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.analysis.ResourceUtils;
@@ -12,13 +16,16 @@ import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
+import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,9 +34,9 @@ import java.io.*;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+
+import java.util.*;
+
 
 @ToolExecutor(id = ExomiserWrapperAnalysisExecutor.ID,
         tool = ExomiserWrapperAnalysis.ID,
@@ -44,7 +51,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     private static final String EXOMISER_OUTPUT_OPTIONS_FILENAME = "output.yml";
 
     public final static String DOCKER_IMAGE_NAME = "exomiser/exomiser-cli";
-    public final static String DOCKER_IMAGE_VERSION = "";
+    public final static String DOCKER_IMAGE_VERSION = "13.1.0-SNAPSHOT"; // with "13.1.0", the docker exomiser/exomiser-cli crashes !!!
 
     private String studyId;
     private String sampleId;
@@ -79,35 +86,49 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
             throw new ToolException("Missing phenotypes, i.e. HPO terms, for individual/sample (" + individual.getId() + "/" + sampleId
                     + ")");
         }
-
         logger.info("{}: Getting HPO for individual {}: {}", ID, individual.getId(), StringUtils.join(hpos, ","));
-        try {
-            PrintWriter pw = new PrintWriter(getOutDir().resolve(sampleId + ".yml").toAbsolutePath().toString());
-            pw.write("# a v1 phenopacket describing an individual https://phenopacket-schema.readthedocs.io/en/1.0.0/phenopacket.html\n");
-            pw.write("---\n");
-            pw.write("subject:\n");
-            pw.write("    id: " + sampleId + "\n");
-            pw.write("phenotypicFeatures:\n");
-            for (String hpo : hpos) {
-                pw.write("    - type:\n");
-                pw.write("        id: " + hpo + "\n");
+
+        List<String> samples = new ArrayList<>();
+        samples.add(individual.getId());
+
+        // Check multi-sample (family) analysis
+        File pedigreeFile = null;
+        Pedigree pedigree = null;
+        Family family = IndividualQcUtils.getFamilyByIndividualId(getStudyId(), individual.getId(),
+                getVariantStorageManager().getCatalogManager(), getToken());
+        if (family != null) {
+            pedigree = FamilyManager.getPedigreeFromFamily(family, individual.getId());
+        }
+
+        File sampleFile = createSampleFile(individual, hpos, pedigree);
+        if (pedigree != null) {
+            if (individual.getFather() != null) {
+                samples.add(individual.getFather().getId());
             }
-            pw.close();
-        } catch (IOException e) {
-            throw new ToolException("Error writing Exomiser sample file", e);
+            if (individual.getMother() != null) {
+                samples.add(individual.getMother().getId());
+            }
+            pedigreeFile = createPedigreeFile(family, pedigree);
         }
 
         // Export data into VCF file
         Path vcfPath = getOutDir().resolve(sampleId + ".vcf.gz");
+
         VariantQuery query = new VariantQuery()
                 .study(studyId)
-                .sample(sampleId)
-                .includeSampleId(true)
-                .includeGenotype(true);
+                .sample(individual.getId() + ":0/1,1/1")
+                .includeSample(samples)
+                .includeSampleData("GT")
+                .unknownGenotype("./.");
+
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,studies.samples");
+
         logger.info("{}: Exomiser exports variants using the query: {}", ID, query.toJson());
+        logger.info("{}: Exomiser exports variants using the query options: {}", ID, queryOptions.toJson());
+
         try {
             getVariantStorageManager().exportData(vcfPath.toString(), VariantWriterFactory.VariantOutputFormat.VCF_GZ, null, query,
-                    new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(VariantField.ID, VariantField.STUDIES_SAMPLES)), getToken());
+                    queryOptions, getToken());
         } catch (StorageEngineException | CatalogException e) {
             throw new ToolException(e);
         }
@@ -144,14 +165,134 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Append input file params
 //        sb.append(" --analysis /jobdir/").append(EXOMISER_ANALYSIS_TEMPLATE_FILENAME)
-        sb.append(" --sample /jobdir/").append(sampleId).append(".yml")
-                .append(" --vcf /jobdir/" + vcfPath.getFileName())
+        sb.append(" --sample /jobdir/").append(sampleFile.getName());
+        if (pedigreeFile != null && pedigreeFile.exists()) {
+            sb.append(" --ped /jobdir/").append(pedigreeFile.getName());
+        }
+        sb.append(" --vcf /jobdir/" + vcfPath.getFileName())
                 .append(" --assembly hg38 --output /jobdir/").append(EXOMISER_OUTPUT_OPTIONS_FILENAME)
                 .append(" --spring.config.location=/jobdir/").append(EXOMISER_PROPERTIES_TEMPLATE_FILENAME);
 
         // Execute command and redirect stdout and stderr to the files
         logger.info("{}: Docker command line: {}", ID, sb);
         runCommandLine(sb.toString());
+    }
+
+    private File createSampleFile(Individual individual, Set<String> hpos, Pedigree pedigree) throws ToolException {
+        File sampleFile = getOutDir().resolve(individual.getId() + ".yml").toFile();
+        try {
+            PrintWriter pw = new PrintWriter(sampleFile);
+            pw.write("# a v1 phenopacket describing an individual https://phenopacket-schema.readthedocs.io/en/1.0.0/phenopacket.html\n");
+            pw.write("---\n");
+            pw.write("id: " + individual.getId() + "\n");
+            pw.write("subject:\n");
+            pw.write("    id: " + individual.getId() + "\n");
+            if (individual.getSex() != null) {
+                pw.write("    sex: " + individual.getSex().getName() + "\n");
+            }
+            pw.write("phenotypicFeatures:\n");
+            for (String hpo : hpos) {
+                pw.write("    - type:\n");
+                pw.write("        id: " + hpo + "\n");
+            }
+            if (pedigree != null) {
+                pw.write("pedigree:\n");
+                pw.write("    persons:\n");
+
+                // Proband
+                pw.write("      - individualId:" + pedigree.getProband().getId() + "\n");
+                if (pedigree.getProband().getFather() != null) {
+                    pw.write("      - paternalId:" + pedigree.getProband().getMother().getId() + "\n");
+                }
+                if (pedigree.getProband().getMother() != null) {
+                    pw.write("      - maternalId:" + pedigree.getProband().getMother().getId() + "\n");
+                }
+                if (pedigree.getProband().getSex() != null) {
+                    pw.write("      - sex:" + pedigree.getProband().getSex().getName() + "\n");
+                }
+                //pw.write("      - affectedStatus:" + AffectationStatus + "\n");
+
+                // Father
+                if (pedigree.getProband().getFather() != null) {
+                    pw.write("      - individualId:" + pedigree.getProband().getFather().getId() + "\n");
+                    if (pedigree.getProband().getFather().getSex() != null) {
+                        pw.write("      - sex:" + pedigree.getProband().getFather().getSex().getName() + "\n");
+                    }
+//                    pw.write("      - affectedStatus:" + AffectationStatus + "\n");
+                }
+
+                // Mother
+                if (pedigree.getProband().getMother() != null) {
+                    pw.write("      - individualId:" + pedigree.getProband().getMother().getId() + "\n");
+                    if (pedigree.getProband().getMother().getSex() != null) {
+                        pw.write("      - sex:" + pedigree.getProband().getMother().getSex().getName() + "\n");
+                    }
+//                    pw.write("      - affectedStatus:" + AffectationStatus + "\n");
+                }
+            }
+
+            // Close file
+            pw.close();
+        } catch (IOException e) {
+            throw new ToolException("Error writing Exomiser sample file", e);
+        }
+        return  sampleFile;
+    }
+
+    private File createPedigreeFile(Family family, Pedigree pedigree) throws ToolException {
+        File pedigreeFile = getOutDir().resolve(pedigree.getProband().getId() + ".ped").toFile();
+        try {
+            PrintWriter pw = new PrintWriter(pedigreeFile);
+            // Proband
+            pw.write(family.getId()
+                    + "\t" + pedigree.getProband().getId()
+                    + "\t" + getPedigreePaternalId(pedigree.getProband())
+                    + "\t" + getPedigreeMaternalId(pedigree.getProband())
+                    + "\t" + getPedigreeSex(pedigree.getProband())
+                    + "\t2\n");
+
+            // Father
+            if (pedigree.getProband().getFather() != null) {
+                pw.write(family.getId() + "\t" + pedigree.getProband().getFather().getId() + "\t0\t0\t1\t0\n");
+            }
+
+            // Mother
+            if (pedigree.getProband().getMother() != null) {
+                pw.write(family.getId() + "\t" + pedigree.getProband().getMother().getId() + "\t0\t0\t2\t0\n");
+            }
+
+            // Close file
+            pw.close();
+        } catch (IOException e) {
+            throw new ToolException("Error writing Exomiser pedigree file", e);
+        }
+
+        return pedigreeFile;
+    }
+
+    private String getPedigreePaternalId(Member member) {
+        if (member.getFather() != null) {
+            return member.getFather().getId();
+        }
+        return "0";
+    }
+
+    private String getPedigreeMaternalId(Member member) {
+        if (member.getMother() != null) {
+            return member.getMother().getId();
+        }
+        return "0";
+    }
+
+    private int getPedigreeSex(Member member) {
+        if (member.getSex() != null) {
+            if (member.getSex() == SexOntologyTermAnnotation.initMale()) {
+                return 1;
+            } if (member.getSex() == SexOntologyTermAnnotation.initFemale()) {
+                return 2;
+            }
+        }
+        return 0;
     }
 
     private Path getOpencgaHomePath() throws ToolExecutorException {

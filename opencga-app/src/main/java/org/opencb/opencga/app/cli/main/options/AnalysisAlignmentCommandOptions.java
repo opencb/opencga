@@ -20,8 +20,8 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
+*  
 */
-
 
 /**
  * This class contains methods for the Analysis - Alignment command line.
@@ -145,8 +145,8 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--window-size"}, description = "Window size", required = false, arity = 1)
         public Integer windowSize;
     
-        @Parameter(names = {"--overwrite"}, description = "Overwrite if coverage is already computed", required = false, arity = 1)
-        public Boolean overwrite;
+        @Parameter(names = {"--overwrite"}, description = "Overwrite if coverage is already computed", required = false, help = true, arity = 0)
+        public boolean overwrite = false;
     
     }
 
@@ -209,8 +209,8 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--offset"}, description = "Offset to extend the region, gene or exon at up and downstream", required = false, arity = 1)
         public Integer offset; 
     
-        @Parameter(names = {"--only-exons"}, description = "Only exons are taking into account when genes are specified", required = false, arity = 1)
-        public Boolean onlyExons; 
+        @Parameter(names = {"--only-exons"}, description = "Only exons are taking into account when genes are specified", required = false, help = true, arity = 0)
+        public boolean onlyExons = false; 
     
         @Parameter(names = {"--range"}, description = "Range of coverage values to be reported. Minimum and maximum values are separated by '-', e.g.: 20-40 (for coverage values greater or equal to 20 and less or equal to 40). A single value means to report coverage values less or equal to that value", required = false, arity = 1)
         public String range; 
@@ -218,8 +218,8 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--window-size"}, description = "Window size for the region coverage (if a coverage range is provided, window size must be 1)", required = false, arity = 1)
         public Integer windowSize; 
     
-        @Parameter(names = {"--split-results"}, description = "Split results into regions (or gene/exon regions)", required = false, arity = 1)
-        public Boolean splitResults; 
+        @Parameter(names = {"--split-results"}, description = "Split results into regions (or gene/exon regions)", required = false, help = true, arity = 0)
+        public boolean splitResults = false; 
     
     }
 
@@ -238,8 +238,8 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--skip-log2"}, description = "Do not apply Log2 to normalise the coverage ratio", required = false, arity = 1)
-        public Boolean skipLog2; 
+        @Parameter(names = {"--skip-log2"}, description = "Do not apply Log2 to normalise the coverage ratio", required = false, help = true, arity = 0)
+        public boolean skipLog2 = false; 
     
         @Parameter(names = {"--region"}, description = "Comma separated list of regions 'chr:start-end, e.g.: 2,3:63500-65000", required = false, arity = 1)
         public String region; 
@@ -250,14 +250,14 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--offset"}, description = "Offset to extend the region, gene or exon at up and downstream", required = false, arity = 1)
         public Integer offset; 
     
-        @Parameter(names = {"--only-exons"}, description = "Only exons are taking into account when genes are specified", required = false, arity = 1)
-        public Boolean onlyExons; 
+        @Parameter(names = {"--only-exons"}, description = "Only exons are taking into account when genes are specified", required = false, help = true, arity = 0)
+        public boolean onlyExons = false; 
     
         @Parameter(names = {"--window-size"}, description = "Window size for the region coverage (if a coverage range is provided, window size must be 1)", required = false, arity = 1)
         public Integer windowSize; 
     
-        @Parameter(names = {"--split-results"}, description = "Split results into regions (or gene/exon regions)", required = false, arity = 1)
-        public Boolean splitResults; 
+        @Parameter(names = {"--split-results"}, description = "Split results into regions (or gene/exon regions)", required = false, help = true, arity = 0)
+        public boolean splitResults = false; 
     
     }
 
@@ -381,8 +381,8 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--file"}, description = "Input BAM/CRAM file ID", required = false, arity = 1)
         public String file;
     
-        @Parameter(names = {"--overwrite"}, description = "Overwrite if index file is already computed", required = false, arity = 1)
-        public Boolean overwrite;
+        @Parameter(names = {"--overwrite"}, description = "Overwrite if index file is already computed", required = false, help = true, arity = 0)
+        public boolean overwrite = false;
     
     }
 
@@ -460,8 +460,8 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--skip"}, description = "Skip metrics to compute. Valid values: stats, flagstats, fastqc and hsmetrics", required = false, arity = 1)
         public String skip;
     
-        @Parameter(names = {"--overwrite"}, description = "Overwrite if quality control is already computed", required = false, arity = 1)
-        public Boolean overwrite;
+        @Parameter(names = {"--overwrite"}, description = "Overwrite if quality control is already computed", required = false, help = true, arity = 0)
+        public boolean overwrite = false;
     
         @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
@@ -480,8 +480,8 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
         public Integer skip; 
     
-        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, arity = 1)
-        public Boolean count; 
+        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
+        public boolean count = false; 
     
         @Parameter(names = {"--file"}, description = "File ID", required = true, arity = 1)
         public String file; 
@@ -498,8 +498,8 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--offset"}, description = "Offset to extend the region, gene or exon at up and downstream", required = false, arity = 1)
         public Integer offset; 
     
-        @Parameter(names = {"--only-exons"}, description = "Only exons are taking into account when genes are specified", required = false, arity = 1)
-        public Boolean onlyExons; 
+        @Parameter(names = {"--only-exons"}, description = "Only exons are taking into account when genes are specified", required = false, help = true, arity = 0)
+        public boolean onlyExons = false; 
     
         @Parameter(names = {"--min-mapping-quality"}, description = "Minimum mapping quality", required = false, arity = 1)
         public Integer minMappingQuality; 
@@ -510,29 +510,29 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--max-num-hits"}, description = "Maximum number of hits", required = false, arity = 1)
         public Integer maxNumHits; 
     
-        @Parameter(names = {"--properly-paired"}, description = "Return only properly paired alignments", required = false, arity = 1)
-        public Boolean properlyPaired; 
+        @Parameter(names = {"--properly-paired"}, description = "Return only properly paired alignments", required = false, help = true, arity = 0)
+        public boolean properlyPaired = false; 
     
         @Parameter(names = {"--max-insert-size"}, description = "Maximum insert size", required = false, arity = 1)
         public Integer maxInsertSize; 
     
-        @Parameter(names = {"--skip-unmapped"}, description = "Skip unmapped alignments", required = false, arity = 1)
-        public Boolean skipUnmapped; 
+        @Parameter(names = {"--skip-unmapped"}, description = "Skip unmapped alignments", required = false, help = true, arity = 0)
+        public boolean skipUnmapped = false; 
     
-        @Parameter(names = {"--skip-duplicated"}, description = "Skip duplicated alignments", required = false, arity = 1)
-        public Boolean skipDuplicated; 
+        @Parameter(names = {"--skip-duplicated"}, description = "Skip duplicated alignments", required = false, help = true, arity = 0)
+        public boolean skipDuplicated = false; 
     
-        @Parameter(names = {"--region-contained"}, description = "Return alignments contained within boundaries of region", required = false, arity = 1)
-        public Boolean regionContained; 
+        @Parameter(names = {"--region-contained"}, description = "Return alignments contained within boundaries of region", required = false, help = true, arity = 0)
+        public boolean regionContained = false; 
     
-        @Parameter(names = {"--force-md-field"}, description = "Force SAM MD optional field to be set with the alignments", required = false, arity = 1)
-        public Boolean forceMDField; 
+        @Parameter(names = {"--force-md-field"}, description = "Force SAM MD optional field to be set with the alignments", required = false, help = true, arity = 0)
+        public boolean forceMDField = false; 
     
-        @Parameter(names = {"--bin-qualities"}, description = "Compress the nucleotide qualities by using 8 quality levels", required = false, arity = 1)
-        public Boolean binQualities; 
+        @Parameter(names = {"--bin-qualities"}, description = "Compress the nucleotide qualities by using 8 quality levels", required = false, help = true, arity = 0)
+        public boolean binQualities = false; 
     
-        @Parameter(names = {"--split-results"}, description = "Split results into regions (or gene/exon regions)", required = false, arity = 1)
-        public Boolean splitResults; 
+        @Parameter(names = {"--split-results"}, description = "Split results into regions (or gene/exon regions)", required = false, help = true, arity = 0)
+        public boolean splitResults = false; 
     
     }
 

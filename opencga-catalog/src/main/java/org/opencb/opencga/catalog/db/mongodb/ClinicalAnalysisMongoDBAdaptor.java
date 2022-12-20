@@ -23,6 +23,7 @@ import com.mongodb.client.model.Projections;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
@@ -61,6 +62,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.*;
@@ -72,11 +74,10 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
  */
 public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements ClinicalAnalysisDBAdaptor {
 
+    private static final String PRIVATE_DUE_DATE = "_dueDate";
     private final MongoDBCollection clinicalCollection;
     private final MongoDBCollection deletedClinicalCollection;
     private final ClinicalAnalysisConverter clinicalConverter;
-
-    private static final String PRIVATE_DUE_DATE = "_dueDate";
 
     public ClinicalAnalysisMongoDBAdaptor(MongoDBCollection clinicalCollection, MongoDBCollection deletedClinicalCollection,
                                           Configuration configuration, MongoDBAdaptorFactory dbAdaptorFactory) {
@@ -85,6 +86,63 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         this.clinicalCollection = clinicalCollection;
         this.deletedClinicalCollection = deletedClinicalCollection;
         this.clinicalConverter = new ClinicalAnalysisConverter();
+    }
+
+    static void fixCommentsForRemoval(ObjectMap parameters) {
+        if (parameters.get(COMMENTS.key()) == null) {
+            return;
+        }
+
+        List<Document> commentParamList = new LinkedList<>();
+        for (Object comment : parameters.getAsList(COMMENTS.key())) {
+            if (comment instanceof ClinicalComment) {
+                commentParamList.add(new Document(COMMENTS_DATE.key().replace(COMMENTS.key() + ".", ""),
+                        ((ClinicalComment) comment).getDate()));
+            }
+        }
+        parameters.put(COMMENTS.key(), commentParamList);
+    }
+
+    static void fixFlagsForRemoval(ObjectMap parameters) {
+        if (parameters.get(FLAGS.key()) == null) {
+            return;
+        }
+
+        List<FlagValueParam> flagParamList = new LinkedList<>();
+        for (Object comment : parameters.getAsList(FLAGS.key())) {
+            if (comment instanceof FlagAnnotation) {
+                flagParamList.add(FlagValueParam.of((FlagAnnotation) comment));
+            }
+        }
+        parameters.put(FLAGS.key(), flagParamList);
+    }
+
+    static void fixPanelsForRemoval(ObjectMap parameters) {
+        if (parameters.get(PANELS.key()) == null) {
+            return;
+        }
+
+        List<Document> panelParamList = new LinkedList<>();
+        for (Object panel : parameters.getAsList(PANELS.key())) {
+            if (panel instanceof Panel) {
+                panelParamList.add(new Document("id", ((Panel) panel).getId()));
+            }
+        }
+        parameters.put(PANELS.key(), panelParamList);
+    }
+
+    static void fixFilesForRemoval(ObjectMap parameters) {
+        if (parameters.get(FILES.key()) == null) {
+            return;
+        }
+
+        List<Document> fileParamList = new LinkedList<>();
+        for (Object file : parameters.getAsList(FILES.key())) {
+            if (file instanceof File) {
+                fileParamList.add(new Document("uid", ((File) file).getUid()));
+            }
+        }
+        parameters.put(FILES.key(), fileParamList);
     }
 
     public MongoDBCollection getClinicalCollection() {
@@ -422,63 +480,6 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         return document;
     }
 
-    static void fixCommentsForRemoval(ObjectMap parameters) {
-        if (parameters.get(COMMENTS.key()) == null) {
-            return;
-        }
-
-        List<Document> commentParamList = new LinkedList<>();
-        for (Object comment : parameters.getAsList(COMMENTS.key())) {
-            if (comment instanceof ClinicalComment) {
-                commentParamList.add(new Document(COMMENTS_DATE.key().replace(COMMENTS.key() + ".", ""),
-                        ((ClinicalComment) comment).getDate()));
-            }
-        }
-        parameters.put(COMMENTS.key(), commentParamList);
-    }
-
-    static void fixFlagsForRemoval(ObjectMap parameters) {
-        if (parameters.get(FLAGS.key()) == null) {
-            return;
-        }
-
-        List<FlagValueParam> flagParamList = new LinkedList<>();
-        for (Object comment : parameters.getAsList(FLAGS.key())) {
-            if (comment instanceof FlagAnnotation) {
-                flagParamList.add(FlagValueParam.of((FlagAnnotation) comment));
-            }
-        }
-        parameters.put(FLAGS.key(), flagParamList);
-    }
-
-    static void fixPanelsForRemoval(ObjectMap parameters) {
-        if (parameters.get(PANELS.key()) == null) {
-            return;
-        }
-
-        List<Document> panelParamList = new LinkedList<>();
-        for (Object panel : parameters.getAsList(PANELS.key())) {
-            if (panel instanceof Panel) {
-                panelParamList.add(new Document("id", ((Panel) panel).getId()));
-            }
-        }
-        parameters.put(PANELS.key(), panelParamList);
-    }
-
-    static void fixFilesForRemoval(ObjectMap parameters) {
-        if (parameters.get(FILES.key()) == null) {
-            return;
-        }
-
-        List<Document> fileParamList = new LinkedList<>();
-        for (Object file : parameters.getAsList(FILES.key())) {
-            if (file instanceof File) {
-                fileParamList.add(new Document("uid", ((File) file).getUid()));
-            }
-        }
-        parameters.put(FILES.key(), fileParamList);
-    }
-
     @Override
     public OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
         return unmarkPermissionRule(clinicalCollection, studyId, permissionRuleId);
@@ -780,13 +781,30 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
+    public OpenCGAResult distinct(long studyUid, String field, Query query, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query finalQuery = query != null ? new Query(query) : new Query();
         finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
         Bson bson = parseQuery(finalQuery, userId);
 
-        return new OpenCGAResult<>(clinicalCollection.distinct(field, bson, clazz));
+        return new OpenCGAResult<>(clinicalCollection.distinct(field, bson));
+    }
+
+    @Override
+    public OpenCGAResult<?> distinct(long studyUid, List<String> fields, Query query, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        StopWatch stopWatch = StopWatch.createStarted();
+        Query finalQuery = query != null ? new Query(query) : new Query();
+        finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
+        Bson bson = parseQuery(finalQuery, userId);
+
+        Set<String> results = new LinkedHashSet<>();
+        for (String field : fields) {
+            results.addAll(clinicalCollection.distinct(field, bson, String.class).getResults());
+        }
+
+        return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), Collections.emptyList(), results.size(),
+                new ArrayList<>(results), -1);
     }
 
     @Override
@@ -920,8 +938,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
      *
      * @param clientSession Client session.
      * @param family        Family object containing the latest version.
-     * @throws CatalogDBException CatalogDBException.
-     * @throws CatalogParameterException CatalogParameterException.
+     * @throws CatalogDBException            CatalogDBException.
+     * @throws CatalogParameterException     CatalogParameterException.
      * @throws CatalogAuthorizationException CatalogAuthorizationException.
      */
     void updateClinicalAnalysisFamilyReferences(ClientSession clientSession, Family family)
@@ -1000,8 +1018,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
      *
      * @param clientSession Client session.
      * @param panel         Panel object containing the new version.
-     * @throws CatalogDBException CatalogDBException.
-     * @throws CatalogParameterException CatalogParameterException.
+     * @throws CatalogDBException            CatalogDBException.
+     * @throws CatalogParameterException     CatalogParameterException.
      * @throws CatalogAuthorizationException CatalogAuthorizationException.
      */
     void updateClinicalAnalysisPanelReferences(ClientSession clientSession, Panel panel)

@@ -309,7 +309,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     @Override
-    public OpenCGAResult<?> distinct(String studyId, String field, Query query, String token) throws CatalogException {
+    public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(token);
@@ -318,20 +318,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
-                .append("field", new Query(query))
+                .append("fields", fields)
                 .append("query", new Query(query))
                 .append("token", token);
         try {
-            SampleDBAdaptor.QueryParams param = SampleDBAdaptor.QueryParams.getParam(field);
-            if (param == null) {
-                throw new CatalogException("Unknown '" + field + "' parameter.");
-            }
-            Class<?> clazz = getTypeClass(param.type());
-
             fixQueryObject(study, query, userId);
 
             query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<?> result = sampleDBAdaptor.distinct(study.getUid(), field, query, userId, clazz);
+            OpenCGAResult<?> result = sampleDBAdaptor.distinct(study.getUid(), fields, query, userId);
 
             auditManager.auditDistinct(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1135,7 +1129,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     SamplePermissions.WRITE);
         }
 
-        if (updateParamsClone != null && StringUtils.isNotEmpty(updateParamsClone.getId())) {
+        if (updateParamsClone != null && updateParamsClone.getId() != null) {
             ParamUtils.checkIdentifier(updateParamsClone.getId(), SampleDBAdaptor.QueryParams.ID.key());
         }
 
@@ -1219,7 +1213,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     public OpenCGAResult<AclEntryList<SamplePermissions>> getAcls(String studyId, List<String> sampleList, String member,
                                                                   boolean ignoreException, String token)
             throws CatalogException {
-        return getAcls(studyId, sampleList, Collections.singletonList(member), ignoreException, token);
+        return getAcls(studyId, sampleList, StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(),
+                ignoreException, token);
     }
 
     public OpenCGAResult<AclEntryList<SamplePermissions>> getAcls(String studyId, List<String> sampleList,
@@ -1276,6 +1271,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                                     new Error(0, "", missingMap.get(sampleId).getErrorMsg())), new ObjectMap());
                 }
             }
+            for (int i = 0; i < queryResult.getResults().size(); i++) {
+                sampleAcls.getResults().get(i).setId(queryResult.getResults().get(i).getId());
+            }
             sampleAcls.setResults(resultList);
             sampleAcls.setEvents(eventList);
         } catch (CatalogException e) {
@@ -1289,7 +1287,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             } else {
                 for (String sampleId : sampleList) {
                     Event event = new Event(Event.Type.ERROR, sampleId, e.getMessage());
-                    sampleAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, new AclEntryList<>(), 0));
+                    sampleAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 }
             }
         } finally {
@@ -1436,6 +1434,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             }
 
             List<Long> sampleUids = batchSampleList.stream().map(Sample::getUid).collect(Collectors.toList());
+            List<String> sampleIds = batchSampleList.stream().map(Sample::getId).collect(Collectors.toList());
             List<AuthorizationManager.CatalogAclParams> aclParamsList = new ArrayList<>();
             AuthorizationManager.CatalogAclParams.addToList(sampleUids, permissions, Enums.Resource.SAMPLE, aclParamsList);
 
@@ -1462,6 +1461,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
                 OpenCGAResult<AclEntryList<SamplePermissions>> queryResults = authorizationManager.getAcls(study.getUid(),
                         sampleUids, members, Enums.Resource.SAMPLE, SamplePermissions.class);
+
+                for (int i = 0; i < queryResults.getResults().size(); i++) {
+                    queryResults.getResults().get(i).setId(sampleIds.get(i));
+                }
                 aclResultList.append(queryResults);
 
                 for (Sample sample : batchSampleList) {

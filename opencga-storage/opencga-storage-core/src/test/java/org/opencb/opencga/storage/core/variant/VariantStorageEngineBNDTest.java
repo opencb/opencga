@@ -13,6 +13,7 @@ import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleFi
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -42,6 +43,8 @@ public abstract class VariantStorageEngineBNDTest extends VariantStorageBaseTest
 
     @Before
     public void before() throws Exception {
+        variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
+        variantStorageEngine.getConfiguration().getCellbase().setVersion(ParamConstants.CELLBASE_VERSION);
         if (!loaded) {
             clearDB(DB_NAME);
             loadFiles();
@@ -50,12 +53,15 @@ public abstract class VariantStorageEngineBNDTest extends VariantStorageBaseTest
     }
 
     protected void loadFiles() throws Exception {
+        variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
+        variantStorageEngine.getConfiguration().getCellbase().setVersion(ParamConstants.CELLBASE_VERSION);
         studyMetadata = new StudyMetadata(1, "s1");
 //        variantStorageEngine.getOptions().append(VariantStorageOptions.ANNOTATOR_CELLBASE_EXCLUDE.key(), "expression,clinical");
         input1 = getResourceUri("variant-test-bnd.vcf");
         pipelineResult1 = runDefaultETL(input1, variantStorageEngine, studyMetadata, new QueryOptions()
                 .append(VariantStorageOptions.ANNOTATE.key(), true)
-                .append(VariantStorageOptions.SOMATIC.key(), true));
+                .append(VariantStorageOptions.SOMATIC.key(), true)
+                .append(VariantStorageOptions.ASSEMBLY.key(), "grch38"));
     }
 
     @Test
@@ -119,18 +125,25 @@ public abstract class VariantStorageEngineBNDTest extends VariantStorageBaseTest
     }
 
     private void testPagination(List<String> variantsList, Query query, int batchSize) {
-        List<String> actualVariants = new ArrayList<>(variantsList.size());
+        List<String> actualVariantsGet = new ArrayList<>(variantsList.size());
+        List<String> actualVariantsIterator = new ArrayList<>(variantsList.size());
         for (int i = 0; i < variantsList.size(); i += batchSize) {
             QueryOptions options = new QueryOptions(QueryOptions.LIMIT, batchSize)
                     .append(QueryOptions.SKIP, i);
             List<Variant> results = variantStorageEngine.get(query, options).getResults();
-            System.out.println("options = " + options.toJson() + " -> " + results.size());
-            for (Variant result : results) {
-                actualVariants.add(result.toString());
-            }
+            System.out.println("get = " + options.toJson() + " -> " + results.size() + " " + results);
+            results.stream().map(Variant::toString).forEach(actualVariantsGet::add);
             assertTrue(results.size() <= batchSize);
+
+            results = new ArrayList<>(batchSize);
+            variantStorageEngine.iterator(query, options).forEachRemaining(results::add);
+            System.out.println("it  = " + options.toJson() + " -> " + results.size() + " " + results);
+            results.stream().map(Variant::toString).forEach(actualVariantsGet::add);
+            assertTrue(results.size() <= batchSize);
+
         }
-        assertEquals(variantsList, actualVariants);
+        assertEquals(variantsList, actualVariantsGet);
+        assertEquals(variantsList, actualVariantsIterator);
     }
 
     @Test

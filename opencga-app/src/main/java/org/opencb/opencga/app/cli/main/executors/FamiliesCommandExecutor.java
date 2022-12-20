@@ -23,10 +23,10 @@ import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
-import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.FamilyAclEntryList;
 import org.opencb.opencga.core.models.family.FamilyAclParams.Propagate;
 import org.opencb.opencga.core.models.family.FamilyAclUpdateParams;
 import org.opencb.opencga.core.models.family.FamilyCreateParams;
@@ -42,9 +42,8 @@ import org.opencb.opencga.core.models.job.Job;
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
+*  
 */
-
-
 /**
  * This class contains methods for the Families command line.
  *    PATH: /{apiVersion}/families
@@ -110,7 +109,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private RestResponse<AclEntryList> updateAcl() throws Exception {
+    private RestResponse<FamilyAclEntryList> updateAcl() throws Exception {
 
         logger.debug("Executing updateAcl in Families command line");
 
@@ -127,7 +126,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         FamilyAclUpdateParams familyAclUpdateParams= null;
         if (commandOptions.jsonDataModel) {
             familyAclUpdateParams = new FamilyAclUpdateParams();
-            RestResponse<AclEntryList> res = new RestResponse<>();
+            RestResponse<FamilyAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(familyAclUpdateParams));
             return res;
@@ -241,12 +240,12 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), FamilyCreateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.bodyId, true);
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.bodyName, true);
-            putNestedIfNotEmpty(beanParams, "description",commandOptions.bodyDescription, true);
-            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.bodyCreationDate, true);
-            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.bodyModificationDate, true);
-            putNestedIfNotNull(beanParams, "expectedSize",commandOptions.bodyExpectedSize, true);
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotNull(beanParams, "expectedSize",commandOptions.expectedSize, true);
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
@@ -328,7 +327,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getFamilyClient().search(queryParams);
     }
 
-    private RestResponse<AclEntryList> acl() throws Exception {
+    private RestResponse<FamilyAclEntryList> acl() throws Exception {
 
         logger.debug("Executing acl in Families command line");
 

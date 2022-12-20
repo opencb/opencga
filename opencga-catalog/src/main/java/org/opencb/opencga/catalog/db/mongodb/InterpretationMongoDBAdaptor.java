@@ -23,6 +23,7 @@ import com.mongodb.client.model.Projections;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
@@ -57,6 +58,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -87,6 +89,20 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         this.interpretationConverter = new InterpretationConverter();
         this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(interpretationCollection, archiveInterpretationCollection,
                 deleteInterpretationCollection);
+    }
+
+    static void fixFindingsForRemoval(ObjectMap parameters, String findingsKey) {
+        if (parameters.get(findingsKey) == null) {
+            return;
+        }
+
+        List<Document> findingsParamList = new LinkedList<>();
+        for (Object finding : parameters.getAsList(findingsKey)) {
+            if (finding instanceof Map) {
+                findingsParamList.add(new Document("id", ((Map) finding).get("id")));
+            }
+        }
+        parameters.put(findingsKey, findingsParamList);
     }
 
     public MongoDBCollection getInterpretationCollection() {
@@ -563,20 +579,6 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         return document;
     }
 
-    static void fixFindingsForRemoval(ObjectMap parameters, String findingsKey) {
-        if (parameters.get(findingsKey) == null) {
-            return;
-        }
-
-        List<Document> findingsParamList = new LinkedList<>();
-        for (Object finding : parameters.getAsList(findingsKey)) {
-            if (finding instanceof Map) {
-                findingsParamList.add(new Document("id", ((Map) finding).get("id")));
-            }
-        }
-        parameters.put(findingsKey, findingsParamList);
-    }
-
     private void checkNewFindingsDontExist(List<ClinicalVariant> currentFindings, List<Map> newFindings)
             throws CatalogDBException {
         Set<String> currentVariantIds = currentFindings.stream().map(ClinicalVariant::getId).collect(Collectors.toSet());
@@ -954,11 +956,11 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     /**
      * Update Panel references from the Interpretations of the CA.
      *
-     * @param clientSession Client session.
+     * @param clientSession    Client session.
      * @param clinicalAnalysis Clinical Analysis.
-     * @param panel         Panel object containing the new version.
-     * @throws CatalogDBException CatalogDBException.
-     * @throws CatalogParameterException CatalogParameterException.
+     * @param panel            Panel object containing the new version.
+     * @throws CatalogDBException            CatalogDBException.
+     * @throws CatalogParameterException     CatalogParameterException.
      * @throws CatalogAuthorizationException CatalogAuthorizationException.
      */
     void updateInterpretationPanelReferences(ClientSession clientSession, ClinicalAnalysis clinicalAnalysis, Panel panel)
@@ -1024,13 +1026,30 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
+    public OpenCGAResult distinct(long studyUid, String field, Query query, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query finalQuery = query != null ? new Query(query) : new Query();
         finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
         Bson bson = parseQuery(finalQuery);
 
-        return new OpenCGAResult<>(interpretationCollection.distinct(field, bson, clazz));
+        return new OpenCGAResult<>(interpretationCollection.distinct(field, bson));
+    }
+
+    @Override
+    public OpenCGAResult<?> distinct(long studyUid, List<String> fields, Query query, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        StopWatch stopWatch = StopWatch.createStarted();
+        Query finalQuery = query != null ? new Query(query) : new Query();
+        finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
+        Bson bson = parseQuery(finalQuery);
+
+        Set<String> results = new LinkedHashSet<>();
+        for (String field : fields) {
+            results.addAll(interpretationCollection.distinct(field, bson, String.class).getResults());
+        }
+
+        return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), Collections.emptyList(), results.size(),
+                new ArrayList<>(results), -1);
     }
 
     @Override

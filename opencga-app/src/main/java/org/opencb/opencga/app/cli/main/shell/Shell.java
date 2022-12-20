@@ -178,7 +178,7 @@ public class Shell extends OpencgaCommandExecutor {
         String host = format("[" + sessionManager.getSession().getHost() + "]", PrintUtils.Color.GREEN);
         String study = format("[" + sessionManager.getSession().getCurrentStudy() + "]", PrintUtils.Color.BLUE);
         String user = format("<" + sessionManager.getSession().getUser() + "/>", PrintUtils.Color.YELLOW);
-        return host + study + user;
+        return host + study + user + " ";
     }
 
     public String[] parseParams(String[] args) throws CatalogAuthenticationException {

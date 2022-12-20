@@ -22,6 +22,7 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.biodata.models.clinical.Disorder;
@@ -65,6 +66,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -232,13 +234,13 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         Bson bsonQuery = parseQuery(query);
 
         versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
-            DataResult update = individualCollection.update(clientSession, bsonQuery, bsonUpdate,
-                    new QueryOptions(MongoDBCollection.MULTI, true));
-            if (update.getNumMatches() == 0) {
-                throw new CatalogDBException("Could not update family references in individuals");
-            }
-            return null;
-        }, Collections.singletonList(QueryParams.SAMPLES_IDS.key()), this::iterator,
+                    DataResult update = individualCollection.update(clientSession, bsonQuery, bsonUpdate,
+                            new QueryOptions(MongoDBCollection.MULTI, true));
+                    if (update.getNumMatches() == 0) {
+                        throw new CatalogDBException("Could not update family references in individuals");
+                    }
+                    return null;
+                }, Collections.singletonList(QueryParams.SAMPLES_IDS.key()), this::iterator,
                 (DBIterator<Individual> iterator) -> updateReferencesAfterIndividualVersionIncrement(clientSession, studyUid, iterator));
     }
 
@@ -1237,13 +1239,30 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     }
 
     @Override
-    public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
+    public OpenCGAResult distinct(long studyUid, String field, Query query, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query finalQuery = query != null ? new Query(query) : new Query();
         finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
         Bson bson = parseQuery(finalQuery, userId);
 
-        return new OpenCGAResult<>(individualCollection.distinct(field, bson, clazz));
+        return new OpenCGAResult<>(individualCollection.distinct(field, bson));
+    }
+
+    @Override
+    public OpenCGAResult<?> distinct(long studyUid, List<String> fields, Query query, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        StopWatch stopWatch = StopWatch.createStarted();
+        Query finalQuery = query != null ? new Query(query) : new Query();
+        finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
+        Bson bson = parseQuery(finalQuery, userId);
+
+        Set<String> results = new LinkedHashSet<>();
+        for (String field : fields) {
+            results.addAll(individualCollection.distinct(field, bson, String.class).getResults());
+        }
+
+        return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), Collections.emptyList(), results.size(),
+                new ArrayList<>(results), -1);
     }
 
     @Override
@@ -1670,16 +1689,16 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         Bson bsonQuery = parseQuery(query);
         versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
-            QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+                    QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
 
-            logger.debug("Sample references extraction. Query: {}, update: {}",
-                    bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-            DataResult updateResult = individualCollection.update(clientSession, bsonQuery, update, multi);
-            logger.debug("Sample uid '" + sampleUid + "' references removed from " + updateResult.getNumUpdated() + " out of "
-                    + updateResult.getNumMatches() + " individuals");
-            return null;
-        }, Collections.singletonList(QueryParams.SAMPLES_IDS.key()), this::iterator,
+                    logger.debug("Sample references extraction. Query: {}, update: {}",
+                            bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                            update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                    DataResult updateResult = individualCollection.update(clientSession, bsonQuery, update, multi);
+                    logger.debug("Sample uid '" + sampleUid + "' references removed from " + updateResult.getNumUpdated() + " out of "
+                            + updateResult.getNumMatches() + " individuals");
+                    return null;
+                }, Collections.singletonList(QueryParams.SAMPLES_IDS.key()), this::iterator,
                 (DBIterator<Individual> iterator) -> updateReferencesAfterIndividualVersionIncrement(clientSession, studyUid, iterator));
     }
 

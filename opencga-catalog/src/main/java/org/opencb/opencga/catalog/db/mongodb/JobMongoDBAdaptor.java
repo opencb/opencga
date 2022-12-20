@@ -21,6 +21,7 @@ import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
@@ -44,12 +45,16 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
-import org.opencb.opencga.core.models.job.*;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobInternalWebhook;
+import org.opencb.opencga.core.models.job.JobPermissions;
+import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -62,12 +67,11 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
  */
 public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
+    private static final String PRIVATE_PRIORITY = "_priority";
+    private static final String PRIVATE_STUDY_UIDS = "_studyUids";
     private final MongoDBCollection jobCollection;
     private final MongoDBCollection deletedJobCollection;
     private JobConverter jobConverter;
-
-    private static final String PRIVATE_PRIORITY = "_priority";
-    private static final String PRIVATE_STUDY_UIDS = "_studyUids";
 
     public JobMongoDBAdaptor(MongoDBCollection jobCollection, MongoDBCollection deletedJobCollection, Configuration configuration,
                              MongoDBAdaptorFactory dbAdaptorFactory) {
@@ -700,13 +704,30 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
+    public OpenCGAResult distinct(long studyUid, String field, Query query, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query finalQuery = query != null ? new Query(query) : new Query();
         finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
         Bson bson = parseQuery(finalQuery, null, userId);
 
-        return new OpenCGAResult(jobCollection.distinct(field, bson, clazz));
+        return new OpenCGAResult(jobCollection.distinct(field, bson));
+    }
+
+    @Override
+    public OpenCGAResult<?> distinct(long studyUid, List<String> fields, Query query, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        StopWatch stopWatch = StopWatch.createStarted();
+        Query finalQuery = query != null ? new Query(query) : new Query();
+        finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
+        Bson bson = parseQuery(finalQuery, null, userId);
+
+        Set<String> results = new LinkedHashSet<>();
+        for (String field : fields) {
+            results.addAll(jobCollection.distinct(field, bson, String.class).getResults());
+        }
+
+        return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), Collections.emptyList(), results.size(),
+                new ArrayList<>(results), -1);
     }
 
     @Override

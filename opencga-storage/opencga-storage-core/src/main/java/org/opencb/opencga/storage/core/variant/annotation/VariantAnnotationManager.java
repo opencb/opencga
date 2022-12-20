@@ -60,14 +60,9 @@ public abstract class VariantAnnotationManager {
     protected final VariantAnnotationMetadata checkCurrentAnnotation(VariantAnnotator annotator, ProjectMetadata projectMetadata,
                                                                      boolean overwrite)
             throws VariantAnnotatorException {
-        VariantAnnotatorProgram newAnnotator;
-        List<ObjectMap> newSourceVersion;
-        try {
-            newAnnotator = annotator.getVariantAnnotatorProgram();
-            newSourceVersion = annotator.getVariantAnnotatorSourceVersion();
-        } catch (IOException e) {
-            throw new VariantAnnotatorException("Error reading current annotation metadata!", e);
-        }
+        VariantAnnotatorProgram newAnnotator = annotator.getVariantAnnotatorProgram();
+        List<ObjectMap> newSourceVersion = annotator.getVariantAnnotatorSourceVersion();
+
 //        if (newSourceVersion == null) {
 //            newSourceVersion = Collections.emptyList();
 //        }
@@ -161,14 +156,8 @@ public abstract class VariantAnnotationManager {
 
     protected final void updateCurrentAnnotation(VariantAnnotator annotator, ProjectMetadata projectMetadata, boolean overwrite)
             throws VariantAnnotatorException {
-        VariantAnnotatorProgram newAnnotator;
-        List<ObjectMap> newSourceVersion;
-        try {
-            newAnnotator = annotator.getVariantAnnotatorProgram();
-            newSourceVersion = annotator.getVariantAnnotatorSourceVersion();
-        } catch (IOException e) {
-            throw new VariantAnnotatorException("Error reading current annotation metadata!", e);
-        }
+        VariantAnnotatorProgram newAnnotator = annotator.getVariantAnnotatorProgram();
+        List<ObjectMap> newSourceVersion = annotator.getVariantAnnotatorSourceVersion();
         updateCurrentAnnotation(annotator, projectMetadata, overwrite, newAnnotator, newSourceVersion);
     }
 

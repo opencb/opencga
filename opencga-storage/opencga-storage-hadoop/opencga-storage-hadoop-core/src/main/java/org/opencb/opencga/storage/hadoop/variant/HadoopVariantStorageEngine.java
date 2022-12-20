@@ -386,7 +386,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     public void sampleIndex(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-        System.out.println("options.toJson() = " + options.toJson());
         new SampleIndexBuilder(getSampleIndexDBAdaptor(), study, getMRExecutor())
                 .buildSampleIndex(samples, options);
     }
@@ -1174,8 +1173,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
     @Override
     protected List<VariantQueryExecutor> initVariantQueryExecutors() throws StorageEngineException {
-        List<VariantQueryExecutor> executors = new ArrayList<>(8);
+        List<VariantQueryExecutor> executors = new ArrayList<>(10);
 
+        executors.add(new NoOpVariantQueryExecutor(
+                getMetadataManager(), getStorageEngineId(), getOptions()));
         executors.add(new SampleIndexCompoundHeterozygousQueryExecutor(
                 getMetadataManager(), getStorageEngineId(), getOptions(), this, getSampleIndexDBAdaptor(), getDBAdaptor()));
         executors.add(new BreakendVariantQueryExecutor(

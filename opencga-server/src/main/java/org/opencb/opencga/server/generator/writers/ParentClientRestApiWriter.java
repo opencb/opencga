@@ -59,17 +59,6 @@ public abstract class ParentClientRestApiWriter {
         return commandName.toLowerCase();
     }
 
-    public static String getCommandName(RestCategory restCategory, RestEndpoint restEndpoint) {
-        return getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
-    }
-
-    protected static String getMethodName(RestCategory restCategory, RestEndpoint restEndpoint) {
-
-        String methodName = "";
-        String subpath = restEndpoint.getPath().replace(restCategory.getPath() + "/", "");
-        return getMethodName(subpath);
-    }
-
     protected static String getMethodName(String subpath) {
         String methodName = "";
         // String subpath = restEndpoint.getPath().replace(restCategory.getPath() + "/", "");
@@ -214,8 +203,13 @@ public abstract class ParentClientRestApiWriter {
         validTypes.put("Object", "Object");
         validTypes.put("integer", "Integer");
         validTypes.put("int", "Integer");
+        validTypes.put("float", "Float");
+        validTypes.put("Float", "Float");
+        validTypes.put("double", "Double");
+        validTypes.put("Double", "Double");
         validTypes.put("map", "ObjectMap");
-        validTypes.put("boolean", "Boolean");
+        validTypes.put("boolean", "boolean");
+        validTypes.put("Boolean", "Boolean");
         validTypes.put("enum", "String");
         validTypes.put("long", "Long");
         validTypes.put("Long", "Long");
@@ -226,8 +220,8 @@ public abstract class ParentClientRestApiWriter {
         validTypes.put("java.lang.Integer", "Integer");
         validTypes.put("java.lang.Long", "Integer");
         validTypes.put("java.lang.Short", "Integer");
-        validTypes.put("java.lang.Double", "Integer");
-        validTypes.put("java.lang.Float", "Integer");
+        validTypes.put("java.lang.Double", "Double");
+        validTypes.put("java.lang.Float", "Float");
         validTypes.put("List", "String");
         validTypes.put("java.util.List", "String");
     }
@@ -236,6 +230,13 @@ public abstract class ParentClientRestApiWriter {
         String type = parameter.getType();
         if (type.equals("Map")) {
             return parameter.getGenericType();
+        }
+        if (StringUtils.containsIgnoreCase(type, "boolean")) {
+            if (StringUtils.containsIgnoreCase(parameter.getTypeClass(), "java.lang")) {
+                return "Boolean";
+            } else {
+                return "boolean";
+            }
         }
         return validTypes.getOrDefault(type, type);
     }
@@ -262,6 +263,18 @@ public abstract class ParentClientRestApiWriter {
 
     private String getCleanPath(String path) {
         return path.replace("/{apiVersion}/", "").replace("/", "_");
+    }
+
+
+    public static String getCommandName(RestCategory restCategory, RestEndpoint restEndpoint) {
+        return getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
+    }
+
+    protected static String getMethodName(RestCategory restCategory, RestEndpoint restEndpoint) {
+
+        String methodName = "";
+        String subpath = restEndpoint.getPath().replace(restCategory.getPath() + "/", "");
+        return getMethodName(subpath);
     }
 
     public Map<String, RestCategory> getAvailableCategories() {

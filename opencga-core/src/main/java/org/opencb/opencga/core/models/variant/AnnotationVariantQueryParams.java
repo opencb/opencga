@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.models.variant;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.tools.ToolParams;
 
@@ -24,8 +25,10 @@ public class AnnotationVariantQueryParams extends ToolParams {
     @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_PANEL_ROLE_IN_CANCER_DESCRIPTION)
     private String panelRoleInCancer;
     @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_PANEL_INTERSECTION_DESCRIPTION)
-    private Boolean panelIntersection;
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+    private boolean panelIntersection;
     @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_COHORT_STATS_REF_DESCRIPTION)
+
     private String cohortStatsRef;
     @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_COHORT_STATS_ALT_DESCRIPTION)
     private String cohortStatsAlt;
@@ -56,7 +59,9 @@ public class AnnotationVariantQueryParams extends ToolParams {
     @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_CLINICAL_SIGNIFICANCE_DESCRIPTION)
     private String clinicalSignificance;
     @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_CLINICAL_CONFIRMED_STATUS_DESCRIPTION)
-    private String clinicalConfirmedStatus;
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+    private boolean clinicalConfirmedStatus;
+
 
     public AnnotationVariantQueryParams() {
     }
@@ -146,11 +151,11 @@ public class AnnotationVariantQueryParams extends ToolParams {
         return this;
     }
 
-    public Boolean getPanelIntersection() {
+    public boolean getPanelIntersection() {
         return panelIntersection;
     }
 
-    public AnnotationVariantQueryParams setPanelIntersection(Boolean panelIntersection) {
+    public AnnotationVariantQueryParams setPanelIntersection(boolean panelIntersection) {
         this.panelIntersection = panelIntersection;
         return this;
     }
@@ -290,11 +295,11 @@ public class AnnotationVariantQueryParams extends ToolParams {
         return this;
     }
 
-    public String getClinicalConfirmedStatus() {
+    public boolean getClinicalConfirmedStatus() {
         return clinicalConfirmedStatus;
     }
 
-    public AnnotationVariantQueryParams setClinicalConfirmedStatus(String clinicalConfirmedStatus) {
+    public AnnotationVariantQueryParams setClinicalConfirmedStatus(boolean clinicalConfirmedStatus) {
         this.clinicalConfirmedStatus = clinicalConfirmedStatus;
         return this;
     }

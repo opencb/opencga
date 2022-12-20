@@ -92,6 +92,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     private final int lockDuration;
     private final int lockTimeout;
+    private final VariantStorageMetadataDBAdaptorFactory dbAdaptorFactory;
 
     public VariantStorageMetadataManager(VariantStorageMetadataDBAdaptorFactory dbAdaptorFactory) {
         this.projectDBAdaptor = dbAdaptorFactory.buildProjectMetadataDBAdaptor();
@@ -104,6 +105,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 .getInt(VariantStorageOptions.METADATA_LOCK_DURATION.key(), VariantStorageOptions.METADATA_LOCK_DURATION.defaultValue());
         lockTimeout = dbAdaptorFactory.getConfiguration()
                 .getInt(VariantStorageOptions.METADATA_LOCK_TIMEOUT.key(), VariantStorageOptions.METADATA_LOCK_TIMEOUT.defaultValue());
+        this.dbAdaptorFactory = dbAdaptorFactory;
         sampleIdCache = new MetadataCache<>(sampleDBAdaptor::getSampleId);
         sampleNameCache = new MetadataCache<>((studyId, sampleId) -> {
             SampleMetadata sampleMetadata = sampleDBAdaptor.getSampleMetadata(studyId, sampleId, null);
@@ -530,6 +532,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             studyMetadata.getVariantScores().removeIf(s -> s.getId() == scoreMetadata.getId());
             return studyMetadata;
         });
+    }
+
+    public <E extends Exception> ProjectMetadata updateProjectMetadata(UpdateConsumer<ProjectMetadata, E> consumer)
+            throws StorageEngineException, E {
+        return updateProjectMetadata(consumer.toFunction());
     }
 
     public <E extends Exception> ProjectMetadata updateProjectMetadata(UpdateFunction<ProjectMetadata, E> function)
@@ -1913,6 +1920,6 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     @Override
     public void close() throws IOException {
-        studyDBAdaptor.close();
+        dbAdaptorFactory.close();
     }
 }

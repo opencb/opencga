@@ -15,6 +15,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
@@ -125,9 +126,9 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
     public void exportAvroGz() throws Exception {
         String fileName = "variants.avro_gz";
         URI uri = getOutputUri(fileName);
-        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO_GZ, null, new Query(STUDY.key(), study1), new QueryOptions());
+        uri = variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO_GZ, null, new Query(STUDY.key(), study1), new QueryOptions()).get(0);
 
-        copyToLocal(fileName, uri);
+        copyToLocal(uri);
     }
 
     @Test
@@ -152,9 +153,9 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
     public void exportTped() throws Exception {
         String fileName = "variants";
         URI uri = getOutputUri(fileName);
-        uri = variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.TPED, null, new Query(STUDY.key(), study1), new QueryOptions());
+        uri = variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.TPED, null, new Query(STUDY.key(), study1), new QueryOptions()).get(0);
 
-        copyToLocal(Paths.get(uri).getFileName().toString(), uri);
+        copyToLocal(uri);
     }
 
     @Test
@@ -170,9 +171,19 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
     public void exportParquet() throws Exception {
         String fileName = "variants.parquet";
         URI uri = getOutputUri(fileName);
-        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.PARQUET_GZ, null, new Query(STUDY.key(), study1), new QueryOptions());
+        uri = variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.PARQUET_GZ, null, new Query(STUDY.key(), study1), new QueryOptions()).get(0);
 
-        copyToLocal(fileName, uri);
+        copyToLocal(uri);
+    }
+
+    @Test
+    public void exportParquetSmallQuery() throws Exception {
+        String fileName = "variants.small.parquet";
+        URI uri = getOutputUri(fileName);
+        uri = variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.PARQUET_GZ, null, new VariantQuery()
+                .study(study1).sample("NA12877"), new QueryOptions()).get(0);
+
+        copyToLocal(uri);
     }
 
     @Test
@@ -214,7 +225,7 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         URI uri = getOutputUri(fileName);
         uri = variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO,
                 null, new Query(STUDY.key(), study1).append(GENOTYPE.key(), "NA12877:0/0,0/1;NA12878:0/0,1/1")
-                        .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), ParamConstants.POP_FREQ_GNOMAD_GENOMES+":ALL>0.3"), new QueryOptions());
+                        .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), ParamConstants.POP_FREQ_GNOMAD_GENOMES+":ALL>0.3"), new QueryOptions()).get(0);
 
         copyToLocal(fileName, uri);
     }
@@ -256,8 +267,13 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         copyToLocal(fileName, uri);
     }
 
+    protected void copyToLocal(URI uri) throws IOException {
+        copyToLocal(Paths.get(uri.getPath()).getFileName().toString(), uri);
+    }
+
     protected void copyToLocal(String fileName, URI uri) throws IOException {
         if (!exportToLocal) {
+            System.out.println("Copy file " + uri);
             FileSystem.get(externalResource.getConf()).copyToLocalFile(true,
                     new Path(uri),
                     new Path(outputUri.resolve(fileName)));

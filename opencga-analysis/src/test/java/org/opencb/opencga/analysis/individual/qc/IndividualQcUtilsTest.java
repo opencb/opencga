@@ -19,6 +19,7 @@ package org.opencb.opencga.analysis.individual.qc;
 import org.junit.Test;
 import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
 import org.opencb.biodata.models.clinical.qc.RelatednessReport;
+import org.opencb.biodata.models.clinical.qc.RelatednessScore;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.IssueEntry;
 import org.opencb.biodata.models.variant.avro.IssueType;
@@ -41,7 +42,7 @@ public class IndividualQcUtilsTest {
 
         URI resourceUri = getResourceUri("ibd.genome");
         File file = Paths.get(resourceUri.getPath()).toFile();
-        List<RelatednessReport.RelatednessScore> relatednessReport = IBDComputation.parseRelatednessScores(file);
+        List<RelatednessScore> relatednessReport = IBDComputation.parseRelatednessScores(file, null, null);
 
         System.out.println(JacksonUtils.getDefaultNonNullObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(relatednessReport));
     }

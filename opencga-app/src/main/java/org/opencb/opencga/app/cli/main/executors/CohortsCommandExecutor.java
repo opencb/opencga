@@ -23,8 +23,8 @@ import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
-import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortAclEntryList;
 import org.opencb.opencga.core.models.cohort.CohortAclUpdateParams;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.cohort.CohortGenerateParams;
@@ -43,9 +43,8 @@ import org.opencb.opencga.core.models.job.Job;
 *
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
+*  
 */
-
-
 /**
  * This class contains methods for the Cohorts command line.
  *    PATH: /{apiVersion}/cohorts
@@ -114,7 +113,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private RestResponse<AclEntryList> updateAcl() throws Exception {
+    private RestResponse<CohortAclEntryList> updateAcl() throws Exception {
 
         logger.debug("Executing updateAcl in Cohorts command line");
 
@@ -130,7 +129,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         CohortAclUpdateParams cohortAclUpdateParams= null;
         if (commandOptions.jsonDataModel) {
             cohortAclUpdateParams = new CohortAclUpdateParams();
-            RestResponse<AclEntryList> res = new RestResponse<>();
+            RestResponse<CohortAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(cohortAclUpdateParams));
             return res;
@@ -329,9 +328,9 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.bodyId, true);
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.bodyName, true);
-            putNestedIfNotNull(beanParams, "type",commandOptions.bodyType, true);
-            putNestedIfNotEmpty(beanParams, "description",commandOptions.bodyDescription, true);
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.bodyCreationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.bodyModificationDate, true);
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
@@ -380,7 +379,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getCohortClient().search(queryParams);
     }
 
-    private RestResponse<AclEntryList> acl() throws Exception {
+    private RestResponse<CohortAclEntryList> acl() throws Exception {
 
         logger.debug("Executing acl in Cohorts command line");
 

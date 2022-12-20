@@ -19,10 +19,7 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.ClinicalAnalyst;
-import org.opencb.biodata.models.clinical.ClinicalAudit;
-import org.opencb.biodata.models.clinical.ClinicalComment;
-import org.opencb.biodata.models.clinical.Disorder;
+import org.opencb.biodata.models.clinical.*;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -607,6 +604,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             ClinicalStatusValue clinicalStatusValue = statusMap.get(clinicalAnalysis.getStatus().getId());
             clinicalAnalysis.getStatus().setDescription(clinicalStatusValue.getDescription());
             clinicalAnalysis.getStatus().setDate(TimeUtils.getTime());
+        } else if (clinicalAnalysis.getStatus().getId() == null) {
+            clinicalAnalysis.getStatus().setId("");
         }
     }
 
@@ -1193,8 +1192,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         Map<String, Object> actionMap = options.getMap(Constants.ACTIONS);
 
-        if (StringUtils.isNotEmpty(updateParams.getId())) {
-            ParamUtils.checkIdentifier(updateParams.getId(), "id");
+        if (updateParams.getId() != null) {
+            ParamUtils.checkIdentifier(updateParams.getId(), ClinicalAnalysisDBAdaptor.QueryParams.ID.key());
         }
         if (StringUtils.isNotEmpty(updateParams.getDueDate()) && TimeUtils.toDate(updateParams.getDueDate()) == null) {
             throw new CatalogException("Unrecognised due date. Accepted format is: yyyyMMddHHmmss");
@@ -1507,7 +1506,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     @Override
-    public OpenCGAResult<?> distinct(String studyId, String field, Query query, String token) throws CatalogException {
+    public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(token);
@@ -1515,20 +1514,14 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
-                .append("field", new Query(query))
+                .append("field", fields)
                 .append("query", new Query(query))
                 .append("token", token);
         try {
-            ClinicalAnalysisDBAdaptor.QueryParams param = ClinicalAnalysisDBAdaptor.QueryParams.getParam(field);
-            if (param == null) {
-                throw new CatalogException("Unknown '" + field + "' parameter.");
-            }
-            Class<?> clazz = getTypeClass(param.type());
-
             fixQueryObject(study, query, userId, token);
 
             query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<?> result = clinicalDBAdaptor.distinct(study.getUid(), field, query, userId, clazz);
+            OpenCGAResult<?> result = clinicalDBAdaptor.distinct(study.getUid(), fields, query, userId);
 
             auditManager.auditDistinct(userId, Enums.Resource.CLINICAL_ANALYSIS, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1946,7 +1939,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     // **************************   ACLs  ******************************** //
     public OpenCGAResult<AclEntryList<ClinicalAnalysisPermissions>> getAcls(
             String studyStr, List<String> clinicalList, String member, boolean ignoreException, String token) throws CatalogException {
-        return getAcls(studyStr, clinicalList, Collections.singletonList(member), ignoreException, token);
+        return getAcls(studyStr, clinicalList, StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(),
+                ignoreException, token);
     }
 
     public OpenCGAResult<AclEntryList<ClinicalAnalysisPermissions>> getAcls(String studyId, List<String> clinicalList, List<String> members,
@@ -2003,6 +1997,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                                     new Error(0, "", missingMap.get(clinicalId).getErrorMsg())), new ObjectMap());
                 }
             }
+            for (int i = 0; i < queryResult.getResults().size(); i++) {
+                clinicalAcls.getResults().get(i).setId(queryResult.getResults().get(i).getId());
+            }
             clinicalAcls.setResults(resultList);
             clinicalAcls.setEvents(eventList);
         } catch (CatalogException e) {
@@ -2016,7 +2013,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             } else {
                 for (String caseId : clinicalList) {
                     Event event = new Event(Event.Type.ERROR, caseId, e.getMessage());
-                    clinicalAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, new AclEntryList<>(), 0));
+                    clinicalAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 }
             }
         } finally {
@@ -2161,7 +2158,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
             queryResults = authorizationManager.getAcls(study.getUid(), clinicalUidList, members, Enums.Resource.CLINICAL_ANALYSIS,
                     ClinicalAnalysisPermissions.class);
-
+            for (int i = 0; i < queryResults.getResults().size(); i++) {
+                queryResults.getResults().get(i).setId(queryResult.getResults().get(i).getId());
+            }
             for (ClinicalAnalysis clinicalAnalysis : queryResult.getResults()) {
                 auditManager.audit(operationUuid, user, Enums.Action.UPDATE_ACLS, Enums.Resource.CLINICAL_ANALYSIS,
                         clinicalAnalysis.getId(), clinicalAnalysis.getUuid(), study.getId(), study.getUuid(), auditParams,

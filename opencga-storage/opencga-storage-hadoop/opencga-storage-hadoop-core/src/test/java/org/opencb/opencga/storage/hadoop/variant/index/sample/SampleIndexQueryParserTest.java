@@ -1848,8 +1848,9 @@ public class SampleIndexQueryParserTest {
                 new Region("6", 31_200_000, 31_800_000),
                 new Region("8", 145_100_000, 146_100_000)), Collections.emptyList());
         assertEquals(Arrays.asList(
-                new LocusQuery(new Region("6", 31_000_000, 32_000_000), Collections.singletonList(new Region("6", 31_200_000, 31_800_000)), Collections.emptyList()),
-                new LocusQuery(new Region("6", 33_000_000, 35_000_000), Collections.singletonList(new Region("6", 33_200_000, 34_800_000)), Collections.emptyList()),
+                new LocusQuery(new Region("6", 31_000_000, 35_000_000), Arrays.asList(new Region("6", 31_200_000, 31_800_000),new Region("6", 33_200_000, 34_800_000)), Collections.emptyList()),
+//                new LocusQuery(new Region("6", 31_000_000, 32_000_000), Collections.singletonList(new Region("6", 31_200_000, 31_800_000)), Collections.emptyList()),
+//                new LocusQuery(new Region("6", 33_000_000, 35_000_000), Collections.singletonList(new Region("6", 33_200_000, 34_800_000)), Collections.emptyList()),
                 new LocusQuery(new Region("8", 144_000_000, 147_000_000), Arrays.asList(new Region("8", 144_671_680, 144_690_000),
                         new Region("8", 144_700_000, 144_995_738),
                         new Region("8", 145_100_000, 146_100_000)), Collections.emptyList())

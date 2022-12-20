@@ -26,6 +26,7 @@ public class DBAdaptorVariantQueryExecutor extends VariantQueryExecutor {
     private Logger logger = LoggerFactory.getLogger(DBAdaptorVariantQueryExecutor.class);
     private static final List<QueryParam> UNSUPPORTED_PARAMS = Arrays.asList(
             VariantQueryUtils.SAMPLE_DE_NOVO,
+            VariantQueryUtils.SAMPLE_DE_NOVO_STRICT,
             VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS,
             VariantQueryUtils.SAMPLE_MENDELIAN_ERROR,
             VariantQueryParam.ANNOT_TRAIT);

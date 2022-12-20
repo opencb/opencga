@@ -40,9 +40,13 @@ public interface SampleIndexEntryIterator extends Iterator<Variant> {
         if (hasFileIndex()) {
             fileIndex = nextFileIndexEntry();
         }
+        Byte parentsCode = null;
+        if (hasParentsIndex()) {
+            parentsCode = nextParentsIndexEntry();
+        }
         String genotype = nextGenotype();
         Variant variant = next();
-        return new SampleVariantIndexEntry(variant, fileIndex, genotype, annotationIndexEntry);
+        return new SampleVariantIndexEntry(variant, fileIndex, genotype, annotationIndexEntry, parentsCode);
     }
 
     /**
