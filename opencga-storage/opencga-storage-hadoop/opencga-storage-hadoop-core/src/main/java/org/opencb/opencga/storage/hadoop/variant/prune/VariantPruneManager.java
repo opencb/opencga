@@ -39,6 +39,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class VariantPruneManager {
 
@@ -110,8 +111,8 @@ public class VariantPruneManager {
         );
 
         Path report;
-        try {
-            report = Files.list(Paths.get(outdir))
+        try (Stream<Path> stream = Files.list(Paths.get(outdir))) {
+            report = stream
                     .filter(p -> p.getFileName().toString().contains("variant_prune_report"))
                     .findFirst()
                     .orElse(null);
