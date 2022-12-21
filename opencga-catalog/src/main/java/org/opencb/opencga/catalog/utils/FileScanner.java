@@ -156,20 +156,22 @@ public class FileScanner {
                 untrackedFiles.put(entry.getKey(), entry.getValue());
                 continue;
             }
-            Stream<URI> files = ioManager.listFilesStream(entry.getValue());
 
-            Iterator<URI> iterator = files.iterator();
-            while (iterator.hasNext()) {
-                URI uri = iterator.next();
-                String filePath = entry.getKey() + entry.getValue().relativize(uri).toString();
+            try (Stream<URI> files = ioManager.listFilesStream(entry.getValue())) {
+                Iterator<URI> iterator = files.iterator();
 
-                DataResult<File> searchFile = catalogManager.getFileManager().search(String.valueOf(studyId),
-                        new Query("path", filePath), new QueryOptions("include", "projects.studies.files.id"), sessionId);
-                if (searchFile.getResults().isEmpty()) {
-                    untrackedFiles.put(filePath, uri);
-                } /*else {
+                while (iterator.hasNext()) {
+                    URI uri = iterator.next();
+                    String filePath = entry.getKey() + entry.getValue().relativize(uri).toString();
+
+                    DataResult<File> searchFile = catalogManager.getFileManager().search(String.valueOf(studyId),
+                            new Query("path", filePath), new QueryOptions("include", "projects.studies.files.id"), sessionId);
+                    if (searchFile.getResults().isEmpty()) {
+                        untrackedFiles.put(filePath, uri);
+                    } /*else {
                     iterator.remove(); //Remove the ones that have an entry in Catalog
                 }*/
+                }
             }
         }
         return untrackedFiles;
@@ -328,6 +330,9 @@ public class FileScanner {
             logger.debug("{}s (create {}s, upload {}s, metadata {}s)", (System.currentTimeMillis() - fileScanStart) / 1000.0,
                     createFileTime / 1000.0, uploadFileTime / 1000.0, metadataFileTime / 1000.0);
         }
+        // Close stream
+        uris.close();
+
         logger.debug("Create catalog file entries: " + createFilesTime / 1000.0 + "s");
         logger.debug("Upload files: " + uploadFilesTime / 1000.0 + "s");
         logger.debug("Read metadata information: " + metadataReadTime / 1000.0 + "s");
