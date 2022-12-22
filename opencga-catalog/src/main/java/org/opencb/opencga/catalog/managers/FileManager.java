@@ -2318,18 +2318,19 @@ public class FileManager extends AnnotationSetManager<File> {
                     result.first().getUuid(), study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
-        } catch (CatalogException e) {
+        } catch (Exception e) {
             try {
                 OpenCGAResult<File> result = privateLink(study, params, parents, token);
                 auditManager.auditCreate(userId, Enums.Action.LINK, Enums.Resource.FILE, result.first().getId(),
                         result.first().getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
                 return result;
-            } catch (CatalogException e2) {
+            } catch (Exception e2) {
                 auditManager.auditCreate(userId, Enums.Action.LINK, Enums.Resource.FILE, params.getUri(), "",
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                 new Error(0, "", e2.getMessage())));
-                throw new CatalogException(e2.getMessage(), e2);
+                e.addSuppressed(e2);
+                throw new CatalogException(e.getMessage(), e);
             }
         }
     }
@@ -3293,8 +3294,7 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
-    private OpenCGAResult<File> privateLink(Study study, FileLinkParams params, boolean parents, String token)
-            throws CatalogException {
+    private OpenCGAResult<File> privateLink(Study study, FileLinkParams params, boolean parents, String token) throws CatalogException {
         ParamUtils.checkObj(params, "FileLinkParams");
         ParamUtils.checkParameter(params.getUri(), "uri");
         URI uriOrigin;
@@ -3503,7 +3503,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         }
                     }
                 } catch (CatalogException e) {
-                    logger.error("An error occurred when trying to create folder {}", dir.toString());
+                    throw new IOException(e);
                 }
 
                 return FileVisitResult.CONTINUE;
@@ -3578,7 +3578,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
                             if (vFileResult.getNumResults() == 1) {
                                 if (!vFileResult.first().getType().equals(File.Type.VIRTUAL)) {
-                                    throw new CatalogException("A file with path '" + virtualFile.getPath()
+                                    throw new IOException("A file with path '" + virtualFile.getPath()
                                             + "' already existed which is not of " + "type " + File.Type.VIRTUAL);
                                 }
                                 virtualFile = vFileResult.first();
@@ -3586,18 +3586,24 @@ public class FileManager extends AnnotationSetManager<File> {
                                 // Validate sample ids are exactly the same as in the virtual file
                                 HashSet<String> sampleIds = new HashSet<>(virtualFile.getSampleIds());
                                 if (sampleIds.size() != subfile.getSampleIds().size() || !sampleIds.containsAll(subfile.getSampleIds())) {
-                                    throw new CatalogException("A virtual file '" + virtualFile.getPath() + "' already exists but the list "
+                                    throw new IOException("A virtual file '" + virtualFile.getPath() + "' already exists but the list "
                                             + "of samples differ.");
                                 }
                             } else {
                                 validateNewFile(study, virtualFile, true);
+                                virtualFile.setSampleIds(subfile.getSampleIds());
+                                virtualFile.setUri(null);
+                                virtualFile.setType(File.Type.VIRTUAL);
                             }
 
                             subfile.setSampleIds(null);
+                            fileDBAdaptor.insertWithVirtualFile(study.getUid(), subfile, virtualFile, existingSamples, nonExistingSamples,
+                                    Collections.emptyList(), new QueryOptions());
+                        } else {
+                            fileDBAdaptor.insert(study.getUid(), subfile, existingSamples, nonExistingSamples, Collections.emptyList(),
+                                    new QueryOptions());
                         }
 
-                        fileDBAdaptor.insert(study.getUid(), subfile, existingSamples, nonExistingSamples, Collections.emptyList(),
-                                new QueryOptions());
                         subfile = getFile(study.getUid(), subfile.getUuid(), QueryOptions.empty()).first();
 
                         // Propagate ACLs
@@ -3611,11 +3617,11 @@ public class FileManager extends AnnotationSetManager<File> {
                             transformedFiles.add(subfile);
                         }
                     } else {
-                        throw new CatalogException("Cannot link the file " + Paths.get(fileUri).getFileName().toString()
+                        throw new IOException("Cannot link the file " + Paths.get(fileUri).getFileName().toString()
                                 + ". There is already a file in the path " + destinyPath + " with the same name.");
                     }
                 } catch (CatalogException e) {
-                    logger.error(e.getMessage());
+                    throw new IOException(e);
                 }
 
                 return FileVisitResult.CONTINUE;

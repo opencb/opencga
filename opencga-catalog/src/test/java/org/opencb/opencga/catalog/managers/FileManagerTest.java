@@ -382,6 +382,51 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testLinkVirtualWithDifferentSamples() throws CatalogException {
+        String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
+        fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, "biofiles/virtual_file.vcf", null, null, null), false, token);
+
+        String bamFile = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("samples differ");
+        fileManager.link(studyFqn, new FileLinkParams(bamFile, "", "", "", null, "biofiles/virtual_file.vcf", null, null, null), false, token);
+    }
+
+    @Test
+    public void testLinkVirtual() throws CatalogException {
+        String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
+        fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, "biofiles/virtual_file.vcf", null, null, null), false, token);
+
+        String vcfFileCopy = getClass().getResource("/biofiles/variant-test-file-copy.vcf.gz").getFile();
+        fileManager.link(studyFqn, new FileLinkParams(vcfFileCopy, "", "", "", null, "biofiles/virtual_file.vcf", null, null, null), false, token);
+
+        OpenCGAResult<File> result = fileManager.get(studyFqn,
+                Arrays.asList("variant-test-file.vcf.gz", "variant-test-file-copy.vcf.gz", "virtual_file.vcf"), QueryOptions.empty(), token);
+        assertEquals(3, result.getNumResults());
+        assertEquals(0, result.getResults().get(0).getSampleIds().size());
+        assertEquals(0, result.getResults().get(1).getSampleIds().size());
+        assertEquals(4, result.getResults().get(2).getSampleIds().size());
+
+        assertEquals(File.Type.FILE, result.getResults().get(0).getType());
+        assertEquals(File.Type.FILE, result.getResults().get(1).getType());
+        assertEquals(File.Type.VIRTUAL, result.getResults().get(2).getType());
+
+        assertEquals(1, result.getResults().get(0).getRelatedFiles().size());
+        assertEquals(1, result.getResults().get(1).getRelatedFiles().size());
+        assertEquals(2, result.getResults().get(2).getRelatedFiles().size());
+
+        assertEquals(FileRelatedFile.Relation.MULTIPART, result.getResults().get(0).getRelatedFiles().get(0).getRelation());
+        assertEquals(FileRelatedFile.Relation.MULTIPART, result.getResults().get(1).getRelatedFiles().get(0).getRelation());
+        assertEquals(FileRelatedFile.Relation.MULTIPART, result.getResults().get(2).getRelatedFiles().get(0).getRelation());
+        assertEquals(FileRelatedFile.Relation.MULTIPART, result.getResults().get(2).getRelatedFiles().get(1).getRelation());
+
+        assertNotNull(result.getResults().get(0).getRelatedFiles().get(0).getFile().getInternal());
+        assertNotNull(result.getResults().get(1).getRelatedFiles().get(0).getFile().getInternal());
+        assertNull(result.getResults().get(2).getRelatedFiles().get(0).getFile().getInternal());
+        assertNull(result.getResults().get(2).getRelatedFiles().get(1).getFile().getInternal());
+    }
+
+    @Test
     public void testGetBase64Image() throws CatalogException {
         String qualityImageFile = getClass().getResource("/fastqc-per_base_sequence_quality.png").getFile();
         fileManager.link(studyFqn, new FileLinkParams(qualityImageFile, "", "", "", null, null, null, null, null), false, token);
