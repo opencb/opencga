@@ -591,7 +591,7 @@ public class VariantCommandExecutor extends CommandExecutor {
             DefaultVariantStatisticsManager statisticsManager =
                     (DefaultVariantStatisticsManager) variantStorageEngine.newVariantStatisticsManager();
             statisticsManager.loadStats(
-                    UriUtils.createUri(statsVariantsCommandOptions.load, true),
+                    UriUtils.createUri(statsVariantsCommandOptions.load),
                     statsVariantsCommandOptions.study, options);
         } else {
             /*

@@ -19,6 +19,8 @@ package org.opencb.opencga.core.common;
 import org.junit.Test;
 
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
 
 import static org.junit.Assert.*;
 
@@ -52,5 +54,23 @@ public class UriUtilsTest {
         assertEquals("", UriUtils.fileName(URI.create("dir/")));
         assertEquals("", UriUtils.fileName(URI.create("/dir/")));
         assertEquals("", UriUtils.fileName(URI.create("file:///dir/")));
+    }
+
+    @Test
+    public void testBuildUri() throws URISyntaxException {
+        // Do not escape anything
+        assertEquals("file:///other/dir/file", UriUtils.createUri("file:///other/dir/file").toString());
+        assertEquals("file:///other/dir/file:2", UriUtils.createUri("file:///other/dir/file:2").toString());
+        assertEquals("file:///other/dir/file%3A2", UriUtils.createUri("file:///other/dir/file%3A2").toString());
+
+        // Escape special characters
+        // %
+        assertEquals("file:///other/dir/file%253A2", UriUtils.createUri("/other/dir/file%3A2").toString());
+        // ?
+        assertEquals("file:///other/dir/file%3F2", UriUtils.createUri("/other/dir/file?2").toString());
+        // #
+        assertEquals("file:///other/dir/file%232", UriUtils.createUri("/other/dir/file#2").toString());
+        // #
+        assertEquals("file:///other/dir/file%232", Paths.get("/other/dir/file#2").toUri().toString());
     }
 }

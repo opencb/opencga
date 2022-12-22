@@ -680,13 +680,7 @@ public class CatalogStorageMetadataSynchronizer {
     }
 
     private String toUri(String path) {
-        String uri;
-        if (path.startsWith("/")) {
-            uri = "file://" + path;
-        } else {
-            uri = Paths.get(path).toUri().toString();
-        }
-        return uri;
+        return Paths.get(path).toUri().toString();
     }
 
     private boolean synchronizeSamples(StudyMetadata study, Collection<Integer> samples, String token) throws CatalogException {

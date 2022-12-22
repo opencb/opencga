@@ -49,7 +49,16 @@ public class UriUtils {
 
     public static URI createUri(String input, boolean failOnInvalidUri) throws URISyntaxException {
         try {
-            URI sourceUri = new URI(null, input, null);
+            URI sourceUri;
+            if (input.startsWith("file:/")) {
+                // Already a valid URI. Assume it is already escaped.
+                // Avoid double code escaping
+                sourceUri = new URI(input);
+            } else {
+                // Assume direct path name.
+                // Escape if needed.
+                sourceUri = new URI(null, input, null);
+            }
             if (sourceUri.getScheme() == null || sourceUri.getScheme().isEmpty()) {
                 sourceUri = Paths.get(input).toUri();
             }
@@ -95,6 +104,11 @@ public class UriUtils {
         }
         int idx1 = path.lastIndexOf('/', idx2 - 1);
         return path.substring(idx1 + 1, idx2 + 1);
+    }
+
+    public static URI resolve(URI uri, String file) {
+        String newPath = Paths.get(uri.getPath()).resolve(file).toString();
+        return replacePath(uri, newPath);
     }
 
     public static URI replacePath(URI uri, String path) {

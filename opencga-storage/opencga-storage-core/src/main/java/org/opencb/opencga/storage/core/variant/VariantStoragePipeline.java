@@ -244,8 +244,8 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             throw new IllegalArgumentException("Unknown compression method " + compression);
         }
 
-        URI outputMalformedVariants = output.resolve(fileName + '.' + VariantReaderUtils.MALFORMED_FILE + ".txt");
-        URI outputVariantsFile = output.resolve(fileName + '.' + VariantReaderUtils.VARIANTS_FILE + '.' + format + extension);
+        URI outputMalformedVariants = UriUtils.resolve(output, fileName + '.' + VariantReaderUtils.MALFORMED_FILE + ".txt");
+        URI outputVariantsFile = UriUtils.resolve(output, fileName + '.' + VariantReaderUtils.VARIANTS_FILE + '.' + format + extension);
         URI outputMetaFile = VariantReaderUtils.getMetaFromTransformedFile(outputVariantsFile);
 
         // Close at the end!
