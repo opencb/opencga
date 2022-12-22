@@ -3559,6 +3559,43 @@ public class FileManager extends AnnotationSetManager<File> {
                         List<Sample> nonExistingSamples = new LinkedList<>();
                         validateNewSamples(study, subfile, existingSamples, nonExistingSamples, token);
 
+                        File virtualFile;
+                        if (StringUtils.isNotEmpty(params.getVirtualFile())) {
+                            virtualFile = new File();
+                            if (params.getVirtualFile().contains("/")) {
+                                virtualFile.setPath(params.getVirtualFile());
+                            } else if (params.getVirtualFile().contains(":")) {
+                                virtualFile.setPath(params.getVirtualFile().replaceAll(":", "/"));
+                            } else {
+                                virtualFile.setPath(params.getVirtualFile());
+                            }
+
+                            // Check if the file exists
+                            Query tmpQuery = new Query(FileDBAdaptor.QueryParams.PATH.key(), virtualFile.getPath());
+                            QueryOptions tmpOptions = keepFieldsInQueryOptions(INCLUDE_FILE_URI_PATH,
+                                    Arrays.asList(FileDBAdaptor.QueryParams.TYPE.key(), FileDBAdaptor.QueryParams.SAMPLE_IDS.key()));
+                            OpenCGAResult<File> vFileResult = fileDBAdaptor.get(study.getUid(), tmpQuery, tmpOptions, userId);
+
+                            if (vFileResult.getNumResults() == 1) {
+                                if (!vFileResult.first().getType().equals(File.Type.VIRTUAL)) {
+                                    throw new CatalogException("A file with path '" + virtualFile.getPath()
+                                            + "' already existed which is not of " + "type " + File.Type.VIRTUAL);
+                                }
+                                virtualFile = vFileResult.first();
+
+                                // Validate sample ids are exactly the same as in the virtual file
+                                HashSet<String> sampleIds = new HashSet<>(virtualFile.getSampleIds());
+                                if (sampleIds.size() != subfile.getSampleIds().size() || !sampleIds.containsAll(subfile.getSampleIds())) {
+                                    throw new CatalogException("A virtual file '" + virtualFile.getPath() + "' already exists but the list "
+                                            + "of samples differ.");
+                                }
+                            } else {
+                                validateNewFile(study, virtualFile, true);
+                            }
+
+                            subfile.setSampleIds(null);
+                        }
+
                         fileDBAdaptor.insert(study.getUid(), subfile, existingSamples, nonExistingSamples, Collections.emptyList(),
                                 new QueryOptions());
                         subfile = getFile(study.getUid(), subfile.getUuid(), QueryOptions.empty()).first();

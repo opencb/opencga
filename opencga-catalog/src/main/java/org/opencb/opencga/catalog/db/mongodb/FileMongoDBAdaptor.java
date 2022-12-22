@@ -126,6 +126,47 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 (e) -> logger.error("Could not create file {}: {}", file.getId(), e.getMessage()));
     }
 
+    @Override
+    public OpenCGAResult insertWithVirtualFile(long studyId, File file, File virtualFile, List<Sample> existingSamples,
+                                               List<Sample> nonExistingSamples, List<VariableSet> variableSetList, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return runTransaction(
+                (clientSession) -> {
+                    long tmpStartTime = startQuery();
+                    logger.debug("Starting file insert transaction for file id '{}' and virtual file id '{}'", file.getId(),
+                            virtualFile.getId());
+
+                    dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
+                    insert(clientSession, studyId, file, null, null, variableSetList);
+
+                    Map<String, Object> actionMap = new HashMap<>();
+                    actionMap.put(QueryParams.RELATED_FILES.key(), BasicUpdateAction.ADD);
+                    QueryOptions qOptions = new QueryOptions(Constants.ACTIONS, actionMap);
+                    if (virtualFile.getUid() <= 0) {
+                        // Add multipart file and insert virtual file
+                        virtualFile.setRelatedFiles(Collections.singletonList(
+                                new FileRelatedFile(file, FileRelatedFile.Relation.MULTIPART))
+                        );
+                        insert(clientSession, studyId, virtualFile, existingSamples, nonExistingSamples, variableSetList);
+                    } else {
+                        // Add multipart file in virtual file
+                        ObjectMap params = new ObjectMap(QueryParams.RELATED_FILES.key(), Collections.singletonList(
+                                new FileRelatedFile(file, FileRelatedFile.Relation.MULTIPART)
+                        ));
+                        privateUpdate(clientSession, virtualFile, params, null, qOptions);
+                    }
+
+                    // Add multipart file in physical file
+                    ObjectMap params = new ObjectMap(QueryParams.RELATED_FILES.key(), Collections.singletonList(
+                            new FileRelatedFile(virtualFile, FileRelatedFile.Relation.MULTIPART)
+                    ));
+                    privateUpdate(clientSession, file, params, null, qOptions);
+
+                    return endWrite(tmpStartTime, 1, 1, 0, 0, null);
+                },
+                (e) -> logger.error("Could not create file {}: {}", file.getId(), e.getMessage()));
+    }
+
     long insert(ClientSession clientSession, long studyId, File file, List<Sample> existingSamples, List<Sample> nonExistingSamples,
                 List<VariableSet> variableSetList) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (filePathExists(clientSession, studyId, file.getPath())) {

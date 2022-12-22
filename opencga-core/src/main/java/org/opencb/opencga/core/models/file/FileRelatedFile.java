@@ -25,6 +25,7 @@ public class FileRelatedFile {
     private Relation relation;
 
     public enum Relation {
+        MULTIPART,
         PRODUCED_FROM,
         PART_OF_PAIR,
         PEDIGREE,

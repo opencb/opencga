@@ -24,16 +24,19 @@ public class FileLinkToolParams extends ToolParams {
     private List<String> uri;
     private String path;
     private String description;
+    private String virtualFile;
     private boolean parents;
     private boolean skipPostLink;
 
     public FileLinkToolParams() {
     }
 
-    public FileLinkToolParams(List<String> uri, String path, String description, boolean parents, boolean skipPostLink) {
+    public FileLinkToolParams(List<String> uri, String path, String description, String virtualFile, boolean parents,
+                              boolean skipPostLink) {
         this.uri = uri;
         this.path = path;
         this.description = description;
+        this.virtualFile = virtualFile;
         this.parents = parents;
         this.skipPostLink = skipPostLink;
     }
@@ -62,6 +65,15 @@ public class FileLinkToolParams extends ToolParams {
 
     public FileLinkToolParams setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public String getVirtualFile() {
+        return virtualFile;
+    }
+
+    public FileLinkToolParams setVirtualFile(String virtualFile) {
+        this.virtualFile = virtualFile;
         return this;
     }
 

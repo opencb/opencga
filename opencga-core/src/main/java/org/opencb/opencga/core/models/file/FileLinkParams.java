@@ -30,6 +30,7 @@ public class FileLinkParams {
     private String description;
     private String creationDate;
     private String modificationDate;
+    private String virtualFile;
     private List<SmallRelatedFileParams> relatedFiles;
     private StatusParams status;
     private FileLinkInternalParams internal;
@@ -37,21 +38,33 @@ public class FileLinkParams {
     public FileLinkParams() {
     }
 
-    public FileLinkParams(String uri, String path, String description, String creationDate, String modificationDate,
+    public FileLinkParams(String uri, String path, String description, String creationDate, String modificationDate, String virtualFile,
                           List<SmallRelatedFileParams> relatedFiles, StatusParams status, FileLinkInternalParams internal) {
         this.uri = uri;
         this.path = path;
         this.description = description;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
+        this.virtualFile = virtualFile;
         this.relatedFiles = relatedFiles;
         this.status = status;
         this.internal = internal;
     }
 
     public static FileLinkParams of(File file) {
+        String virtualFile = null;
+        if (file.getType() != File.Type.VIRTUAL && file.getRelatedFiles() != null) {
+            for (FileRelatedFile relatedFile : file.getRelatedFiles()) {
+                if (relatedFile.getRelation().equals(FileRelatedFile.Relation.MULTIPART)) {
+                    virtualFile = relatedFile.getFile().getId();
+                    break;
+                }
+            }
+        }
+
         return new FileLinkParams(file.getUri().toString(), file.getPath(), file.getDescription(), file.getCreationDate(),
-                file.getModificationDate(), file.getRelatedFiles() != null
+                file.getModificationDate(), virtualFile,
+                file.getRelatedFiles() != null
                 ? file.getRelatedFiles().stream().map(SmallRelatedFileParams::of).collect(Collectors.toList())
                 : Collections.emptyList(), StatusParams.of(file.getStatus()),
                 new FileLinkInternalParams(file.getInternal().getSampleMap()));
@@ -65,6 +78,7 @@ public class FileLinkParams {
         sb.append(", description='").append(description).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
+        sb.append(", virtualFile='").append(virtualFile).append('\'');
         sb.append(", relatedFiles=").append(relatedFiles);
         sb.append(", status=").append(status);
         sb.append(", internal=").append(internal);
@@ -143,6 +157,15 @@ public class FileLinkParams {
 
     public FileLinkParams setStatus(StatusParams status) {
         this.status = status;
+        return this;
+    }
+
+    public String getVirtualFile() {
+        return virtualFile;
+    }
+
+    public FileLinkParams setVirtualFile(String virtualFile) {
+        this.virtualFile = virtualFile;
         return this;
     }
 

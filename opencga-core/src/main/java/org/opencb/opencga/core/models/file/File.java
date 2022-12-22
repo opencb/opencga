@@ -529,6 +529,7 @@ public class File extends Annotable {
 
     public enum Type {
         FILE,
+        VIRTUAL,
         DIRECTORY
     }
 

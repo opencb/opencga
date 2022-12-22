@@ -35,7 +35,8 @@ public class FileLinkTask extends OpenCgaToolScopeStudy {
             FileLinkParams linkParams = new FileLinkParams()
                     .setUri(uri)
                     .setPath(toolParams.getPath())
-                    .setDescription(toolParams.getDescription());
+                    .setDescription(toolParams.getDescription())
+                    .setVirtualFile(toolParams.getVirtualFile());
             logger.info("Linking file " + uri);
             OpenCGAResult<File> result
                     = catalogManager.getFileManager().link(getStudy(), linkParams, toolParams.isParents(), getToken());
