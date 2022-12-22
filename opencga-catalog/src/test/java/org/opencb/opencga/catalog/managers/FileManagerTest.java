@@ -393,6 +393,25 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testLinkVirtualExcludeType() throws CatalogException {
+        String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
+        fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, "biofiles/virtual_file.vcf", null, null, null), false, token);
+
+        OpenCGAResult<File> result;
+
+        result = fileManager.get(studyFqn,
+                Arrays.asList("variant-test-file.vcf.gz"),
+                new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.RELATED_FILES.key()), token);
+        assertEquals(1, result.getNumResults());
+
+        result = fileManager.get(studyFqn,
+                Arrays.asList("variant-test-file.vcf.gz"),
+                new QueryOptions(QueryOptions.EXCLUDE, "type"), token);
+        assertEquals(1, result.getNumResults());
+
+    }
+
+    @Test
     public void testLinkVirtual() throws CatalogException {
         String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
         fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, "biofiles/virtual_file.vcf", null, null, null), false, token);
@@ -410,6 +429,10 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals(File.Type.FILE, result.getResults().get(0).getType());
         assertEquals(File.Type.FILE, result.getResults().get(1).getType());
         assertEquals(File.Type.VIRTUAL, result.getResults().get(2).getType());
+
+        assertTrue(FileUtils.isPartial(result.getResults().get(0)));
+        assertTrue(FileUtils.isPartial(result.getResults().get(1)));
+        assertFalse(FileUtils.isPartial(result.getResults().get(2)));
 
         assertEquals(1, result.getResults().get(0).getRelatedFiles().size());
         assertEquals(1, result.getResults().get(1).getRelatedFiles().size());

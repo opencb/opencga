@@ -37,6 +37,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     LOAD_BATCH_SIZE("load.batchSize", 100),
     LOAD_THREADS("load.numThreads", 6),
     LOAD_SPLIT_DATA("load.splitData"),
+    LOAD_VIRTUAL_FILE("load.virtualFile"),
     LOAD_MULTI_FILE_DATA("load.multiFileData", false),
     LOAD_SAMPLE_INDEX("load.sampleIndex", YesNoAuto.AUTO),
     LOAD_ARCHIVE("load.archive", YesNoAuto.AUTO),
@@ -83,6 +84,8 @@ public enum VariantStorageOptions implements ConfigurationOption {
 
     METADATA_LOCK_DURATION("metadata.lock.duration", 5000),
     METADATA_LOCK_TIMEOUT("metadata.lock.timeout", 60000),
+    METADATA_LOAD_BATCH_SIZE("metadata.load.batchSize", 10),
+    METADATA_LOAD_THREADS("metadata.load.numThreads", 4),
 
     QUERY_DEFAULT_TIMEOUT("query.timeout.default", 10000), // Default timeout for DBAdaptor operations. Only used if none is provided.
     QUERY_MAX_TIMEOUT("query.timeout.max", 30000),         // Max allowed timeout for DBAdaptor operations

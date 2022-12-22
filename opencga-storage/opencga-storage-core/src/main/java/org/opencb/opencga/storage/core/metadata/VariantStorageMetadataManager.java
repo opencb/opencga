@@ -19,16 +19,23 @@ package org.opencb.opencga.storage.core.metadata;
 import com.google.common.base.Throwables;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.commons.run.Task;
+import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
@@ -36,7 +43,6 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.*;
 import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
@@ -48,6 +54,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -56,6 +64,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.isNegated;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.removeNegation;
@@ -93,6 +102,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     private final int lockDuration;
     private final int lockTimeout;
     private final VariantStorageMetadataDBAdaptorFactory dbAdaptorFactory;
+    private final ObjectMap configuration;
 
     public VariantStorageMetadataManager(VariantStorageMetadataDBAdaptorFactory dbAdaptorFactory) {
         this.projectDBAdaptor = dbAdaptorFactory.buildProjectMetadataDBAdaptor();
@@ -101,10 +111,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         this.sampleDBAdaptor = dbAdaptorFactory.buildSampleMetadataDBAdaptor();
         this.cohortDBAdaptor = dbAdaptorFactory.buildCohortMetadataDBAdaptor();
         this.taskDBAdaptor = dbAdaptorFactory.buildTaskDBAdaptor();
+        this.configuration = dbAdaptorFactory.getConfiguration();
         lockDuration = dbAdaptorFactory.getConfiguration()
-                .getInt(VariantStorageOptions.METADATA_LOCK_DURATION.key(), VariantStorageOptions.METADATA_LOCK_DURATION.defaultValue());
+                .getInt(METADATA_LOCK_DURATION.key(), METADATA_LOCK_DURATION.defaultValue());
         lockTimeout = dbAdaptorFactory.getConfiguration()
-                .getInt(VariantStorageOptions.METADATA_LOCK_TIMEOUT.key(), VariantStorageOptions.METADATA_LOCK_TIMEOUT.defaultValue());
+                .getInt(METADATA_LOCK_TIMEOUT.key(), METADATA_LOCK_TIMEOUT.defaultValue());
         this.dbAdaptorFactory = dbAdaptorFactory;
         sampleIdCache = new MetadataCache<>(sampleDBAdaptor::getSampleId);
         sampleNameCache = new MetadataCache<>((studyId, sampleId) -> {
@@ -580,22 +591,22 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     public ProjectMetadata getProjectMetadata(ObjectMap options) throws StorageEngineException {
         ProjectMetadata projectMetadata = getProjectMetadata();
         if (options != null && (projectMetadata == null
-                || StringUtils.isEmpty(projectMetadata.getSpecies()) && options.containsKey(VariantStorageOptions.SPECIES.key())
-                || StringUtils.isEmpty(projectMetadata.getAssembly()) && options.containsKey(VariantStorageOptions.ASSEMBLY.key()))) {
+                || StringUtils.isEmpty(projectMetadata.getSpecies()) && options.containsKey(SPECIES.key())
+                || StringUtils.isEmpty(projectMetadata.getAssembly()) && options.containsKey(ASSEMBLY.key()))) {
 
             projectMetadata = updateProjectMetadata(pm -> {
                 if (pm == null) {
                     pm = new ProjectMetadata();
                 }
                 if (pm.getRelease() <= 0) {
-                    pm.setRelease(options.getInt(VariantStorageOptions.RELEASE.key(),
-                            VariantStorageOptions.RELEASE.defaultValue()));
+                    pm.setRelease(options.getInt(RELEASE.key(),
+                            RELEASE.defaultValue()));
                 }
                 if (StringUtils.isEmpty(pm.getSpecies())) {
-                    pm.setSpecies(toCellBaseSpeciesName(options.getString(VariantStorageOptions.SPECIES.key())));
+                    pm.setSpecies(toCellBaseSpeciesName(options.getString(SPECIES.key())));
                 }
                 if (StringUtils.isEmpty(pm.getAssembly())) {
-                    pm.setAssembly(options.getString(VariantStorageOptions.ASSEMBLY.key()));
+                    pm.setAssembly(options.getString(ASSEMBLY.key()));
                 }
 
                 return pm;
@@ -764,7 +775,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public LinkedHashSet<Integer> getIndexedFiles(int studyId) {
-        return fileDBAdaptor.getIndexedFiles(studyId);
+        return getIndexedFiles(studyId, false);
+    }
+
+    public LinkedHashSet<Integer> getIndexedFiles(int studyId, boolean includePartial) {
+        return fileDBAdaptor.getIndexedFiles(studyId, includePartial);
     }
 
     public void addIndexedFiles(int studyId, List<Integer> fileIds) throws StorageEngineException {
@@ -795,10 +810,25 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public void removeIndexedFiles(int studyId, Collection<Integer> fileIds) throws StorageEngineException {
         Set<Integer> samples = new HashSet<>();
+        Set<Integer> partialFiles = new HashSet<>();
         for (Integer fileId : fileIds) {
             updateFileMetadata(studyId, fileId, fileMetadata -> {
                 samples.addAll(fileMetadata.getSamples());
                 fileMetadata.setIndexStatus(TaskMetadata.Status.NONE);
+                fileMetadata.setSecondaryIndexStatus(TaskMetadata.Status.NONE);
+                fileMetadata.setAnnotationStatus(TaskMetadata.Status.NONE);
+                if (fileMetadata.getType() == FileMetadata.Type.VIRTUAL) {
+                    partialFiles.addAll(fileMetadata.getAttributes().getAsIntegerList(FileMetadata.VIRTUAL_FILES));
+                }
+            });
+//            deleteVariantFileMetadata(studyId, fileId);
+        }
+        for (Integer fileId : partialFiles) {
+            updateFileMetadata(studyId, fileId, fileMetadata -> {
+                samples.addAll(fileMetadata.getSamples());
+                fileMetadata.setIndexStatus(TaskMetadata.Status.NONE);
+                fileMetadata.setSecondaryIndexStatus(TaskMetadata.Status.NONE);
+                fileMetadata.setAnnotationStatus(TaskMetadata.Status.NONE);
             });
 //            deleteVariantFileMetadata(studyId, fileId);
         }
@@ -1448,18 +1478,71 @@ public class VariantStorageMetadataManager implements AutoCloseable {
      * Before load file, register the new sample names.
      * If SAMPLE_IDS is missing, will auto-generate sampleIds
      */
-    public void registerFileSamples(int studyId, int fileId, List<String> sampleIds)
+    public void registerFileSamples(int studyId, int fileId, List<String> sampleNames)
             throws StorageEngineException {
 
+        final FileMetadata.Type fileType = getFileMetadata(studyId, fileId).getType();
+
         // Register samples and add file
-        LinkedHashSet<Integer> samples = new LinkedHashSet<>(sampleIds.size());
-        for (String sample : sampleIds) {
-            samples.add(registerSample(studyId, fileId, sample));
+        LinkedHashSet<Integer> sampleIds = new LinkedHashSet<>(sampleNames.size());
+        if (sampleNames.size() > 500) {
+            String fileName = getFileName(studyId, fileId);
+            ProgressLogger progressLogger;
+            if (fileType == FileMetadata.Type.PARTIAL) {
+                progressLogger = new ProgressLogger("Register samples from file '" + fileName + "'", sampleNames.size(), 20);
+            } else {
+                progressLogger = new ProgressLogger("Associate samples to file '" + fileName + "'", sampleNames.size(), 20);
+            }
+            Map<String, Integer> samples = new ConcurrentHashMap<>(sampleNames.size());
+
+            // Shuffle to avoid collisions with concurrent executions
+            List<String> shuffledSampleIds = new ArrayList<>(sampleNames);
+            Collections.shuffle(shuffledSampleIds);
+
+            // Parallel insertion
+            ParallelTaskRunner<String, Void> ptr = new ParallelTaskRunner<>(
+                    BatchUtils.toDataReader(shuffledSampleIds),
+                    batch -> {
+                        for (String sample : batch) {
+                            if (fileType == FileMetadata.Type.PARTIAL) {
+                                // Do not associate sample to file
+                                samples.put(sample, registerSample(studyId, null, sample));
+                            } else {
+                                samples.put(sample, registerSample(studyId, fileId, sample));
+                            }
+                        }
+                        progressLogger.increment(batch.size());
+                        return null;
+                    },
+                    null,
+                    ParallelTaskRunner.Config.builder()
+                            .setNumTasks(configuration.getInt(METADATA_LOAD_THREADS.key(), METADATA_LOAD_THREADS.defaultValue()))
+                            .setBatchSize(configuration.getInt(METADATA_LOAD_BATCH_SIZE.key(), METADATA_LOAD_BATCH_SIZE.defaultValue()))
+                            .build());
+            try {
+                ptr.run();
+            } catch (ExecutionException e) {
+                throw new StorageEngineException("Error associating samples from file '" + fileName + "'", e);
+            }
+
+            //Ensure ordered sampleIds
+            sampleNames.stream().map(samples::get).forEach(sampleIds::add);
+        } else {
+            // Sequential insert
+            for (String sample : sampleNames) {
+                if (fileType == FileMetadata.Type.PARTIAL) {
+                    // Do not associate sample to file
+                    sampleIds.add(registerSample(studyId, null, sample));
+                } else {
+                    sampleIds.add(registerSample(studyId, fileId, sample));
+                }
+            }
         }
+
 
         updateFileMetadata(studyId, fileId, fileMetadata -> {
             //Assign new sampleIds
-            fileMetadata.setSamples(samples);
+            fileMetadata.setSamples(sampleIds);
         });
 
     }
@@ -1612,6 +1695,24 @@ public class VariantStorageMetadataManager implements AutoCloseable {
      * @throws StorageEngineException if the file is not valid for being loaded
      */
     public int registerFile(int studyId, String filePath) throws StorageEngineException {
+        return registerFile(studyId, filePath, FileMetadata.Type.NORMAL);
+    }
+
+    /**
+     * Check if the file(name,id) can be added to the Study metadata.
+     *
+     * Will fail if:
+     * fileName was already in the study fileIds with a different fileId
+     * fileId was already in the study fileIds with a different fileName
+     * fileId was already in the study indexedFiles
+     *
+     * @param studyId   studyId
+     * @param filePath  File path
+     * @param type      File type
+     * @return fileId related to that file.
+     * @throws StorageEngineException if the file is not valid for being loaded
+     */
+    private int registerFile(int studyId, String filePath, FileMetadata.Type type) throws StorageEngineException {
 
         String fileName = Paths.get(filePath).getFileName().toString();
         Integer fileId = getFileId(studyId, fileName);
@@ -1653,12 +1754,183 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 FileMetadata fileMetadata = new FileMetadata()
                         .setId(fileId)
                         .setName(fileName)
-                        .setPath(filePath);
+                        .setPath(filePath)
+                        .setType(type);
                 unsecureUpdateFileMetadata(studyId, fileMetadata);
             }
         }
 
         return fileId;
+    }
+
+    public FileMetadata registerVirtualFile(int studyId, String virtualFileName) throws StorageEngineException {
+        Objects.requireNonNull(virtualFileName);
+
+        // Create virtual file
+        FileMetadata virtualFile = getFileMetadata(studyId, virtualFileName);
+
+        if (virtualFile == null) {
+            logger.info("Create virtual file '{}'", virtualFileName);
+            int virtualFileId = registerFile(studyId, virtualFileName, FileMetadata.Type.VIRTUAL);
+            return getFileMetadata(studyId, virtualFileId);
+        } else {
+            logger.info("Virtual file already exists '{}'", virtualFileName);
+            if (virtualFile.getType() != FileMetadata.Type.VIRTUAL) {
+                throw new IllegalStateException("File '" + virtualFileName + "' already exists and is not VIRTUAL");
+            }
+            return virtualFile;
+        }
+    }
+
+    public int registerPartialFile(int studyId, String filePath) throws StorageEngineException {
+        return registerFile(studyId, filePath, FileMetadata.Type.PARTIAL);
+    }
+
+    public int registerPartialFile(int studyId, String virtualFile, VariantFileMetadata variantFileMetadata) throws StorageEngineException {
+        int fileId = registerFile(studyId, variantFileMetadata.getPath(), FileMetadata.Type.PARTIAL);
+        registerFileSamples(studyId, fileId, variantFileMetadata.getSampleIds());
+        associatePartialFiles(studyId, virtualFile, Collections.singletonList(getFileName(studyId, fileId)));
+        return fileId;
+    }
+
+    public void associatePartialFiles(int studyId, String virtualFileName, List<String> files) throws StorageEngineException {
+        Objects.requireNonNull(virtualFileName);
+        if (files == null || files.isEmpty()) {
+            throw new IllegalStateException("Empty files");
+        }
+
+        // Create virtual file
+        FileMetadata virtualFile = registerVirtualFile(studyId, virtualFileName);
+        int virtualFileId = virtualFile.getId();
+        LinkedHashSet<Integer> samples = virtualFile.getSamples();
+
+
+        // Iterate over files to virtualize and check
+        List<Integer> nonPartialFiles = new ArrayList<>(files.size());
+        List<Integer> partialFiles = new ArrayList<>(files.size());
+
+        Collection<?> inputFiles;
+        if (files.size() == 1 && files.get(0).equals(ParamConstants.ALL)) {
+            inputFiles = getIndexedFiles(studyId);
+        } else {
+            inputFiles = files;
+        }
+        ProgressLogger progressLogger;
+        if (inputFiles.size() > 100) {
+            progressLogger = new ProgressLogger("Check partial files", inputFiles.size(), 50);
+        } else {
+            progressLogger = null;
+        }
+        for (Object fileStr : inputFiles) {
+            FileMetadata file = getFileMetadata(studyId, fileStr);
+            if (progressLogger != null) {
+                progressLogger.increment(1);
+            }
+            if (file.getType() == FileMetadata.Type.VIRTUAL) {
+                logger.info("Skip virtual file '{}'", file.getName());
+                continue;
+            }
+            if (file.getType() == FileMetadata.Type.PARTIAL
+                    && file.getAttributes().get(FileMetadata.VIRTUAL_PARENT) != null) {
+                logger.info("Skip already virtualized file '{}'", file.getName());
+                continue;
+            }
+            if (file.getType() == FileMetadata.Type.PARTIAL) {
+                partialFiles.add(file.getId());
+            } else {
+                nonPartialFiles.add(file.getId());
+            }
+            if (samples == null) {
+                samples = file.getSamples();
+            } else if (!samples.equals(file.getSamples())) {
+                throw new IllegalStateException("Unable to virtualize files with different sets of samples");
+            }
+        }
+
+        if (partialFiles.isEmpty() && nonPartialFiles.isEmpty()) {
+            logger.info("Nothing to do!");
+            return;
+        }
+
+        // Add files to virtual file
+        LinkedHashSet<Integer> finalSamples = samples;
+        updateFileMetadata(studyId, virtualFileId, fm -> {
+            HashSet<Integer> virtualFiles = new HashSet<>();
+            virtualFiles.addAll(fm.getAttributes().getAsIntegerList(FileMetadata.VIRTUAL_FILES));
+            virtualFiles.addAll(partialFiles);
+            virtualFiles.addAll(nonPartialFiles);
+
+            fm.setIndexStatus(TaskMetadata.Status.READY);
+            fm.getAttributes().put(FileMetadata.VIRTUAL_FILES, new ArrayList<>(virtualFiles));
+            fm.setSamples(finalSamples);
+        });
+
+        // Mark virtual files and samples
+        if (virtualFile.getSamples() != null && nonPartialFiles.isEmpty()) {
+            logger.info("Skip updating samples from partial files. Nothing to do.");
+        } else {
+            progressLogger = new ProgressLogger("Associate samples to virtual file '" + virtualFileName + "'", samples.size(), 50);
+//            for (Integer virtualizedSample : samples) {
+//                updateSampleMetadata(studyId, virtualizedSample, sm -> {
+//                    sm.getFiles().removeAll(partialFiles);
+//                    sm.getFiles().removeAll(nonPartialFiles);
+//                    if (!sm.getFiles().contains(virtualFileId)) {
+//                        sm.getFiles().add(virtualFileId);
+//                    }
+//                });
+//                progressLogger.increment(1);
+//            }
+            // Shuffle to avoid collisions with concurrent executions
+            List<Integer> shuffledSampleIds = new ArrayList<>(samples);
+            Collections.shuffle(shuffledSampleIds);
+            // Parallel insertion
+            ParallelTaskRunner<Integer, Void> ptr = new ParallelTaskRunner<>(
+                    BatchUtils.toDataReader(shuffledSampleIds),
+                    ((Task<Integer, Void>) batch -> {
+                        for (Integer sampleId : batch) {
+                            SampleMetadata sampleMetadata = getSampleMetadata(studyId, sampleId);
+                            boolean needsUpdate = !sampleMetadata.getFiles().contains(virtualFileId)
+                                    || CollectionUtils.containsAny(sampleMetadata.getFiles(), partialFiles)
+                                    || CollectionUtils.containsAny(sampleMetadata.getFiles(), nonPartialFiles);
+                            if (needsUpdate) {
+                                updateSampleMetadata(studyId, sampleId, sm -> {
+                                    sm.getFiles().removeAll(partialFiles);
+                                    sm.getFiles().removeAll(nonPartialFiles);
+                                    if (!sm.getFiles().contains(virtualFileId)) {
+                                        sm.getFiles().add(virtualFileId);
+                                    }
+                                });
+                            }
+                        }
+                        return null;
+                    }).then(progressLogger.asTask()),
+                    null,
+                    ParallelTaskRunner.Config.builder()
+                            .setNumTasks(configuration.getInt(METADATA_LOAD_THREADS.key(), METADATA_LOAD_THREADS.defaultValue()))
+                            .setBatchSize(configuration.getInt(METADATA_LOAD_BATCH_SIZE.key(), METADATA_LOAD_BATCH_SIZE.defaultValue()))
+                            .build());
+            try {
+                ptr.run();
+            } catch (ExecutionException e) {
+                throw new StorageEngineException("Error associating samples from virtual file '" + virtualFileName + "'", e);
+            }
+
+        }
+
+        if (partialFiles.size() + nonPartialFiles.size() > 100) {
+            progressLogger = new ProgressLogger("Update files", partialFiles.size() + nonPartialFiles.size(), 50);
+        }  else {
+            progressLogger = null;
+        }
+        for (Integer virtualizedFile : Iterables.concat(partialFiles, nonPartialFiles)) {
+            updateFileMetadata(studyId, virtualizedFile, fm -> {
+                fm.getAttributes().put(FileMetadata.VIRTUAL_PARENT, virtualFileId);
+                fm.setType(FileMetadata.Type.PARTIAL);
+            });
+            if (progressLogger != null) {
+                progressLogger.increment(1);
+            }
+        }
     }
 
     public Integer registerCohort(String study, String cohortName, Collection<String> samples) throws StorageEngineException {

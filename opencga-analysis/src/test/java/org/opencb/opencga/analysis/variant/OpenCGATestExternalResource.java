@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.StorageManager;
+import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
@@ -58,6 +59,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
     Logger logger = LoggerFactory.getLogger(OpenCGATestExternalResource.class);
     private StorageConfiguration storageConfiguration;
     private StorageEngineFactory storageEngineFactory;
+    private ToolRunner toolRunner;
 
 
 //    public HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource;
@@ -92,6 +94,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
         Files.createDirectory(opencgaHome.resolve("storage"));
         VariantStorageBaseTest.setRootDir(opencgaHome.resolve("storage"));
 
+        toolRunner = new ToolRunner(opencgaHome.toString(), getCatalogManager(), getStorageEngineFactory());
 //        ExecutorFactory.LOCAL_EXECUTOR_FACTORY.set((c, s) -> new StorageLocalExecutorManager(s));
     }
 
@@ -119,6 +122,10 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
     public StorageConfiguration getStorageConfiguration() {
         return storageConfiguration;
+    }
+
+    public ToolRunner getToolRunner() {
+        return toolRunner;
     }
 
     public Path isolateOpenCGA() throws IOException {

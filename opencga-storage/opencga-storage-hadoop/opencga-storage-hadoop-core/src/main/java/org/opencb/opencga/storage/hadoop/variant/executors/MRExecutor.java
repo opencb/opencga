@@ -81,7 +81,7 @@ public abstract class MRExecutor {
         }
     }
 
-    public <T extends Tool> int run(Class<T> execClass, String[] args) throws StorageEngineException {
+    protected <T extends Tool> int run(Class<T> execClass, String[] args) throws StorageEngineException {
         String hadoopRoute = options.getString(MR_HADOOP_BIN.key(), MR_HADOOP_BIN.defaultValue());
         String jar = getJarWithDependencies(options);
         String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();

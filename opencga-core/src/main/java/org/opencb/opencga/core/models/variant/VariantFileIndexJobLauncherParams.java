@@ -23,7 +23,6 @@ public class VariantFileIndexJobLauncherParams extends ToolParams {
         this.resumeFailed = resumeFailed;
         this.ignoreFailed = ignoreFailed;
         this.maxJobs = maxJobs;
-        this.indexParams = new VariantIndexParams();
         this.indexParams = indexParams;
     }
 

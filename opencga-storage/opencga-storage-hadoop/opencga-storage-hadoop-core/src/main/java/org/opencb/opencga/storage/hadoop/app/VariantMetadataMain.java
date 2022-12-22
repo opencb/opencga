@@ -4,12 +4,16 @@ import com.google.common.collect.Iterators;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -31,6 +35,8 @@ import java.util.stream.Collectors;
  */
 public class VariantMetadataMain extends AbstractMain {
 
+    protected static final Logger LOGGER = LoggerFactory.getLogger(VariantMetadataMain.class);
+
     public static void main(String[] args) {
         try {
             new VariantMetadataMain().run(args);
@@ -42,107 +48,120 @@ public class VariantMetadataMain extends AbstractMain {
 
     @Override
     public void run(String[] args) throws Exception {
-        Configuration configuration = HBaseConfiguration.create();
+        new VariantMetadataCommandExecutor().exec(args);
+    }
 
-        String command = getArg(args, 0, "help");
-        String subCommand = getArg(args, 1, "help");
-        final VariantStorageMetadataManager mm;
-        if (!command.equals("help") && !subCommand.equals("help") && !command.contains("table")) {
-            String metaTableName = getArg(args, 2);
-            mm = buildVariantStorageMetadataManager(configuration, metaTableName);
-        } else {
-            mm = null;
+    public static class VariantMetadataCommandExecutor extends NestedCommandExecutor {
+        public VariantMetadataCommandExecutor() {
+            this("metadata");
         }
 
-        switch (command) {
-            case "tables":
-            case "table":
-                switch (subCommand) {
-                    case "list":
-                        try (HBaseManager hBaseManager = new HBaseManager(configuration)) {
-                            List<String> tables = new LinkedList<>();
-                            for (TableName tableName : hBaseManager.getConnection().getAdmin().listTableNames()) {
-                                if (HBaseVariantTableNameGenerator.isValidMetaTableName(tableName.getNameWithNamespaceInclAsString())) {
-                                    tables.add(tableName.getNameWithNamespaceInclAsString());
-                                }
-                            }
-                            print(tables);
-                        }
-                        break;
-                    case "help":
-                    default:
-                        println("Commands:");
-                        println("  " + command + " list");
-                        println("  " + command + " help");
-                        break;
-                }
-                break;
-            case "sm":
-            case "study":
-            case "studies":
-            case "study-metadata":
-                switch (subCommand) {
-                    case "list":
-                    case "search":
-                        print(mm.getStudies());
-                        break;
-                    case "read":
-                    case "info":
-                        print(mm.getStudyMetadata(getArg(args, 3)));
-                        break;
-                    case "write":
-                    case "update":
-                        mm.unsecureUpdateStudyMetadata(readFile(getArg(args, 3), StudyMetadata.class));
-                        break;
-                    case "help":
-                    default:
-                        println("Commands:");
-                        println("  study-metadata list <metadata_table>");
-                        println("  study-metadata read <metadata_table> <study>");
-                        println("  study-metadata write <metadata_table> <studyMetadata.json>");
-                }
-                break;
-            case "fm":
-            case "file":
-            case "files":
-            case "file-metadata":
-                new FileCommandExecutor(mm).exec(args, command, subCommand);
-                break;
-            case "sample":
-            case "samples":
-            case "sample-metadata":
-                new SampleCommandExecutor(mm).exec(args, command, subCommand);
-                break;
-            case "cohort":
-            case "cohorts":
-            case "cohort-metadata":
-                new CohortCommandExecutor(mm).exec(args, command, subCommand);
-                break;
-            case "task":
-            case "tasks":
-            case "task-metadata":
-                new TaskCommandExecutor(mm).exec(args, command, subCommand);
-                break;
-            default:
-            case "help":
-                println("Commands:");
-                println("  help");
-                println("  tables          [help|list]");
-                println("  study-metadata  [help|list|id|read|write] <metadata_table> ...");
-                println("  file-metadata   [help|list|id|read|write] <metadata_table> ...");
-                println("  sample-metadata [help|list|id|read|write] <metadata_table> ...");
-                println("  cohort-metadata [help|list|id|read|write] <metadata_table> ...");
-                println("  task-metadata   [help|list|id|read|write] <metadata_table> ...");
-                break;
+        public VariantMetadataCommandExecutor(String argsContext) {
+            super(argsContext);
+            addSubCommand(Arrays.asList("tables", "table"), "[help|list]", new HBaseTablesCommandExecutor());
+            addSubCommand(Arrays.asList("study-metadata", "sm", "study", "studies"), "[help|list|id|read|write] <metadata_table> ...",
+                    new StudyCommandExecutor());
+            addSubCommand(Arrays.asList("file-metadata", "fm", "file", "files"), "[help|list|id|read|write] <metadata_table> ...",
+                    new FileCommandExecutor());
+            addSubCommand(Arrays.asList("sample-metadata", "sample", "samples"), "[help|list|id|read|write] <metadata_table> ...",
+                    new SampleCommandExecutor());
+            addSubCommand(Arrays.asList("cohort-metadata", "cohort", "cohorts"), "[help|list|id|read|write] <metadata_table> ...",
+                    new CohortCommandExecutor());
+            addSubCommand(Arrays.asList("task-metadata", "task", "tasks"), "[help|list|id|read|write] <metadata_table> ...",
+                    new TaskCommandExecutor());
         }
-        if (mm != null) {
+    }
+
+    private static class HBaseTablesCommandExecutor extends NestedCommandExecutor {
+        private HBaseManager hBaseManager;
+
+        HBaseTablesCommandExecutor() {
+            addSubCommand("list", "", args -> {
+                List<String> tables = new LinkedList<>();
+                for (TableName tableName : hBaseManager.getConnection().getAdmin().listTableNames()) {
+                    if (HBaseVariantTableNameGenerator.isValidMetaTableName(tableName.getNameWithNamespaceInclAsString())) {
+                        tables.add(tableName.getNameWithNamespaceInclAsString());
+                    }
+                }
+                print(tables);
+            });
+        }
+
+        @Override
+        protected void setup(String command, String[] args) throws Exception {
+            hBaseManager = new HBaseManager(HBaseConfiguration.create());
+        }
+
+        @Override
+        protected void cleanup(String command, String[] args) throws Exception {
+            hBaseManager.close();
+        }
+    }
+
+    private static class VariantStorageMetadataManagerCommandExecutor extends NestedCommandExecutor {
+        protected VariantStorageMetadataManager mm;
+
+        @Override
+        protected void setup(String command, String[] args) throws Exception {
+            Configuration configuration = HBaseConfiguration.create();
+            HBaseManager hBaseManager = new HBaseManager(configuration);
+            String metaTableName = getArg(args, 0);
+            mm = new VariantStorageMetadataManager(
+                    new HBaseVariantStorageMetadataDBAdaptorFactory(hBaseManager, metaTableName, configuration));
+        }
+
+        @Override
+        protected void cleanup(String command, String[] args) throws Exception {
             mm.close();
         }
     }
 
-    public class FileCommandExecutor extends ResourceCommandExecutor<FileMetadata> {
-        protected FileCommandExecutor(VariantStorageMetadataManager mm) {
-            super(mm, FileMetadata.class);
+    private static class StudyCommandExecutor extends VariantStorageMetadataManagerCommandExecutor {
+        StudyCommandExecutor() {
+            addSubCommand(Arrays.asList("list", "search"),
+                    "<metadata_table>",
+                    args -> {
+                        print(mm.getStudies());
+                    }
+            );
+            addSubCommand(Arrays.asList("read", "info"),
+                    "<metadata_table> <study>",
+                    args -> {
+                        print(mm.getStudyMetadata(getArg(args, 1)));
+                    }
+            );
+            addSubCommand(Arrays.asList("write", "update"),
+                    "<metadata_table> <studyMetadata.json>",
+                    args -> {
+                        mm.unsecureUpdateStudyMetadata(readFile(getArg(args, 1), StudyMetadata.class));
+                    }
+            );
+            addSubCommand(Arrays.asList("rename"),
+                    "<metadata_table> <currentStudyName> <newStudyName>",
+                    args -> {
+                        rename(getArg(args, 1), getArg(args, 2));
+                    }
+            );
+        }
+
+        private void rename(String currentStudyName, String newStudyName) throws StorageEngineException {
+            Integer studyIdOrNull = mm.getStudyIdOrNull(newStudyName);
+            if (studyIdOrNull != null) {
+                throw new IllegalStateException("New study name already exists!");
+            }
+            int studyId = mm.getStudyId(currentStudyName);
+            mm.updateStudyMetadata(studyId, studyMetadata -> {
+                studyMetadata.setName(newStudyName);
+            });
+        }
+    }
+
+    public static class FileCommandExecutor extends ResourceCommandExecutor<FileMetadata> {
+        protected FileCommandExecutor() {
+            super(FileMetadata.class);
+            addSubCommand(Collections.singletonList("create-virtual-file"),
+                    "<metadata_table> <study> " + new CreateVirtualFileParams().toCliHelp(), this::createVirtualFile);
+            addSubCommand(Collections.singletonList("list-indexed"), "<metadata_table> <study> [--includePartial]", this::listIndexed);
         }
 
         @Override
@@ -164,11 +183,29 @@ public class VariantMetadataMain extends AbstractMain {
         protected void write(int studyId, FileMetadata file) {
             mm.unsecureUpdateFileMetadata(studyId, file);
         }
+
+        public class CreateVirtualFileParams extends ToolParams {
+            protected String virtualFileName;
+            protected List<String> files;
+        }
+
+        protected void createVirtualFile(String[] args) throws Exception {
+            int studyId = mm.getStudyId(getArg(args, 1));
+            CreateVirtualFileParams params = getArgsMap(args, 2, new CreateVirtualFileParams());
+            mm.registerVirtualFile(studyId, params.virtualFileName);
+            mm.associatePartialFiles(studyId, params.virtualFileName, params.files);
+        }
+
+        protected void listIndexed(String[] args) throws Exception {
+            int studyId = mm.getStudyId(getArg(args, 1));
+            ObjectMap map = getArgsMap(args, 2, "includePartial");
+            mm.getIndexedFiles(studyId, map.getBoolean("includePartial", false));
+        }
     }
 
-    public class CohortCommandExecutor extends ResourceCommandExecutor<CohortMetadata> {
-        protected CohortCommandExecutor(VariantStorageMetadataManager mm) {
-            super(mm, CohortMetadata.class);
+    public static class CohortCommandExecutor extends ResourceCommandExecutor<CohortMetadata> {
+        protected CohortCommandExecutor() {
+            super(CohortMetadata.class);
         }
 
         @Override
@@ -192,9 +229,9 @@ public class VariantMetadataMain extends AbstractMain {
         }
     }
 
-    public class SampleCommandExecutor extends ResourceCommandExecutor<SampleMetadata> {
-        protected SampleCommandExecutor(VariantStorageMetadataManager mm) {
-            super(mm, SampleMetadata.class);
+    public static class SampleCommandExecutor extends ResourceCommandExecutor<SampleMetadata> {
+        protected SampleCommandExecutor() {
+            super(SampleMetadata.class);
         }
 
         @Override
@@ -218,9 +255,9 @@ public class VariantMetadataMain extends AbstractMain {
         }
     }
 
-    public class TaskCommandExecutor extends ResourceCommandExecutor<TaskMetadata> {
-        protected TaskCommandExecutor(VariantStorageMetadataManager mm) {
-            super(mm, TaskMetadata.class);
+    public static class TaskCommandExecutor extends ResourceCommandExecutor<TaskMetadata> {
+        protected TaskCommandExecutor() {
+            super(TaskMetadata.class);
         }
 
         @Override
@@ -265,14 +302,59 @@ public class VariantMetadataMain extends AbstractMain {
         }
     }
 
-    public abstract class ResourceCommandExecutor<T> {
-
-        protected final VariantStorageMetadataManager mm;
+    public abstract static class ResourceCommandExecutor<T> extends VariantStorageMetadataManagerCommandExecutor {
         protected final Class<T> clazz;
 
-        protected ResourceCommandExecutor(VariantStorageMetadataManager mm, Class<T> clazz) {
-            this.mm = mm;
+        protected ResourceCommandExecutor(Class<T> clazz) {
             this.clazz = clazz;
+
+            addSubCommand(Arrays.asList("list", "query", "search"),
+                    "<metadata_table> <study> [id=<ID_1>,<ID_2>,...] [name=<NAME_REGEX_PATTERN>]",
+                    args -> {
+                        int studyId = mm.getStudyId(getArg(args, 1));
+                        Predicate<T> filter = getFilter(args);
+                        print(Iterators.filter(list(studyId), filter::test));
+                    }
+            );
+            addSubCommand(Arrays.asList("id"),
+                    "<metadata_table> <study> <" + clazz.getSimpleName() + ">",
+                    args -> {
+                        int studyId = mm.getStudyId(getArg(args, 1));
+                        print(id(studyId, getArg(args, 2)));
+                    }
+            );
+            addSubCommand(Arrays.asList("read", "info", "get"),
+                    "<metadata_table> <study> <" + clazz.getSimpleName() + ">",
+                    args -> {
+                        int studyId = mm.getStudyId(getArg(args, 1));
+                        print(read(studyId, id(studyId, getArg(args, 2))));
+                    }
+            );
+            addSubCommand(Arrays.asList("write"),
+                    "<metadata_table> <study> <" + clazz.getSimpleName() + ".json>",
+                    args -> {
+                        int studyId = mm.getStudyId(getArg(args, 1));
+                        write(studyId, readFile(getArg(args, 2), clazz));
+                    }
+            );
+//            addSubCommand(args -> {
+//                        int studyId = mm.getStudyId(getArg(args, 1));
+//                        delete(studyId, id(studyId, getArg(args, 2)));
+//                    },
+//                    "<metadata_table> <study> <" + clazz.getSimpleName() + ">",
+//                    "delete"
+//            );
+//            addSubCommand(args -> {
+//                    studyId = mm.getStudyId(getArg(args, 1));
+//                    String arg = getArg(args, 2);
+//                    T value = read.apply(studyId, StringUtils.isNumeric(arg) ? Integer.valueOf(arg) : arg);
+//                    updateValue(value, args);
+//                    write.accept(studyId, value);
+//                    break;
+//                },
+//                    "<metadata_table> <study> <" + clazz.getSimpleName() + ">",
+//                    "update"
+//            );
         }
 
         protected abstract Iterator<T> list(int studyId);
@@ -280,57 +362,7 @@ public class VariantMetadataMain extends AbstractMain {
         protected abstract T read(int studyId, int id);
         protected abstract void write(int studyId, T object) throws StorageEngineException;
 //        protected abstract void delete(int studyId, int id) throws StorageEngineException;
-
-        protected final void exec(String[] args, String command, String subCommand) throws Exception {
-            int studyId;
-            switch (subCommand) {
-                case "list":
-                case "query":
-                case "search":
-                    studyId = mm.getStudyId(getArg(args, 3));
-                    Predicate<T> filter = getFilter(args);
-                    print(Iterators.filter(list(studyId), filter::test));
-                    break;
-                case "id": {
-                    studyId = mm.getStudyId(getArg(args, 3));
-                    print(id(studyId, getArg(args, 4)));
-                    break;
-                }
-                case "read":
-                case "info": {
-                    studyId = mm.getStudyId(getArg(args, 3));
-                    print(read(studyId, id(studyId, getArg(args, 4))));
-                    break;
-                }
-                case "write":
-                    studyId = mm.getStudyId(getArg(args, 3));
-                    write(studyId, readFile(getArg(args, 4), clazz));
-                    break;
-//                case "delete": {
-//                    studyId = mm.getStudyId(getArg(args, 3));
-//                    int id = id(studyId, getArg(args, 4));
-//                    delete(studyId, id);
-//                }
-//                    break;
-//            case "update": {
-//                studyId = mm.getStudyId(getArg(args, 3));
-//                String arg = getArg(args, 4);
-//                T value = read.apply(studyId, StringUtils.isNumeric(arg) ? Integer.valueOf(arg) : arg);
-//                updateValue(value, args);
-//                write.accept(studyId, value);
-//                break;
-//            }
-                case "help":
-                default:
-                    println("Commands:");
-                    println("  " + command + " list <metadata_table> <study> [id=<ID_1>,<ID_2>,...] [name=<NAME_REGEX_PATTERN>]");
-                    println("  " + command + " id <metadata_table> <study> <" + command + ">");
-                    println("  " + command + " read <metadata_table> <study> <" + command + ">");
-                    println("  " + command + " write <metadata_table> <study> <" + command + ".json>");
-//                    println("  " + command + " delete <metadata_table> <study> <" + command + ">");
-
-            }
-        }
+//        protected abstract void updateValue(int studyId, ???) throws StorageEngineException;
 
         protected final Predicate<T> getFilter(String[] args) throws Exception {
             Predicate<T> filter = f -> true;
@@ -387,10 +419,4 @@ public class VariantMetadataMain extends AbstractMain {
         }
 
     }
-
-    protected static VariantStorageMetadataManager buildVariantStorageMetadataManager(Configuration configuration, String metaTableName) {
-        return new VariantStorageMetadataManager(
-                new HBaseVariantStorageMetadataDBAdaptorFactory(new HBaseManager(configuration), metaTableName, configuration));
-    }
-
 }

@@ -12,8 +12,18 @@ import java.util.LinkedHashSet;
  */
 public class FileMetadata extends StudyResourceMetadata<FileMetadata> {
 
+    public static final String VIRTUAL_PARENT = "virtualParent";
+    public static final String VIRTUAL_FILES = "virtualFiles";
+
     private String path;
     private LinkedHashSet<Integer> samples;
+    private Type type = Type.NORMAL;
+
+    public enum Type {
+        NORMAL,
+        PARTIAL,
+        VIRTUAL;
+    }
 
 //    private VariantFileMetadata variantFileMetadata;
 
@@ -43,6 +53,15 @@ public class FileMetadata extends StudyResourceMetadata<FileMetadata> {
 
     public FileMetadata setSamples(LinkedHashSet<Integer> samples) {
         this.samples = samples;
+        return this;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public FileMetadata setType(Type type) {
+        this.type = type;
         return this;
     }
 

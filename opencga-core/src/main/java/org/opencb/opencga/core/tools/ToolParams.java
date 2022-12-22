@@ -69,6 +69,18 @@ public abstract class ToolParams {
         return map;
     }
 
+    public String toCliHelp() {
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, Class<?>> entry : fields().entrySet()) {
+            sb.append("--").append(entry.getKey());
+            if (entry.getValue() == boolean.class) {
+                sb.append(" ");
+            } else {
+                sb.append(" <").append(entry.getValue().getSimpleName()).append("> ");
+            }
+        }
+        return sb.toString();
+    }
 
     public void updateParams(Map<String, Object> params) {
         ObjectMapper objectMapper = getObjectMapper();

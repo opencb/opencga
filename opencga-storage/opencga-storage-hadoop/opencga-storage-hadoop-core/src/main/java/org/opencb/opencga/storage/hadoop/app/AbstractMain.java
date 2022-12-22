@@ -3,19 +3,18 @@ package org.opencb.opencga.storage.hadoop.app;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.tools.ToolParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Stream;
 
 public abstract class AbstractMain {
@@ -31,21 +30,21 @@ public abstract class AbstractMain {
 
     protected abstract void run(String[] args) throws Exception;
 
-    protected RuntimeException error(String msg) {
+    protected static RuntimeException error(String msg) {
         printError(msg);
         return new IllegalArgumentException(msg);
     }
 
-    protected RuntimeException error(Exception e) {
+    protected static RuntimeException error(Exception e) {
         printError(e.getMessage());
         return new IllegalArgumentException(e);
     }
 
-    protected void printError(String msg) {
+    protected static void printError(String msg) {
         print(new ObjectMap("error", msg));
     }
 
-    protected void print(final Object obj) {
+    protected static void print(final Object obj) {
         try {
             ObjectWriter objectWriter = objectMapper.writerWithDefaultPrettyPrinter();
             if (obj instanceof Iterable) {
@@ -73,14 +72,14 @@ public abstract class AbstractMain {
         }
     }
 
-    protected void println(String msg) {
+    protected static void println(String msg) {
         System.out.println(msg);
     }
 
-    protected String getArg(String[] args, int i, String def) {
+    protected static String getArg(String[] args, int i, String def) {
         return args.length > i ? args[i] : def;
     }
-    protected String getArg(String[] args, int i) throws Exception {
+    protected static String getArg(String[] args, int i) throws Exception {
         if (args.length > i) {
             return args[i];
         } else {
@@ -90,7 +89,13 @@ public abstract class AbstractMain {
         }
     }
 
-    protected ObjectMap getArgsMap(String[] args, int firstIdx, String... keys) {
+    protected static <T extends ToolParams> T getArgsMap(String[] args, int firstIdx, T params) {
+        ObjectMap argsMap = getArgsMap(args, firstIdx, params.fields().keySet().toArray(new String[]{}));
+        params.updateParams(argsMap);
+        return params;
+    }
+
+    protected static ObjectMap getArgsMap(String[] args, int firstIdx, String... keys) {
         Set<String> acceptedKeys = new HashSet<>(Arrays.asList(keys));
         ObjectMap argsMap;
         argsMap = new ObjectMap();
@@ -151,5 +156,88 @@ public abstract class AbstractMain {
 
         return r;
 
+    }
+
+    public interface CommandExecutor {
+        void exec(String[] args) throws Exception;
+    }
+
+    public static class NestedCommandExecutor implements CommandExecutor {
+        protected final Map<String, String> subCommandAlias = new LinkedHashMap<>();
+        protected final Map<String, String> subCommandDescription = new LinkedHashMap<>();
+        protected final Map<String, CommandExecutor> commandExecutor = new LinkedHashMap<>();
+        protected String argsContext;
+        protected CommandExecutor defaultExecutor;
+
+        public NestedCommandExecutor() {
+            this("");
+        }
+
+        public NestedCommandExecutor(String argsContext) {
+            this.argsContext = argsContext;
+            this.defaultExecutor = args -> {
+//                String command = getArg(args, 0, "help");
+                String subCommand = getArg(args, 0, "help");
+                println("Unknown subcommand '" + subCommand + "'");
+                help(argsContext);
+            };
+        }
+
+        protected final NestedCommandExecutor addSubCommand(String subCommand, String description, CommandExecutor executor) {
+            return addSubCommand(Collections.singletonList(subCommand), description, executor);
+        }
+
+        protected final NestedCommandExecutor addSubCommand(List<String> subCommands, String description, CommandExecutor executor) {
+            String subCommand = subCommands.get(0);
+            for (String alias : subCommands) {
+                subCommandAlias.put(alias, subCommand);
+            }
+            subCommandDescription.put(subCommand, description);
+            commandExecutor.put(subCommand, executor);
+            return this;
+        }
+
+        protected void setup(String command, String[] args) throws Exception {
+        }
+
+        protected void cleanup(String command, String[] args) throws Exception {
+        }
+
+        public final void exec(String[] args) throws Exception {
+            String command = getArg(args, 0, "help");
+
+            if (args.length <= 1) {
+                args = new String[]{};
+            } else {
+                args = Arrays.copyOfRange(args, 1, args.length);
+            }
+            if (StringUtils.isEmpty(command) || "help".equals(command)) {
+                help(argsContext);
+            } else {
+                String commandResolved = subCommandAlias.getOrDefault(command, command);
+                CommandExecutor executor = commandExecutor.getOrDefault(commandResolved, defaultExecutor);
+                if (executor instanceof NestedCommandExecutor) {
+                    if (argsContext == null || argsContext.isEmpty()) {
+                        ((NestedCommandExecutor) executor).argsContext = command;
+                    } else {
+                        ((NestedCommandExecutor) executor).argsContext = argsContext + " " + command;
+                    }
+                }
+                setup(command, args);
+                try {
+                    executor.exec(args);
+                } finally {
+                    cleanup(command, args);
+                }
+            }
+        }
+
+        protected void help(String command) {
+            println("Commands:");
+            int maxLength = subCommandDescription.keySet().stream().mapToInt(String::length).max().orElse(10) + 2;
+            subCommandDescription.forEach((subcommand, description) -> {
+                println("  " + command + " " + subcommand + StringUtils.repeat(' ', maxLength - subcommand.length()) + " " + description);
+            });
+        }
     }
 }

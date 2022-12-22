@@ -3594,6 +3594,8 @@ public class FileManager extends AnnotationSetManager<File> {
                                 virtualFile.setSampleIds(subfile.getSampleIds());
                                 virtualFile.setUri(null);
                                 virtualFile.setType(File.Type.VIRTUAL);
+                                virtualFile.setFormat(subfile.getFormat());
+                                virtualFile.setBioformat(subfile.getBioformat());
                             }
 
                             subfile.setSampleIds(null);

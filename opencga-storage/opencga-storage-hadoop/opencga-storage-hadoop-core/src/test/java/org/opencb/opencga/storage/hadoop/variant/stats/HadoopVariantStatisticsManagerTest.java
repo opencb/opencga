@@ -119,7 +119,7 @@ public class HadoopVariantStatisticsManagerTest extends VariantStatisticsManager
 
         getMrExecutor().run(VariantStatsDriver.class, VariantStatsDriver.buildArgs(
                 dbAdaptor.getArchiveTableName(studyMetadata.getId()),
-                dbAdaptor.getVariantTable(), studyMetadata.getId(), null, options));
+                dbAdaptor.getVariantTable(), studyMetadata.getId(), null, options), "");
 
         try(BufferedReader is = new BufferedReader(new FileReader(outputFile.getPath()))) {
             long count = is.lines().count();

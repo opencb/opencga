@@ -140,6 +140,14 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         REGION,
         MULTI;
 
+        public static boolean isPartial(ObjectMap options) {
+            return isPartial(from(options));
+        }
+
+        public static boolean isPartial(SplitData splitData) {
+            return splitData == CHROMOSOME || splitData == REGION;
+        }
+
         public static SplitData from(ObjectMap options) {
             Objects.requireNonNull(options);
             String loadSplitDataStr = options.getString(LOAD_SPLIT_DATA.key());
@@ -880,6 +888,13 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 FileMetadata fileMetadata = metadataManager.getFileMetadata(studyMetadata.getId(), file);
                 if (fileMetadata == null) {
                     throw VariantQueryException.fileNotFound(file, study);
+                }
+                if (fileMetadata.getType() == FileMetadata.Type.PARTIAL) {
+                    String virtualFileName = metadataManager.getFileName(
+                            studyMetadata.getId(),
+                            fileMetadata.getAttributes().getInt(FileMetadata.VIRTUAL_PARENT));
+                    throw new StorageEngineException("Unable to remove " + FileMetadata.Type.PARTIAL + " file. "
+                            + "Try removing its virtual file : '" + virtualFileName + "'");
                 }
                 fileIds.add(fileMetadata.getId());
                 if (!fileMetadata.isIndexed()) {

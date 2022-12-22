@@ -9,6 +9,7 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -89,15 +90,12 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
             Set<String> virtualFiles =new HashSet<>();
             for (File file : fileResult.getResults()) {
                 boolean foundVirtual = false;
-                if (file.getType().equals(File.Type.FILE)) {
-                    for (FileRelatedFile relatedFile : file.getRelatedFiles()) {
-                        if (relatedFile.getRelation().equals(FileRelatedFile.Relation.MULTIPART)) {
-                            logger.info("Found associated virtual file for file '" + file.getPath() + "'. Will automatically associate"
-                                    + " samples to the virtual file '" + relatedFile.getFile().getPath() + "' instead");
-                            virtualFiles.add(relatedFile.getFile().getPath());
-                            foundVirtual = true;
-                        }
-                    }
+                File virtualFile = FileUtils.getVirtualFileFromPartial(file);
+                if (virtualFile != null) {
+                    logger.info("Found associated virtual file for file '" + file.getPath() + "'. Will automatically associate"
+                            + " samples to the virtual file '" + virtualFile.getPath() + "' instead");
+                    virtualFiles.add(virtualFile.getPath());
+                    foundVirtual = true;
                 }
                 if (!foundVirtual) {
                     // Process current file if not associated to any virtual file

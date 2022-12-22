@@ -42,6 +42,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -253,6 +254,9 @@ public class VariantHbaseTestUtils {
             throws Exception {
         String archiveTableName = dbAdaptor.getArchiveTableName(studyMetadata.getId());
         for (Integer fileId : dbAdaptor.getMetadataManager().getIndexedFiles(studyMetadata.getId())) {
+            if (dbAdaptor.getMetadataManager().getFileMetadata(studyMetadata.getId(), fileId).getType() == FileMetadata.Type.VIRTUAL) {
+                continue;
+            }
             String fileName = "archive." + fileId + "." + archiveTableName + "." + TimeUtils.getTimeMillis() + ".txt";
             try (PrintStream os = new PrintStream(new FileOutputStream(outDir.resolve(fileName).toFile()))) {
                 printArchiveTable(dbAdaptor, studyMetadata, fileId, os);
@@ -384,6 +388,7 @@ public class VariantHbaseTestUtils {
             throws Exception {
         boolean old = HBaseToVariantConverter.isFailOnWrongVariants();
         HBaseToVariantConverter.setFailOnWrongVariants(false);
+        printMetaTable(dbAdaptor, outDir);
         for (StudyMetadata studyMetadata : studies) {
             printVariantsFromArchiveTable(dbAdaptor, studyMetadata, outDir);
             printArchiveTable(studyMetadata, dbAdaptor, outDir);
@@ -391,7 +396,6 @@ public class VariantHbaseTestUtils {
                 printVcf(studyMetadata, dbAdaptor, outDir);
             }
         }
-        printMetaTable(dbAdaptor, outDir);
         printSampleIndexTable(dbAdaptor, outDir);
         printVariantsFromVariantsTable(dbAdaptor, outDir);
         printVariantsFromDBAdaptor(dbAdaptor, outDir);

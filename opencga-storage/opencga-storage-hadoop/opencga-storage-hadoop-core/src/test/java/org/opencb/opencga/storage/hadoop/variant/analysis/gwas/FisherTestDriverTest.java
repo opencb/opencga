@@ -70,7 +70,7 @@ public class FisherTestDriverTest extends VariantStorageBaseTest implements Hado
                 dbAdaptor.getArchiveTableName(1),
                 dbAdaptor.getVariantTable(),
                 1,
-                Collections.emptySet(), objectMap));
+                Collections.emptySet(), objectMap), "");
 
         URI local1 = copyToLocal("fisher_result");
 
@@ -82,7 +82,7 @@ public class FisherTestDriverTest extends VariantStorageBaseTest implements Hado
                 dbAdaptor.getArchiveTableName(1),
                 dbAdaptor.getVariantTable(),
                 1,
-                Collections.emptySet(), objectMap));
+                Collections.emptySet(), objectMap), "");
 
 //        URI local2 = copyToLocal("fisher_result2");
 
