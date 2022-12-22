@@ -48,17 +48,17 @@ public class RestServer extends AbstractStorageServer {
         server = new Server(port);
 
         WebAppContext webapp = new WebAppContext();
-        Optional<Path> warPath = null;
+        Optional<Path> warPath;
         try (Stream<Path> stream = Files.list(opencgaHome)) {
             warPath = stream
                     .filter(path -> path.toString().endsWith("war"))
                     .findFirst();
         } catch (IOException e) {
-            logger.warn("Could not find OpenCGA Home", e);
+            throw new Exception("Error accessing OpenCGA Home: " + opencgaHome.toString(), e);
         }
         // Check is a war file has been found in opencgaHome
         if (warPath == null || !warPath.isPresent()) {
-            throw new Exception("No war file found at: " + opencgaHome.toString());
+            throw new Exception("No war file found at " + opencgaHome.toString());
         }
 
         String opencgaVersion = warPath.get().toFile().getName().replace(".war", "");
