@@ -326,7 +326,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         StringBuilder sb = new StringBuilder();
         for (RestParameter restParameter : body.getData()) {
             if (CollectionUtils.isEmpty(restParameter.getData())) {
-                if (restParameter.isAvailableType() || restParameter.isEnum() || isReferenceParam(restParameter.getGenericType())) {
+                if (restParameter.isAvailableType() || restParameter.isEnum() || isValidMap(restParameter)) {
                     String javaCommandOptionsField = "commandOptions." + getJavaFieldName(restParameter);
                     String label = StringUtils.isEmpty(restParameter.getParentName()) ? restParameter.getName() : restParameter.getParentName() + "." + restParameter.getName();
                     if (restParameter.getTypeClass().equals("java.lang.String;")) {
@@ -375,6 +375,8 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                             // with the same name, but the setter does not have this prefix, so it must be removed
                             return true;
                         } else if (bodyParam.isStringList()) {
+                            return true;
+                        } else if (isValidMap(bodyParam)) {
                             return true;
                         }
                         if (bodyParam.getType().equals("enum")) {

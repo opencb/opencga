@@ -300,6 +300,9 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
+        @DynamicParameter(names = {"--configuration"}, description = "The body configuration VariantConfigureParams web service parameter. Use: --configuration key=value", required = false)
+        public Map<String, ?> configuration = new HashMap<>(); //Dynamic parameters must be initialized;
+    
     }
 
     @Parameters(commandNames = {"variant-delete"}, commandDescription ="Remove variant files from the variant storage")

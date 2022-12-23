@@ -151,6 +151,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
+        @DynamicParameter(names = {"--interpretation-default-filter"}, description = "The body defaultFilter InterpretationStudyConfiguration web service parameter. Use: --interpretation-default-filter key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> interpretationDefaultFilter = new HashMap<>(); //Dynamic parameters must be initialized;
+    
     }
 
     @Parameters(commandNames = {"create"}, commandDescription ="Create a new clinical analysis")
@@ -243,6 +246,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--interpretation-locked"}, description = "The body locked InterpretationCreateParams web service parameter", required = false, arity = 1)
         public Boolean interpretationLocked;
     
+        @DynamicParameter(names = {"--interpretation-attributes"}, description = "A map of customizable attributes. Use: --interpretation-attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> interpretationAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
+    
         @Parameter(names = {"--quality-control-summary"}, description = "The body summary ClinicalAnalysisQualityControlUpdateParam web service parameter", required = false, arity = 1)
         public String qualityControlSummary;
     
@@ -257,6 +263,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--priority-id"}, description = "The body id PriorityParam web service parameter", required = false, arity = 1)
         public String priorityId;
+    
+        @DynamicParameter(names = {"--attributes"}, description = "A map of customizable attributes. Use: --attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--status-id"}, description = "The body id StatusParam web service parameter", required = false, arity = 1)
         public String statusId;
@@ -1880,6 +1889,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--priority-id"}, description = "The body id PriorityParam web service parameter", required = false, arity = 1)
         public String priorityId;
     
+        @DynamicParameter(names = {"--attributes"}, description = "A map of customizable attributes. Use: --attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+    
         @Parameter(names = {"--status-id"}, description = "The body id StatusParam web service parameter", required = false, arity = 1)
         public String statusId;
     
@@ -1970,6 +1982,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--status-id"}, description = "The body id StatusParam web service parameter", required = false, arity = 1)
         public String statusId;
+    
+        @DynamicParameter(names = {"--attributes"}, description = "A map of customizable attributes. Use: --attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 
@@ -2104,6 +2119,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--locked"}, description = "The body locked InterpretationUpdateParams web service parameter", required = false, arity = 1)
         public Boolean locked;
+    
+        @DynamicParameter(names = {"--attributes"}, description = "A map of customizable attributes. Use: --attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 

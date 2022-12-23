@@ -219,6 +219,9 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--modification-date", "--md"}, description = "The last modification date of the item", required = false, arity = 1)
         public String modificationDate;
     
+        @DynamicParameter(names = {"--attributes"}, description = "A map of customizable attributes. Use: --attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+    
         @Parameter(names = {"--status-id"}, description = "The body id StatusParams web service parameter", required = false, arity = 1)
         public String statusId;
     
@@ -375,6 +378,9 @@ public class CohortsCommandOptions {
     
         @Parameter(names = {"--status-description"}, description = "Field to store information of the item", required = false, arity = 1)
         public String statusDescription;
+    
+        @DynamicParameter(names = {"--attributes"}, description = "A map of customizable attributes. Use: --attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 
@@ -553,6 +559,9 @@ public class CohortsCommandOptions {
     
         @Parameter(names = {"--modification-date", "--md"}, description = "The last modification date of the item", required = false, arity = 1)
         public String modificationDate;
+    
+        @DynamicParameter(names = {"--attributes"}, description = "A map of customizable attributes. Use: --attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--status-id"}, description = "The body id StatusParams web service parameter", required = false, arity = 1)
         public String statusId;

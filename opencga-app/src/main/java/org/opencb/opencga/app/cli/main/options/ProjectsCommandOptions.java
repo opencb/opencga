@@ -110,6 +110,9 @@ public class ProjectsCommandOptions {
         @Parameter(names = {"--cellbase-preferred"}, description = "The body web service preferred parameter", required = false, arity = 1)
         public String cellbasePreferred;
     
+        @DynamicParameter(names = {"--attributes"}, description = "A map of customizable attributes. Use: --attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+    
     }
 
     @Parameters(commandNames = {"search"}, commandDescription ="Search projects")
@@ -298,6 +301,9 @@ public class ProjectsCommandOptions {
     
         @Parameter(names = {"--organism-assembly"}, description = "The body assembly ProjectOrganism web service parameter", required = false, arity = 1)
         public String organismAssembly;
+    
+        @DynamicParameter(names = {"--attributes"}, description = "A map of customizable attributes. Use: --attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 

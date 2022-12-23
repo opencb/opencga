@@ -294,4 +294,12 @@ public abstract class ParentClientRestApiWriter {
         this.availableCategoryConfigs = availableCategoryConfigs;
         return this;
     }
+
+    public boolean isValidMap(RestParameter bodyRestParameter) {
+        return "Query".equals(bodyRestParameter.getType())
+                || "ObjectMap".equals(bodyRestParameter.getType())
+                || "QueryOptions".equals(bodyRestParameter.getType())
+                || "java.util.Map<java.lang.String,java.lang.String>".equals(bodyRestParameter.getGenericType())
+                || "java.util.Map<java.lang.String,java.lang.Object>".equals(bodyRestParameter.getGenericType());
+    }
 }

@@ -219,6 +219,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
 
             studyCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -428,6 +429,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+            putNestedIfNotNull(beanParams, "query",commandOptions.query, true);
             putNestedIfNotNull(beanParams, "members",commandOptions.members, true);
             putNestedIfNotNull(beanParams, "permissions",commandOptions.permissions, true);
 
@@ -500,6 +502,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
@@ -591,6 +594,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             putNestedIfNotNull(beanParams, "rank",commandOptions.rank, true);
             putNestedIfNotEmpty(beanParams, "dependsOn",commandOptions.dependsOn, true);
             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
 
             variable = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

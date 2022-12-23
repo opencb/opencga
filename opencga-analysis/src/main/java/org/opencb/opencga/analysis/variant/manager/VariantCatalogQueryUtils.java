@@ -391,7 +391,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             }
         }
 
-        ParsedVariantQuery.VariantQueryXref xrefs = VariantQueryParser.preProcessXrefs(query);
+        ParsedVariantQuery.VariantQueryXref xrefs = VariantQueryParser.preProcessXrefs(query, cellBaseUtils);
         Region segregationChromosome = null;
         if (isValidParam(query, FAMILY)) {
             String familyId = query.getString(FAMILY.key());
@@ -690,6 +690,11 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 //                    }
                 }
             }
+
+            // Validate panel genes
+            panelGenes = new HashSet<>(cellBaseUtils.validateGenes(new ArrayList<>(panelGenes), true));
+
+            // Apply segregation chromosome filter
             if (segregationChromosome != null) {
                 // Remove panel elements that are out of the segregationChromosome (if any)
                 Map<String, Region> panelGeneRegionMap = cellBaseUtils.getGeneRegionMap(new ArrayList<>(panelGenes), true);

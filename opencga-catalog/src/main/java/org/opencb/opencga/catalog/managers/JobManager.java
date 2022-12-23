@@ -577,7 +577,7 @@ public class JobManager extends ResourceManager<Job> {
                 .append(QueryOptions.LIMIT, 10)
                 .append(QueryOptions.INCLUDE, Arrays.asList(JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.PARAMS.key()));
 
-        DBIterator<Job> it = iterator(study.getId(), query, options, token);
+        DBIterator<Job> it = iterator(study.getUuid(), query, options, token);
         while (it.hasNext()) {
             Job candidateJob = it.next();
             // Compare params orderless

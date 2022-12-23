@@ -867,32 +867,43 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testCreateJobAndReuse() throws CatalogException {
         Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user");
-        String studyId = catalogManager.getStudyManager().search(query, null, token).first().getId();
+
+
+        String project1 = catalogManager.getProjectManager().create("testCreateJobAndReuse_project1", "", "", "Homo sapiens",
+                null, "GRCh38", INCLUDE_RESULT, token).first().getId();
+        String project2 = catalogManager.getProjectManager().create("testCreateJobAndReuse_project2", "", "", "Homo sapiens",
+                null, "GRCh38", INCLUDE_RESULT, token).first().getId();
+
+        String study1 = catalogManager.getStudyManager().create(project1, new Study()
+                .setId("studyWithDuplicatedID"), INCLUDE_RESULT, token).first().getUuid();
+        String study2 = catalogManager.getStudyManager().create(project2, new Study()
+                .setId("studyWithDuplicatedID"), INCLUDE_RESULT, token).first().getUuid();
+
 //        catalogManager.getConfiguration().getAnalysis().getExecution().getOptions()
 //                .put("jobs.reuse.tools", "command-subcommand");
 //        String toolId = "command-subcommand";
         String toolId = "variant-index";
-        String job1 = catalogManager.getJobManager().submit(studyId, toolId, null, new ObjectMap("key", 1).append("key2", 2), token).first().getId();
+        String job1 = catalogManager.getJobManager().submit(study1, toolId, null, new ObjectMap("key", 1).append("key2", 2), token).first().getId();
 
         // Same params, different order, empty jobId
-        OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyId, toolId, null, new ObjectMap("key2", 2).append("key", 1),
+        OpenCGAResult<Job> result = catalogManager.getJobManager().submit(study1, toolId, null, new ObjectMap("key2", 2).append("key", 1),
                 "", "", Collections.emptyList(), Collections.emptyList(), token);
         assertEquals(job1, result.first().getId());
         assertEquals(1, result.getEvents().size());
         assertEquals("reuse", result.getEvents().get(0).getId());
 
         // Same params, different values
-        result = catalogManager.getJobManager().submit(studyId, toolId, null, new ObjectMap("key2", 2).append("key", 2), token);
+        result = catalogManager.getJobManager().submit(study1, toolId, null, new ObjectMap("key2", 2).append("key", 2), token);
         assertNotEquals(job1, result.first().getId());
 
         // Same params, but with jobId
-        result = catalogManager.getJobManager().submit(studyId, toolId, null, new ObjectMap("key2", 2).append("key", 2), "MyJobId", "",
+        result = catalogManager.getJobManager().submit(study1, toolId, null, new ObjectMap("key2", 2).append("key", 2), "MyJobId", "",
                 Collections.emptyList(), Collections.emptyList(), token);
         assertNotEquals(job1, result.first().getId());
         assertEquals("MyJobId", result.first().getId());
 
         // Same params, but with dependencies
-        result = catalogManager.getJobManager().submit(studyId, toolId, null, new ObjectMap("key2", 2).append("key", 2), "", "",
+        result = catalogManager.getJobManager().submit(study1, toolId, null, new ObjectMap("key2", 2).append("key", 2), "", "",
                 Collections.singletonList(job1), Collections.emptyList(), token);
         assertNotEquals(job1, result.first().getId());
     }

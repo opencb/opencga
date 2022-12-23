@@ -301,6 +301,9 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--density"}, description = "Density plot: LOW, MEDIUM, HIGH", required = false, arity = 1)
         public String density;
     
+        @DynamicParameter(names = {"--query"}, description = "Circos query. Use: --query key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.String> query = new HashMap<>(); //Dynamic parameters must be initialized;
+    
         @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
     
@@ -834,6 +837,9 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
+    
+        @DynamicParameter(names = {"--gatk-params"}, description = "Other parameters. Use: --gatk-params key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.String> gatkParams = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 
@@ -1506,6 +1512,9 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
     
+        @DynamicParameter(names = {"--plink-params"}, description = "Plink parameters. Use: --plink-params key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.String> plinkParams = new HashMap<>(); //Dynamic parameters must be initialized;
+    
     }
 
     @Parameters(commandNames = {"query"}, commandDescription ="Filter and fetch variants from indexed VCF files in the variant storage")
@@ -1823,6 +1832,9 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
+    
+        @DynamicParameter(names = {"--rvtests-params"}, description = "Other Rvtests parameters. Use: --rvtests-params key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.String> rvtestsParams = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 

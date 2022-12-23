@@ -258,6 +258,13 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             clinicalAnalysisStudyConfiguration = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), ClinicalAnalysisStudyConfiguration.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotNull(beanParams, "interpretation.defaultFilter",commandOptions.interpretationDefaultFilter, true);
+
+            clinicalAnalysisStudyConfiguration = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), ClinicalAnalysisStudyConfiguration.class);
         }
         return openCGAClient.getClinicalAnalysisClient().updateClinicalConfiguration(clinicalAnalysisStudyConfiguration, queryParams);
     }
@@ -310,11 +317,13 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "interpretation.creationDate",commandOptions.interpretationCreationDate, true);
             putNestedIfNotEmpty(beanParams, "interpretation.modificationDate",commandOptions.interpretationModificationDate, true);
             putNestedIfNotNull(beanParams, "interpretation.locked",commandOptions.interpretationLocked, true);
+            putNestedIfNotNull(beanParams, "interpretation.attributes",commandOptions.interpretationAttributes, true);
             putNestedIfNotNull(beanParams, "qualityControl.summary",commandOptions.qualityControlSummary, true);
             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
             putNestedIfNotEmpty(beanParams, "dueDate",commandOptions.dueDate, true);
             putNestedIfNotEmpty(beanParams, "priority.id",commandOptions.priorityId, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
 
             clinicalAnalysisCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
@@ -1209,6 +1218,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
             putNestedIfNotEmpty(beanParams, "dueDate",commandOptions.dueDate, true);
             putNestedIfNotEmpty(beanParams, "priority.id",commandOptions.priorityId, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
 
             clinicalAnalysisUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
@@ -1275,6 +1285,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "method.commit",commandOptions.methodCommit, true);
             putNestedIfNotNull(beanParams, "locked",commandOptions.locked, true);
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
 
             interpretationCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -1367,6 +1378,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
             putNestedIfNotNull(beanParams, "locked",commandOptions.locked, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
 
             interpretationUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
