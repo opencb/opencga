@@ -156,4 +156,22 @@ public class AnalysisUtils {
         }
         return job;
     }
+
+    public static final String JOBS_IN_JOBDIR = "JOBS";
+
+    public static String getJobBaseDir(String path) {
+        int index = path.indexOf(JOBS_IN_JOBDIR);
+        if (index == -1) {
+            return null;
+        }
+        return path.substring(0, index + 5);
+    }
+
+    public static String getJobFileRelativePath(String path) {
+        int index = path.indexOf(JOBS_IN_JOBDIR);
+        if (index == -1) {
+            return null;
+        }
+        return path.substring(index + 5);
+    }
 }

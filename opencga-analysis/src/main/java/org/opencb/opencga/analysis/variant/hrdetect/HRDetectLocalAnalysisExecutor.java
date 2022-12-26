@@ -28,6 +28,7 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResultWriter;
+import org.opencb.commons.exec.Command;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
@@ -63,7 +64,8 @@ public class HRDetectLocalAnalysisExecutor extends HRDetectAnalysisExecutor
 
     private final static String CNV_FILENAME = "cnv.tsv";
     private final static String INDEL_FILENAME = "indel.vcf";
-    private final static String INDEL_GZ_FILENAME = "indel.vcf.gz";
+    private final static String INDEL_SORTED_FILENAME = "indel.sorted.vcf";
+    private final static String INDEL_GZ_FILENAME = "indel.sorted.vcf.gz";
     private final static String INPUT_TABLE_FILENAME = "inputTable.tsv";
 
     private final static String VIRTUAL_VOLUMEN_DATA = "/data/";
@@ -143,7 +145,8 @@ public class HRDetectLocalAnalysisExecutor extends HRDetectAnalysisExecutor
         query.put(VariantQueryParam.STUDY.key(), getStudy());
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.append(QueryOptions.INCLUDE, "id,studies");
+        queryOptions.append(QueryOptions.INCLUDE, "id,studies")
+                .append(QueryOptions.SORT, true);
 
         logger.info("INDEL query: {}", query);
         logger.info("INDEL query options: {}", queryOptions);
@@ -155,10 +158,23 @@ public class HRDetectLocalAnalysisExecutor extends HRDetectAnalysisExecutor
             new ToolExecutorException("Error exporting VCF file with INDEL variants");
         }
 
+        // Workaround to sort, waiting for exporting to do it
+        File sortVcfFile = getOutDir().resolve("sort_vcf.sh").toFile();
+        PrintWriter pw = new PrintWriter(sortVcfFile);
+        pw.println("#!/bin/sh");
+        pw.println("cat $1 | awk '$1 ~ /^#/ {print $0;next} {print $0 | \"sort -k1,1 -k2,2n\"}' > $2");
+        pw.close();
+        new Command("bash " + sortVcfFile.getAbsolutePath()
+                + " " + getOutDir().resolve(INDEL_FILENAME).toAbsolutePath()
+                + " " + getOutDir().resolve(INDEL_SORTED_FILENAME).toFile())
+                .run();
+        sortVcfFile.delete();
+
         // BGZIP
         AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir()
                 .toAbsolutePath().toString(), VIRTUAL_VOLUMEN_DATA);
-        String cmdline = DockerUtils.run(R_DOCKER_IMAGE, null, outputBinding, "bgzip " + VIRTUAL_VOLUMEN_DATA + INDEL_FILENAME, null);
+        String cmdline = DockerUtils.run(R_DOCKER_IMAGE, null, outputBinding, "bgzip " + VIRTUAL_VOLUMEN_DATA + INDEL_SORTED_FILENAME,
+                null);
         logger.info("Docker command line: " + cmdline);
 
         // TABIX

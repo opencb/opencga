@@ -19,10 +19,7 @@ package org.opencb.opencga.analysis.variant;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.hamcrest.CoreMatchers;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.opencb.biodata.models.clinical.Disorder;
@@ -1031,6 +1028,19 @@ public class VariantAnalysisTest {
         byte[] bytes = Files.readAllBytes(hrDetectFile.toPath());
         System.out.println(new String(bytes));
         assertTrue(hrDetectFile.exists());
+
+        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(CANCER_STUDY, cancer_sample, QueryOptions.empty(), token);
+        Sample sample = sampleResult.first();
+        List<HRDetect> hrDetects = sample.getQualityControl().getVariant().getHrDetects();
+        for (HRDetect hrDetect : hrDetects) {
+            if (hrDetect.getId().equals(hrDetect.getId())) {
+                if (hrDetect.getScores().containsKey("del.mh.prop")) {
+                    Assert.assertEquals(hrDetect.getScores().getFloat("del.mh.prop"), 0.172413793103448f, 0.00001f);
+                    return;
+                }
+            }
+        }
+        fail("HRDetect result not found in sample quality control");
     }
 
     @Test

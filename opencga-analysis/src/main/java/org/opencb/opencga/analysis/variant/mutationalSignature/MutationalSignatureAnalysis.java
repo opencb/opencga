@@ -415,18 +415,17 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
         fitting.setScores(scores);
 
         // Set files
-        int length = outDir.toAbsolutePath().getParent().toAbsolutePath().toString().length() + 1;
         List<String> files = new ArrayList<>();
         for (File file : outDir.toFile().listFiles()) {
             if (file.getName().equals("catalogues.pdf")) {
                 continue;
             }
             if (file.getName().endsWith("pdf") || file.getName().equals("fitData.rData")) {
-                files.add(file.getAbsolutePath().substring(length));
+                files.add(AnalysisUtils.getJobFileRelativePath(file.getAbsolutePath()));
             } else if (file.isDirectory()) {
                 for (File file2 : file.listFiles()) {
                     if (file2.getName().endsWith("pdf")) {
-                        files.add(file2.getAbsolutePath().substring(length));
+                        files.add(AnalysisUtils.getJobFileRelativePath(file2.getAbsolutePath()));
                     }
                 }
             }

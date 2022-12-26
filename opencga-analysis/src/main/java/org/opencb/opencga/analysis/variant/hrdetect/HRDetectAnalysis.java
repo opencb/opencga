@@ -52,6 +52,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -145,14 +146,16 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
 
         pathSnvFittingRData = getFittingRDataFile(snvFitting.getFiles());
         if (!pathSnvFittingRData.toFile().exists()) {
-            throw new ToolException("Unable to compute HRDetect analysis. No .rData file found for SNV fitting with ID '"
-                    + hrdetectParams.getSvFittingId() + "' for sample '" + hrdetectParams.getSampleId() + "'");
+            throw new ToolException("Unable to compute HRDetect analysis. No .rData file found for SNV fitting '"
+                    + pathSnvFittingRData.toAbsolutePath() + "' with ID '" + hrdetectParams.getSnvFittingId() + "' for sample '"
+                    + hrdetectParams.getSampleId() + "'");
         }
 
         pathSvFittingRData = getFittingRDataFile(svFitting.getFiles());
         if (!pathSvFittingRData.toFile().exists()) {
-            throw new ToolException("Unable to compute HRDetect analysis. No .rData file found for SV fitting with ID '"
-                    + hrdetectParams.getSvFittingId() + "' for sample '" + hrdetectParams.getSampleId() + "'");
+            throw new ToolException("Unable to compute HRDetect analysis. No .rData file found for SV fitting '"
+                    + pathSvFittingRData.toAbsolutePath() + "' with ID '" + hrdetectParams.getSvFittingId() + "' for sample '"
+                    + hrdetectParams.getSampleId() + "'");
         }
 
         // Check CNV query
@@ -252,9 +255,8 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
                 .setDescription(hrdetectParams.getDescription())
                 .setSnvFittingId(hrdetectParams.getSnvFittingId())
                 .setSvFittingId(hrdetectParams.getSvFittingId())
-//                .setCnvQuery(JacksonUtils.getDefaultObjectMapper().readValue(hrdetectParams.getCnvQuery(), ObjectMap.class))
-//                .setIndelQuery(JacksonUtils.getDefaultObjectMapper().readValue(hrdetectParams.getIndelQuery(), ObjectMap.class));
-                ;
+                .setCnvQuery(JacksonUtils.getDefaultObjectMapper().readValue(hrdetectParams.getCnvQuery(), ObjectMap.class))
+                .setIndelQuery(JacksonUtils.getDefaultObjectMapper().readValue(hrdetectParams.getIndelQuery(), ObjectMap.class));
 
         // Set other params
         ObjectMap params = new ObjectMap();
@@ -325,9 +327,12 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
         if (CollectionUtils.isEmpty(files)) {
             return null;
         }
+        Path basePath = Paths.get(AnalysisUtils.getJobBaseDir(getOutDir().toAbsolutePath().toString()));
         for (String file : files) {
             if (file.endsWith("rData")) {
-                return getOutDir().getParent().resolve(file);
+                Path path = basePath.resolve(file);
+                logger.info("RData file found: {}; outdir = {}; path = {}", file, getOutDir().toAbsolutePath(), path.toAbsolutePath());
+                return path;
             }
         }
         return null;
