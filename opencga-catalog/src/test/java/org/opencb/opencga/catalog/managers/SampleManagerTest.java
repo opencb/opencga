@@ -2124,6 +2124,32 @@ public class SampleManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void associateSameSampleAndIndividualInDifferentStudies() throws CatalogException {
+        String id = "myUniqueId";
+        for (String studyId : Arrays.asList("st1", "st2")) {
+            System.out.println("Study " + studyId);
+            catalogManager.getStudyManager().create(project1, new Study().setId(studyId), QueryOptions.empty(), token);
+
+            catalogManager.getSampleManager().create(studyId, new Sample().setId(id), QueryOptions.empty(), token);
+            catalogManager.getIndividualManager().create(studyId, new Individual().setId(id), QueryOptions.empty(), token);
+            catalogManager.getSampleManager().update(studyId, id, new SampleUpdateParams().setIndividualId(id), QueryOptions.empty(), token);
+
+            OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(studyId, id, QueryOptions.empty(), token);
+            assertEquals(1, sampleResult.getNumResults());
+            assertEquals(id, sampleResult.first().getIndividualId());
+            assertEquals(2, sampleResult.first().getVersion());
+
+            OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager().get(studyId, id, QueryOptions.empty(), token);
+            assertEquals(1, individualResult.getNumResults());
+            assertEquals(2, individualResult.first().getVersion());
+            assertEquals(1, individualResult.first().getSamples().size());
+            assertEquals(id, individualResult.first().getSamples().get(0).getId());
+            assertEquals(2, individualResult.first().getSamples().get(0).getVersion());
+        }
+
+    }
+
+    @Test
     public void testGetSampleAndIndividualWithPermissionsChecked() throws CatalogException {
         String sampleId1 = catalogManager.getSampleManager()
                 .create(studyFqn, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT, token).first().getId();
