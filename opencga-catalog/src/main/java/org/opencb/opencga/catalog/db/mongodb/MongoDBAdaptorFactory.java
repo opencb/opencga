@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.BasicDBObject;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -30,11 +31,13 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.MigrationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
@@ -42,42 +45,6 @@ import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper
  * Created by pfurio on 08/01/16.
  */
 public class MongoDBAdaptorFactory implements DBAdaptorFactory {
-
-    private final List<String> COLLECTIONS_LIST = Arrays.asList(
-            USER_COLLECTION,
-            STUDY_COLLECTION,
-            FILE_COLLECTION,
-            JOB_COLLECTION,
-            SAMPLE_COLLECTION,
-            INDIVIDUAL_COLLECTION,
-            COHORT_COLLECTION,
-            PANEL_COLLECTION,
-            FAMILY_COLLECTION,
-            CLINICAL_ANALYSIS_COLLECTION,
-            INTERPRETATION_COLLECTION,
-
-            SAMPLE_ARCHIVE_COLLECTION,
-            INDIVIDUAL_ARCHIVE_COLLECTION,
-            FAMILY_ARCHIVE_COLLECTION,
-            PANEL_ARCHIVE_COLLECTION,
-            INTERPRETATION_ARCHIVE_COLLECTION,
-
-            DELETED_USER_COLLECTION,
-            DELETED_STUDY_COLLECTION,
-            DELETED_FILE_COLLECTION,
-            DELETED_JOB_COLLECTION,
-            DELETED_SAMPLE_COLLECTION,
-            DELETED_INDIVIDUAL_COLLECTION,
-            DELETED_COHORT_COLLECTION,
-            DELETED_PANEL_COLLECTION,
-            DELETED_FAMILY_COLLECTION,
-            DELETED_CLINICAL_ANALYSIS_COLLECTION,
-            DELETED_INTERPRETATION_COLLECTION,
-
-            MIGRATION_COLLECTION,
-            METADATA_COLLECTION,
-            AUDIT_COLLECTION
-    );
 
     public static final String USER_COLLECTION = "user";
     public static final String STUDY_COLLECTION = "study";
@@ -135,6 +102,43 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public static final String METADATA_COLLECTION = "metadata";
     public static final String MIGRATION_COLLECTION = "migration";
     public static final String AUDIT_COLLECTION = "audit";
+
+    public static final List<String> COLLECTIONS_LIST = Arrays.asList(
+            USER_COLLECTION,
+            STUDY_COLLECTION,
+            FILE_COLLECTION,
+            JOB_COLLECTION,
+            SAMPLE_COLLECTION,
+            INDIVIDUAL_COLLECTION,
+            COHORT_COLLECTION,
+            PANEL_COLLECTION,
+            FAMILY_COLLECTION,
+            CLINICAL_ANALYSIS_COLLECTION,
+            INTERPRETATION_COLLECTION,
+
+            SAMPLE_ARCHIVE_COLLECTION,
+            INDIVIDUAL_ARCHIVE_COLLECTION,
+            FAMILY_ARCHIVE_COLLECTION,
+            PANEL_ARCHIVE_COLLECTION,
+            INTERPRETATION_ARCHIVE_COLLECTION,
+
+            DELETED_USER_COLLECTION,
+            DELETED_STUDY_COLLECTION,
+            DELETED_FILE_COLLECTION,
+            DELETED_JOB_COLLECTION,
+            DELETED_SAMPLE_COLLECTION,
+            DELETED_INDIVIDUAL_COLLECTION,
+            DELETED_COHORT_COLLECTION,
+            DELETED_PANEL_COLLECTION,
+            DELETED_FAMILY_COLLECTION,
+            DELETED_CLINICAL_ANALYSIS_COLLECTION,
+            DELETED_INTERPRETATION_COLLECTION,
+
+            MIGRATION_COLLECTION,
+            METADATA_COLLECTION,
+            AUDIT_COLLECTION
+    );
+
     static final String METADATA_OBJECT_ID = "METADATA";
     private final MongoDataStoreManager mongoManager;
     private final MongoDBConfiguration configuration;
@@ -189,7 +193,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
-    public void installCatalogDB(Configuration configuration) throws CatalogException {
+    public void createAllCollections(Configuration configuration) throws CatalogException {
         // TODO: Check META object does not exist. Use {@link isCatalogDBReady}
         // TODO: Check all collections do not exists, or are empty
         // TODO: Catch DuplicatedKeyException while inserting META object
@@ -200,12 +204,18 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
                     + StringUtils.join(mongoDataStore.getCollectionNames()) + ".\nPlease, remove the database or choose a different one.");
         }
         COLLECTIONS_LIST.forEach(mongoDataStore::createCollection);
-        metaDBAdaptor.initializeMetaCollection(configuration);
     }
 
     @Override
-    public void createIndexes(boolean wholeIndexes) {
-        metaDBAdaptor.createIndexes(wholeIndexes);
+    public void initialiseMetaCollection(Admin admin) throws CatalogException {
+        metaDBAdaptor.initializeMetaCollection(admin);
+    }
+
+    @Override
+    public void createIndexes() {
+        StopWatch stopWatch = StopWatch.createStarted();
+        metaDBAdaptor.createIndexes();
+        logger.info("Creating all indexes took {} milliseconds", stopWatch.getTime(TimeUnit.MILLISECONDS));
     }
 
     @Override

@@ -2453,7 +2453,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
     @Test
     public void createClinicalAnalysisWithPanels() throws CatalogException {
-        catalogManager.getPanelManager().importFromSource(STUDY, "cancer-gene-census", "", sessionIdUser);
+        catalogManager.getPanelManager().importFromSource(STUDY, "gene-census", "", sessionIdUser);
         Panel panel = catalogManager.getPanelManager().search(STUDY, new Query(), QueryOptions.empty(), sessionIdUser).first();
 
         DataResult<Family> dummyFamily = createDummyFamily();
@@ -2489,7 +2489,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
     @Test
     public void createInterpretationWithPanels() throws CatalogException {
-        catalogManager.getPanelManager().importFromSource(STUDY, "cancer-gene-census", "", sessionIdUser);
+        catalogManager.getPanelManager().importFromSource(STUDY, "gene-census", "", sessionIdUser);
         Panel panel = catalogManager.getPanelManager().search(STUDY, new Query(), QueryOptions.empty(), sessionIdUser).first();
 
         ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
@@ -2508,7 +2508,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
     @Test
     public void updatePanelsInClinicalAnalysis() throws CatalogException {
-        catalogManager.getPanelManager().importFromSource(STUDY, "cancer-gene-census", "", sessionIdUser);
+        catalogManager.getPanelManager().importFromSource(STUDY, "gene-census", "", sessionIdUser);
         Panel panel = catalogManager.getPanelManager().search(STUDY, new Query(), QueryOptions.empty(), sessionIdUser).first();
 
         DataResult<Family> dummyFamily = createDummyFamily();

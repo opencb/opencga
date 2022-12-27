@@ -24,8 +24,6 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
-import org.bson.BsonDocument;
-import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
@@ -198,12 +196,12 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             projectId = projectId.split("@", 2)[1];
         }
 
-        DataResult<Document> queryResult = userCollection.find(
-                new BsonDocument(UserDBAdaptor.QueryParams.PROJECTS_ID.key(), new BsonString(projectId))
-                        .append(UserDBAdaptor.QueryParams.ID.key(), new BsonString(userId)),
-                Projections.fields(Projections.include(UserDBAdaptor.QueryParams.PROJECTS_UID.key()),
-                        Projections.elemMatch("projects", Filters.eq(QueryParams.ID.key(), projectId))),
-                null);
+        Bson filter = Filters.and(
+                Filters.eq(UserDBAdaptor.QueryParams.PROJECTS_ID.key(), projectId),
+                Filters.eq(UserDBAdaptor.QueryParams.ID.key(), userId)
+        );
+        Bson projection = Projections.elemMatch("projects", Filters.eq(QueryParams.ID.key(), projectId));
+        DataResult<Document> queryResult = userCollection.find(filter, projection, null);
         User user = parseUser(queryResult);
         if (user == null || user.getProjects().isEmpty()) {
             return -1;
