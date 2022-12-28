@@ -1542,13 +1542,20 @@ public class RgaManager implements AutoCloseable {
                 .append(QueryOptions.FACET, RgaDataModel.VARIANT_SUMMARY);
         DataResult<FacetField> facetFieldDataResult = rgaEngine.facetedQuery(collection, auxQuery, knockoutTypeFacet);
         KnockoutTypeCount knockoutTypeCount = new KnockoutTypeCount(auxQuery);
+        if (CollectionUtils.isNotEmpty(rgaDataModel.getChPairs())) {
+            for (String chPair : rgaDataModel.getChPairs()) {
+                CodedChPairVariants codedChPairVariants = CodedChPairVariants.parseEncodedId(chPair);
+                knockoutTypeCount.processChPairFeature(codedChPairVariants);
+            }
+        }
+
         for (FacetField.Bucket variantBucket : facetFieldDataResult.first().getBuckets()) {
             CodedVariant codedFeature = CodedVariant.parseEncodedId(variantBucket.getValue());
             knockoutTypeCount.processFeature(codedFeature);
         }
         VariantKnockoutStats variantStats = new VariantKnockoutStats(knockoutTypeCount.getNumIds(), knockoutTypeCount.getNumHomIds(),
-                knockoutTypeCount.getNumCompHetIds(), knockoutTypeCount.getNumPairedCompHetIds(), knockoutTypeCount.getNumHetIds(),
-                knockoutTypeCount.getNumDelOverlapIds());
+                knockoutTypeCount.getNumCompHetIds(), knockoutTypeCount.getNumPairedCompHetIds(),
+                knockoutTypeCount.getNumPairedDelOverlapIds(), knockoutTypeCount.getNumHetIds(), knockoutTypeCount.getNumDelOverlapIds());
         geneSummary.setVariantStats(variantStats);
 
         // 3. Get individual knockout type counts
@@ -1630,8 +1637,8 @@ public class RgaManager implements AutoCloseable {
             knockoutTypeCount.processFeature(codedFeature);
         }
         VariantKnockoutStats variantStats = new VariantKnockoutStats(knockoutTypeCount.getNumIds(), knockoutTypeCount.getNumHomIds(),
-                knockoutTypeCount.getNumCompHetIds(), knockoutTypeCount.getNumPairedCompHetIds(), knockoutTypeCount.getNumHetIds(),
-                knockoutTypeCount.getNumDelOverlapIds());
+                knockoutTypeCount.getNumCompHetIds(), knockoutTypeCount.getNumPairedCompHetIds(),
+                knockoutTypeCount.getNumPairedDelOverlapIds(), knockoutTypeCount.getNumHetIds(), knockoutTypeCount.getNumDelOverlapIds());
         knockoutByIndividualSummary.setVariantStats(variantStats);
 
         // Use list of variants filtered matching all criteria if the number of variants is lower than 100. Otherwise, variants will not be

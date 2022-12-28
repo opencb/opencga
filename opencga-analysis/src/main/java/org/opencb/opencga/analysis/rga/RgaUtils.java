@@ -811,9 +811,9 @@ class RgaUtils {
 
         private Set<String> ids;
         private Map<String, Set<String>> transcriptCompHetIdsMap;
+        private Map<String, Set<String>> transcriptDelOverlapIdsMap;
         private Set<String> homIds;
         private Set<String> hetIds;
-        private Set<String> delOverlapIds;
 
         public KnockoutTypeCount(Query query) throws RgaException {
             variantIdQuery = new HashSet<>();
@@ -826,9 +826,9 @@ class RgaUtils {
             validChPairVariants = new HashMap<>();
             ids = new HashSet<>();
             transcriptCompHetIdsMap = new HashMap<>();
+            transcriptDelOverlapIdsMap = new HashMap<>();
             homIds = new HashSet<>();
             hetIds = new HashSet<>();
-            delOverlapIds = new HashSet<>();
 
             query = ParamUtils.defaultObject(query, Query::new);
             variantIdQuery.addAll(query.getAsStringList(RgaQueryParams.VARIANTS.key()));
@@ -908,7 +908,10 @@ class RgaUtils {
                     hetIds.add(codedFeature.getId());
                     break;
                 case DELETION_OVERLAP:
-                    delOverlapIds.add(codedFeature.getId());
+                    if (!transcriptDelOverlapIdsMap.containsKey(codedFeature.getTranscriptId())) {
+                        transcriptDelOverlapIdsMap.put(codedFeature.getTranscriptId(), new HashSet<>());
+                    }
+                    transcriptDelOverlapIdsMap.get(codedFeature.getTranscriptId()).add(codedFeature.getId());
                     break;
                 default:
                     throw new IllegalStateException("Unexpected value: " + codedFeature.getKnockoutType());
@@ -974,6 +977,25 @@ class RgaUtils {
             return chPairs.size();
         }
 
+        public int getNumPairedDelOverlapIds() {
+            int numPairedDelOverlap = 0;
+            for (Map.Entry<String, Set<String>> entry : transcriptDelOverlapIdsMap.entrySet()) {
+                Set<String> chSet = entry.getValue();
+                if (chSet.size() > 1) {
+                    List<Variant> variantList = chSet.stream().map(Variant::new).collect(Collectors.toList());
+                    for (int i = 0; i < variantList.size() - 1; i++) {
+                        for (int j = i + 1; j < variantList.size(); j++) {
+                            // We simply check if two variants overlap. If they do, they are a valid pair
+                            if (variantList.get(i).overlapWith(variantList.get(j), true)) {
+                                numPairedDelOverlap++;
+                            }
+                        }
+                    }
+                }
+            }
+            return numPairedDelOverlap;
+        }
+
         public int getNumHomIds() {
             return homIds.size();
         }
@@ -983,7 +1005,7 @@ class RgaUtils {
         }
 
         public int getNumDelOverlapIds() {
-            return delOverlapIds.size();
+            return (int) transcriptDelOverlapIdsMap.values().stream().flatMap(Set::stream).distinct().count();
         }
 
         public Map<String, List<String>> getTranscriptCompHetIdsMap() {
