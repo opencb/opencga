@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
@@ -296,8 +295,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     OpenCGAResult<Long> count(ClientSession clientSession, Query query, String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, user);
-        logger.debug("Individual count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class,
-                MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Individual count: query : {}, dbTime: {}", bson.toBsonDocument());
         return new OpenCGAResult<>(individualCollection.count(clientSession, bson));
     }
 
@@ -416,9 +414,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             if (!individualUpdate.isEmpty()) {
                 Bson finalQuery = parseQuery(tmpQuery);
 
-                logger.debug("Individual update: query : {}, update: {}",
-                        finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                        individualUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                logger.debug("Individual update: query : {}, update: {}", finalQuery.toBsonDocument(), individualUpdate.toBsonDocument());
 
                 result = individualCollection.update(clientSession, finalQuery, individualUpdate, new QueryOptions("multi", true));
 
@@ -1024,9 +1020,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 );
                 Document update = familyDBAdaptor.parseAndValidateUpdateParams(clientSession, params, null).toFinalUpdateDocument();
 
-                logger.debug("Remove individual references from family: Query: {}, update: {}",
-                        bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                        update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                logger.debug("Remove individual references from family: Query: {}, update: {}", bsonQuery.toBsonDocument(),
+                        update.toBsonDocument());
                 DataResult result = familyDBAdaptor.getFamilyCollection().update(clientSession, bsonQuery, update,
                         new QueryOptions(MongoDBCollection.MULTI, true));
                 logger.debug("Families found: {}, families updated: {}", result.getNumMatches(), result.getNumUpdated());
@@ -1203,7 +1198,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         qOptions = filterOptions(qOptions, FILTER_ROUTE_INDIVIDUALS);
         fixAclProjection(qOptions);
 
-        logger.debug("Individual get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Individual get: query : {}", bson.toBsonDocument());
         MongoDBCollection collection = getQueryCollection(query, individualCollection, archiveIndividualCollection,
                 deletedIndividualCollection);
         return collection.iterator(clientSession, bson, null, null, qOptions);
@@ -1690,10 +1685,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         Bson bsonQuery = parseQuery(query);
         versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
                     QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
-
-                    logger.debug("Sample references extraction. Query: {}, update: {}",
-                            bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                            update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                    logger.debug("Sample references extraction. Query: {}, update: {}", bsonQuery.toBsonDocument(),
+                            update.toBsonDocument());
                     DataResult updateResult = individualCollection.update(clientSession, bsonQuery, update, multi);
                     logger.debug("Sample uid '" + sampleUid + "' references removed from " + updateResult.getNumUpdated() + " out of "
                             + updateResult.getNumMatches() + " individuals");

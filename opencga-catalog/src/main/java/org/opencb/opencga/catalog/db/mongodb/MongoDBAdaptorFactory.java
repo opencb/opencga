@@ -180,6 +180,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
                 .setUserPassword(
                         catalogConfiguration.getCatalog().getDatabase().getUser(),
                         catalogConfiguration.getCatalog().getDatabase().getPassword())
+                .setConnectionsPerHost(200)
                 .setServerAddress(dataStoreServerAddresses)
                 .load(catalogConfiguration.getCatalog().getDatabase().getOptions())
                 .build();

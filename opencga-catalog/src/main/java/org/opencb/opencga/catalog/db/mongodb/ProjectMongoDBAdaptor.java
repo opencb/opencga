@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
@@ -141,9 +140,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         //Update object
         Bson query = Filters.eq(UserDBAdaptor.QueryParams.ID.key(), userId);
 
-        logger.debug("Inserting project. Query: {}, update: {}",
-                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Inserting project. Query: {}, update: {}", query.toBsonDocument(), update.toBsonDocument());
         userCollection.update(clientSession, query, update, null);
 
         return project;
@@ -314,9 +311,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             Query tmpQuery = new Query(QueryParams.UID.key(), project.getUid());
             Bson finalQuery = parseQuery(tmpQuery);
 
-            logger.debug("Update project. Query: {}, update: {}",
-                    finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    updates.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            logger.debug("Update project. Query: {}, update: {}", finalQuery.toBsonDocument(), updates.toBsonDocument());
             DataResult result = userCollection.update(clientSession, finalQuery, updates, null);
 
             if (result.getNumMatches() == 0) {
@@ -503,9 +498,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         Bson bsonQuery = parseQuery(studyQuery);
         Document updateDocument = getDocumentUpdateParams(updateParams);
 
-        logger.debug("Delete project {}: Query: {}, update: {}", project.getId(),
-                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Delete project {}: Query: {}, update: {}", project.getId(), bsonQuery.toBsonDocument(),
+                updateDocument.toBsonDocument());
         DataResult result = userCollection.update(clientSession, bsonQuery, updateDocument, QueryOptions.empty());
 
         if (result.getNumMatches() == 0) {
@@ -791,7 +785,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         }
 
         for (Bson aggregate : aggregates) {
-            logger.debug("Get project: Aggregate : {}", aggregate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            logger.debug("Get project: Aggregate : {}", aggregate.toBsonDocument());
         }
 
         QueryOptions qOptions = new QueryOptions();
