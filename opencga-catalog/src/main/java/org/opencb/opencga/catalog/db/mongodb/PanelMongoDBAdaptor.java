@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
@@ -270,7 +269,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     OpenCGAResult<Long> count(ClientSession clientSession, final Query query, final String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, user);
-        logger.debug("Panel count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Panel count: query : {}", bson.toBsonDocument());
         return new OpenCGAResult<>(panelCollection.count(clientSession, bson));
     }
 
@@ -345,9 +344,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
         Bson finalQuery = parseQuery(tmpQuery);
         return versionedMongoDBAdaptor.update(clientSession, finalQuery, () -> {
-                    logger.debug("Panel update: query : {}, update: {}",
-                            finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                            panelUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                    logger.debug("Panel update: query : {}, update: {}", finalQuery.toBsonDocument(), panelUpdate.toBsonDocument());
 
                     DataResult result = panelCollection.update(clientSession, finalQuery, new Document("$set", panelUpdate),
                             new QueryOptions("multi", true));
@@ -613,7 +610,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         }
 
         Bson bson = parseQuery(finalQuery, user);
-        logger.debug("Panel query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Panel query: {}", bson.toBsonDocument());
         MongoDBCollection collection = getQueryCollection(query, panelCollection, panelArchiveCollection, deletedPanelCollection);
         return collection.iterator(clientSession, bson, null, null, qOptions);
     }

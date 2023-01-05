@@ -301,6 +301,9 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--density"}, description = "The body web service density parameter", required = false, arity = 1)
         public String density;
     
+        @DynamicParameter(names = {"--query"}, description = "The body web service query parameter. Use: --query key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.String> query = new HashMap<>(); //Dynamic parameters must be initialized;
+    
         @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
         public String outdir;
     
@@ -834,6 +837,9 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
         public String outdir;
+    
+        @DynamicParameter(names = {"--gatk-params"}, description = "The body web service gatkParams parameter. Use: --gatk-params key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.String> gatkParams = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 
@@ -1485,6 +1491,9 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
         public String outdir;
     
+        @DynamicParameter(names = {"--plink-params"}, description = "The body web service plinkParams parameter. Use: --plink-params key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.String> plinkParams = new HashMap<>(); //Dynamic parameters must be initialized;
+    
     }
 
     @Parameters(commandNames = {"query"}, commandDescription ="Filter and fetch variants from indexed VCF files in the variant storage")
@@ -1802,6 +1811,9 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
         public String outdir;
+    
+        @DynamicParameter(names = {"--rvtests-params"}, description = "The body web service rvtestsParams parameter. Use: --rvtests-params key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.String> rvtestsParams = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 
