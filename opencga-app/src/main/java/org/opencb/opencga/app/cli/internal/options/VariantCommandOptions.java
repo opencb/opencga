@@ -1319,6 +1319,10 @@ public class VariantCommandOptions {
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
 
+        @Parameter(names = {"--sample"}, description = "Sample ID.", required = true)
+        public String sample;
+
+        // Signature catalogue
         @Parameter(names = {"--id"}, description = FieldConstants.MUTATIONAL_SIGNATURE_ID_DESCRIPTION)
         public String id;
 
@@ -1329,39 +1333,40 @@ public class VariantCommandOptions {
         public String query;
 
         // For fitting method
-
-        @Parameter(names = {"--catalogues"}, description = FieldConstants.MUTATIONAL_SIGNATURE_CATALOGUES_DESCRIPTION)
-        public String catalogues;
-
-        @Parameter(names = {"--catalogues-content"}, description = FieldConstants.MUTATIONAL_SIGNATURE_CATALOGUES_CONTENT_DESCRIPTION)
-        public String cataloguesContent;
+        @Parameter(names = {"--fit-id"}, description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_ID_DESCRIPTION)
+        public String fitId;
 
         @Parameter(names = {"--fit-method"}, description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION)
         public String fitMethod = "FitMS";
 
-        @Parameter(names = {"--n-boot"}, description = FieldConstants.MUTATIONAL_SIGNATURE_N_BOOT_DESCRIPTION)
-        public Integer nBoot;
+        @Parameter(names = {"--fit-n-boot"}, description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_N_BOOT_DESCRIPTION)
+        public Integer fitNBoot;
 
-        @Parameter(names = {"--sig-version"}, description = FieldConstants.MUTATIONAL_SIGNATURE_SIG_VERSION_DESCRIPTION)
-        public String sigVersion = "RefSigv2";
+        @Parameter(names = {"--fit-sig-version"}, description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_SIG_VERSION_DESCRIPTION)
+        public String fitSigVersion = "RefSigv2";
 
-        @Parameter(names = {"--organ"}, description = FieldConstants.MUTATIONAL_SIGNATURE_ORGAN_DESCRIPTION)
-        public String organ;
+        @Parameter(names = {"--fit-organ"}, description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_ORGAN_DESCRIPTION)
+        public String fitOrgan;
 
-        @Parameter(names = {"--threshold-perc"}, description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PERC_DESCRIPTION)
-        public Float thresholdPerc = 5f;
+        @Parameter(names = {"--fit-threshold-perc"}, description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_THRESHOLD_PERC_DESCRIPTION)
+        public Float fitThresholdPerc = 5f;
 
-        @Parameter(names = {"--threshold-pval"}, description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PVAL_DESCRIPTION)
-        public Float thresholdPval = 0.05f;
+        @Parameter(names = {"--fit-threshold-pval"}, description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_THRESHOLD_PVAL_DESCRIPTION)
+        public Float fitThresholdPval = 0.05f;
 
-        @Parameter(names = {"--max-rare-sigs"}, description = FieldConstants.MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION)
-        public Integer maxRareSigs = 1;
+        @Parameter(names = {"--fit-max-rare-sigs"}, description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_MAX_RARE_SIGS_DESCRIPTION)
+        public Integer fitMaxRareSigs = 1;
 
-        @Parameter(names = {"--signatures-file"}, description = FieldConstants.MUTATIONAL_SIGNATURE_SIGNATURES_FILE_DESCRIPTION)
-        public String signaturesFile;
+        @Parameter(names = {"--fit-signatures-file"}, description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_SIGNATURES_FILE_DESCRIPTION)
+        public String fitSignaturesFile;
 
-        @Parameter(names = {"--rare-signatures-file"}, description = FieldConstants.MUTATIONAL_SIGNATURE_RARE_SIGNATURES_FILE_DESCRIPTION)
-        public String rareSignaturesFile;
+        @Parameter(names = {"--fit-rare-signatures-file"},
+                description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_RARE_SIGNATURES_FILE_DESCRIPTION)
+        public String fitRareSignaturesFile;
+
+        // Other
+        @Parameter(names = {"--skip"}, description = FieldConstants.SAMPLE_QUALITY_CONTROL_SKIP_DESCRIPTION)
+        public String skip;
 
         @Parameter(names = {"-o", "--outdir"}, description = FieldConstants.JOB_OUT_DIR_DESCRIPTION, arity = 1, required = false)
         public String outdir;
@@ -1595,32 +1600,36 @@ public class VariantCommandOptions {
         @Parameter(names = {"--ms-query"}, description = FieldConstants.MUTATIONAL_SIGNATURE_QUERY_DESCRIPTION)
         public String signatureQuery;
 
+        @Parameter(names = {"--ms-fit-id"}, description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_ID_DESCRIPTION)
+        public String signatureFitId;
+
         @Parameter(names = {"--ms-fit-method"}, description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION)
         public String signatureFitMethod = "FitMS";
 
-        @Parameter(names = {"--ms-n-boot"}, description = FieldConstants.MUTATIONAL_SIGNATURE_N_BOOT_DESCRIPTION)
-        public Integer signatureNBoot;
+        @Parameter(names = {"--ms-fit-n-boot"}, description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_N_BOOT_DESCRIPTION)
+        public Integer signatureFitNBoot;
 
-        @Parameter(names = {"--ms-sig-version"}, description = FieldConstants.MUTATIONAL_SIGNATURE_SIG_VERSION_DESCRIPTION)
-        public String signatureSigVersion = "RefSigv2";
+        @Parameter(names = {"--ms-fit-sig-version"}, description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_SIG_VERSION_DESCRIPTION)
+        public String signatureFitSigVersion = "RefSigv2";
 
-        @Parameter(names = {"--ms-organ"}, description = FieldConstants.MUTATIONAL_SIGNATURE_ORGAN_DESCRIPTION)
-        public String signatureOrgan;
+        @Parameter(names = {"--ms-fit-organ"}, description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_ORGAN_DESCRIPTION)
+        public String signatureFitOrgan;
 
-        @Parameter(names = {"--ms-threshold-perc"}, description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PERC_DESCRIPTION)
-        public Float signatureThresholdPerc = 5f;
+        @Parameter(names = {"--ms-fit-threshold-perc"}, description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_THRESHOLD_PERC_DESCRIPTION)
+        public Float signatureFitThresholdPerc = 5f;
 
-        @Parameter(names = {"--ms-threshold-pval"}, description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PVAL_DESCRIPTION)
-        public Float signatureThresholdPval = 0.05f;
+        @Parameter(names = {"--ms-fit-threshold-pval"}, description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_THRESHOLD_PVAL_DESCRIPTION)
+        public Float signatureFitThresholdPval = 0.05f;
 
-        @Parameter(names = {"--ms-max-rare-sigs"}, description = FieldConstants.MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION)
-        public Integer signatureMaxRareSigs = 1;
+        @Parameter(names = {"--ms-fit-max-rare-sigs"}, description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_MAX_RARE_SIGS_DESCRIPTION)
+        public Integer signatureFitMaxRareSigs = 1;
 
-        @Parameter(names = {"--ms-signatures-file"}, description = FieldConstants.MUTATIONAL_SIGNATURE_SIGNATURES_FILE_DESCRIPTION)
-        public String signatureSignaturesFile;
+        @Parameter(names = {"--ms-fit-signatures-file"}, description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_SIGNATURES_FILE_DESCRIPTION)
+        public String signatureFitSignaturesFile;
 
-        @Parameter(names = {"--ms-rare-signatures-file"}, description = FieldConstants.MUTATIONAL_SIGNATURE_RARE_SIGNATURES_FILE_DESCRIPTION)
-        public String signatureRareSignaturesFile;
+        @Parameter(names = {"--ms-fit-rare-signatures-file"},
+                description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_RARE_SIGNATURES_FILE_DESCRIPTION)
+        public String signatureFitRareSignaturesFile;
 
         // Genome plot
 
@@ -1632,6 +1641,10 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--gpcf", "--gp-config-file"}, description = FieldConstants.GENOME_PLOT_CONFIGURATION_FILE_DESCRIPTION)
         public String genomePlotConfigFile;
+
+        // Other
+        @Parameter(names = {"--skip"}, description = FieldConstants.SAMPLE_QUALITY_CONTROL_SKIP_DESCRIPTION)
+        public String skip;
 
         @Parameter(names = {"-o", "--outdir"}, description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
         public String outdir;
