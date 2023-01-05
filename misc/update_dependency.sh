@@ -111,8 +111,13 @@ CURRENT_DIR=$PWD
 cd "$SCRIPT_DIR" || exit 2
 cd ..
 BRANCH_NAME=$(git branch --show-current)
-check_repo_clean
-
+if [[ "$BRANCH_NAME" == "TASK-"* ]]; then
+  check_repo_clean "$BRANCH_NAME"
+else
+   	yellow "[$BRANCH_NAME] The branch name must start with TASK-"
+    yellow "$GIT_STATUS"
+    exit
+fi
 
 if [ "$LIB" = "JAVA_COMMONS_LIB" ];then
   CURRENT_VERSION=$(grep -m 1 java-common-libs.version pom.xml | cut -d ">" -f 2 | cut -d "<" -f 1)
