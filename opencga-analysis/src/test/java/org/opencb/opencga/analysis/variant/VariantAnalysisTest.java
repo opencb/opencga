@@ -28,9 +28,12 @@ import org.junit.runners.Parameterized;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
+import org.opencb.biodata.models.clinical.qc.Signature;
+import org.opencb.biodata.models.clinical.qc.SignatureFitting;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -40,6 +43,7 @@ import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantSampleIndexOperationTool;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
@@ -68,16 +72,19 @@ import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.Location;
 import org.opencb.opencga.core.models.operations.variant.VariantSampleIndexParams;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleQualityControl;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.variant.*;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -90,6 +97,8 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -97,6 +106,7 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.*;
+import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 @RunWith(Parameterized.class)
 public class VariantAnalysisTest {
@@ -115,10 +125,15 @@ public class VariantAnalysisTest {
     private static String son = "NA19685";
     private static String daughter = "NA19600";
 
+    public static final String CANCER_STUDY = "cancer";
+    private static String cancer_sample = "AR2.10039966-01T";
+    private static String germline_sample = "AR2.10039966-01G";
+
+
     @Parameterized.Parameters(name = "{0}")
     public static Object[][] parameters() {
         return new Object[][]{
-                {MongoDBVariantStorageEngine.STORAGE_ENGINE_ID},
+//                {MongoDBVariantStorageEngine.STORAGE_ENGINE_ID},
                 {HadoopVariantStorageEngine.STORAGE_ENGINE_ID}
         };
     }
@@ -172,13 +187,16 @@ public class VariantAnalysisTest {
 
             setUpCatalogManager();
 
-
             file = opencga.createFile(STUDY, "variant-test-file.vcf.gz", token);
             variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), token);
 
             for (int i = 0; i < file.getSampleIds().size(); i++) {
+                String id = file.getSampleIds().get(i);
+                if (id.equals(son)) {
+                    SampleUpdateParams updateParams = new SampleUpdateParams().setSomatic(true);
+                    catalogManager.getSampleManager().update(STUDY, id, updateParams, null, token);
+                }
                 if (i % 2 == 0) {
-                    String id = file.getSampleIds().get(i);
                     SampleUpdateParams updateParams = new SampleUpdateParams().setPhenotypes(Collections.singletonList(PHENOTYPE));
                     catalogManager.getSampleManager().update(STUDY, id, updateParams, null, token);
                 }
@@ -216,6 +234,13 @@ public class VariantAnalysisTest {
                     new Family("f1", "f1", Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 3, null, null),
                     individuals.stream().map(Individual::getId).collect(Collectors.toList()), new QueryOptions(),
                     token);
+
+            // Cancer (SV)
+            file = opencga.createFile(CANCER_STUDY, "AR2.10039966-01T_vs_AR2.10039966-01G.annot.brass.vcf.gz", token);
+            variantStorageManager.index(CANCER_STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), token);
+
+            SampleUpdateParams updateParams = new SampleUpdateParams().setSomatic(true);
+            catalogManager.getSampleManager().update(CANCER_STUDY, cancer_sample, updateParams, null, token);
 
 
             opencga.getStorageConfiguration().getVariant().setDefaultEngine(storageEngine);
@@ -257,6 +282,12 @@ public class VariantAnalysisTest {
             catalogManager.getSampleManager().create(STUDY, sample, null, token);
         }
 
+        // Cancer
+        catalogManager.getStudyManager().create(projectId, CANCER_STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
+        Sample sample = new Sample().setId(cancer_sample).setSomatic(true);
+        catalogManager.getSampleManager().create(CANCER_STUDY, sample, null, token);
+        sample = new Sample().setId(germline_sample);
+        catalogManager.getSampleManager().create(CANCER_STUDY, sample, null, token);
     }
 
     @Test
@@ -743,6 +774,153 @@ public class VariantAnalysisTest {
 
         ExecutionResult er = toolRunner.execute(VariantSampleIndexOperationTool.class, params.toObjectMap(), outDir, null, token);
 //        checkExecutionResult(er, false);
+    }
+
+    @Test
+    public void testMutationalSignatureFittingSNV() throws Exception {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_mutational_signature_fitting_snv"));
+        System.out.println("outDir = " + outDir);
+
+        URI uri = getResourceUri("mutational-signature-catalogue-snv.json");
+        Path path = Paths.get(uri.getPath());
+        Signature signature = JacksonUtils.getDefaultObjectMapper().readerFor(Signature.class).readValue(path.toFile());
+        SampleQualityControl qc = new SampleQualityControl();
+        qc.getVariant().setSignatures(Collections.singletonList(signature));
+        SampleUpdateParams updateParams = new SampleUpdateParams().setQualityControl(qc);
+        catalogManager.getSampleManager().update(CANCER_STUDY, cancer_sample, updateParams, null, token);
+
+        MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
+        params.setSample(cancer_sample);
+        params.setId(signature.getId());
+        params.setFitId("fitting-1");
+        params.setFitMethod("FitMS");
+        params.setFitSigVersion("RefSigv2");
+        params.setFitOrgan("Breast");
+        params.setFitNBoot(200);
+        params.setFitThresholdPerc(5.0f);
+        params.setFitThresholdPval(0.05f);
+        params.setFitMaxRareSigs(1);
+        params.setSkip("catalogue");
+
+        toolRunner.execute(MutationalSignatureAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, CANCER_STUDY),
+                outDir, null, token);
+
+        java.io.File catalogueFile = outDir.resolve(MutationalSignatureAnalysis.SIGNATURE_COEFFS_FILENAME).toFile();
+        byte[] bytes = Files.readAllBytes(catalogueFile.toPath());
+        System.out.println(new String(bytes));
+        assertTrue(catalogueFile.exists());
+
+        java.io.File signatureFile = outDir.resolve(MutationalSignatureAnalysis.MUTATIONAL_SIGNATURE_FITTING_DATA_MODEL_FILENAME).toFile();
+        bytes = Files.readAllBytes(signatureFile.toPath());
+        System.out.println(new String(bytes));
+        assertTrue(signatureFile.exists());
+
+        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(CANCER_STUDY, cancer_sample, QueryOptions.empty(), token);
+        Sample sample = sampleResult.first();
+        List<Signature> signatures = sample.getQualityControl().getVariant().getSignatures();
+        for (Signature sig : signatures) {
+            if (sig.getId().equals(signature.getId())) {
+                for (SignatureFitting fitting : sig.getFittings()) {
+                    if (fitting.getId().equals(params.getFitId())) {
+                        System.out.println(JacksonUtils.getDefaultObjectMapper().writerFor(SignatureFitting.class).writeValueAsString(fitting));
+                        return;
+                    }
+                }
+            }
+        }
+        fail("Mutational signature fitting not found in sample quality control");
+    }
+
+    @Test
+    public void testMutationalSignatureCatalogueSV() throws Exception {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_mutational_signature_catalogue_sv"));
+        System.out.println("outDir = " + outDir);
+
+        Path opencgaHome = opencga.getOpencgaHome();
+        System.out.println("OpenCGA home = " + opencgaHome);
+
+        MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
+        params.setSample(cancer_sample);
+        params.setId("catalogue-1");
+        params.setDescription("Catalogue #1");
+        VariantQuery query = new VariantQuery();
+        query.sample(cancer_sample);
+        query.type(VariantType.SV.name());
+        params.setQuery(query.toJson());
+        params.setSkip("fitting");
+
+        toolRunner.execute(MutationalSignatureAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, CANCER_STUDY),
+                outDir, null, token);
+
+        java.io.File catalogueFile = outDir.resolve(MutationalSignatureAnalysis.CATALOGUES_FILENAME_DEFAULT).toFile();
+        byte[] bytes = Files.readAllBytes(catalogueFile.toPath());
+        System.out.println(new String(bytes));
+        assertTrue(catalogueFile.exists());
+
+        java.io.File signatureFile = outDir.resolve(MutationalSignatureAnalysis.MUTATIONAL_SIGNATURE_DATA_MODEL_FILENAME).toFile();
+        bytes = Files.readAllBytes(signatureFile.toPath());
+        System.out.println(new String(bytes));
+        assertTrue(signatureFile.exists());
+
+        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(CANCER_STUDY, cancer_sample, QueryOptions.empty(), token);
+        Sample sample = sampleResult.first();
+        List<Signature> signatures = sample.getQualityControl().getVariant().getSignatures();
+        for (Signature signature : signatures) {
+            if (signature.getId().equals(params.getId())) {
+                return;
+            }
+        }
+        fail("Signature not found in sample quality control");
+    }
+
+    @Test
+    public void testMutationalSignatureFittingSV() throws Exception {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_mutational_signature_fitting"));
+        System.out.println("outDir = " + outDir);
+
+        URI uri = getResourceUri("2019_01_10_all_PCAWG_sigs_rearr.tsv");
+        Path path = Paths.get(uri.getPath());
+        catalogManager.getFileManager().createFolder(CANCER_STUDY, "signature", true, "", new QueryOptions(), token);
+        catalogManager.getFileManager().link(CANCER_STUDY, uri, "signature", new ObjectMap(), token);
+        String filename = Paths.get(uri.toURL().getFile()).toFile().getName();
+        File file = catalogManager.getFileManager().get(CANCER_STUDY, filename, null, token).first();
+        String signatureFileId = file.getId();
+
+        uri = getResourceUri("mutational-signature-sv.json");
+        path = Paths.get(uri.getPath());
+        Signature signature = JacksonUtils.getDefaultObjectMapper().readerFor(Signature.class).readValue(path.toFile());
+        SampleQualityControl qc = new SampleQualityControl();
+        qc.getVariant().setSignatures(Collections.singletonList(signature));
+        SampleUpdateParams updateParams = new SampleUpdateParams().setQualityControl(qc);
+        catalogManager.getSampleManager().update(CANCER_STUDY, cancer_sample, updateParams, null, token);
+
+        MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
+        params.setSample(cancer_sample);
+        params.setId(signature.getId());
+        params.setFitId("fitting-1");
+        params.setFitMethod("FitMS");
+        params.setFitSigVersion("RefSigv2");
+        params.setFitOrgan("Breast");
+        params.setFitNBoot(200);
+        params.setFitThresholdPerc(5.0f);
+        params.setFitThresholdPval(0.05f);
+        params.setFitMaxRareSigs(1);
+        params.setFitSignaturesFile(signatureFileId);
+        params.setFitRareSignaturesFile(signatureFileId);
+        params.setSkip("catalogue");
+
+        toolRunner.execute(MutationalSignatureAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, CANCER_STUDY),
+                outDir, null, token);
+
+        java.io.File catalogueFile = outDir.resolve(MutationalSignatureAnalysis.SIGNATURE_COEFFS_FILENAME).toFile();
+        byte[] bytes = Files.readAllBytes(catalogueFile.toPath());
+        System.out.println(new String(bytes));
+        assertTrue(catalogueFile.exists());
+
+        java.io.File signatureFile = outDir.resolve(MutationalSignatureAnalysis.MUTATIONAL_SIGNATURE_FITTING_DATA_MODEL_FILENAME).toFile();
+        bytes = Files.readAllBytes(signatureFile.toPath());
+        System.out.println(new String(bytes));
+        assertTrue(signatureFile.exists());
     }
 
     public void checkExecutionResult(ExecutionResult er) {

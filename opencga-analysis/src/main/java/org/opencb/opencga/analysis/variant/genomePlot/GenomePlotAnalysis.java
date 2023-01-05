@@ -35,6 +35,8 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.core.tools.variant.GenomePlotAnalysisExecutor;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Tool(id = GenomePlotAnalysis.ID, resource = Enums.Resource.VARIANT)
@@ -111,6 +113,18 @@ public class GenomePlotAnalysis extends OpenCgaToolScopeStudy {
                 }
             }
         });
+    }
+
+    public static GenomePlot parseResults(Path outDir, String description, GenomePlotConfig plotConfig) throws IOException {
+        // Get image file
+        for (java.io.File imgFile : outDir.toFile().listFiles()) {
+            if (imgFile.getName().endsWith(GenomePlotAnalysis.SUFFIX_FILENAME)) {
+                int index = imgFile.getAbsolutePath().indexOf("JOBS/");
+                String relativeFilePath = (index == -1 ? imgFile.getName() : imgFile.getAbsolutePath().substring(index));
+                return new GenomePlot("", description, plotConfig, relativeFilePath);
+            }
+        }
+        return null;
     }
 
     public String getStudy() {

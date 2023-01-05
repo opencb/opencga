@@ -41,7 +41,7 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
     private ObjectMap query;
 
     // For fitting signature
-    private String catalogues;
+    private String fitId;
     private String fitMethod;
     private Integer nBoot;
     private String sigVersion;
@@ -52,15 +52,9 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
     private String signaturesFile;
     private String rareSignaturesFile;
 
+    private String skip;
+
     public MutationalSignatureAnalysisExecutor() {
-    }
-
-    protected String getContextIndexFilename() {
-        return "OPENCGA_" + sample + "_" + assembly + "_genome_context.csv";
-    }
-
-    protected String getMutationalSignatureFilename() {
-        return "result_" + sigVersion + "_" + assembly + ".txt";
     }
 
     protected static Map<String, Map<String, Integer>> initCountMap() {
@@ -182,6 +176,15 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
         return this;
     }
 
+    public String getFitId() {
+        return fitId;
+    }
+
+    public MutationalSignatureAnalysisExecutor setFitId(String fitId) {
+        this.fitId = fitId;
+        return this;
+    }
+
     public String getFitMethod() {
         return fitMethod;
     }
@@ -210,15 +213,6 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
 
     public MutationalSignatureAnalysisExecutor setQuery(ObjectMap query) {
         this.query = query;
-        return this;
-    }
-
-    public String getCatalogues() {
-        return catalogues;
-    }
-
-    public MutationalSignatureAnalysisExecutor setCatalogues(String catalogues) {
-        this.catalogues = catalogues;
         return this;
     }
 
@@ -296,6 +290,15 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
 
     public MutationalSignatureAnalysisExecutor setRareSignaturesFile(String rareSignaturesFile) {
         this.rareSignaturesFile = rareSignaturesFile;
+        return this;
+    }
+
+    public String getSkip() {
+        return skip;
+    }
+
+    public MutationalSignatureAnalysisExecutor setSkip(String skip) {
+        this.skip = skip;
         return this;
     }
 }
