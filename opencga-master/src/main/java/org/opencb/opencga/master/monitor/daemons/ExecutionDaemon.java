@@ -1023,6 +1023,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         if (analysisResultPath != null) {
             execution = readExecutionResult(analysisResultPath);
             if (execution != null) {
+                if (execution.getEnd() == null) {
+                    // This could happen if the job finished abruptly
+                    logger.info("[{}] Missing end date at ExecutionResult", job.getId());
+                    execution.setEnd(Date.from(Instant.now()));
+                    execution.getEvents().add(new Event(Event.Type.WARNING, "missing-execution-end-date",
+                            "Missing execution field 'end'. Using an approximate end date."));
+                }
                 PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setExecution(execution);
                 try {
                     jobManager.update(job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);

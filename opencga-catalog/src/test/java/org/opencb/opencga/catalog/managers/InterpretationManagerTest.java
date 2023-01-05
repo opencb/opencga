@@ -21,14 +21,13 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.user.Account;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -262,6 +261,36 @@ public class InterpretationManagerTest extends GenericTest {
         for (Interpretation secondaryInterpretation : ca.getSecondaryInterpretations()) {
             assertTrue(secondaryInterpretation.isLocked());
         }
+    }
+
+    @Test
+    public void createInterpretationWithSubsetOfPanels() throws CatalogException {
+        ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
+
+        List<PanelReferenceParam> panelReferenceParamList = new ArrayList<>(3);
+        for (int i = 0; i < 3; i++) {
+            Panel panel = new Panel().setId("panel" + i);
+            panelReferenceParamList.add(new PanelReferenceParam(panel.getId()));
+            catalogManager.getPanelManager().create(STUDY, panel, QueryOptions.empty(), sessionIdUser);
+        }
+
+        // Add panels to the case and set panelLock to true
+        ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
+                .setPanels(panelReferenceParamList);
+        catalogManager.getClinicalAnalysisManager().update(STUDY, ca.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
+
+        updateParams = new ClinicalAnalysisUpdateParams()
+                .setPanelLock(true);
+        catalogManager.getClinicalAnalysisManager().update(STUDY, ca.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
+
+        // Create interpretation with just panel1
+        InterpretationCreateParams interpretationCreateParams = new InterpretationCreateParams()
+                .setPanels(panelReferenceParamList.subList(0, 1));
+        Interpretation interpretation = catalogManager.getInterpretationManager().create(STUDY, ca.getId(),
+                interpretationCreateParams.toClinicalInterpretation(), ParamUtils.SaveInterpretationAs.PRIMARY,
+                new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionIdUser).first();
+        assertEquals(1, interpretation.getPanels().size());
+        assertEquals(panelReferenceParamList.get(0).getId(), interpretation.getPanels().get(0).getId());
     }
 
 }

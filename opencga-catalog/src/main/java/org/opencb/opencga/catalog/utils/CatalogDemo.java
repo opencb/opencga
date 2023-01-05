@@ -25,7 +25,6 @@ import org.opencb.opencga.core.models.study.StudyAclParams;
 import org.opencb.opencga.core.models.user.Account;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.*;
 
 /**
@@ -44,20 +43,11 @@ public final class CatalogDemo {
      * @param adminPassword Administrator password.
      * @param force Used in the case where a database already exists with the same name. When force = true, it will override it.
      * @throws CatalogException when there is already a database with the same name and force is false.
-     * @throws URISyntaxException when there is a problem parsing the URI read from the configuration file.
      */
     public static void createDemoDatabase(CatalogManager catalogManager, String adminPassword, boolean force)
-            throws CatalogException, URISyntaxException {
-        if (catalogManager.existsCatalogDB()) {
-            if (force) {
-                String token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
-                catalogManager.deleteCatalogDB(token);
-            } else {
-                throw new CatalogException("A database called " + catalogManager.getCatalogDatabase() + " already exists");
-            }
-        }
-        catalogManager.installCatalogDB(catalogManager.getConfiguration().getAdmin().getSecretKey(), adminPassword,
-                "opencga@admin.com", "");
+            throws CatalogException {
+        catalogManager.installCatalogDB(catalogManager.getConfiguration().getAdmin().getSecretKey(), adminPassword, "opencga@admin.com",
+                "", force);
         try {
             populateDatabase(catalogManager);
         } catch (IOException e) {

@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
@@ -207,7 +206,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         }
 
         for (Bson bson : aggregation) {
-            logger.debug("Get Acl: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            logger.debug("Get Acl: {}", bson.toBsonDocument());
         }
 
         DataResult<Document> aggregate = collection.aggregate(aggregation, null);
@@ -378,8 +377,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 .append(QueryParams.USER_DEFINED_ACLS.key(), removePermissions)
         );
         logger.debug("Remove all acls for entity {} for member {} in study {}. Query: {}, pullAll: {}", resource, member, studyId,
-                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                query.toBsonDocument(), update.toBsonDocument());
         return new OpenCGAResult<>(update(null, query, update, resource));
     }
 
@@ -436,9 +434,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             update.put(QueryParams.USER_DEFINED_ACLS.key(), permissions);
         }
         update = new Document("$pullAll", update);
-        logger.debug("Pull all acls: Query {}, PullAll {}, entity: {}",
-                queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()), resource);
+        logger.debug("Pull all acls: Query {}, PullAll {}, entity: {}", queryDocument.toBsonDocument(), update.toBsonDocument(), resource);
         update(clientSession, queryDocument, update, resource);
 
         /* 2. We now add the expected permissions to those members */
@@ -454,9 +450,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         }
 
         update = new Document("$addToSet", update);
-        logger.debug("Add Acls (addToSet): Query {}, Push {}, entity: {}",
-                queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()), resource);
+        logger.debug("Add Acls (addToSet): Query {}, Push {}, entity: {}", queryDocument.toBsonDocument(), update.toBsonDocument(),
+                resource);
         update(clientSession, queryDocument, update, resource);
     }
 
@@ -501,9 +496,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             update = new Document("$addToSet", new Document(QueryParams.ACL.key(), new Document("$each", myPermissions)));
         }
 
-        logger.debug("Add Acls (addToSet): Query {}, Push {}",
-                queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Add Acls (addToSet): Query {}, Push {}", queryDocument.toBsonDocument(), update.toBsonDocument());
         update(clientSession, queryDocument, update, resource);
     }
 
@@ -572,9 +565,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             update = new Document("$pullAll", new Document(QueryParams.ACL.key(), removePermissions));
         }
 
-        logger.debug("Remove Acls (pullAll): Query {}, Pull {}",
-                queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Remove Acls (pullAll): Query {}, Pull {}", queryDocument.toBsonDocument(), update.toBsonDocument());
         update(clientSession, queryDocument, update, resource);
     }
 
@@ -635,9 +626,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 update = new Document("$set", new Document(QueryParams.ACL.key(), permissionArray));
             }
 
-            logger.debug("Set Acls (set): Query {}, Push {}",
-                    queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            logger.debug("Set Acls (set): Query {}, Push {}", queryDocument.toBsonDocument(), update.toBsonDocument());
             update(null, queryDocument, update, resource);
         }
 
@@ -676,9 +665,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                         .append(QueryParams.ACL.key(), new Document("$each", myPermissions))
                         .append(PERMISSION_RULES_APPLIED, permissionRule.getId()));
 
-        logger.debug("Apply permission rules: Query {}, Update {}",
-                bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Apply permission rules: Query {}, Update {}", bson.toBsonDocument(), update.toBsonDocument());
         return new OpenCGAResult<>(update(null, bson, update, entry.getResource()));
     }
 
@@ -754,9 +741,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                     .append(QueryParams.USER_DEFINED_ACLS.key(), manualPermissions)
                     .append(PERMISSION_RULES_APPLIED, permissionRulesApplied));
 
-            logger.debug("Remove permission rule id and permissions from {}: Query {}, Update {}", entry,
-                    tmpQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            logger.debug("Remove permission rule id and permissions from {}: Query {}, Update {}", entry, tmpQuery.toBsonDocument(),
+                    update.toBsonDocument());
             DataResult<?> result = update(null, tmpQuery, update, entry.getResource());
             if (result.getNumUpdated() == 0) {
                 throw new CatalogException("Could not update and remove permission rule from entry " + myDocument.get(PRIVATE_UID));
@@ -837,8 +823,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                     .append(PERMISSION_RULES_APPLIED, permissionRulesApplied));
 
             logger.debug("Remove permission rule id and restoring permissions from {}: Query {}, Update {}", entry,
-                    tmpQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                    tmpQuery.toBsonDocument(), update.toBsonDocument());
             DataResult<?> result = update(null, tmpQuery, update, entry.getResource());
             if (result.getNumUpdated() == 0) {
                 throw new CatalogException("Could not update and remove permission rule from entry " + myDocument.get(PRIVATE_UID));
@@ -862,9 +847,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 .append(PERMISSION_RULES_APPLIED, permissionRuleId);
         Document update = new Document()
                 .append("$pull", new Document(PERMISSION_RULES_APPLIED, permissionRuleId));
-        logger.debug("Remove permission rule id from all {} in study {}: Query {}, Update {}", entry, studyId,
-                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Remove permission rule id from all {} in study {}: Query {}, Update {}", entry, studyId, query.toBsonDocument(),
+                update.toBsonDocument());
 
         DataResult<?> result = update(null, query, update, entry.getResource());
         if (result.getNumUpdated() == 0) {
@@ -895,9 +879,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         Document update = new Document("$pull",
                 new Document(StudyDBAdaptor.QueryParams.PERMISSION_RULES.key() + "." + entry,
                         new Document("id", permissionRuleToDelete)));
-        logger.debug("Remove permission rule from the study {}: Query {}, Update {}", studyId,
-                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Remove permission rule from the study {}: Query {}, Update {}", studyId, query.toBsonDocument(),
+                update.toBsonDocument());
         DataResult<?> result = update(null, query, update, Enums.Resource.STUDY);
         if (result.getNumUpdated() == 0) {
             throw new CatalogException("Could not remove permission rule " + permissionRuleToDelete + " from study " + studyId);

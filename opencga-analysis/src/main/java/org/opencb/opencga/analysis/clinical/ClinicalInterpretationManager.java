@@ -328,7 +328,7 @@ public class ClinicalInterpretationManager extends StorageManager {
                                         && CollectionUtils.isNotEmpty(clinicalVariant.getEvidences())) {
                                     for (ClinicalVariantEvidence primaryFindingEvidence : primaryFinding.getEvidences()) {
                                         for (ClinicalVariantEvidence clinicalVariantEvidence : clinicalVariant.getEvidences()) {
-                                            if (matchEvidence(primaryFindingEvidence, clinicalVariantEvidence)) {
+                                            if (ClinicalUtils.matchEvidence(primaryFindingEvidence, clinicalVariantEvidence)) {
                                                 clinicalVariantEvidence.setReview(primaryFindingEvidence.getReview());
                                             }
                                         }
@@ -355,27 +355,6 @@ public class ClinicalInterpretationManager extends StorageManager {
         result.setResults(clinicalVariants);
 
         return result;
-    }
-
-    private boolean matchEvidence(ClinicalVariantEvidence ev1, ClinicalVariantEvidence ev2) {
-        // Check panel ID
-        if (ev1.getPanelId() != null && ev2.getPanelId() != null && !ev1.getPanelId().equals(ev2.getPanelId())) {
-            return false;
-        }
-        if (StringUtils.isNotEmpty(ev1.getPanelId()) || StringUtils.isNotEmpty(ev2.getPanelId())) {
-            return false;
-        }
-        if (ev1.getGenomicFeature() != null && ev2.getGenomicFeature() != null) {
-            if (ev1.getGenomicFeature().getTranscriptId() != null && ev2.getGenomicFeature().getTranscriptId() != null
-                    && ev1.getGenomicFeature().getTranscriptId().equals(ev2.getGenomicFeature().getTranscriptId())) {
-                return true;
-            }
-            if (ev1.getGenomicFeature().getId() != null && ev2.getGenomicFeature().getId() != null
-                    && ev1.getGenomicFeature().getId().equals(ev2.getGenomicFeature().getId())) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /*--------------------------------------------------------------------------*/

@@ -81,7 +81,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         return result.getResults().get(0).getLong(field);
     }
 
-    public void createIndexes(boolean uniqueIndexesOnly) {
+    public void createIndexes() {
         InputStream resourceAsStream = getClass().getResourceAsStream("/catalog-indexes.txt");
         ObjectMapper objectMapper = getDefaultObjectMapper();
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(resourceAsStream));
@@ -99,10 +99,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
                     Map<String, ObjectMap> myIndexes = new HashMap<>();
                     myIndexes.put("fields", new ObjectMap((Map) hashMap.get("fields")));
                     myIndexes.put("options", new ObjectMap((Map) hashMap.getOrDefault("options", Collections.emptyMap())));
-
-                    if (!uniqueIndexesOnly || myIndexes.get("options").getBoolean("unique")) {
-                        indexes.get(collection).add(myIndexes);
-                    }
+                    indexes.get(collection).add(myIndexes);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -179,20 +176,20 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         }
     }
 
-    public void initializeMetaCollection(Configuration configuration) throws CatalogException {
+    public void initializeMetaCollection(Admin admin) throws CatalogException {
         Metadata metadata = new Metadata().setIdCounter(0L).setVersion(VERSION);
 
         // Ensure JWT secret key is long and secure
-        String secretKey = configuration.getAdmin().getSecretKey();
+        String secretKey = admin.getSecretKey();
         if (StringUtils.isEmpty(secretKey)) {
             throw new CatalogDBException("Missing JWT secret key");
         } else {
-            JwtUtils.validateJWTKey(configuration.getAdmin().getAlgorithm(), secretKey);
+            JwtUtils.validateJWTKey(admin.getAlgorithm(), secretKey);
         }
 
         Document metadataObject = getMongoDBDocument(metadata, "Metadata");
         metadataObject.put(ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID);
-        Document adminDocument = getMongoDBDocument(configuration.getAdmin(), "Admin");
+        Document adminDocument = getMongoDBDocument(admin, "Admin");
         metadataObject.put("admin", adminDocument);
         metadataObject.put("_fullVersion", new Document()
                 .append("version", 20003)

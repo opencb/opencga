@@ -217,13 +217,16 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
              putNestedIfNotNull(beanParams, "tool.resource",commandOptions.toolResource, true);
              putNestedIfNotNull(beanParams, "priority",commandOptions.priority, true);
              putNestedIfNotEmpty(beanParams, "commandLine",commandOptions.commandLine, true);
+             putNestedIfNotNull(beanParams, "params",commandOptions.params, true);
              putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
              putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
              putNestedIfNotEmpty(beanParams, "outDir.path",commandOptions.outDirPath, true);
              putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
              putNestedIfNotEmpty(beanParams, "result.id",commandOptions.resultId, true);
+             putNestedIfNotNull(beanParams, "result.attributes",commandOptions.resultAttributes, true);
              putNestedIfNotEmpty(beanParams, "stdout.path",commandOptions.stdoutPath, true);
              putNestedIfNotEmpty(beanParams, "stderr.path",commandOptions.stderrPath, true);
+             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
  
             jobCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -296,6 +299,7 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "job",commandOptions.job, true);
              putNestedIfNotNull(beanParams, "force",commandOptions.force, true);
+             putNestedIfNotNull(beanParams, "params",commandOptions.params, true);
  
             jobRetryParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -427,6 +431,7 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
              putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
              putNestedIfNotNull(beanParams, "visited",commandOptions.visited, true);
+             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
  
             jobUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

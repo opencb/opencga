@@ -94,7 +94,7 @@ public class PanelManagerTest extends GenericTest {
 
     @Test
     public void importFromSource() throws CatalogException {
-        OpenCGAResult<Panel> cancer = panelManager.importFromSource(studyFqn, "cancer-gene-census", null, sessionIdUser);
+        OpenCGAResult<Panel> cancer = panelManager.importFromSource(studyFqn, "gene-census", null, sessionIdUser);
         assertEquals(1, cancer.getNumInserted());
 
         OpenCGAResult<Panel> panelApp = panelManager.importFromSource(studyFqn, "panelapp", "Thoracic_aortic_aneurysm_and_dissection-PanelAppId-700,VACTERL-like_phenotypes-PanelAppId-101", sessionIdUser);
@@ -105,19 +105,19 @@ public class PanelManagerTest extends GenericTest {
     public void importFromSourceInvalidId() throws CatalogException {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Unknown panel");
-        panelManager.importFromSource(studyFqn, "cancer-gene-census", "ZSR222", sessionIdUser);
+        panelManager.importFromSource(studyFqn, "gene-census", "ZSR222", sessionIdUser);
     }
 
     @Test
     public void importFromInvalidSource() throws CatalogException {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Unknown source");
-        panelManager.importFromSource(studyFqn, "cancer-gene-census-wrong", null, sessionIdUser);
+        panelManager.importFromSource(studyFqn, "gene-census-wrong", null, sessionIdUser);
     }
 
     @Test
     public void updateTest() throws CatalogException {
-        panelManager.importFromSource(studyFqn, "cancer-gene-census", null, sessionIdUser);
+        panelManager.importFromSource(studyFqn, "gene-census", null, sessionIdUser);
         Panel panel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
         assertEquals(1, panel.getVersion());
         assertEquals((int) panel.getStats().get("numberOfRegions"), panel.getVariants().size());
@@ -168,7 +168,7 @@ public class PanelManagerTest extends GenericTest {
 
     @Test
     public void deletePanelTest() throws CatalogException {
-        panelManager.importFromSource(studyFqn, "cancer-gene-census", null, sessionIdUser);
+        panelManager.importFromSource(studyFqn, "gene-census", null, sessionIdUser);
         Panel panel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
         assertEquals(1, panel.getVersion());
 
@@ -186,7 +186,7 @@ public class PanelManagerTest extends GenericTest {
 
     @Test
     public void deletePanelWithVersionsTest() throws CatalogException {
-        panelManager.importFromSource(studyFqn, "cancer-gene-census", null, sessionIdUser);
+        panelManager.importFromSource(studyFqn, "gene-census", null, sessionIdUser);
         Panel panel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
         assertEquals(1, panel.getVersion());
 

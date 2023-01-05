@@ -17,11 +17,8 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.mongodb.MongoDataStore;
-import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
@@ -43,14 +40,13 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.LinkedList;
-import java.util.List;
 
 import static org.opencb.opencga.catalog.managers.AbstractManager.OPENCGA;
 import static org.opencb.opencga.core.api.ParamConstants.ADMIN_PROJECT;
@@ -175,14 +171,44 @@ public class CatalogManager implements AutoCloseable {
         return catalogDBAdaptorFactory.isCatalogDBReady();
     }
 
-    public void installCatalogDB(String secretKey, String password, String email, String organization) throws CatalogException {
-
-        installCatalogDB(secretKey, password, email, organization, false);
+    public void installCatalogDB(String secretKey, String password, String email, String organization, boolean force)
+            throws CatalogException {
+        installCatalogDB(secretKey, password, email, organization, force, false);
     }
 
-    public void installCatalogDB(String secretKey, String password, String email, String organization, boolean test)
+    public void installCatalogDB(String secretKey, String password, String email, String organization, boolean force, boolean test)
             throws CatalogException {
+        if (existsCatalogDB()) {
+            if (force) {
+                // The password of the old db should match the one to be used in the new installation. Otherwise, they can obtain the same
+                // results calling first to "catalog delete" and then "catalog install"
+                deleteCatalogDB(password);
+            } else {
+                // Check admin password ...
+                try {
+                    userManager.loginAsAdmin(password);
+                    logger.warn("A database called " + getCatalogDatabase() + " already exists");
+                    return;
+                } catch (CatalogException e) {
+                    throw new CatalogException("A database called " + getCatalogDatabase() + " with a different admin"
+                            + " password already exists. If you are aware of that installation, please delete it first.");
+                }
+            }
+        }
 
+        try {
+            logger.info("Installing database {} in {}", getCatalogDatabase(), configuration.getCatalog().getDatabase().getHosts());
+            privateInstall(secretKey, password, email, organization, test);
+            String token = userManager.loginAsAdmin(password).getToken();
+            installIndexes(token);
+        } catch (Exception e) {
+            clearCatalog();
+            throw e;
+        }
+    }
+
+    private void privateInstall(String secretKey, String password, String email, String organization, boolean test)
+            throws CatalogException {
         if (existsCatalogDB()) {
             throw new CatalogException("Nothing to install. There already exists a catalog database");
         }
@@ -192,10 +218,12 @@ public class CatalogManager implements AutoCloseable {
         ParamUtils.checkParameter(secretKey, "secretKey");
         ParamUtils.checkParameter(password, "password");
         JwtUtils.validateJWTKey(configuration.getAdmin().getAlgorithm(), secretKey);
-
         configuration.getAdmin().setSecretKey(secretKey);
 
-        catalogDBAdaptorFactory.installCatalogDB(configuration);
+        if (!test) {
+            catalogDBAdaptorFactory.createAllCollections(configuration);
+        }
+        catalogDBAdaptorFactory.initialiseMetaCollection(configuration.getAdmin());
         catalogIOManager.createDefaultOpenCGAFolders();
 
         User user = new User(OPENCGA, new Account().setType(Account.AccountType.ADMINISTRATOR).setExpirationDate(""))
@@ -209,50 +237,44 @@ public class CatalogManager implements AutoCloseable {
 
         // Skip old available migrations
         migrationManager.skipPendingMigrations(token);
-
-        installIndexes(token, test);
     }
 
     public void installIndexes(String token) throws CatalogException {
-        installIndexes(token, false);
-    }
-
-    public void installIndexes(String token, boolean test) throws CatalogException {
         if (!OPENCGA.equals(userManager.getUserId(token))) {
             throw new CatalogAuthorizationException("Only the admin can install new indexes");
         }
-        catalogDBAdaptorFactory.createIndexes(test);
+        catalogDBAdaptorFactory.createIndexes();
     }
 
-    public void deleteCatalogDB(String token) throws CatalogException, URISyntaxException {
-        String userId = userManager.getUserId(token);
-        if (!authorizationManager.isInstallationAdministrator(userId)) {
-            throw new CatalogException("Only the admin can delete the database");
+    public void deleteCatalogDB(String password) throws CatalogException {
+        try {
+            userManager.loginAsAdmin(password);
+        } catch (CatalogException e) {
+            // Validate that the admin user exists.
+            OpenCGAResult<User> result = catalogDBAdaptorFactory.getCatalogUserDBAdaptor().get(OPENCGA, QueryOptions.empty());
+            if (result.getNumResults() == 1) {
+                // Admin user exists so we have to fail. Password must be incorrect.
+                throw e;
+            } else {
+                logger.error("Password could not be validated. Database seems corrupted. Deleting...");
+            }
         }
 
-        catalogDBAdaptorFactory.deleteCatalogDB();
         clearCatalog();
     }
 
-    private void clearCatalog() throws URISyntaxException {
-        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostPort : configuration.getCatalog().getDatabase().getHosts()) {
-            if (hostPort.contains(":")) {
-                String[] split = hostPort.split(":");
-                Integer port = Integer.valueOf(split[1]);
-                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
-            } else {
-                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
-            }
-        }
-        MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
-//        MongoDataStore db = mongoManager.get(catalogConfiguration.getDatabase().getDatabase());
-        MongoDataStore db = mongoManager.get(getCatalogDatabase());
-        db.getDb().drop();
-//        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
-        mongoManager.close(getCatalogDatabase());
+    private void clearCatalog() throws CatalogException {
+        // Clear DB
+        catalogDBAdaptorFactory.deleteCatalogDB();
+        catalogDBAdaptorFactory.close();
 
-        Path rootdir = Paths.get(UriUtils.createDirectoryUri(configuration.getWorkspace()));
+        // Clear workspace folder
+        Path rootdir;
+        try {
+            rootdir = Paths.get(UriUtils.createDirectoryUri(configuration.getWorkspace()));
+        } catch (URISyntaxException e) {
+            throw new CatalogException("Could not create uri for " + configuration.getWorkspace(), e);
+        }
         deleteFolderTree(rootdir.toFile());
     }
 

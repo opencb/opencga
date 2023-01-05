@@ -98,7 +98,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
             } else {
                 logger.info("Single sample indexes iterator : " + sample);
                 SingleSampleIndexVariantDBIterator iterator = internalIterator(query.forSample(sample, gts), schema);
-                return applyLimitSkip(iterator, options);
+                return iterator.localLimitSkip(options);
             }
         }
 
@@ -133,22 +133,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
             iterator = new IntersectMultiVariantKeyIterator(iterators, negatedIterators);
         }
 
-        return applyLimitSkip(iterator, options);
-    }
-
-    protected VariantDBIterator applyLimitSkip(VariantDBIterator iterator, QueryOptions options) {
-        int limit = options.getInt(QueryOptions.LIMIT, -1);
-        int skip = options.getInt(QueryOptions.SKIP, -1);
-        // Client site limit-skip
-        if (skip > 0) {
-            Iterators.advance(iterator, skip);
-        }
-        if (limit >= 0) {
-            Iterator<Variant> it = Iterators.limit(iterator, limit);
-            return VariantDBIterator.wrapper(it).addCloseable(iterator);
-        } else {
-            return iterator;
-        }
+        return iterator.localLimitSkip(options);
     }
 
     /**
@@ -285,6 +270,10 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     }
 
     public CloseableIterator<SampleVariantIndexEntry> rawIterator(SampleIndexQuery query) throws IOException {
+        return rawIterator(query, new QueryOptions());
+    }
+
+    public CloseableIterator<SampleVariantIndexEntry> rawIterator(SampleIndexQuery query, QueryOptions options) throws IOException {
         Map<String, List<String>> samples = query.getSamplesMap();
 
         if (samples.isEmpty()) {
@@ -302,7 +291,8 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                 return CloseableIterator.emptyIterator();
             } else {
                 logger.info("Single sample indexes iterator");
-                return rawInternalIterator(query.forSample(sample, gts), schema);
+                RawSingleSampleIndexVariantDBIterator iterator = rawInternalIterator(query.forSample(sample, gts), schema);
+                return iterator.localLimitSkip(options);
             }
         }
 
@@ -329,7 +319,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
             }
         }
 
-        CloseableIterator<SampleVariantIndexEntry> iterator;
+        final CloseableIterator<SampleVariantIndexEntry> iterator;
         if (operation.equals(QueryOperation.OR)) {
             logger.info("Union of " + iterators.size() + " sample indexes");
             iterator = new UnionMultiKeyIterator<>(
@@ -341,7 +331,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                     iterators, negatedIterators);
         }
 
-        return iterator;
+        return iterator.localLimitSkip(options);
     }
 
     public boolean isFastCount(SampleIndexQuery query) {
@@ -613,7 +603,8 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                 if (includeAll || !query.emptyFileIndex()) {
                     scan.addColumn(family, SampleIndexSchema.toFileIndexColumn(gt));
                 }
-                if (includeAll || query.hasFatherFilter() || query.hasMotherFilter() || query.getMendelianErrorType() != null) {
+                if (includeAll || query.isIncludeParentColumns()
+                        || query.hasFatherFilter() || query.hasMotherFilter() || query.getMendelianErrorType() != null) {
                     scan.addColumn(family, SampleIndexSchema.toParentsGTColumn(gt));
                 }
             }

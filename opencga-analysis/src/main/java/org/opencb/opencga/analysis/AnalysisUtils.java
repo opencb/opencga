@@ -1,5 +1,6 @@
 package org.opencb.opencga.analysis;
 
+import org.opencb.biodata.models.clinical.qc.RelatednessScore;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -9,9 +10,9 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.io.*;
+import java.nio.file.Path;
+import java.util.*;
 
 import static org.opencb.opencga.core.api.ParamConstants.SAMTOOLS_COMMANDS_SUPPORTED;
 
@@ -93,5 +94,31 @@ public class AnalysisUtils {
         }
 
         return fileQueryResult.first();
+    }
+
+    public static Map<String, Map<String, Float>> parseRelatednessThresholds(Path thresholdsPath) throws IOException {
+        Map<String, Map<String, Float>> thresholds = new HashMap<>();
+        BufferedReader reader = new BufferedReader(new FileReader(thresholdsPath.toFile()));
+        String line;
+        while ((line = reader.readLine()) != null) {
+            if (!line.startsWith("#")) {
+                String[] splits = line.trim().split("\t");
+                if (splits.length != 9) {
+                    new IOException("Error parsing relatedness thresholds file: " + thresholdsPath.toFile().getName());
+                }
+                Map<String, Float> scores = new HashMap<>();
+                scores.put("minPiHat", Float.parseFloat(splits[1]));
+                scores.put("maxPiHat", Float.parseFloat(splits[2]));
+                scores.put("minZ0", Float.parseFloat(splits[3]));
+                scores.put("maxZ0", Float.parseFloat(splits[4]));
+                scores.put("minZ1", Float.parseFloat(splits[5]));
+                scores.put("maxZ1", Float.parseFloat(splits[6]));
+                scores.put("minZ2", Float.parseFloat(splits[7]));
+                scores.put("maxZ2", Float.parseFloat(splits[8]));
+
+                thresholds.put(splits[0], scores);
+            }
+        }
+        return thresholds;
     }
 }

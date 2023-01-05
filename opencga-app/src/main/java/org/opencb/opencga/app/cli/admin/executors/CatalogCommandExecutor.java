@@ -36,7 +36,6 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.Collections;
 
@@ -160,7 +159,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result));
     }
 
-    private void install() throws CatalogException, URISyntaxException {
+    private void install() throws CatalogException {
         AdminCliOptionsParser.InstallCatalogCommandOptions commandOptions = catalogCommandOptions.installCatalogCommandOptions;
 
         validateConfiguration(commandOptions);
@@ -176,43 +175,20 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             throw new CatalogException("No admin password found. Please, insert your password.");
         }
 
-        CatalogManager catalogManager = new CatalogManager(configuration);
-        if (catalogManager.existsCatalogDB()) {
-            if (commandOptions.force) {
-                // The password of the old db should match the one to be used in the new installation. Otherwise, they can obtain the same
-                // results calling first to "catalog delete" and then "catalog install"
-                String token = catalogManager.getUserManager().loginAsAdmin(commandOptions.commonOptions.adminPassword).getToken();
-                catalogManager.deleteCatalogDB(token);
-            } else {
-                // Check admin password ...
-                try {
-                    catalogManager.getUserManager().loginAsAdmin(commandOptions.commonOptions.adminPassword);
-                    logger.warn("A database called " + catalogManager.getCatalogDatabase() + " already exists");
-                    return;
-                } catch (CatalogException e) {
-                    throw new CatalogException("A database called " + catalogManager.getCatalogDatabase() + " with a different admin"
-                            + " password already exists. If you are aware of that installation, please delete it first.");
-                }
-            }
+        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+            catalogManager.installCatalogDB(configuration.getAdmin().getSecretKey(), commandOptions.commonOptions.adminPassword,
+                    commandOptions.email, commandOptions.organization, commandOptions.force);
         }
-
-        logger.info("\nInstalling database {} in {}\n", catalogManager.getCatalogDatabase(),
-                configuration.getCatalog().getDatabase().getHosts());
-
-        catalogManager.installCatalogDB(configuration.getAdmin().getSecretKey(), commandOptions.commonOptions.adminPassword,
-                commandOptions.email, commandOptions.organization);
     }
 
-    private void delete() throws CatalogException, URISyntaxException {
+    private void delete() throws CatalogException {
         validateConfiguration(catalogCommandOptions.deleteCatalogCommandOptions);
 
-        CatalogManager catalogManager = new CatalogManager(configuration);
-        String token = catalogManager.getUserManager()
-                .loginAsAdmin(catalogCommandOptions.deleteCatalogCommandOptions.commonOptions.adminPassword).getToken();
-
-        logger.info("\nDeleting database {} from {}\n", catalogManager.getCatalogDatabase(), configuration.getCatalog().getDatabase()
-                .getHosts());
-        catalogManager.deleteCatalogDB(token);
+        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+            logger.info("\nDeleting database {} from {}\n", catalogManager.getCatalogDatabase(), configuration.getCatalog().getDatabase()
+                    .getHosts());
+            catalogManager.deleteCatalogDB(catalogCommandOptions.deleteCatalogCommandOptions.commonOptions.adminPassword);
+        }
     }
 
     private void index() throws CatalogException {

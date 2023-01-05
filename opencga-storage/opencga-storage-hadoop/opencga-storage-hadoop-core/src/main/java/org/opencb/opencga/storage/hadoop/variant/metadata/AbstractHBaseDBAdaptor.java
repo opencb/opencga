@@ -12,15 +12,14 @@ import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
+import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.opencb.opencga.storage.core.metadata.models.SampleVariantStatsMixin;
 import org.opencb.opencga.storage.core.utils.iterators.IteratorWithClosable;
-import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLockManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,10 +49,6 @@ public abstract class AbstractHBaseDBAdaptor {
     protected final String tableName;
     private Boolean tableExists = null; // unknown
     protected byte[] family;
-
-    public AbstractHBaseDBAdaptor(VariantTableHelper helper) {
-        this(null, helper.getMetaTableAsString(), helper.getConf());
-    }
 
     public AbstractHBaseDBAdaptor(HBaseManager hBaseManager, String metaTableName, Configuration configuration) {
         Objects.requireNonNull(configuration);

@@ -341,6 +341,7 @@ public class IndividualQcUtils {
     // P R I V A T E     M E T H O D S
     //-------------------------------------------------------------------------
 
+    @Deprecated
     private static void exportData(File tpedFile, File tfamFile, Query query, VariantStorageManager storageManager,
                                    String token) throws ToolException {
         try {

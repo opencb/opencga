@@ -1,5 +1,8 @@
 package org.opencb.opencga.storage.core.utils.iterators;
 
+import com.google.common.collect.Iterators;
+import org.opencb.commons.datastore.core.QueryOptions;
+
 import java.io.IOException;
 import java.util.*;
 
@@ -40,6 +43,23 @@ public abstract class CloseableIterator<T> implements Iterator<T>, AutoCloseable
             IOException e = new IOException("Errors found closing iterator");
             exceptions.forEach(e::addSuppressed);
             throw e;
+        }
+    }
+
+    public CloseableIterator<T> localLimitSkip(QueryOptions options) {
+        return localLimitSkip(options.getInt(QueryOptions.LIMIT, -1), options.getInt(QueryOptions.SKIP, -1));
+    }
+
+    public CloseableIterator<T> localLimitSkip(int limit, int skip) {
+        // Client site limit-skip
+        if (skip > 0) {
+            Iterators.advance(this, skip);
+        }
+        if (limit >= 0) {
+            Iterator<T> it = Iterators.limit(this, limit);
+            return wrap(it).addCloseable(this);
+        } else {
+            return this;
         }
     }
 

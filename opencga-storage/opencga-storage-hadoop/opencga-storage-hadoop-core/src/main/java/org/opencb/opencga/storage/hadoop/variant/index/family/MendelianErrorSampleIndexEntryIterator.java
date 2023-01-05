@@ -131,8 +131,12 @@ public class MendelianErrorSampleIndexEntryIterator implements SampleIndexEntryI
         }
         String genotype = nextGenotype();
         int meCode = nextMendelianErrorCode();
+        Byte parentsCode = null;
+        if (hasParentsIndex()) {
+            parentsCode = nextParentsIndexEntry();
+        }
         Variant variant = next();
-        return new SampleVariantIndexEntry(variant, fileIndex, genotype, annotationIndexEntry, meCode);
+        return new SampleVariantIndexEntry(variant, fileIndex, genotype, annotationIndexEntry, parentsCode, meCode);
     }
 
     @Override
