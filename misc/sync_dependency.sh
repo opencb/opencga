@@ -124,19 +124,21 @@ else
     exit
 fi
 
+function update_library(){
+  local LIBRARY="$1"
+    POM_DEPENDENCY_VERSION=$(grep -m 1 "$LIBRARY" pom.xml | cut -d ">" -f 2 | cut -d "<" -f 1)
+    toggle_version "$BRANCH_NAME"
+    update_dependency "$DEPENDENCY_REPO" "$NEW_VERSION" "$BRANCH_NAME"
+    mvn versions:set-property -Dproperty=java-common-libs.version -DnewVersion="$NEW_VERSION" -DgenerateBackupPoms=false
+    git commit -am "Update '$LIBRARY' dependency to $NEW_VERSION"
+}
+
+
 if [ "$LIB" = "JAVA_COMMONS_LIB" ];then
-  POM_DEPENDENCY_VERSION=$(grep -m 1 java-common-libs.version pom.xml | cut -d ">" -f 2 | cut -d "<" -f 1)
-  toggle_version "$BRANCH_NAME"
-  update_dependency "$DEPENDENCY_REPO" "$NEW_VERSION" "$BRANCH_NAME"
-  mvn versions:set-property -Dproperty=java-common-libs.version -DnewVersion="$NEW_VERSION" -DgenerateBackupPoms=false
-  git commit -am "Update 'java-common-libs' dependency to $NEW_VERSION"
+ update_library java-common-libs.version
 fi
 if [ "$LIB" = "BIODATA" ];then
-  POM_DEPENDENCY_VERSION=$(grep -m 1 biodata.version pom.xml | cut -d ">" -f 2 | cut -d "<" -f 1)
-  toggle_version "$BRANCH_NAME"
-  update_dependency "$DEPENDENCY_REPO" "$NEW_VERSION" "$BRANCH_NAME"
-  mvn versions:set-property -Dproperty=biodata.version -DnewVersion="$NEW_VERSION" -DgenerateBackupPoms=false
-  git commit -am "Update 'biodata' dependency to $NEW_VERSION"
+   update_library biodata.version
 fi
 
 yellow "The new dependency version is $NEW_VERSION"
