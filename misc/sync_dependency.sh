@@ -20,7 +20,6 @@ function printUsage(){
   green "     -j     --java-common-libs    STRING         Update java-common-libs dependency"
   green "     -b     --biodata             STRING         Update biodata dependency"
   echo ""
-
 }
 
 ## Check if the repo status is clean.
@@ -36,13 +35,15 @@ function check_repo_clean() {
 ## This function removes TASK-XXX- if exists, otherwise it adds it.
 function toggle_version() {
   local BRANCH=$1
-  ## Remove TASK-XXX- from the current version
-  if [[ "$CURRENT_VERSION" == *"$BRANCH"* ]]; then
-    NEW_VERSION=${CURRENT_VERSION/"$BRANCH-"}
+  if [[ "$POM_DEPENDENCY_VERSION" == *"$BRANCH"* ]]; then
+    ## Remove TASK-XXX- from the current version
+    ## Example:  remove 'TASK-1234-' from 2.6.0-TASK-1234-SNAPSHOT
+    NEW_VERSION=${POM_DEPENDENCY_VERSION/"$BRANCH-"}
   else
-    ## Add TASK-XXX- to the current version
-    CLEAN_RELEASE_VERSION=$(echo "$CURRENT_VERSION" | cut -d "-" -f 1)
-    TAG_VERSION=$(echo "$CURRENT_VERSION" | cut -d "-" -f 2)
+    ## Add 'TASK-XXX-' to the current version
+    ## Example:  2.6.0-SNAPSHOT  -->  2.6.0-TASK-1234-SNAPSHOT
+    CLEAN_RELEASE_VERSION=$(echo "$POM_DEPENDENCY_VERSION" | cut -d "-" -f 1)
+    TAG_VERSION=$(echo "$POM_DEPENDENCY_VERSION" | cut -d "-" -f 2)
     NEW_VERSION="$CLEAN_RELEASE_VERSION-$BRANCH-$TAG_VERSION"
   fi
 }
@@ -50,6 +51,8 @@ function toggle_version() {
 ## Change version in the dependency.
 ## Usage: update_dependency "$DEPENDENCY_REPO" "$NEW_VERSION" "$BRANCH_NAME"
 function update_dependency() {
+  ## Save current directory
+  local pwd=$PWD
   cd "$1" || exit 2
   check_repo_clean
   git checkout "$3"
@@ -62,6 +65,8 @@ function update_dependency() {
   ## Rename and commit new version
   mvn versions:set -DnewVersion="$2" -DgenerateBackupPoms=false
   git commit -am "Update version to $2"
+  ## Restore directory
+  cd "$pwd" || exit 2
 }
 
 ## At least one parameter is required.
@@ -120,22 +125,18 @@ else
 fi
 
 if [ "$LIB" = "JAVA_COMMONS_LIB" ];then
-  CURRENT_VERSION=$(grep -m 1 java-common-libs.version pom.xml | cut -d ">" -f 2 | cut -d "<" -f 1)
+  POM_DEPENDENCY_VERSION=$(grep -m 1 java-common-libs.version pom.xml | cut -d ">" -f 2 | cut -d "<" -f 1)
   toggle_version "$BRANCH_NAME"
   update_dependency "$DEPENDENCY_REPO" "$NEW_VERSION" "$BRANCH_NAME"
-  cd "$SCRIPT_DIR" || exit 2
-  cd ..
   mvn versions:set-property -Dproperty=java-common-libs.version -DnewVersion="$NEW_VERSION" -DgenerateBackupPoms=false
-  git commit -am "Update java-common-libs dependency to $NEW_VERSION"
+  git commit -am "Update 'java-common-libs' dependency to $NEW_VERSION"
 fi
 if [ "$LIB" = "BIODATA" ];then
-  CURRENT_VERSION=$(grep -m 1 biodata.version pom.xml | cut -d ">" -f 2 | cut -d "<" -f 1)
+  POM_DEPENDENCY_VERSION=$(grep -m 1 biodata.version pom.xml | cut -d ">" -f 2 | cut -d "<" -f 1)
   toggle_version "$BRANCH_NAME"
   update_dependency "$DEPENDENCY_REPO" "$NEW_VERSION" "$BRANCH_NAME"
-  cd "$SCRIPT_DIR" || exit 2
-  cd ..
   mvn versions:set-property -Dproperty=biodata.version -DnewVersion="$NEW_VERSION" -DgenerateBackupPoms=false
-  git commit -am "Update biodata dependency to $NEW_VERSION"
+  git commit -am "Update 'biodata' dependency to $NEW_VERSION"
 fi
 
 yellow "The new dependency version is $NEW_VERSION"
