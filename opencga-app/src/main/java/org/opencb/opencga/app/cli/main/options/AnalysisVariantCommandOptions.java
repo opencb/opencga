@@ -301,6 +301,9 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--density"}, description = "The body web service density parameter", required = false, arity = 1)
         public String density;
     
+        @DynamicParameter(names = {"--query"}, description = "The body web service query parameter. Use: --query key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.String> query = new HashMap<>(); //Dynamic parameters must be initialized;
+    
         @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
         public String outdir;
     
@@ -473,8 +476,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--panel-role-in-cancer"}, description = "The body web service panelRoleInCancer parameter", required = false, arity = 1)
         public String panelRoleInCancer;
     
-        @Parameter(names = {"--panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, arity = 1)
-        public Boolean panelIntersection;
+        @Parameter(names = {"--panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, help = true, arity = 0)
+        public boolean panelIntersection = false;
     
         @Parameter(names = {"--cohort-stats-ref"}, description = "The body web service cohortStatsRef parameter", required = false, arity = 1)
         public String cohortStatsRef;
@@ -557,11 +560,11 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--include-sample-data"}, description = "The body web service includeSampleData parameter", required = false, arity = 1)
         public String includeSampleData;
     
-        @Parameter(names = {"--include-sample-id"}, description = "The body web service includeSampleId parameter", required = false, arity = 1)
-        public String includeSampleId;
+        @Parameter(names = {"--include-sample-id"}, description = "The body web service includeSampleId parameter", required = false, help = true, arity = 0)
+        public boolean includeSampleId = false;
     
-        @Parameter(names = {"--include-genotype"}, description = "The body web service includeGenotype parameter", required = false, arity = 1)
-        public String includeGenotype;
+        @Parameter(names = {"--include-genotype"}, description = "The body web service includeGenotype parameter", required = false, help = true, arity = 0)
+        public boolean includeGenotype = false;
     
         @Parameter(names = {"--file"}, description = "The body web service file parameter", required = false, arity = 1)
         public String file;
@@ -834,6 +837,9 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
         public String outdir;
+    
+        @DynamicParameter(names = {"--gatk-params"}, description = "The body web service gatkParams parameter. Use: --gatk-params key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.String> gatkParams = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 
@@ -1296,7 +1302,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--file"}, description = "Filter variants from the files specified. This will set includeFile parameter when not provided", required = false, arity = 1)
         public String file; 
     
-        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
         public String sample; 
     
         @Parameter(names = {"--include-study"}, description = "List of studies to include in the result. Accepts 'all' and 'none'.", required = false, arity = 1)
@@ -1506,6 +1512,9 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
         public String outdir;
     
+        @DynamicParameter(names = {"--plink-params"}, description = "The body web service plinkParams parameter. Use: --plink-params key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.String> plinkParams = new HashMap<>(); //Dynamic parameters must be initialized;
+    
     }
 
     @Parameters(commandNames = {"query"}, commandDescription ="Filter and fetch variants from indexed VCF files in the variant storage")
@@ -1577,7 +1586,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--file-data"}, description = "Filter by file data (i.e. FILTER, QUAL and INFO columns from VCF file). [{file}:]{key}{op}{value}[,;]* . If no file is specified, will use all files from 'file' filter. e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 . Many fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10,FILTER=PASS,LowDP", required = false, arity = 1)
         public String fileData; 
     
-        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
         public String sample; 
     
         @Parameter(names = {"--genotype"}, description = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1. Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT. This will automatically set 'includeSample' parameter when not provided", required = false, arity = 1)
@@ -1634,7 +1643,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--family-disorder"}, description = "Specify the disorder to use for the family segregation", required = false, arity = 1)
         public String familyDisorder; 
     
-        @Parameter(names = {"--family-segregation"}, description = "Filter by segregation mode from a given family. Accepted values: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
+        @Parameter(names = {"--family-segregation"}, description = "Filter by segregation mode from a given family. Accepted values: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
         public String familySegregation; 
     
         @Parameter(names = {"--family-members"}, description = "Sub set of the members of a given family", required = false, arity = 1)
@@ -1824,6 +1833,9 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
         public String outdir;
     
+        @DynamicParameter(names = {"--rvtests-params"}, description = "The body web service rvtestsParams parameter. Use: --rvtests-params key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.String> rvtestsParams = new HashMap<>(); //Dynamic parameters must be initialized;
+    
     }
 
     @Parameters(commandNames = {"sample-aggregation-stats"}, commandDescription ="Calculate and fetch sample aggregation stats")
@@ -1853,7 +1865,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--filter"}, description = "Specify the FILTER for any of the files. If 'file' filter is provided, will match the file and the filter. e.g.: PASS,LowGQX", required = false, arity = 1)
         public String filter; 
     
-        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
         public String sample; 
     
         @Parameter(names = {"--genotype"}, description = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1. Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT. This will automatically set 'includeSample' parameter when not provided", required = false, arity = 1)
@@ -1868,7 +1880,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--family-disorder"}, description = "Specify the disorder to use for the family segregation", required = false, arity = 1)
         public String familyDisorder; 
     
-        @Parameter(names = {"--family-segregation"}, description = "Filter by segregation mode from a given family. Accepted values: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
+        @Parameter(names = {"--family-segregation"}, description = "Filter by segregation mode from a given family. Accepted values: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
         public String familySegregation; 
     
         @Parameter(names = {"--family-members"}, description = "Sub set of the members of a given family", required = false, arity = 1)
@@ -1998,8 +2010,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--vs-query-panel-role-in-cancer"}, description = "The body web service panelRoleInCancer parameter", required = false, arity = 1)
         public String vsQueryPanelRoleInCancer;
     
-        @Parameter(names = {"--vs-query-panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, arity = 1)
-        public Boolean vsQueryPanelIntersection;
+        @Parameter(names = {"--vs-query-panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, help = true, arity = 0)
+        public boolean vsQueryPanelIntersection = false;
     
         @Parameter(names = {"--vs-query-cohort-stats-ref"}, description = "The body web service cohortStatsRef parameter", required = false, arity = 1)
         public String vsQueryCohortStatsRef;
@@ -2173,8 +2185,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--panel-role-in-cancer"}, description = "The body web service panelRoleInCancer parameter", required = false, arity = 1)
         public String panelRoleInCancer;
     
-        @Parameter(names = {"--panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, arity = 1)
-        public Boolean panelIntersection;
+        @Parameter(names = {"--panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, help = true, arity = 0)
+        public boolean panelIntersection = false;
     
         @Parameter(names = {"--cohort-stats-ref"}, description = "The body web service cohortStatsRef parameter", required = false, arity = 1)
         public String cohortStatsRef;
@@ -2348,8 +2360,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--variant-query-panel-role-in-cancer"}, description = "The body web service panelRoleInCancer parameter", required = false, arity = 1)
         public String variantQueryPanelRoleInCancer;
     
-        @Parameter(names = {"--variant-query-panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, arity = 1)
-        public Boolean variantQueryPanelIntersection;
+        @Parameter(names = {"--variant-query-panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, help = true, arity = 0)
+        public boolean variantQueryPanelIntersection = false;
     
         @Parameter(names = {"--variant-query-cohort-stats-ref"}, description = "The body web service cohortStatsRef parameter", required = false, arity = 1)
         public String variantQueryCohortStatsRef;

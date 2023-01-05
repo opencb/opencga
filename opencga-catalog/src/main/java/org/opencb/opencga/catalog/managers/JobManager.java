@@ -512,13 +512,24 @@ public class JobManager extends ResourceManager<Job> {
                 }
             }
 
-            jobDBAdaptor.insert(study.getUid(), job, new QueryOptions());
-            OpenCGAResult<Job> jobResult = jobDBAdaptor.get(job.getUid(), new QueryOptions());
+            OpenCGAResult<Job> reuseJob = getJobToReuse(study, jobId, job, token);
+            if (reuseJob != null) {
+                job = reuseJob.first();
+                auditManager.audit(userId, Enums.Action.REUSE, Enums.Resource.JOB, job.getId(), job.getUuid(),
+                        study.getId(),
+                        study.getUuid(),
+                        auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                return reuseJob;
+            } else {
+                jobDBAdaptor.insert(study.getUid(), job, new QueryOptions());
+                OpenCGAResult<Job> jobResult = jobDBAdaptor.get(job.getUid(), new QueryOptions());
 
-            auditManager.auditCreate(userId, Enums.Resource.JOB, job.getId(), "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                auditManager.auditCreate(userId, Enums.Resource.JOB, job.getId(), "", study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return jobResult;
+                return jobResult;
+            }
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Resource.JOB, job.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -529,6 +540,85 @@ public class JobManager extends ResourceManager<Job> {
 
             throw e;
         }
+    }
+
+    /**
+     * Check if the job is eligible to be reused, and if so, try to find an equivalent job.
+     * Eligible job:
+     *  - Not enforced jobId
+     *  - Tool.id within list of "tools-to-reuse"
+     * Equivalent job:
+     *  - Internal.status.id = PENDING | QUEUED
+     *  - Params -> Same as the input job
+     *  - Same job dependencies
+     * @param study       Study
+     * @param inputJobId  Enforced JobId
+     * @param job         Job to be created
+     * @param token       User token
+     * @return A job to be reused (if any)
+     * @throws CatalogException on error
+     */
+    private OpenCGAResult<Job> getJobToReuse(Study study, String inputJobId, Job job, String token)
+            throws CatalogException {
+
+        // First check if the job can be reused
+        if (!jobEligibleToReuse(inputJobId, job)) {
+            return null;
+        }
+
+        // Get candidates
+        Query query = new Query()
+                .append(JobDBAdaptor.QueryParams.TOOL_ID.key(), job.getTool().getId())
+                .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(),
+                        Arrays.asList(Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED));
+
+        QueryOptions options = new QueryOptions()
+                .append(QueryOptions.LIMIT, 10)
+                .append(QueryOptions.INCLUDE, Arrays.asList(JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.PARAMS.key()));
+
+        DBIterator<Job> it = iterator(study.getUuid(), query, options, token);
+        while (it.hasNext()) {
+            Job candidateJob = it.next();
+            // Compare params orderless
+            if (new HashMap<>(job.getParams()).equals(new HashMap<>(candidateJob.getParams()))) {
+                // This is a valid candidate!
+                OpenCGAResult<Job> result = jobDBAdaptor.get(candidateJob.getUid(), new QueryOptions());
+                result.addEvent(new Event(Event.Type.WARNING, "reuse",
+                        "Another job which is pending execution was already created using the exact same parameters. "
+                                + "Returning that job instead of creating a new one."));
+                return result;
+            }
+        }
+
+        return null;
+    }
+
+    private boolean jobEligibleToReuse(String inputJobId, Job job) {
+        boolean enabled = configuration.getAnalysis().getExecution().getOptions()
+                .getBoolean("jobs.reuse.enabled", true);
+        if (!enabled) {
+            return false;
+        }
+
+        if (StringUtils.isNotEmpty(inputJobId)) {
+            // Do not allow reusing a job if a `jobId` is provided
+            return false;
+        }
+
+        List<String> availableTools = configuration.getAnalysis().getExecution().getOptions()
+                .getAsStringList("jobs.reuse.tools");
+        if (availableTools.isEmpty()) {
+            availableTools = Collections.singletonList("variant-.*");
+        }
+        String toolId = job.getTool().getId();
+        boolean validTool = false;
+        for (String availableTool : availableTools) {
+            if (availableTool.equals(toolId) || toolId.matches(availableTool)) {
+                validTool = true;
+                break;
+            }
+        }
+        return validTool;
     }
 
     public OpenCGAResult count(Query query, String token) throws CatalogException {

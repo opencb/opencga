@@ -70,7 +70,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
             catalogManager.deleteCatalogDB(TestParamConstants.ADMIN_PASSWORD);
         }
         catalogManager.installCatalogDB(PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH),
-                TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", "", true, false);
+                TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", "", true, true);
 
         loader = new CatalogSampleAnnotationsLoader(catalogManager);
 

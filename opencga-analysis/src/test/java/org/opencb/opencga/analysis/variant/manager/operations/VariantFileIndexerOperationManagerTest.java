@@ -181,7 +181,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         Study study = catalogManager.getFileManager().getStudy(inputFile, sessionId);
 
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("index status");
+        thrown.expectMessage("The status is READY");
         catalogManager.getFileManager().unlink(study.getFqn(), inputFile.getId(), sessionId);
     }
 
@@ -281,6 +281,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
 
         try {
             indexFiles(files, queryOptions, outputId);
+            fail();
         } catch (StoragePipelineException e) {
 //            StoragePipelineException exception = (StoragePipelineException) e.getCause();
             StoragePipelineException exception = e;

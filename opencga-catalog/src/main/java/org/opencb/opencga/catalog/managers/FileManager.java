@@ -567,6 +567,9 @@ public class FileManager extends AnnotationSetManager<File> {
             }
 
             if (createParams.getType().equals(File.Type.FILE)) {
+                if (path.endsWith("/")) {
+                    throw new CatalogException("Provided path points to a folder but the type was set to FILE. Please check your input.");
+                }
                 // Ensure path is a full path pointing to a file, not a folder
                 String[] split = path.split("/");
                 String fileName = split[split.length - 1];
