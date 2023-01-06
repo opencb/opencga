@@ -32,8 +32,6 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.converters.ga4gh.Ga4ghVariantConverter;
 import org.opencb.biodata.tools.variant.converters.ga4gh.factories.AvroGa4GhVariantFactory;
 import org.opencb.biodata.tools.variant.converters.ga4gh.factories.ProtoGa4GhVariantFactory;
-import org.opencb.cellbase.core.config.SpeciesProperties;
-import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.solr.SolrManager;
@@ -551,11 +549,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
             engine.getConfiguration().setCellbase(cellbaseConfiguration);
             engine.reloadCellbaseConfiguration();
-            CellBaseDataResponse<SpeciesProperties> species = engine.getCellBaseUtils().getCellBaseClient().getMetaClient().species();
-            if (species == null || species.firstResult() == null) {
-                throw new IllegalArgumentException("Unable to access cellbase url '" + cellbaseConfiguration.getUrl() + "'"
-                        + " version '" + cellbaseConfiguration.getVersion() + "'");
-            }
+            engine.getCellBaseUtils().validateCellBaseConnection();
 
             if (engine.getMetadataManager().exists()) {
                 List<String> jobDependsOn = new ArrayList<>(1);

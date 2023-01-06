@@ -7,6 +7,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
@@ -25,7 +26,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -48,13 +48,15 @@ public class CellBaseUtilsTest {
     @Parameters(name = "{0}")
     public static List<Object[]> data() {
         return Arrays.asList(
-                new Object[]{"http://ws.opencb.org/cellbase-4.7.3/", "v4", "grch37"},
-                new Object[]{"http://ws.opencb.org/cellbase-4.8.2/", "v4", "grch37"},
-//                new Object[]{"http://ws.opencb.org/cellbase-4.8.3/", "v4", "grch37"},
-//                new Object[]{"http://ws.opencb.org/cellbase-4.9.0/", "v4", "grch37"},
-//                new Object[]{"http://ws.opencb.org/cellbase/", "v4", "grch37"},
-                new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5", "grch38"},
-                new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5.1", "grch38"});
+                new Object[]{"http://ws.opencb.org/cellbase-4.7.3/", "v4", "grch37", null},
+                new Object[]{"http://ws.opencb.org/cellbase-4.8.2/", "v4", "grch37", null},
+//                new Object[]{"http://ws.opencb.org/cellbase-4.8.3/", "v4", "grch37", null},
+//                new Object[]{"http://ws.opencb.org/cellbase-4.9.0/", "v4", "grch37", null},
+//                new Object[]{"http://ws.opencb.org/cellbase/", "v4", "grch37", null},
+                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "grch37", "1"},
+                new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5", "grch38", null},
+                new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5.1", "grch38", "1"},
+                new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5.1", "grch38", "2"});
     }
 
     @Parameter(0)
@@ -66,12 +68,20 @@ public class CellBaseUtilsTest {
     @Parameter(2)
     public String assembly;
 
+    @Parameter(3)
+    public String dataRelease;
+
     @Before
     public void setUp() throws Exception {
-        cellBaseClient = new CellBaseClient("hsapiens", assembly,
+        cellBaseClient = new CellBaseClient("hsapiens", assembly, dataRelease,
                 new ClientConfiguration().setVersion(version)
                         .setRest(new RestConfig(Collections.singletonList(url), 10000)));
-        cellBaseUtils = new CellBaseUtils(cellBaseClient, assembly);
+        cellBaseUtils = new CellBaseUtils(cellBaseClient);
+    }
+
+    @Test
+    public void testValidateCellBaseConnection() throws IOException {
+        cellBaseUtils.validateCellBaseConnection();
     }
 
     @Test
@@ -104,14 +114,21 @@ public class CellBaseUtilsTest {
     }
 
     @Test
-    public void testGetGeneByTranscriptName() {
+    public void testGetGeneByTranscriptName() throws IOException {
         Assume.assumeTrue(version.startsWith("v5"));
-        assertNotNull(cellBaseUtils.getGeneRegion(Arrays.asList("BRCA2-206"), false).get(0));
+        String transcriptName = cellBaseUtils.getCellBaseClient().getGeneClient().get(Collections.singletonList("BRCA2"), new QueryOptions()).firstResult().getTranscripts()
+                .stream()
+                .map(Transcript::getName)
+                .filter(t -> t.startsWith("BRCA2-"))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(cellBaseUtils.getGeneRegion(Arrays.asList(transcriptName), false).get(0));
     }
 
     @Test
     public void convertGeneToRegionHGNC() {
         Assume.assumeTrue(version.startsWith("v5"));
+        Assume.assumeFalse("HGNC ids not supported in GRCH37", assembly.equalsIgnoreCase("grch37"));
         assertNotNull(cellBaseUtils.getGeneRegion("HGNC:12363"));
     }
 
@@ -152,6 +169,7 @@ public class CellBaseUtilsTest {
     @Test
     public void validateGeneNames() {
         Assume.assumeTrue(!version.startsWith("v4"));
+        Assume.assumeFalse("HGNC ids not supported in GRCH37", assembly.equalsIgnoreCase("grch37"));
         List<String> validated = cellBaseUtils.validateGenes(Arrays.asList("BRCA2", "NonExistingGene", "HGNC:12363"), true);
         assertEquals(Arrays.asList("BRCA2", "TSC2"), validated);
     }
@@ -184,6 +202,7 @@ public class CellBaseUtilsTest {
 
     @Test
     public void testGetTranscriptFlags() throws IOException {
+        Assume.assumeTrue("The variant tested here is from GRCH38", assembly.equalsIgnoreCase("grch38"));
         CellBaseDataResponse<VariantAnnotation> v = cellBaseClient.getVariantClient()
                 .getAnnotationByVariantIds(Collections.singletonList("1:26644214:T:C"), new QueryOptions());
         VariantAnnotation variantAnnotation = v.firstResult();
