@@ -1015,7 +1015,7 @@ class RgaUtils {
         }
 
         public int getNumCompHetDelOverlapIds() {
-            Set<String> ids = new HashSet<>(delOverlapIds);
+            Set<String> ids = new HashSet<>();
             ids.addAll(transcriptCompHetIdsMap.values().stream().flatMap(Set::stream).collect(Collectors.toSet()));
             return ids.size();
         }
