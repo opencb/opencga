@@ -320,7 +320,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             // Perform the update
             DataResult result = updateAnnotationSets(clientSession, sampleUid, parameters, variableSetList, queryOptions, true);
 
-            UpdateDocument updateParams = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery, queryOptions);
+            UpdateDocument updateParams = parseAndValidateUpdateParams(clientSession, studyUid, parameters, tmpQuery, queryOptions);
             Document sampleUpdate = updateParams.toFinalUpdateDocument();
 
             if (sampleUpdate.isEmpty() && result.getNumUpdated() == 0) {
@@ -383,7 +383,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         }
 
         ObjectMap params = new ObjectMap(QueryParams.INDIVIDUAL_ID.key(), individualId);
-        Document update = parseAndValidateUpdateParams(clientSession, params, null, QueryOptions.empty()).toFinalUpdateDocument();
+        Document update = parseAndValidateUpdateParams(clientSession, studyId, params, null, QueryOptions.empty()).toFinalUpdateDocument();
         Bson query = parseQuery(new Query()
                 .append(QueryParams.STUDY_UID.key(), studyId)
                 .append(QueryParams.UID.key(), sampleUids));
@@ -534,7 +534,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         individualDBAdaptor.getCollection().update(clientSession, bsonQuery, update, null);
     }
 
-    UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, Query query, QueryOptions queryOptions)
+    UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, long studyUid, ObjectMap parameters, Query query,
+                                                QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         UpdateDocument document = new UpdateDocument();
 
@@ -622,13 +623,18 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
             if (StringUtils.isNotEmpty(individualId)) {
                 // Look for the individual uid
-                Query indQuery = new Query(IndividualDBAdaptor.QueryParams.ID.key(), individualId);
+                Query indQuery = new Query()
+                        .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                        .append(IndividualDBAdaptor.QueryParams.ID.key(), individualId);
                 QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.UID.key());
                 OpenCGAResult<Individual> individualDataResult = individualDBAdaptor.get(clientSession, indQuery, options);
 
                 if (individualDataResult.getNumResults() == 0) {
                     throw new CatalogDBException("Cannot update " + QueryParams.INDIVIDUAL_ID.key() + " for sample. Individual '"
                             + individualId + "' not found.");
+                } else if (individualDataResult.getNumResults() > 1) {
+                    throw new CatalogDBException("Cannot update " + QueryParams.INDIVIDUAL_ID.key() + " for sample. More than one"
+                            + " Individual '" + individualId + "' found.");
                 }
 
                 document.getSet().put(QueryParams.INDIVIDUAL_ID.key(), individualId);
