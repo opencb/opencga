@@ -1,250 +1,250 @@
-{"collections": ["user"], "fields": {"id": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["user"], "fields": {"projects.uid": 1, "id": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["user"], "fields": {"projects.uuid": 1, "id": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["user"], "fields": {"projects.fqn": 1, "id": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["user"], "fields": {"projects.id": 1, "id": 1}, "options": {"unique": true, "background": true}}
+{"collections": ["user"], "fields": {"id": 1}, "options": {"unique": true}}
+{"collections": ["user"], "fields": {"projects.uid": 1, "id": 1}, "options": {"unique": true}}
+{"collections": ["user"], "fields": {"projects.uuid": 1, "id": 1}, "options": {"unique": true}}
+{"collections": ["user"], "fields": {"projects.fqn": 1, "id": 1}, "options": {"unique": true}}
+{"collections": ["user"], "fields": {"projects.id": 1, "id": 1}, "options": {"unique": true}}
 
-{"collections": ["study"], "fields": {"uid": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["study"], "fields": {"uuid": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["study"], "fields": {"fqn": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["study"], "fields": {"id": 1, "_project.uid": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["study"], "fields": {"groups.id": 1, "uid": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["study"], "fields": {"groups.userIds": 1, "uid": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["study"], "fields": {"_acl": 1}, "options": {"background": true}}
-{"collections": ["study"], "fields": {"_project.uid": 1}, "options": {"background": true}}
-{"collections": ["study"], "fields": {"variableSets.id": 1, "uid": 1}, "options": {"unique": true, "background": true}}
+{"collections": ["study"], "fields": {"uid": 1}, "options": {"unique": true}}
+{"collections": ["study"], "fields": {"uuid": 1}, "options": {"unique": true}}
+{"collections": ["study"], "fields": {"fqn": 1}, "options": {"unique": true}}
+{"collections": ["study"], "fields": {"id": 1, "_project.uid": 1}, "options": {"unique": true}}
+{"collections": ["study"], "fields": {"groups.id": 1, "uid": 1}, "options": {"unique": true}}
+{"collections": ["study"], "fields": {"groups.userIds": 1, "uid": 1}, "options": {"unique": true}}
+{"collections": ["study"], "fields": {"_acl": 1}, "options": {}}
+{"collections": ["study"], "fields": {"_project.uid": 1}, "options": {}}
+{"collections": ["study"], "fields": {"variableSets.id": 1, "uid": 1}, "options": {"unique": true}}
 
-{"collections": ["job"], "fields": {"uuid": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["job"], "fields": {"uid": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["job"], "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["job"], "fields": {"tool.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["job"], "fields": {"tool.type": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["job"], "fields": {"userId": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["job"], "fields": {"input.uid": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["job"], "fields": {"output.uid": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["job"], "fields": {"outDir.uid": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["job"], "fields": {"tags": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["job"], "fields": {"visited": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["job"], "fields": {"status.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["job"], "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["job"], "fields": {"_priority": 1, "_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["job"], "fields": {"_priority": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["job"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["job"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["job"], "fields": {"studyUid": 1, "_acl": 1}, "options": {"background": true}}
-{"collections": ["job"], "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {"background": true}}
+{"collections": ["job"], "fields": {"uuid": 1}, "options": {"unique": true}}
+{"collections": ["job"], "fields": {"uid": 1}, "options": {"unique": true}}
+{"collections": ["job"], "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true}}
+{"collections": ["job"], "fields": {"tool.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["job"], "fields": {"tool.type": 1, "studyUid": 1}, "options": {}}
+{"collections": ["job"], "fields": {"userId": 1, "studyUid": 1}, "options": {}}
+{"collections": ["job"], "fields": {"input.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["job"], "fields": {"output.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["job"], "fields": {"outDir.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["job"], "fields": {"tags": 1, "studyUid": 1}, "options": {}}
+{"collections": ["job"], "fields": {"visited": 1, "studyUid": 1}, "options": {}}
+{"collections": ["job"], "fields": {"status.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["job"], "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["job"], "fields": {"_priority": 1, "_creationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["job"], "fields": {"_priority": 1, "studyUid": 1}, "options": {}}
+{"collections": ["job"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["job"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["job"], "fields": {"studyUid": 1, "_acl": 1}, "options": {}}
+{"collections": ["job"], "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {}}
 
-{"collections": ["file"], "fields": {"uuid": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["file"], "fields": {"uid": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["file"], "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["file"], "fields": {"path": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["file"], "fields": {"name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"uri": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"_reverse": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"type": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"format": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"bioformat": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"tags": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"size": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"software.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"external": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"_samples.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"_samples.uuid": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"jobId": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"status.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"internal.variant.index.status.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"studyUid": 1, "_acl": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"_as.as": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"_as.vs": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"_as.id": 1, "_as.value": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"_ias.as": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"_ias.vs": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["file"], "fields": {"_ias.id": 1, "_ias.value": 1, "studyUid": 1}, "options": {"background": true}}
+{"collections": ["file"], "fields": {"uuid": 1}, "options": {"unique": true}}
+{"collections": ["file"], "fields": {"uid": 1}, "options": {"unique": true}}
+{"collections": ["file"], "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true}}
+{"collections": ["file"], "fields": {"path": 1, "studyUid": 1}, "options": {"unique": true}}
+{"collections": ["file"], "fields": {"name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"uri": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"_reverse": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"type": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"format": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"bioformat": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"tags": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"size": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"software.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"external": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"_samples.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"_samples.uuid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"jobId": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"status.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"internal.variant.index.status.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"studyUid": 1, "_acl": 1}, "options": {}}
+{"collections": ["file"], "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {}}
+{"collections": ["file"], "fields": {"_as.as": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"_as.vs": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"_as.id": 1, "_as.value": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"_ias.as": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"_ias.vs": 1, "studyUid": 1}, "options": {}}
+{"collections": ["file"], "fields": {"_ias.id": 1, "_ias.value": 1, "studyUid": 1}, "options": {}}
 
-{"collections": ["sample", "sample_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"id": 1, "studyUid": 1, "version": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"somatic": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"phenotypes.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"phenotypes.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"fileIds": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"cohortIds": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"individualId": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"processing.product.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"processing.preparationMethod": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"processing.extractionMethod": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"processing.labSampleId": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"collection.from.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"collection.method": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"collection.type": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"studyUid": 1, "_lastOfVersion": 1, "_acl": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"_as.as": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"_as.vs": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"_as.id": 1, "_as.value": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"_ias.as": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"_ias.vs": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"_ias.id": 1, "_ias.value": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"status.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["sample", "sample_archive"], "fields": {"internal.rga.status": 1, "studyUid": 1}, "options": {"background": true}}
+{"collections": ["sample", "sample_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["sample", "sample_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["sample", "sample_archive"], "fields": {"id": 1, "studyUid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["sample", "sample_archive"], "fields": {"somatic": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"phenotypes.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"phenotypes.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"fileIds": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"cohortIds": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"individualId": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"processing.product.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"processing.preparationMethod": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"processing.extractionMethod": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"processing.labSampleId": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"collection.from.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"collection.method": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"collection.type": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"studyUid": 1, "_lastOfVersion": 1, "_acl": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"_as.as": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"_as.vs": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"_as.id": 1, "_as.value": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"_ias.as": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"_ias.vs": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"_ias.id": 1, "_ias.value": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"status.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"internal.rga.status": 1, "studyUid": 1}, "options": {}}
 
-{"collections": ["individual", "individual_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"id": 1, "studyUid": 1, "version": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"father.uid": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"mother.uid": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"familyIds": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"sex.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"karyotypicSex": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"ethnicity.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"dateOfBirth": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"lifeStatus": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"samples.uid": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"phenotypes.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"phenotypes.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"disorders.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"disorders.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"population.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"population.subpopulation": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"studyUid": 1, "_lastOfVersion": 1, "_acl": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"_as.as": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"_as.vs": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"_as.id": 1, "_as.value": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"_ias.as": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"_ias.vs": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"_ias.id": 1, "_ias.value": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"status.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["individual", "individual_archive"], "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}
+{"collections": ["individual", "individual_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["individual", "individual_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["individual", "individual_archive"], "fields": {"id": 1, "studyUid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["individual", "individual_archive"], "fields": {"name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"father.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"mother.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"familyIds": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"sex.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"karyotypicSex": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"ethnicity.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"dateOfBirth": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"lifeStatus": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"samples.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"phenotypes.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"phenotypes.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"disorders.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"disorders.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"population.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"population.subpopulation": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"studyUid": 1, "_lastOfVersion": 1, "_acl": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"_as.as": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"_as.vs": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"_as.id": 1, "_as.value": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"_ias.as": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"_ias.vs": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"_ias.id": 1, "_ias.value": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"status.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {}}
 
-{"collections": ["cohort"], "fields": {"uuid": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["cohort"], "fields": {"uid": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["cohort"], "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["cohort"], "fields": {"name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["cohort"], "fields": {"type": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["cohort"], "fields": {"samples.uid": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["cohort"], "fields": {"numSamples": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["cohort"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["cohort"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["cohort"], "fields": {"studyUid": 1, "_acl": 1}, "options": {"background": true}}
-{"collections": ["cohort"], "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {"background": true}}
-{"collections": ["cohort"], "fields": {"_as.as": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["cohort"], "fields": {"_as.vs": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["cohort"], "fields": {"_as.id": 1, "_as.value": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["cohort"], "fields": {"_ias.as": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["cohort"], "fields": {"_ias.vs": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["cohort"], "fields": {"_ias.id": 1, "_ias.value": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["cohort"], "fields": {"status.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["cohort"], "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}
+{"collections": ["cohort"], "fields": {"uuid": 1}, "options": {"unique": true}}
+{"collections": ["cohort"], "fields": {"uid": 1}, "options": {"unique": true}}
+{"collections": ["cohort"], "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true}}
+{"collections": ["cohort"], "fields": {"name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["cohort"], "fields": {"type": 1, "studyUid": 1}, "options": {}}
+{"collections": ["cohort"], "fields": {"samples.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["cohort"], "fields": {"numSamples": 1, "studyUid": 1}, "options": {}}
+{"collections": ["cohort"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["cohort"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["cohort"], "fields": {"studyUid": 1, "_acl": 1}, "options": {}}
+{"collections": ["cohort"], "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {}}
+{"collections": ["cohort"], "fields": {"_as.as": 1, "studyUid": 1}, "options": {}}
+{"collections": ["cohort"], "fields": {"_as.vs": 1, "studyUid": 1}, "options": {}}
+{"collections": ["cohort"], "fields": {"_as.id": 1, "_as.value": 1, "studyUid": 1}, "options": {}}
+{"collections": ["cohort"], "fields": {"_ias.as": 1, "studyUid": 1}, "options": {}}
+{"collections": ["cohort"], "fields": {"_ias.vs": 1, "studyUid": 1}, "options": {}}
+{"collections": ["cohort"], "fields": {"_ias.id": 1, "_ias.value": 1, "studyUid": 1}, "options": {}}
+{"collections": ["cohort"], "fields": {"status.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["cohort"], "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {}}
 
-{"collections": ["family", "family_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["family", "family_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["family", "family_archive"], "fields": {"id": 1, "studyUid": 1, "version": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["family", "family_archive"], "fields": {"name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["family", "family_archive"], "fields": {"members.uid": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["family", "family_archive"], "fields": {"phenotypes.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["family", "family_archive"], "fields": {"phenotypes.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["family", "family_archive"], "fields": {"disorders.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["family", "family_archive"], "fields": {"disorders.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["family", "family_archive"], "fields": {"expectedSize": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["family", "family_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["family", "family_archive"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["family", "family_archive"], "fields": {"studyUid": 1, "_lastOfVersion": 1, "_acl": 1}, "options": {"background": true}}
-{"collections": ["family", "family_archive"], "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1}, "options": {"background": true}}
-{"collections": ["family", "family_archive"], "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {"background": true}}
-{"collections": ["family", "family_archive"], "fields": {"_as.as": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["family", "family_archive"], "fields": {"_as.vs": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["family", "family_archive"], "fields": {"_as.id": 1, "_as.value": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["family", "family_archive"], "fields": {"_ias.as": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["family", "family_archive"], "fields": {"_ias.vs": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["family", "family_archive"], "fields": {"_ias.id": 1, "_ias.value": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["family", "family_archive"], "fields": {"status.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["family", "family_archive"], "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}
+{"collections": ["family", "family_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["family", "family_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["family", "family_archive"], "fields": {"id": 1, "studyUid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["family", "family_archive"], "fields": {"name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["family", "family_archive"], "fields": {"members.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["family", "family_archive"], "fields": {"phenotypes.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["family", "family_archive"], "fields": {"phenotypes.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["family", "family_archive"], "fields": {"disorders.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["family", "family_archive"], "fields": {"disorders.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["family", "family_archive"], "fields": {"expectedSize": 1, "studyUid": 1}, "options": {}}
+{"collections": ["family", "family_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["family", "family_archive"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["family", "family_archive"], "fields": {"studyUid": 1, "_lastOfVersion": 1, "_acl": 1}, "options": {}}
+{"collections": ["family", "family_archive"], "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1}, "options": {}}
+{"collections": ["family", "family_archive"], "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {}}
+{"collections": ["family", "family_archive"], "fields": {"_as.as": 1, "studyUid": 1}, "options": {}}
+{"collections": ["family", "family_archive"], "fields": {"_as.vs": 1, "studyUid": 1}, "options": {}}
+{"collections": ["family", "family_archive"], "fields": {"_as.id": 1, "_as.value": 1, "studyUid": 1}, "options": {}}
+{"collections": ["family", "family_archive"], "fields": {"_ias.as": 1, "studyUid": 1}, "options": {}}
+{"collections": ["family", "family_archive"], "fields": {"_ias.vs": 1, "studyUid": 1}, "options": {}}
+{"collections": ["family", "family_archive"], "fields": {"_ias.id": 1, "_ias.value": 1, "studyUid": 1}, "options": {}}
+{"collections": ["family", "family_archive"], "fields": {"status.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["family", "family_archive"], "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {}}
 
-{"collections": ["panel", "panel_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["panel", "panel_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["panel", "panel_archive"], "fields": {"id": 1, "studyUid": 1, "version": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["panel", "panel_archive"], "fields": {"name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["panel", "panel_archive"], "fields": {"tags": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["panel", "panel_archive"], "fields": {"disorders.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["panel", "panel_archive"], "fields": {"disorders.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["panel", "panel_archive"], "fields": {"variants.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["panel", "panel_archive"], "fields": {"genes.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["panel", "panel_archive"], "fields": {"genes.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["panel", "panel_archive"], "fields": {"source.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["panel", "panel_archive"], "fields": {"source.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["panel", "panel_archive"], "fields": {"regions.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["panel", "panel_archive"], "fields": {"categories.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["panel", "panel_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["panel", "panel_archive"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["panel", "panel_archive"], "fields": {"status.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["panel", "panel_archive"], "fields": {"studyUid": 1, "_lastOfVersion": 1, "_acl": 1}, "options": {"background": true}}
-{"collections": ["panel", "panel_archive"], "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1}, "options": {"background": true}}
-{"collections": ["panel", "panel_archive"], "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {"background": true}}
-{"collections": ["panel", "panel_archive"], "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}
+{"collections": ["panel", "panel_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["panel", "panel_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["panel", "panel_archive"], "fields": {"id": 1, "studyUid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["panel", "panel_archive"], "fields": {"name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["panel", "panel_archive"], "fields": {"tags": 1, "studyUid": 1}, "options": {}}
+{"collections": ["panel", "panel_archive"], "fields": {"disorders.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["panel", "panel_archive"], "fields": {"disorders.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["panel", "panel_archive"], "fields": {"variants.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["panel", "panel_archive"], "fields": {"genes.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["panel", "panel_archive"], "fields": {"genes.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["panel", "panel_archive"], "fields": {"source.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["panel", "panel_archive"], "fields": {"source.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["panel", "panel_archive"], "fields": {"regions.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["panel", "panel_archive"], "fields": {"categories.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["panel", "panel_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["panel", "panel_archive"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["panel", "panel_archive"], "fields": {"status.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["panel", "panel_archive"], "fields": {"studyUid": 1, "_lastOfVersion": 1, "_acl": 1}, "options": {}}
+{"collections": ["panel", "panel_archive"], "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1}, "options": {}}
+{"collections": ["panel", "panel_archive"], "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {}}
+{"collections": ["panel", "panel_archive"], "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {}}
 
-{"collections": ["clinical"], "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["clinical"], "fields": {"uuid": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["clinical"], "fields": {"uid": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["clinical"], "fields": {"type": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["clinical"], "fields": {"files.uid": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["clinical"], "fields": {"proband.uid": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["clinical"], "fields": {"proband.samples.uid": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["clinical"], "fields": {"family.uid": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["clinical"], "fields": {"family.members.uid": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["clinical"], "fields": {"family.members.samples.uid": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["clinical"], "fields": {"panels.uid": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["clinical"], "fields": {"panelLock": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["clinical"], "fields": {"locked": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["clinical"], "fields": {"_dueDate": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["clinical"], "fields": {"disorder.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["clinical"], "fields": {"disorder.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["clinical"], "fields": {"analyst.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["clinical"], "fields": {"priority.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["clinical"], "fields": {"flags.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["clinical"], "fields": {"qualityControl.summary": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["clinical"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["clinical"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["clinical"], "fields": {"studyUid": 1, "_acl": 1}, "options": {"background": true}}
-{"collections": ["clinical"], "fields": {"status.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["clinical"], "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}
+{"collections": ["clinical"], "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true}}
+{"collections": ["clinical"], "fields": {"uuid": 1}, "options": {"unique": true}}
+{"collections": ["clinical"], "fields": {"uid": 1}, "options": {"unique": true}}
+{"collections": ["clinical"], "fields": {"type": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical"], "fields": {"files.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical"], "fields": {"proband.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical"], "fields": {"proband.samples.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical"], "fields": {"family.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical"], "fields": {"family.members.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical"], "fields": {"family.members.samples.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical"], "fields": {"panels.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical"], "fields": {"panelLock": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical"], "fields": {"locked": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical"], "fields": {"_dueDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical"], "fields": {"disorder.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical"], "fields": {"disorder.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical"], "fields": {"analyst.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical"], "fields": {"priority.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical"], "fields": {"flags.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical"], "fields": {"qualityControl.summary": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical"], "fields": {"studyUid": 1, "_acl": 1}, "options": {}}
+{"collections": ["clinical"], "fields": {"status.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical"], "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {}}
 
-{"collections": ["interpretation", "interpretation_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["interpretation", "interpretation_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["interpretation", "interpretation_archive"], "fields": {"id": 1, "version": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
-{"collections": ["interpretation", "interpretation_archive"], "fields": {"clinicalAnalysisId": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["interpretation", "interpretation_archive"], "fields": {"analyst.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["interpretation", "interpretation_archive"], "fields": {"method.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["interpretation", "interpretation_archive"], "fields": {"panels.uid": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["interpretation", "interpretation_archive"], "fields": {"status.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["interpretation", "interpretation_archive"], "fields": {"primaryFindings.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["interpretation", "interpretation_archive"], "fields": {"secondaryFindings.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["interpretation", "interpretation_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["interpretation", "interpretation_archive"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["interpretation", "interpretation_archive"], "fields": {"status.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["interpretation", "interpretation_archive"], "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collections": ["interpretation", "interpretation_archive"], "fields": {"studyUid": 1, "_lastOfVersion": 1}, "options": {"background": true}}
-{"collections": ["interpretation", "interpretation_archive"], "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1}, "options": {"background": true}}
-{"collections": ["interpretation", "interpretation_archive"], "fields": {"studyUid": 1, "release": 1}, "options": {"background": true}}
-{"collections": ["interpretation", "interpretation_archive"], "fields": {"locked": 1, "studyUid": 1}, "options": {"background": true}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"id": 1, "version": 1, "studyUid": 1}, "options": {"unique": true}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"clinicalAnalysisId": 1, "studyUid": 1}, "options": {}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"analyst.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"method.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"panels.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"status.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"primaryFindings.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"secondaryFindings.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"status.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"studyUid": 1, "_lastOfVersion": 1}, "options": {}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1}, "options": {}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"studyUid": 1, "release": 1}, "options": {}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"locked": 1, "studyUid": 1}, "options": {}}
 
-{"collections": ["audit"], "fields": {"studyUuid": 1}, "options": {"background": true}}
-{"collections": ["audit"], "fields": {"userId": 1, "studyUuid": 1}, "options": {"background": true}}
-{"collections": ["audit"], "fields": {"action": 1, "studyUuid": 1}, "options": {"background": true}}
-{"collections": ["audit"], "fields": {"resource": 1, "studyUuid": 1}, "options": {"background": true}}
-{"collections": ["audit"], "fields": {"resourceId": 1, "studyUuid": 1}, "options": {"background": true}}
-{"collections": ["audit"], "fields": {"resourceUuid": 1, "studyUuid": 1}, "options": {"background": true}}
-{"collections": ["audit"], "fields": {"status.name": 1, "studyUuid": 1}, "options": {"background": true}}
-{"collections": ["audit"], "fields": {"date": 1, "studyUuid": 1}, "options": {"background": true}}
+{"collections": ["audit"], "fields": {"studyUuid": 1}, "options": {}}
+{"collections": ["audit"], "fields": {"userId": 1, "studyUuid": 1}, "options": {}}
+{"collections": ["audit"], "fields": {"action": 1, "studyUuid": 1}, "options": {}}
+{"collections": ["audit"], "fields": {"resource": 1, "studyUuid": 1}, "options": {}}
+{"collections": ["audit"], "fields": {"resourceId": 1, "studyUuid": 1}, "options": {}}
+{"collections": ["audit"], "fields": {"resourceUuid": 1, "studyUuid": 1}, "options": {}}
+{"collections": ["audit"], "fields": {"status.name": 1, "studyUuid": 1}, "options": {}}
+{"collections": ["audit"], "fields": {"date": 1, "studyUuid": 1}, "options": {}}

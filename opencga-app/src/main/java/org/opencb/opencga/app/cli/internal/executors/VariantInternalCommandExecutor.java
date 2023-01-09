@@ -330,9 +330,9 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         QueryOptions queryOptions = VariantQueryCommandUtils.parseQueryOptions(cliOptions);
         queryOptions.put("summary", cliOptions.genericVariantQueryOptions.summary);
 
-        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         if (cliOptions.numericOptions.count) {
+            VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
             DataResult<Long> result = variantManager.count(query, token);
             System.out.println("Num. results\t" + result.getResults().get(0));
         } else {

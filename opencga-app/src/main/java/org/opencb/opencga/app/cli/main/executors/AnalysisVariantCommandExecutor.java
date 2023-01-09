@@ -328,6 +328,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "title",commandOptions.title, true);
              putNestedIfNotEmpty(beanParams, "density",commandOptions.density, true);
+             putNestedIfNotNull(beanParams, "query",commandOptions.query, true);
              putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
  
             circosAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
@@ -686,6 +687,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "command",commandOptions.command, true);
              putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+             putNestedIfNotNull(beanParams, "gatkParams",commandOptions.gatkParams, true);
  
             gatkWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -1244,6 +1246,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+             putNestedIfNotNull(beanParams, "plinkParams",commandOptions.plinkParams, true);
  
             plinkWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -1416,6 +1419,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "command",commandOptions.command, true);
              putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+             putNestedIfNotNull(beanParams, "rvtestsParams",commandOptions.rvtestsParams, true);
  
             rvtestsWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

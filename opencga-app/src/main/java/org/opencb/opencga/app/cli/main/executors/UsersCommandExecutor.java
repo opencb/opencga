@@ -228,6 +228,7 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+             putNestedIfNotNull(beanParams, "configuration",commandOptions.configuration, true);
  
             configUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -298,6 +299,7 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
              putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
              putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
+             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
  
             userUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

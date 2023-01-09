@@ -156,7 +156,11 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
         catalogProjectDBAdaptor.insert(new Project("p2", "project2", null, null, "Cool", null, 1, ProjectInternal.init()), user1.getId(), null);
         Project p2 = getProject(user1.getId(), "p2");
 
-        catalogProjectDBAdaptor.update(p1.getUid(), new ObjectMap("internal.cellbase", new CellBaseConfiguration("url", "v")), new QueryOptions());
+        catalogProjectDBAdaptor.update(p1.getUid(), new ObjectMap(ProjectDBAdaptor.QueryParams.CELLBASE.key(),
+                new CellBaseConfiguration("url", "v")), QueryOptions.empty());
+        p1 = catalogProjectDBAdaptor.get(p1.getUid(), QueryOptions.empty()).first();
+        assertEquals("url", p1.getCellbase().getUrl());
+        assertEquals("v", p1.getCellbase().getVersion());
     }
 
 }
