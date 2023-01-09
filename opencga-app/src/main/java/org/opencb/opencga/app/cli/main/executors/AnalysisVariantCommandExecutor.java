@@ -42,6 +42,7 @@ import org.opencb.opencga.core.models.variant.FamilyQcAnalysisParams;
 import org.opencb.opencga.core.models.variant.GatkWrapperParams;
 import org.opencb.opencga.core.models.variant.GenomePlotAnalysisParams;
 import org.opencb.opencga.core.models.variant.GwasAnalysisParams;
+import org.opencb.opencga.core.models.variant.HRDetectAnalysisParams;
 import org.opencb.opencga.core.models.variant.IndividualQcAnalysisParams;
 import org.opencb.opencga.core.models.variant.InferredSexAnalysisParams;
 import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
@@ -136,6 +137,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "gwas-run":
                 queryResponse = runGwas();
+                break;
+            case "hr-detect-run":
+                queryResponse = runHrDetect();
                 break;
             case "index-run":
                 queryResponse = runIndex();
@@ -781,6 +785,56 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), GwasAnalysisParams.class);
         }
         return openCGAClient.getVariantClient().runGwas(gwasAnalysisParams, queryParams);
+    }
+
+    private RestResponse<Job> runHrDetect() throws Exception {
+
+        logger.debug("Executing runHrDetect in Analysis - Variant command line");
+
+        AnalysisVariantCommandOptions.RunHrDetectCommandOptions commandOptions = analysisVariantCommandOptions.runHrDetectCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        HRDetectAnalysisParams hRDetectAnalysisParams= null;
+        if (commandOptions.jsonDataModel) {
+            hRDetectAnalysisParams = new HRDetectAnalysisParams();
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(hRDetectAnalysisParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            hRDetectAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), HRDetectAnalysisParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+             putNestedIfNotEmpty(beanParams, "sampleId",commandOptions.sampleId, true);
+             putNestedIfNotEmpty(beanParams, "snvFittingId",commandOptions.snvFittingId, true);
+             putNestedIfNotEmpty(beanParams, "svFittingId",commandOptions.svFittingId, true);
+             putNestedIfNotEmpty(beanParams, "cnvQuery",commandOptions.cnvQuery, true);
+             putNestedIfNotEmpty(beanParams, "indelQuery",commandOptions.indelQuery, true);
+             putNestedIfNotEmpty(beanParams, "snv3CustomName",commandOptions.snv3CustomName, true);
+             putNestedIfNotEmpty(beanParams, "snv8CustomName",commandOptions.snv8CustomName, true);
+             putNestedIfNotEmpty(beanParams, "sv3CustomName",commandOptions.sv3CustomName, true);
+             putNestedIfNotEmpty(beanParams, "sv8CustomName",commandOptions.sv8CustomName, true);
+             putNestedIfNotNull(beanParams, "bootstrap",commandOptions.bootstrap, true);
+             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+ 
+            hRDetectAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), HRDetectAnalysisParams.class);
+        }
+        return openCGAClient.getVariantClient().runHrDetect(hRDetectAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runIndex() throws Exception {

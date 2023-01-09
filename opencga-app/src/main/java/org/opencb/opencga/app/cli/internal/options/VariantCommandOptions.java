@@ -24,6 +24,7 @@ import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.genomePlot.GenomePlotAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.hrdetect.HRDetectAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.julie.JulieTool;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
@@ -128,6 +129,7 @@ public class VariantCommandOptions {
     public final KnockoutCommandOptions knockoutCommandOptions;
     public final SampleEligibilityCommandOptions sampleEligibilityCommandOptions;
     public final MutationalSignatureCommandOptions mutationalSignatureCommandOptions;
+    public final HRDetectCommandOptions hrDetectCommandOptions;
     public final GenomePlotCommandOptions genomePlotCommandOptions;
     public final GenomePlotInternalCommandOptions genomePlotInternalCommandOptions;
     public final MendelianErrorCommandOptions mendelianErrorCommandOptions;
@@ -196,6 +198,7 @@ public class VariantCommandOptions {
         this.knockoutCommandOptions = new KnockoutCommandOptions();
         this.sampleEligibilityCommandOptions = new SampleEligibilityCommandOptions();
         this.mutationalSignatureCommandOptions = new MutationalSignatureCommandOptions();
+        this.hrDetectCommandOptions = new HRDetectCommandOptions();
         this.genomePlotCommandOptions = new GenomePlotCommandOptions();
         this.genomePlotInternalCommandOptions = new GenomePlotInternalCommandOptions();
         this.mendelianErrorCommandOptions = new MendelianErrorCommandOptions();
@@ -1368,6 +1371,61 @@ public class VariantCommandOptions {
         @Parameter(names = {"--skip"}, description = FieldConstants.SAMPLE_QUALITY_CONTROL_SKIP_DESCRIPTION)
         public String skip;
 
+        @Parameter(names = {"-o", "--outdir"}, description = FieldConstants.JOB_OUT_DIR_DESCRIPTION, arity = 1, required = false)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = HRDetectCommandOptions.HRDETECT_RUN_COMMAND, commandDescription = HRDetectAnalysis.DESCRIPTION)
+    public class HRDetectCommandOptions {
+        public static final String HRDETECT_RUN_COMMAND = HRDetectAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @Parameter(names = {"--study"}, description = "Study where the sample belong to.")
+        public String study;
+
+        @Parameter(names = {"--sample-id"}, description = FieldConstants.SAMPLE_ID_DESCRIPTION, required = true)
+        public String sample;
+
+        @Parameter(names = {"--id"}, description = FieldConstants.HRDETECT_ID_DESCRIPTION, arity = 1)
+        public String id;
+
+        @Parameter(names = {"--description"}, description = FieldConstants.HRDETECT_DESCRIPTION_DESCRIPTION, arity = 1)
+        public String description;
+
+        @Parameter(names = {"--snv-fitting-id"}, description = FieldConstants.HRDETECT_SNV_FITTING_ID_DESCRIPTION, required = true,
+                arity = 1)
+        public String snvFittingId;
+
+        @Parameter(names = {"--sv-fitting-id"}, description = FieldConstants.HRDETECT_SV_FITTING_ID_DESCRIPTION, required = true, arity = 1)
+        public String svFittingId;
+
+        @Parameter(names = {"--cnv-query"}, description = FieldConstants.HRDETECT_CNV_QUERY_DESCRIPTION, required = true, arity = 1)
+        public String cnvQuery;
+
+        @Parameter(names = {"--indel-query"}, description = FieldConstants.HRDETECT_INDEL_QUERY_DESCRIPTION, required = true, arity = 1)
+        public String indelQuery;
+
+        @Parameter(names = {"--snv3custom-name"}, description = FieldConstants.HRDETECT_SNV3_CUSTOM_NAME_DESCRIPTION, arity = 1)
+        public String snv3CustomName;
+
+        @Parameter(names = {"--snv8custom-name"}, description = FieldConstants.HRDETECT_SNV8_CUSTOM_NAME_DESCRIPTION, arity = 1)
+        public String snv8CustomName;
+
+        @Parameter(names = {"--sv3custom-name"}, description = FieldConstants.HRDETECT_SV3_CUSTOM_NAME_DESCRIPTION, arity = 1)
+        public String sv3CustomName;
+
+        @Parameter(names = {"--sv8custom-name"}, description = FieldConstants.HRDETECT_SV8_CUSTOM_NAME_DESCRIPTION, arity = 1)
+        public String sv8CustomName;
+
+        @Parameter(names = {"--bootstrap"}, description = FieldConstants.HRDETECT_BOOTSTRAP_DESCRIPTION, arity = 1)
+        public Boolean bootstrap;
+
+        // Other
         @Parameter(names = {"-o", "--outdir"}, description = FieldConstants.JOB_OUT_DIR_DESCRIPTION, arity = 1, required = false)
         public String outdir;
     }

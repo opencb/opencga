@@ -7,7 +7,7 @@ openRegister: true
 databasePrefix: "opencga_test"
 workspace: "/tmp/opencga/sessions"
 
-jobDir: "/tmp/opencga/jobs"
+jobDir: "/tmp/opencga/JOBS"
 
 admin:
   secretKey: "asidnadh19rh230qncfascd1.rffzasf.asd.ad.12ddeASDAsd12e1d.adsx"

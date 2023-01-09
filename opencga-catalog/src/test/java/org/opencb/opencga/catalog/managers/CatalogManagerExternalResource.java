@@ -65,7 +65,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
         Files.createDirectories(opencgaHome);
         configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
         configuration.setWorkspace(opencgaHome.resolve("sessions").toAbsolutePath().toString());
-        configuration.setJobDir(opencgaHome.resolve("jobs").toAbsolutePath().toString());
+        configuration.setJobDir(opencgaHome.resolve("JOBS").toAbsolutePath().toString());
 
         clearCatalog(configuration);
         if (!opencgaHome.toFile().exists()) {
