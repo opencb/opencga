@@ -73,6 +73,7 @@ import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -423,6 +424,9 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
         options.put(VariantStorageOptions.SPECIES.key(), "hsapiens");
         options.put(VariantStorageOptions.ASSEMBLY.key(), "grch37");
+//        storageConfiguration.getCellbase().setUrl("https://uk.ws.zettagenomics.com/cellbase/");
+//        storageConfiguration.getCellbase().setVersion("v5.2");
+//        storageConfiguration.getCellbase().setDataRelease("1");
 
         variantConfiguration.getDatabase().setHosts(Collections.singletonList("hbase://" + HadoopVariantStorageTest.configuration.get().get(HConstants.ZOOKEEPER_QUORUM)));
         return storageConfiguration;

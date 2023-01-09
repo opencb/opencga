@@ -60,8 +60,8 @@ public abstract class VariantAnnotationManager {
     protected final VariantAnnotationMetadata checkCurrentAnnotation(VariantAnnotator annotator, ProjectMetadata projectMetadata,
                                                                      boolean overwrite)
             throws VariantAnnotatorException {
-        VariantAnnotatorProgram newAnnotator = annotator.getVariantAnnotatorProgram();
-        List<ObjectMap> newSourceVersion = annotator.getVariantAnnotatorSourceVersion();
+//        VariantAnnotatorProgram newAnnotator = annotator.getVariantAnnotatorProgram();
+//        List<ObjectMap> newSourceVersion = annotator.getVariantAnnotatorSourceVersion();
 
 //        if (newSourceVersion == null) {
 //            newSourceVersion = Collections.emptyList();
@@ -72,11 +72,12 @@ public abstract class VariantAnnotationManager {
 //        if (newSourceVersion.isEmpty()) {
 //            throw new IllegalArgumentException("Missing annotator source version for VariantAnnotator: " + annotator.getClass());
 //        }
-        return checkCurrentAnnotation(projectMetadata, overwrite, newAnnotator, newSourceVersion);
+        ProjectMetadata.VariantAnnotationMetadata newVariantAnnotationMetadata = annotator.getVariantAnnotationMetadata();
+        return checkCurrentAnnotation(projectMetadata, overwrite, newVariantAnnotationMetadata);
     }
 
     protected final VariantAnnotationMetadata checkCurrentAnnotation(ProjectMetadata projectMetadata, boolean overwrite,
-                                                                     VariantAnnotatorProgram newAnnotator, List<ObjectMap> newSourceVersion)
+                                                                     VariantAnnotationMetadata newVariantAnnotationMetadata)
             throws VariantAnnotatorException {
         VariantAnnotationMetadata current = projectMetadata.getAnnotation().getCurrent();
         if (current == null) {
@@ -88,6 +89,7 @@ public abstract class VariantAnnotationManager {
 
         // Check using same annotator and same source version
         VariantAnnotatorProgram currentAnnotator = current.getAnnotator();
+        VariantAnnotatorProgram newAnnotator = newVariantAnnotationMetadata.getAnnotator();
         if (currentAnnotator != null && !currentAnnotator.equals(newAnnotator)) {
             String currentVersion = removePatchFromVersion(currentAnnotator.getVersion());
             String newVersion = removePatchFromVersion(newAnnotator.getVersion());
@@ -113,24 +115,57 @@ public abstract class VariantAnnotationManager {
             }
         }
 
-        List<ObjectMap> currentSourceVersion = current.getSourceVersion();
-        if (CollectionUtils.isNotEmpty(currentSourceVersion) && !sameSourceVersion(newSourceVersion, currentSourceVersion)) {
-            String msg = "Source version of the annotator has changed. "
-                    + "Existing annotation calculated with "
-                    + currentSourceVersion.stream().map(ObjectMap::toJson).collect(Collectors.joining(" , ", "[ ", " ]"))
-                    + ", attempting to annotate with "
-                    + newSourceVersion.stream().map(ObjectMap::toJson).collect(Collectors.joining(" , ", "[ ", " ]"));
+        if (current.getDataRelease() != null && newVariantAnnotationMetadata.getDataRelease() == null) {
+            // Regression. DataRelease is lost.
+            String msg = "DataRelease missing. "
+                            + "Existing annotation calculated with dataRelease " + current.getDataRelease().getRelease()
+                            + ", attempting to annotate without explicit dataRelease";
 
             if (overwrite) {
                 logger.info(msg);
             } else {
-                // List of sources from cellbase 5.0.x is not reliable, and should
-                // not be taken into account to force a full annotation overwrite
-                if (newAnnotator.getName().toLowerCase().contains("cellbase") && newAnnotator.getVersion().startsWith("5.0")) {
-                    logger.warn(msg);
-                    logger.info("Ignore source version change at Cellbase v5.0.x");
+                throw new VariantAnnotatorException(msg);
+            }
+        }
+
+        if (newVariantAnnotationMetadata.getDataRelease() != null) {
+            if (current.getDataRelease() == null) {
+                // Missing current dataRelease. Continue.
+            } else {
+                if (!current.getDataRelease().equals(newVariantAnnotationMetadata.getDataRelease())) {
+                    String msg = "DataRelease has changed. "
+                            + "Existing annotation calculated with dataRelease " + current.getDataRelease().getRelease()
+                            + ", attempting to annotate with " + newVariantAnnotationMetadata.getDataRelease().getRelease();
+
+                    if (overwrite) {
+                        logger.info(msg);
+                    } else {
+                        throw new VariantAnnotatorException(msg);
+                    }
+                }
+            }
+        } else {
+            // Check sources for old cellbase versions
+            List<ObjectMap> currentSourceVersion = current.getSourceVersion();
+            List<ObjectMap> newSourceVersion = newVariantAnnotationMetadata.getSourceVersion();
+            if (CollectionUtils.isNotEmpty(currentSourceVersion) && !sameSourceVersion(newSourceVersion, currentSourceVersion)) {
+                String msg = "Source version of the annotator has changed. "
+                        + "Existing annotation calculated with "
+                        + currentSourceVersion.stream().map(ObjectMap::toJson).collect(Collectors.joining(" , ", "[ ", " ]"))
+                        + ", attempting to annotate with "
+                        + newSourceVersion.stream().map(ObjectMap::toJson).collect(Collectors.joining(" , ", "[ ", " ]"));
+
+                if (overwrite) {
+                    logger.info(msg);
                 } else {
-                    throw new VariantAnnotatorException(msg);
+                    // List of sources from cellbase 5.0.x is not reliable, and should
+                    // not be taken into account to force a full annotation overwrite
+                    if (newAnnotator.getName().toLowerCase().contains("cellbase") && newAnnotator.getVersion().startsWith("5.0")) {
+                        logger.warn(msg);
+                        logger.info("Ignore source version change at Cellbase v5.0.x");
+                    } else {
+                        throw new VariantAnnotatorException(msg);
+                    }
                 }
             }
         }
@@ -156,15 +191,15 @@ public abstract class VariantAnnotationManager {
 
     protected final void updateCurrentAnnotation(VariantAnnotator annotator, ProjectMetadata projectMetadata, boolean overwrite)
             throws VariantAnnotatorException {
-        VariantAnnotatorProgram newAnnotator = annotator.getVariantAnnotatorProgram();
-        List<ObjectMap> newSourceVersion = annotator.getVariantAnnotatorSourceVersion();
-        updateCurrentAnnotation(annotator, projectMetadata, overwrite, newAnnotator, newSourceVersion);
+        updateCurrentAnnotation(annotator, projectMetadata, overwrite, annotator.getVariantAnnotationMetadata());
     }
 
+
     protected final void updateCurrentAnnotation(VariantAnnotator annotator, ProjectMetadata projectMetadata,
-                                                 boolean overwrite, VariantAnnotatorProgram newAnnotator,
-                                                 List<ObjectMap> newSourceVersion)
+                                                 boolean overwrite, VariantAnnotationMetadata newAnnotationMetadata)
             throws VariantAnnotatorException {
+        List<ObjectMap> newSourceVersion = newAnnotationMetadata.getSourceVersion();
+        VariantAnnotatorProgram newAnnotator = newAnnotationMetadata.getAnnotator();
         if (newSourceVersion == null) {
             newSourceVersion = Collections.emptyList();
         }
@@ -174,10 +209,12 @@ public abstract class VariantAnnotationManager {
         if (newSourceVersion.isEmpty()) {
             throw new IllegalArgumentException("Missing annotator source version for VariantAnnotator: " + annotator.getClass());
         }
-        checkCurrentAnnotation(projectMetadata, overwrite, newAnnotator, newSourceVersion);
+        checkCurrentAnnotation(projectMetadata, overwrite, newAnnotationMetadata);
 
-        projectMetadata.getAnnotation().getCurrent().setAnnotator(newAnnotator);
-        projectMetadata.getAnnotation().getCurrent().setSourceVersion(newSourceVersion);
+        VariantAnnotationMetadata current = projectMetadata.getAnnotation().getCurrent();
+        current.setAnnotator(newAnnotator);
+        current.setSourceVersion(newSourceVersion);
+        current.setDataRelease(newAnnotationMetadata.getDataRelease());
     }
 
     protected final VariantAnnotationMetadata registerNewAnnotationSnapshot(String name, VariantAnnotator annotator,
@@ -204,7 +241,8 @@ public abstract class VariantAnnotationManager {
                 name,
                 Date.from(Instant.now()),
                 current.getAnnotator(),
-                current.getSourceVersion());
+                current.getSourceVersion(),
+                current.getDataRelease());
         projectMetadata.getAnnotation().getSaved().add(newSnapshot);
 
         // Increment ID of the current annotation

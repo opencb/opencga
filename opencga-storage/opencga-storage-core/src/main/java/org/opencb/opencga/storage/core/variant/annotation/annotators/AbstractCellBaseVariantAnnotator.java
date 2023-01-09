@@ -55,6 +55,7 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
     protected final String species;
     protected final String assembly;
     protected final String cellbaseVersion;
+    protected final String cellbaseDataRelease;
     protected final QueryOptions queryOptions;
     protected final boolean supportImpreciseVariants;
     protected final boolean supportStarAlternate;
@@ -69,6 +70,7 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
         species = projectMetadata.getSpecies();
         assembly = projectMetadata.getAssembly();
         cellbaseVersion = storageConfiguration.getCellbase().getVersion();
+        cellbaseDataRelease = storageConfiguration.getCellbase().getDataRelease();
 
         queryOptions = new QueryOptions();
         if (StringUtils.isNotEmpty(params.getString(VariantStorageOptions.ANNOTATOR_CELLBASE_INCLUDE.key()))) {
@@ -98,6 +100,7 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
                     + ':' + (variant.getAlternate().isEmpty() ? "-" : variant.getAlternate());
         }
         checkNotNull(cellbaseVersion, "cellbase version");
+//        checkNotNull(cellbaseDataRelease, "cellbase dataRelease");
         checkNotNull(species, "species");
         checkNotNull(assembly, "assembly");
 
@@ -108,15 +111,6 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
             throw new VariantAnnotatorException("Missing defaultValue: " + name);
         }
     }
-
-    public static String toCellBaseSpeciesName(String scientificName) {
-        if (scientificName != null && scientificName.contains(" ")) {
-            String[] split = scientificName.split(" ", 2);
-            scientificName = (split[0].charAt(0) + split[1]).toLowerCase();
-        }
-        return scientificName;
-    }
-
 
     @Override
     public final List<VariantAnnotation> annotate(List<Variant> variants) throws VariantAnnotatorException {

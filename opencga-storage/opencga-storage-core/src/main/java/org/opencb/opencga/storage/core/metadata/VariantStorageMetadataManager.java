@@ -56,7 +56,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
+import static org.opencb.opencga.storage.core.utils.CellBaseUtils.toCellBaseSpeciesName;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.isNegated;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.removeNegation;
 

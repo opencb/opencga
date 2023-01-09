@@ -35,7 +35,6 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.clinical.ClinicalVariantCreator;
 import org.opencb.biodata.tools.clinical.DefaultClinicalVariantCreator;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
-import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
@@ -98,7 +97,6 @@ public class ClinicalInterpretationManager extends StorageManager {
     private ClinicalVariantEngine clinicalVariantEngine;
     private VariantStorageManager variantStorageManager;
 
-    protected CellBaseClient cellBaseClient;
     protected AlignmentStorageManager alignmentStorageManager;
 
     private VariantCatalogQueryUtils catalogQueryUtils;
@@ -138,7 +136,6 @@ public class ClinicalInterpretationManager extends StorageManager {
         this.clinicalAnalysisManager = catalogManager.getClinicalAnalysisManager();
         this.variantStorageManager = new VariantStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
 
-        this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
         this.alignmentStorageManager = new AlignmentStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
 
         this.catalogQueryUtils = new VariantCatalogQueryUtils(catalogManager);

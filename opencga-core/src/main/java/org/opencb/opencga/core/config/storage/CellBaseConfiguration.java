@@ -16,40 +16,45 @@
 
 package org.opencb.opencga.core.config.storage;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
-import java.util.List;
 
 /**
  * Created by imedina on 04/05/15.
  */
 @JsonIgnoreProperties(allowSetters = true, value = {"host", "preferred", "hosts", "database"})
 public class CellBaseConfiguration {
-    /*
-     * URL to CellBase REST web services, by default official UCam installation is used
-     */
+
+    @DataField(id = "url", description = "URL to CellBase REST web services, by default official ZettaGenomics installation is used")
     private String url;
 
-    /*
-     * CellBase version to be used, by default the 'v4' stable
-     */
+    @DataField(id = "version", description = "URL to CellBase REST web services, by default official ZettaGenomics installation is used")
     private String version;
 
-    private static final String CELLBASE_HOST = "http://ws.opencb.org/cellbase/";
-    private static final String CELLBASE_VERSION = "v4";
+    @DataField(id = "version", description = "CellBase data release version to be used. If empty, will use the latest")
+    private String dataRelease;
 
     public CellBaseConfiguration() {
-        this(CELLBASE_HOST, CELLBASE_VERSION);
+        this(ParamConstants.CELLBASE_URL, ParamConstants.CELLBASE_VERSION);
     }
 
     public CellBaseConfiguration(String url, String version) {
         this.url = url;
         this.version = version;
+    }
+
+    public CellBaseConfiguration(String url, String version, String dataRelease) {
+        this.url = url;
+        this.version = version;
+        this.dataRelease = dataRelease;
     }
 
     @Override
@@ -67,6 +72,15 @@ public class CellBaseConfiguration {
 
     public CellBaseConfiguration setUrl(String url) {
         this.url = url;
+        return this;
+    }
+
+    public String getDataRelease() {
+        return dataRelease;
+    }
+
+    public CellBaseConfiguration setDataRelease(String dataRelease) {
+        this.dataRelease = dataRelease;
         return this;
     }
 
@@ -115,11 +129,13 @@ public class CellBaseConfiguration {
     }
 
     @Deprecated
+    @JsonIgnore
     public Object getDatabase() {
         return null;
     }
 
     @Deprecated
+    @JsonIgnore
     public CellBaseConfiguration setDatabase(Object database) {
         if (database != null) {
             LoggerFactory.getLogger(CellBaseConfiguration.class).warn("Deprecated option 'storage-configuration.yml#cellbase.database'");
@@ -128,11 +144,13 @@ public class CellBaseConfiguration {
     }
 
     @Deprecated
+    @JsonIgnore
     public String getPreferred() {
         return "";
     }
 
     @Deprecated
+    @JsonIgnore
     public CellBaseConfiguration setPreferred(String preferred) {
         if (StringUtils.isNotEmpty(preferred)) {
             LoggerFactory.getLogger(CellBaseConfiguration.class).warn("Deprecated option 'storage-configuration.yml#cellbase.preferred'");
