@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.storage.core.utils;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
@@ -24,6 +26,7 @@ import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.client.rest.ParentRestClient;
 import org.opencb.cellbase.core.ParamConstants;
+import org.opencb.cellbase.core.config.SpeciesProperties;
 import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.cellbase.core.result.CellBaseDataResult;
 import org.opencb.commons.datastore.core.Query;
@@ -51,11 +54,60 @@ public class CellBaseUtils {
     public static final QueryOptions GENE_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE,
             "id,name,chromosome,start,end,transcripts.id,transcripts.name,transcripts.proteinId");
 
-    private final ConcurrentHashMap<String, Region> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, GeneReference> cache = new ConcurrentHashMap<>();
 
-    public CellBaseUtils(CellBaseClient cellBaseClient, String assembly) {
+    public static class GeneReference {
+        private final Region region;
+        private final String id;
+        private final String name;
+
+        public GeneReference(Region region, String id, String name) {
+            this.region = region;
+            this.id = id;
+            this.name = name;
+        }
+
+        public GeneReference(Gene gene) {
+            int start = Math.max(1, gene.getStart() - GENE_EXTRA_REGION);
+            int end = gene.getEnd() + GENE_EXTRA_REGION;
+            region = new Region(gene.getChromosome(), start, end);
+            id = gene.getId();
+            name = gene.getName();
+        }
+
+        public Region getRegion() {
+            return region;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public String toString() {
+            return new ToStringBuilder(this)
+                    .append("region", region)
+                    .append("id", id)
+                    .append("name", name)
+                    .toString();
+        }
+    }
+
+    public CellBaseUtils(CellBaseClient cellBaseClient) {
         this.cellBaseClient = cellBaseClient;
-        this.assembly = assembly;
+        this.assembly = cellBaseClient.getAssembly();
+    }
+
+    public static String toCellBaseSpeciesName(String scientificName) {
+        if (scientificName != null && scientificName.contains(" ")) {
+            String[] split = scientificName.split(" ", 2);
+            scientificName = (split[0].charAt(0) + split[1]).toLowerCase();
+        }
+        return scientificName;
     }
 
     public Region getGeneRegion(String geneStr) {
@@ -72,33 +124,40 @@ public class CellBaseUtils {
     }
 
     public Map<String, Region> getGeneRegionMap(List<String> geneStrs, boolean skipMissing) {
+        Map<String, GeneReference> genes = getGenes(geneStrs, skipMissing);
+        Map<String, Region> map = new HashMap<>(genes.size());
+        genes.forEach((k, v) -> map.put(k, v.getRegion()));
+        return map;
+    }
+
+    public Map<String, GeneReference> getGenes(List<String> geneStrs, boolean skipMissing) {
         if (geneStrs.size() > ParentRestClient.REST_CALL_BATCH_SIZE) {
             List<String> l1 = geneStrs.subList(0, geneStrs.size() / 2);
             List<String> l2 = geneStrs.subList(geneStrs.size() / 2, geneStrs.size());
-            Map<String, Region> regions = getGeneRegionMap(l1, skipMissing);
-            regions.putAll(getGeneRegionMap(l2, skipMissing));
+            Map<String, GeneReference> regions = getGenes(l1, skipMissing);
+            regions.putAll(getGenes(l2, skipMissing));
             return regions;
         }
         geneStrs = new LinkedList<>(geneStrs);
-        Map<String, Region> regions = new HashMap<>(geneStrs.size());
+        Map<String, GeneReference> genesMap = new HashMap<>(geneStrs.size());
         Iterator<String> iterator = geneStrs.iterator();
         while (iterator.hasNext()) {
             String gene = iterator.next();
-            Region region = cache.get(gene);
-            if (region != null) {
-                regions.put(gene, region);
+            GeneReference geneRef = cache.get(gene);
+            if (geneRef != null) {
+                genesMap.put(gene, geneRef);
                 iterator.remove();
             }
         }
         if (geneStrs.isEmpty()) {
-            return regions;
+            return genesMap;
         }
         try {
             long ts = System.currentTimeMillis();
             QueryOptions options = new QueryOptions(GENE_QUERY_OPTIONS); // Copy options. DO NOT REUSE QUERY OPTIONS
             options.append(QueryOptions.LIMIT, ParentRestClient.REST_CALL_BATCH_SIZE * 2);
 
-            CellBaseDataResponse<Gene> response = checkNulls(cellBaseClient.getGeneClient().get(geneStrs, options));
+            CellBaseDataResponse<Gene> response = checkNulls(cellBaseClient.getGeneClient().get(geneStrs, new QueryOptions(options)));
             logger.info("Query genes from CellBase " + cellBaseClient.getSpecies() + ":" + assembly + " " + geneStrs + "  -> "
                     + (System.currentTimeMillis() - ts) / 1000.0 + "s ");
             List<String> missingGenes = null;
@@ -131,14 +190,24 @@ public class CellBaseUtils {
                 }
                 if (gene == null) {
                     Query query = new Query();
-                    if (geneStr.startsWith("ENSG")) {
-                        query.put("id", geneStr);
-                    } else if (geneStr.startsWith("ENST")) {
-                        query.put("transcripts.id", geneStr);
+                    if (cellBaseClient.getClientConfiguration().getVersion().startsWith("v4")) {
+                        if (geneStr.startsWith("ENSG")) {
+                            query.put("id", geneStr);
+                        } else if (geneStr.startsWith("ENST")) {
+                            query.put("transcripts.id", geneStr);
+                        } else {
+                            query.put("name", geneStr);
+                        }
                     } else {
-                        query.put("name", geneStr);
+                        // Filter by XREF is only available starting in CellBase V5
+                        query.put("xref", geneStr);
                     }
-                    gene = cellBaseClient.getGeneClient().search(query, options).firstResult();
+                    QueryOptions searchQueryOptions = new QueryOptions(options).append(QueryOptions.LIMIT, 2);
+                    CellBaseDataResponse<Gene> thisGeneResponse = cellBaseClient.getGeneClient().search(query, searchQueryOptions);
+                    if (thisGeneResponse.first() != null && thisGeneResponse.first().getNumMatches() > 1) {
+                        logger.warn("Found {} matches for gene '{}'", thisGeneResponse.first().getNumMatches(), geneStr);
+                    }
+                    gene = thisGeneResponse.firstResult();
                 }
                 if (gene == null) {
                     if (missingGenes == null) {
@@ -147,17 +216,15 @@ public class CellBaseUtils {
                     missingGenes.add(geneStr);
                     continue;
                 }
-                int start = Math.max(1, gene.getStart() - GENE_EXTRA_REGION);
-                int end = gene.getEnd() + GENE_EXTRA_REGION;
-                Region region = new Region(gene.getChromosome(), start, end);
-                regions.put(geneStr, region);
+                GeneReference geneRef = new GeneReference(gene);
+                genesMap.put(geneStr, geneRef);
                 if (gene.getName() != null) {
-                    cache.put(gene.getName(), region);
+                    cache.put(gene.getName(), geneRef);
                 }
                 if (gene.getId() != null) {
-                    cache.put(gene.getId(), region);
+                    cache.put(gene.getId(), geneRef);
                 }
-                cache.put(geneStr, region);
+                cache.put(geneStr, geneRef);
             }
             if (!skipMissing && missingGenes != null) {
                 throw VariantQueryException.geneNotFound(String.join(",", missingGenes),
@@ -166,10 +233,32 @@ public class CellBaseUtils {
                         assembly
                 );
             }
-            return regions;
+            return genesMap;
         } catch (IOException e) {
             throw VariantQueryException.internalException(e);
         }
+    }
+
+    public List<String> validateGenes(List<String> geneStrs, boolean skipMissing) {
+        Map<String, CellBaseUtils.GeneReference> geneRefs = getGenes(geneStrs, skipMissing);
+
+        List<String> validatedGenes = new ArrayList<>();
+        for (Map.Entry<String, CellBaseUtils.GeneReference> entry : geneRefs.entrySet()) {
+            String geneFromQuery = entry.getKey();
+            CellBaseUtils.GeneReference geneReference = entry.getValue();
+            if (geneFromQuery.equals(geneReference.getId()) || geneFromQuery.equals(geneReference.getName())) {
+                // Valid gene name
+                validatedGenes.add(geneFromQuery);
+            } else {
+                // The input gene might be a xref. Replace with the actual geneName or geneId
+                if (geneReference.getName() != null) {
+                    validatedGenes.add(geneReference.getName());
+                } else {
+                    validatedGenes.add(geneReference.getId());
+                }
+            }
+        }
+        return validatedGenes;
     }
 
     public Set<String> getGenesByGo(List<String> goValues) {
@@ -283,5 +372,97 @@ public class CellBaseUtils {
 
     public String getSpecies() {
         return cellBaseClient.getSpecies();
+    }
+
+    public String getDataRelease() {
+        return cellBaseClient.getDataRelease();
+    }
+
+    public String getURL() {
+        return cellBaseClient.getClientConfiguration().getRest().getHosts().get(0);
+    }
+
+    public String getVersion() {
+        return cellBaseClient.getClientConfiguration().getVersion();
+    }
+
+    public void validateCellBaseConnection() throws IOException {
+        CellBaseDataResponse<SpeciesProperties> species = cellBaseClient.getMetaClient().species();
+        if (species == null || species.firstResult() == null) {
+            throw new IllegalArgumentException("Unable to access cellbase url '" + getURL() + "', version '" + getVersion() + "'");
+        }
+        String serverVersion = getVersionFromServerMajorMinor();
+        if (!supportsDataRelease(serverVersion)) {
+            logger.warn("DataRelease not supported on version '" + serverVersion + ".x'");
+        } else {
+            if (getDataRelease() == null) {
+                throw new IllegalArgumentException("Missing DataRelease for cellbase "
+                        + "url: '" + getURL() + "'"
+                        + ", version: '" + getVersion()
+                        + "', species: '" + getSpecies()
+                        + "', assembly: '" + getAssembly() + "'");
+            }
+            boolean dataReleaseExists = cellBaseClient.getMetaClient().dataReleases()
+                    .allResults()
+                    .stream()
+                    .anyMatch(dataRelease -> {
+                        return getDataRelease().equals(String.valueOf(dataRelease.getRelease()));
+                    });
+            if (!dataReleaseExists) {
+                throw new IllegalArgumentException("DataRelease '" + getDataRelease() + "' not found on cellbase "
+                        + "url: '" + getURL() + "'"
+                        + ", version: '" + getVersion()
+                        + "', species: '" + getSpecies()
+                        + "', assembly: '" + getAssembly() + "'");
+            }
+        }
+    }
+
+    public boolean supportsDataRelease() throws IOException {
+        return supportsDataRelease(getVersionFromServer());
+    }
+
+    public static boolean supportsDataRelease(String serverVersion) {
+        return !majorMinor(serverVersion).equals("5.0") && !major(serverVersion).equals("4");
+    }
+
+    public String getVersionFromServerMajor() throws IOException {
+        return major(getVersionFromServer());
+    }
+
+    public String getVersionFromServerMajorMinor() throws IOException {
+        String serverVersion = getVersionFromServer();
+        serverVersion = majorMinor(serverVersion);
+        return serverVersion;
+    }
+
+    private static String major(String version) {
+        return version.split("\\.")[0];
+    }
+
+    private static String majorMinor(String version) {
+        String[] split = version.split("\\.");
+        if (split.length > 1) {
+            version = split[0] + "." + split[1];
+        }
+        return version;
+    }
+
+    public String getVersionFromServer() throws IOException {
+        String serverVersion = cellBaseClient.getMetaClient().about().firstResult().getString("Version");
+        if (StringUtils.isEmpty(serverVersion)) {
+            serverVersion = cellBaseClient.getMetaClient().about().firstResult().getString("Version: ");
+        }
+        return serverVersion;
+    }
+
+    @Override
+    public String toString() {
+        return "URL: '" + getURL() + "', "
+                + "version '" + getVersion() + "', "
+                + "species '" + getSpecies() + "', "
+                + "assembly '" + getAssembly() + "', "
+                + "dataRelease '" + getDataRelease() + "'";
+
     }
 }

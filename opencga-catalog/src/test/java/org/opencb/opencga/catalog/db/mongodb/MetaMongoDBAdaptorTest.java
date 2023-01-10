@@ -18,8 +18,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-
 /**
  * Created by imedina on 07/04/16.
  */
@@ -27,7 +25,7 @@ public class MetaMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void createIndex() throws Exception {
-        catalogDBAdaptor.getCatalogMetaDBAdaptor().createIndexes(true);
+        catalogDBAdaptor.getCatalogMetaDBAdaptor().createIndexes();
     }
 
 }

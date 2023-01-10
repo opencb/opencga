@@ -207,7 +207,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                         sb.append("        public " + getValidValue(bodyRestParameter) + " "
                                                 + getVariableName(bodyRestParameter) + getDefaultValue(bodyRestParameter) + ";\n");
                                         sb.append("    \n");
-                                    } else if (bodyRestParameter.getType().equals("Query")) {
+                                    } else if (isValidMap(bodyRestParameter)) {
                                         String names = getShortCuts(bodyRestParameter, config);
                                         sb.append("        @DynamicParameter(names = {" + names + "}, " +
                                                 "description"
@@ -219,8 +219,8 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                                 + getVariableName(bodyRestParameter) + " = new HashMap<>(); //Dynamic parameters must be initialized;\n");
                                         sb.append("    \n");
                                     } else {
-                                        logger.warn("Skipping parameter '{}' type '{}' at command '{} {}'",
-                                                bodyRestParameter.getName(), bodyRestParameter.getType(),
+                                        logger.warn("Skipping parameter '{}' value '{}' at command '{} {}'",
+                                                bodyRestParameter.getName(), getValidValue(bodyRestParameter),
                                                 getCategoryCommandName(restCategory, config), reverseCommandName(commandName));
                                     }
                                 }

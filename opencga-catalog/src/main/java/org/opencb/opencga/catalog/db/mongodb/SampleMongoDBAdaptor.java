@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
@@ -65,7 +64,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
-import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.*;
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
@@ -321,7 +320,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             // Perform the update
             DataResult result = updateAnnotationSets(clientSession, sampleUid, parameters, variableSetList, queryOptions, true);
 
-            UpdateDocument updateParams = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery, queryOptions);
+            UpdateDocument updateParams = parseAndValidateUpdateParams(clientSession, studyUid, parameters, tmpQuery, queryOptions);
             Document sampleUpdate = updateParams.toFinalUpdateDocument();
 
             if (sampleUpdate.isEmpty() && result.getNumUpdated() == 0) {
@@ -335,9 +334,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             if (!sampleUpdate.isEmpty()) {
                 Bson finalQuery = parseQuery(tmpQuery);
 
-                logger.debug("Sample update: query : {}, update: {}",
-                        finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                        sampleUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                logger.debug("Sample update: query : {}, update: {}", finalQuery.toBsonDocument(), sampleUpdate.toBsonDocument());
                 result = sampleCollection.update(clientSession, finalQuery, sampleUpdate, new QueryOptions("multi", true));
 
                 if (updateParams.getSet().containsKey(PRIVATE_INDIVIDUAL_UID)) {
@@ -386,7 +383,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         }
 
         ObjectMap params = new ObjectMap(QueryParams.INDIVIDUAL_ID.key(), individualId);
-        Document update = parseAndValidateUpdateParams(clientSession, params, null, QueryOptions.empty()).toFinalUpdateDocument();
+        Document update = parseAndValidateUpdateParams(clientSession, studyId, params, null, QueryOptions.empty()).toFinalUpdateDocument();
         Bson query = parseQuery(new Query()
                 .append(QueryParams.STUDY_UID.key(), studyId)
                 .append(QueryParams.UID.key(), sampleUids));
@@ -537,7 +534,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         individualDBAdaptor.getCollection().update(clientSession, bsonQuery, update, null);
     }
 
-    UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, Query query, QueryOptions queryOptions)
+    UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, long studyUid, ObjectMap parameters, Query query,
+                                                QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         UpdateDocument document = new UpdateDocument();
 
@@ -625,13 +623,18 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
             if (StringUtils.isNotEmpty(individualId)) {
                 // Look for the individual uid
-                Query indQuery = new Query(IndividualDBAdaptor.QueryParams.ID.key(), individualId);
+                Query indQuery = new Query()
+                        .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                        .append(IndividualDBAdaptor.QueryParams.ID.key(), individualId);
                 QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.UID.key());
                 OpenCGAResult<Individual> individualDataResult = individualDBAdaptor.get(clientSession, indQuery, options);
 
                 if (individualDataResult.getNumResults() == 0) {
                     throw new CatalogDBException("Cannot update " + QueryParams.INDIVIDUAL_ID.key() + " for sample. Individual '"
                             + individualId + "' not found.");
+                } else if (individualDataResult.getNumResults() > 1) {
+                    throw new CatalogDBException("Cannot update " + QueryParams.INDIVIDUAL_ID.key() + " for sample. More than one"
+                            + " Individual '" + individualId + "' found.");
                 }
 
                 document.getSet().put(QueryParams.INDIVIDUAL_ID.key(), individualId);
@@ -824,18 +827,15 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
             Bson count = Aggregates.count("count");
 
-            logger.debug("Sample count aggregation: {} -> {} -> {} -> {}",
-                    match.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    lookup.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    individualMatch.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    count.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            logger.debug("Sample count aggregation: {} -> {} -> {} -> {}", match.toBsonDocument(), lookup.toBsonDocument(),
+                    individualMatch.toBsonDocument(), count.toBsonDocument());
 
             DataResult<Document> aggregate = sampleCollection.aggregate(Arrays.asList(match, lookup, individualMatch, count),
                     QueryOptions.empty());
             long numResults = aggregate.getNumResults() == 0 ? 0 : ((int) aggregate.first().get("count"));
             return new OpenCGAResult<>(aggregate.getTime(), Collections.emptyList(), 1, Collections.singletonList(numResults), 1);
         } else {
-            logger.debug("Sample count query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            logger.debug("Sample count query: {}", bson.toBsonDocument());
             return new OpenCGAResult<>(sampleCollection.count(bson));
         }
     }
@@ -930,9 +930,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 .append(QueryParams.FILE_IDS.key(), fileId);
         Bson bsonQuery = parseQuery(query);
 
-        logger.debug("Removing file from sample '{}' field. Query: {}, Update: {}", QueryParams.FILE_IDS.key(),
-                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Removing file from sample '{}' field. Query: {}, Update: {}", QueryParams.FILE_IDS.key(), bsonQuery.toBsonDocument(),
+                updateDocument.toBsonDocument());
 
         versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
             DataResult<?> result = sampleCollection.update(clientSession, bsonQuery, updateDocument, new QueryOptions("multi", true));
@@ -1148,7 +1147,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         Bson bson = parseQuery(finalQuery, user);
         MongoDBCollection collection = getQueryCollection(finalQuery, sampleCollection, archiveSampleCollection, deletedSampleCollection);
-        logger.debug("Sample query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Sample query: {}", bson.toBsonDocument());
         return collection.iterator(clientSession, bson, null, null, qOptions);
     }
 

@@ -119,14 +119,14 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--annotation-save-id"}, description = "Save a copy of the current variant annotation at the database", required = false, arity = 1)
         public String annotationSaveId; 
     
-        @Parameter(names = {"--url"}, description = "The body web service url parameter", required = false, arity = 1)
+        @Parameter(names = {"--url"}, description = "URL to CellBase REST web services, by default official ZettaGenomics installation is used", required = false, arity = 1)
         public String url;
     
-        @Parameter(names = {"--version"}, description = "The body web service version parameter", required = false, arity = 1)
+        @Parameter(names = {"--version"}, description = "URL to CellBase REST web services, by default official ZettaGenomics installation is used", required = false, arity = 1)
         public String version;
     
-        @Parameter(names = {"--preferred"}, description = "The body web service preferred parameter", required = false, arity = 1)
-        public String preferred;
+        @Parameter(names = {"--data-release"}, description = "CellBase data release version to be used. If empty, will use the active one", required = false, arity = 1)
+        public String dataRelease;
     
     }
 
@@ -299,6 +299,9 @@ public class OperationsVariantStorageCommandOptions {
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
+    
+        @DynamicParameter(names = {"--configuration"}, description = "The body web service configuration parameter. Use: --configuration key=value", required = false)
+        public Map<String, ?> configuration = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 

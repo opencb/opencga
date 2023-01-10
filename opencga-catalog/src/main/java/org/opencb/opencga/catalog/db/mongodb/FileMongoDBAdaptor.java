@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
@@ -361,9 +360,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         List<Event> events = new ArrayList<>();
         if (!fileUpdate.isEmpty()) {
-            logger.debug("Update file. Query: {}, Update: {}",
-                    queryBson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    fileUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            logger.debug("Update file. Query: {}, Update: {}", queryBson.toBsonDocument(), fileUpdate.toBsonDocument());
 
             result = fileCollection.update(clientSession, queryBson, fileUpdate, null);
 
@@ -981,7 +978,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     public OpenCGAResult<Long> count(final Query query, final String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, user);
-        logger.debug("File count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("File count: query : {}", bson.toBsonDocument());
         return new OpenCGAResult<>(fileCollection.count(bson));
     }
 
@@ -1134,7 +1131,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         }
         qOptions = fixQueryOptions(qOptions);
 
-        logger.debug("File query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("File query: {}", bson.toBsonDocument());
         if (!query.getBoolean(QueryParams.DELETED.key())) {
             return fileCollection.iterator(clientSession, bson, null, null, qOptions);
         } else {
@@ -1417,9 +1414,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         Bson bsonQuery = parseQuery(query);
 
-        logger.debug("Sample references extraction. Query: {}, update: {}",
-                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Sample references extraction. Query: {}, update: {}", bsonQuery.toBsonDocument(), update.toBsonDocument());
         DataResult result = fileCollection.update(clientSession, bsonQuery, update, multi);
         logger.debug("Sample '" + sample.getId() + "' references removed from " + result.getNumUpdated() + " out of "
                 + result.getNumMatches() + " files");

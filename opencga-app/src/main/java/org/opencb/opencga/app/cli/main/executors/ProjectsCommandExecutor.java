@@ -18,7 +18,6 @@ import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.ProjectsCommandOptions;
 
-import java.lang.Object;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.project.Project;
@@ -124,7 +123,8 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotEmpty(beanParams, "organism.assembly",commandOptions.organismAssembly, true);
              putNestedIfNotEmpty(beanParams, "cellbase.url",commandOptions.cellbaseUrl, true);
              putNestedIfNotEmpty(beanParams, "cellbase.version",commandOptions.cellbaseVersion, true);
-             putNestedIfNotEmpty(beanParams, "cellbase.preferred",commandOptions.cellbasePreferred, true);
+             putNestedIfNotEmpty(beanParams, "cellbase.dataRelease",commandOptions.cellbaseDataRelease, true);
+             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
  
             projectCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -247,6 +247,7 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotEmpty(beanParams, "organism.scientificName",commandOptions.organismScientificName, true);
              putNestedIfNotEmpty(beanParams, "organism.commonName",commandOptions.organismCommonName, true);
              putNestedIfNotEmpty(beanParams, "organism.assembly",commandOptions.organismAssembly, true);
+             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
  
             projectUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
