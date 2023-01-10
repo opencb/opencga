@@ -779,6 +779,9 @@ public class VariantQueryParser {
     }
 
     public static ParsedVariantQuery.VariantQueryXref preProcessXrefs(Query query, CellBaseUtils cellBaseUtils) {
+        VariantQueryUtils.convertRoleInCancerToGeneQuery(query, cellBaseUtils);
+        VariantQueryUtils.convertGoToGeneQuery(query, cellBaseUtils);
+        VariantQueryUtils.convertExpressionToGeneQuery(query, cellBaseUtils);
         ParsedVariantQuery.VariantQueryXref xrefs = parseXrefs(query);
         List<String> allIds = new ArrayList<>(xrefs.getIds().size() + xrefs.getVariants().size());
         allIds.addAll(xrefs.getIds());
@@ -826,7 +829,7 @@ public class VariantQueryParser {
         if (query == null) {
             return xrefs;
         }
-        xrefs.getGenes().addAll(query.getAsStringList(GENE.key(), OR));
+        Set<String> genes = new HashSet<>(query.getAsStringList(GENE.key(), OR));
 
         if (isValidParam(query, ID)) {
             List<String> idsList = query.getAsStringList(ID.key(), OR);
@@ -851,12 +854,31 @@ public class VariantQueryParser {
                     if (isVariantAccession(value) || isClinicalAccession(value) || isGeneAccession(value)) {
                         xrefs.getOtherXrefs().add(value);
                     } else {
-                        xrefs.getGenes().add(value);
+                        genes.add(value);
                     }
                 }
             }
 
         }
+        if (isValidParam(query, ANNOT_GENE_ROLE_IN_CANER_GENES)) {
+            List<String> thisGenes = query.getAsStringList(ANNOT_GENE_ROLE_IN_CANER_GENES.key());
+            if (thisGenes.size() != 1 || !thisGenes.get(0).equals(NONE)) {
+                genes.addAll(thisGenes);
+            }
+        }
+        if (isValidParam(query, ANNOT_GO_GENES)) {
+            List<String> thisGenes = query.getAsStringList(ANNOT_GO_GENES.key());
+            if (thisGenes.size() != 1 || !thisGenes.get(0).equals(NONE)) {
+                genes.addAll(thisGenes);
+            }
+        }
+        if (isValidParam(query, ANNOT_EXPRESSION_GENES)) {
+            List<String> thisGenes = query.getAsStringList(ANNOT_EXPRESSION_GENES.key());
+            if (thisGenes.size() != 1 || !thisGenes.get(0).equals(NONE)) {
+                genes.addAll(thisGenes);
+            }
+        }
+        xrefs.getGenes().addAll(genes);
 //        xrefs.getOtherXrefs().addAll(query.getAsStringList(ANNOT_HPO.key(), OR));
         xrefs.getOtherXrefs().addAll(query.getAsStringList(ANNOT_COSMIC.key(), OR));
         xrefs.getOtherXrefs().addAll(query.getAsStringList(ANNOT_CLINVAR.key(), OR));

@@ -336,6 +336,11 @@ public final class VariantQueryParam implements QueryParam {
             = "List of tissues of interest. e.g. \"lung\"";
     public static final VariantQueryParam ANNOT_EXPRESSION = new VariantQueryParam("expression", TEXT_ARRAY, ANNOT_EXPRESSION_DESCR);
 
+    public static final String ANNOT_GENE_ROLE_IN_CANCER_DESCR
+            = "";
+    public static final VariantQueryParam ANNOT_GENE_ROLE_IN_CANCER
+            = new VariantQueryParam("geneRoleInCancer", TEXT_ARRAY, ANNOT_GENE_ROLE_IN_CANCER_DESCR);
+
     public static final String ANNOT_PROTEIN_KEYWORD_DESCR
             = "List of Uniprot protein variant annotation keywords";
     public static final VariantQueryParam ANNOT_PROTEIN_KEYWORD

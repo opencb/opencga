@@ -18,6 +18,7 @@ import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.VersionUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -26,6 +27,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -45,7 +47,7 @@ public class CellBaseUtilsTest {
     private CellBaseUtils cellBaseUtils;
     private CellBaseClient cellBaseClient;
 
-    @Parameters(name = "{0}")
+    @Parameters(name = "{0}{1}/?assembly={2}%dataRelease={3}")
     public static List<Object[]> data() {
         return Arrays.asList(
                 new Object[]{"http://ws.opencb.org/cellbase-4.7.3/", "v4", "grch37", null},
@@ -54,6 +56,7 @@ public class CellBaseUtilsTest {
 //                new Object[]{"http://ws.opencb.org/cellbase-4.9.0/", "v4", "grch37", null},
 //                new Object[]{"http://ws.opencb.org/cellbase/", "v4", "grch37", null},
                 new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "grch37", "1"},
+                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "grch38", "2"},
                 new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5", "grch38", null},
                 new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5.1", "grch38", "1"},
                 new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5.1", "grch38", "2"});
@@ -94,6 +97,26 @@ public class CellBaseUtilsTest {
     }
 
     @Test
+    public void testGetGo() throws IOException {
+        Assume.assumeFalse("GO ids not supported in GRCH37 and v5", assembly.equalsIgnoreCase("grch37") && cellBaseUtils.isMinVersion("5.0.0"));
+        Set<String> genesByGo = cellBaseUtils.getGenesByGo(Arrays.asList("GO:0006508"));
+        assertNotNull(genesByGo);
+        assertNotEquals(0, genesByGo.size());
+        System.out.println("GO:0006508 = " + genesByGo.size());
+    }
+
+    @Test
+    public void testGetRoleInCancer() throws IOException {
+        Assume.assumeTrue(VersionUtils.isMinVersion("5.2.7-SNAPSHOT", cellBaseUtils.getVersionFromServer()));
+        Assume.assumeFalse("GRCH37", assembly.equalsIgnoreCase("grch37"));
+
+        Set<String> genesByGo = cellBaseUtils.getGenesByRoleInCancer(Arrays.asList("ONCOGENE"));
+        assertNotNull(genesByGo);
+        assertNotEquals(0, genesByGo.size());
+        System.out.println("genesByGo = " + genesByGo);
+    }
+
+    @Test
     public void testGetDuplicatedGene() {
         assertNotNull(cellBaseUtils.getGeneRegion(Arrays.asList("MFRP"), false).get(0));
     }
@@ -126,8 +149,8 @@ public class CellBaseUtilsTest {
     }
 
     @Test
-    public void convertGeneToRegionHGNC() {
-        Assume.assumeTrue(version.startsWith("v5"));
+    public void convertGeneToRegionHGNC() throws IOException {
+        Assume.assumeTrue(cellBaseUtils.isMinVersion("5.0.0"));
         Assume.assumeFalse("HGNC ids not supported in GRCH37", assembly.equalsIgnoreCase("grch37"));
         assertNotNull(cellBaseUtils.getGeneRegion("HGNC:12363"));
     }

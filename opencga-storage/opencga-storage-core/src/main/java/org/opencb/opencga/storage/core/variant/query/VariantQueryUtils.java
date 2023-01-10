@@ -79,6 +79,8 @@ public final class VariantQueryUtils {
             "List of VariantIds that should be intersected with the rest of positional filters", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam ANNOT_EXPRESSION_GENES = QueryParam.create("annot_expression_genes", "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam ANNOT_GO_GENES = QueryParam.create("annot_go_genes", "", QueryParam.Type.TEXT_ARRAY);
+    public static final QueryParam ANNOT_GENE_ROLE_IN_CANER_GENES = QueryParam.create("annot_role_in_cancer_genes", "",
+            QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam ANNOT_GENE_REGIONS = QueryParam.create("annot_gene_regions", "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam ANNOT_GENE_REGIONS_MAP = QueryParam.create("annot_gene_regions_map", "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam VARIANTS_TO_INDEX = QueryParam.create("variantsToIndex",
@@ -100,6 +102,7 @@ public final class VariantQueryUtils {
             ID_INTERSECT,
             ANNOT_EXPRESSION_GENES,
             ANNOT_GO_GENES,
+            ANNOT_GENE_ROLE_IN_CANER_GENES,
             ANNOT_GENE_REGIONS,
             ANNOT_GENE_REGIONS_MAP,
             VARIANTS_TO_INDEX,
@@ -1413,6 +1416,10 @@ public final class VariantQueryUtils {
         if (cellBaseUtils == null) {
             return;
         }
+        if (isValidParam(query, ANNOT_EXPRESSION_GENES)) {
+            // GENE_REGIONS already present in query!
+            return;
+        }
         if (isValidParam(query, VariantQueryParam.ANNOT_EXPRESSION)) {
             String value = query.getString(VariantQueryParam.ANNOT_EXPRESSION.key());
             // Check if comma separated of semi colon separated (AND or OR)
@@ -1436,6 +1443,10 @@ public final class VariantQueryUtils {
         if (cellBaseUtils == null) {
             return;
         }
+        if (isValidParam(query, ANNOT_GO_GENES)) {
+            // GENE_REGIONS already present in query!
+            return;
+        }
         if (isValidParam(query, VariantQueryParam.ANNOT_GO)) {
             String value = query.getString(VariantQueryParam.ANNOT_GO.key());
             // Check if comma separated of semi colon separated (AND or OR)
@@ -1452,6 +1463,30 @@ public final class VariantQueryUtils {
                 genesByGo = Collections.singleton(NONE);
             }
             query.put(ANNOT_GO_GENES.key(), genesByGo);
+        }
+    }
+
+    public static void convertRoleInCancerToGeneQuery(Query query, CellBaseUtils cellBaseUtils) {
+        if (cellBaseUtils == null) {
+            return;
+        }
+        if (isValidParam(query, ANNOT_GENE_ROLE_IN_CANER_GENES)) {
+            // GENE_REGIONS already present in query!
+            return;
+        }
+        if (isValidParam(query, VariantQueryParam.ANNOT_GENE_ROLE_IN_CANCER)) {
+            ParsedQuery<String> value = splitValue(query, ANNOT_GENE_ROLE_IN_CANCER);
+
+            if (value.getOperation() == VariantQueryUtils.QueryOperation.AND) {
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_GENE_ROLE_IN_CANCER, value.toQuery(),
+                        "Unimplemented AND operator");
+            }
+//            query.remove(VariantQueryParam.ANNOT_EXPRESSION.key());
+            Set<String> genes = cellBaseUtils.getGenesByRoleInCancer(value.getValues());
+            if (genes.isEmpty()) {
+                genes = Collections.singleton(NONE);
+            }
+            query.put(ANNOT_GENE_ROLE_IN_CANER_GENES.key(), genes);
         }
     }
 
