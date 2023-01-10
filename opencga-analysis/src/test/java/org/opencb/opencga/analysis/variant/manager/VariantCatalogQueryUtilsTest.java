@@ -188,7 +188,7 @@ public class VariantCatalogQueryUtilsTest {
                 .setVersion("v5")
                 .setDefaultSpecies("hsapiens")
                 .setRest(new RestConfig(Collections.singletonList("https://ws.zettagenomics.com/cellbase"), 10000));
-        cellBaseUtils = new CellBaseUtils(new CellBaseClient(clientConfiguration), assembly);
+        cellBaseUtils = new CellBaseUtils(new CellBaseClient(clientConfiguration));
 
 
         Region cadm1 = cellBaseUtils.getGeneRegion("CADM1");

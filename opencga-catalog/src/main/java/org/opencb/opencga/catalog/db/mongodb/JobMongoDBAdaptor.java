@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import org.apache.commons.lang3.NotImplementedException;
@@ -207,7 +206,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     public OpenCGAResult<Long> count(Query query, String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, QueryOptions.empty(), user);
-        logger.debug("Job count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Job count: query : {}, dbTime: {}", bson.toBsonDocument());
         return new OpenCGAResult<>(jobCollection.count(bson));
     }
 
@@ -281,9 +280,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                 .append(QueryParams.UID.key(), job.getUid());
         Bson finalQuery = parseQuery(tmpQuery, options);
 
-        logger.debug("Job update: query : {}, update: {}",
-                finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                jobParameters.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Job update: query : {}, update: {}", finalQuery.toBsonDocument(), jobParameters.toBsonDocument());
         DataResult result = jobCollection.update(clientSession, finalQuery, jobParameters, null);
 
         if (result.getNumMatches() == 0) {
@@ -638,7 +635,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
         Bson bson = parseQuery(query, options, user);
 
-        logger.debug("Job get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Job get: query : {}", bson.toBsonDocument());
         if (!query.getBoolean(QueryParams.DELETED.key())) {
             return jobCollection.iterator(clientSession, bson, null, null, qOptions);
         } else {
@@ -755,9 +752,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         document.getPush().put(prefix + Constants.JOB_DELETED_INPUT_FILES, file);
         Document updateDocument = document.toFinalUpdateDocument();
 
-        logger.debug("Removing file from job '{}' field. Query: {}, Update: {}", QueryParams.INPUT.key(),
-                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Removing file from job '{}' field. Query: {}, Update: {}", QueryParams.INPUT.key(), query.toBsonDocument(),
+                updateDocument.toBsonDocument());
         DataResult result = jobCollection.update(clientSession, query, updateDocument, QueryOptions.empty());
         logger.debug("File '{}' removed from {} jobs", fileUid, result.getNumUpdated());
 
@@ -771,9 +767,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         document.getPush().put(prefix + Constants.JOB_DELETED_OUTPUT_FILES, file);
         updateDocument = document.toFinalUpdateDocument();
 
-        logger.debug("Removing file from job '{}' field. Query: {}, Update: {}", QueryParams.OUTPUT.key(),
-                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Removing file from job '{}' field. Query: {}, Update: {}", QueryParams.OUTPUT.key(), query.toBsonDocument(),
+                updateDocument.toBsonDocument());
         result = jobCollection.update(clientSession, query, updateDocument, QueryOptions.empty());
         logger.debug("File '{}' removed from {} jobs", fileUid, result.getNumUpdated());
 
@@ -786,9 +781,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         document.getSet().put(prefix + Constants.JOB_DELETED_OUTPUT_DIRECTORY, file);
         updateDocument = document.toFinalUpdateDocument();
 
-        logger.debug("Removing file from job '{}' field. Query: {}, Update: {}", QueryParams.OUT_DIR.key(),
-                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Removing file from job '{}' field. Query: {}, Update: {}", QueryParams.OUT_DIR.key(), query.toBsonDocument(),
+                updateDocument.toBsonDocument());
         result = jobCollection.update(clientSession, query, updateDocument, QueryOptions.empty());
         logger.debug("File '{}' removed from {} jobs", fileUid, result.getNumUpdated());
     }

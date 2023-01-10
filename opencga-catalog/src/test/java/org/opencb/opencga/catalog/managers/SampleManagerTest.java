@@ -440,7 +440,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         sampleVariantStats.setTiTvRatio((float) 15.2);
         sampleQcVariantStats.add(new SampleQcVariantStats("v2", "", null, sampleVariantStats));
 
-        SampleVariantQualityControlMetrics metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null, null);
+        SampleVariantQualityControlMetrics metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null, null, null);
         SampleQualityControl qualityControl = new SampleQualityControl(null, null, metrics);
 
         OpenCGAResult<Sample> result = catalogManager.getSampleManager().update(studyFqn, "sample",
@@ -483,7 +483,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         sampleVariantStats.setVariantCount(15);
         sampleVariantStats.setTiTvRatio((float) 3.5);
         sampleQcVariantStats.add(new SampleQcVariantStats("v1", "", null, sampleVariantStats));
-        metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null, null);
+        metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null, null, null);
         qualityControl = new SampleQualityControl(null, null, metrics);
 
         // And update sample
@@ -614,7 +614,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         sampleVariantStats.setTiTvRatio((float) 15.2);
         sampleQcVariantStats.add(new SampleQcVariantStats("v2", "", null, sampleVariantStats));
 
-        SampleVariantQualityControlMetrics metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null, null);
+        SampleVariantQualityControlMetrics metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null, null, null);
         SampleQualityControl qualityControl = new SampleQualityControl(null, null, metrics);
 
         OpenCGAResult<Sample> result = catalogManager.getSampleManager().update(studyFqn, "sample",
@@ -648,7 +648,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         sampleVariantStats.setVariantCount(15);
         sampleVariantStats.setTiTvRatio((float) 3.5);
         sampleQcVariantStats.add(new SampleQcVariantStats("v1", "", null, sampleVariantStats));
-        metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null, null);
+        metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null, null, null);
         qualityControl = new SampleQualityControl(null, null, metrics);
 
         // And update sample
@@ -868,14 +868,14 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         ClinicalAnalysis clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical", QueryOptions.empty(), token).first();
         assertEquals(2, clinicalResult.getProband().getVersion());
-        assertEquals(2, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
+        assertEquals(2, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample2 version
         assertEquals(1, clinicalResult.getFamily().getVersion());
         assertEquals(2, clinicalResult.getFamily().getMembers().get(0).getVersion());   // proband version
         assertEquals(2, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
 
         clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical2", QueryOptions.empty(), token).first();
         assertEquals(3, clinicalResult.getProband().getVersion());
-        assertEquals(3, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
+        assertEquals(2, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample2 version
         assertEquals(2, clinicalResult.getFamily().getVersion());
         assertEquals(3, clinicalResult.getFamily().getMembers().get(0).getVersion());   // proband version
         assertEquals(2, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
@@ -901,7 +901,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical", QueryOptions.empty(), token).first();
         assertEquals(2, clinicalResult.getProband().getVersion());
-        assertEquals(2, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
+        assertEquals(2, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample2 version
         assertEquals(1, clinicalResult.getFamily().getVersion());
         assertEquals(2, clinicalResult.getFamily().getMembers().get(0).getVersion());   // proband version
         assertEquals(2, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
@@ -909,7 +909,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical2", QueryOptions.empty(), token).first();
         assertEquals(3, clinicalResult.getProband().getVersion());
-        assertEquals(3, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
+        assertEquals(2, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample2 version
         assertEquals(3, clinicalResult.getFamily().getVersion());
         assertEquals(3, clinicalResult.getFamily().getMembers().get(0).getVersion());   // proband version
         assertEquals(3, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
@@ -940,7 +940,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical", QueryOptions.empty(), token).first();
         assertEquals(2, clinicalResult.getProband().getVersion());
-        assertEquals(2, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
+        assertEquals(2, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample2 version
         assertEquals(1, clinicalResult.getFamily().getVersion());
         assertEquals(2, clinicalResult.getFamily().getMembers().get(0).getVersion());   // proband version
         assertEquals(2, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
@@ -952,6 +952,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(5, clinicalResult.getFamily().getVersion());
         assertEquals(4, clinicalResult.getFamily().getMembers().get(0).getVersion());   // proband version
         assertEquals(4, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
+        assertEquals(4, clinicalResult.getFamily().getMembers().get(1).getSamples().get(0).getVersion());   // sample3 version
         assertEquals(3, clinicalResult.getFamily().getMembers().get(0).getSamples().get(0).getVersion());   // proband sample2 version
     }
 
@@ -2124,6 +2125,32 @@ public class SampleManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void associateSameSampleAndIndividualInDifferentStudies() throws CatalogException {
+        String id = "myUniqueId";
+        for (String studyId : Arrays.asList("st1", "st2")) {
+            System.out.println("Study " + studyId);
+            catalogManager.getStudyManager().create(project1, new Study().setId(studyId), QueryOptions.empty(), token);
+
+            catalogManager.getSampleManager().create(studyId, new Sample().setId(id), QueryOptions.empty(), token);
+            catalogManager.getIndividualManager().create(studyId, new Individual().setId(id), QueryOptions.empty(), token);
+            catalogManager.getSampleManager().update(studyId, id, new SampleUpdateParams().setIndividualId(id), QueryOptions.empty(), token);
+
+            OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(studyId, id, QueryOptions.empty(), token);
+            assertEquals(1, sampleResult.getNumResults());
+            assertEquals(id, sampleResult.first().getIndividualId());
+            assertEquals(2, sampleResult.first().getVersion());
+
+            OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager().get(studyId, id, QueryOptions.empty(), token);
+            assertEquals(1, individualResult.getNumResults());
+            assertEquals(2, individualResult.first().getVersion());
+            assertEquals(1, individualResult.first().getSamples().size());
+            assertEquals(id, individualResult.first().getSamples().get(0).getId());
+            assertEquals(2, individualResult.first().getSamples().get(0).getVersion());
+        }
+
+    }
+
+    @Test
     public void testGetSampleAndIndividualWithPermissionsChecked() throws CatalogException {
         String sampleId1 = catalogManager.getSampleManager()
                 .create(studyFqn, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT, token).first().getId();
@@ -2351,7 +2378,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                 ParamUtils.AclAction.ADD, this.token);
 
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("view study");
+        thrown.expectMessage("view any study");
         catalogManager.getStudyManager().get(studyFqn, QueryOptions.empty(), "");
     }
 

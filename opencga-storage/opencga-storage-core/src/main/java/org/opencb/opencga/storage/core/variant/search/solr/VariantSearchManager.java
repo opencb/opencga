@@ -45,6 +45,7 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
@@ -83,10 +84,10 @@ public class VariantSearchManager {
     public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
 
     public VariantSearchManager(VariantStorageMetadataManager variantStorageMetadataManager,
-                                StorageConfiguration storageConfiguration, ObjectMap options) {
+                                CellBaseUtils cellBaseUtils, StorageConfiguration storageConfiguration, ObjectMap options) {
 
         this.solrQueryParser = new SolrQueryParser(variantStorageMetadataManager);
-        this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
+        this.cellBaseClient = cellBaseUtils.getCellBaseClient();
         this.options = options;
         this.variantSearchToVariantConverter = new VariantSearchToVariantConverter();
         this.configSet = storageConfiguration.getSearch().getConfigSet();

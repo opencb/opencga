@@ -60,6 +60,7 @@ public enum VariantField {
     ANNOTATION_ANCESTRAL_ALLELE(ANNOTATION, "annotation.ancestralAllele"),
     ANNOTATION_ID(ANNOTATION, "annotation.id"),
     ANNOTATION_XREFS(ANNOTATION, "annotation.xrefs"),
+    ANNOTATION_GWAS(ANNOTATION, "annotation.gwas"),
     ANNOTATION_HGVS(ANNOTATION, "annotation.hgvs"),
     ANNOTATION_CYTOBAND(ANNOTATION, "annotation.cytoband"),
     ANNOTATION_DISPLAY_CONSEQUENCE_TYPE(ANNOTATION, "annotation.displayConsequenceType"),

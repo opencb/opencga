@@ -18,7 +18,6 @@ import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.OperationsVariantStorageCommandOptions;
 
-import java.lang.Object;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.YesNoAuto;
@@ -198,7 +197,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "url",commandOptions.url, true);
              putNestedIfNotEmpty(beanParams, "version",commandOptions.version, true);
-             putNestedIfNotEmpty(beanParams, "preferred",commandOptions.preferred, true);
+             putNestedIfNotEmpty(beanParams, "dataRelease",commandOptions.dataRelease, true);
  
             cellBaseConfiguration = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

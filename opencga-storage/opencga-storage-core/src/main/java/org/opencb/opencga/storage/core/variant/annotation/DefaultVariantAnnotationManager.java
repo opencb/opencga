@@ -132,11 +132,10 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         preAnnotate(query, doCreate, doLoad, params);
 
         if (doCreate && doLoad) {
-            ProjectMetadata.VariantAnnotatorProgram newAnnotator = variantAnnotator.getVariantAnnotatorProgram();
-            List<ObjectMap> newSourceVersion = variantAnnotator.getVariantAnnotatorSourceVersion();
+            ProjectMetadata.VariantAnnotationMetadata newVariantAnnotationMetadata = variantAnnotator.getVariantAnnotationMetadata();
 
             dbAdaptor.getMetadataManager().updateProjectMetadata(projectMetadata -> {
-                checkCurrentAnnotation(projectMetadata, overwrite, newAnnotator, newSourceVersion);
+                checkCurrentAnnotation(projectMetadata, overwrite, newVariantAnnotationMetadata);
                 return projectMetadata;
             });
         }
@@ -503,12 +502,11 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             throws VariantAnnotatorException, StorageEngineException, IOException {
         boolean overwrite = params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false);
         if (doLoad && doCreate) {
-            ProjectMetadata.VariantAnnotatorProgram newAnnotator = variantAnnotator.getVariantAnnotatorProgram();
-            List<ObjectMap> newSourceVersion = variantAnnotator.getVariantAnnotatorSourceVersion();
+            ProjectMetadata.VariantAnnotationMetadata newAnnotationMetadata = variantAnnotator.getVariantAnnotationMetadata();
 
 
             dbAdaptor.getMetadataManager().updateProjectMetadata(projectMetadata -> {
-                updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite, newAnnotator, newSourceVersion);
+                updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite, newAnnotationMetadata);
                 return projectMetadata;
             });
         }

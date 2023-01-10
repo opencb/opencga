@@ -201,7 +201,7 @@ public class ProjectManagerTest extends GenericTest {
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
         assertNotNull(pr.getCellbase());
         assertEquals("https://ws.zettagenomics.com/cellbase", pr.getCellbase().getUrl());
-        assertEquals("v5", pr.getCellbase().getVersion());
+        assertEquals(ParamConstants.CELLBASE_VERSION, pr.getCellbase().getVersion());
 
         CellBaseConfiguration cb = new CellBaseConfiguration("https://ws.opencb.org/cellbase", "v3");
         OpenCGAResult<Project> update = catalogManager.getProjectManager().setCellbaseConfiguration(pr.getId(),

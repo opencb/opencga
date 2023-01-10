@@ -42,6 +42,7 @@ import org.opencb.opencga.core.models.variant.FamilyQcAnalysisParams;
 import org.opencb.opencga.core.models.variant.GatkWrapperParams;
 import org.opencb.opencga.core.models.variant.GenomePlotAnalysisParams;
 import org.opencb.opencga.core.models.variant.GwasAnalysisParams;
+import org.opencb.opencga.core.models.variant.HRDetectAnalysisParams;
 import org.opencb.opencga.core.models.variant.IndividualQcAnalysisParams;
 import org.opencb.opencga.core.models.variant.InferredSexAnalysisParams;
 import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
@@ -136,6 +137,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "gwas-run":
                 queryResponse = runGwas();
+                break;
+            case "hr-detect-run":
+                queryResponse = runHrDetect();
                 break;
             case "index-run":
                 queryResponse = runIndex();
@@ -783,6 +787,56 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantClient().runGwas(gwasAnalysisParams, queryParams);
     }
 
+    private RestResponse<Job> runHrDetect() throws Exception {
+
+        logger.debug("Executing runHrDetect in Analysis - Variant command line");
+
+        AnalysisVariantCommandOptions.RunHrDetectCommandOptions commandOptions = analysisVariantCommandOptions.runHrDetectCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        HRDetectAnalysisParams hRDetectAnalysisParams= null;
+        if (commandOptions.jsonDataModel) {
+            hRDetectAnalysisParams = new HRDetectAnalysisParams();
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(hRDetectAnalysisParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            hRDetectAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), HRDetectAnalysisParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+             putNestedIfNotEmpty(beanParams, "sampleId",commandOptions.sampleId, true);
+             putNestedIfNotEmpty(beanParams, "snvFittingId",commandOptions.snvFittingId, true);
+             putNestedIfNotEmpty(beanParams, "svFittingId",commandOptions.svFittingId, true);
+             putNestedIfNotEmpty(beanParams, "cnvQuery",commandOptions.cnvQuery, true);
+             putNestedIfNotEmpty(beanParams, "indelQuery",commandOptions.indelQuery, true);
+             putNestedIfNotEmpty(beanParams, "snv3CustomName",commandOptions.snv3CustomName, true);
+             putNestedIfNotEmpty(beanParams, "snv8CustomName",commandOptions.snv8CustomName, true);
+             putNestedIfNotEmpty(beanParams, "sv3CustomName",commandOptions.sv3CustomName, true);
+             putNestedIfNotEmpty(beanParams, "sv8CustomName",commandOptions.sv8CustomName, true);
+             putNestedIfNotNull(beanParams, "bootstrap",commandOptions.bootstrap, true);
+             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+ 
+            hRDetectAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), HRDetectAnalysisParams.class);
+        }
+        return openCGAClient.getVariantClient().runHrDetect(hRDetectAnalysisParams, queryParams);
+    }
+
     private RestResponse<Job> runIndex() throws Exception {
 
         logger.debug("Executing runIndex in Analysis - Variant command line");
@@ -1086,6 +1140,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("sample", commandOptions.sample);
+        queryParams.putIfNotEmpty("type", commandOptions.type);
         queryParams.putIfNotEmpty("ct", commandOptions.ct);
         queryParams.putIfNotEmpty("biotype", commandOptions.biotype);
         queryParams.putIfNotEmpty("fileData", commandOptions.fileData);
@@ -1099,17 +1154,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("panelFeatureType", commandOptions.panelFeatureType);
         queryParams.putIfNotEmpty("panelRoleInCancer", commandOptions.panelRoleInCancer);
         queryParams.putIfNotNull("panelIntersection", commandOptions.panelIntersection);
-        queryParams.putIfNotEmpty("catalogues", commandOptions.catalogues);
-        queryParams.putIfNotEmpty("cataloguesContent", commandOptions.cataloguesContent);
-        queryParams.putIfNotEmpty("fitMethod", commandOptions.fitMethod);
-        queryParams.putIfNotNull("nBoot", commandOptions.nBoot);
-        queryParams.putIfNotEmpty("sigVersion", commandOptions.sigVersion);
-        queryParams.putIfNotEmpty("organ", commandOptions.organ);
-        queryParams.putIfNotNull("thresholdPerc", commandOptions.thresholdPerc);
-        queryParams.putIfNotNull("thresholdPval", commandOptions.thresholdPval);
-        queryParams.putIfNotNull("maxRareSigs", commandOptions.maxRareSigs);
-        queryParams.putIfNotEmpty("signaturesFile", commandOptions.signaturesFile);
-        queryParams.putIfNotEmpty("rareSignaturesFile", commandOptions.rareSignaturesFile);
+        queryParams.putIfNotEmpty("msId", commandOptions.msId);
+        queryParams.putIfNotEmpty("msDescription", commandOptions.msDescription);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
@@ -1148,18 +1194,19 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
              putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
              putNestedIfNotEmpty(beanParams, "query",commandOptions.query, true);
-             putNestedIfNotEmpty(beanParams, "catalogues",commandOptions.catalogues, true);
-             putNestedIfNotEmpty(beanParams, "cataloguesContent",commandOptions.cataloguesContent, true);
+             putNestedIfNotEmpty(beanParams, "fitId",commandOptions.fitId, true);
              putNestedIfNotEmpty(beanParams, "fitMethod",commandOptions.fitMethod, true);
-             putNestedIfNotNull(beanParams, "nBoot",commandOptions.nBoot, true);
-             putNestedIfNotEmpty(beanParams, "sigVersion",commandOptions.sigVersion, true);
-             putNestedIfNotEmpty(beanParams, "organ",commandOptions.organ, true);
-             putNestedIfNotNull(beanParams, "thresholdPerc",commandOptions.thresholdPerc, true);
-             putNestedIfNotNull(beanParams, "thresholdPval",commandOptions.thresholdPval, true);
-             putNestedIfNotNull(beanParams, "maxRareSigs",commandOptions.maxRareSigs, true);
-             putNestedIfNotEmpty(beanParams, "signaturesFile",commandOptions.signaturesFile, true);
-             putNestedIfNotEmpty(beanParams, "rareSignaturesFile",commandOptions.rareSignaturesFile, true);
+             putNestedIfNotNull(beanParams, "fitNBoot",commandOptions.fitNBoot, true);
+             putNestedIfNotEmpty(beanParams, "fitSigVersion",commandOptions.fitSigVersion, true);
+             putNestedIfNotEmpty(beanParams, "fitOrgan",commandOptions.fitOrgan, true);
+             putNestedIfNotNull(beanParams, "fitThresholdPerc",commandOptions.fitThresholdPerc, true);
+             putNestedIfNotNull(beanParams, "fitThresholdPval",commandOptions.fitThresholdPval, true);
+             putNestedIfNotNull(beanParams, "fitMaxRareSigs",commandOptions.fitMaxRareSigs, true);
+             putNestedIfNotEmpty(beanParams, "fitSignaturesFile",commandOptions.fitSignaturesFile, true);
+             putNestedIfNotEmpty(beanParams, "fitRareSignaturesFile",commandOptions.fitRareSignaturesFile, true);
+             putNestedIfNotEmpty(beanParams, "skip",commandOptions.skip, true);
              putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
  
             mutationalSignatureAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
@@ -1517,18 +1564,20 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotEmpty(beanParams, "msId",commandOptions.msId, true);
              putNestedIfNotEmpty(beanParams, "msDescription",commandOptions.msDescription, true);
              putNestedIfNotEmpty(beanParams, "msQuery",commandOptions.msQuery, true);
+             putNestedIfNotEmpty(beanParams, "msFitId",commandOptions.msFitId, true);
              putNestedIfNotEmpty(beanParams, "msFitMethod",commandOptions.msFitMethod, true);
-             putNestedIfNotNull(beanParams, "msNBoot",commandOptions.msNBoot, true);
-             putNestedIfNotEmpty(beanParams, "msSigVersion",commandOptions.msSigVersion, true);
-             putNestedIfNotEmpty(beanParams, "msOrgan",commandOptions.msOrgan, true);
-             putNestedIfNotNull(beanParams, "msThresholdPerc",commandOptions.msThresholdPerc, true);
-             putNestedIfNotNull(beanParams, "msThresholdPval",commandOptions.msThresholdPval, true);
-             putNestedIfNotNull(beanParams, "msMaxRareSigs",commandOptions.msMaxRareSigs, true);
-             putNestedIfNotEmpty(beanParams, "msSignaturesFile",commandOptions.msSignaturesFile, true);
-             putNestedIfNotEmpty(beanParams, "msRareSignaturesFile",commandOptions.msRareSignaturesFile, true);
+             putNestedIfNotNull(beanParams, "msFitNBoot",commandOptions.msFitNBoot, true);
+             putNestedIfNotEmpty(beanParams, "msFitSigVersion",commandOptions.msFitSigVersion, true);
+             putNestedIfNotEmpty(beanParams, "msFitOrgan",commandOptions.msFitOrgan, true);
+             putNestedIfNotNull(beanParams, "msFitThresholdPerc",commandOptions.msFitThresholdPerc, true);
+             putNestedIfNotNull(beanParams, "msFitThresholdPval",commandOptions.msFitThresholdPval, true);
+             putNestedIfNotNull(beanParams, "msFitMaxRareSigs",commandOptions.msFitMaxRareSigs, true);
+             putNestedIfNotEmpty(beanParams, "msFitSignaturesFile",commandOptions.msFitSignaturesFile, true);
+             putNestedIfNotEmpty(beanParams, "msFitRareSignaturesFile",commandOptions.msFitRareSignaturesFile, true);
              putNestedIfNotEmpty(beanParams, "gpId",commandOptions.gpId, true);
              putNestedIfNotEmpty(beanParams, "gpDescription",commandOptions.gpDescription, true);
              putNestedIfNotEmpty(beanParams, "gpConfigFile",commandOptions.gpConfigFile, true);
+             putNestedIfNotEmpty(beanParams, "skip",commandOptions.skip, true);
              putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
  
             sampleQcAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()

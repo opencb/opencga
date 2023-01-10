@@ -1,10 +1,8 @@
 package org.opencb.opencga.core.api;
 
-import com.beust.jcommander.DynamicParameter;
-import com.beust.jcommander.Parameter;
-
-import java.util.HashMap;
-import java.util.Map;
+import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
+import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
+import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
 
 public class FieldConstants {
 
@@ -30,7 +28,8 @@ public class FieldConstants {
     public static final String GENERIC_CUSTOM_STATUS = "Object to set a custom status.";
     public static final String GENERIC_INTERNAL = "Internal field to manage the object.";
     public static final String GENERIC_NAME = "Name of the .";
-    public static final String GENERIC_ID_DESCRIPTION = "Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.";
+    public static final String GENERIC_ID_DESCRIPTION = "Object ID is a mandatory parameter when creating a new one, this ID cannot be"
+            + " changed at the moment.";
     public static final String GENERIC_STATUS_DESCRIPTION = "Object status.";
     public static final String GENERIC_STATS = "Stats of the object.";
     //QualityControl
@@ -74,12 +73,20 @@ public class FieldConstants {
     public static final String SAMPLE_QUALITY_CONTROL_FILES_DESCRIPTION = "Files used for the quality control of the sample.";
     public static final String SAMPLE_QUALITY_CONTROL_COMMENTS_DESCRIPTION = "Comments for the quality control of the sample.";
     public static final String SAMPLE_QUALITY_CONTROL_VARIANT_DESCRIPTION = "Describes variant quality control.";
+    public static final String SAMPLE_QUALITY_CONTROL_SKIP_DESCRIPTION = "Quality control metrics to skip. Valid values are: "
+            + SampleQcAnalysisParams.VARIANT_STATS_SKIP_VALUE + ", " + SampleQcAnalysisParams.SIGNATURE_SKIP_VALUE + ", "
+            + SampleQcAnalysisParams.SIGNATURE_CATALOGUE_SKIP_VALUE + ", " + SampleQcAnalysisParams.SIGNATURE_FITTING_SKIP_VALUE + ", "
+            + SampleQcAnalysisParams.GENOME_PLOT_SKIP_VALUE;
+    public static final String SAMPLE_QUALITY_CONTROL_OVERWRITE_DESCRIPTION = "Overwrite sample quality control in OpenCGA catalog.";
 
     //SampleVariantQualityControlMetrics
-    public static final String SAMPLE_QUALITY_CONTROL_METRICS_VARIANT_STATS_DESCRIPTION = "Variant stats for the quality control of the "
-            + "sample.";
-    public static final String SAMPLE_QUALITY_CONTROL_METRICS_SIGNATURES_DESCRIPTION = "Signature for the quality control of the sample.";
-    public static final String SAMPLE_QUALITY_CONTROL_METRICS_GENOME_PLOT_DESCRIPTION = "Genome plot for the quality control of the sample.";
+    public static final String SAMPLE_QUALITY_CONTROL_METRICS_VARIANT_STATS_DESCRIPTION = "Variant stats for the quality control of the"
+            + " sample.";
+    public static final String SAMPLE_QUALITY_CONTROL_METRICS_SIGNATURES_DESCRIPTION = "List of signature for the quality control of the"
+            + " sample.";
+    public static final String SAMPLE_QUALITY_CONTROL_METRICS_GENOME_PLOT_DESCRIPTION = "Genome plot for the quality control of the"
+            + " sample.";
+    public static final String SAMPLE_QUALITY_CONTROL_METRICS_HRDETEC_DESCRIPTION  = "List of HRDetect results for a given sample";
     public static final String SAMPLE_QUALITY_CONTROL_METRICS_FILES_DESCRIPTION = "File for the quality control metrics of the "
             + "sample.";
 
@@ -131,16 +138,19 @@ public class FieldConstants {
             + "true or false.";
 
     //Family
-    public static final String FAMILY_ID_DESCRIPTION = "Family is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment.";
+    public static final String FAMILY_ID_DESCRIPTION = "Family is a mandatory parameter when creating a new sample, this ID cannot be"
+            + " changed at the moment.";
     public static final String FAMILY_NAME = "Family name.";
     public static final String FAMILY_MEMBERS = "List of individuals who are family members.";
     public static final String FAMILY_DISORDERS = "Family disorders.";
     public static final String FAMILY_EXPECTED_SIZE = "Family expected size.";
-    public static final String FAMILY_ROLES = "Map of members ids and enum of roles (FATHER, MOTHER, IDENTICAL_TWIN, SON, UNCLE, PATERNAL_GRANDFATHER.)  .";
+    public static final String FAMILY_ROLES = "Map of members ids and enum of roles (FATHER, MOTHER, IDENTICAL_TWIN, SON, UNCLE,"
+            + " PATERNAL_GRANDFATHER.)  .";
 
     //FamilyQualityControl
     public static final String FAMILY_QUALITY_CONTROL_RELATEDNESS_DESCRIPTION = "Reports of family relationship.";
-    public static final String INDIVIDUAL_QUALITY_CONTROL_INFERRED_SEX_REPORT_DESCRIPTION = "List of inferred sex reports, it depends on the method (currently by coverage ratio).";
+    public static final String INDIVIDUAL_QUALITY_CONTROL_INFERRED_SEX_REPORT_DESCRIPTION = "List of inferred sex reports, it depends on"
+            + " the method (currently by coverage ratio).";
     public static final String INDIVIDUAL_QUALITY_CONTROL_SAMPLE_RELATEDNESS_REPORT_DESCRIPTION = "Reports of samples relatedness.";
     public static final String INDIVIDUAL_QUALITY_CONTROL_MENDELIAN_ERRORS_DESCRIPTION = "Mendelian errors.";
 
@@ -395,43 +405,73 @@ public class FieldConstants {
     // Mutational signature (sample-qc-run, mutationsl-signature-run, mutational-signature-query)
     public static final String MUTATIONAL_SIGNATURE_ID_DESCRIPTION = "Signature ID.";
     public static final String MUTATIONAL_SIGNATURE_DESCRIPTION_DESCRIPTION = "Signature description.";
+    public static final String MUTATIONAL_SIGNATURE_SAMPLE_DESCRIPTION = "Sample.";
     public static final String MUTATIONAL_SIGNATURE_QUERY_DESCRIPTION = "Signature query in JSON format, e.g: \"\"{\\\"sample\\\":"
             + "\\\"NR123456_T\\\", \\\"fileData\\\": \\\"NR.123456_T_vs_NR.1234567_G.annot.vcf.gz:FILTER=PASS;CLPM<=0;ASMD>=140\\\"}\".";
     public static final String MUTATIONAL_SIGNATURE_CATALOGUES_DESCRIPTION = "File name containing mutational catalogues. Each sample"
             + " catalogue is in a column, with sample names as column headers and channel.";
     public static final String MUTATIONAL_SIGNATURE_CATALOGUES_CONTENT_DESCRIPTION = "Mutational catalogues. Each sample catalogue is in a"
             + " column, with sample names as column headers and channel.";
+    public static final String MUTATIONAL_SIGNATURE_FIT_ID_DESCRIPTION = "Fiiting signature ID";
     public static final String MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION = "Either Fit or FitMS. If not specified then FitMS";
-    public static final String MUTATIONAL_SIGNATURE_N_BOOT_DESCRIPTION = "Number of bootstrap to be used.";
-    public static final String MUTATIONAL_SIGNATURE_SIG_VERSION_DESCRIPTION = "Either COSMICv2, COSMICv3.2, RefSigv1 or RefSigv2. If not"
-            + " specified RefSigv2.";
-    public static final String MUTATIONAL_SIGNATURE_ORGAN_DESCRIPTION = "When using RefSigv1 or RefSigv2 as SIGVERSION, organ-specific"
-            + " signatures will be used. If SIGVERSION is COSMICv2 or COSMICv3.2, then a selection of signatures found in the given organ will be"
-            + " used. Available organs depend on the selected SIGVERSION. For RefSigv1 or RefSigv2: Biliary, Bladder, Bone_SoftTissue, Breast,"
-            + " Cervix (v1 only), CNS, Colorectal, Esophagus, Head_neck, Kidney, Liver, Lung, Lymphoid, NET (v2 only), Oral_Oropharyngeal"
-            + " (v2 only), Ovary, Pancreas, Prostate, Skin, Stomach, Uterus.";
-    public static final String MUTATIONAL_SIGNATURE_THRESHOLD_PERC_DESCRIPTION = "Threshold in percentage of total mutations in a sample,"
-            + " only exposures larger than THRPERC are considered. If not specified 5.";
-    public static final String MUTATIONAL_SIGNATURE_THRESHOLD_PVAL_DESCRIPTION = "P-value to determine the empirical probability that the"
-            + " exposure is lower than the threshold. If not specified then 0.05.";
-    public static final String MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION = "Maximum number of rare signatures that are allowed to be"
-            + " present in each sample. If not specified 1.";
-    public static final String MUTATIONAL_SIGNATURE_SIGNATURES_FILE_DESCRIPTION = "The file name containing mutational signatures. Each"
+    public static final String MUTATIONAL_SIGNATURE_FIT_N_BOOT_DESCRIPTION = "Number of bootstrap to be used.";
+    public static final String MUTATIONAL_SIGNATURE_FIT_SIG_VERSION_DESCRIPTION = "Either COSMICv2, COSMICv3.2, RefSigv1 or RefSigv2."
+            + " If not specified RefSigv2.";
+    public static final String MUTATIONAL_SIGNATURE_FIT_ORGAN_DESCRIPTION = "When using RefSigv1 or RefSigv2 as SIGVERSION, organ-specific"
+            + " signatures will be used. If SIGVERSION is COSMICv2 or COSMICv3.2, then a selection of signatures found in the given organ"
+            + " will be used. Available organs depend on the selected SIGVERSION. For RefSigv1 or RefSigv2: Biliary, Bladder,"
+            + " Bone_SoftTissue, Breast, Cervix (v1 only), CNS, Colorectal, Esophagus, Head_neck, Kidney, Liver, Lung, Lymphoid, NET"
+            + " (v2 only), Oral_Oropharyngeal (v2 only), Ovary, Pancreas, Prostate, Skin, Stomach, Uterus.";
+    public static final String MUTATIONAL_SIGNATURE_FIT_THRESHOLD_PERC_DESCRIPTION = "Threshold in percentage of total mutations in a"
+            + " sample, only exposures larger than THRPERC are considered. If not specified 5.";
+    public static final String MUTATIONAL_SIGNATURE_FIT_THRESHOLD_PVAL_DESCRIPTION = "P-value to determine the empirical probability that"
+            + " the exposure is lower than the threshold. If not specified then 0.05.";
+    public static final String MUTATIONAL_SIGNATURE_FIT_MAX_RARE_SIGS_DESCRIPTION = "Maximum number of rare signatures that are allowed to"
+            + " be present in each sample. If not specified 1.";
+    public static final String MUTATIONAL_SIGNATURE_FIT_SIGNATURES_FILE_DESCRIPTION = "The file name containing mutational signatures. Each"
             + " signature is in a column, with signature names as column hearders and channel names as row names in the first column with"
             + " no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures are"
             + " considered common signatures.";
-    public static final String MUTATIONAL_SIGNATURE_RARE_SIGNATURES_FILE_DESCRIPTION = "The file name containing mutational signatures."
+    public static final String MUTATIONAL_SIGNATURE_FIT_RARE_SIGNATURES_FILE_DESCRIPTION = "The file name containing mutational signatures."
             + " Each signature is in a column, with signature names as column hearders and channel names as row names in the first column"
             + " with no header. Each column must sum to 1. Use only to provide your own signatures. When fitmethod=FitMS, these signatures"
             + " are considered rare signatures.";
+    public static final String MUTATIONAL_SIGNATURE_SKIP_DESCRIPTION = "To skip to compute catalogue counts or the signature fitting. Use "
+            + " the following keywords: " + MutationalSignatureAnalysisParams.SIGNATURE_CATALOGUE_SKIP_VALUE + ", "
+            + MutationalSignatureAnalysisParams.SIGNATURE_FITTING_SKIP_VALUE + ".";
+
+    // HRDetect analysis
+    public static final String HRDETECT_ID_DESCRIPTION = "ID to identify the HRDetect results.";
+    public static final String HRDETECT_DESCRIPTION_DESCRIPTION = "Decription for these particular HRDetect results.";
+    public static final String HRDETECT_SNV_FITTING_ID_DESCRIPTION = "Mutational signature fitting ID for SNV.";
+    public static final String HRDETECT_SV_FITTING_ID_DESCRIPTION = "Mutational signature fitting ID for SV.";
+    public static final String HRDETECT_CNV_QUERY_DESCRIPTION = "CNV query";
+    public static final String HRDETECT_INDEL_QUERY_DESCRIPTION = "INDEL query";
+    public static final String HRDETECT_SNV3_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SNV3 input for"
+        + " HRDetect.";
+    public static final String HRDETECT_SNV8_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SNV8 input for"
+            + " HRDetect.";
+    public static final String HRDETECT_SV3_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SV3 input for"
+            + " HRDetect.";
+    public static final String HRDETECT_SV8_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SV8 input for"
+            + " HRDetect.";
+    public static final String HRDETECT_BOOTSTRAP_DESCRIPTION = "Request HRDetect with bootstrap.";
 
     // Genome plot (sample-qc-run)
     public static final String GENOME_PLOT_ID_DESCRIPTION = "Genome plot ID.";
     public static final String GENOME_PLOT_DESCRIPTION_DESCRIPTION = "Genome plot description.";
     public static final String GENOME_PLOT_CONFIGURATION_FILE_DESCRIPTION = "Genome plot configuration file.";
 
-    // Varaint stats (sample-qc-run)
+    // Variant stats (sample-qc-run)
     public static final String VARIANT_STATS_ID_DESCRIPTION = "Variant stats ID.";
     public static final String VARIANT_STATS_DESCRIPTION_DESCRIPTION = "Variant stats description.";
     public static final String VARIANT_STATS_QUERY_DESCRIPTION = "Variant stats query in JSON format.";
+
+    // Alignment QC analysis (asample-qc-run)
+    public static final String ALIGNMENT_QC_BAM_FILE_DESCRIPTION = "ID for the BAM file to process.";
+    public static final String ALIGNMENT_QC_SKIP_DESCRIPTION = "To skip any alignment QC metrics use the following keywords (separated by"
+            + " commas): " + AlignmentQcParams.STATS_SKIP_VALUE + ", " + AlignmentQcParams.FLAGSTATS_SKIP_VALUE + ", "
+            + AlignmentQcParams.FASTQC_METRICS_SKIP_VALUE;
+    public static final String ALIGNMENT_QC_OVERWRITE_DESCRIPTION = "To overwrite the QC metrics already computed.";
+
 }

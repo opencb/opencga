@@ -44,7 +44,7 @@ public class VariantQueryParserTest implements DummyVariantStorageTest {
     public void setUp() throws Exception {
         metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory(true));
         ClientConfiguration clientConfiguration = getVariantStorageEngine().getConfiguration().getCellbase().toClientConfiguration();
-        CellBaseUtils cellBaseUtils = new CellBaseUtils(new CellBaseClient("hsapiens", "grch38", clientConfiguration), "grch38");
+        CellBaseUtils cellBaseUtils = new CellBaseUtils(new CellBaseClient("hsapiens", "grch38", clientConfiguration));
         variantQueryParser = new VariantQueryParser(cellBaseUtils, metadataManager);
 
 
