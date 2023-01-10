@@ -278,12 +278,13 @@ public class CellBaseUtils {
         Set<String> genes = new HashSet<>();
         try {
             List<CellBaseDataResult<Gene>> responses;
+            QueryOptions options = new QueryOptions(GENE_QUERY_OPTIONS); // Copy options. DO NOT REUSE QUERY OPTIONS
             if (isMinVersion("5.0.0")) {
                 Query query = new Query("transcriptAnnotationOntologiesId", String.join(",", goValues));
-                responses = checkNulls(cellBaseClient.getGeneClient().search(query, GENE_QUERY_OPTIONS))
+                responses = checkNulls(cellBaseClient.getGeneClient().search(query, options))
                         .getResponses();
             } else {
-                responses = checkNulls(cellBaseClient.getGeneClient().get(goValues, GENE_QUERY_OPTIONS))
+                responses = checkNulls(cellBaseClient.getGeneClient().get(goValues, options))
                         .getResponses();
             }
             for (CellBaseDataResult<Gene> response : responses) {
@@ -334,8 +335,9 @@ public class CellBaseUtils {
                         + "Requires at least cellbase version 5.2.7");
             }
             Query query = new Query("roleInCancer", String.join(",", roleInCancer));
+            QueryOptions options = new QueryOptions(GENE_QUERY_OPTIONS); // Copy options. DO NOT REUSE QUERY OPTIONS
             List<CellBaseDataResult<Gene>> responses =
-                    checkNulls(cellBaseClient.getGeneClient().search(query, GENE_QUERY_OPTIONS)).getResponses();
+                    checkNulls(cellBaseClient.getGeneClient().search(query, options)).getResponses();
             for (CellBaseDataResult<Gene> response : responses) {
                 for (Gene gene : response.getResults()) {
                     genes.add(cacheGene(gene).getName());
