@@ -170,7 +170,6 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response upload(
             @ApiParam(value = "File to upload") @FormDataParam("file") InputStream fileInputStream,
             @FormDataParam("file") FormDataContentDisposition fileMetaData,
-
             @ApiParam(value = "File name to overwrite the input fileName") @FormDataParam("filename") String filename,
             @ApiParam(value = "File format") @DefaultValue("") @FormDataParam("fileFormat") File.Format fileFormat,
             @ApiParam(value = "File bioformat") @DefaultValue("") @FormDataParam("bioformat") File.Bioformat bioformat,

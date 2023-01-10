@@ -43,11 +43,15 @@ public abstract class ParentFilesCommandExecutor extends OpencgaCommandExecutor 
                 .append("fileFormat", ParamUtils.defaultString(commandOptions.fileFormat, File.Format.UNKNOWN.toString()))
                 .append("bioformat", ParamUtils.defaultString(commandOptions.bioformat, File.Bioformat.UNKNOWN.toString()))
                 .append("parents", commandOptions.parents);
+        //If the DEPRECATED parameter fileFormat has set we only override it if the new parameter format is also set
+        params.append("fileFormat", ParamUtils.defaultString(commandOptions.format,params.getString("fileFormat")));
 
         params.putIfNotEmpty("study", commandOptions.study);
         params.putIfNotEmpty("relativeFilePath", commandOptions.catalogPath);
+        params.putIfNotEmpty("relativeFilePath", commandOptions.path);
         params.putIfNotEmpty("description", commandOptions.description);
         params.putIfNotEmpty("fileName", commandOptions.fileName);
+        params.putIfNotEmpty("fileName", commandOptions.name);
         params.putIfNotEmpty("file", commandOptions.inputFile);
         params.put("uploadServlet", Boolean.FALSE);
 

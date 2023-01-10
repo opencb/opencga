@@ -24,6 +24,7 @@
  import org.apache.commons.collections4.CollectionUtils;
  import org.apache.commons.lang3.StringUtils;
  import org.glassfish.jersey.client.ClientProperties;
+ import org.glassfish.jersey.client.RequestEntityProcessing;
  import org.glassfish.jersey.media.multipart.FormDataMultiPart;
  import org.glassfish.jersey.media.multipart.MultiPartFeature;
  import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
@@ -70,7 +71,7 @@
      private static final int DEFAULT_LIMIT = 2000;
      private static final int DEFAULT_SKIP = 0;
      private static final int DEFAULT_CONNECT_TIMEOUT = 1000;
-     private static final int DEFAULT_READ_TIMEOUT = 30000;
+     private static final int DEFAULT_READ_TIMEOUT = 5400000;
      protected final Client client;
      protected final ObjectMapper jsonObjectMapper;
      private final ClientConfiguration clientConfiguration;
@@ -293,11 +294,12 @@
          RestResponse<T> batchRestResponse;
          switch (action) {
              case "upload":
-                 if (isFileUploadServlet(params)) {
+                /* if (isFileUploadServlet(params)) {
                      batchRestResponse = uploadFile(path, params, clazz);
                  } else {
                      batchRestResponse = callUploadRest(path, params, clazz);
-                 }
+                 }*/
+                 batchRestResponse = callUploadRest(path, params, clazz);
                  break;
              case "download":
                  String destinyPath = params.getString("OPENCGA_DESTINY");
@@ -424,12 +426,13 @@
          params.remove("file");
          params.remove("body");
 
-         path.property(ClientProperties.READ_TIMEOUT, DEFAULT_READ_TIMEOUT * 10);
+         path.property(ClientProperties.READ_TIMEOUT, 5400000);
+         client.property(ClientProperties.READ_TIMEOUT, 5400000);
          path.register(MultiPartFeature.class);
-
+         path.property(ClientProperties.REQUEST_ENTITY_PROCESSING,
+                 RequestEntityProcessing.CHUNKED);
          final FileDataBodyPart filePart = new FileDataBodyPart("file", new File(filePath));
          FormDataMultiPart formDataMultiPart = new FormDataMultiPart();
-
          // Add the rest of the parameters to the form
          for (Map.Entry<String, Object> stringObjectEntry : params.entrySet()) {
              formDataMultiPart.field(stringObjectEntry.getKey(), stringObjectEntry.getValue().toString());
@@ -452,6 +455,32 @@
          checkErrors(restResponse, response.getStatusInfo(), POST, path);
          return restResponse;
      }
+
+
+   /*  public <T> RestResponse<T> upload(WebTarget path, Map<String, Object> params, Class<T> clazz) throws ClientException {
+
+         RestResponse<T> restResponse = null;
+         try {
+             Client client = ClientBuilder.newBuilder().build();
+             client.register(MultiPartFeature.class);
+             client.property(ClientProperties.REQUEST_ENTITY_PROCESSING,
+                     RequestEntityProcessing.CHUNKED);
+             // WebTarget target = client.target("http://myexample.com").path("/upload");
+             Invocation.Builder builder = path.request();
+             String filePath = ((String) params.get("file"));
+             File binaryFile = new File(filePath);
+             InputStream targetStream = new FileInputStream(binaryFile);
+             FormDataMultiPart form = new FormDataMultiPart();
+             form.bodyPart(new StreamDataBodyPart("file", targetStream, binaryFile.getName()));
+             Response response = builder.header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token)
+                     .post(Entity.entity(form, form.getMediaType()));
+             restResponse = parseResult(response, clazz);
+         } catch (Exception e) {
+             throw new ClientException(e.getMessage(), e);
+         }
+         return restResponse;
+     }
+*/
 
      /**
       * Call to upload WS.
@@ -615,4 +644,5 @@
          this.token = token;
          return this;
      }
+
  }
