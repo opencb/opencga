@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.api;
 
+import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
 
@@ -461,8 +462,16 @@ public class FieldConstants {
     public static final String GENOME_PLOT_DESCRIPTION_DESCRIPTION = "Genome plot description.";
     public static final String GENOME_PLOT_CONFIGURATION_FILE_DESCRIPTION = "Genome plot configuration file.";
 
-    // Varaint stats (sample-qc-run)
+    // Variant stats (sample-qc-run)
     public static final String VARIANT_STATS_ID_DESCRIPTION = "Variant stats ID.";
     public static final String VARIANT_STATS_DESCRIPTION_DESCRIPTION = "Variant stats description.";
     public static final String VARIANT_STATS_QUERY_DESCRIPTION = "Variant stats query in JSON format.";
+
+    // Alignment QC analysis (asample-qc-run)
+    public static final String ALIGNMENT_QC_BAM_FILE_DESCRIPTION = "ID for the BAM file to process.";
+    public static final String ALIGNMENT_QC_SKIP_DESCRIPTION = "To skip any alignment QC metrics use the following keywords (separated by"
+            + " commas): " + AlignmentQcParams.STATS_SKIP_VALUE + ", " + AlignmentQcParams.FLAGSTATS_SKIP_VALUE + ", "
+            + AlignmentQcParams.FASTQC_METRICS_SKIP_VALUE;
+    public static final String ALIGNMENT_QC_OVERWRITE_DESCRIPTION = "To overwrite the QC metrics already computed.";
+
 }
