@@ -2,7 +2,6 @@ package org.opencb.opencga.core.common;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -14,27 +13,8 @@ public class VersionUtils {
     }
 
     public static boolean isMinVersion(String minVersion, String version) {
-        int c = new Version(minVersion).compareTo(new Version(version));
-//        if (c == 0) {
-//            System.out.println(minVersion + "\t=\t" + version);
-//        } else if (c < 0) {
-//            System.out.println(minVersion + "\t<\t" + version);
-//        } else {
-//            System.out.println(minVersion + "\t>\t" + version);
-//        }
-        return c <= 0;
+        return new Version(minVersion).compareTo(new Version(version)) <= 0;
     }
-
-//    public static void main(String[] args) {
-//        isMinVersion("5.2.7", "5.2.8");
-//        isMinVersion("5.2.7", "5.2.7");
-//        isMinVersion("5.2.7.1", "5.2.7.1-alpha");
-//        isMinVersion("5.2.7", "5.2.7-SNAPSHOT");
-//        isMinVersion("5.2.7-alpha", "5.2.7");
-//        isMinVersion("5.2.7-alpha", "5.2.7-beta");
-//        isMinVersion("5.2.7", "5.2.6");
-//        isMinVersion("5.2.7", "5.2.7.0");
-//    }
 
     public static class Version implements Comparable<Version> {
 
