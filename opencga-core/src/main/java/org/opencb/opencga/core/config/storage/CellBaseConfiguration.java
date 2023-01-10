@@ -39,7 +39,7 @@ public class CellBaseConfiguration {
     @DataField(id = "version", description = "URL to CellBase REST web services, by default official ZettaGenomics installation is used")
     private String version;
 
-    @DataField(id = "version", description = "CellBase data release version to be used. If empty, will use the latest")
+    @DataField(id = "dataRelease", description = "CellBase data release version to be used. If empty, will use the active one")
     private String dataRelease;
 
     public CellBaseConfiguration() {
@@ -60,8 +60,9 @@ public class CellBaseConfiguration {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CellBaseConfiguration{");
-        sb.append("url=").append(url);
+        sb.append("url='").append(url).append('\'');
         sb.append(", version='").append(version).append('\'');
+        sb.append(", dataRelease='").append(dataRelease).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -75,56 +76,21 @@ public class CellBaseConfiguration {
         return this;
     }
 
-    public String getDataRelease() {
-        return dataRelease;
-    }
-
-    public CellBaseConfiguration setDataRelease(String dataRelease) {
-        this.dataRelease = dataRelease;
-        return this;
-    }
-
-//    @Deprecated
-//    public String getHost() {
-//        return url;
-//    }
-//
-//    @Deprecated
-//    public CellBaseConfiguration setHost(String host) {
-//        if (host != null) {
-//            LoggerFactory.getLogger(CellBaseConfiguration.class).warn("Deprecated option 'cellbase.host'. Use 'cellbase.url'");
-//        }
-//        url = host;
-//        return this;
-//    }
-
-//    @Deprecated
-//    public List<String> getHosts() {
-//        return Collections.singletonList(url);
-//    }
-//
-//    @Deprecated
-//    public CellBaseConfiguration setHosts(List<String> hosts) {
-//        if (hosts != null) {
-//            LoggerFactory.getLogger(CellBaseConfiguration.class).warn("Deprecated option 'cellbase.hosts'. Use 'cellbase.url'");
-//        }
-//        if (hosts == null || hosts.isEmpty()) {
-//            url = null;
-//        } else {
-//            if (hosts.size() != 1) {
-//                throw new IllegalArgumentException("Unsupported multiple cellbase hosts");
-//            }
-//            url = hosts.get(0);
-//        }
-//        return this;
-//    }
-
     public String getVersion() {
         return version;
     }
 
     public CellBaseConfiguration setVersion(String version) {
         this.version = version;
+        return this;
+    }
+
+    public String getDataRelease() {
+        return dataRelease;
+    }
+
+    public CellBaseConfiguration setDataRelease(String dataRelease) {
+        this.dataRelease = dataRelease;
         return this;
     }
 

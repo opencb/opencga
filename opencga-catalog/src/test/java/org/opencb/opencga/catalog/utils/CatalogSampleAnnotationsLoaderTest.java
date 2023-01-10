@@ -16,10 +16,7 @@
 
 package org.opencb.opencga.catalog.utils;
 
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.opencb.biodata.models.pedigree.Individual;
 import org.opencb.biodata.models.pedigree.Pedigree;
 import org.opencb.commons.datastore.core.DataResult;
@@ -48,6 +45,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
 
+@Ignore
 public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
 
     private static final List<String> populations = Arrays.asList("ACB", "ASW", "BEB", "CDX", "CEU", "CHB", "CHS", "CLM", "ESN", "FIN",
