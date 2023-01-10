@@ -39,7 +39,7 @@ public final class VariantAnnotatorFactory {
     public enum AnnotationEngine {
         CELLBASE_REST,
         CELLBASE,
-        VEP,
+//        VEP,
         OTHER
     }
 
@@ -73,8 +73,8 @@ public final class VariantAnnotatorFactory {
             case CELLBASE_REST:
             case CELLBASE:
                 return new CellBaseRestVariantAnnotator(configuration, projectMetadata, options);
-            case VEP:
-                return VepVariantAnnotator.buildVepAnnotator();
+//            case VEP:
+//                return VepVariantAnnotator.buildVepAnnotator();
             case OTHER:
                 String className = options.getString(VariantStorageOptions.ANNOTATOR_CLASS.key());
                 logger.info("Annotating with {} = {}", annotationEngine, className);

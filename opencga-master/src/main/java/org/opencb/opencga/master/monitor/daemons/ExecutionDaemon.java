@@ -51,6 +51,7 @@ import org.opencb.opencga.analysis.templates.TemplateRunner;
 import org.opencb.opencga.analysis.tools.ToolFactory;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.hrdetect.HRDetectAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.julie.JulieTool;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
@@ -229,6 +230,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(KnockoutAnalysis.ID, "variant knockout-run");
             put(SampleEligibilityAnalysis.ID, "variant " + SampleEligibilityAnalysis.ID + "-run");
             put(MutationalSignatureAnalysis.ID, "variant " + MutationalSignatureAnalysis.ID + "-run");
+            put(HRDetectAnalysis.ID, "variant " + HRDetectAnalysis.ID + "-run");
             put(MendelianErrorAnalysis.ID, "variant " + MendelianErrorAnalysis.ID + "-run");
             put(InferredSexAnalysis.ID, "variant " + InferredSexAnalysis.ID + "-run");
             put(RelatednessAnalysis.ID, "variant " + RelatednessAnalysis.ID + "-run");

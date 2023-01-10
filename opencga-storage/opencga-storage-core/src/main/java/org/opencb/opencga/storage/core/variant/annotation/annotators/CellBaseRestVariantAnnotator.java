@@ -21,6 +21,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.cellbase.core.models.DataRelease;
 import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.cellbase.core.result.CellBaseDataResult;
 import org.opencb.commons.datastore.core.Event;
@@ -28,6 +29,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 
@@ -46,6 +48,7 @@ import java.util.stream.Collectors;
 public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotator {
 
     private final CellBaseClient cellBaseClient;
+    private final CellBaseUtils cellBaseUtils;
 
     public CellBaseRestVariantAnnotator(StorageConfiguration storageConfiguration, ProjectMetadata projectMetadata, ObjectMap options)
             throws VariantAnnotatorException {
@@ -64,10 +67,15 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
                 VariantStorageOptions.ANNOTATION_TIMEOUT.defaultValue());
 
         clientConfiguration.getRest().setTimeout(timeoutMillis);
-        cellBaseClient = new CellBaseClient(species, assembly, clientConfiguration);
+        cellBaseClient = new CellBaseClient(species, assembly, cellbaseDataRelease, clientConfiguration);
+        cellBaseUtils = new CellBaseUtils(cellBaseClient);
+        logger.info("Annotating with Cellbase REST. {}", cellBaseUtils);
 
-        logger.info("Annotating with Cellbase REST. host '{}', version '{}', species '{}', assembly '{}'",
-                cellbaseRest, cellbaseVersion, species, assembly);
+        try {
+            cellBaseUtils.validateCellBaseConnection();
+        } catch (IOException e) {
+            throw new VariantAnnotatorException(e.getMessage(), e);
+        }
 
     }
 
@@ -88,7 +96,29 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
     }
 
     @Override
-    public ProjectMetadata.VariantAnnotatorProgram getVariantAnnotatorProgram() throws VariantAnnotatorException {
+    public ProjectMetadata.VariantAnnotationMetadata getVariantAnnotationMetadata() throws VariantAnnotatorException {
+        DataRelease dataRelease = null;
+        try {
+            if (cellBaseUtils.supportsDataRelease()) {
+                dataRelease = cellBaseClient.getMetaClient()
+                        .dataReleases()
+                        .allResults()
+                        .stream()
+                        .filter(dr -> String.valueOf(dr.getRelease()).equals(cellBaseClient.getDataRelease()))
+                        .findFirst()
+                        .orElse(null);
+            }
+        } catch (IOException e) {
+            throw new VariantAnnotatorException("Error fetching CellBase information from "
+                    + getDebugInfo("/meta/" + species + "/dataReleases") + ". ");
+        }
+        return new ProjectMetadata.VariantAnnotationMetadata(-1, null, null,
+                getVariantAnnotatorProgram(),
+                getVariantAnnotatorSourceVersion(),
+                dataRelease);
+    }
+
+    private ProjectMetadata.VariantAnnotatorProgram getVariantAnnotatorProgram() throws VariantAnnotatorException {
         CellBaseDataResponse<ObjectMap> response;
         try {
             response = cellBaseClient.getMetaClient().about();
@@ -121,9 +151,7 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
         return program;
     }
 
-
-    @Override
-    public List<ObjectMap> getVariantAnnotatorSourceVersion() throws VariantAnnotatorException {
+    private List<ObjectMap> getVariantAnnotatorSourceVersion() throws VariantAnnotatorException {
         CellBaseDataResponse<ObjectMap> response;
         try {
             response = cellBaseClient.getMetaClient().versions();
@@ -151,11 +179,8 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
     }
 
     private String getDebugInfo(String path) {
-        return "host: '" + cellBaseClient.getClientConfiguration().getRest().getHosts().get(0) + "', "
-                + "version: '" + cellBaseClient.getClientConfiguration().getVersion() + "', "
-                + "species: '" + species + "', "
-                + "assembly: '" + assembly + "', "
-                + "path: '" + path + "'";
+        return cellBaseUtils.toString()
+                + " path: '" + path + "'";
     }
 
     private Event errorEvent(CellBaseDataResponse<ObjectMap> response) {

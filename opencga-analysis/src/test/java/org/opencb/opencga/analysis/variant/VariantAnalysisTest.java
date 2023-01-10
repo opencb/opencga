@@ -19,14 +19,12 @@ package org.opencb.opencga.analysis.variant;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.hamcrest.CoreMatchers;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.clinical.qc.HRDetect;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.clinical.qc.SignatureFitting;
@@ -41,6 +39,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.hrdetect.HRDetectAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
@@ -236,12 +235,19 @@ public class VariantAnalysisTest {
                     token);
 
             // Cancer (SV)
+            ObjectMap config = new ObjectMap();
+//            config.put(VariantStorageOptions.ANNOTATE.key(), true);
+            config.put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.MULTI);
+
             file = opencga.createFile(CANCER_STUDY, "AR2.10039966-01T_vs_AR2.10039966-01G.annot.brass.vcf.gz", token);
-            variantStorageManager.index(CANCER_STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), token);
+            variantStorageManager.index(CANCER_STUDY, file.getId(), opencga.createTmpOutdir("_index"), config, token);
+            file = opencga.createFile(CANCER_STUDY, "AR2.10039966-01T.copynumber.caveman.vcf.gz", token);
+            variantStorageManager.index(CANCER_STUDY, file.getId(), opencga.createTmpOutdir("_index"), config, token);
+            file = opencga.createFile(CANCER_STUDY, "AR2.10039966-01T_vs_AR2.10039966-01G.annot.pindel.vcf.gz", token);
+            variantStorageManager.index(CANCER_STUDY, file.getId(), opencga.createTmpOutdir("_index"), config, token);
 
             SampleUpdateParams updateParams = new SampleUpdateParams().setSomatic(true);
             catalogManager.getSampleManager().update(CANCER_STUDY, cancer_sample, updateParams, null, token);
-
 
             opencga.getStorageConfiguration().getVariant().setDefaultEngine(storageEngine);
             VariantStorageEngine engine = opencga.getStorageEngineFactory().getVariantStorageEngine(storageEngine, DB_NAME);
@@ -283,11 +289,18 @@ public class VariantAnalysisTest {
         }
 
         // Cancer
+        List<Sample> samples = new ArrayList<>();
         catalogManager.getStudyManager().create(projectId, CANCER_STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
         Sample sample = new Sample().setId(cancer_sample).setSomatic(true);
-        catalogManager.getSampleManager().create(CANCER_STUDY, sample, null, token);
+        samples.add(sample);
+//        catalogManager.getSampleManager().create(CANCER_STUDY, sample, null, token);
         sample = new Sample().setId(germline_sample);
-        catalogManager.getSampleManager().create(CANCER_STUDY, sample, null, token);
+        samples.add(sample);
+//        catalogManager.getSampleManager().create(CANCER_STUDY, sample, null, token);
+        Individual individual = catalogManager.getIndividualManager()
+                .create(CANCER_STUDY, new Individual("AR2.10039966-01", "AR2.10039966-01", new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
+                        samples, false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), Collections.emptyList(), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first();
+        assertEquals(2, individual.getSamples().size());
     }
 
     @Test
@@ -923,7 +936,142 @@ public class VariantAnalysisTest {
         assertTrue(signatureFile.exists());
     }
 
-    public void checkExecutionResult(ExecutionResult er) {
+    @Test
+    public void testHRDetect() throws Exception {
+        Path snvFittingOutDir = Paths.get(opencga.createTmpOutdir("_snv_fitting"));
+        Path svFittingOutDir = Paths.get(opencga.createTmpOutdir("_sv_fitting"));
+        Path hrdetectOutDir = Paths.get(opencga.createTmpOutdir("_hrdetect"));
+
+        // Read SNV signaure
+        URI uri = getResourceUri("mutational-signature-catalogue-snv.json");
+        Path path = Paths.get(uri.getPath());
+        Signature snvSignature = JacksonUtils.getDefaultObjectMapper().readerFor(Signature.class).readValue(path.toFile());
+
+        // Read SV signature
+        uri = getResourceUri("mutational-signature-sv.json");
+        path = Paths.get(uri.getPath());
+        Signature svSignature = JacksonUtils.getDefaultObjectMapper().readerFor(Signature.class).readValue(path.toFile());
+
+        // Update quality control for the cancer sample
+        SampleQualityControl qc = new SampleQualityControl();
+        qc.getVariant().setSignatures(Arrays.asList(snvSignature, svSignature));
+        SampleUpdateParams updateParams = new SampleUpdateParams().setQualityControl(qc);
+        catalogManager.getSampleManager().update(CANCER_STUDY, cancer_sample, updateParams, null, token);
+
+        // SNV fitting
+        MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
+        params.setSample(cancer_sample);
+        params.setId(snvSignature.getId());
+        params.setFitId("snv-fitting-1");
+        params.setFitMethod("FitMS");
+        params.setFitSigVersion("RefSigv2");
+        params.setFitOrgan("Breast");
+        params.setFitNBoot(100);
+        params.setFitThresholdPerc(5.0f);
+        params.setFitThresholdPval(0.05f);
+        params.setFitMaxRareSigs(1);
+        params.setSkip("catalogue");
+
+        toolRunner.execute(MutationalSignatureAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, CANCER_STUDY),
+                snvFittingOutDir, null, token);
+
+        java.io.File snvSignatureFittingFile = snvFittingOutDir.resolve(MutationalSignatureAnalysis.MUTATIONAL_SIGNATURE_FITTING_DATA_MODEL_FILENAME).toFile();
+        assertTrue(snvSignatureFittingFile.exists());
+        SignatureFitting snvFitting = JacksonUtils.getDefaultObjectMapper().readerFor(SignatureFitting.class).readValue(snvSignatureFittingFile);
+        assertEquals(params.getFitId(), snvFitting.getId());
+
+        // SV fitting
+        uri = getResourceUri("2019_01_10_all_PCAWG_sigs_rearr.tsv");
+        path = Paths.get(uri.getPath());
+        catalogManager.getFileManager().createFolder(CANCER_STUDY, "signature", true, "", new QueryOptions(), token);
+        catalogManager.getFileManager().link(CANCER_STUDY, uri, "signature", new ObjectMap(), token);
+        String filename = Paths.get(uri.toURL().getFile()).toFile().getName();
+        File file = catalogManager.getFileManager().get(CANCER_STUDY, filename, null, token).first();
+        String signatureFileId = file.getId();
+
+        params = new MutationalSignatureAnalysisParams();
+        params.setSample(cancer_sample);
+        params.setId(svSignature.getId());
+        params.setFitId("fitting-sv-1");
+        params.setFitMethod("FitMS");
+        params.setFitSigVersion("RefSigv2");
+        params.setFitOrgan("Breast");
+        params.setFitNBoot(100);
+        params.setFitThresholdPerc(5.0f);
+        params.setFitThresholdPval(0.05f);
+        params.setFitMaxRareSigs(1);
+        params.setFitSignaturesFile(signatureFileId);
+        params.setFitRareSignaturesFile(signatureFileId);
+        params.setSkip("catalogue");
+
+        toolRunner.execute(MutationalSignatureAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, CANCER_STUDY),
+                svFittingOutDir, null, token);
+
+        java.io.File svSignatureFittingFile = svFittingOutDir.resolve(MutationalSignatureAnalysis.MUTATIONAL_SIGNATURE_FITTING_DATA_MODEL_FILENAME).toFile();
+        assertTrue(svSignatureFittingFile.exists());
+        SignatureFitting svFitting = JacksonUtils.getDefaultObjectMapper().readerFor(SignatureFitting.class).readValue(svSignatureFittingFile);
+        assertEquals(params.getFitId(), svFitting.getId());
+
+        // HRDetect
+        HRDetectAnalysisParams hrdParams = new HRDetectAnalysisParams();
+        hrdParams.setId("hrd-1");
+        hrdParams.setSampleId(cancer_sample);
+        hrdParams.setSnvFittingId(snvFitting.getId());
+        hrdParams.setSvFittingId(svFitting.getId());
+        hrdParams.setCnvQuery("{\"sample\": \"" + cancer_sample + "\", \"type\": \"" + VariantType.CNV + "\"}");
+        hrdParams.setIndelQuery("{\"sample\": \"" + cancer_sample + "\", \"type\": \"" + VariantType.INDEL + "\"}");
+        hrdParams.setBootstrap(true);
+
+        toolRunner.execute(HRDetectAnalysis.class, hrdParams, new ObjectMap(ParamConstants.STUDY_PARAM, CANCER_STUDY), hrdetectOutDir, null, token);
+
+        java.io.File hrDetectFile = hrdetectOutDir.resolve(HRDetectAnalysis.HRDETECT_SCORES_FILENAME_DEFAULT).toFile();
+        byte[] bytes = Files.readAllBytes(hrDetectFile.toPath());
+        System.out.println(new String(bytes));
+        assertTrue(hrDetectFile.exists());
+
+        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(CANCER_STUDY, cancer_sample, QueryOptions.empty(), token);
+        Sample sample = sampleResult.first();
+        List<HRDetect> hrDetects = sample.getQualityControl().getVariant().getHrDetects();
+        for (HRDetect hrDetect : hrDetects) {
+            if (hrDetect.getId().equals(hrDetect.getId())) {
+                if (hrDetect.getScores().containsKey("del.mh.prop")) {
+                    Assert.assertEquals(hrDetect.getScores().getFloat("del.mh.prop"), 0.172413793103448f, 0.00001f);
+                    return;
+                }
+            }
+        }
+        fail("HRDetect result not found in sample quality control");
+    }
+
+    @Test
+    public void testHRDetectParseResults() throws Exception {
+        Path hrdetectOutDir = Paths.get(opencga.createTmpOutdir("_hrdetect"));
+        URI uri = getResourceUri("hrdetect_output_38.tsv");
+        java.io.File file = Paths.get(uri.getPath()).toFile();
+        FileUtils.copyFile(file, hrdetectOutDir.resolve(HRDetectAnalysis.HRDETECT_SCORES_FILENAME_DEFAULT).toFile());
+
+        HRDetectAnalysisParams hrdParams = new HRDetectAnalysisParams();
+        hrdParams.setId("hrd-1");
+        hrdParams.setSampleId(cancer_sample);
+        hrdParams.setSnvFittingId("snvFittingId");
+        hrdParams.setSvFittingId("svFittingId");
+        hrdParams.setCnvQuery("{\"sample\": \"" + cancer_sample + "\", \"type\": \"" + VariantType.CNV + "\"}");
+        hrdParams.setIndelQuery("{\"sample\": \"" + cancer_sample + "\", \"type\": \"" + VariantType.INDEL + "\"}");
+
+        HRDetectAnalysis analysis = new HRDetectAnalysis();
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, hrdParams.toObjectMap(), hrdetectOutDir,
+                "job-1", token);
+        HRDetect hrDetect = analysis.parseResult(hrdetectOutDir);
+        for (Map.Entry<String, Object> entry : hrDetect.getScores().entrySet()) {
+            System.out.println(entry.getKey() + " -> " + entry.getValue());
+        }
+        assertTrue(hrDetect.getScores().containsKey("hrd"));
+        assertEquals(-0.102769986f, hrDetect.getScores().getFloat("hrd"), 0.00001f);
+        assertTrue(hrDetect.getScores().containsKey("Probability"));
+        assertEquals(0.998444f, hrDetect.getScores().getFloat("Probability"), 0.00001f);
+    }
+
+        public void checkExecutionResult(ExecutionResult er) {
         checkExecutionResult(er, true);
     }
 

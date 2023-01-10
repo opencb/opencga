@@ -82,7 +82,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
-import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
+import static org.opencb.opencga.storage.core.utils.CellBaseUtils.toCellBaseSpeciesName;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.buildSamplesIndexCollectionName;
 
@@ -1041,7 +1041,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 species = clientConfiguration.getDefaultSpecies();
             }
             species = toCellBaseSpeciesName(species);
-            cellBaseUtils = new CellBaseUtils(new CellBaseClient(species, assembly, clientConfiguration), assembly);
+            cellBaseUtils = new CellBaseUtils(new CellBaseClient(species, assembly, configuration.getCellbase().getDataRelease(),
+                    clientConfiguration));
         }
         return cellBaseUtils;
     }
@@ -1083,7 +1084,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             synchronized (variantSearchManager) {
                 if (variantSearchManager.get() == null) {
                     // TODO One day we should use reflection here reading from storage-configuration.yml
-                    variantSearchManager.set(new VariantSearchManager(getMetadataManager(), configuration, getOptions()));
+                    variantSearchManager.set(
+                            new VariantSearchManager(getMetadataManager(), getCellBaseUtils(), configuration, getOptions()));
                 }
             }
         }

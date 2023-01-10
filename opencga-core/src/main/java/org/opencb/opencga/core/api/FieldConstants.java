@@ -1,12 +1,8 @@
 package org.opencb.opencga.core.api;
 
-import com.beust.jcommander.DynamicParameter;
-import com.beust.jcommander.Parameter;
+import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class FieldConstants {
 
@@ -84,11 +80,13 @@ public class FieldConstants {
     public static final String SAMPLE_QUALITY_CONTROL_OVERWRITE_DESCRIPTION = "Overwrite sample quality control in OpenCGA catalog.";
 
     //SampleVariantQualityControlMetrics
-    public static final String SAMPLE_QUALITY_CONTROL_METRICS_VARIANT_STATS_DESCRIPTION = "Variant stats for the quality control of the "
-            + "sample.";
-    public static final String SAMPLE_QUALITY_CONTROL_METRICS_SIGNATURES_DESCRIPTION = "Signature for the quality control of the sample.";
+    public static final String SAMPLE_QUALITY_CONTROL_METRICS_VARIANT_STATS_DESCRIPTION = "Variant stats for the quality control of the"
+            + " sample.";
+    public static final String SAMPLE_QUALITY_CONTROL_METRICS_SIGNATURES_DESCRIPTION = "List of signature for the quality control of the"
+            + " sample.";
     public static final String SAMPLE_QUALITY_CONTROL_METRICS_GENOME_PLOT_DESCRIPTION = "Genome plot for the quality control of the"
             + " sample.";
+    public static final String SAMPLE_QUALITY_CONTROL_METRICS_HRDETEC_DESCRIPTION  = "List of HRDetect results for a given sample";
     public static final String SAMPLE_QUALITY_CONTROL_METRICS_FILES_DESCRIPTION = "File for the quality control metrics of the "
             + "sample.";
 
@@ -442,13 +440,38 @@ public class FieldConstants {
             + " the following keywords: " + MutationalSignatureAnalysisParams.SIGNATURE_CATALOGUE_SKIP_VALUE + ", "
             + MutationalSignatureAnalysisParams.SIGNATURE_FITTING_SKIP_VALUE + ".";
 
+    // HRDetect analysis
+    public static final String HRDETECT_ID_DESCRIPTION = "ID to identify the HRDetect results.";
+    public static final String HRDETECT_DESCRIPTION_DESCRIPTION = "Decription for these particular HRDetect results.";
+    public static final String HRDETECT_SNV_FITTING_ID_DESCRIPTION = "Mutational signature fitting ID for SNV.";
+    public static final String HRDETECT_SV_FITTING_ID_DESCRIPTION = "Mutational signature fitting ID for SV.";
+    public static final String HRDETECT_CNV_QUERY_DESCRIPTION = "CNV query";
+    public static final String HRDETECT_INDEL_QUERY_DESCRIPTION = "INDEL query";
+    public static final String HRDETECT_SNV3_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SNV3 input for"
+        + " HRDetect.";
+    public static final String HRDETECT_SNV8_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SNV8 input for"
+            + " HRDetect.";
+    public static final String HRDETECT_SV3_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SV3 input for"
+            + " HRDetect.";
+    public static final String HRDETECT_SV8_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SV8 input for"
+            + " HRDetect.";
+    public static final String HRDETECT_BOOTSTRAP_DESCRIPTION = "Request HRDetect with bootstrap.";
+
     // Genome plot (sample-qc-run)
     public static final String GENOME_PLOT_ID_DESCRIPTION = "Genome plot ID.";
     public static final String GENOME_PLOT_DESCRIPTION_DESCRIPTION = "Genome plot description.";
     public static final String GENOME_PLOT_CONFIGURATION_FILE_DESCRIPTION = "Genome plot configuration file.";
 
-    // Varaint stats (sample-qc-run)
+    // Variant stats (sample-qc-run)
     public static final String VARIANT_STATS_ID_DESCRIPTION = "Variant stats ID.";
     public static final String VARIANT_STATS_DESCRIPTION_DESCRIPTION = "Variant stats description.";
     public static final String VARIANT_STATS_QUERY_DESCRIPTION = "Variant stats query in JSON format.";
+
+    // Alignment QC analysis (asample-qc-run)
+    public static final String ALIGNMENT_QC_BAM_FILE_DESCRIPTION = "ID for the BAM file to process.";
+    public static final String ALIGNMENT_QC_SKIP_DESCRIPTION = "To skip any alignment QC metrics use the following keywords (separated by"
+            + " commas): " + AlignmentQcParams.STATS_SKIP_VALUE + ", " + AlignmentQcParams.FLAGSTATS_SKIP_VALUE + ", "
+            + AlignmentQcParams.FASTQC_METRICS_SKIP_VALUE;
+    public static final String ALIGNMENT_QC_OVERWRITE_DESCRIPTION = "To overwrite the QC metrics already computed.";
+
 }

@@ -228,6 +228,7 @@ public class AlignmentStorageManager extends StorageManager {
         }
         String species = projectQueryResult.first().getOrganism().getScientificName();
         String assembly = projectQueryResult.first().getOrganism().getAssembly();
+        String dataRelease = projectQueryResult.first().getCellbase().getDataRelease();
 
         for (String geneName : geneNames) {
 
@@ -248,9 +249,9 @@ public class AlignmentStorageManager extends StorageManager {
 
 
             // Query CellBase to get gene coordinates and then apply the offset (up and downstream) to create a gene region
-            CellBaseClient cellBaseClient = new CellBaseClient(storageEngineFactory.getVariantStorageEngine().getConfiguration().getCellbase()
+            CellBaseClient cellBaseClient = new CellBaseClient(species, assembly, dataRelease, projectQueryResult.first().getCellbase()
                     .toClientConfiguration());
-            GeneClient geneClient = new GeneClient(species, assembly, cellBaseClient.getClientConfiguration());
+            GeneClient geneClient = cellBaseClient.getGeneClient();
             Gene gene = geneClient.get(Collections.singletonList(geneName), QueryOptions.empty()).firstResult();
             if (gene != null) {
                 List<TranscriptCoverageStats> transcriptCoverageStatsList = new ArrayList<>();
@@ -445,9 +446,10 @@ public class AlignmentStorageManager extends StorageManager {
         // Query CellBase to get gene coordinates and then apply the offset (up and downstream) to create a gene region
         String species = projectQueryResult.first().getOrganism().getScientificName();
         String assembly = projectQueryResult.first().getOrganism().getAssembly();
-        CellBaseClient cellBaseClient = new CellBaseClient(storageEngineFactory.getVariantStorageEngine().getConfiguration().getCellbase()
+        String dataRelease = projectQueryResult.first().getCellbase().getDataRelease();
+        CellBaseClient cellBaseClient = new CellBaseClient(species, assembly, dataRelease, projectQueryResult.first().getCellbase()
                 .toClientConfiguration());
-        GeneClient geneClient = new GeneClient(species, assembly, cellBaseClient.getClientConfiguration());
+        GeneClient geneClient = cellBaseClient.getGeneClient();
         List<Gene> response = geneClient.get(genes, QueryOptions.empty()).allResults();
         if (CollectionUtils.isNotEmpty(response)) {
             for (Gene gene : response) {
@@ -500,15 +502,13 @@ public class AlignmentStorageManager extends StorageManager {
 // PRIVATE METHODS
 //-------------------------------------------------------------------------
 
-    public Map<String, List<Region>> getExonRegionsPerTranscript(String geneName, String species, String assembly)
+    public Map<String, List<Region>> getExonRegionsPerTranscript(String geneName, CellBaseClient cellBaseClient)
             throws StorageEngineException, IOException {
         // Init region map, where key = transcript and value = list of exon regions
         Map<String, List<Region>> regionMap = new HashMap<>();
 
         // Query CellBase to get gene coordinates and then apply the offset (up and downstream) to create a gene region
-        CellBaseClient cellBaseClient = new CellBaseClient(storageEngineFactory.getVariantStorageEngine().getConfiguration().getCellbase()
-                .toClientConfiguration());
-        GeneClient geneClient = new GeneClient(species, assembly, cellBaseClient.getClientConfiguration());
+        GeneClient geneClient = cellBaseClient.getGeneClient();
         Gene gene = geneClient.get(Collections.singletonList(geneName), QueryOptions.empty()).firstResult();
         if (gene != null) {
             // Create region from gene coordinates
