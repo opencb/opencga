@@ -978,7 +978,7 @@ class RgaUtils {
         }
 
         public int getNumPairedDelOverlapIds() {
-            int numPairedDelOverlap = 0;
+            Set<String> delOverlapPairs = new HashSet<>();
             for (Map.Entry<String, Set<String>> entry : transcriptDelOverlapIdsMap.entrySet()) {
                 Set<String> chSet = entry.getValue();
                 if (chSet.size() > 1) {
@@ -987,13 +987,14 @@ class RgaUtils {
                         for (int j = i + 1; j < variantList.size(); j++) {
                             // We simply check if two variants overlap. If they do, they are a valid pair
                             if (variantList.get(i).overlapWith(variantList.get(j), true)) {
-                                numPairedDelOverlap++;
+                                String pair = concatSortedVariants(variantList.get(i).toString(), variantList.get(j).toString());
+                                delOverlapPairs.add(pair);
                             }
                         }
                     }
                 }
             }
-            return numPairedDelOverlap;
+            return delOverlapPairs.size();
         }
 
         public int getNumHomIds() {
@@ -1029,6 +1030,10 @@ class RgaUtils {
                 }
             }
             return compHetMap;
+        }
+
+        private String concatSortedVariants(String v1, String v2) {
+            return StringUtils.compare(v1, v2) <= 0 ? v1 + "__" + v2 : v2 + "__" + v1;
         }
     }
 
