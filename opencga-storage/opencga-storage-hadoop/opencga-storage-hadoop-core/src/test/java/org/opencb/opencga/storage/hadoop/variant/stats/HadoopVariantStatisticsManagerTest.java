@@ -24,12 +24,14 @@ import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.PopulationFrequency;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.annotation.DummyTestAnnotator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManagerTest;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -52,10 +54,25 @@ import java.util.stream.Collectors;
  */
 public class HadoopVariantStatisticsManagerTest extends VariantStatisticsManagerTest implements HadoopVariantStorageTest {
 
+    @Rule
+    public ExternalResource externalResource = new HadoopExternalResource();
+
     @Override
     public void before() throws Exception {
         super.before();
         VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
+    }
+
+    @Override
+    public Map<String, ?> getOtherStorageConfigurationOptions() {
+        return new ObjectMap(HadoopVariantStorageOptions.VARIANT_TABLE_INDEXES_SKIP.key(), true)
+                .append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
+                .append(HadoopVariantStorageOptions.STATS_LOCAL.key(), false);
     }
 
     @Override
@@ -90,21 +107,6 @@ public class HadoopVariantStatisticsManagerTest extends VariantStatisticsManager
         super.calculateStatsSeparatedCohortsTest();
     }
 
-    @After
-    public void tearDown() throws Exception {
-        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
-    }
-
-    @Rule
-    public ExternalResource externalResource = new HadoopExternalResource();
-
-    @Override
-    public Map<String, ?> getOtherStorageConfigurationOptions() {
-        return new ObjectMap(HadoopVariantStorageOptions.VARIANT_TABLE_INDEXES_SKIP.key(), true)
-                .append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
-                .append(HadoopVariantStorageOptions.STATS_LOCAL.key(), false);
-    }
-
     @Test
     public void testStatsToFile() throws Exception {
 
@@ -137,6 +139,16 @@ public class HadoopVariantStatisticsManagerTest extends VariantStatisticsManager
         engine.getOptions().put(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName());
         engine.annotate(outputUri, new QueryOptions(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
 
+        runETL(engine, getResourceUri("gnomad/gnomad.genomes.v3.1.2.sites.small.vcf"), "GNOMAD_GENOMES", new ObjectMap());
+        Properties properties = new Properties();
+        properties.load(getResourceUri("gnomad/gnomad.genomes.v3.1.2.properties").toURL().openStream());
+        HashMap<String, Collection<String>> cohorts = new HashMap<>();
+        cohorts.put("ALL", Collections.emptyList());
+        cohorts.put("AFR", Collections.emptyList());
+        engine.calculateStats("GNOMAD_GENOMES", cohorts,
+                new QueryOptions(VariantStorageOptions.STATS_AGGREGATION.key(), Aggregation.BASIC)
+                        .append(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), properties));
+
         engine.getMRExecutor().run(JulieToolDriver.class, JulieToolDriver.buildArgs(
                 dbAdaptor.getVariantTable(),
                 new QueryOptions()
@@ -160,7 +172,11 @@ public class HadoopVariantStatisticsManagerTest extends VariantStatisticsManager
                 Assert.assertNotNull(stats);
                 Assert.assertThat(expected, CoreMatchers.hasItem(populationFrequency.getStudy() + ":" + populationFrequency.getPopulation()));
                 Assert.assertEquals(stats.getAltAlleleFreq(), populationFrequency.getAltAlleleFreq());
+                Assert.assertEquals(stats.getAltAlleleCount(), populationFrequency.getAltAlleleCount());
                 Assert.assertEquals(stats.getRefAlleleFreq(), populationFrequency.getRefAlleleFreq());
+                Assert.assertEquals(stats.getRefAlleleCount(), populationFrequency.getRefAlleleCount());
+                Assert.assertEquals(stats.getGenotypeCount().entrySet().stream().filter(e -> GenotypeClass.HOM_ALT.test(e.getKey())).mapToInt(Map.Entry::getValue).sum(),
+                        populationFrequency.getAltHomGenotypeCount().intValue());
             }
         }
     }
