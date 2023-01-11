@@ -486,14 +486,18 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     protected static String envToStringRedacted(Hashtable<String, Object> env) {
-        // Replace credentials only if exists
-        Object remove = env.replace(DirContext.SECURITY_CREDENTIALS, "*********");
+        String string;
+        if (env.containsKey(DirContext.SECURITY_CREDENTIALS)) {
+            // Replace credentials only if exists
+            Object remove = env.replace(DirContext.SECURITY_CREDENTIALS, "*********");
 
-        String string = env.toString();
+            string = env.toString();
 
-        // Restore credentials, if any
-        env.replace(DirContext.SECURITY_CREDENTIALS, remove);
-
+            // Restore credentials, if any
+            env.replace(DirContext.SECURITY_CREDENTIALS, remove);
+        } else {
+            string = env.toString();
+        }
         return string;
     }
 
