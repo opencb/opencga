@@ -262,7 +262,7 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String description;
     
-        @Parameter(names = {"--type"}, description = "Enum param allowed values: FILE, DIRECTORY", required = false, arity = 1)
+        @Parameter(names = {"--type"}, description = "Enum param allowed values: FILE, VIRTUAL, DIRECTORY", required = false, arity = 1)
         public String type;
     
         @Parameter(names = {"--format"}, description = "Enum param allowed values: VCF, BCF, GVCF, TBI, BIGWIG, SAM, BAM, BAI, CRAM, CRAI, FASTQ, FASTA, PED, TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, IMAGE, PLAIN, BINARY, NONE, UNKNOWN", required = false, arity = 1)
@@ -483,6 +483,9 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--modification-date", "--md"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
         public String modificationDate;
     
+        @Parameter(names = {"--virtual-file"}, description = "The body web service virtualFile parameter", required = false, arity = 1)
+        public String virtualFile;
+    
         @Parameter(names = {"--status-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String statusId;
     
@@ -532,6 +535,9 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
     
         @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String description;
+    
+        @Parameter(names = {"--virtual-file"}, description = "The body web service virtualFile parameter", required = false, arity = 1)
+        public String virtualFile;
     
         @Parameter(names = {"--parents"}, description = "The body web service parents parameter", required = false, help = true, arity = 0)
         public boolean parents = false;

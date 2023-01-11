@@ -464,6 +464,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
              putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
              putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
              putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+             putNestedIfNotEmpty(beanParams, "virtualFile",commandOptions.virtualFile, true);
              putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
              putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
              putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
@@ -508,6 +509,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             putNestedIfNotNull(beanParams, "uri",commandOptions.uri, true);
              putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
              putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+             putNestedIfNotEmpty(beanParams, "virtualFile",commandOptions.virtualFile, true);
              putNestedIfNotNull(beanParams, "parents",commandOptions.parents, true);
              putNestedIfNotNull(beanParams, "skipPostLink",commandOptions.skipPostLink, true);
  
