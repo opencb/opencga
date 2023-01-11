@@ -172,6 +172,11 @@ public class VariantHBaseQueryParser {
                 otherParams.remove(ANNOT_GO);
             }
         }
+        if (otherParams.contains(ANNOT_GENE_ROLE_IN_CANCER)) {
+            if (isValidParam(query, ANNOT_GENE_ROLE_IN_CANER_GENES)) {
+                otherParams.remove(ANNOT_GENE_ROLE_IN_CANCER);
+            }
+        }
 
         if (messages.isEmpty() && otherParams.isEmpty()) {
             return Collections.emptySet();

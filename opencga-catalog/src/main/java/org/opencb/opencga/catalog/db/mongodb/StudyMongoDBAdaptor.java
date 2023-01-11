@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
@@ -693,9 +692,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         Document update = new Document("$set", new Document(QueryParams.PERMISSION_RULES.key() + "." + entry + ".$.id",
                 newPermissionRuleId));
 
-        logger.debug("Mark permission rule for deletion: Query {}, Update {}",
-                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Mark permission rule for deletion: Query {}, Update {}", query.toBsonDocument(), update.toBsonDocument());
 
         DataResult result = studyCollection.update(query, update, QueryOptions.empty());
         if (result.getNumMatches() == 0) {
@@ -1435,9 +1432,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             Query tmpQuery = new Query(QueryParams.UID.key(), study.getUid());
             Bson finalQuery = parseQuery(tmpQuery);
 
-            logger.debug("Update study. Query: {}, update: {}",
-                    finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    updates.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            logger.debug("Update study. Query: {}, update: {}", finalQuery.toBsonDocument(), updates.toBsonDocument());
             DataResult result = studyCollection.update(clientSession, finalQuery, updates, null);
 
             if (result.getNumMatches() == 0) {
@@ -1769,7 +1764,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         Bson bson = parseQuery(query);
 
-        logger.debug("Study native get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Study native get: query : {}", bson.toBsonDocument());
         if (!query.getBoolean(QueryParams.DELETED.key())) {
             return studyCollection.iterator(clientSession, bson, null, null, qOptions);
         } else {

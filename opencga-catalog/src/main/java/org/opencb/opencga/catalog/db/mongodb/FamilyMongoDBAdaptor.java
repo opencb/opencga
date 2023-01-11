@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
@@ -251,7 +250,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     public OpenCGAResult<Long> count(ClientSession clientSession, final Query query, final String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, user);
-        logger.debug("Family count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Family count: query : {}", bson.toBsonDocument());
         return new OpenCGAResult<>(familyCollection.count(clientSession, bson));
     }
 
@@ -421,9 +420,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             if (!familyUpdate.isEmpty()) {
                 Bson finalQuery = parseQuery(tmpQuery);
 
-                logger.debug("Family update: query : {}, update: {}",
-                        finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                        familyUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                logger.debug("Family update: query : {}, update: {}", finalQuery.toBsonDocument(), familyUpdate.toBsonDocument());
                 result = familyCollection.update(clientSession, finalQuery, familyUpdate, new QueryOptions("multi", true));
 
                 if (parameters.containsKey(QueryParams.ID.key())) {
@@ -921,7 +918,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         qOptions = removeAnnotationProjectionOptions(qOptions);
         fixAclProjection(qOptions);
 
-        logger.debug("Family query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Family query : {}", bson.toBsonDocument());
         MongoDBCollection collection = getQueryCollection(query, familyCollection, archiveFamilyCollection, deletedFamilyCollection);
         return collection.iterator(clientSession, bson, null, null, qOptions);
     }

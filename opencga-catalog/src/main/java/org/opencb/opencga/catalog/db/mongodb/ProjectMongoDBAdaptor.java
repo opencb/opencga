@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
@@ -24,8 +23,6 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
-import org.bson.BsonDocument;
-import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
@@ -143,9 +140,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         //Update object
         Bson query = Filters.eq(UserDBAdaptor.QueryParams.ID.key(), userId);
 
-        logger.debug("Inserting project. Query: {}, update: {}",
-                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Inserting project. Query: {}, update: {}", query.toBsonDocument(), update.toBsonDocument());
         userCollection.update(clientSession, query, update, null);
 
         return project;
@@ -198,12 +193,12 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             projectId = projectId.split("@", 2)[1];
         }
 
-        DataResult<Document> queryResult = userCollection.find(
-                new BsonDocument(UserDBAdaptor.QueryParams.PROJECTS_ID.key(), new BsonString(projectId))
-                        .append(UserDBAdaptor.QueryParams.ID.key(), new BsonString(userId)),
-                Projections.fields(Projections.include(UserDBAdaptor.QueryParams.PROJECTS_UID.key()),
-                        Projections.elemMatch("projects", Filters.eq(QueryParams.ID.key(), projectId))),
-                null);
+        Bson filter = Filters.and(
+                Filters.eq(UserDBAdaptor.QueryParams.PROJECTS_ID.key(), projectId),
+                Filters.eq(UserDBAdaptor.QueryParams.ID.key(), userId)
+        );
+        Bson projection = Projections.elemMatch("projects", Filters.eq(QueryParams.ID.key(), projectId));
+        DataResult<Document> queryResult = userCollection.find(filter, projection, null);
         User user = parseUser(queryResult);
         if (user == null || user.getProjects().isEmpty()) {
             return -1;
@@ -316,9 +311,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             Query tmpQuery = new Query(QueryParams.UID.key(), project.getUid());
             Bson finalQuery = parseQuery(tmpQuery);
 
-            logger.debug("Update project. Query: {}, update: {}",
-                    finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    updates.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            logger.debug("Update project. Query: {}, update: {}", finalQuery.toBsonDocument(), updates.toBsonDocument());
             DataResult result = userCollection.update(clientSession, finalQuery, updates, null);
 
             if (result.getNumMatches() == 0) {
@@ -505,9 +498,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         Bson bsonQuery = parseQuery(studyQuery);
         Document updateDocument = getDocumentUpdateParams(updateParams);
 
-        logger.debug("Delete project {}: Query: {}, update: {}", project.getId(),
-                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Delete project {}: Query: {}, update: {}", project.getId(), bsonQuery.toBsonDocument(),
+                updateDocument.toBsonDocument());
         DataResult result = userCollection.update(clientSession, bsonQuery, updateDocument, QueryOptions.empty());
 
         if (result.getNumMatches() == 0) {
@@ -793,7 +785,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         }
 
         for (Bson aggregate : aggregates) {
-            logger.debug("Get project: Aggregate : {}", aggregate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            logger.debug("Get project: Aggregate : {}", aggregate.toBsonDocument());
         }
 
         QueryOptions qOptions = new QueryOptions();

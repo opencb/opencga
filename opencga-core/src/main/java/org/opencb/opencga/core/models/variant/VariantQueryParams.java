@@ -16,10 +16,12 @@
 
 package org.opencb.opencga.core.models.variant;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.opencb.commons.datastore.core.Query;
 
 /**
- * Do not use native values (like boolean or int), so they are null by default.
+ * When using native values (like boolean or int), set add
+ * {@code @JsonInclude(JsonInclude.Include.NON_DEFAULT)} so they are null by default.
  */
 public class VariantQueryParams extends BasicVariantQueryParams {
 
@@ -34,8 +36,10 @@ public class VariantQueryParams extends BasicVariantQueryParams {
     private String includeSample;
     private String includeFile;
     private String includeSampleData;
-    private String includeSampleId;
-    private String includeGenotype;
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+    private boolean includeSampleId;
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+    private boolean includeGenotype;
 
     private String file;
     private String qual;
@@ -79,7 +83,9 @@ public class VariantQueryParams extends BasicVariantQueryParams {
     private String customAnnotation;
 
     private String unknownGenotype;
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private boolean sampleMetadata = false;
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private boolean sort = false;
 
 
@@ -176,20 +182,20 @@ public class VariantQueryParams extends BasicVariantQueryParams {
         return this;
     }
 
-    public String getIncludeGenotype() {
+    public boolean getIncludeGenotype() {
         return includeGenotype;
     }
 
-    public VariantQueryParams setIncludeGenotype(String includeGenotype) {
+    public VariantQueryParams setIncludeGenotype(boolean includeGenotype) {
         this.includeGenotype = includeGenotype;
         return this;
     }
 
-    public String getIncludeSampleId() {
+    public boolean getIncludeSampleId() {
         return includeSampleId;
     }
 
-    public VariantQueryParams setIncludeSampleId(String includeSampleId) {
+    public VariantQueryParams setIncludeSampleId(boolean includeSampleId) {
         this.includeSampleId = includeSampleId;
         return this;
     }

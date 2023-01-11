@@ -167,7 +167,8 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         release = project.getCurrentRelease();
 
         // Add species, assembly and release
-        CatalogStorageMetadataSynchronizer.updateProjectMetadata(variantStorageEngine.getMetadataManager(), project.getOrganism(), release);
+        CatalogStorageMetadataSynchronizer.updateProjectMetadata(variantStorageEngine.getMetadataManager(), project.getOrganism(), release,
+                project.getCellbase());
     }
 
     /**

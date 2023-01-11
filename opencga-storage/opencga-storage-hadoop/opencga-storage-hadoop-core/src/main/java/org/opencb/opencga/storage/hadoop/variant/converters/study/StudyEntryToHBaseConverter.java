@@ -107,16 +107,16 @@ public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverte
         add(put, VariantPhoenixSchema.VariantColumn.TYPE, variant.getType().toString());
         if (variant.getSv() != null) {
             if (variant.getSv().getCiStartLeft() != null) {
-                add(put, VariantPhoenixSchema.VariantColumn.CI_START_L, variant.getSv().getCiStartLeft());
+                add(put, VariantPhoenixSchema.VariantColumn.CI_START_L, Math.max(0, variant.getSv().getCiStartLeft()));
             }
             if (variant.getSv().getCiStartRight() != null) {
-                add(put, VariantPhoenixSchema.VariantColumn.CI_START_R, variant.getSv().getCiStartRight());
+                add(put, VariantPhoenixSchema.VariantColumn.CI_START_R, Math.max(0, variant.getSv().getCiStartRight()));
             }
             if (variant.getSv().getCiEndLeft() != null) {
-                add(put, VariantPhoenixSchema.VariantColumn.CI_END_L, variant.getSv().getCiEndLeft());
+                add(put, VariantPhoenixSchema.VariantColumn.CI_END_L, Math.max(0, variant.getSv().getCiEndLeft()));
             }
             if (variant.getSv().getCiEndRight() != null) {
-                add(put, VariantPhoenixSchema.VariantColumn.CI_END_R, variant.getSv().getCiEndRight());
+                add(put, VariantPhoenixSchema.VariantColumn.CI_END_R, Math.max(0, variant.getSv().getCiEndRight()));
             }
         }
         add(put, studyColumn, 0);

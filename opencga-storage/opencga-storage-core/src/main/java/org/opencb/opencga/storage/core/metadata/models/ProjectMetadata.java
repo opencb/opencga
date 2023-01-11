@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.metadata.models;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.opencb.cellbase.core.models.DataRelease;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 
@@ -16,6 +17,7 @@ public class ProjectMetadata {
 
     private String species;
     private String assembly;
+    private String dataRelease;
 
     private int release;
 
@@ -76,18 +78,20 @@ public class ProjectMetadata {
         private Date creationDate;
         private VariantAnnotatorProgram annotator;
         private List<ObjectMap> sourceVersion;
+        private DataRelease dataRelease;
 
         public VariantAnnotationMetadata() {
             sourceVersion = new ArrayList<>();
         }
 
         public VariantAnnotationMetadata(int id, String name, Date creationDate, VariantAnnotatorProgram annotator,
-                                         List<ObjectMap> sourceVersion) {
+                                         List<ObjectMap> sourceVersion, DataRelease dataRelease) {
             this.id = id;
             this.name = name;
             this.creationDate = creationDate;
             this.annotator = annotator;
             this.sourceVersion = sourceVersion != null ? sourceVersion : new ArrayList<>();
+            this.dataRelease = dataRelease;
         }
 
         public int getId() {
@@ -132,6 +136,15 @@ public class ProjectMetadata {
 
         public VariantAnnotationMetadata setSourceVersion(List<ObjectMap> sourceVersion) {
             this.sourceVersion = sourceVersion;
+            return this;
+        }
+
+        public DataRelease getDataRelease() {
+            return dataRelease;
+        }
+
+        public VariantAnnotationMetadata setDataRelease(DataRelease dataRelease) {
+            this.dataRelease = dataRelease;
             return this;
         }
     }
@@ -216,13 +229,14 @@ public class ProjectMetadata {
     }
 
     public ProjectMetadata(String species, String assembly, int release) {
-        this(species, assembly, release, null, null, null);
+        this(species, assembly, null, release, null, null, null);
     }
 
-    public ProjectMetadata(String species, String assembly, int release, ObjectMap attributes, Map<String, Integer> counters,
-                           VariantAnnotationSets annotation) {
+    public ProjectMetadata(String species, String assembly, String dataRelease, int release, ObjectMap attributes,
+                           Map<String, Integer> counters, VariantAnnotationSets annotation) {
         this.species = species;
         this.assembly = assembly;
+        this.dataRelease = dataRelease;
         this.release = release;
         this.attributes = attributes != null ? attributes : new ObjectMap();
         this.annotation = annotation != null ? annotation : new VariantAnnotationSets();
@@ -230,7 +244,7 @@ public class ProjectMetadata {
     }
 
     public ProjectMetadata copy() {
-        return new ProjectMetadata(species, assembly, release, new ObjectMap(attributes), new HashMap<>(counters), annotation);
+        return new ProjectMetadata(species, assembly, dataRelease, release, new ObjectMap(attributes), new HashMap<>(counters), annotation);
     }
 
     public String getSpecies() {
@@ -248,6 +262,15 @@ public class ProjectMetadata {
 
     public ProjectMetadata setAssembly(String assembly) {
         this.assembly = assembly;
+        return this;
+    }
+
+    public String getDataRelease() {
+        return dataRelease;
+    }
+
+    public ProjectMetadata setDataRelease(String dataRelease) {
+        this.dataRelease = dataRelease;
         return this;
     }
 

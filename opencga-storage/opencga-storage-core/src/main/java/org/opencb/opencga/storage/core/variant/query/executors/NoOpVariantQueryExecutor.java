@@ -12,10 +12,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.query.KeyOpValue;
-import org.opencb.opencga.storage.core.variant.query.Values;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.GENOTYPE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
 
 /**
  * Look for technically correct queries that will return 0 results.
@@ -65,7 +63,18 @@ public class NoOpVariantQueryExecutor extends VariantQueryExecutor {
             }
         }
 
-
+        // Check invalid positional filter
+        ParsedVariantQuery.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
+        boolean withGeneAliasFilter = VariantQueryUtils.isValidParam(query, VariantQueryParam.ANNOT_GENE_ROLE_IN_CANCER)
+                || VariantQueryUtils.isValidParam(query, VariantQueryParam.ANNOT_GO)
+                || VariantQueryUtils.isValidParam(query, VariantQueryParam.ANNOT_EXPRESSION);
+        if (withGeneAliasFilter && xrefs.getGenes().isEmpty()) {
+            // We have geneAliasFilter, but it didn't produce any actual gene.
+            // If there is no other region or variant filter, we should return no variants.
+            if (!VariantQueryUtils.isValidParam(query, REGION) && xrefs.getVariants().isEmpty()) {
+                return true;
+            }
+        }
         return false;
     }
 

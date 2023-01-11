@@ -124,7 +124,8 @@ public class VariantAnnotationOperationManager extends OperationManager {
         Project project = catalogManager.getProjectManager().get(projectStr, null, token).first();
         ProjectOrganism organism = project.getOrganism();
         int currentRelease = project.getCurrentRelease();
-        CatalogStorageMetadataSynchronizer.updateProjectMetadata(variantStorageEngine.getMetadataManager(), organism, currentRelease);
+        CatalogStorageMetadataSynchronizer.updateProjectMetadata(variantStorageEngine.getMetadataManager(), organism, currentRelease,
+                project.getCellbase());
     }
 
     private String buildOutputFileName(String alias, String region) {
