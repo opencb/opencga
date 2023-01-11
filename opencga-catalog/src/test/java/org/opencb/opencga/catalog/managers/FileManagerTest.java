@@ -74,6 +74,8 @@ public class FileManagerTest extends AbstractManagerTest {
     public void setUp() throws IOException, CatalogException {
         super.setUp();
         fileManager = catalogManager.getFileManager();
+        // Ensure this threshold is restored
+        fileManager.setFileSampleLinkThreshold(5000);
     }
 
     private DataResult<File> link(URI uriOrigin, String pathDestiny, String studyIdStr, ObjectMap params, String sessionId)
@@ -419,12 +421,37 @@ public class FileManagerTest extends AbstractManagerTest {
         String vcfFileCopy = getClass().getResource("/biofiles/variant-test-file-copy.vcf.gz").getFile();
         fileManager.link(studyFqn, new FileLinkParams(vcfFileCopy, "", "", "", null, "biofiles/virtual_file.vcf", null, null, null), false, token);
 
+        checkTestLinkVirtualFile(false);
+    }
+
+    @Test
+    public void testLinkVirtualOverSampleLinkThreshold() throws CatalogException {
+        String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
+        fileManager.setFileSampleLinkThreshold(2);
+
+        fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, "biofiles/virtual_file.vcf", null, null, null), false, token);
+
+        String vcfFileCopy = getClass().getResource("/biofiles/variant-test-file-copy.vcf.gz").getFile();
+        fileManager.link(studyFqn, new FileLinkParams(vcfFileCopy, "", "", "", null, "biofiles/virtual_file.vcf", null, null, null), false, token);
+
+        checkTestLinkVirtualFile(true);
+    }
+
+    private void checkTestLinkVirtualFile(boolean missingSamples) throws CatalogException {
         OpenCGAResult<File> result = fileManager.get(studyFqn,
                 Arrays.asList("variant-test-file.vcf.gz", "variant-test-file-copy.vcf.gz", "virtual_file.vcf"), QueryOptions.empty(), token);
+
         assertEquals(3, result.getNumResults());
+
         assertEquals(0, result.getResults().get(0).getSampleIds().size());
         assertEquals(0, result.getResults().get(1).getSampleIds().size());
-        assertEquals(4, result.getResults().get(2).getSampleIds().size());
+        if (missingSamples) {
+            assertEquals(FileStatus.MISSING_SAMPLES, result.getResults().get(2).getInternal().getStatus().getId());
+            assertEquals(0, result.getResults().get(2).getSampleIds().size());
+        } else {
+            assertEquals(FileStatus.READY, result.getResults().get(2).getInternal().getStatus().getId());
+            assertEquals(4, result.getResults().get(2).getSampleIds().size());
+        }
 
         assertEquals(File.Type.FILE, result.getResults().get(0).getType());
         assertEquals(File.Type.FILE, result.getResults().get(1).getType());

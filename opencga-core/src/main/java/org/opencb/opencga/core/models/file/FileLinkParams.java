@@ -30,7 +30,7 @@ public class FileLinkParams {
     private String description;
     private String creationDate;
     private String modificationDate;
-    private String virtualFile;
+    private String virtualFileName;
     private List<SmallRelatedFileParams> relatedFiles;
     private StatusParams status;
     private FileLinkInternalParams internal;
@@ -45,7 +45,7 @@ public class FileLinkParams {
         this.description = description;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
-        this.virtualFile = virtualFile;
+        this.virtualFileName = virtualFile;
         this.relatedFiles = relatedFiles;
         this.status = status;
         this.internal = internal;
@@ -78,7 +78,7 @@ public class FileLinkParams {
         sb.append(", description='").append(description).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
-        sb.append(", virtualFile='").append(virtualFile).append('\'');
+        sb.append(", virtualFile='").append(virtualFileName).append('\'');
         sb.append(", relatedFiles=").append(relatedFiles);
         sb.append(", status=").append(status);
         sb.append(", internal=").append(internal);
@@ -160,12 +160,12 @@ public class FileLinkParams {
         return this;
     }
 
-    public String getVirtualFile() {
-        return virtualFile;
+    public String getVirtualFileName() {
+        return virtualFileName;
     }
 
-    public FileLinkParams setVirtualFile(String virtualFile) {
-        this.virtualFile = virtualFile;
+    public FileLinkParams setVirtualFileName(String virtualFileName) {
+        this.virtualFileName = virtualFileName;
         return this;
     }
 

@@ -16,6 +16,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -25,7 +26,6 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
-import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -3560,20 +3560,22 @@ public class FileManager extends AnnotationSetManager<File> {
                         validateNewSamples(study, subfile, existingSamples, nonExistingSamples, token);
 
                         File virtualFile;
-                        if (StringUtils.isNotEmpty(params.getVirtualFile())) {
+                        if (StringUtils.isNotEmpty(params.getVirtualFileName())) {
                             virtualFile = new File();
-                            if (params.getVirtualFile().contains("/")) {
-                                virtualFile.setPath(params.getVirtualFile());
-                            } else if (params.getVirtualFile().contains(":")) {
-                                virtualFile.setPath(params.getVirtualFile().replaceAll(":", "/"));
+                            if (params.getVirtualFileName().contains("/")) {
+                                virtualFile.setPath(params.getVirtualFileName());
+                            } else if (params.getVirtualFileName().contains(":")) {
+                                virtualFile.setPath(params.getVirtualFileName().replaceAll(":", "/"));
                             } else {
-                                virtualFile.setPath(params.getVirtualFile());
+                                virtualFile.setPath(params.getVirtualFileName());
                             }
 
                             // Check if the file exists
                             Query tmpQuery = new Query(FileDBAdaptor.QueryParams.PATH.key(), virtualFile.getPath());
-                            QueryOptions tmpOptions = keepFieldsInQueryOptions(INCLUDE_FILE_URI_PATH,
-                                    Arrays.asList(FileDBAdaptor.QueryParams.TYPE.key(), FileDBAdaptor.QueryParams.SAMPLE_IDS.key()));
+                            QueryOptions tmpOptions = keepFieldsInQueryOptions(INCLUDE_FILE_URI_PATH, Arrays.asList(
+                                    FileDBAdaptor.QueryParams.TYPE.key(),
+                                    FileDBAdaptor.QueryParams.SAMPLE_IDS.key(),
+                                    FileDBAdaptor.QueryParams.INTERNAL_MISSING_SAMPLES.key()));
                             OpenCGAResult<File> vFileResult = fileDBAdaptor.get(study.getUid(), tmpQuery, tmpOptions, userId);
 
                             if (vFileResult.getNumResults() == 1) {
@@ -3584,7 +3586,14 @@ public class FileManager extends AnnotationSetManager<File> {
                                 virtualFile = vFileResult.first();
 
                                 // Validate sample ids are exactly the same as in the virtual file
-                                HashSet<String> sampleIds = new HashSet<>(virtualFile.getSampleIds());
+                                Set<String> sampleIds;
+                                if (virtualFile.getInternal().getStatus().getId().equals(FileStatus.MISSING_SAMPLES)) {
+                                    MissingSamples missingSamples = virtualFile.getInternal().getMissingSamples();
+                                    sampleIds = new HashSet<>(missingSamples.getExisting());
+                                    sampleIds.addAll(missingSamples.getNonExisting());
+                                } else {
+                                    sampleIds = new HashSet<>(virtualFile.getSampleIds());
+                                }
                                 if (sampleIds.size() != subfile.getSampleIds().size() || !sampleIds.containsAll(subfile.getSampleIds())) {
                                     throw new IOException("A virtual file '" + virtualFile.getPath() + "' already exists but the list "
                                             + "of samples differ.");

@@ -21,17 +21,14 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.nio.file.Paths;
 
 import static org.junit.Assert.*;
@@ -57,15 +54,15 @@ public class VariantVirtualFileIndexTest extends AbstractVariantOperationManager
         String virtualFile = "variant-test-file.vcf";
         catalogManager.getFileManager().link(studyId, new FileLinkParams()
                 .setUri(getResourceUri("by_chr/chr20.variant-test-file.vcf.gz").toString())
-                .setVirtualFile(virtualFile)
+                .setVirtualFileName(virtualFile)
                 .setPath(path), true, sessionId).first();
         catalogManager.getFileManager().link(studyId, new FileLinkParams()
                 .setUri(getResourceUri("by_chr/chr21.variant-test-file.vcf.gz").toString())
-                .setVirtualFile(virtualFile)
+                .setVirtualFileName(virtualFile)
                 .setPath(path), true, sessionId).first();
         catalogManager.getFileManager().link(studyId, new FileLinkParams()
                 .setUri(getResourceUri("by_chr/chr22.variant-test-file.vcf.gz").toString())
-                .setVirtualFile(virtualFile)
+                .setVirtualFileName(virtualFile)
                 .setPath(path), true, sessionId).first();
 
         ToolRunner toolRunner = opencga.getToolRunner();
