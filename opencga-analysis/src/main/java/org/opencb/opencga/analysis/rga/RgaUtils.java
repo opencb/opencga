@@ -43,6 +43,21 @@ class RgaUtils {
     public static final Set<String> ALL_PARAMS;
     public static final Map<String, Set<String>> PARAM_TYPES;
 
+    // CONSEQUENCE TYPE
+    public static final List<String> CONSEQUENCE_TYPE_LIST = Arrays.asList("start_retained_variant", "upstream_variant",
+            "3_prime_UTR_variant", "splice_acceptor_variant", "transcript_amplification", "upstream_gene_variant",
+            "RNA_polymerase_promoter", "non_coding_transcript_exon_variant", "non_coding_transcript_variant", "inframe_variant",
+            "transcript_ablation", "splice_donor_variant", "synonymous_variant", "feature_elongation", "feature_truncation",
+            "miRNA_target_site", "exon_variant", "downstream_gene_variant", "stop_retained_variant", "TF_binding_site_variant",
+            "initiator_codon_variant", "coding_sequence_variant", "protein_altering_variant", "intergenic_variant",
+            "terminator_codon_variant", "frameshift_variant", "DNAseI_hypersensitive_site", "feature_variant", "2KB_downstream_variant",
+            "intron_variant", "splice_region_variant", "5_prime_UTR_variant", "SNP", "stop_gained", "regulatory_region_amplification",
+            "2KB_upstream_variant", "miRNA", "lincRNA", "start_lost", "SNV", "CpG_island", "downstream_variant",
+            "NMD_transcript_variant", "2KB_downstream_gene_variant", "TFBS_amplification", "missense_variant",
+            "regulatory_region_ablation", "mature_miRNA_variant", "stop_lost", "structural_variant", "regulatory_region_variant",
+            "TFBS_ablation", "copy_number_change", "2KB_upstream_gene_variant", "polypeptide_variation_site", "inframe_deletion",
+            "inframe_insertion", "incomplete_terminal_codon_variant");
+
     private static final Logger logger;
 
     static {
@@ -60,21 +75,7 @@ class RgaUtils {
         ENCODE_MAP.put(PASS, "P");
         ENCODE_MAP.put(NOT_PASS, "NP");
 
-        // CONSEQUENCE TYPE
-        List<String> consequenceTypeList = Arrays.asList("start_retained_variant", "upstream_variant", "3_prime_UTR_variant",
-                "splice_acceptor_variant", "transcript_amplification", "upstream_gene_variant", "RNA_polymerase_promoter",
-                "non_coding_transcript_exon_variant", "non_coding_transcript_variant", "inframe_variant", "transcript_ablation",
-                "splice_donor_variant", "synonymous_variant", "feature_elongation", "feature_truncation", "miRNA_target_site",
-                "exon_variant", "downstream_gene_variant", "stop_retained_variant", "TF_binding_site_variant", "initiator_codon_variant",
-                "coding_sequence_variant", "protein_altering_variant", "intergenic_variant", "terminator_codon_variant",
-                "frameshift_variant", "DNAseI_hypersensitive_site", "feature_variant", "2KB_downstream_variant", "intron_variant",
-                "splice_region_variant", "5_prime_UTR_variant", "SNP", "stop_gained", "regulatory_region_amplification",
-                "2KB_upstream_variant", "miRNA", "lincRNA", "start_lost", "SNV", "CpG_island", "downstream_variant",
-                "NMD_transcript_variant", "2KB_downstream_gene_variant", "TFBS_amplification", "missense_variant",
-                "regulatory_region_ablation", "mature_miRNA_variant", "stop_lost", "structural_variant", "regulatory_region_variant",
-                "TFBS_ablation", "copy_number_change", "2KB_upstream_gene_variant", "polypeptide_variation_site", "inframe_deletion",
-                "inframe_insertion", "incomplete_terminal_codon_variant");
-        for (String consequenceType : consequenceTypeList) {
+        for (String consequenceType : CONSEQUENCE_TYPE_LIST) {
             ENCODE_MAP.put(consequenceType, String.valueOf(VariantQueryUtils.parseConsequenceType(consequenceType)));
         }
 

@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.analysis.rga.RgaQueryParams.*;
 import static org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant.KnockoutType.*;
@@ -27,6 +28,25 @@ public class RgaQueryParser {
     public static final String SEPARATOR = "__";
 
     protected static Logger logger = LoggerFactory.getLogger(RgaQueryParser.class);
+
+    private static final List<String> ALL_CONSEQUENCE_TYPES;
+    private static final List<String> ALL_PAIRED_CONSEQUENCE_TYPES;
+    private static final List<String> INCLUDED_DEL_OVERLAP_CONSEQUENCE_TYPES;
+    private static final List<String> INCLUDED_DEL_OVERLAP_PAIR_CTS;
+
+    static {
+        List<String> excludedDelOverlapCts = getEncodedConsequenceTypes(Collections.singletonList("missense_variant"));
+//        List<String> excludedDelOverlapCts = getEncodedConsequenceTypes(Collections.singletonList("transcript_ablation"));
+
+        // Exclude DELETION_OVERLAP variants with consequence types: missense_variant
+        ALL_CONSEQUENCE_TYPES = getEncodedConsequenceTypes(RgaUtils.CONSEQUENCE_TYPE_LIST);
+        ALL_PAIRED_CONSEQUENCE_TYPES = generateSortedCombinations(ALL_CONSEQUENCE_TYPES);
+        INCLUDED_DEL_OVERLAP_CONSEQUENCE_TYPES = ALL_CONSEQUENCE_TYPES
+                .stream()
+                .filter(ct -> !excludedDelOverlapCts.contains(ct))
+                .collect(Collectors.toList());
+        INCLUDED_DEL_OVERLAP_PAIR_CTS = generateSortedCombinations(INCLUDED_DEL_OVERLAP_CONSEQUENCE_TYPES);
+    }
 
     public RgaQueryParser() {
         this(CompHetQueryMode.SINGLE);
@@ -265,7 +285,7 @@ public class RgaQueryParser {
         buildComplexQuery(koValues, filterValues, ctValues, popFreqQueryList, filterList);
     }
 
-    private List<String> getEncodedConsequenceTypes(List<String> originalCtList) {
+    private static List<String> getEncodedConsequenceTypes(List<String> originalCtList) {
         if (CollectionUtils.isEmpty(originalCtList)) {
             return Collections.emptyList();
         }
@@ -281,6 +301,8 @@ public class RgaQueryParser {
                                    Map<String, List<String>> popFreqQueryList, List<String> filterList) throws RgaException {
         String encodedChString = RgaUtils.encode(COMP_HET.name());
 
+        String delOverlap = RgaUtils.parseKnockoutTypeQuery(Collections.singletonList(DELETION_OVERLAP.name())).get(0);
+
         List<String> chFilterValues = filterValues;
         List<String> chCtValues = ctValues;
         if (compHetQueryMode.equals(CompHetQueryMode.PAIR)) {
@@ -294,8 +316,13 @@ public class RgaQueryParser {
             List<String> orFilterList = new LinkedList<>();
             for (String koValue : koValues) {
                 List<String> finalFilterValues = koValue.equals(encodedChString) ? chFilterValues : filterValues;
+                List<String> ctList = koValue.equals(delOverlap) ? INCLUDED_DEL_OVERLAP_CONSEQUENCE_TYPES : ALL_CONSEQUENCE_TYPES;
                 for (String filterVal : finalFilterValues) {
-                    orFilterList.add(koValue + SEPARATOR + filterVal);
+                    // This is how it should be filtered
+//                    orFilterList.add(koValue + SEPARATOR + filterVal);
+                    for (String ctValue : ctList) {
+                        orFilterList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue);
+                    }
                 }
             }
             parseStringValue(orFilterList, RgaDataModel.COMPOUND_FILTERS, filterList, "||");
@@ -313,6 +340,10 @@ public class RgaQueryParser {
                         List<String> finalCtValues = koValue.equals(encodedChString) ? chCtValues : ctValues;
                         for (String filterVal : finalFilterValues) {
                             for (String ctValue : finalCtValues) {
+                                if (koValue.equals(delOverlap) && !INCLUDED_DEL_OVERLAP_PAIR_CTS.contains(ctValue)) {
+                                    // Don't process this filter
+                                    continue;
+                                }
                                 orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR + sortedPopFreq.get(0)
                                         + SEPARATOR + sortedPopFreq.get(1));
                             }
@@ -329,6 +360,10 @@ public class RgaQueryParser {
                             List<String> finalCtValues = koValue.equals(encodedChString) ? chCtValues : ctValues;
                             for (String filterVal : finalFilterValues) {
                                 for (String ctValue : finalCtValues) {
+                                    if (koValue.equals(delOverlap) && !INCLUDED_DEL_OVERLAP_CONSEQUENCE_TYPES.contains(ctValue)) {
+                                        // Don't process this filter
+                                        continue;
+                                    }
                                     if (compHetQueryMode.equals(CompHetQueryMode.PAIR) && koValue.equals(encodedChString)) {
                                         orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR + popFreq
                                                 + SEPARATOR + popFreq);
@@ -351,6 +386,10 @@ public class RgaQueryParser {
                 List<String> finalCtValues = koValue.equals(encodedChString) ? chCtValues : ctValues;
                 for (String filterVal : finalFilterValues) {
                     for (String ctValue : finalCtValues) {
+                        if (koValue.equals(delOverlap) && !INCLUDED_DEL_OVERLAP_CONSEQUENCE_TYPES.contains(ctValue)) {
+                            // Don't process this filter
+                            continue;
+                        }
                         orFilterList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue);
                     }
                 }
@@ -367,10 +406,15 @@ public class RgaQueryParser {
                 for (List<String> sortedPopFreq : sortedPopFreqs) {
                     for (String koValue : koValues) {
                         List<String> finalFilterValues = koValue.equals(encodedChString) ? chFilterValues : filterValues;
+                        List<String> ctList = koValue.equals(delOverlap) ? INCLUDED_DEL_OVERLAP_PAIR_CTS : ALL_PAIRED_CONSEQUENCE_TYPES;
                         for (String filterVal : finalFilterValues) {
-                            orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + sortedPopFreq.get(0) + SEPARATOR
-                                    + sortedPopFreq.get(1));
-
+                            // This is how it should be filtered
+//                            orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + sortedPopFreq.get(0) + SEPARATOR
+//                                    + sortedPopFreq.get(1));
+                            for (String ctValue : ctList) {
+                                orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR + sortedPopFreq.get(0)
+                                        + SEPARATOR + sortedPopFreq.get(1));
+                            }
                         }
                     }
                 }
@@ -380,9 +424,15 @@ public class RgaQueryParser {
                     List<String> orQueryList = new LinkedList<>();
                     for (String popFreq : tmpPopFreqList) {
                         for (String koValue : koValues) {
+                            List<String> ctList = koValue.equals(delOverlap) ? INCLUDED_DEL_OVERLAP_CONSEQUENCE_TYPES
+                                    : ALL_CONSEQUENCE_TYPES;
                             List<String> finalFilterValues = koValue.equals(encodedChString) ? chFilterValues : filterValues;
                             for (String filterVal : finalFilterValues) {
-                                orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + popFreq);
+                                // This is how it should be filtered
+//                                orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + popFreq);
+                                for (String ctValue : ctList) {
+                                    orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR + popFreq);
+                                }
                             }
                         }
                     }
@@ -391,6 +441,7 @@ public class RgaQueryParser {
             }
             parseStringValue(andQueryList, RgaDataModel.COMPOUND_FILTERS, filterList, "&&");
         }
+
     }
 
     public static List<String> generateSortedCombinations(List<String> list) {
