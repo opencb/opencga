@@ -1188,6 +1188,10 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         options = filterOptions(options, FILTER_ROUTE_FILES);
         options = changeProjectionKey(options, QueryParams.SAMPLE_IDS.key(), PRIVATE_SAMPLES);
         fixAclProjection(options);
+
+        // type must always be there when relatedFiles is included
+        options = filterQueryOptions(options, Collections.singletonList(QueryParams.TYPE.key()));
+
         return options;
     }
 
