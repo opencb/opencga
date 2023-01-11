@@ -39,6 +39,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class VariantPruneManager {
 
@@ -110,8 +111,8 @@ public class VariantPruneManager {
         );
 
         Path report;
-        try {
-            report = Files.list(Paths.get(outdir))
+        try (Stream<Path> stream = Files.list(Paths.get(outdir))) {
+            report = stream
                     .filter(p -> p.getFileName().toString().contains("variant_prune_report"))
                     .findFirst()
                     .orElse(null);
@@ -304,6 +305,11 @@ public class VariantPruneManager {
             // FIXME: What if not invalid?
             //   Might happen if some samples were deleted, or when loading split files?
         }
+
+        // Discard studies without loaded files.
+        // These can't have the stats computed.
+        studiesWithoutStats.removeIf(study -> mm.getIndexedFiles(mm.getStudyId(study)).isEmpty());
+
         if (!studiesWithoutStats.isEmpty()) {
             throw new StorageEngineException("Unable to run variant prune operation. "
                     + "Please, run variant stats index on cohort '" + StudyEntry.DEFAULT_COHORT + "' for studies " + studiesWithoutStats);

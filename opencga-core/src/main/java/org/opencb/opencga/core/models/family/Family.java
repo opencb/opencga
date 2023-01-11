@@ -423,7 +423,7 @@ public class Family extends Annotable {
         PATERNAL_GRANDFATHER("", "grandfather"),
         GREAT_GRANDFATHER("", "great-grandfather"),
         GREAT_GRANDMOTHER("", "great-grandmother"),
-        DOUBLE_FIRST_COUSING("", "cousin"),
+        DOUBLE_FIRST_COUSIN("", "cousin"),
         COUSIN("", "cousin"),
         MALE_COUSIN("", "cousin"),
         FEMALE_COUSIN("", "cousin"),

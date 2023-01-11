@@ -62,11 +62,7 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
         if (getIterator) {
             VariantDBIterator iterator = delegatedQueryExecutor.iterator(query, options);
             iterator = iterator.mapBuffered(l -> getBreakendPairs(0, baseQuery, variantLocalFilter, l), 100);
-            Iterators.advance(iterator, skip);
-            iterator = iterator.localSkip(skip);
-            if (limit > 0) {
-                iterator = iterator.localLimit(limit);
-            }
+            iterator = iterator.localLimitSkip(limit, skip);
             return iterator;
         } else {
             // Copy to avoid modifications to input options

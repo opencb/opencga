@@ -175,6 +175,16 @@ public class GenotypeCodec {
         return Pair.of(decode(split[0]), decode(split[1]));
     }
 
+    public static String decodeMother(byte code) {
+        byte[] split = split(code);
+        return decode(split[1]);
+    }
+
+    public static String decodeFather(byte code) {
+        byte[] split = split(code);
+        return decode(split[0]);
+    }
+
     public static boolean isAmbiguousCode(int i) {
         return AMBIGUOUS_GT_CODE[i];
     }

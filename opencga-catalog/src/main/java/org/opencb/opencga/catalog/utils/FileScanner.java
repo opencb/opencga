@@ -156,20 +156,22 @@ public class FileScanner {
                 untrackedFiles.put(entry.getKey(), entry.getValue());
                 continue;
             }
-            Stream<URI> files = ioManager.listFilesStream(entry.getValue());
 
-            Iterator<URI> iterator = files.iterator();
-            while (iterator.hasNext()) {
-                URI uri = iterator.next();
-                String filePath = entry.getKey() + entry.getValue().relativize(uri).toString();
+            try (Stream<URI> files = ioManager.listFilesStream(entry.getValue())) {
+                Iterator<URI> iterator = files.iterator();
 
-                DataResult<File> searchFile = catalogManager.getFileManager().search(String.valueOf(studyId),
-                        new Query("path", filePath), new QueryOptions("include", "projects.studies.files.id"), sessionId);
-                if (searchFile.getResults().isEmpty()) {
-                    untrackedFiles.put(filePath, uri);
-                } /*else {
+                while (iterator.hasNext()) {
+                    URI uri = iterator.next();
+                    String filePath = entry.getKey() + entry.getValue().relativize(uri).toString();
+
+                    DataResult<File> searchFile = catalogManager.getFileManager().search(String.valueOf(studyId),
+                            new Query("path", filePath), new QueryOptions("include", "projects.studies.files.id"), sessionId);
+                    if (searchFile.getResults().isEmpty()) {
+                        untrackedFiles.put(filePath, uri);
+                    } /*else {
                     iterator.remove(); //Remove the ones that have an entry in Catalog
                 }*/
+                }
             }
         }
         return untrackedFiles;
@@ -227,111 +229,115 @@ public class FileScanner {
 
         long createFilesTime = 0, uploadFilesTime = 0, metadataReadTime = 0;
         IOManager ioManager = catalogManager.getIoManagerFactory().get(directoryToScan);
-        Stream<URI> uris = ioManager.exists(directoryToScan)
-                ? catalogManager.getIoManagerFactory().get(directoryToScan).listFilesStream(directoryToScan)
-                : Stream.empty();
+
         List<File> files = new LinkedList<>();
-
-        Iterator<URI> iterator = uris.iterator();
-        while (iterator.hasNext()) {
-            long fileScanStart = System.currentTimeMillis();
-            URI uri = iterator.next();
-            if (!filter.test(uri)) {
-                continue;
-            }
-            URI generatedFile = directoryToScan.relativize(uri);
-            String filePath = URI.create(directory.getPath()).resolve(generatedFile).toString();
+        if (ioManager.exists(directoryToScan)) {
+            try (Stream<URI> stream = catalogManager.getIoManagerFactory().get(directoryToScan).listFilesStream(directoryToScan)) {
+                Iterator<URI> iterator = stream.iterator();
+                while (iterator.hasNext()) {
+                    long fileScanStart = System.currentTimeMillis();
+                    URI uri = iterator.next();
+                    if (!filter.test(uri)) {
+                        continue;
+                    }
+                    URI generatedFile = directoryToScan.relativize(uri);
+                    String filePath = URI.create(directory.getPath()).resolve(generatedFile).toString();
 //            String filePath = Paths.get(directory.getPath(), generatedFile.toString()).toString();
-            if (generatedFile.getPath().endsWith("/") && !filePath.endsWith("/")) {
-                filePath += "/";
-            }
+                    if (generatedFile.getPath().endsWith("/") && !filePath.endsWith("/")) {
+                        filePath += "/";
+                    }
 
-            Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), filePath);
-            DataResult<File> searchFile = catalogManager.getFileManager().search(study.getFqn(), query, null, sessionId);
-            File file = null;
-            boolean overwrite = true;
-            boolean returnFile = false;
-            if (searchFile.getNumResults() != 0) {
-                File existingFile = searchFile.first();
-                logger.info("File already existing in target \"" + filePath + "\". FileScannerPolicy = " + policy);
-                switch (policy) {
-                    case DELETE:
-                        logger.info("Deleting file { uid:" + existingFile.getUid() + ", path:\"" + existingFile.getPath() + "\" }");
-                        Query tmpQuery = new Query(FileDBAdaptor.QueryParams.UID.key(), existingFile.getUid());
+                    Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), filePath);
+                    DataResult<File> searchFile = catalogManager.getFileManager().search(study.getFqn(), query, null, sessionId);
+                    File file = null;
+                    boolean overwrite = true;
+                    boolean returnFile = false;
+                    if (searchFile.getNumResults() != 0) {
+                        File existingFile = searchFile.first();
+                        logger.info("File already existing in target \"" + filePath + "\". FileScannerPolicy = " + policy);
+                        switch (policy) {
+                            case DELETE:
+                                logger.info("Deleting file { uid:" + existingFile.getUid() + ", path:\"" + existingFile.getPath() + "\" }");
+                                Query tmpQuery = new Query(FileDBAdaptor.QueryParams.UID.key(), existingFile.getUid());
 
-                        // Set the status of the file to PENDING DELETE
-                        FileUpdateParams updateParams = new FileUpdateParams()
-                                .setInternal(new SmallFileInternal(new FileStatus(FileStatus.PENDING_DELETE)));
-                        catalogManager.getFileManager().update(study.getFqn(), tmpQuery, updateParams, QueryOptions.empty(), sessionId);
+                                // Set the status of the file to PENDING DELETE
+                                FileUpdateParams updateParams = new FileUpdateParams()
+                                        .setInternal(new SmallFileInternal(new FileStatus(FileStatus.PENDING_DELETE)));
+                                catalogManager.getFileManager().update(study.getFqn(), tmpQuery, updateParams, QueryOptions.empty(),
+                                        sessionId);
 
-                        // Delete completely the file/folder !
-                        catalogManager.getFileManager().delete(study.getFqn(), tmpQuery, new QueryOptions(Constants.SKIP_TRASH, true),
-                                sessionId);
-                        overwrite = false;
-                        break;
-                    case REPLACE:
-                        file = existingFile;
-                        break;
+                                // Delete completely the file/folder !
+                                catalogManager.getFileManager().delete(study.getFqn(), tmpQuery, new QueryOptions(Constants.SKIP_TRASH,
+                                                true), sessionId);
+                                overwrite = false;
+                                break;
+                            case REPLACE:
+                                file = existingFile;
+                                break;
 //                    case RENAME:
 //                        throw new UnsupportedOperationException("Unimplemented policy 'rename'");
 //                    case DO_ERROR:
 //                        throw new UnsupportedOperationException("Unimplemented policy 'error'");
-                    default:
-                        throw new UnsupportedOperationException("Unimplemented policy '" + policy + "'");
-                }
-            }
-
-            long createFileTime = 0, uploadFileTime = 0, metadataFileTime = 0;
-            if (file == null) {
-                long start, end;
-                if (uri.getPath().endsWith("/")) {
-                    file = catalogManager.getFileManager().createFolder(study.getFqn(), Paths.get(filePath).toString(), true,
-                            null, QueryOptions.empty(), sessionId).first();
-                } else {
-                    start = System.currentTimeMillis();
-
-                    InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(uri)));
-                    file = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
-                            new File().setPath(filePath), overwrite, true, calculateChecksum, sessionId).first();
-                    if (deleteSource) {
-                        ioManager.deleteFile(uri);
+                            default:
+                                throw new UnsupportedOperationException("Unimplemented policy '" + policy + "'");
+                        }
                     }
 
-                    end = System.currentTimeMillis();
-                    uploadFileTime = end - start;
-                    uploadFilesTime += uploadFileTime;
-                    returnFile = true;      //Return file because is new
-                }
-                logger.debug("Created new file entry for " + uri + " { uid:" + file.getUid() + ", path:\"" + file.getPath() + "\" } ");
-            } else {
-                if (file.getType() == File.Type.FILE) {
-                    if (file.getInternal().getStatus().getId().equals(FileStatus.MISSING)) {
-                        logger.info("File { uid:" + file.getUid() + ", path:'" + file.getPath() + "' } recover tracking from file " + uri);
-                        logger.debug("Set status to " + FileStatus.READY);
-                        returnFile = true;      //Return file because was missing
+                    long createFileTime = 0, uploadFileTime = 0, metadataFileTime = 0;
+                    if (file == null) {
+                        long start, end;
+                        if (uri.getPath().endsWith("/")) {
+                            file = catalogManager.getFileManager().createFolder(study.getFqn(), Paths.get(filePath).toString(), true,
+                                    null, QueryOptions.empty(), sessionId).first();
+                        } else {
+                            start = System.currentTimeMillis();
+
+                            InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(uri)));
+                            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream, new File().setPath(filePath),
+                                    overwrite, true, calculateChecksum, sessionId).first();
+                            if (deleteSource) {
+                                ioManager.deleteFile(uri);
+                            }
+
+                            end = System.currentTimeMillis();
+                            uploadFileTime = end - start;
+                            uploadFilesTime += uploadFileTime;
+                            returnFile = true;      //Return file because is new
+                        }
+                        logger.debug("Created new file entry for " + uri + " { uid:" + file.getUid() + ", path:\"" + file.getPath()
+                                + "\" } ");
+                    } else {
+                        if (file.getType() == File.Type.FILE) {
+                            if (file.getInternal().getStatus().getId().equals(FileStatus.MISSING)) {
+                                logger.info("File { uid:" + file.getUid() + ", path:'" + file.getPath() + "' } recover tracking from file "
+                                        + uri);
+                                logger.debug("Set status to " + FileStatus.READY);
+                                returnFile = true;      //Return file because was missing
+                            }
+                            long start = System.currentTimeMillis();
+
+                            InputStream inputStream = new FileInputStream(new java.io.File(uri));
+                            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream, file, overwrite, true,
+                                    calculateChecksum, sessionId).first();
+
+                            long end = System.currentTimeMillis();
+                            uploadFilesTime += end - start;
+                        }
                     }
-                    long start = System.currentTimeMillis();
 
-                    InputStream inputStream = new FileInputStream(new java.io.File(uri));
-                    file = catalogManager.getFileManager().upload(study.getFqn(), inputStream, file, overwrite, true, calculateChecksum,
-                            sessionId).first();
-
-                    long end = System.currentTimeMillis();
-                    uploadFilesTime += end - start;
+                    if (returnFile) { // Return only new and found files.
+                        files.add(file);
+                    }
+                    logger.info("Added file {}", filePath);
+                    logger.debug("{}s (create {}s, upload {}s, metadata {}s)", (System.currentTimeMillis() - fileScanStart) / 1000.0,
+                            createFileTime / 1000.0, uploadFileTime / 1000.0, metadataFileTime / 1000.0);
                 }
             }
-
-            if (returnFile) { //Return only new and found files.
-                files.add(file);
-            }
-            logger.info("Added file {}", filePath);
-            logger.debug("{}s (create {}s, upload {}s, metadata {}s)", (System.currentTimeMillis() - fileScanStart) / 1000.0,
-                    createFileTime / 1000.0, uploadFileTime / 1000.0, metadataFileTime / 1000.0);
         }
+
         logger.debug("Create catalog file entries: " + createFilesTime / 1000.0 + "s");
         logger.debug("Upload files: " + uploadFilesTime / 1000.0 + "s");
         logger.debug("Read metadata information: " + metadataReadTime / 1000.0 + "s");
         return files;
     }
-
 }

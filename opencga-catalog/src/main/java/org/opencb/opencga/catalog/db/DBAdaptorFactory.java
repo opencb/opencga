@@ -46,10 +46,10 @@ public interface DBAdaptorFactory extends AutoCloseable {
     /**
      * Creates the indexes needed to make queries faster.
      *
-     * @param uniqueIndexesOnly boolean indicating whether to index unique indexes only.
+     * @param wholeIndexes boolean indicating whether to generate all indexes or only the unique ones.
      * @throws CatalogDBException if there is any problem creating the indexes.
      */
-    void createIndexes(boolean uniqueIndexesOnly) throws CatalogDBException;
+    void createIndexes(boolean wholeIndexes) throws CatalogDBException;
 
     String getCatalogDatabase(String prefix);
 

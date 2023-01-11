@@ -47,6 +47,7 @@ public class SampleIndexQuery {
     private final SampleAnnotationIndexQuery annotationIndexQuery;
     private final Set<String> mendelianErrorSet;
     private final MendelianErrorType mendelianErrorType;
+    private final boolean includeParentColumns;
     private final QueryOperation queryOperation;
 
     public enum MendelianErrorType {
@@ -69,6 +70,7 @@ public class SampleIndexQuery {
         this.annotationIndexQuery = query.annotationIndexQuery;
         this.mendelianErrorSet = query.mendelianErrorSet;
         this.mendelianErrorType = query.mendelianErrorType;
+        this.includeParentColumns = query.includeParentColumns;
         this.queryOperation = query.queryOperation;
     }
 
@@ -76,7 +78,7 @@ public class SampleIndexQuery {
             List<String>> samplesMap, QueryOperation queryOperation) {
         this(schema, locusQueries, null, study, samplesMap, Collections.emptySet(), null, Collections.emptyMap(), Collections.emptyMap(),
                 Collections.emptyMap(),
-                new SampleAnnotationIndexQuery(schema), Collections.emptySet(), null, queryOperation);
+                new SampleAnnotationIndexQuery(schema), Collections.emptySet(), null, false, queryOperation);
     }
 
     public SampleIndexQuery(SampleIndexSchema schema, Collection<LocusQuery> locusQueries, Set<VariantType> variantTypes, String study,
@@ -84,7 +86,8 @@ public class SampleIndexQuery {
                             Set<String> negatedSamples, Map<String, boolean[]> fatherFilter, Map<String, boolean[]> motherFilter,
                             Map<String, Values<SampleFileIndexQuery>> fileFilterMap,
                             SampleAnnotationIndexQuery annotationIndexQuery,
-                            Set<String> mendelianErrorSet, MendelianErrorType mendelianErrorType, QueryOperation queryOperation) {
+                            Set<String> mendelianErrorSet, MendelianErrorType mendelianErrorType, boolean includeParentColumns,
+                            QueryOperation queryOperation) {
         this.schema = schema;
         this.locusQueries = locusQueries;
         this.variantTypes = variantTypes;
@@ -98,6 +101,7 @@ public class SampleIndexQuery {
         this.annotationIndexQuery = annotationIndexQuery;
         this.mendelianErrorSet = mendelianErrorSet;
         this.mendelianErrorType = mendelianErrorType;
+        this.includeParentColumns = includeParentColumns;
         this.queryOperation = queryOperation;
     }
 
@@ -217,6 +221,10 @@ public class SampleIndexQuery {
 
     public SampleAnnotationIndexQuery getAnnotationIndexQuery() {
         return annotationIndexQuery;
+    }
+
+    public boolean isIncludeParentColumns() {
+        return includeParentColumns;
     }
 
     public QueryOperation getQueryOperation() {

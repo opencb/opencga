@@ -17,6 +17,7 @@
 package org.opencb.opencga.analysis.variant.operations;
 
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsIndexParams;
@@ -59,10 +60,9 @@ public class VariantStatsIndexOperationTool extends OperationTool {
 
         // if the study is aggregated and a mapping file is provided, pass it to storage
         // and create in catalog the cohorts described in the mapping file
-        String aggregationMappingFile = params.getString(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key());
-        Path mappingFilePath = null;
-        if (isNotEmpty(aggregationMappingFile)) {
-            mappingFilePath = getFilePath(aggregationMappingFile);
+        if (isNotEmpty(toolParams.getAggregationMappingFile())) {
+            Path mappingFilePath = getFilePath(toolParams.getAggregationMappingFile());
+            params.append(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), mappingFilePath);
         }
 
         // Do not save intermediate files
@@ -73,10 +73,9 @@ public class VariantStatsIndexOperationTool extends OperationTool {
         }
 
         params.put(VariantStorageOptions.STATS_OVERWRITE.key(), toolParams.isOverwriteStats());
-        params.put(VariantStorageOptions.STATS_AGGREGATION.key(), toolParams.getAggregated());
-        params.put(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), toolParams.getAggregationMappingFile());
+        params.put(VariantStorageOptions.STATS_AGGREGATION.key(),
+                VariantStatsAnalysis.getAggregation(catalogManager, studyFqn, toolParams.getAggregated(), token));
         params.put(VariantStorageOptions.RESUME.key(), toolParams.isResume());
-        params.append(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), mappingFilePath);
         params.append(DefaultVariantStatisticsManager.OUTPUT, outputFile.toAbsolutePath().toString());
     }
 
@@ -99,12 +98,8 @@ public class VariantStatsIndexOperationTool extends OperationTool {
     }
 
     private Path getFilePath(String aggregationMapFile) throws CatalogException {
-        if (Files.exists(Paths.get(aggregationMapFile))) {
-            return Paths.get(aggregationMapFile).toAbsolutePath();
-        } else {
-            return Paths.get(getCatalogManager().getFileManager()
-                    .get(studyFqn, aggregationMapFile, QueryOptions.empty(), getToken()).first().getUri());
-        }
+        return Paths.get(getCatalogManager().getFileManager()
+                .get(studyFqn, aggregationMapFile, QueryOptions.empty(), getToken()).first().getUri());
     }
 
 }

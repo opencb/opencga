@@ -86,6 +86,7 @@ public class VariantCatalogQueryUtilsTest {
 
     @ClassRule
     public static CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
+    private static String assembly;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -111,7 +112,7 @@ public class VariantCatalogQueryUtilsTest {
         User user = catalog.getUserManager().create("user", "user", "my@email.org", TestParamConstants.PASSWORD, "ACME", 1000L, Account.AccountType.FULL, null).first();
 
         sessionId = catalog.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
-        String assembly = "GRCh38";
+        assembly = "GRCh38";
         catalog.getProjectManager().create("p1", "p1", "", "hsapiens", "Homo Sapiens", assembly, null, sessionId);
         catalog.getStudyManager().create("p1", "s1", "s1", "s1", null, null, null, null, null, null, sessionId);
         catalog.getStudyManager().create("p1", "s2", "s2", "s2", null, null, null, null, null, null, sessionId);
@@ -711,6 +712,61 @@ public class VariantCatalogQueryUtilsTest {
         assertEquals(set(cadm1Variant), set(query, ID));
         assertEquals(set(brca2Region, new Region(cadm1Region.toString()).setEnd(cadm1Region.getEnd() - 3000)), set(query, ANNOT_GENE_REGIONS));
         assertEquals(set("1:1000-2000"), set(query, REGION));
+    }
+
+    @Test
+    public void queryByPanelIntersectSinglePositionRegions() throws Exception {
+        Region brca2Region = cellBaseUtils.getGeneRegion("BRCA2");
+        String singlePositionRegion = brca2Region.getChromosome() + ":" + (brca2Region.getStart() + 10) + "-" + (brca2Region.getStart() + 10);
+
+        // SinglePositionRegion in QUERY
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), myPanelWithRegions.getId())
+                .append(REGION.key(), singlePositionRegion)
+                .append(PANEL_INTERSECTION.key(), true), null, cellBaseUtils, sessionId);
+        assertEquals(set("BRCA2"), set(query, GENE));
+        assertEquals(set(new Region(singlePositionRegion)), set(query, ANNOT_GENE_REGIONS));
+
+
+        // SinglePositionRegion in PANEL
+        Panel myPanelWithSinglePositionRegion = new Panel("myPanelWithSinglePositionRegion", "myPanelWithSinglePositionRegion", 1);
+        myPanelWithSinglePositionRegion
+                .setRegions(Arrays.asList(
+                        ((DiseasePanel.RegionPanel) new DiseasePanel.RegionPanel().setCoordinates(Arrays.asList(
+                                new DiseasePanel.Coordinate(assembly, singlePositionRegion, null))))
+                ))
+        ;
+        catalog.getPanelManager().create("s1", myPanelWithSinglePositionRegion, null, sessionId);
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), myPanelWithSinglePositionRegion.getId())
+                .append(GENE.key(), "BRCA2")
+                .append(PANEL_INTERSECTION.key(), true), null, cellBaseUtils, sessionId);
+        assertEquals(set("BRCA2"), set(query, GENE));
+        assertEquals(set(new Region(singlePositionRegion)), set(query, ANNOT_GENE_REGIONS));
+
+        // SinglePositionRegion in both PANEL and QUERY
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), myPanelWithSinglePositionRegion.getId())
+                .append(REGION.key(), singlePositionRegion)
+                .append(PANEL_INTERSECTION.key(), true), null, cellBaseUtils, sessionId);
+        assertEquals(set(new Region(singlePositionRegion)), set(query, REGION));
+    }
+
+    @Test
+    public void queryByPanelsWithGeneXrefs() throws Exception {
+        //  PANEL
+        String geneXref = "HGNC:12363";
+        String geneName = "TSC2";
+        Panel myPanelWithXrefGenes = new Panel("myPanelWithXrefGenes", "myPanelWithXrefGenes", 1)
+                .setGenes(Arrays.asList(new GenePanel().setName(geneXref)));
+        catalog.getPanelManager().create("s1", myPanelWithXrefGenes, null, sessionId);
+
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), myPanelWithXrefGenes.getId()), null, cellBaseUtils, sessionId);
+        assertEquals(set(geneName), set(query, GENE));
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(GENE.key(), geneXref), null, cellBaseUtils, sessionId);
+        assertEquals(set(geneName), set(query, GENE));
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(ANNOT_XREF.key(), geneXref), null, cellBaseUtils, sessionId);
+        assertEquals(set(geneName), set(query, GENE));
     }
 
     private <T> Set<String> set(T... values) {
