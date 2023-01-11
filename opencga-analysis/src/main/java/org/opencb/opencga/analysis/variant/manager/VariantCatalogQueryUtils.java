@@ -830,9 +830,15 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 } else {
                     query.put(REGION.key(), regionsFinal);
                 }
-                if (genesFinal.isEmpty() && geneRegionsFinal.isEmpty() && variantsFinal.isEmpty() && regionsFinal.isEmpty()) {
-                    query.put(REGION.key(), VariantQueryUtils.NON_EXISTING_REGION);
-                }
+            }
+
+            // If the panel (with or without intersection) resulted in an empty set of positional
+            // filters (gene,region and id) , add a dummy region filter by a "non_existing_region"
+            if (!isValidParam(query, GENE)
+                    && !isValidParam(query, REGION)
+                    && !isValidParam(query, ID)
+                    && CollectionUtils.sizeIsEmpty(query.get(ANNOT_GENE_REGIONS_MAP.key()))) {
+                query.put(REGION.key(), VariantQueryUtils.NON_EXISTING_REGION);
             }
         } else {
             if (isValidParam(query, PANEL_CONFIDENCE)) {

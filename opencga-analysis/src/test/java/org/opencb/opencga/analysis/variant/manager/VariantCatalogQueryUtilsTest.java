@@ -584,8 +584,50 @@ public class VariantCatalogQueryUtilsTest {
     public void queryByPanel() throws Exception {
         Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel"), null, cellBaseUtils, sessionId);
         assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL", "BEX2"), set(query, GENE));
-        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel").append(GENE.key(), "ASDF"), null, sessionId);
-        assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL", "ASDF", "BEX2"), set(query, GENE));
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel").append(GENE.key(), "BRCA1"), null, cellBaseUtils, sessionId);
+        assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL", "BRCA1", "BEX2"), set(query, GENE));
+        assertEquals(true, query.getBoolean(SKIP_MISSING_GENES, false));
+        assertNull(query.get(ANNOT_GENE_REGIONS.key()));
+    }
+
+    @Test
+    public void queryByPanelEmpty() throws Exception {
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1")
+                        .append(PANEL.key(), "MyPanel")
+                        .append(PANEL_ROLE_IN_CANCER.key(), ClinicalProperty.RoleInCancer.FUSION)
+                , null, cellBaseUtils, sessionId);
+        assertEquals(set(), set(query, GENE));
+        assertEquals(set(NON_EXISTING_REGION), set(query, REGION));
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1")
+                        .append(REGION.key(), "4")
+                        .append(PANEL.key(), "MyPanel")
+                        .append(PANEL_ROLE_IN_CANCER.key(), ClinicalProperty.RoleInCancer.FUSION)
+                , null, cellBaseUtils, sessionId);
+        assertEquals(set(), set(query, GENE));
+        assertEquals(set("4"), set(query, REGION));
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1")
+                        .append(GENE.key(), "BRCA1")
+                        .append(PANEL.key(), "MyPanel")
+                        .append(PANEL_ROLE_IN_CANCER.key(), ClinicalProperty.RoleInCancer.FUSION)
+                , null, cellBaseUtils, sessionId);
+        assertEquals(set("BRCA1"), set(query, GENE));
+        assertEquals(set(), set(query, REGION));
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel")
+                .append(REGION.key(), "21")
+                .append(PANEL_INTERSECTION.key(), true), null, cellBaseUtils, sessionId);
+        assertEquals(set(), set(query, GENE));
+        assertEquals(set(NON_EXISTING_REGION), set(query, REGION));
+        assertEquals(true, query.getBoolean(SKIP_MISSING_GENES, false));
+        assertNull(query.get(ANNOT_GENE_REGIONS.key()));
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel")
+                .append(GENE.key(), "BRCA1")
+                .append(PANEL_INTERSECTION.key(), true), null, cellBaseUtils, sessionId);
+        assertEquals(set(), set(query, GENE));
+        assertEquals(set(NON_EXISTING_REGION), set(query, REGION));
         assertEquals(true, query.getBoolean(SKIP_MISSING_GENES, false));
         assertNull(query.get(ANNOT_GENE_REGIONS.key()));
     }
