@@ -44,7 +44,7 @@
     <properties>
         <pyopencga.version>2.6.0_dev</pyopencga.version>
         <opencgar.version>2.6.0_dev</opencgar.version>
-        <cellbase.version>5.2.7</cellbase.version>
+        <cellbase.version>5.2.8</cellbase.version>
         <biodata.version>2.6.0-SNAPSHOT</biodata.version>
         <java-common-libs.version>4.6.0-SNAPSHOT</java-common-libs.version>
         <iva.version>2.4.10</iva.version>
