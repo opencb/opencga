@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.variant.manager.operations;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
@@ -46,7 +47,6 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis.getAggregation;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
 
@@ -149,13 +149,19 @@ public class VariantStatsOperationManager extends OperationManager {
 
         // Check aggregation mapping properties
         String tagMap = params.getString(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key());
+
         List<String> cohortsByAggregationMapFile = Collections.emptyList();
-        if (!isBlank(tagMap)) {
+        if (StringUtils.isNotEmpty(tagMap)) {
+            logger.info("Aggregation : " + aggregation);
+            logger.info("Aggregation tagMap : " + tagMap);
             if (!AggregationUtils.isAggregated(aggregation)) {
                 throw nonAggregatedWithMappingFile();
             }
             cohortsByAggregationMapFile = createCohortsByAggregationMapFile(studyId, tagMap, sessionId);
+            logger.info("Reading cohorts from aggregation mapping file. Found {} cohorts.",
+                    cohortsByAggregationMapFile.size());
         } else if (AggregationUtils.isAggregated(aggregation)) {
+//            throw missingAggregationMappingFile(aggregation);
             if (aggregation.equals(Aggregation.BASIC)) {
                 cohortsByAggregationMapFile = createCohortsIfNeeded(studyId, Collections.singleton(StudyEntry.DEFAULT_COHORT), sessionId);
             } else {

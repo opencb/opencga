@@ -9,10 +9,10 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
-import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -234,7 +234,7 @@ public class VariantQueryParser {
         convertGoToGeneQuery(query, cellBaseUtils);
         convertExpressionToGeneQuery(query, cellBaseUtils);
 
-        preProcessXrefs(query);
+        preProcessXrefs(query, cellBaseUtils);
 
         if (VariantQueryUtils.isValidParam(query, TYPE)) {
             Set<VariantType> types = new HashSet<>();
@@ -272,6 +272,11 @@ public class VariantQueryParser {
             query.put(TYPE.key(), new ArrayList<>(types));
         }
 
+        if (VariantQueryUtils.isValidParam(query, ANNOT_CLINICAL_CONFIRMED_STATUS)
+                && !query.getBoolean(ANNOT_CLINICAL_CONFIRMED_STATUS.key())) {
+            // Remove false value if exists
+            query.remove(ANNOT_CLINICAL_CONFIRMED_STATUS.key());
+        }
         if (VariantQueryUtils.isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE)) {
             String v = query.getString(ANNOT_CLINICAL_SIGNIFICANCE.key());
             QueryOperation operator = VariantQueryUtils.checkOperator(v);
@@ -716,6 +721,10 @@ public class VariantQueryParser {
             formats = Collections.singletonList(NONE);
         }
 
+        if (VariantQueryUtils.isValidParam(query, SAMPLE_METADATA) && !query.getBoolean(SAMPLE_METADATA.key())) {
+            // Remove false value if exists
+            query.remove(SAMPLE_METADATA.key());
+        }
         query.put(INCLUDE_SAMPLE_DATA.key(), formats);
         query.remove(INCLUDE_GENOTYPE.key(), formats);
     }
@@ -769,7 +778,7 @@ public class VariantQueryParser {
         return genotypes;
     }
 
-    public static ParsedVariantQuery.VariantQueryXref preProcessXrefs(Query query) {
+    public static ParsedVariantQuery.VariantQueryXref preProcessXrefs(Query query, CellBaseUtils cellBaseUtils) {
         ParsedVariantQuery.VariantQueryXref xrefs = parseXrefs(query);
         List<String> allIds = new ArrayList<>(xrefs.getIds().size() + xrefs.getVariants().size());
         allIds.addAll(xrefs.getIds());
@@ -784,7 +793,11 @@ public class VariantQueryParser {
         if (xrefs.getGenes().isEmpty()) {
             query.remove(GENE.key());
         } else {
-            query.put(GENE.key(), xrefs.getGenes());
+            List<String> genes = xrefs.getGenes();
+            if (cellBaseUtils != null) {
+                genes = cellBaseUtils.validateGenes(genes, query.getBoolean(SKIP_MISSING_GENES, false));
+            }
+            query.put(GENE.key(), genes);
         }
         if (xrefs.getOtherXrefs().isEmpty()) {
             query.remove(ANNOT_XREF.key());

@@ -194,6 +194,43 @@ public class VariantPruneManagerTest extends VariantStorageBaseTest implements H
         variantPrune("5_prune_dry", true, 0);
     }
 
+    @Test
+    public void testVariantPruneRemoveStudy() throws Exception {
+        load();
+
+        variantPrune("remove_study_1_prune_dry", true, 0);
+
+//        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("pre-remove"));
+        engine.removeStudy(STUDY_NAME_3, outputUri);
+//        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("post-remove"));
+
+        int variantsToPrune = variantPrune("remove_study_2_prune_dry", true);
+        variantPrune("remove_study_3_prune_wet", false, variantsToPrune);
+//        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("post-prune"));
+        variantPrune("remove_study_4_prune_dry", true, 0);
+    }
+
+    @Test
+    public void testVariantPruneRemoveStudyAndLoad() throws Exception {
+        load();
+
+        variantPrune("remove_study_and_load_1_prune_dry", true, 0);
+
+//        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("pre-remove"));
+        engine.removeStudy(STUDY_NAME_3, outputUri);
+        ObjectMap params = new ObjectMap()
+                .append(VariantStorageOptions.STUDY.key(), STUDY_NAME_3)
+                .append(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), true);
+        runETL(engine, getPlatinumFile(8), outputUri, params, true, true, true);
+//        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("post-remove"));
+
+        int variantsToPrune = variantPrune("remove_study_and_load_2_prune_dry", true);
+        variantPrune("remove_study_and_load_3_prune_wet", false, variantsToPrune);
+//        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("post-prune"));
+        variantPrune("remove_study_and_load_4_prune_dry", true, 0);
+    }
+
     private int variantPrune(String testName, boolean dryMode) throws Exception {
         return variantPrune(testName, dryMode, null);
     }

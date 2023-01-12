@@ -1673,7 +1673,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return dataStore;
     }
 
-    public static String buildDatabaseName(String databasePrefix, String userId, String alias) {
+    public static String buildDatabaseName(String databasePrefix, String userId, String projectId) {
         String prefix;
         if (StringUtils.isNotEmpty(databasePrefix)) {
             prefix = databasePrefix;
@@ -1683,14 +1683,14 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         } else {
             prefix = "opencga_";
         }
-        // Project alias contains the userId:
-        // userId@projectAlias
-        int idx = alias.indexOf('@');
+        // Project id might contain the userId:
+        // userId@projectId
+        int idx = projectId.indexOf('@');
         if (idx >= 0) {
-            alias = alias.substring(idx + 1);
+            projectId = projectId.substring(idx + 1);
         }
 
-        return prefix + userId + '_' + alias;
+        return prefix + userId + '_' + projectId;
     }
 
 }

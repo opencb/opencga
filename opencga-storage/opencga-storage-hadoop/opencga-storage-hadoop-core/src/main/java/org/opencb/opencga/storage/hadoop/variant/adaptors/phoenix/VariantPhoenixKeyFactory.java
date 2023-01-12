@@ -300,11 +300,11 @@ public class VariantPhoenixKeyFactory {
             VariantBuilder builder = new VariantBuilder(chromosome, start, end, reference, alternate);
             builder.setSvInsSeq(insSeqL, insSeqR);
 
-            if (ciStartL > 0) {
+            if (ciStartL > 0 || ciStartR > 0) {
                 builder.setCiStart(ciStartL, ciStartR);
             }
 
-            if (ciEndL > 0) {
+            if (ciEndL > 0 || ciEndR > 0) {
                 builder.setCiEnd(ciEndL, ciEndR);
             }
             if (StringUtils.isNotBlank(type)) {

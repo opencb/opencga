@@ -27,11 +27,13 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.opencb.opencga.core.api.ParamConstants.BWA_COMMANDS_SUPPORTED;
 
@@ -113,12 +115,16 @@ public class BwaWrapperAnalysis extends OpenCgaToolScopeStudy {
             // Post-processing for the command 'index'
             if ("index".equals(analysisParams.getCommand())) {
                 String name = Paths.get(fastaFilePath).getFileName().toString();
-                for (Path path : Files.list(Paths.get(fastaFilePath).getParent()).collect(Collectors.toList())) {
-                    if (path.getFileName().toString().startsWith(name + ".")) {
-                        // Create symbolic link
-                        Path symbolic = getOutDir().resolve(path.getFileName().toString());
-                        Files.createSymbolicLink(symbolic, path);
+                try (Stream<Path> stream = Files.list(Paths.get(fastaFilePath).getParent())) {
+                    for (Path path : stream.collect(Collectors.toList())) {
+                        if (path.getFileName().toString().startsWith(name + ".")) {
+                            // Create symbolic link
+                            Path symbolic = getOutDir().resolve(path.getFileName().toString());
+                            Files.createSymbolicLink(symbolic, path);
+                        }
                     }
+                } catch (IOException e) {
+                    throw new ToolException("Error processing 'index' results", e);
                 }
             }
         });

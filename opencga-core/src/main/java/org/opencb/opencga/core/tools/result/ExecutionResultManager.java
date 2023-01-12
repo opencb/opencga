@@ -132,7 +132,7 @@ public class ExecutionResultManager {
         return close(null);
     }
 
-    public synchronized ExecutionResult close(Exception exception) throws ToolException {
+    public synchronized ExecutionResult close(Throwable throwable) throws ToolException {
         if (closed) {
             throw new ToolException(getClass().getName() + " already closed!");
         }
@@ -157,7 +157,7 @@ public class ExecutionResultManager {
         }
 
         Status.Type finalStatus;
-        if (exception == null) {
+        if (throwable == null) {
             finalStatus = Status.Type.DONE;
             for (Event event : execution.getEvents()) {
                 if (event.getType().equals(Event.Type.ERROR)) {
@@ -167,7 +167,7 @@ public class ExecutionResultManager {
                 }
             }
         } else {
-            addError(exception, execution);
+            addError(throwable, execution);
             finalStatus = Status.Type.ERROR;
         }
 

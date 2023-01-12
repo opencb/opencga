@@ -360,6 +360,13 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else if (commandOptions.jsonFile != null) {
             variantConfigureParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantConfigureParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotNull(beanParams, "configuration",commandOptions.configuration, true);
+ 
+            variantConfigureParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), VariantConfigureParams.class);
         }
         return openCGAClient.getVariantOperationClient().configureVariant(variantConfigureParams, queryParams);
     }
