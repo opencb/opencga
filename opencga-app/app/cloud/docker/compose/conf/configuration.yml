@@ -2,8 +2,6 @@
 logLevel: "INFO"
 logDir: /opt/opencga/logs
 
-openRegister: false
-
 databasePrefix: opencga
 workspace: /opt/opencga/sessions
 jobDir: /opt/opencga/sessions/jobs

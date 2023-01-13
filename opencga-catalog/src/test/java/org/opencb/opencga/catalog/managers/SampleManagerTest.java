@@ -2319,7 +2319,7 @@ public class SampleManagerTest extends AbstractManagerTest {
     @Test
     public void getSharedProject() throws CatalogException, IOException {
         catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L,
-                Account.AccountType.GUEST, null);
+                Account.AccountType.GUEST, opencgaToken);
         catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("dummy")), token);
 
@@ -2343,7 +2343,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
     @Test
     public void checkRegisteredUserPermissions() throws CatalogException {
-        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L, Account.AccountType.GUEST, opencgaToken);
         String token = catalogManager.getUserManager().login("dummy", TestParamConstants.PASSWORD).getToken();
 
         catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
@@ -2356,7 +2356,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
     @Test
     public void checkRegisteredUserPermissions2() throws CatalogException {
-        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L, Account.AccountType.GUEST, opencgaToken);
         String token = catalogManager.getUserManager().login("dummy", TestParamConstants.PASSWORD).getToken();
 
         catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
@@ -2404,7 +2404,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertTrue(catalogManager.getSampleManager().search(studyFqn, new Query(), new QueryOptions(), "").getNumResults() > 0);
         assertTrue(catalogManager.getFileManager().search(studyFqn, new Query(), new QueryOptions(), "").getNumResults() > 0);
 
-        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L, Account.AccountType.GUEST, opencgaToken);
         String token = catalogManager.getUserManager().login("dummy", TestParamConstants.PASSWORD).getToken();
         studyResult = catalogManager.getStudyManager().get(studyFqn, QueryOptions.empty(), token);
         assertEquals(1, studyResult.getNumResults());

@@ -22,7 +22,6 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
@@ -48,27 +47,6 @@ public class UserWSServer extends OpenCGAWSServer {
 
     public UserWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
-    }
-
-    @POST
-    @Path("/create")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create a new user", response = User.class)
-    public Response createUserPost(@ApiParam(value = "JSON containing the parameters", required = true) UserCreateParams user) {
-        try {
-            ObjectUtils.defaultIfNull(user, new UserCreateParams());
-
-            if (!user.checkValidParams()) {
-                createErrorResponse(new CatalogException("id, name, email or password not present"));
-            }
-
-            OpenCGAResult<User> queryResult = catalogManager.getUserManager()
-                    .create(user.getId(), user.getName(), user.getEmail(), user.getPassword(), user.getOrganization(), null,
-                            Account.AccountType.GUEST, null);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
     }
 
     @GET

@@ -76,6 +76,7 @@ public class FamilyManagerTest extends GenericTest {
 
     protected CatalogManager catalogManager;
     private FamilyManager familyManager;
+    private String opencgaToken;
     protected String sessionIdUser;
 
     private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
@@ -88,7 +89,9 @@ public class FamilyManagerTest extends GenericTest {
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws CatalogException {
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
+        opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
         sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
 
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
@@ -610,7 +613,7 @@ public class FamilyManagerTest extends GenericTest {
     public void testPropagateFamilyPermission() throws CatalogException {
         createDummyFamily("Martinez-Martinez", true);
 
-        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST, opencgaToken);
         String token = catalogManager.getUserManager().login("user2", TestParamConstants.PASSWORD).getToken();
 
         try {
@@ -671,7 +674,7 @@ public class FamilyManagerTest extends GenericTest {
     public void getFamilyWithOnlyAllowedMembers2() throws CatalogException, IOException {
         createDummyFamily("Martinez-Martinez", true);
 
-        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST, opencgaToken);
         String token = catalogManager.getUserManager().login("user2", TestParamConstants.PASSWORD).getToken();
 
         try {

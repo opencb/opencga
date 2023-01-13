@@ -40,6 +40,7 @@ public class Configuration {
      */
     private String logDir;
 
+    @Deprecated
     private boolean openRegister;
 
     private String databasePrefix;
@@ -204,7 +205,6 @@ public class Configuration {
         final StringBuilder sb = new StringBuilder("Configuration{");
         sb.append("logLevel='").append(logLevel).append('\'');
         sb.append(", logDir='").append(logDir).append('\'');
-        sb.append(", openRegister=").append(openRegister);
         sb.append(", databasePrefix='").append(databasePrefix).append('\'');
         sb.append(", workspace='").append(workspace).append('\'');
         sb.append(", admin=").append(admin);
@@ -252,10 +252,12 @@ public class Configuration {
         return this;
     }
 
+    @Deprecated
     public boolean isOpenRegister() {
         return openRegister;
     }
 
+    @Deprecated
     public Configuration setOpenRegister(boolean openRegister) {
         this.openRegister = openRegister;
         return this;

@@ -80,8 +80,6 @@ public interface AuthorizationManager {
         return EnumSet.noneOf(StudyPermissions.Permissions.class);
     }
 
-    boolean isPublicRegistration();
-
     void checkCanViewProject(long projectId, String userId) throws CatalogException;
 
     void checkCanEditProject(long projectId, String userId) throws CatalogException;

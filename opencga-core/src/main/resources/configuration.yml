@@ -2,8 +2,6 @@
 logLevel: "INFO"
 logDir: ${OPENCGA.INSTALLATION.DIR}/logs
 
-openRegister: false
-
 databasePrefix: ${OPENCGA.DB.PREFIX}
 workspace: ${OPENCGA.USER.WORKSPACE}
 jobDir: ${OPENCGA.USER.WORKSPACE}/jobs
