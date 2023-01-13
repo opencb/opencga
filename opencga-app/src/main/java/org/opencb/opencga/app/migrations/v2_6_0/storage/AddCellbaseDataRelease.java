@@ -47,7 +47,7 @@ public class AddCellbaseDataRelease extends StorageMigrationTool {
             }
             if (updateCellbase) {
                 logger.info("Update cellbase info for project '{}' with '{}'", projectFqn, cellBaseUtils);
-                variantStorageManager.setCellbaseConfiguration(projectFqn, null, false, null, token);
+                variantStorageManager.setCellbaseConfiguration(projectFqn, cellbase, false, null, token);
             }
         }
     }
