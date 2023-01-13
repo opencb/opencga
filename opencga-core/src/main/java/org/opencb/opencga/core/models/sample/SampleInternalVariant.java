@@ -26,9 +26,9 @@ public class SampleInternalVariant {
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleInternalVariant{");
         sb.append("index=").append(index);
-        sb.append(", sampleGenotypeIndex=").append(secondarySampleIndex);
+        sb.append(", secondarySampleIndex=").append(secondarySampleIndex);
         sb.append(", annotationIndex=").append(annotationIndex);
-        sb.append(", secondaryIndex=").append(secondaryAnnotationIndex);
+        sb.append(", secondaryAnnotationIndex=").append(secondaryAnnotationIndex);
         sb.append('}');
         return sb.toString();
     }

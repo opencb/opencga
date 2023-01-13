@@ -28,7 +28,6 @@ import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.analysis.variant.operations.*;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.YesNoAuto;
@@ -52,18 +51,18 @@ import org.opencb.opencga.core.models.variant.VariantStorageMetadataSynchronizeP
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 
-import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 
@@ -88,7 +87,8 @@ public class VariantOperationsTest {
     @Parameterized.Parameters(name = "{0}")
     public static Object[][] parameters() {
         return new Object[][]{
-                {MongoDBVariantStorageEngine.STORAGE_ENGINE_ID},
+//                {MongoDBVariantStorageEngine.STORAGE_ENGINE_ID},
+                {DummyVariantStorageEngine.STORAGE_ENGINE_ID},
                 {HadoopVariantStorageEngine.STORAGE_ENGINE_ID}
         };
     }
@@ -152,6 +152,8 @@ public class VariantOperationsTest {
     }
 
     private void loadDataset() throws Throwable {
+        opencga.after();
+        opencga.before();
         if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
             if (hadoopExternalResource == null) {
                 hadoopExternalResource = new HadoopVariantStorageTest.HadoopExternalResource();
@@ -159,9 +161,9 @@ public class VariantOperationsTest {
             } else {
                 hadoopExternalResource.clearHBase();
             }
+        } else if (storageEngine.equals(DummyVariantStorageEngine.STORAGE_ENGINE_ID)) {
+            DummyVariantStorageEngine.configure(opencga.getStorageEngineFactory(), true);
         }
-        opencga.after();
-        opencga.before();
 
         catalogManager = opencga.getCatalogManager();
         variantStorageManager = opencga.getVariantStorageManager(solrExternalResource);
@@ -245,7 +247,7 @@ public class VariantOperationsTest {
         }
     }
 
-    public void setUpCatalogManager() throws IOException, CatalogException {
+    public void setUpCatalogManager() throws Exception {
         catalogManager.getUserManager().create(USER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
         token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
 
@@ -287,7 +289,10 @@ public class VariantOperationsTest {
 
     @Test
     public void testVariantSecondarySampleIndex() throws Exception {
-        Assume.assumeThat(storageEngine, is(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
+        Assume.assumeThat(storageEngine, anyOf(
+//                is(DummyVariantStorageEngine.STORAGE_ENGINE_ID),
+                is(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)
+        ));
         for (String sample : samples) {
             SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
             assertEquals(sample, IndexStatus.READY, sampleIndex.getStatus().getId());

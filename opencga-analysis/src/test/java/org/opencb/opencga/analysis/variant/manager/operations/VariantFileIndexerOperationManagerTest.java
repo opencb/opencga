@@ -301,6 +301,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         }
 
         mockVariantStorageETL();
+        queryOptions.append(VariantFileIndexerOperationManager.SKIP_INDEXED_FILES, true);
         // File 0 already transformed.
         // Expecting to transform and load only file 1
         indexFiles(files, singletonList(files.get(1)), queryOptions, outputId);

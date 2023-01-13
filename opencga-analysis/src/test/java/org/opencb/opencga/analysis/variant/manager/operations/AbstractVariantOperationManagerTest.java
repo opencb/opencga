@@ -22,7 +22,6 @@ import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
@@ -38,9 +37,6 @@ import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.config.DatabaseCredentials;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
-import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.file.File;
@@ -137,20 +133,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
     @Before
     public final void setUpAbstract() throws Exception {
         catalogManager = opencga.getCatalogManager();
-        StorageEngineFactory factory = opencga.getStorageEngineFactory();
-        StorageConfiguration storageConfiguration = factory.getStorageConfiguration();
-        storageConfiguration.getVariant().setDefaultEngine(STORAGE_ENGINE_DUMMY);
-        storageConfiguration.getVariant().getEngines().clear();
-        storageConfiguration.getVariant().getEngines()
-                .add(new StorageEngineConfiguration()
-                        .setId(STORAGE_ENGINE_DUMMY)
-                        .setEngine(DummyVariantStorageEngine.class.getName())
-                        .setOptions(new ObjectMap())
-                        .setDatabase(new DatabaseCredentials()));
-
-        factory.unregisterVariantStorageEngine(DummyVariantStorageEngine.STORAGE_ENGINE_ID);
-
-        DummyVariantStorageMetadataDBAdaptorFactory.clear();
+        DummyVariantStorageEngine.configure(opencga.getStorageEngineFactory(), true);
 
         variantManager = opencga.getVariantStorageManager();
 

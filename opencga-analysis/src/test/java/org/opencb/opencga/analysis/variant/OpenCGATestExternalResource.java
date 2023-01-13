@@ -32,6 +32,8 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -231,6 +233,8 @@ public class OpenCGATestExternalResource extends ExternalResource {
             MongoDataStoreManager mongoManager = new MongoDataStoreManager("localhost", 27017);
             MongoDataStore mongoDataStore = mongoManager.get(dbName);
             mongoManager.drop(dbName);
+        } else if (storageEngine.equals(DummyVariantStorageEngine.STORAGE_ENGINE_ID)) {
+            DummyVariantStorageMetadataDBAdaptorFactory.clear();
         } else {
             throw new UnsupportedOperationException();
         }

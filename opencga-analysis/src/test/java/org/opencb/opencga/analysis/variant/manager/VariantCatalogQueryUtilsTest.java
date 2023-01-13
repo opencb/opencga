@@ -584,8 +584,8 @@ public class VariantCatalogQueryUtilsTest {
     public void queryByPanel() throws Exception {
         Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel"), null, cellBaseUtils, sessionId);
         assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL", "BEX2"), set(query, GENE));
-        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel").append(GENE.key(), "ASDF"), null, sessionId);
-        assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL", "ASDF", "BEX2"), set(query, GENE));
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel").append(GENE.key(), "BRCA1"), null, cellBaseUtils, sessionId);
+        assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL", "BRCA1", "BEX2"), set(query, GENE));
         assertEquals(true, query.getBoolean(SKIP_MISSING_GENES, false));
         assertNull(query.get(ANNOT_GENE_REGIONS.key()));
     }

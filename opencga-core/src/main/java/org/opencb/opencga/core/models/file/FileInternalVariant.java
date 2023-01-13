@@ -30,7 +30,7 @@ public class FileInternalVariant {
         final StringBuilder sb = new StringBuilder("FileInternalVariant{");
         sb.append("index=").append(index);
         sb.append(", annotationIndex=").append(annotationIndex);
-        sb.append(", secondaryIndex=").append(secondaryAnnotationIndex);
+        sb.append(", secondaryAnnotationIndex=").append(secondaryAnnotationIndex);
         sb.append('}');
         return sb.toString();
     }
