@@ -222,7 +222,8 @@ public class AlignmentStorageManager extends StorageManager {
         // Get species and assembly from catalog
         OpenCGAResult<Project> projectQueryResult = catalogManager.getProjectManager().search(
                 new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyIdStr),
-                new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), token);
+                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(ProjectDBAdaptor.QueryParams.ORGANISM.key(),
+                        ProjectDBAdaptor.QueryParams.CELLBASE.key())), token);
         if (projectQueryResult.getNumResults() != 1) {
             throw new CatalogException("Error getting species and assembly from catalog");
         }
