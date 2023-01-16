@@ -102,6 +102,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkCanEditProject(long projectId, String userId) throws CatalogException {
+        if (isInstallationAdministrator(userId)) {
+            return;
+        }
         if (projectDBAdaptor.getOwnerId(projectId).equals(userId)) {
             return;
         }
