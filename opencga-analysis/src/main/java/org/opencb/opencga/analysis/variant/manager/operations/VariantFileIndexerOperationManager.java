@@ -61,8 +61,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.api.FileDBAdaptor.QueryParams.ID;
 import static org.opencb.opencga.catalog.db.api.FileDBAdaptor.QueryParams.UID;
-import static org.opencb.opencga.catalog.db.api.ProjectDBAdaptor.QueryParams.CURRENT_RELEASE;
-import static org.opencb.opencga.catalog.db.api.ProjectDBAdaptor.QueryParams.ORGANISM;
+import static org.opencb.opencga.catalog.db.api.ProjectDBAdaptor.QueryParams.*;
 
 /**
  * Created by imedina on 17/08/16.
@@ -163,7 +162,8 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         Project project = catalogManager
                 .getProjectManager()
                 .get(projectFqn,
-                        new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(CURRENT_RELEASE.key(), ORGANISM.key())), token).first();
+                        new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(CURRENT_RELEASE.key(), ORGANISM.key(), CELLBASE.key())),
+                        token).first();
         release = project.getCurrentRelease();
 
         // Add species, assembly and release

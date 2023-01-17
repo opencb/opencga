@@ -57,6 +57,7 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
     protected void loadFiles() throws Exception {
         variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
         variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.1");
+        variantStorageEngine.getConfiguration().getCellbase().setDataRelease("2");
         variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
         variantStorageEngine.reloadCellbaseConfiguration();
 

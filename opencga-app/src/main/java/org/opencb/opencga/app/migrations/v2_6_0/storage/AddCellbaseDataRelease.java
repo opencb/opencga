@@ -22,7 +22,7 @@ public class AddCellbaseDataRelease extends StorageMigrationTool {
     protected void run() throws Exception {
         VariantStorageManager variantStorageManager = getVariantStorageManager();
         for (String projectFqn : getVariantStorageProjects()) {
-            Project project = catalogManager.getProjectManager().get(projectFqn, new QueryOptions(), token).first();
+            Project project = catalogManager.getProjectManager().get(projectFqn, QueryOptions.empty(), token).first();
             CellBaseConfiguration cellbase = project.getCellbase();
             CellBaseUtils cellBaseUtils = getVariantStorageEngineByProject(projectFqn).getCellBaseUtils();
             boolean updateCellbase = false;
