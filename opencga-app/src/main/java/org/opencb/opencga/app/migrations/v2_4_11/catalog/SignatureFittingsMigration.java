@@ -17,7 +17,7 @@ import static com.mongodb.client.model.Filters.eq;
 
 @Migration(id = "signature_fittings" ,
         description = "Replace fitting for fittings in Signature",
-        version = "2.6.0",
+        version = "2.4.11",
         domain = Migration.MigrationDomain.CATALOG,
         language = Migration.MigrationLanguage.JAVA,
         date = 20221109
