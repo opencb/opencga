@@ -17,7 +17,7 @@ import static com.mongodb.client.model.Filters.eq;
 
 @Migration(id = "signature_fittings" ,
         description = "Replace fitting for fittings in Signature",
-        version = "2.4.11",
+        version = "2.6.0",
         domain = Migration.MigrationDomain.CATALOG,
         language = Migration.MigrationLanguage.JAVA,
         date = 20221109
@@ -53,7 +53,7 @@ public class SignatureFittingsMigration extends MigrationTool {
 
                         bulk.add(new UpdateOneModel<>(
                                 eq("_id", document.get("_id")),
-                                new Document("$set", new Document("qualityControl.variant", signatures)))
+                                new Document("$set", new Document("qualityControl.variant.signatures", signatures)))
                         );
                     }
                 });
