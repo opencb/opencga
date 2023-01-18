@@ -35,8 +35,9 @@ public class RgaQueryParser {
     private static final List<String> INCLUDED_DEL_OVERLAP_PAIR_CTS;
 
     static {
-        List<String> excludedDelOverlapCts = getEncodedConsequenceTypes(Collections.singletonList("missense_variant"));
-//        List<String> excludedDelOverlapCts = getEncodedConsequenceTypes(Collections.singletonList("transcript_ablation"));
+        List<String> excludedDelOverlapCts = getEncodedConsequenceTypes(Arrays.asList("missense_variant", "frameshift_variant",
+                "incomplete_terminal_codon_variant", "start_lost", "stop_gained", "stop_lost", "splice_acceptor_variant",
+                "splice_donor_variant", "splice_region_variant"));
 
         // Exclude DELETION_OVERLAP variants with consequence types: missense_variant
         ALL_CONSEQUENCE_TYPES = getEncodedConsequenceTypes(RgaUtils.CONSEQUENCE_TYPE_LIST);
