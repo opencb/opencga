@@ -163,7 +163,7 @@ public class K8SExecutor implements BatchExecutor {
         envVars.add(DOCKER_HOST);
 
         String javaHeap = execution.getOptions().getString(K8S_JAVA_HEAP);
-        if (javaHeap == null && requests.containsKey("memory")) {
+        if (StringUtils.isEmpty(javaHeap) && requests.containsKey("memory")) {
             Quantity memory = requests.get("memory");
             String amount = memory.getAmount();
             long bytes = IOUtils.fromHumanReadableToByte(amount);
