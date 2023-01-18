@@ -27,6 +27,8 @@ import io.fabric8.kubernetes.client.*;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.Execution;
@@ -53,6 +55,8 @@ public class K8SExecutor implements BatchExecutor {
     public static final String K8S_DIND_IMAGE_NAME = "k8s.dind.imageName";
     public static final String K8S_REQUESTS = "k8s.requests";
     public static final String K8S_LIMITS = "k8s.limits";
+    public static final String K8S_JAVA_HEAP = "k8s.javaHeap";
+    public static final String K8S_ENVS = "k8s.envs";
     public static final String K8S_NAMESPACE = "k8s.namespace";
     public static final String K8S_VOLUME_MOUNTS = "k8s.volumeMounts";
     public static final String K8S_VOLUMES = "k8s.volumes";
@@ -93,6 +97,7 @@ public class K8SExecutor implements BatchExecutor {
     private final SecurityContext securityContext;
     private final PodSecurityContext podSecurityContext;
     private final ResourceRequirements resources;
+    private final List<EnvVar> envVars;
     private final Config k8sConfig;
     private final Container dockerDaemonSidecar;
     private final KubernetesClient kubernetesClient;
@@ -124,7 +129,7 @@ public class K8SExecutor implements BatchExecutor {
         this.imagePullPolicy = execution.getOptions().getString(K8S_IMAGE_PULL_POLICY, "IfNotPresent");
         this.imagePullSecrets = buildLocalObjectReference(execution.getOptions().get(K8S_IMAGE_PULL_SECRETS));
         this.ttlSecondsAfterFinished = execution.getOptions().getInt(K8S_TTL_SECONDS_AFTER_FINISHED, 3600);
-        nodeSelector = getMap(execution, K8S_NODE_SELECTOR);
+        nodeSelector = getMap(execution.getOptions(), K8S_NODE_SELECTOR);
         if (execution.getOptions().containsKey(K8S_SECURITY_CONTEXT)) {
             securityContext = buildObject(execution.getOptions().get(K8S_SECURITY_CONTEXT), SecurityContext.class);
         } else {
@@ -143,17 +148,35 @@ public class K8SExecutor implements BatchExecutor {
         }
 
         HashMap<String, Quantity> requests = new HashMap<>();
-        for (Map.Entry<String, String> entry : getMap(execution, K8S_REQUESTS).entrySet()) {
+        for (Map.Entry<String, String> entry : getMap(execution.getOptions(), K8S_REQUESTS).entrySet()) {
             requests.put(entry.getKey(), new Quantity(entry.getValue()));
         }
         HashMap<String, Quantity> limits = new HashMap<>();
-        for (Map.Entry<String, String> entry : getMap(execution, K8S_LIMITS).entrySet()) {
+        for (Map.Entry<String, String> entry : getMap(execution.getOptions(), K8S_LIMITS).entrySet()) {
             limits.put(entry.getKey(), new Quantity(entry.getValue()));
         }
         resources = new ResourceRequirementsBuilder()
                 .withLimits(limits)
                 .withRequests(requests)
                 .build();
+        envVars = new ArrayList<>();
+        envVars.add(DOCKER_HOST);
+
+        String javaHeap = execution.getOptions().getString(K8S_JAVA_HEAP);
+        if (javaHeap == null && requests.containsKey("memory")) {
+            Quantity memory = requests.get("memory");
+            String amount = memory.getAmount();
+            long bytes = IOUtils.fromHumanReadableToByte(amount);
+            bytes -= IOUtils.fromHumanReadableToByte("300Mi");
+            javaHeap = Long.toString(bytes);
+        }
+        if (javaHeap != null) {
+            envVars.add(new EnvVar("JAVA_HEAP", javaHeap, null));
+        }
+        Map<String, String> map = getMap(execution.getOptions(), K8S_ENVS);
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            envVars.add(new EnvVar(entry.getKey(), entry.getValue(), null));
+        }
 
         String scratchDir = configuration.getAnalysis().getScratchDir();
         if (StringUtils.isNotEmpty(scratchDir)) {
@@ -273,7 +296,7 @@ public class K8SExecutor implements BatchExecutor {
                                                 .withImage(imageName)
                                                 .withImagePullPolicy(imagePullPolicy)
                                                 .withResources(resources)
-                                                .addToEnv(DOCKER_HOST)
+                                                .addAllToEnv(envVars)
                                                 .withCommand("/bin/sh", "-c")
                                                 .withArgs("trap 'touch " + DIND_DONE_FILE + "' EXIT ; "
                                                         + getCommandLine(commandLine, stdout, stderr))
@@ -470,10 +493,10 @@ public class K8SExecutor implements BatchExecutor {
         return status;
     }
 
-    private Map<String, String> getMap(Execution execution, String key) {
-        if (execution.getOptions().containsKey(key)) {
+    private Map<String, String> getMap(ObjectMap objectMap, String key) {
+        if (objectMap.containsKey(key)) {
             Map<String, String> map = new HashMap<>();
-            ((Map<String, Object>) execution.getOptions().get(key)).forEach((k, v) -> map.put(k, v.toString()));
+            ((Map<String, Object>) objectMap.get(key)).forEach((k, v) -> map.put(k, v.toString()));
             return map;
         } else {
             return Collections.emptyMap();
