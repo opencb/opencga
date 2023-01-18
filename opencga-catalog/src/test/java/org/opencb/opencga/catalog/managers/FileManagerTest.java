@@ -171,6 +171,15 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testLinkFileWithoutReadPermissions() throws IOException, CatalogException {
+        java.io.File file = createDebugFile("/tmp/file_" + RandomStringUtils.randomAlphanumeric(5) + ".vcf");
+        Files.setPosixFilePermissions(Paths.get(file.toURI()), new HashSet<>());
+        thrown.expect(CatalogIOException.class);
+        thrown.expectMessage("read VariantSource");
+        fileManager.link(studyFqn, new FileLinkParams().setUri(file.getPath()), false, token);
+    }
+
+    @Test
     public void createDirectoryTest() throws CatalogException {
         FileCreateParams params = new FileCreateParams()
                 .setType(File.Type.DIRECTORY)

@@ -2332,7 +2332,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 auditManager.auditCreate(userId, Enums.Action.LINK, Enums.Resource.FILE, params.getUri(), "",
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                 new Error(0, "", e2.getMessage())));
-                throw new CatalogException(e2.getMessage(), e2);
+                throw e2;
             }
         }
     }
@@ -3506,7 +3506,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         }
                     }
                 } catch (CatalogException e) {
-                    logger.error("An error occurred when trying to create folder {}", dir.toString());
+                    throw new IOException("An error occurred when trying to create folder " + dir, e);
                 }
 
                 return FileVisitResult.CONTINUE;
@@ -3581,7 +3581,7 @@ public class FileManager extends AnnotationSetManager<File> {
                                 + ". There is already a file in the path " + destinyPath + " with the same name.");
                     }
                 } catch (CatalogException e) {
-                    logger.error(e.getMessage());
+                    throw new IOException(e);
                 }
 
                 return FileVisitResult.CONTINUE;
