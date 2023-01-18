@@ -2332,7 +2332,8 @@ public class FileManager extends AnnotationSetManager<File> {
                 auditManager.auditCreate(userId, Enums.Action.LINK, Enums.Resource.FILE, params.getUri(), "",
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                 new Error(0, "", e2.getMessage())));
-                throw e2;
+                e.addSuppressed(e2);
+                throw e;
             }
         }
     }
