@@ -52,7 +52,6 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
     @Before
     public void setUp() throws Exception {
         clearDB(DB_NAME);
-        clearDB(getVariantStorageEngine().getArchiveTableName(STUDY_ID));
     }
 
     private VariantFileMetadata loadFile(String resource, StudyMetadata studyMetadata, Map<? extends String, ?> map) throws Exception {

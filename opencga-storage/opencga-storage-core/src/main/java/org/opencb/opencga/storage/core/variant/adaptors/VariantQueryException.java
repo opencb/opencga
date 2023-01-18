@@ -200,15 +200,25 @@ public class VariantQueryException extends IllegalArgumentException {
     }
 
     public static VariantQueryException sampleNotFound(Object sample, Object study) {
-        return new VariantQueryException("Sample '" + sample + "' not found in study '" + study + "'");
+        return new VariantQueryException("Sample " + quote(sample) + " not found in study '" + study + "'");
+    }
+
+    private static Object quote(Object o) {
+        if (o == null) {
+            return "null";
+        } else if (o instanceof CharSequence) {
+            return "'" + o + "'";
+        } else {
+            return o.toString();
+        }
     }
 
     public static VariantQueryException fileNotFound(Object file, Object study) {
-        return new VariantQueryException("File '" + file + "' not found in study '" + study + "'");
+        return new VariantQueryException("File " + quote(file) + " not found in study '" + study + "'");
     }
 
     public static VariantQueryException scoreNotFound(Object score, Object study) {
-        return new VariantQueryException("Variant Score '" + score + "' not found in study '" + study + "'");
+        return new VariantQueryException("Variant Score " + quote(score) + " not found in study '" + study + "'");
     }
 
     public static VariantQueryException incompatibleSampleAndGenotypeOperators() {

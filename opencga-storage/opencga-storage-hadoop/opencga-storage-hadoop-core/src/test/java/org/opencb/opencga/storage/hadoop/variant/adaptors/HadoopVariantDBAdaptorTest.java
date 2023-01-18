@@ -98,9 +98,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
             if (!indexParams.equals(previousIndexParams)) {
                 fileIndexed = false;
                 VariantDBAdaptorTest.fileIndexed = false;
-                clearDB(getVariantStorageEngine().getVariantTableName());
-                clearDB(getVariantStorageEngine().getArchiveTableName(STUDY_ID));
-                clearDB(getVariantStorageEngine().getDBAdaptor().getTableNameGenerator().getMetaTableName());
+                clearDB(getVariantStorageEngine().getDBName());
             }
             previousIndexParams = indexParams;
             System.out.println("Loading with MergeMode : " + mergeMode);

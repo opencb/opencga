@@ -22,26 +22,16 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysisTest;
+import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
-import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
-import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -51,26 +41,15 @@ import java.util.stream.Collectors;
 
 public class ClinicalAnalysisUtilsTest {
 
-    public static AbstractClinicalManagerTest getClinicalTest(CatalogManagerExternalResource catalogManagerResource,
-                                                              MongoDBVariantStorageEngine variantStorageEngine) throws IOException, CatalogException, URISyntaxException, StorageEngineException, ToolException {
+    public static AbstractClinicalManagerTest getClinicalTest(OpenCGATestExternalResource opencga) throws IOException, CatalogException, URISyntaxException, StorageEngineException, ToolException {
 
         AbstractClinicalManagerTest clinicalTest = new AbstractClinicalManagerTest();
 
-        clinicalTest.catalogManagerResource = catalogManagerResource;
+        clinicalTest.catalogManagerResource = opencga.getCatalogManagerExternalResource();
         clinicalTest.setUp();
 
-        // Copy config files in the OpenCGA home conf folder
-        Files.createDirectory(catalogManagerResource.getOpencgaHome().resolve("conf"));
-        catalogManagerResource.getConfiguration().serialize(
-                new FileOutputStream(catalogManagerResource.getOpencgaHome().resolve("conf").resolve("configuration.yml").toString()));
-
-        InputStream inputStream = MongoDBVariantStorageTest.class.getClassLoader()
-                .getResourceAsStream("storage-configuration.yml");
-        Files.copy(inputStream, catalogManagerResource.getOpencgaHome().resolve("conf").resolve("storage-configuration.yml"),
-                StandardCopyOption.REPLACE_EXISTING);
-
         // Exomiser analysis
-        Path exomiserDataPath = catalogManagerResource.getOpencgaHome().resolve("analysis/exomiser");
+        Path exomiserDataPath = opencga.getOpencgaHome().resolve("analysis/exomiser");
         Files.createDirectories(exomiserDataPath);
         Path parent = Paths.get(ClinicalAnalysisUtilsTest.class.getClassLoader().getResource("pheno").getPath()).getParent();
         Files.copy(parent.resolve("exomiser/application.properties"), exomiserDataPath.resolve("application.properties"),
@@ -78,18 +57,12 @@ public class ClinicalAnalysisUtilsTest {
         Files.copy(parent.resolve("exomiser/output.yml"), exomiserDataPath.resolve("output.yml"),
                 StandardCopyOption.REPLACE_EXISTING);
 
-
         // Storage
         ObjectMap storageOptions = new ObjectMap()
                 .append(VariantStorageOptions.ANNOTATE.key(), true)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
-        StorageConfiguration configuration = variantStorageEngine.getConfiguration();
-        configuration.getVariant().setDefaultEngine(variantStorageEngine.getStorageEngineId());
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(configuration);
-        storageEngineFactory.registerVariantStorageEngine(variantStorageEngine);
-
-        VariantStorageManager variantStorageManager = new VariantStorageManager(catalogManagerResource.getCatalogManager(), storageEngineFactory);
+        VariantStorageManager variantStorageManager = new VariantStorageManager(opencga.getCatalogManager(), opencga.getStorageEngineFactory());
 
         Path outDir = Paths.get("target/test-data").resolve("junit_clinical_analysis_" + RandomStringUtils.randomAlphabetic(10));
         Files.createDirectories(outDir);

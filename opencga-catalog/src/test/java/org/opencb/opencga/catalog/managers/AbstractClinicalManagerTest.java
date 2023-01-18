@@ -25,6 +25,7 @@ import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
@@ -96,7 +97,8 @@ public class AbstractClinicalManagerTest extends GenericTest {
                 .setProband(getChild())
                 .setFamily(getFamily());
 
-        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().create(studyFqn, auxClinicalAnalysis, QueryOptions.empty(), token)
+        clinicalAnalysis = catalogManager.getClinicalAnalysisManager()
+                .create(studyFqn, auxClinicalAnalysis, new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token)
                 .first();
 
         URI vcf = getClass().getResource("/biofiles/family.vcf").toURI();
@@ -115,7 +117,8 @@ public class AbstractClinicalManagerTest extends GenericTest {
                 .setDisorder(getDisorder())
                 .setProband(getMamuel());
 
-        clinicalAnalysis2 = catalogManager.getClinicalAnalysisManager().create(studyFqn, auxClinicalAnalysis, QueryOptions.empty(), token)
+        clinicalAnalysis2 = catalogManager.getClinicalAnalysisManager()
+                .create(studyFqn, auxClinicalAnalysis, new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token)
                 .first();
 
         vcf = getClass().getResource("/biofiles/exomiser.vcf.gz").toURI();

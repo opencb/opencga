@@ -129,6 +129,7 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
         ArrayList<Integer> includeSample = new ArrayList<>(controlCohort.size() + caseCohort.size());
         includeSample.addAll(controlCohort);
         includeSample.addAll(caseCohort);
+        query.append(VariantQueryParam.STUDY.key(), getStudyId());
         query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), includeSample);
         queryOptions.remove(QueryOptions.INCLUDE);
         queryOptions.put(QueryOptions.EXCLUDE,

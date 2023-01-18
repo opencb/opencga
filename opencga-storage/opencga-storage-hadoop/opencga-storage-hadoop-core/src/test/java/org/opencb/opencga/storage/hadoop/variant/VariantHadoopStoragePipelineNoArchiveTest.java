@@ -41,8 +41,7 @@ public class VariantHadoopStoragePipelineNoArchiveTest extends VariantStorageBas
     @BeforeClass
     public static void beforeClass() throws Exception {
         HadoopVariantStorageEngine variantStorageManager = externalResource.getVariantStorageEngine();
-        externalResource.clearDB(variantStorageManager.getVariantTableName());
-        externalResource.clearDB(variantStorageManager.getArchiveTableName(STUDY_ID));
+        externalResource.clearDB(variantStorageManager.getDBName());
     }
 
     @Before

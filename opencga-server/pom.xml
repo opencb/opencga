@@ -239,28 +239,13 @@
 
 
     <profiles>
-<!--        <profile>-->
-<!--            <id>storage-mongodb</id>-->
-<!--            <activation>-->
-<!--                <activeByDefault>true</activeByDefault>-->
-<!--            </activation>-->
-<!--            <dependencies>-->
-<!--                <dependency>-->
-<!--                    <groupId>org.opencb.opencga</groupId>-->
-<!--                    <artifactId>opencga-storage-mongodb</artifactId>-->
-<!--                    <version>${project.parent.version}</version>-->
-<!--                </dependency>-->
-<!--            </dependencies>-->
-<!--            <properties>-->
-<!--                &lt;!&ndash;<app.name>opencga-mongo.sh</app.name>&ndash;&gt;-->
-<!--            </properties>-->
-<!--        </profile>-->
         <profile>
             <id>storage-hadoop</id>
             <activation>
                 <property>
                     <name>storage-hadoop</name>
                 </property>
+                <activeByDefault>true</activeByDefault>
             </activation>
             <dependencies>
                 <dependency>

@@ -37,17 +37,13 @@ import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationConfigurati
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
-import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.InterpretationUpdateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
-import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,27 +53,28 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.opencb.opencga.core.api.ParamConstants.INCLUDE_INTERPRETATION;
 
-public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest implements MongoDBVariantStorageTest {
+public class ClinicalInterpretationAnalysisTest {
 
 
     private AbstractClinicalManagerTest clinicalTest;
-
-    Path outDir;
-
+    private Path outDir;
 
     @ClassRule
-    public static OpenCGATestExternalResource opencga = new OpenCGATestExternalResource();
-
-    @Rule
-    public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
+    public static OpenCGATestExternalResource opencga = new OpenCGATestExternalResource(true);
 
     @Before
     public void setUp() throws Exception {
-        clearDB("opencga_test_user_1000G");
-        clinicalTest = ClinicalAnalysisUtilsTest.getClinicalTest(catalogManagerResource, getVariantStorageEngine());
+        opencga.clearStorageDB();
+        clinicalTest = ClinicalAnalysisUtilsTest.getClinicalTest(opencga);
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        opencga.clear();
     }
 
     @Test
@@ -86,7 +83,7 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
 
         TieringInterpretationConfiguration config = new TieringInterpretationConfiguration();
         TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis();
-        tieringAnalysis.setUp(catalogManagerResource.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
+        tieringAnalysis.setUp(opencga.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
         tieringAnalysis.setStudyId(clinicalTest.studyFqn)
                 .setClinicalAnalysisId(clinicalTest.clinicalAnalysis.getId())
                 .setPenetrance(ClinicalProperty.Penetrance.COMPLETE)
@@ -106,7 +103,7 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
         try {
             TeamInterpretationConfiguration config = new TeamInterpretationConfiguration();
             TeamInterpretationAnalysis teamAnalysis = new TeamInterpretationAnalysis();
-            teamAnalysis.setUp(catalogManagerResource.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
+            teamAnalysis.setUp(opencga.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
             teamAnalysis.setStudyId(clinicalTest.studyFqn)
                     .setClinicalAnalysisId(clinicalTest.clinicalAnalysis.getId())
                     .setConfig(config);
@@ -131,7 +128,7 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
 
         ZettaInterpretationConfiguration config = new ZettaInterpretationConfiguration();
         ZettaInterpretationAnalysis customAnalysis = new ZettaInterpretationAnalysis();
-        customAnalysis.setUp(catalogManagerResource.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
+        customAnalysis.setUp(opencga.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
         customAnalysis.setStudyId(clinicalTest.studyFqn)
                 .setClinicalAnalysisId(clinicalTest.clinicalAnalysis.getId())
                 .setConfig(config);
@@ -165,7 +162,7 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
 
         ZettaInterpretationConfiguration config = new ZettaInterpretationConfiguration();
         ZettaInterpretationAnalysis customAnalysis = new ZettaInterpretationAnalysis();
-        customAnalysis.setUp(catalogManagerResource.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
+        customAnalysis.setUp(opencga.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
         customAnalysis.setStudyId(clinicalTest.studyFqn)
                 .setClinicalAnalysisId(clinicalTest.clinicalAnalysis.getId())
                 .setQuery(query)
@@ -183,9 +180,8 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
         String study = "1000G:phase1";
         String clinicalAnalysisId = "clinical-analysis-1";
         String interpretationId = "clinical-analysis-1.1";
-        StorageEngineFactory engineFactory = StorageEngineFactory.get(getVariantStorageEngine().getConfiguration());
 
-        ClinicalInterpretationManager manager = new ClinicalInterpretationManager(clinicalTest.catalogManager, engineFactory,
+        ClinicalInterpretationManager manager = new ClinicalInterpretationManager(clinicalTest.catalogManager, opencga.getStorageEngineFactory(),
                 opencga.getOpencgaHome());
 
         // Add new finding
@@ -219,9 +215,7 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
                 success = true;
             }
         }
-        if (!success) {
-            fail();
-        }
+        assertTrue(success);
     }
 
     private void checkInterpretation(int expected, ExecutionResult result) {
