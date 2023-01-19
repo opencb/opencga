@@ -50,6 +50,8 @@ public class UriUtilsTest {
         assertEquals("file", UriUtils.fileName(URI.create("file:///file")));
         assertEquals("file", UriUtils.fileName(URI.create("/file")));
         assertEquals("file", UriUtils.fileName(URI.create("file")));
+        assertEquals("file#2", UriUtils.fileName(UriUtils.createUriSafe("s3:///other/dir/file%232")));
+        assertEquals("file%3A2", UriUtils.fileName(UriUtils.createUriSafe("/other/dir/file%3A2")));
 
         assertEquals("", UriUtils.fileName(URI.create("dir/")));
         assertEquals("", UriUtils.fileName(URI.create("/dir/")));
@@ -61,7 +63,8 @@ public class UriUtilsTest {
         // Do not escape anything
         assertEquals("file:///other/dir/file", UriUtils.createUri("file:///other/dir/file").toString());
         assertEquals("file:///other/dir/file:2", UriUtils.createUri("file:///other/dir/file:2").toString());
-        assertEquals("file:///other/dir/file%3A2", UriUtils.createUri("file:///other/dir/file%3A2").toString());
+        assertEquals("http:///other/dir/file%3A2", UriUtils.createUri("http:///other/dir/file%3A2").toString());
+        assertEquals("s3:///other/dir/file%232", UriUtils.createUri("s3:///other/dir/file%232").toString());
 
         // Escape special characters
         // %
@@ -70,7 +73,5 @@ public class UriUtilsTest {
         assertEquals("file:///other/dir/file%3F2", UriUtils.createUri("/other/dir/file?2").toString());
         // #
         assertEquals("file:///other/dir/file%232", UriUtils.createUri("/other/dir/file#2").toString());
-        // #
-        assertEquals("file:///other/dir/file%232", Paths.get("/other/dir/file#2").toUri().toString());
     }
 }

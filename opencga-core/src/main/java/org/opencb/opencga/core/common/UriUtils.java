@@ -22,11 +22,14 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
+import java.util.regex.Pattern;
 
 /**
  * Created by hpccoll1 on 11/05/15.
  */
 public class UriUtils {
+
+    private static final Pattern HAS_SCHEMA = Pattern.compile("^\\w+:/.*$");
 
     public static void checkUri(URI uri, String uriName, String schema) throws IOException {
         if(uri == null || uri.getScheme() != null && !uri.getScheme().equals(schema)) {
@@ -50,16 +53,13 @@ public class UriUtils {
     public static URI createUri(String input, boolean failOnInvalidUri) throws URISyntaxException {
         try {
             URI sourceUri;
-            if (input.startsWith("file:/")) {
-                // Already a valid URI. Assume it is already escaped.
+            if (HAS_SCHEMA.matcher(input).matches()) {
+                // Already a URI. Assume it is already escaped.
                 // Avoid double code escaping
                 sourceUri = new URI(input);
             } else {
                 // Assume direct path name.
                 // Escape if needed.
-                sourceUri = new URI(null, input, null);
-            }
-            if (sourceUri.getScheme() == null || sourceUri.getScheme().isEmpty()) {
                 sourceUri = Paths.get(input).toUri();
             }
             return sourceUri;
