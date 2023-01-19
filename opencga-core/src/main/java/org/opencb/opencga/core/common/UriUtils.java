@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
  */
 public class UriUtils {
 
-    private static final Pattern HAS_SCHEMA = Pattern.compile("^\\w+:/.*$");
+    private static final Pattern HAS_SCHEMA = Pattern.compile("^[^/?#]+:/.*$");
 
     public static void checkUri(URI uri, String uriName, String schema) throws IOException {
         if(uri == null || uri.getScheme() != null && !uri.getScheme().equals(schema)) {

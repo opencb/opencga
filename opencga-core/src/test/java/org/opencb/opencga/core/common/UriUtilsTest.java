@@ -20,9 +20,8 @@ import org.junit.Test;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Paths;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created on 03/05/19.
@@ -64,6 +63,7 @@ public class UriUtilsTest {
         assertEquals("file:///other/dir/file", UriUtils.createUri("file:///other/dir/file").toString());
         assertEquals("file:///other/dir/file:2", UriUtils.createUri("file:///other/dir/file:2").toString());
         assertEquals("http:///other/dir/file%3A2", UriUtils.createUri("http:///other/dir/file%3A2").toString());
+        assertEquals("my.schema:///other/dir/file%3A2", UriUtils.createUri("my.schema:///other/dir/file%3A2").toString());
         assertEquals("s3:///other/dir/file%232", UriUtils.createUri("s3:///other/dir/file%232").toString());
 
         // Escape special characters
