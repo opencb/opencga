@@ -27,14 +27,86 @@ public class ConvertIntoVirtual extends AbstractMain {
     private static Logger logger = LoggerFactory.getLogger(ConvertIntoVirtual.class);
 
     public static class ConvertIntoVirtualParams extends ToolParams {
-        protected String study;
-        protected String dbName;
-        protected String storageConfigurationFile = "/opt/opencga/conf/storage-configuration.yml";
-        protected String virtualFile;
-        protected List<String> files;
-        protected int limit;
-        protected boolean help;
-        protected boolean fixPhoenix;
+        private String study;
+        private String dbName;
+        private String storageConfigurationFile = "/opt/opencga/conf/storage-configuration.yml";
+        private String virtualFile;
+        private List<String> files;
+        private int limit;
+        private boolean help;
+        private boolean fixPhoenix;
+
+        public String getStudy() {
+            return study;
+        }
+
+        public ConvertIntoVirtualParams setStudy(String study) {
+            this.study = study;
+            return this;
+        }
+
+        public String getDbName() {
+            return dbName;
+        }
+
+        public ConvertIntoVirtualParams setDbName(String dbName) {
+            this.dbName = dbName;
+            return this;
+        }
+
+        public String getStorageConfigurationFile() {
+            return storageConfigurationFile;
+        }
+
+        public ConvertIntoVirtualParams setStorageConfigurationFile(String storageConfigurationFile) {
+            this.storageConfigurationFile = storageConfigurationFile;
+            return this;
+        }
+
+        public String getVirtualFile() {
+            return virtualFile;
+        }
+
+        public ConvertIntoVirtualParams setVirtualFile(String virtualFile) {
+            this.virtualFile = virtualFile;
+            return this;
+        }
+
+        public List<String> getFiles() {
+            return files;
+        }
+
+        public ConvertIntoVirtualParams setFiles(List<String> files) {
+            this.files = files;
+            return this;
+        }
+
+        public int getLimit() {
+            return limit;
+        }
+
+        public ConvertIntoVirtualParams setLimit(int limit) {
+            this.limit = limit;
+            return this;
+        }
+
+        public boolean isHelp() {
+            return help;
+        }
+
+        public ConvertIntoVirtualParams setHelp(boolean help) {
+            this.help = help;
+            return this;
+        }
+
+        public boolean isFixPhoenix() {
+            return fixPhoenix;
+        }
+
+        public ConvertIntoVirtualParams setFixPhoenix(boolean fixPhoenix) {
+            this.fixPhoenix = fixPhoenix;
+            return this;
+        }
     }
 
     @Override

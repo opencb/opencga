@@ -1,11 +1,10 @@
 package org.opencb.opencga.app.cli.main.options;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.Parameters;
-import com.beust.jcommander.ParametersDelegate;
+import com.beust.jcommander.*;
 
 import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandOptions;
+
+import java.util.HashMap;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 

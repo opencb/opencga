@@ -23,7 +23,7 @@ public abstract class Main {
         executor.addSubCommand(Arrays.asList("phoenix", "ph"), "Run phoenix utility commands", args -> {
             new PhoenixMain().run(args);
         });
-        executor.addSubCommand(Arrays.asList("convertintovirtual"), "Migrate into virtual file", args -> {
+        executor.addSubCommand(Arrays.asList("convertintovirtual", "ConvertIntoVirtual"), "Migrate into virtual file", args -> {
             new ConvertIntoVirtual().run(args);
         });
         executor.exec(mainArgs);
