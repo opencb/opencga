@@ -108,6 +108,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         JCommander panelSubCommands = jCommander.getCommands().get("panel");
         panelSubCommands.addCommand("panelapp", panelCommandOptions.panelAppCommandOptions);
         panelSubCommands.addCommand("cancer-gene-census", panelCommandOptions.cancerGeneCensusCommandOptions);
+        panelSubCommands.addCommand("g2p", panelCommandOptions.g2PCommandOptions);
 
         this.metaCommandOptions = new AdminCliOptionsParser.MetaCommandOptions();
         this.jCommander.addCommand("meta", this.metaCommandOptions);
@@ -285,12 +286,14 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
         public PanelAppCommandOptions panelAppCommandOptions;
         public CancerGeneCensusCommandOptions cancerGeneCensusCommandOptions;
+        public G2PCommandOptions g2PCommandOptions;
 
         public IgnorePasswordCommonCommandOptions commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
 
         public PanelCommandOptions() {
             this.panelAppCommandOptions = new PanelAppCommandOptions();
             this.cancerGeneCensusCommandOptions = new CancerGeneCensusCommandOptions();
+            this.g2PCommandOptions = new G2PCommandOptions();
         }
     }
 
@@ -725,6 +728,19 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public String outdir;
 
         @Parameter(names = {"-i", "--input"}, description = "Gene Census panel in TSV format", arity = 1, required = true)
+        public String input;
+    }
+
+    @Parameters(commandNames = {"g2p"}, commandDescription = "Parse G2P panel")
+    public class G2PCommandOptions extends CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public IgnorePasswordCommonCommandOptions commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory", arity = 1, required = true)
+        public String outdir;
+
+        @Parameter(names = {"-i", "--input"}, description = "File containing panel in G2P format", arity = 1, required = true)
         public String input;
     }
 

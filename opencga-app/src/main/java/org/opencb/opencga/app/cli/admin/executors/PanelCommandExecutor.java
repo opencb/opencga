@@ -39,6 +39,9 @@ public class PanelCommandExecutor extends CommandExecutor {
             case "cancer-gene-census":
                 parseGeneCensus();
                 break;
+            case "g2p":
+                parseG2P();
+                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -141,6 +144,9 @@ public class PanelCommandExecutor extends CommandExecutor {
                 diseasePanel);
 
         generatePanelIdsFile(directory, Collections.singletonList(diseasePanel.getId()));
+    }
+
+    private void parseG2P() throws IOException {
     }
 
     private void generatePanelIdsFile(Path directory, List<String> panelIds) throws IOException {
