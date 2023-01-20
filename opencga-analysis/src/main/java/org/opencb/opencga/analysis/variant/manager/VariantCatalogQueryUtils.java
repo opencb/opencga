@@ -913,16 +913,15 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 continue;
             }
             // Do not filter out if undefined
-            if (!panelModeOfInheritance.isEmpty()
-                    && genePanel.getModeOfInheritance() != null
-                    && !panelModeOfInheritance.contains(genePanel.getModeOfInheritance())) {
+            if (!panelModeOfInheritance.isEmpty() && CollectionUtils.isNotEmpty(genePanel.getModesOfInheritance())
+                    && genePanel.getModesOfInheritance().stream().noneMatch(panelModeOfInheritance::contains)) {
                 // Discard this gene
                 continue;
             }
             // Do not filter out if undefined
             if (!panelRoleInCancer.isEmpty()
-                    && genePanel.getCancer() != null && genePanel.getCancer().getRole() != null
-                    && !panelRoleInCancer.contains(genePanel.getCancer().getRole())) {
+                    && genePanel.getCancer() != null && CollectionUtils.isNotEmpty(genePanel.getCancer().getRoles())
+                    && genePanel.getCancer().getRoles().stream().noneMatch(panelRoleInCancer::contains)) {
                 // Discard this gene
                 continue;
             }
