@@ -53,7 +53,7 @@ public class SignatureFittingsMigration extends MigrationTool {
 
                         bulk.add(new UpdateOneModel<>(
                                 eq("_id", document.get("_id")),
-                                new Document("$set", new Document("qualityControl.variant", signatures)))
+                                new Document("$set", new Document("qualityControl.variant.signatures", signatures)))
                         );
                     }
                 });

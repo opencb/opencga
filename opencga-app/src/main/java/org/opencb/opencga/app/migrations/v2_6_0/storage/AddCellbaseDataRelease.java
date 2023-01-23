@@ -36,18 +36,29 @@ public class AddCellbaseDataRelease extends StorageMigrationTool {
                     cellbase.setDataRelease(cellBaseUtils.getDataRelease());
                     updateCellbase = true;
                 } else {
+                    String serverVersion;
+                    try {
+                        serverVersion = cellBaseUtils.getVersionFromServer();
+                    } catch (Exception e) {
+                        if (cellBaseUtils.getVersion().equals("v4")) {
+                            logger.debug(e.getMessage(), e);
+                            logger.warn(e.getMessage(), e);
+                            logger.info("DataRelease not supported on version '" + cellBaseUtils.getVersion() + "' . Leaving empty");
+                            continue;
+                        }
+                        throw e;
+                    }
                     if (cellBaseUtils.supportsDataRelease()) {
                         cellbase.setDataRelease("1");
                         updateCellbase = true;
                     } else {
-                        String serverVersion = cellBaseUtils.getVersionFromServer();
                         logger.info("DataRelease not supported on version '" + serverVersion + "' . Leaving empty");
                     }
                 }
             }
             if (updateCellbase) {
                 logger.info("Update cellbase info for project '{}' with '{}'", projectFqn, cellBaseUtils);
-                variantStorageManager.setCellbaseConfiguration(projectFqn, null, false, null, token);
+                variantStorageManager.setCellbaseConfiguration(projectFqn, cellbase, false, null, token);
             }
         }
     }
