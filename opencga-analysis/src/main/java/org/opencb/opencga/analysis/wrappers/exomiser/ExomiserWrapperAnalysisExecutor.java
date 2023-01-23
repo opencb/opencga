@@ -21,6 +21,7 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -65,6 +66,17 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         Set<String> hpos = new HashSet<>();
         Individual individual = IndividualQcUtils.getIndividualBySampleId(studyId, sampleId, getVariantStorageManager().getCatalogManager(),
                 getToken());
+
+        // Set father and mother if necessary (family ?)
+        if (individual.getFather() != null && StringUtils.isNotEmpty(individual.getFather().getId())) {
+            individual.setFather(IndividualQcUtils.getIndividualById(studyId, individual.getFather().getId(),
+                    getVariantStorageManager().getCatalogManager(), getToken()));
+        }
+        if (individual.getMother() != null && StringUtils.isNotEmpty(individual.getMother().getId())) {
+            individual.setMother(IndividualQcUtils.getIndividualById(studyId, individual.getMother().getId(),
+                    getVariantStorageManager().getCatalogManager(), getToken()));
+        }
+
         logger.info("{}: Individual found: {}", ID, individual.getId());
         if (CollectionUtils.isNotEmpty(individual.getPhenotypes())) {
             for (Phenotype phenotype : individual.getPhenotypes()) {
@@ -88,7 +100,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         logger.info("{}: Getting HPO for individual {}: {}", ID, individual.getId(), StringUtils.join(hpos, ","));
 
         List<String> samples = new ArrayList<>();
-        samples.add(individual.getId());
+        samples.add(sampleId);
 
         // Check multi-sample (family) analysis
         File pedigreeFile = null;
@@ -103,10 +115,10 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
             if (pedigree != null) {
                 if (individual.getFather() != null) {
-                    samples.add(individual.getFather().getId());
+                    samples.add(individual.getFather().getSamples().get(0).getId());
                 }
                 if (individual.getMother() != null) {
-                    samples.add(individual.getMother().getId());
+                    samples.add(individual.getMother().getSamples().get(0).getId());
                 }
                 pedigreeFile = createPedigreeFile(family, pedigree);
             }
@@ -118,7 +130,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         VariantQuery query = new VariantQuery()
                 .study(studyId)
-                .sample(individual.getId() + ":0/1,1/1")
+                .sample(sampleId + ":0/1,1/1")
                 .includeSample(samples)
                 .includeSampleData("GT")
                 .unknownGenotype("./.");
@@ -181,19 +193,19 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     }
 
     private File createSampleFile(Individual individual, Set<String> hpos, Pedigree pedigree) throws ToolException {
-        File sampleFile = getOutDir().resolve(individual.getId() + ".yml").toFile();
+        File sampleFile = getOutDir().resolve(sampleId + ".yml").toFile();
         try {
             PrintWriter pw = new PrintWriter(sampleFile);
             pw.write("# a v1 phenopacket describing an individual https://phenopacket-schema.readthedocs.io/en/1.0.0/phenopacket.html\n");
             pw.write("---\n");
-            pw.write("id: " + individual.getId() + "\n");
+            pw.write("id: " + sampleId + "\n");
             String prefix = "";
             if (pedigree != null) {
                 prefix = "  ";
                 pw.write("proband:\n");
             }
             pw.write(prefix + "subject:\n");
-            pw.write(prefix + "  id: " + individual.getId() + "\n");
+            pw.write(prefix + "  id: " + sampleId + "\n");
             if (individual.getSex() != null) {
                 pw.write(prefix + "  sex: " + individual.getSex().getSex().name() + "\n");
             }
@@ -207,12 +219,12 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
                 pw.write("  persons:\n");
 
                 // Proband
-                pw.write("    - individualId: " + pedigree.getProband().getId() + "\n");
+                pw.write("    - individualId: " + sampleId + "\n");
                 if (pedigree.getProband().getFather() != null) {
-                    pw.write("      paternalId: " + pedigree.getProband().getFather().getId() + "\n");
+                    pw.write("      paternalId: " + individual.getFather().getSamples().get(0).getId() + "\n");
                 }
                 if (pedigree.getProband().getMother() != null) {
-                    pw.write("      maternalId: " + pedigree.getProband().getMother().getId() + "\n");
+                    pw.write("      maternalId: " + individual.getMother().getSamples().get(0).getId() + "\n");
                 }
                 if (pedigree.getProband().getSex() != null) {
                     pw.write("      sex: " + pedigree.getProband().getSex().getSex().name() + "\n");
@@ -221,7 +233,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
                 // Father
                 if (pedigree.getProband().getFather() != null) {
-                    pw.write("    - individualId: " + pedigree.getProband().getFather().getId() + "\n");
+                    pw.write("    - individualId: " + individual.getFather().getSamples().get(0).getId() + "\n");
                     if (pedigree.getProband().getFather().getSex() != null) {
                         pw.write("      sex: " + pedigree.getProband().getFather().getSex().getSex().name() + "\n");
                     }
@@ -230,7 +242,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
                 // Mother
                 if (pedigree.getProband().getMother() != null) {
-                    pw.write("    - individualId: " + pedigree.getProband().getMother().getId() + "\n");
+                    pw.write("    - individualId: " + individual.getMother().getSamples().get(0).getId() + "\n");
                     if (pedigree.getProband().getMother().getSex() != null) {
                         pw.write("      sex: " + pedigree.getProband().getMother().getSex().getSex().name() + "\n");
                     }
@@ -247,25 +259,45 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     }
 
     private File createPedigreeFile(Family family, Pedigree pedigree) throws ToolException {
-        File pedigreeFile = getOutDir().resolve(pedigree.getProband().getId() + ".ped").toFile();
+        Map<String, String> fromIndividualToSample = new HashMap<>();
+        for (Individual member : family.getMembers()) {
+            if (CollectionUtils.isNotEmpty(member.getSamples())) {
+                fromIndividualToSample.put(member.getId(), member.getSamples().get(0).getId());
+            }
+        }
+
+        File pedigreeFile = getOutDir().resolve(fromIndividualToSample.get(pedigree.getProband().getId()) + ".ped").toFile();
         try {
             PrintWriter pw = new PrintWriter(pedigreeFile);
+
+            String probandId = fromIndividualToSample.get(pedigree.getProband().getId());
+
+            String fatherId = "0";
+            if (pedigree.getProband().getFather() != null) {
+                fatherId = fromIndividualToSample.get(pedigree.getProband().getFather().getId());
+            }
+
+            String motherId = "0";
+            if (pedigree.getProband().getMother() != null) {
+                motherId = fromIndividualToSample.get(pedigree.getProband().getMother().getId());
+            }
+
             // Proband
             pw.write(family.getId()
-                    + "\t" + pedigree.getProband().getId()
-                    + "\t" + getPedigreePaternalId(pedigree.getProband())
-                    + "\t" + getPedigreeMaternalId(pedigree.getProband())
+                    + "\t" + probandId
+                    + "\t" + fatherId
+                    + "\t" + motherId
                     + "\t" + getPedigreeSex(pedigree.getProband())
                     + "\t2\n");
 
             // Father
-            if (pedigree.getProband().getFather() != null) {
-                pw.write(family.getId() + "\t" + pedigree.getProband().getFather().getId() + "\t0\t0\t1\t0\n");
+            if (!fatherId.equals("0")) {
+                pw.write(family.getId() + "\t" + fatherId + "\t0\t0\t1\t0\n");
             }
 
             // Mother
-            if (pedigree.getProband().getMother() != null) {
-                pw.write(family.getId() + "\t" + pedigree.getProband().getMother().getId() + "\t0\t0\t2\t0\n");
+            if (!motherId.equals("0")) {
+                pw.write(family.getId() + "\t" + motherId + "\t0\t0\t2\t0\n");
             }
 
             // Close file
@@ -415,7 +447,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         // Download data
         try {
             url = new URL("http://resources.opencb.org/opencb/opencga/analysis/exomiser/" + filename);
-            logger.info("{}: Downloading Exomiser data: {}", ID, url);
+            logger.info("{}: Downloading Exomiser data: {} in {}", ID, url, exomiserDataPath);
             ResourceUtils.downloadThirdParty(url, exomiserDataPath);
         } catch (IOException e) {
             throw new ToolException("Error downloading Exomiser data from " + url, e);

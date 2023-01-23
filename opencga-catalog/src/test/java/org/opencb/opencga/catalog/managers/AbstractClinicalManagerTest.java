@@ -52,7 +52,10 @@ public class AbstractClinicalManagerTest extends GenericTest {
     public final static String CA_ID1 = "clinical-analysis-1";
 
     public final static String CA_ID2 = "clinical-analysis-2";
-    public final static String PROBAND_ID2 = "manuel";
+    public final static String PROBAND_ID2 = "manuel_individual";
+
+    public final static String CA_ID3 = "clinical-analysis-3";
+    public final static String PROBAND_ID3 = "HG005_individual";
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -66,6 +69,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
     public Family family;
     public ClinicalAnalysis clinicalAnalysis;
     public ClinicalAnalysis clinicalAnalysis2;
+    public ClinicalAnalysis clinicalAnalysis3;
 
     @Before
     public void setUp() throws IOException, CatalogException, URISyntaxException {
@@ -74,6 +78,8 @@ public class AbstractClinicalManagerTest extends GenericTest {
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException, URISyntaxException {
+        URI vcf;
+        ClinicalAnalysis auxClinicalAnalysis;
 
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
 
@@ -86,27 +92,30 @@ public class AbstractClinicalManagerTest extends GenericTest {
                 null, null, null, token).first();
         studyFqn = study.getFqn();
 
-        family = catalogManager.getFamilyManager().create(studyFqn, getFamily(), QueryOptions.empty(), token).first();
+//        family = catalogManager.getFamilyManager().create(studyFqn, getFamily(), QueryOptions.empty(), token).first();
+//
+//        // Clinical analysis
+//        ClinicalAnalysis auxClinicalAnalysis = new ClinicalAnalysis()
+//                .setId(CA_ID1).setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
+//                .setDueDate("20180510100000")
+//                .setDisorder(getDisorder())
+//                .setProband(getChild())
+//                .setFamily(getFamily());
+//
+//        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().create(studyFqn, auxClinicalAnalysis, QueryOptions.empty(), token)
+//                .first();
+//
+//        URI vcf = getClass().getResource("/biofiles/family.vcf").toURI();
+//
+//        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcf)))) {
+//            catalogManager.getFileManager().upload(studyFqn, inputStream,
+//                    new File().setPath(Paths.get(vcf).getFileName().toString()), false, true, false, token);
+//        }
 
-        // Clinical analysis
-        ClinicalAnalysis auxClinicalAnalysis = new ClinicalAnalysis()
-                .setId(CA_ID1).setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
-                .setDueDate("20180510100000")
-                .setDisorder(getDisorder())
-                .setProband(getChild())
-                .setFamily(getFamily());
+        //---------------------------------------------------------------------
+        // Clinical analysis for exomiser test (SINGLE, manuel)
+        //---------------------------------------------------------------------
 
-        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().create(studyFqn, auxClinicalAnalysis, QueryOptions.empty(), token)
-                .first();
-
-        URI vcf = getClass().getResource("/biofiles/family.vcf").toURI();
-
-        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcf)))) {
-            catalogManager.getFileManager().upload(studyFqn, inputStream,
-                    new File().setPath(Paths.get(vcf).getFileName().toString()), false, true, false, token);
-        }
-
-        // Clinical analysis for exomiser test
         catalogManager.getIndividualManager().create(studyFqn, getMamuel(), QueryOptions.empty(), token).first();
 
         auxClinicalAnalysis = new ClinicalAnalysis()
@@ -120,6 +129,62 @@ public class AbstractClinicalManagerTest extends GenericTest {
 
         vcf = getClass().getResource("/biofiles/exomiser.vcf.gz").toURI();
 
+        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcf)))) {
+            catalogManager.getFileManager().upload(studyFqn, inputStream,
+                    new File().setPath(Paths.get(vcf).getFileName().toString()), false, true, false, token);
+        }
+
+        //---------------------------------------------------------------------
+        // Chinese trio (clinicalAnalysis3)
+        //---------------------------------------------------------------------
+
+        Individual hg006Individual =  new Individual().setId("HG006_individual")
+                .setPhenotypes(Collections.emptyList())
+                .setSex(SexOntologyTermAnnotation.initMale())
+                .setSamples(Collections.singletonList(new Sample().setId("HG006")));
+
+        Individual hg007Individual =  new Individual().setId("HG007_individual")
+                .setPhenotypes(Collections.emptyList())
+                .setSex(SexOntologyTermAnnotation.initFemale())
+                .setSamples(Collections.singletonList(new Sample().setId("HG007")));
+
+        Individual hg005Individual =  new Individual().setId("HG005_individual")
+                .setDisorders(Collections.singletonList(getDisorder()))
+                .setPhenotypes(getPhenotypes())
+                .setFather(hg006Individual)
+                .setMother(hg007Individual)
+                .setSex(SexOntologyTermAnnotation.initMale())
+                .setSamples(Collections.singletonList(new Sample().setId("HG005")));
+
+        Family chineseFamily = new Family("chinese_family", "chinese_family", null, null,
+                Arrays.asList(hg005Individual, hg006Individual, hg007Individual), "", 3, Collections.emptyList(), Collections.emptyMap());
+        catalogManager.getFamilyManager().create(studyFqn, chineseFamily, QueryOptions.empty(), token).first();
+
+        auxClinicalAnalysis = new ClinicalAnalysis()
+                .setId(CA_ID3)
+                .setDescription("My description - exomiser - trio")
+                .setType(ClinicalAnalysis.Type.FAMILY)
+                .setDueDate("20180510100000")
+                .setDisorder(getDisorder())
+                .setProband(hg005Individual)
+                .setFamily(chineseFamily);
+
+        catalogManager.getClinicalAnalysisManager().create(studyFqn, auxClinicalAnalysis, QueryOptions.empty(), token)
+                .first();
+
+        vcf = getClass().getResource("/biofiles/HG005.1k.vcf.gz").toURI();
+        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcf)))) {
+            catalogManager.getFileManager().upload(studyFqn, inputStream,
+                    new File().setPath(Paths.get(vcf).getFileName().toString()), false, true, false, token);
+        }
+
+        vcf = getClass().getResource("/biofiles/HG006.1k.vcf.gz").toURI();
+        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcf)))) {
+            catalogManager.getFileManager().upload(studyFqn, inputStream,
+                    new File().setPath(Paths.get(vcf).getFileName().toString()), false, true, false, token);
+        }
+
+        vcf = getClass().getResource("/biofiles/HG007.1k.vcf.gz").toURI();
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcf)))) {
             catalogManager.getFileManager().upload(studyFqn, inputStream,
                     new File().setPath(Paths.get(vcf).getFileName().toString()), false, true, false, token);
@@ -158,12 +223,12 @@ public class AbstractClinicalManagerTest extends GenericTest {
 
     private Individual getMamuel() {
         return new Individual().setId(PROBAND_ID2)
-                .setPhenotypes(getManuelPhenotypes())
+                .setPhenotypes(getPhenotypes())
                 .setSex(SexOntologyTermAnnotation.initMale())
-                .setSamples(Collections.singletonList(new Sample().setId(PROBAND_ID2)));
+                .setSamples(Collections.singletonList(new Sample().setId(PROBAND_ID2.split("_")[0])));
     }
 
-    private List<Phenotype> getManuelPhenotypes() {
+    private List<Phenotype> getPhenotypes() {
         List<Phenotype> phenotypes = new ArrayList<>();
         phenotypes.add(new Phenotype("HP:0001159", "Syndactyly", "HPO"));
         phenotypes.add(new Phenotype("HP:0000486", "Strabismus", "HPO"));
