@@ -176,6 +176,10 @@ analysis:
       k8s.limits:
         cpu: 4
         memory: "13G"
+      # Job java heap. If undefined, will use "requests.memory - 300MiB"
+      k8s.javaHeap: "11700M"
+#      k8s.envs:
+#        KEY: value
       k8s.nodeSelector:
         agentpool: jobs
         kubernetes.io/os: linux
