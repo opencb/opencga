@@ -170,6 +170,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotEmpty(beanParams, "source.author",commandOptions.sourceAuthor, true);
              putNestedIfNotEmpty(beanParams, "source.project",commandOptions.sourceProject, true);
              putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
+             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
  
             panelCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -377,6 +378,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotEmpty(beanParams, "source.author",commandOptions.sourceAuthor, true);
              putNestedIfNotEmpty(beanParams, "source.project",commandOptions.sourceProject, true);
              putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
+             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
  
             panelUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

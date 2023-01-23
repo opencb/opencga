@@ -30,13 +30,12 @@ public class HBaseVariantTableInputFormat extends AbstractHBaseVariantTableInput
         VariantQueryProjection projection;
 
         HBaseVariantStorageMetadataDBAdaptorFactory dbAdaptorFactory = new HBaseVariantStorageMetadataDBAdaptorFactory(helper);
-        try (VariantStorageMetadataManager scm = new VariantStorageMetadataManager(dbAdaptorFactory)) {
-            Query query = getQueryFromConfig(configuration);
-            QueryOptions queryOptions = getQueryOptionsFromConfig(configuration);
-            projection = VariantQueryProjectionParser.parseVariantQueryFields(query, queryOptions, scm);
-        }
+        VariantStorageMetadataManager scm = new VariantStorageMetadataManager(dbAdaptorFactory);
+        Query query = getQueryFromConfig(configuration);
+        QueryOptions queryOptions = getQueryOptionsFromConfig(configuration);
+        projection = VariantQueryProjectionParser.parseVariantQueryFields(query, queryOptions, scm);
 
-        HBaseToVariantConverter<Result> converter = HBaseToVariantConverter.fromResult(helper)
+        HBaseToVariantConverter<Result> converter = HBaseToVariantConverter.fromResult(scm)
                 .configure(HBaseVariantConverterConfiguration
                         .builder(configuration)
                         .setProjection(projection)

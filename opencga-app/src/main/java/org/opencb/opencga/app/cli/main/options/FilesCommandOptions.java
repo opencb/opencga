@@ -289,6 +289,9 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--software-website"}, description = "Software website", required = false, arity = 1)
         public String softwareWebsite;
     
+        @DynamicParameter(names = {"--software-params"}, description = "Software params. Use: --software-params key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.String> softwareParams = new HashMap<>(); //Dynamic parameters must be initialized;
+    
         @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
         public String tags;
     
@@ -309,6 +312,9 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
     
         @Parameter(names = {"--status-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String statusDescription;
+    
+        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 
@@ -485,6 +491,9 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
     
         @Parameter(names = {"--status-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String statusDescription;
+    
+        @DynamicParameter(names = {"--internal-sample-map"}, description = "The body web service sampleMap parameter. Use: --internal-sample-map key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.String> internalSampleMap = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 
@@ -814,6 +823,9 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--software-website"}, description = "Software website", required = false, arity = 1)
         public String softwareWebsite;
     
+        @DynamicParameter(names = {"--software-params"}, description = "Software params. Use: --software-params key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.String> softwareParams = new HashMap<>(); //Dynamic parameters must be initialized;
+    
         @Parameter(names = {"--experiment-technology"}, description = "Enum param allowed values: SEQUENCING, MICROARRAY", required = false, arity = 1)
         public String experimentTechnology;
     
@@ -847,6 +859,9 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--experiment-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String experimentDescription;
     
+        @DynamicParameter(names = {"--experiment-attributes"}, description = "The body web service attributes parameter. Use: --experiment-attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> experimentAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
+    
         @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
         public String tags;
     
@@ -864,6 +879,12 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
     
         @Parameter(names = {"--quality-control-files"}, description = "The body web service files parameter", required = false, arity = 1)
         public String qualityControlFiles;
+    
+        @DynamicParameter(names = {"--stats"}, description = "The body web service stats parameter. Use: --stats key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> stats = new HashMap<>(); //Dynamic parameters must be initialized;
+    
+        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 

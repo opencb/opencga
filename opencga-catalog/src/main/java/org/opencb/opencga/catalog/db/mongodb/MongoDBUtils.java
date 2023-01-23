@@ -473,8 +473,10 @@ public class MongoDBUtils {
      * @param bsonList List to which we will add the ontology terms search.
      */
     public static void addDefaultOrQueryFilter(String mongoKey, String queryKey, Query query, List<Bson> bsonList) {
-        Bson ontologyId = MongoDBQueryUtils.createAutoFilter(mongoKey + ".id", queryKey, query, QueryParam.Type.STRING);
-        Bson ontologyName = MongoDBQueryUtils.createAutoFilter(mongoKey + ".name", queryKey, query, QueryParam.Type.STRING);
+        Bson ontologyId = MongoDBQueryUtils.createStringFilter(mongoKey + ".id", queryKey, query,
+                ObjectMap.COMMA_SEPARATED_LIST_SPLIT_PATTERN);
+        Bson ontologyName = MongoDBQueryUtils.createStringFilter(mongoKey + ".name", queryKey, query,
+                ObjectMap.COMMA_SEPARATED_LIST_SPLIT_PATTERN);
         bsonList.add(Filters.or(ontologyId, ontologyName));
     }
 

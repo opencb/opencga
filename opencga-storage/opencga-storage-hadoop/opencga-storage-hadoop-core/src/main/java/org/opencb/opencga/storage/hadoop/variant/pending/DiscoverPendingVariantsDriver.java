@@ -127,6 +127,7 @@ public class DiscoverPendingVariantsDriver extends AbstractVariantsTableDriver {
         private int pendingVariants;
         private PendingVariantsDescriptor descriptor;
         private Function<Result, Mutation> pendingEvaluator;
+        private VariantStorageMetadataManager metadataManager;
 
 
         @Override
@@ -138,10 +139,11 @@ public class DiscoverPendingVariantsDriver extends AbstractVariantsTableDriver {
             readyVariants = 0;
             pendingVariants = 0;
             boolean overwrite = context.getConfiguration().getBoolean(OVERWRITE, false);
+            metadataManager = new VariantStorageMetadataManager(
+                    new HBaseVariantStorageMetadataDBAdaptorFactory(
+                            new VariantTableHelper(context.getConfiguration())));
             pendingEvaluator = descriptor.getPendingEvaluatorMapper(
-                    new VariantStorageMetadataManager(
-                            new HBaseVariantStorageMetadataDBAdaptorFactory(
-                                    new VariantTableHelper(context.getConfiguration()))), overwrite);
+                    metadataManager, overwrite);
         }
 
         @Override
@@ -171,6 +173,7 @@ public class DiscoverPendingVariantsDriver extends AbstractVariantsTableDriver {
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "ready_variants").increment(readyVariants);
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "pending_variants").increment(pendingVariants);
             }
+            metadataManager.close();
         }
     }
 

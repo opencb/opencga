@@ -1,16 +1,20 @@
 package org.opencb.opencga.storage.hadoop.utils;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.core.common.BatchUtils;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -133,5 +137,27 @@ public abstract class AbstractHBaseDataWriter<T, M extends Mutation> implements 
             throw new UncheckedIOException(e);
         }
         return true;
+    }
+
+    public static List<Put> splitDensePuts(Put put, Configuration conf) throws IOException {
+        return splitDensePuts(put, conf.getInt("hbase.region.store.parallel.put.limit.min.column.count", 100));
+    }
+
+    public static List<Put> splitDensePuts(Put put, int limitColumnsPerPut) throws IOException {
+        List<Put> puts = new ArrayList<>();
+        List<Cell> cells = put.getFamilyCellMap().get(GenomeHelper.COLUMN_FAMILY_BYTES);
+        List<List<Cell>> lists = BatchUtils.splitBatches(cells, limitColumnsPerPut);
+        if (lists.size() > 1) {
+            for (List<Cell> list : lists) {
+                Put partialPut = new Put(put.getRow());
+                for (Cell cell : list) {
+                    partialPut.add(cell);
+                }
+                puts.add(partialPut);
+            }
+        } else {
+            puts.add(put);
+        }
+        return puts;
     }
 }

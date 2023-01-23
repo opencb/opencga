@@ -1053,7 +1053,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                     throw new CatalogException("Unable to modify a cohort while it's in status \"" + CohortStatus.CALCULATING
                             + "\"");
                 case CohortStatus.READY:
-                    parameters.putIfAbsent(CohortDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), CohortStatus.INVALID);
+                    parameters.putIfAbsent(CohortDBAdaptor.QueryParams.INTERNAL_STATUS.key(), new CohortStatus(CohortStatus.INVALID));
                     break;
                 case CohortStatus.NONE:
                 case CohortStatus.INVALID:
@@ -1128,11 +1128,11 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
+        CohortStatus cohortStatus = new CohortStatus(status, message);
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("cohortId", cohortId)
-                .append("status", status)
-                .append("message", message)
+                .append(CohortDBAdaptor.QueryParams.INTERNAL_STATUS.key(), cohortStatus)
                 .append("token", token);
         Cohort cohort;
         try {
@@ -1151,8 +1151,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             }
 
             ObjectMap parameters = new ObjectMap();
-            parameters.putIfNotNull(CohortDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), status);
-            parameters.putIfNotNull(CohortDBAdaptor.QueryParams.INTERNAL_STATUS_DESCRIPTION.key(), message);
+            parameters.put(CohortDBAdaptor.QueryParams.INTERNAL_STATUS.key(), cohortStatus);
 
             cohortDBAdaptor.update(cohort.getUid(), parameters, new QueryOptions());
 

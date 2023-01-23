@@ -39,12 +39,9 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenix
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
-import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
@@ -67,10 +64,6 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
     protected static boolean failOnWrongVariants = false; //FIXME
     protected HBaseVariantConverterConfiguration configuration;
-
-    public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
-        this(new VariantStorageMetadataManager(new HBaseVariantStorageMetadataDBAdaptorFactory(variantTableHelper)));
-    }
 
     public HBaseToVariantConverter(VariantStorageMetadataManager scm) {
         long ts = scm.getProjectMetadata().getAttributes().getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
@@ -140,16 +133,8 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         failOnWrongVariants = b;
     }
 
-    public static HBaseToVariantConverter<Result> fromResult(VariantTableHelper helper) throws IOException {
-        return new ResultToVariantConverter(helper);
-    }
-
     public static HBaseToVariantConverter<Result> fromResult(VariantStorageMetadataManager scm) {
         return new ResultToVariantConverter(scm);
-    }
-
-    public static HBaseToVariantConverter<ResultSet> fromResultSet(VariantTableHelper helper) throws IOException {
-        return new ResultSetToVariantConverter(helper);
     }
 
     public static HBaseToVariantConverter<ResultSet> fromResultSet(VariantStorageMetadataManager scm) {
@@ -194,10 +179,6 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
     }
 
     private static class ResultSetToVariantConverter extends HBaseToVariantConverter<ResultSet> {
-        ResultSetToVariantConverter(VariantTableHelper helper) throws IOException {
-            super(helper);
-        }
-
         ResultSetToVariantConverter(VariantStorageMetadataManager scm) {
             super(scm);
         }
@@ -223,10 +204,6 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
     }
 
     private static class ResultToVariantConverter extends HBaseToVariantConverter<Result> {
-        ResultToVariantConverter(VariantTableHelper helper) throws IOException {
-            super(helper);
-        }
-
         ResultToVariantConverter(VariantStorageMetadataManager scm) {
             super(scm);
         }

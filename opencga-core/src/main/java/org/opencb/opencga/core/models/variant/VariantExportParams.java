@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models.variant;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.opencb.commons.datastore.core.Query;
 
 public class VariantExportParams extends VariantQueryParams {
@@ -28,6 +29,7 @@ public class VariantExportParams extends VariantQueryParams {
     private String exclude;
     private Integer limit;
     private Integer skip;
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private boolean summary;
 
     public VariantExportParams() {

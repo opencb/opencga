@@ -125,7 +125,7 @@ public final class VariantQueryParam implements QueryParam {
 
     public static final String SAMPLE_METADATA_DESCR
             = "Return the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.";
-    public static final VariantQueryParam SAMPLE_METADATA = new VariantQueryParam("sampleMetadata", TEXT_ARRAY, SAMPLE_METADATA_DESCR);
+    public static final VariantQueryParam SAMPLE_METADATA = new VariantQueryParam("sampleMetadata", BOOLEAN, SAMPLE_METADATA_DESCR);
 
     public static final String INCLUDE_SAMPLE_DATA_DESCR
             = "List of Sample Data keys (i.e. FORMAT column from VCF file) from Sample Data to include in the output. e.g: DP,AD. "

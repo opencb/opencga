@@ -181,10 +181,10 @@ public abstract class OpenCgaTool {
         erm = new ExecutionResultManager(getId(), outDir);
         erm.init(params, executorParams);
         Thread hook = new Thread(() -> {
-            Exception exception = null;
+            Throwable exception = null;
             try {
                 onShutdown();
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 exception = e;
             }
             if (!erm.isClosed()) {
@@ -206,7 +206,7 @@ public abstract class OpenCgaTool {
             }
         });
         Runtime.getRuntime().addShutdownHook(hook);
-        Exception exception = null;
+        Throwable exception = null;
         ExecutionResult result;
         try {
             if (scratchDir == null) {
@@ -252,7 +252,7 @@ public abstract class OpenCgaTool {
             } catch (Exception e) {
                 throw new ToolException(e);
             }
-        } catch (RuntimeException | ToolException e) {
+        } catch (Throwable e) {
             exception = e;
             throw e;
         } finally {

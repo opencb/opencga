@@ -124,7 +124,7 @@ public class PlatinumFileIndexerTest extends AbstractVariantOperationManagerTest
             transformFile = transformFile(inputFile, new QueryOptions());
             loadFile(transformFile, new QueryOptions(), outputId);
 
-            opencga.getCatalogManager().getProjectManager().incrementRelease(projectAlias, sessionId);
+            opencga.getCatalogManager().getProjectManager().incrementRelease(projectId, sessionId);
         }
 
         int i = 1;

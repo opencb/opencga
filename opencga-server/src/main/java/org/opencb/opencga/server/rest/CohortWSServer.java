@@ -28,7 +28,6 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.cohort.*;
-import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.tools.annotations.*;
@@ -167,7 +166,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.COHORT_IDS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_ID_PARAM) String id,
             @ApiParam(value = ParamConstants.COHORT_NAMES_DESCRIPTION) @QueryParam(ParamConstants.COHORT_NAME_PARAM) String name,
             @ApiParam(value = ParamConstants.COHORT_UUIDS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_UUID_PARAM) String uuid,
-            @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_TYPE_PARAM) Enums.CohortType type,
+            @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_TYPE_PARAM) String type,
             @ApiParam(value = ParamConstants.COHORT_CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_CREATION_DATE_PARAM) String creationDate,
             @ApiParam(value = ParamConstants.COHORT_MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_MODIFICATION_DATE_PARAM) String modificationDate,
             @ApiParam(value = ParamConstants.COHORT_DELETED_DESCRIPTION) @QueryParam(ParamConstants.COHORT_DELETED_PARAM) boolean deleted,
@@ -194,7 +193,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.COHORT_IDS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_ID_PARAM) String id,
             @ApiParam(value = ParamConstants.COHORT_NAMES_DESCRIPTION) @QueryParam(ParamConstants.COHORT_NAME_PARAM) String name,
             @ApiParam(value = ParamConstants.COHORT_UUIDS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_UUID_PARAM) String uuid,
-            @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_TYPE_PARAM) Enums.CohortType type,
+            @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_TYPE_PARAM) String type,
             @ApiParam(value = ParamConstants.COHORT_CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_CREATION_DATE_PARAM) String creationDate,
             @ApiParam(value = ParamConstants.COHORT_MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_MODIFICATION_DATE_PARAM) String modificationDate,
             @ApiParam(value = ParamConstants.COHORT_DELETED_DESCRIPTION) @QueryParam(ParamConstants.COHORT_DELETED_PARAM) boolean deleted,

@@ -8,13 +8,18 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
+import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.MRJobConfig;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.parquet.hadoop.ParquetFileWriter;
+import org.apache.phoenix.mapreduce.util.PhoenixConfigurationUtil;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -149,7 +154,35 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         LOGGER.info("=================================================");
-        LOGGER.info("Execute " + getJobName());
+        LOGGER.info("Execute '" + getJobName() + "'");
+        LOGGER.info("   * InputFormat   : " + job.getInputFormatClass().getName());
+        if (StringUtils.isNotEmpty(job.getConfiguration().get(TableInputFormat.INPUT_TABLE))) {
+            LOGGER.info("     - InputTable  : " + job.getConfiguration().get(TableInputFormat.INPUT_TABLE));
+        } else if (StringUtils.isNotEmpty(job.getConfiguration().get(PhoenixConfigurationUtil.INPUT_TABLE_NAME))) {
+            LOGGER.info("     - InputPTable : " + job.getConfiguration().get(PhoenixConfigurationUtil.INPUT_TABLE_NAME));
+        } else if (StringUtils.isNotEmpty(job.getConfiguration().get(FileInputFormat.INPUT_DIR))) {
+            LOGGER.info("     - InputDir    : " + job.getConfiguration().get(FileInputFormat.INPUT_DIR));
+        }
+        int numMapLimit = job.getConfiguration().getInt(MRJobConfig.JOB_RUNNING_MAP_LIMIT, 0);
+        if (numMapLimit > 0) {
+            LOGGER.info("   * Mapper        : " + numMapLimit + "x " + job.getMapperClass().getName());
+        } else {
+            LOGGER.info("   * Mapper        : " + job.getMapperClass().getName());
+        }
+        LOGGER.info("     - memory (MB) : " + job.getConfiguration().getInt(MRJobConfig.MAP_MEMORY_MB, -1));
+        if (job.getNumReduceTasks() > 0) {
+            LOGGER.info("   * Reducer       : " + job.getNumReduceTasks() + "x " + job.getReducerClass().getName());
+            LOGGER.info("     - memory (MB) : " + job.getConfiguration().getInt(MRJobConfig.REDUCE_MEMORY_MB, -1));
+        } else {
+            LOGGER.info("   * Reducer       : (no reducer)");
+        }
+        LOGGER.info("   * OutputFormat  : " + job.getOutputFormatClass().getName());
+        if (job.getOutputFormatClass().equals(TableOutputFormat.class)
+                && StringUtils.isNotEmpty(job.getConfiguration().get(TableOutputFormat.OUTPUT_TABLE))) {
+            LOGGER.info("     - OutputTable : " + job.getConfiguration().get(TableOutputFormat.OUTPUT_TABLE));
+        } else if (StringUtils.isNotEmpty(job.getConfiguration().get(FileOutputFormat.OUTDIR))) {
+            LOGGER.info("     - Outdir      : " + job.getConfiguration().get(FileOutputFormat.OUTDIR));
+        }
         LOGGER.info("=================================================");
         boolean succeed = executeJob(job);
         if (!succeed) {

@@ -151,6 +151,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
+        @DynamicParameter(names = {"--interpretation-default-filter"}, description = "The body web service defaultFilter parameter. Use: --interpretation-default-filter key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> interpretationDefaultFilter = new HashMap<>(); //Dynamic parameters must be initialized;
+    
     }
 
     @Parameters(commandNames = {"create"}, commandDescription ="Create a new clinical analysis")
@@ -237,6 +240,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--interpretation-locked"}, description = "The body web service locked parameter", required = false, arity = 1)
         public Boolean interpretationLocked;
     
+        @DynamicParameter(names = {"--interpretation-attributes"}, description = "The body web service attributes parameter. Use: --interpretation-attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> interpretationAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
+    
         @Parameter(names = {"--quality-control-summary"}, description = "Enum param allowed values: HIGH, MEDIUM, LOW, DISCARD, NEEDS_REVIEW, UNKNOWN", required = false, arity = 1)
         public String qualityControlSummary;
     
@@ -251,6 +257,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--priority-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String priorityId;
+    
+        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--status-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String statusId;
@@ -1613,7 +1622,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--file-data"}, description = "Filter by file data (i.e. FILTER, QUAL and INFO columns from VCF file). [{file}:]{key}{op}{value}[,;]* . If no file is specified, will use all files from 'file' filter. e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 . Many fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10,FILTER=PASS,LowDP", required = false, arity = 1)
         public String fileData; 
     
-        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
         public String sample; 
     
         @Parameter(names = {"--sample-data"}, description = "Filter by any SampleData field from samples. [{sample}:]{key}{op}{value}[,;]* . If no sample is specified, will use all samples from 'sample' or 'genotype' filter. e.g. DP>200 or HG0097:DP>200,HG0098:DP<10 . Many FORMAT fields can be combined. e.g. HG0097:DP>200;GT=1/1,0/1,HG0098:DP<10", required = false, arity = 1)
@@ -1655,7 +1664,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--family-disorder"}, description = "Specify the disorder to use for the family segregation", required = false, arity = 1)
         public String familyDisorder; 
     
-        @Parameter(names = {"--family-segregation"}, description = "Filter by segregation mode from a given family. Accepted values: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
+        @Parameter(names = {"--family-segregation"}, description = "Filter by segregation mode from a given family. Accepted values: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
         public String familySegregation; 
     
         @Parameter(names = {"--family-members"}, description = "Sub set of the members of a given family", required = false, arity = 1)
@@ -1871,6 +1880,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--priority-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String priorityId;
     
+        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+    
         @Parameter(names = {"--status-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String statusId;
     
@@ -1958,6 +1970,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--status-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String statusId;
+    
+        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 
@@ -2089,6 +2104,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--locked"}, description = "The body web service locked parameter", required = false, arity = 1)
         public Boolean locked;
+    
+        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 

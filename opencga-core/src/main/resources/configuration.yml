@@ -142,6 +142,14 @@ analysis:
       variant-annotation-index: 5
       variant-secondary-index: 2
     options:
+      ## Job reuse policy. Do not create a new job if an equivalent PENDING or QUEUED job exists.
+      jobs.reuse.enabled: true
+      ## List of tools to apply the reuse policy. Add `.*` to apply widely.
+      jobs.reuse.tools:
+        - "variant-index"
+        - "variant-stats-index"
+        - "variant-annotation-index"
+        - "variant-secondary-annotation-index"
       ## Local executor configuration
       local.maxConcurrentJobs: 2    # Max number of concurrent jobs to be executed locally in the master
       ## Azure Batch Service configuration example

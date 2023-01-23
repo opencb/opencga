@@ -4,16 +4,20 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.util.StopWatch;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
+import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
@@ -24,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -43,6 +48,8 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
     private StudyMetadata studyMetadata;
     private VariantStatsToHBaseConverter converter;
     private final Logger logger = LoggerFactory.getLogger(VariantStatsFromVariantRowTsvMapper.class);
+    private ProgressLogger progressLogger;
+    private int limitColumnsPerPut;
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
@@ -76,28 +83,55 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
         });
 
         converter = new VariantStatsToHBaseConverter(studyMetadata, cohortIds);
+        progressLogger = new ProgressLogger("Calculating stats");
+        limitColumnsPerPut = context.getConfiguration().getInt("hbase.region.store.parallel.put.limit.min.column.count", 100);
+    }
 
+    @FunctionalInterface
+    public interface MyCallable<V> {
+        V call() throws IOException, InterruptedException;
+    }
+
+    public <T> T execute(String name, MyCallable<T> callable) throws IOException, InterruptedException {
+        StopWatch stopWatch = new StopWatch().start();
+        T t = callable.call();
+        stopWatch.stop();
+        long time = stopWatch.now(TimeUnit.MILLISECONDS);
+        if (time > 1000) {
+            logger.info("Slow processing on [{}], took {}", name, TimeUtils.durationToString(time));
+        }
+        return t;
     }
 
     @Override
     protected void map(Object key, Variant variant, Context context) throws IOException, InterruptedException {
         try {
-            List<VariantStatsWrapper> variantStatsWrappers = calculator.calculateBatch(Collections.singletonList(variant), study, samples);
+            List<VariantStatsWrapper> variantStatsWrappers = execute("calculateStats",
+                    () -> calculator.calculateBatch(Collections.singletonList(variant), study, samples));
             if (variantStatsWrappers.isEmpty()) {
                 return;
             }
             VariantStatsWrapper stats = variantStatsWrappers.get(0);
             context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variants").increment(1);
 
-            Put put = converter.convert(stats);
+            Put put = execute("convert", () -> converter.convert(stats));
 
             if (put == null) {
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put.null").increment(1);
             } else {
                 HadoopVariantSearchIndexUtils.addNotSyncStatus(put);
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put").increment(1);
-                context.write(new ImmutableBytesWritable(helper.getVariantsTable()), put);
+                List<Put> puts = AbstractHBaseDataWriter.splitDensePuts(put, limitColumnsPerPut);
+                for (Put p : puts) {
+                    execute("write", () -> {
+                        context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put.partial").increment(1);
+                        context.write(new ImmutableBytesWritable(helper.getVariantsTable()), p);
+                        return null;
+                    });
+                }
             }
+            context.progress();
+            progressLogger.increment(1, () -> "up to variant " + variant.toString());
         } catch (Exception e) {
             logger.error("Problem with variant " + variant, e);
             throw e;

@@ -12,6 +12,7 @@ import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleFi
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -54,14 +55,22 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
     }
 
     protected void loadFiles() throws Exception {
+        variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
+        variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.1");
+        variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
+        variantStorageEngine.reloadCellbaseConfiguration();
+
         input1 = getResourceUri("variant-test-sv.vcf");
         studyMetadata = new StudyMetadata(1, "s1");
         variantStorageEngine.getOptions().append(VariantStorageOptions.ANNOTATOR_CELLBASE_EXCLUDE.key(), "expression,clinical");
         pipelineResult1 = runDefaultETL(input1, variantStorageEngine, studyMetadata, new QueryOptions()
-                .append(VariantStorageOptions.ANNOTATE.key(), true));
+                .append(VariantStorageOptions.ANNOTATE.key(), true)
+                .append(VariantStorageOptions.ASSEMBLY.key(), "grch38")
+        );
         input2 = getResourceUri("variant-test-sv_2.vcf");
         pipelineResult2 = runDefaultETL(input2, variantStorageEngine, studyMetadata, new QueryOptions()
-                .append(VariantStorageOptions.ANNOTATE.key(), true));
+                .append(VariantStorageOptions.ANNOTATE.key(), true)
+                .append(VariantStorageOptions.ASSEMBLY.key(), "grch38"));
     }
 
     @Test
@@ -73,7 +82,11 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
 
     @Test
     public void checkCount() throws Exception {
-        int expected = 24 + 7 + 1;
+        int expected = 24
+                + 7 // bnd
+                + 1
+                + 1 // negative cipos
+                ;
         int count = variantStorageEngine.getDBAdaptor().count().first().intValue();
         assertEquals(expected, count);
     }
@@ -103,7 +116,7 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
             // Check variants are correct
             assertNotNull(actual.toString(), expected);
             assertEquals(expected.toString(), actual.toString());
-            assertEquals(expected.getSv(), actual.getSv());
+            assertEquals(actual.toString(), expected.getSv(), actual.getSv());
 
             StudyEntry actualStudyEntry = actual.getStudies().get(0);
             StudyEntry expectedStudyEntry = expected.getStudies().get(0);

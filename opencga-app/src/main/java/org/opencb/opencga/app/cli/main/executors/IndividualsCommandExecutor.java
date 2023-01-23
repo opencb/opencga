@@ -273,11 +273,13 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotEmpty(beanParams, "sex.description",commandOptions.sexDescription, true);
              putNestedIfNotEmpty(beanParams, "sex.source",commandOptions.sexSource, true);
              putNestedIfNotEmpty(beanParams, "sex.url",commandOptions.sexUrl, true);
+             putNestedIfNotNull(beanParams, "sex.attributes",commandOptions.sexAttributes, true);
              putNestedIfNotEmpty(beanParams, "ethnicity.id",commandOptions.ethnicityId, true);
              putNestedIfNotEmpty(beanParams, "ethnicity.name",commandOptions.ethnicityName, true);
              putNestedIfNotEmpty(beanParams, "ethnicity.description",commandOptions.ethnicityDescription, true);
              putNestedIfNotEmpty(beanParams, "ethnicity.source",commandOptions.ethnicitySource, true);
              putNestedIfNotEmpty(beanParams, "ethnicity.url",commandOptions.ethnicityUrl, true);
+             putNestedIfNotNull(beanParams, "ethnicity.attributes",commandOptions.ethnicityAttributes, true);
              putNestedIfNotNull(beanParams, "parentalConsanguinity",commandOptions.parentalConsanguinity, true);
              putNestedIfNotEmpty(beanParams, "population.name",commandOptions.populationName, true);
              putNestedIfNotEmpty(beanParams, "population.subpopulation",commandOptions.populationSubpopulation, true);
@@ -288,6 +290,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
              putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
              putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
  
             individualCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -482,11 +485,13 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotEmpty(beanParams, "sex.description",commandOptions.sexDescription, true);
              putNestedIfNotEmpty(beanParams, "sex.source",commandOptions.sexSource, true);
              putNestedIfNotEmpty(beanParams, "sex.url",commandOptions.sexUrl, true);
+             putNestedIfNotNull(beanParams, "sex.attributes",commandOptions.sexAttributes, true);
              putNestedIfNotEmpty(beanParams, "ethnicity.id",commandOptions.ethnicityId, true);
              putNestedIfNotEmpty(beanParams, "ethnicity.name",commandOptions.ethnicityName, true);
              putNestedIfNotEmpty(beanParams, "ethnicity.description",commandOptions.ethnicityDescription, true);
              putNestedIfNotEmpty(beanParams, "ethnicity.source",commandOptions.ethnicitySource, true);
              putNestedIfNotEmpty(beanParams, "ethnicity.url",commandOptions.ethnicityUrl, true);
+             putNestedIfNotNull(beanParams, "ethnicity.attributes",commandOptions.ethnicityAttributes, true);
              putNestedIfNotEmpty(beanParams, "population.name",commandOptions.populationName, true);
              putNestedIfNotEmpty(beanParams, "population.subpopulation",commandOptions.populationSubpopulation, true);
              putNestedIfNotEmpty(beanParams, "population.description",commandOptions.populationDescription, true);
@@ -497,6 +502,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
              putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
              putNestedIfNotNull(beanParams, "qualityControl.files",commandOptions.qualityControlFiles, true);
+             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
  
             individualUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

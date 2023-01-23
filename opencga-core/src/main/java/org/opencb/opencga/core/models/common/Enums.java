@@ -128,6 +128,7 @@ public final class Enums {
         INDEX,
         CHANGE_PERMISSION,
         REVERT,
+        REUSE,
 
         LOGIN,
         REFRESH_TOKEN,

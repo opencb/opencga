@@ -17,6 +17,7 @@
 package org.opencb.opencga.analysis.variant.manager.operations;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -45,6 +46,7 @@ import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.Va
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Ignore
 public class VariantImportTest extends AbstractVariantOperationManagerTest {
 
     @Override

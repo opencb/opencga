@@ -38,17 +38,22 @@ public class HadoopVariantStorageEngineSVTest extends VariantStorageEngineSVTest
 
     @Test
     public void checkSampleIndex() throws Exception {
-        for (Variant variant : variantStorageEngine.iterable(new VariantQuery().includeSample(ParamConstants.ALL), new QueryOptions())) {
+        for (Variant variant : variantStorageEngine.iterable(new VariantQuery()
+                        .includeSampleAll()
+                        .includeSampleId(true)
+                , new QueryOptions())) {
             Set<String> samplesInVariant = new HashSet<>();
             for (String sample : metadataManager.getIndexedSamplesMap(studyMetadata.getId()).keySet()) {
                 QueryOptions options = new QueryOptions(VariantHadoopDBAdaptor.NATIVE, false);
-                VariantQueryResult<Variant> result
-                        = variantStorageEngine.get(new Query(VariantQueryParam.SAMPLE.key(), sample).append(VariantQueryParam.ID.key(), variant), options);
-                if (GenotypeClass.MAIN_ALT.test(variant.getStudies().get(0).getSample(sample).getData().get(0))) {
+                VariantQueryResult<Variant> result = variantStorageEngine.get(new Query()
+                        .append(VariantQueryParam.SAMPLE.key(), sample)
+                        .append(VariantQueryParam.ID.key(), variant.toString()), options);
+                String genotype = variant.getStudies().get(0).getSample(sample).getData().get(0);
+                if (GenotypeClass.MAIN_ALT.test(genotype)) {
                     Assert.assertNotNull(result.first());
                     samplesInVariant.add(sample);
                 } else {
-                    Assert.assertNull(result.first());
+                    Assert.assertNull("Sample=" + sample + " with GT=" + genotype + " in variant=" + variant, result.first());
                 }
             }
             List<String> actualSampleNames = variantStorageEngine.getSampleData(variant.toString(), studyMetadata.getName(), new QueryOptions()).first().getSampleNames(studyMetadata.getName());

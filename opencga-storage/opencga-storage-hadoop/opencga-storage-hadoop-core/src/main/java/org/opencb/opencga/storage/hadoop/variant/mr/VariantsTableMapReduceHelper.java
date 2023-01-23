@@ -68,7 +68,7 @@ public class VariantsTableMapReduceHelper implements AutoCloseable {
         metadataManager = new VariantStorageMetadataManager(
                 new HBaseVariantStorageMetadataDBAdaptorFactory(hBaseManager, helper.getMetaTableAsString(), context.getConfiguration()));
 
-        hbaseToVariantConverter = HBaseToVariantConverter.fromResult(getHelper());
+        hbaseToVariantConverter = HBaseToVariantConverter.fromResult(metadataManager);
         hbaseToVariantConverter.configure(HBaseVariantConverterConfiguration.builder()
                 .setFailOnEmptyVariants(true)
                 .setSimpleGenotypes(false)

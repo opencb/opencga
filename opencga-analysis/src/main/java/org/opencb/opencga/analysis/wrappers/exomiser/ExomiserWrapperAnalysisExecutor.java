@@ -8,6 +8,7 @@ import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
+import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.analysis.ResourceUtils;
@@ -92,22 +93,25 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         // Check multi-sample (family) analysis
         File pedigreeFile = null;
         Pedigree pedigree = null;
-        Family family = IndividualQcUtils.getFamilyByIndividualId(getStudyId(), individual.getId(),
-                getVariantStorageManager().getCatalogManager(), getToken());
-        if (family != null) {
-            pedigree = FamilyManager.getPedigreeFromFamily(family, individual.getId());
-        }
+        if (individual.getMother() != null && individual.getMother().getId() != null
+                && individual.getFather() != null && individual.getFather().getId() != null) {
+            Family family = IndividualQcUtils.getFamilyByIndividualId(getStudyId(), individual.getId(),
+                    getVariantStorageManager().getCatalogManager(), getToken());
+            if (family != null) {
+                pedigree = FamilyManager.getPedigreeFromFamily(family, individual.getId());
+            }
 
-        File sampleFile = createSampleFile(individual, hpos, pedigree);
-        if (pedigree != null) {
-            if (individual.getFather() != null) {
-                samples.add(individual.getFather().getId());
+            if (pedigree != null) {
+                if (individual.getFather() != null) {
+                    samples.add(individual.getFather().getId());
+                }
+                if (individual.getMother() != null) {
+                    samples.add(individual.getMother().getId());
+                }
+                pedigreeFile = createPedigreeFile(family, pedigree);
             }
-            if (individual.getMother() != null) {
-                samples.add(individual.getMother().getId());
-            }
-            pedigreeFile = createPedigreeFile(family, pedigree);
         }
+        File sampleFile = createSampleFile(individual, hpos, pedigree);
 
         // Export data into VCF file
         Path vcfPath = getOutDir().resolve(sampleId + ".vcf.gz");
@@ -183,47 +187,52 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
             pw.write("# a v1 phenopacket describing an individual https://phenopacket-schema.readthedocs.io/en/1.0.0/phenopacket.html\n");
             pw.write("---\n");
             pw.write("id: " + individual.getId() + "\n");
-            pw.write("subject:\n");
-            pw.write("    id: " + individual.getId() + "\n");
-            if (individual.getSex() != null) {
-                pw.write("    sex: " + individual.getSex().getName() + "\n");
+            String prefix = "";
+            if (pedigree != null) {
+                prefix = "  ";
+                pw.write("proband:\n");
             }
-            pw.write("phenotypicFeatures:\n");
+            pw.write(prefix + "subject:\n");
+            pw.write(prefix + "  id: " + individual.getId() + "\n");
+            if (individual.getSex() != null) {
+                pw.write(prefix + "  sex: " + individual.getSex().getSex().name() + "\n");
+            }
+            pw.write(prefix + "phenotypicFeatures:\n");
             for (String hpo : hpos) {
-                pw.write("    - type:\n");
-                pw.write("        id: " + hpo + "\n");
+                pw.write(prefix + "  - type:\n");
+                pw.write(prefix + "      id: " + hpo + "\n");
             }
             if (pedigree != null) {
                 pw.write("pedigree:\n");
-                pw.write("    persons:\n");
+                pw.write("  persons:\n");
 
                 // Proband
-                pw.write("      - individualId:" + pedigree.getProband().getId() + "\n");
+                pw.write("    - individualId: " + pedigree.getProband().getId() + "\n");
                 if (pedigree.getProband().getFather() != null) {
-                    pw.write("      - paternalId:" + pedigree.getProband().getMother().getId() + "\n");
+                    pw.write("      paternalId: " + pedigree.getProband().getFather().getId() + "\n");
                 }
                 if (pedigree.getProband().getMother() != null) {
-                    pw.write("      - maternalId:" + pedigree.getProband().getMother().getId() + "\n");
+                    pw.write("      maternalId: " + pedigree.getProband().getMother().getId() + "\n");
                 }
                 if (pedigree.getProband().getSex() != null) {
-                    pw.write("      - sex:" + pedigree.getProband().getSex().getName() + "\n");
+                    pw.write("      sex: " + pedigree.getProband().getSex().getSex().name() + "\n");
                 }
-                //pw.write("      - affectedStatus:" + AffectationStatus + "\n");
+                pw.write("      affectedStatus: AFFECTED\n");
 
                 // Father
                 if (pedigree.getProband().getFather() != null) {
-                    pw.write("      - individualId:" + pedigree.getProband().getFather().getId() + "\n");
+                    pw.write("    - individualId: " + pedigree.getProband().getFather().getId() + "\n");
                     if (pedigree.getProband().getFather().getSex() != null) {
-                        pw.write("      - sex:" + pedigree.getProband().getFather().getSex().getName() + "\n");
+                        pw.write("      sex: " + pedigree.getProband().getFather().getSex().getSex().name() + "\n");
                     }
 //                    pw.write("      - affectedStatus:" + AffectationStatus + "\n");
                 }
 
                 // Mother
                 if (pedigree.getProband().getMother() != null) {
-                    pw.write("      - individualId:" + pedigree.getProband().getMother().getId() + "\n");
+                    pw.write("    - individualId: " + pedigree.getProband().getMother().getId() + "\n");
                     if (pedigree.getProband().getMother().getSex() != null) {
-                        pw.write("      - sex:" + pedigree.getProband().getMother().getSex().getName() + "\n");
+                        pw.write("      sex: " + pedigree.getProband().getMother().getSex().getSex().name() + "\n");
                     }
 //                    pw.write("      - affectedStatus:" + AffectationStatus + "\n");
                 }
@@ -284,9 +293,9 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
     private int getPedigreeSex(Member member) {
         if (member.getSex() != null) {
-            if (member.getSex() == SexOntologyTermAnnotation.initMale()) {
+            if (member.getSex().getSex() == IndividualProperty.Sex.MALE) {
                 return 1;
-            } if (member.getSex() == SexOntologyTermAnnotation.initFemale()) {
+            } if (member.getSex().getSex() == IndividualProperty.Sex.FEMALE) {
                 return 2;
             }
         }

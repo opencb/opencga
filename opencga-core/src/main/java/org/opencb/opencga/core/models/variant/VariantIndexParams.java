@@ -17,8 +17,6 @@
 package org.opencb.opencga.core.models.variant;
 
 import org.opencb.biodata.models.variant.metadata.Aggregation;
-import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class VariantIndexParams extends ToolParams {
@@ -98,12 +96,12 @@ public class VariantIndexParams extends ToolParams {
     private String loadHomRef;
     private String postLoadCheck;
     private String includeGenotypes;
-    private String includeSampleData = ParamConstants.ALL;
+    private String includeSampleData;
     private String merge;
     private String deduplicationPolicy;
 
     private boolean calculateStats;
-    private Aggregation aggregated = Aggregation.NONE;
+    private Aggregation aggregated;
     private String aggregationMappingFile;
 
     private boolean annotate;

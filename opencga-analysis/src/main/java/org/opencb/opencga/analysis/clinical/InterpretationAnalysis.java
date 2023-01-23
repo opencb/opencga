@@ -113,8 +113,9 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
     protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis, Query query) throws ToolException {
 
         // Interpretation method
-        InterpretationMethod method = new InterpretationMethod(getId(), "", "",
-                Collections.singletonList(new Software().setName(getId())));
+        InterpretationMethod method = new InterpretationMethod(getId(), null, null,
+                Collections.singletonList(new Software().setName("OpenCGA").setVersion(GitRepositoryState.get().getBuildVersion())
+                        .setCommit(GitRepositoryState.get().getCommitId())));
 
         // Analyst
         ClinicalAnalyst analyst = clinicalInterpretationManager.getAnalyst(token);
@@ -132,7 +133,6 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
         }
 
         org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation = new Interpretation()
-                .setId(getId() + "." + TimeUtils.getTimeMillis())
                 .setPrimaryFindings(primaryFindings)
                 .setSecondaryFindings(secondaryFindings)
                 .setAnalyst(analyst)

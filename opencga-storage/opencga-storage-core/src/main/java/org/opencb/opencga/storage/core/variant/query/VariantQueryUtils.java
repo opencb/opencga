@@ -1481,11 +1481,14 @@ public final class VariantQueryUtils {
         }
         int start = Math.max(regionLeft.getStart(), regionRight.getStart());
         int end = Math.min(regionLeft.getEnd(), regionRight.getEnd());
-        if (start >= end) {
+        if (start <= end) {
+            // 1-based positions.
+            // If end and start are the same, the regions are overlapping in that position.
+            return new Region(regionLeft.getChromosome(), start, end);
+        } else {
             // don't overlap
             return null;
         }
-        return new Region(regionLeft.getChromosome(), start, end);
     }
 
     public static List<Region> mergeRegions(List<Region> regions) {

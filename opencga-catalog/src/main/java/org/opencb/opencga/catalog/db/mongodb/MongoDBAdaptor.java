@@ -213,7 +213,13 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
      */
     protected void addAutoOrQuery(String mongoDbField, String queryParam, Query query, QueryParam.Type paramType, List<Bson> andBsonList) {
         if (query != null && query.getString(queryParam) != null) {
-            Bson filter = MongoDBQueryUtils.createAutoFilter(mongoDbField, queryParam, query, paramType);
+            Bson filter;
+            if (paramType == QueryParam.Type.STRING || paramType == QueryParam.Type.TEXT || paramType == QueryParam.Type.TEXT_ARRAY) {
+                filter = MongoDBQueryUtils.createStringFilter(mongoDbField, queryParam, query,
+                        ObjectMap.COMMA_SEPARATED_LIST_SPLIT_PATTERN);
+            } else {
+                filter = MongoDBQueryUtils.createAutoFilter(mongoDbField, queryParam, query, paramType);
+            }
             if (filter != null) {
                 andBsonList.add(filter);
             }

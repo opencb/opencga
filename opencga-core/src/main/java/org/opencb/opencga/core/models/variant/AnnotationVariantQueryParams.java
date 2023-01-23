@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.models.variant;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.tools.ToolParams;
 
@@ -12,6 +13,7 @@ public class AnnotationVariantQueryParams extends ToolParams {
     private String panelModeOfInheritance;
     private String panelConfidence;
     private String panelRoleInCancer;
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private boolean panelIntersection;
     private String cohortStatsRef;
     private String cohortStatsAlt;
@@ -28,6 +30,7 @@ public class AnnotationVariantQueryParams extends ToolParams {
     private String functionalScore;
     private String clinical;
     private String clinicalSignificance;
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private boolean clinicalConfirmedStatus;
 
     public AnnotationVariantQueryParams() {
@@ -118,11 +121,11 @@ public class AnnotationVariantQueryParams extends ToolParams {
         return this;
     }
 
-    public Boolean getPanelIntersection() {
+    public boolean getPanelIntersection() {
         return panelIntersection;
     }
 
-    public AnnotationVariantQueryParams setPanelIntersection(Boolean panelIntersection) {
+    public AnnotationVariantQueryParams setPanelIntersection(boolean panelIntersection) {
         this.panelIntersection = panelIntersection;
         return this;
     }

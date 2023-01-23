@@ -10,13 +10,23 @@ import org.apache.hadoop.mapreduce.lib.db.DBWritable;
 import org.apache.phoenix.jdbc.PhoenixDriver;
 import org.apache.phoenix.mapreduce.util.PhoenixConfigurationUtil;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 
+import java.io.Closeable;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
+import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryFromConfig;
+import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryOptionsFromConfig;
 
 /**
  * Created on 27/10/17.
@@ -47,10 +57,11 @@ public class PhoenixVariantTableInputFormat
         return new RecordReaderTransform<>(recordReader, VariantDBWritable::getVariant);
     }
 
-    public static class VariantDBWritable implements DBWritable, Configurable {
+    public static class VariantDBWritable implements DBWritable, Configurable, Closeable {
         private Configuration conf;
         private HBaseToVariantConverter<ResultSet> converter;
         private Variant variant;
+        private VariantStorageMetadataManager metadataManager;
 
         @Override
         public void write(PreparedStatement statement) throws SQLException {
@@ -69,16 +80,33 @@ public class PhoenixVariantTableInputFormat
         @Override
         public void setConf(Configuration conf) {
             this.conf = conf;
-            try {
-                converter = HBaseToVariantConverter.fromResultSet(new VariantTableHelper(conf)).configure(conf);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
+            initConverter(conf);
+        }
+
+        private void initConverter(Configuration conf) {
+            VariantTableHelper helper = new VariantTableHelper(conf);
+            HBaseVariantStorageMetadataDBAdaptorFactory dbAdaptorFactory = new HBaseVariantStorageMetadataDBAdaptorFactory(helper);
+            Query query = getQueryFromConfig(conf);
+            QueryOptions queryOptions = getQueryOptionsFromConfig(conf);
+            metadataManager = new VariantStorageMetadataManager(dbAdaptorFactory);
+            VariantQueryProjection projection = new VariantQueryProjectionParser(metadataManager)
+                    .parseVariantQueryProjection(query, queryOptions);
+
+
+            converter = HBaseToVariantConverter.fromResultSet(metadataManager)
+                    .configure(HBaseVariantConverterConfiguration.builder(conf)
+                            .setProjection(projection)
+                            .build());
         }
 
         @Override
         public Configuration getConf() {
             return conf;
+        }
+
+        @Override
+        public void close() throws IOException {
+            metadataManager.close();
         }
     }
 

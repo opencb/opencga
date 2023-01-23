@@ -17,6 +17,26 @@ audit:
   maxDocuments: 20000000  # Maximum number of documents that will be created in the audit collection.
   maxSize: 100            # Maximum size that the audit collection will have in Gigabytes (GB).
 
+analysis:
+  scratchDir: ""    # Scratch folder for the analysis.
+  execution:
+    # Accepted values are "local", "SGE", "azure-batch", "k8s"
+    # see org.opencb.opencga.master.monitor.executors.ExecutorFactory
+    id: "local"
+    maxConcurrentJobs:
+      variant-index: 20
+      variant-annotation-index: 5
+      variant-secondary-index: 2
+    options:
+      jobs.reuse.enabled: true
+      jobs.reuse.tools:
+          - "variant-index"
+          - "variant-stats-index"
+          - "variant-annotation-index"
+          - "variant-secondary-annotation-index"
+      ## Local executor configuration
+      local.maxConcurrentJobs: 2    # Max number of concurrent jobs to be executed locally in the master
+
 monitor:
   daysToRemove: 30
   executionDaemonInterval: 4000 # number of milliseconds between checks
