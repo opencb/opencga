@@ -1533,14 +1533,26 @@ public class RgaManager implements AutoCloseable {
         // 1. Get KnockoutByGene information
         Query individualQuery = new Query(RgaQueryParams.GENE_ID.key(), geneId);
         QueryOptions options = new QueryOptions()
-                .append(QueryOptions.LIMIT, 1)
                 .append(QueryOptions.EXCLUDE, "individuals");
         RgaIterator rgaIterator = rgaEngine.geneQuery(collection, individualQuery, options);
 
         if (!rgaIterator.hasNext()) {
             throw RgaException.noResultsMatching();
         }
-        RgaDataModel rgaDataModel = rgaIterator.next();
+
+        KnockoutTypeCount knockoutTypeCount = new KnockoutTypeCount(auxQuery);
+        RgaDataModel rgaDataModel = null;
+        while (rgaIterator.hasNext()) {
+             rgaDataModel = rgaIterator.next();
+            if (CollectionUtils.isNotEmpty(rgaDataModel.getChPairs())) {
+                for (String chPair : rgaDataModel.getChPairs()) {
+                    CodedChPairVariants codedChPairVariants = CodedChPairVariants.parseEncodedId(chPair);
+                    knockoutTypeCount.processChPairFeature(codedChPairVariants);
+                }
+            }
+        }
+
+        // To get the basic gene information, we can use any document from RgaDataModel. In this case, we use the last document
         KnockoutByGeneSummary geneSummary = new KnockoutByGeneSummary(rgaDataModel.getGeneId(), rgaDataModel.getGeneName(),
                 rgaDataModel.getChromosome(), rgaDataModel.getStart(), rgaDataModel.getEnd(), rgaDataModel.getStrand(),
                 rgaDataModel.getGeneBiotype(), null, null);
@@ -1550,13 +1562,6 @@ public class RgaManager implements AutoCloseable {
                 .append(QueryOptions.LIMIT, -1)
                 .append(QueryOptions.FACET, RgaDataModel.VARIANT_SUMMARY);
         DataResult<FacetField> facetFieldDataResult = rgaEngine.facetedQuery(collection, auxQuery, knockoutTypeFacet);
-        KnockoutTypeCount knockoutTypeCount = new KnockoutTypeCount(auxQuery);
-        if (CollectionUtils.isNotEmpty(rgaDataModel.getChPairs())) {
-            for (String chPair : rgaDataModel.getChPairs()) {
-                CodedChPairVariants codedChPairVariants = CodedChPairVariants.parseEncodedId(chPair);
-                knockoutTypeCount.processChPairFeature(codedChPairVariants);
-            }
-        }
 
         for (FacetField.Bucket variantBucket : facetFieldDataResult.first().getBuckets()) {
             CodedVariant codedFeature = CodedVariant.parseEncodedId(variantBucket.getValue());
