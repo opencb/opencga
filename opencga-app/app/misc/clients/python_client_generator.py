@@ -100,7 +100,6 @@ class PythonClientGenerator(RestClientGenerator):
                 desc += ' Allowed values: {}'.format(
                     self.get_parameter_allowed_values(param).split(',')
                 )
-            print(path_params + mandatory_query_params)
             name = self.to_snake_case(param) if self.to_snake_case(param) in path_params + mandatory_query_params else param
             line = '{}:param {} {}: {}'.format(
                 ' ' * 8, self.param_types[self.get_parameter_type(param)], name, desc
