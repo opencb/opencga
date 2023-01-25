@@ -89,8 +89,8 @@ class PythonClientGenerator(RestClientGenerator):
     def get_method_definition(self, category, endpoint):
 
         # Getting parameters
-        path_params = self.get_path_params(endpoint)
-        mandatory_query_params = self.get_mandatory_query_params(endpoint)
+        path_params = list(map(lambda x: self.to_snake_case(x), self.get_path_params(endpoint)))
+        mandatory_query_params = list(map(lambda x: self.to_snake_case(x), self.get_mandatory_query_params(endpoint)))
 
         # Getting parameters description
         params_descriptions = []
@@ -100,8 +100,10 @@ class PythonClientGenerator(RestClientGenerator):
                 desc += ' Allowed values: {}'.format(
                     self.get_parameter_allowed_values(param).split(',')
                 )
+            print(path_params + mandatory_query_params)
+            name = self.to_snake_case(param) if self.to_snake_case(param) in path_params + mandatory_query_params else param
             line = '{}:param {} {}: {}'.format(
-                ' ' * 8, self.param_types[self.get_parameter_type(param)], param, desc
+                ' ' * 8, self.param_types[self.get_parameter_type(param)], name, desc
             )
             if self.is_required(param):
                 line += ' (REQUIRED)'
@@ -121,7 +123,7 @@ class PythonClientGenerator(RestClientGenerator):
 
         # Method body
         method_body = [
-            '{}options[\'{}\'] = {}'.format(' ' * 8, required_parameter, required_parameter)
+            '{}options[\'{}\'] = {}'.format(' ' * 8, self.to_camel_case(required_parameter), required_parameter)
             for required_parameter in mandatory_query_params if required_parameter != 'data']
 
         # Call arguments
@@ -131,11 +133,11 @@ class PythonClientGenerator(RestClientGenerator):
         if self.action:
             call_args.append('resource=\'{}\''.format(self.action))
         if self.id1:
-            call_args.append('query_id={}'.format(self.id1))
+            call_args.append('query_id={}'.format(self.to_snake_case(self.id1)))
         if self.subcategory:
             call_args.append('subcategory=\'{}\''.format(self.subcategory))
         if self.id2:
-            call_args.append('second_query_id={}'.format(self.id2))
+            call_args.append('second_query_id={}'.format(self.to_snake_case(self.id2)))
         if endpoint['method'] == 'POST' and 'data' in self.parameters:
             call_args.append('data=data')
         call_args.append('**options')
