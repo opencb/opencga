@@ -301,8 +301,7 @@ public class RgaQueryParser {
     private void buildComplexQuery(List<String> koValues, List<String> filterValues, List<String> ctValues,
                                    Map<String, List<String>> popFreqQueryList, List<String> filterList) throws RgaException {
         String encodedChString = RgaUtils.encode(COMP_HET.name());
-
-        String delOverlap = RgaUtils.parseKnockoutTypeQuery(Collections.singletonList(DELETION_OVERLAP.name())).get(0);
+        String delOverlap = RgaUtils.encode(DELETION_OVERLAP.name());
 
         List<String> chFilterValues = filterValues;
         List<String> chCtValues = ctValues;
@@ -399,7 +398,7 @@ public class RgaQueryParser {
         } else { // POP_FREQ not empty
             // KT + FILTER + POP_FREQ
             List<String> andQueryList = new ArrayList<>(popFreqQueryList.size());
-            if (popFreqQueryList.size() == 2) {
+            if (popFreqQueryList.size() == 2) { // + 2x POP FREQ
                 ArrayList<String> popFreqKeys = new ArrayList<>(popFreqQueryList.keySet());
                 List<List<String>> sortedPopFreqs = RgaUtils.generateSortedCombinations(popFreqQueryList.get(popFreqKeys.get(0)),
                         popFreqQueryList.get(popFreqKeys.get(1)));
@@ -412,15 +411,36 @@ public class RgaQueryParser {
                             // This is how it should be filtered
 //                            orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + sortedPopFreq.get(0) + SEPARATOR
 //                                    + sortedPopFreq.get(1));
-                            for (String ctValue : ctList) {
-                                orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR + sortedPopFreq.get(0)
-                                        + SEPARATOR + sortedPopFreq.get(1));
+                            if (koValue.equals(delOverlap)) {
+                                for (String ctValue : ctList) {
+                                    orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR + sortedPopFreq.get(0)
+                                            + SEPARATOR + sortedPopFreq.get(1));
+                                }
+//                            } else if (koValue.equals(encodedChString)) {
+//                                orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + sortedPopFreq.get(0) + SEPARATOR
+//                                        + sortedPopFreq.get(1));
+//                            } else {
+//                                List<String> tmpAndQueryList = new ArrayList<>(2);
+//                                tmpAndQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + sortedPopFreq.get(0));
+//                                tmpAndQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + sortedPopFreq.get(1));
+//                                parseStringValue(tmpAndQueryList, "", orQueryList, "&&");
+//                            }
+                            } else {
+                                List<String> tmpAndQueryList = new ArrayList<>(2);
+                                tmpAndQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + sortedPopFreq.get(0));
+                                tmpAndQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + sortedPopFreq.get(1));
+                                parseStringValue(tmpAndQueryList, "", orQueryList, "&&");
+
+                                if (koValue.equals(encodedChString)) {
+                                    orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + sortedPopFreq.get(0) + SEPARATOR
+                                            + sortedPopFreq.get(1));
+                                }
                             }
                         }
                     }
                 }
                 parseStringValue(orQueryList, "", andQueryList, "||");
-            } else {
+            } else { // + 1x POP FREQ
                 for (List<String> tmpPopFreqList : popFreqQueryList.values()) {
                     List<String> orQueryList = new LinkedList<>();
                     for (String popFreq : tmpPopFreqList) {
