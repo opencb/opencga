@@ -72,16 +72,12 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private final FamilyDBAdaptor familyDBAdaptor;
     private final ClinicalAnalysisDBAdaptor clinicalAnalysisDBAdaptor;
 
-    private final boolean openRegister;
-
     private final AuthorizationDBAdaptor aclDBAdaptor;
 
     public CatalogAuthorizationManager(DBAdaptorFactory dbFactory, Configuration configuration)
             throws CatalogDBException {
         this.logger = LoggerFactory.getLogger(CatalogAuthorizationManager.class);
         this.aclDBAdaptor = new AuthorizationMongoDBAdaptor(dbFactory, configuration);
-
-        this.openRegister = configuration.isOpenRegister();
 
         projectDBAdaptor = dbFactory.getCatalogProjectDbAdaptor();
         studyDBAdaptor = dbFactory.getCatalogStudyDBAdaptor();
@@ -93,11 +89,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         panelDBAdaptor = dbFactory.getCatalogPanelDBAdaptor();
         familyDBAdaptor = dbFactory.getCatalogFamilyDBAdaptor();
         clinicalAnalysisDBAdaptor = dbFactory.getClinicalAnalysisDBAdaptor();
-    }
-
-    @Override
-    public boolean isPublicRegistration() {
-        return openRegister;
     }
 
     @Override

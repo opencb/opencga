@@ -260,7 +260,7 @@ public class StudyManagerTest extends AbstractManagerTest {
         Group first = catalogManager.getStudyManager().getGroup(studyFqn, "@test", token).first();
         assertNotNull(first.getUserIds());
 
-        catalogManager.getUserManager().create("dummy", "dummy", "dummy@mail.com", TestParamConstants.PASSWORD, "", 0L, Account.AccountType.GUEST, token);
+        catalogManager.getUserManager().create("dummy", "dummy", "dummy@mail.com", TestParamConstants.PASSWORD, "", 0L, Account.AccountType.GUEST, opencgaToken);
         catalogManager.getStudyManager().createGroup(studyFqn, "@test2", Collections.singletonList("dummy"), token);
         catalogManager.getStudyManager().updateAcl(studyFqn, "@test2", new StudyAclParams("", "view_only"), ParamUtils.AclAction.ADD, token);
 

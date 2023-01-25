@@ -55,6 +55,7 @@ public class ProjectManagerTest extends GenericTest {
     public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
 
     protected CatalogManager catalogManager;
+    private String opencgaToken;
     protected String sessionIdUser;
     protected String sessionIdUser2;
     protected String sessionIdUser3;
@@ -74,9 +75,11 @@ public class ProjectManagerTest extends GenericTest {
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
-        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
-        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, null);
+        opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, opencgaToken);
 
         sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
         sessionIdUser2 = catalogManager.getUserManager().login("user2", TestParamConstants.PASSWORD).getToken();
@@ -118,7 +121,7 @@ public class ProjectManagerTest extends GenericTest {
 
     @Test
     public void searchProjects() throws CatalogException {
-        catalogManager.getUserManager().create("userid", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create("userid", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
         String token = catalogManager.getUserManager().login("userid", TestParamConstants.PASSWORD).getToken();
         OpenCGAResult<Project> projectOpenCGAResult = catalogManager.getProjectManager().search(new Query(), QueryOptions.empty(), token);
         assertTrue(projectOpenCGAResult.getResults().isEmpty());

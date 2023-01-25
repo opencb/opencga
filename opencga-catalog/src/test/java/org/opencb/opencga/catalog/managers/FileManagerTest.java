@@ -147,7 +147,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testLinkAnalystUser() throws CatalogException {
-        catalogManager.getUserManager().create("analyst", "analyst", "a@mail.com", TestParamConstants.PASSWORD, "", 200000L, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("analyst", "analyst", "a@mail.com", TestParamConstants.PASSWORD, "", 200000L, Account.AccountType.GUEST, opencgaToken);
         catalogManager.getStudyManager().updateAcl(studyFqn, "analyst", new StudyAclParams("", "analyst"), ParamUtils.AclAction.SET, token);
         String analystToken = catalogManager.getUserManager().login("analyst", TestParamConstants.PASSWORD).getToken();
 
@@ -159,7 +159,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testLinkUserWithNoWritePermissions() throws CatalogException {
-        catalogManager.getUserManager().create("view_user", "view_user", "a@mail.com", TestParamConstants.PASSWORD, "", 200000L, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("view_user", "view_user", "a@mail.com", TestParamConstants.PASSWORD, "", 200000L, Account.AccountType.GUEST, opencgaToken);
         catalogManager.getStudyManager().updateAcl(studyFqn, "view_user", new StudyAclParams("", "view_only"), ParamUtils.AclAction.SET, token);
         String analystToken = catalogManager.getUserManager().login("view_user", TestParamConstants.PASSWORD).getToken();
 
