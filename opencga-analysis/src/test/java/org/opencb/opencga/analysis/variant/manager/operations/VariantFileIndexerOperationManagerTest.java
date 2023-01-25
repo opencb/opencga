@@ -67,6 +67,7 @@ import static java.util.Collections.singletonList;
 import static org.junit.Assert.*;
 import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
 import static org.opencb.opencga.analysis.variant.manager.operations.StatsVariantStorageTest.checkCalculatedStats;
+import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 /**
  * Created by hpccoll1 on 13/07/15.
@@ -460,6 +461,23 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         assertEquals(Event.Type.WARNING, er.getEvents().get(0).getType());
         assertThat(er.getEvents().get(0).getMessage(), CoreMatchers.containsString("Found duplicated variants"));
         assertTrue(Files.exists(outDir.resolve("variant-test-duplicated.vcf.duplicated.tsv")));
+    }
+
+    @Test
+    public void testIndexWeirdFileName() throws Exception {
+        ToolRunner toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantManager.getStorageConfiguration()));
+
+        Path outDir = Paths.get(opencga.createTmpOutdir("_escaped_name"));
+
+        Path filePath = Paths.get(getResourceUri("variant-test-file.vcf.gz"));
+        filePath = Files.move(filePath, filePath.getParent().resolve("variant-test%3Afile.vcf.gz"));
+
+        VariantIndexParams params = new VariantIndexParams();
+        params.setFile(create(studyId, filePath.toUri()).getName());
+
+        ExecutionResult er = toolRunner.execute(VariantIndexOperationTool.class, params.toObjectMap()
+                        .append(ParamConstants.STUDY_PARAM, studyId)
+                , outDir, null, sessionId);
     }
 
     @Override
