@@ -25,6 +25,7 @@ import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
+import org.opencb.opencga.app.cli.admin.options.StorageCommandOptions;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.models.user.Account;
 
@@ -48,6 +49,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     private final PanelCommandOptions panelCommandOptions;
     private final AdminCliOptionsParser.MetaCommandOptions metaCommandOptions;
     private final MigrationCommandOptions migrationCommandOptions;
+    private final StorageCommandOptions storageCommandOptions;
 
     protected static final String DEPRECATED = "[DEPRECATED] ";
 
@@ -56,7 +58,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
         generalCommonCommandOptions = new GeneralCliOptions.CommonCommandOptions();
         commonCommandOptions = new AdminCommonCommandOptions();
-        noPasswordCommonCommandOptions = new IgnorePasswordCommonCommandOptions();
+        noPasswordCommonCommandOptions = new IgnorePasswordCommonCommandOptions(AdminCliOptionsParser.this.generalCommonCommandOptions);
 
         catalogCommandOptions = new CatalogCommandOptions();
         jCommander.addCommand("catalog", catalogCommandOptions);
@@ -121,6 +123,11 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         migrationSubCommands.addCommand("search", this.migrationCommandOptions.getSearchCommandOptions());
         migrationSubCommands.addCommand("run", this.migrationCommandOptions.getRunCommandOptions());
         migrationSubCommands.addCommand("run-manual", this.migrationCommandOptions.getRunManualCommandOptions());
+
+        this.storageCommandOptions = new StorageCommandOptions(jCommander, commonCommandOptions);
+        this.jCommander.addCommand("storage", this.storageCommandOptions);
+        JCommander storageSubCommands = this.jCommander.getCommands().get("storage");
+        storageSubCommands.addCommand("status", this.storageCommandOptions.getStatusCommandOptions());
     }
 
     @Override
@@ -170,10 +177,14 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     /**
      * This class contains all those common parameters available for all 'subcommands' that do not need the password parameter.
      */
-    public class IgnorePasswordCommonCommandOptions {
+    public static class IgnorePasswordCommonCommandOptions {
+
+        public IgnorePasswordCommonCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions) {
+            commonOptions = commonCommandOptions;
+        }
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = AdminCliOptionsParser.this.generalCommonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions;
 
         @Parameter(names = {"-p", "--password"}, description = "Administrator password", hidden = true, arity = 0)
         public boolean adminPassword;
@@ -391,6 +402,10 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
         @ParametersDelegate
         public IgnorePasswordCommonCommandOptions commonOptions = noPasswordCommonCommandOptions;
+
+        @Parameter(names = {"--include-mongodb-uri"}, description = "Include connection URI for mongodb."
+                + " When enabling this option, the admin password will be required.")
+        public boolean uri;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete the Catalog database")
@@ -850,4 +865,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         return migrationCommandOptions;
     }
 
+    public StorageCommandOptions getStorageCommandOptions() {
+        return storageCommandOptions;
+    }
 }
