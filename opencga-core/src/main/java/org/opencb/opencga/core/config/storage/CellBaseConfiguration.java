@@ -42,6 +42,9 @@ public class CellBaseConfiguration {
     @DataField(id = "dataRelease", description = "CellBase data release version to be used. If empty, will use the active one")
     private String dataRelease;
 
+    @DataField(id = "token", description = "CellBase token to access to the licensed data sources such as COSMIC or HGMD")
+    private String token;
+
     public CellBaseConfiguration() {
         this(ParamConstants.CELLBASE_URL, ParamConstants.CELLBASE_VERSION);
     }
@@ -51,10 +54,11 @@ public class CellBaseConfiguration {
         this.version = version;
     }
 
-    public CellBaseConfiguration(String url, String version, String dataRelease) {
+    public CellBaseConfiguration(String url, String version, String dataRelease, String token) {
         this.url = url;
         this.version = version;
         this.dataRelease = dataRelease;
+        this.token = token;
     }
 
     @Override
@@ -63,6 +67,7 @@ public class CellBaseConfiguration {
         sb.append("url='").append(url).append('\'');
         sb.append(", version='").append(version).append('\'');
         sb.append(", dataRelease='").append(dataRelease).append('\'');
+        sb.append(", token='").append(token).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -91,6 +96,15 @@ public class CellBaseConfiguration {
 
     public CellBaseConfiguration setDataRelease(String dataRelease) {
         this.dataRelease = dataRelease;
+        return this;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public CellBaseConfiguration setToken(String token) {
+        this.token = token;
         return this;
     }
 

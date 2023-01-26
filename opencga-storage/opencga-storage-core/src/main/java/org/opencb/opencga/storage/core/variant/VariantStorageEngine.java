@@ -81,8 +81,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.core.utils.CellBaseUtils.toCellBaseSpeciesName;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.buildSamplesIndexCollectionName;
 
@@ -1042,7 +1042,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
             species = toCellBaseSpeciesName(species);
             cellBaseUtils = new CellBaseUtils(new CellBaseClient(species, assembly, configuration.getCellbase().getDataRelease(),
-                    clientConfiguration));
+                    configuration.getCellbase().getToken(), clientConfiguration));
         }
         return cellBaseUtils;
     }

@@ -74,9 +74,12 @@ public class CellBaseUtilsTest {
     @Parameter(3)
     public String dataRelease;
 
+    @Parameter(4)
+    public String token;
+
     @Before
     public void setUp() throws Exception {
-        cellBaseClient = new CellBaseClient("hsapiens", assembly, dataRelease,
+        cellBaseClient = new CellBaseClient("hsapiens", assembly, dataRelease, token,
                 new ClientConfiguration().setVersion(version)
                         .setRest(new RestConfig(Collections.singletonList(url), 10000)));
         cellBaseUtils = new CellBaseUtils(cellBaseClient);
