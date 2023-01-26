@@ -6,8 +6,8 @@ on:
       - develop
       - release-*
       - TASK-*
-      paths:
-        - opencga-app/app/cloud/docker/opencga-ext-tools/Dockerfile
+    paths:
+      - opencga-app/app/cloud/docker/opencga-ext-tools/Dockerfile
   workflow_dispatch:
 
 jobs:
