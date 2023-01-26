@@ -23,6 +23,7 @@ import org.opencb.opencga.core.models.common.Enums;
         description = VariantSecondaryIndexSamplesDeleteOperationTool.DESCRIPTION,
         type = Tool.Type.OPERATION,
         resource = Enums.Resource.VARIANT)
+@Deprecated
 public class VariantSecondaryIndexSamplesDeleteOperationTool extends OperationTool {
 
     public static final String ID = "variant-secondary-index-samples-delete";

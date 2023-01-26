@@ -820,6 +820,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         fileDBAdaptor.removeIndexedFiles(studyId, fileIds);
     }
 
+    public Iterable<FileMetadata> fileMetadataIterable(int studyId) {
+        return () -> fileDBAdaptor.fileIterator(studyId);
+    }
+
     public Iterator<FileMetadata> fileMetadataIterator(int studyId) {
         return fileDBAdaptor.fileIterator(studyId);
     }

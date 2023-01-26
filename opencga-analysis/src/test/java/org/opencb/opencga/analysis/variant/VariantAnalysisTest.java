@@ -41,7 +41,7 @@ import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
-import org.opencb.opencga.analysis.variant.operations.VariantSampleIndexOperationTool;
+import org.opencb.opencga.analysis.variant.operations.VariantSecondarySampleIndexOperationTool;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
@@ -66,7 +66,7 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.Location;
-import org.opencb.opencga.core.models.operations.variant.VariantSampleIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantSecondarySampleIndexParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
@@ -156,7 +156,7 @@ public class VariantAnalysisTest {
             opencga.before();
 
             catalogManager = opencga.getCatalogManager();
-            variantStorageManager = new VariantStorageManager(catalogManager, opencga.getStorageEngineFactory());
+            variantStorageManager = opencga.getVariantStorageManager();
 
             opencga.clearStorageDB(DB_NAME);
 
@@ -227,7 +227,7 @@ public class VariantAnalysisTest {
         // Reset engines
         opencga.getStorageEngineFactory().close();
         catalogManager = opencga.getCatalogManager();
-        variantStorageManager = new VariantStorageManager(catalogManager, opencga.getStorageEngineFactory());
+        variantStorageManager = opencga.getVariantStorageManager();
         toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
         token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
     }
@@ -264,7 +264,7 @@ public class VariantAnalysisTest {
         File file = opencga.createFile(STUDY, "variant-test-file-corrupted.vcf", token);
         try {
             toolRunner.execute(VariantIndexOperationTool.class,
-                    new VariantIndexParams().setFile(file.getId()).setAnnotate(true), new ObjectMap(),
+                    new VariantIndexParams().setFile(file.getId()).setAnnotate(true),
                     Paths.get(opencga.createTmpOutdir()), null, token);
         } catch (ToolException e) {
             System.out.println(ExceptionUtils.prettyExceptionMessage(e, true, true));
@@ -425,7 +425,7 @@ public class VariantAnalysisTest {
         params.getVariantQuery()
                 .appendQuery(query)
                 .setRegion(region);
-        ExecutionResult result = toolRunner.execute(SampleVariantStatsAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
+        ExecutionResult result = toolRunner.execute(SampleVariantStatsAnalysis.class, STUDY, params, outDir, null, token);
 
         if (nothingToDo) {
             assertEquals("All samples stats indexed. Nothing to do!", result.getEvents().get(0).getMessage());
@@ -477,8 +477,8 @@ public class VariantAnalysisTest {
                 .setCohort(StudyEntry.DEFAULT_COHORT)
                 .setIndex(true);
 
-        ExecutionResult result = toolRunner.execute(CohortVariantStatsAnalysis.class, toolParams,
-                new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
+        ExecutionResult result = toolRunner.execute(CohortVariantStatsAnalysis.class, STUDY, toolParams,
+                outDir, null, token);
         checkExecutionResult(result, storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
 
         Cohort cohort = catalogManager.getCohortManager().get(STUDY, StudyEntry.DEFAULT_COHORT, new QueryOptions(), token).first();
@@ -502,8 +502,7 @@ public class VariantAnalysisTest {
 
         outDir = Paths.get(opencga.createTmpOutdir("_cohort_stats_index_2"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        result = toolRunner.execute(CohortVariantStatsAnalysis.class, toolParams,
-                new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
+        result = toolRunner.execute(CohortVariantStatsAnalysis.class, STUDY, toolParams, outDir, null, token);
         checkExecutionResult(result, storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
 
 
@@ -737,11 +736,11 @@ public class VariantAnalysisTest {
     public void testVariantSecondarySampleIndex() throws Exception {
         Path outDir = Paths.get(opencga.createTmpOutdir("_VariantSecondarySampleIndex"));
         System.out.println("outDir = " + outDir);
-        VariantSampleIndexParams params = new VariantSampleIndexParams();
+        VariantSecondarySampleIndexParams params = new VariantSecondarySampleIndexParams();
         params.setFamilyIndex(true);
         params.setSample(Arrays.asList(son, daughter));
 
-        ExecutionResult er = toolRunner.execute(VariantSampleIndexOperationTool.class, params.toObjectMap(), outDir, null, token);
+        ExecutionResult er = toolRunner.execute(VariantSecondarySampleIndexOperationTool.class, params.toObjectMap(), outDir, null, token);
 //        checkExecutionResult(er, false);
     }
 

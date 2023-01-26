@@ -214,11 +214,11 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(GatkWrapperAnalysis.ID, "variant " + GatkWrapperAnalysis.ID + "-run");
             put(ExomiserWrapperAnalysis.ID, "variant " + ExomiserWrapperAnalysis.ID + "-run");
             put(VariantFileDeleteOperationTool.ID, "variant file-delete");
-            put(VariantSecondaryIndexOperationTool.ID, "variant secondary-index");
+            put(VariantSecondaryAnnotationIndexOperationTool.ID, "variant secondary-index");
             put(VariantSecondaryIndexSamplesDeleteOperationTool.ID, "variant secondary-index-delete");
             put(VariantScoreDeleteOperationTool.ID, "variant score-delete");
             put(VariantScoreIndexOperationTool.ID, "variant score-index");
-            put(VariantSampleIndexOperationTool.ID, "variant sample-index");
+            put(VariantSecondarySampleIndexOperationTool.ID, "variant sample-index");
             put(VariantFamilyIndexOperationTool.ID, "variant family-index");
             put(VariantAggregateFamilyOperationTool.ID, "variant aggregate-family");
             put(VariantAggregateOperationTool.ID, "variant aggregate");

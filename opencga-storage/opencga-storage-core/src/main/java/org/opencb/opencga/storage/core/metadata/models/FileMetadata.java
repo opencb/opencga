@@ -86,12 +86,12 @@ public class FileMetadata extends StudyResourceMetadata<FileMetadata> {
     }
 
     @JsonIgnore
-    public TaskMetadata.Status getSecondaryIndexStatus() {
-        return getStatus("secondaryIndex");
+    public TaskMetadata.Status getSecondaryAnnotationIndexStatus() {
+        return getStatus("secondaryAnnotationIndex");
     }
     @JsonIgnore
-    public FileMetadata setSecondaryIndexStatus(TaskMetadata.Status annotationStatus) {
-        return setStatus("secondaryIndex", annotationStatus);
+    public FileMetadata setSecondaryAnnotationIndexStatus(TaskMetadata.Status annotationStatus) {
+        return setStatus("secondaryAnnotationIndex", annotationStatus);
     }
 
     @Override
