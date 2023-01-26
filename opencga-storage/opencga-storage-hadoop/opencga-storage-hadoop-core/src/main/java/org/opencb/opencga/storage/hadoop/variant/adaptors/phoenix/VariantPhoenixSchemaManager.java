@@ -329,6 +329,10 @@ public class VariantPhoenixSchemaManager implements AutoCloseable {
         }
     }
 
+    public void dropTable(boolean ifExists) throws SQLException {
+        phoenixHelper.dropTable(con, variantsTableName, VariantPhoenixSchema.DEFAULT_TABLE_TYPE, ifExists, true);
+    }
+
     private String buildCreate(String variantsTableName) {
         PTableType tableType = DEFAULT_TABLE_TYPE;
         StringBuilder sb = new StringBuilder().append("CREATE ").append(tableType).append(" IF NOT EXISTS ")
