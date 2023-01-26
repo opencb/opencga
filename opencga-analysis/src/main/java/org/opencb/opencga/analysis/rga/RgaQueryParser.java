@@ -172,7 +172,9 @@ public class RgaQueryParser {
         count += ctValues.isEmpty() ? 0 : 1;
         count += popFreqValues.isEmpty() ? 0 : 1;
 
-        if (count == 1) {
+        boolean simpleFilter = !knockoutValues.contains(COMP_HET.name()) && !knockoutValues.contains(DELETION_OVERLAP.name()) && count == 1;
+
+        if (simpleFilter) {
             // Simple filter
             parseStringValue(query, KNOCKOUT, RgaDataModel.KNOCKOUT_TYPES, filterList);
             parseStringValue(query, FILTER, RgaDataModel.FILTERS, filterList);
@@ -185,7 +187,7 @@ public class RgaQueryParser {
                     parseStringValue(entry.getValue(), RgaDataModel.POPULATION_FREQUENCIES.replace("*", entry.getKey()), filterList, "||");
                 }
             }
-        } else if (count > 1) {
+        } else {
             buildComplexQueryFilter(filterList, knockoutValues, filterValue, ctValues, popFreqValues);
         }
     }
@@ -202,9 +204,7 @@ public class RgaQueryParser {
         count += ctValues.isEmpty() ? 0 : 1;
         count += popFreqValues.isEmpty() ? 0 : 1;
 
-        // In this case, we may need to use both filters if users are filtering by COMP_HET and another ko type + (ct | pf)
-        boolean simpleFilter = !knockoutValues.contains(COMP_HET.name()) || count == 1;
-        boolean complexFilter = knockoutValues.contains(COMP_HET.name()) && count > 1;
+        boolean simpleFilter = !knockoutValues.contains(COMP_HET.name()) && !knockoutValues.contains(DELETION_OVERLAP.name()) && count == 1;
 
         if (simpleFilter) {
             // Simple filters
@@ -222,8 +222,7 @@ public class RgaQueryParser {
                             AuxiliarRgaDataModel.POPULATION_FREQUENCIES.replace("*", entry.getKey()), filterList, "||");
                 }
             }
-        }
-        if (complexFilter) {
+        } else {
             buildComplexQueryFilter(filterList, knockoutValues, "", ctValues, popFreqValues);
         }
     }
