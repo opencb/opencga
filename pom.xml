@@ -43,8 +43,8 @@
     </modules>
 
     <properties>
-        <pyopencga.version>2.4.12_dev</pyopencga.version>
-        <opencgar.version>2.4.12_dev</opencgar.version>
+        <pyopencga.version>2.4.13_dev</pyopencga.version>
+        <opencgar.version>2.4.13_dev</opencgar.version>
         <cellbase.version>5.1.6</cellbase.version>
         <biodata.version>2.4.10-SNAPSHOT</biodata.version>
         <java-common-libs.version>4.4.5-SNAPSHOT</java-common-libs.version>
