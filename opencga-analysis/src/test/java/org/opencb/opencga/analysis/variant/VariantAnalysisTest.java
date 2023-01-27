@@ -30,7 +30,6 @@ import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.clinical.qc.SignatureFitting;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -58,7 +57,6 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
@@ -87,10 +85,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -149,7 +145,7 @@ public class VariantAnalysisTest {
     private VariantStorageManager variantStorageManager;
 
     public static OpenCGATestExternalResource opencga = new OpenCGATestExternalResource();
-    public static HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource = new HadoopVariantStorageTest.HadoopExternalResource();
+//    public static HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource = new HadoopVariantStorageTest.HadoopExternalResource();
 
     private static String storageEngine;
     private static boolean indexed = false;
@@ -163,26 +159,12 @@ public class VariantAnalysisTest {
         if (!indexed) {
             indexed = true;
 
-            if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
-                hadoopExternalResource.before();
-            }
             opencga.after();
-            opencga.before();
+            opencga.before(storageEngine);
 
             catalogManager = opencga.getCatalogManager();
             variantStorageManager = new VariantStorageManager(catalogManager, opencga.getStorageEngineFactory());
 
-            opencga.clearStorageDB(DB_NAME);
-
-            StorageConfiguration storageConfiguration = opencga.getStorageConfiguration();
-            storageConfiguration.getVariant().setDefaultEngine(storageEngine);
-            if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
-                HadoopVariantStorageTest.updateStorageConfiguration(storageConfiguration, hadoopExternalResource.getConf());
-                ObjectMap variantHadoopOptions = storageConfiguration.getVariantEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getOptions();
-                for (Map.Entry<String, String> entry : hadoopExternalResource.getConf()) {
-                    variantHadoopOptions.put(entry.getKey(), entry.getValue());
-                }
-            }
 
             setUpCatalogManager();
 
@@ -239,6 +221,7 @@ public class VariantAnalysisTest {
 //            config.put(VariantStorageOptions.ANNOTATE.key(), true);
             config.put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.MULTI);
 
+            File file;
             file = opencga.createFile(CANCER_STUDY, "AR2.10039966-01T_vs_AR2.10039966-01G.annot.brass.vcf.gz", token);
             variantStorageManager.index(CANCER_STUDY, file.getId(), opencga.createTmpOutdir("_index"), config, token);
             file = opencga.createFile(CANCER_STUDY, "AR2.10039966-01T.copynumber.caveman.vcf.gz", token);
@@ -265,9 +248,9 @@ public class VariantAnalysisTest {
 
     @AfterClass
     public static void afterClass() {
-        if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
-            hadoopExternalResource.after();
-        }
+//        if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
+//            hadoopExternalResource.after();
+//        }
         opencga.after();
     }
 
@@ -405,7 +388,7 @@ public class VariantAnalysisTest {
 
     @Test
     public void testSampleStatsSampleFilter() throws Exception {
-        Assume.assumeThat(storageEngine, CoreMatchers.is(CoreMatchers.not(MongoDBVariantStorageEngine.STORAGE_ENGINE_ID)));
+        Assume.assumeThat(storageEngine, CoreMatchers.is(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
         sampleVariantStats(null, "stats_filter_GT", false, 1, Collections.singletonList(ParamConstants.ALL), false,
                 new Query(VariantQueryParam.SAMPLE_DATA.key(), "GT=1|1"));
         sampleVariantStats(null, "stats_filter_DS", false, 2, Collections.singletonList(ParamConstants.ALL), false,
@@ -569,7 +552,8 @@ public class VariantAnalysisTest {
         variantExportParams.setCt("lof");
         variantExportParams.setOutputFileName("chr22.vcf");
 
-        toolRunner.execute(VariantExportTool.class, variantExportParams.toObjectMap(), outDir, null, token);
+        toolRunner.execute(VariantExportTool.class,
+                variantExportParams.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
         assertTrue(outDir.resolve(variantExportParams.getOutputFileName() + ".gz").toFile().exists());
     }
 
@@ -583,7 +567,8 @@ public class VariantAnalysisTest {
         variantExportParams.setCt("lof");
         variantExportParams.setOutputFileName("chr1-5-22");
         variantExportParams.setOutputFileFormat(VariantWriterFactory.VariantOutputFormat.ENSEMBL_VEP.name());
-        toolRunner.execute(VariantExportTool.class, variantExportParams.toObjectMap(), outDir, null, token);
+        toolRunner.execute(VariantExportTool.class,
+                variantExportParams.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
     }
 
     @Test
@@ -602,7 +587,8 @@ public class VariantAnalysisTest {
 
         variantExportParams.setInclude("id,studies.samples");
 
-        toolRunner.execute(VariantExportTool.class, variantExportParams.toObjectMap(), outDir, null, token);
+        toolRunner.execute(VariantExportTool.class,
+                variantExportParams.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
 
         System.out.println(outDir);
         Path tped = outDir.resolve(variantExportParams.getOutputFileName() + ".tped");
@@ -647,7 +633,7 @@ public class VariantAnalysisTest {
     @Test
     public void testGwasIndex() throws Exception {
         // Variant scores can not be loaded in mongodb
-        Assume.assumeThat(storageEngine, CoreMatchers.is(CoreMatchers.not(MongoDBVariantStorageEngine.STORAGE_ENGINE_ID)));
+        Assume.assumeThat(storageEngine, CoreMatchers.is(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
 
         ObjectMap executorParams = new ObjectMap();
         GwasAnalysis analysis = new GwasAnalysis();
@@ -672,9 +658,9 @@ public class VariantAnalysisTest {
         assertEquals(1, scores.size());
         assertEquals("GwasScore", scores.get(0).getName());
 
-        for (Variant variant : variantStorageManager.iterable(token)) {
+        variantStorageManager.iterator(new Query(VariantQueryParam.STUDY.key(), STUDY), new QueryOptions(), token).forEachRemaining(variant -> {
             assertEquals("GwasScore", variant.getStudies().get(0).getScores().get(0).getId());
-        }
+        });
     }
 
     @Test
@@ -684,7 +670,8 @@ public class VariantAnalysisTest {
         KnockoutAnalysisParams params = new KnockoutAnalysisParams();
         params.setSample(file.getSampleIds());
 
-        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, token);
+        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class,
+                params.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
         checkExecutionResult(er, false);
     }
 
@@ -696,7 +683,10 @@ public class VariantAnalysisTest {
         params.setSample(file.getSampleIds());
         params.setGene(Arrays.asList("MIR1909", "DZIP3", "BTN3A2", "ITIH5"));
 
-        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap().append("executionMethod", "byGene"), outDir, null, token);
+        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class,
+                params.toObjectMap()
+                        .append(ParamConstants.STUDY_PARAM, STUDY)
+                        .append("executionMethod", "byGene"), outDir, null, token);
         checkExecutionResult(er, false);
         assertEquals(4, er.getAttributes().get("otherGenesCount"));
         assertEquals(3, er.getAttributes().get("proteinCodingGenesCount"));
@@ -711,7 +701,8 @@ public class VariantAnalysisTest {
         params.setGene(Arrays.asList("MIR1909", "DZIP3", "BTN3A2", "ITIH5"));
         params.setBiotype(VariantAnnotationConstants.PROTEIN_CODING);
 
-        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, token);
+        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class,
+                params.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
         checkExecutionResult(er, false);
         assertEquals(0, er.getAttributes().get("otherGenesCount"));
         assertEquals(3, er.getAttributes().get("proteinCodingGenesCount"));
@@ -726,7 +717,8 @@ public class VariantAnalysisTest {
         params.setGene(Arrays.asList("MIR1909", "DZIP3", "BTN3A2", "ITIH5"));
         params.setBiotype("nonsense_mediated_decay");
 
-        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, token);
+        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class,
+                params.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
         checkExecutionResult(er, false);
         assertEquals(3, er.getAttributes().get("otherGenesCount")); // MIR1909 only has miRNA biotype
         assertEquals(0, er.getAttributes().get("proteinCodingGenesCount"));
@@ -762,7 +754,8 @@ public class VariantAnalysisTest {
 //                + "," + "non_stop_decay"
 //                + "," + "TR_V_gene");
 
-        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, token);
+        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class,
+                params.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
         checkExecutionResult(er, false);
     }
 
@@ -773,7 +766,8 @@ public class VariantAnalysisTest {
         SampleEligibilityAnalysisParams params = new SampleEligibilityAnalysisParams();
         params.setQuery("(biotype=protein_coding AND ct=missense_variant AND gene=BRCA2) OR (gene=BTN3A2)");
 
-        ExecutionResult er = toolRunner.execute(SampleEligibilityAnalysis.class, params.toObjectMap(), outDir, null, token);
+        ExecutionResult er = toolRunner.execute(SampleEligibilityAnalysis.class,
+                params.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
 //        checkExecutionResult(er, false);
     }
 
@@ -785,7 +779,8 @@ public class VariantAnalysisTest {
         params.setFamilyIndex(true);
         params.setSample(Arrays.asList(son, daughter));
 
-        ExecutionResult er = toolRunner.execute(VariantSampleIndexOperationTool.class, params.toObjectMap(), outDir, null, token);
+        ExecutionResult er = toolRunner.execute(VariantSampleIndexOperationTool.class,
+                params.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
 //        checkExecutionResult(er, false);
     }
 
@@ -1059,7 +1054,8 @@ public class VariantAnalysisTest {
         hrdParams.setIndelQuery("{\"sample\": \"" + cancer_sample + "\", \"type\": \"" + VariantType.INDEL + "\"}");
 
         HRDetectAnalysis analysis = new HRDetectAnalysis();
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, hrdParams.toObjectMap(), hrdetectOutDir,
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager,
+                hrdParams.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), hrdetectOutDir,
                 "job-1", token);
         HRDetect hrDetect = analysis.parseResult(hrdetectOutDir);
         for (Map.Entry<String, Object> entry : hrDetect.getScores().entrySet()) {

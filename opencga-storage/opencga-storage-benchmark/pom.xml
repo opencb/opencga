@@ -125,14 +125,29 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-storage-mongodb</artifactId>
-            <version>2.5.0</version>
+            <artifactId>opencga-storage-hadoop-core</artifactId>
+            <version>${project.parent.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-storage-mongodb</artifactId>
-            <version>2.5.0</version>
+            <artifactId>opencga-storage-hadoop-core</artifactId>
+            <version>${project.parent.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
+            <version>${project.parent.version}</version>
+            <classifier>shaded</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
+            <version>${project.parent.version}</version>
+            <classifier>tests</classifier>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
