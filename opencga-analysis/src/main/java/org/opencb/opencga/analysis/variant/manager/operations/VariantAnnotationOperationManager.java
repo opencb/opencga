@@ -121,7 +121,7 @@ public class VariantAnnotationOperationManager extends OperationManager {
     }
 
     private void synchronizeProjectMetadata(String projectStr, String token) throws CatalogException, StorageEngineException {
-        Project project = catalogManager.getProjectManager().get(projectStr, null, token).first();
+        Project project = catalogManager.getProjectManager().get(projectStr, QueryOptions.empty(), token).first();
         ProjectOrganism organism = project.getOrganism();
         int currentRelease = project.getCurrentRelease();
         CatalogStorageMetadataSynchronizer.updateProjectMetadata(variantStorageEngine.getMetadataManager(), organism, currentRelease,

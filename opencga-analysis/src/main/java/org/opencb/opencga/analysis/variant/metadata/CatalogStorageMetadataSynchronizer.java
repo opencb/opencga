@@ -110,7 +110,8 @@ public class CatalogStorageMetadataSynchronizer {
             throws CatalogException, StorageEngineException {
         final Project p = catalog.getProjectManager().get(project,
                         new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                                ProjectDBAdaptor.QueryParams.ORGANISM.key(), ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key())),
+                                ProjectDBAdaptor.QueryParams.ORGANISM.key(), ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key(),
+                                ProjectDBAdaptor.QueryParams.CELLBASE.key())),
                         sessionId)
                 .first();
 
