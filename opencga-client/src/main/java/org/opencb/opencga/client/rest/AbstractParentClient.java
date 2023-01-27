@@ -236,7 +236,9 @@
              // Select batch. Either by ID or with limit/skip
              if (CollectionUtils.isNotEmpty(id1)) {
                  // Select batch of IDs
-                 path = path.path(String.join(",", id1.subList(skip, skip + batchLimit)));
+                 String ids = String.join(",", id1.subList(skip, skip + batchLimit));
+                 // Use templated variables to ensure correct URL encoding
+                 path = path.path("{id1}").resolveTemplate("id1", ids);
                  // FIXME: This should not be needed!
                  params.put(QueryOptions.LIMIT, batchLimit);
              } else {
@@ -248,7 +250,8 @@
                  path = path.path(category2);
              }
              if (StringUtils.isNotEmpty(id2)) {
-                 path = path.path(id2);
+                 // Use templated variables to ensure correct URL encoding
+                 path = path.path("{id2}").resolveTemplate("id2", id2);
              }
              path = path.path(action);
              //privateLogger.info("PATH ::: " + path);

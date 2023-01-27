@@ -177,8 +177,7 @@ public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverte
             for (FileEntry fileEntry : studyEntry.getFiles()) {
                 int fileId = Integer.parseInt(fileEntry.getFileId());
                 if (writeAllFileAttributes || filesToWrite.contains(fileId)) {
-                    byte[] fileColumnKey = VariantPhoenixSchema
-                            .buildFileColumnKey(studyMetadata.getId(), fileId);
+                    byte[] fileColumnKey = getFileColumnKey(fileId);
                     List<String> fileColumn = remapFileData(variant, studyEntry, fileEntry, overlappingStatus);
                     addVarcharArray(put, fileColumnKey, fileColumn);
                 }
@@ -187,6 +186,8 @@ public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverte
 
         return put;
     }
+
+    protected abstract byte[] getFileColumnKey(int fileId);
 
     protected abstract byte[] getSampleColumn(Integer sampleId);
 

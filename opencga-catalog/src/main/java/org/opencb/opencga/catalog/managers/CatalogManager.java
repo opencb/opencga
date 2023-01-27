@@ -197,7 +197,11 @@ public class CatalogManager implements AutoCloseable {
             String token = userManager.loginAsAdmin(password).getToken();
             installIndexes(token, wholeIndexes);
         } catch (Exception e) {
-            clearCatalog();
+            try {
+                clearCatalog();
+            } catch (Exception suppressed) {
+                e.addSuppressed(suppressed);
+            }
             throw e;
         }
     }

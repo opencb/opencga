@@ -200,7 +200,7 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
             //Nothing to update
             return;
         } else {
-            studiesSummary.put(study, studyId);
+            studiesSummary.forcePut(study, studyId);
             updateStudiesSummary(studiesSummary);
         }
     }

@@ -30,7 +30,9 @@ import java.util.stream.Collectors;
 public class CopyHBaseColumnDriver extends AbstractHBaseDriver {
 
     public static final String COLUMNS_TO_COPY = "columnsToCopy";
+    public static final String COLUMNS_TO_INCLUDE = "columnsToInclude";
     public static final String DELETE_AFTER_COPY = "deleteAfterCopy";
+    private List<String> columnsToInclude;
     private Map<String, String> columnsToCopyMap;
     private static final Logger LOGGER = LoggerFactory.getLogger(CopyHBaseColumnDriver.class);
 
@@ -51,7 +53,7 @@ public class CopyHBaseColumnDriver extends AbstractHBaseDriver {
     @Override
     protected void setupJob(Job job, String table) throws IOException {
         Scan scan = new Scan();
-        int caching = job.getConfiguration().getInt(HadoopVariantStorageOptions.MR_HBASE_SCAN_CACHING.key(), 100);
+        int caching = job.getConfiguration().getInt(HadoopVariantStorageOptions.MR_HBASE_SCAN_CACHING.key(), 10);
 
         LOGGER.info("Scan set Caching to " + caching);
         scan.setCaching(caching);        // 1 is the default in Scan
@@ -60,9 +62,14 @@ public class CopyHBaseColumnDriver extends AbstractHBaseDriver {
             String[] split = column.split(":");
             scan.addColumn(Bytes.toBytes(split[0]), Bytes.toBytes(split[1]));
         }
+        for (String column : columnsToInclude) {
+            String[] split = column.split(":");
+            scan.addColumn(Bytes.toBytes(split[0]), Bytes.toBytes(split[1]));
+        }
+        LOGGER.info("Scan " + scan.toString(50));
 
         // There is a maximum number of counters
-        int newSize = Math.min(columnsToCopyMap.size(), 80);
+        int newSize = Math.min(columnsToCopyMap.size(), 50);
         job.getConfiguration().setStrings(COLUMNS_TO_COUNT, new ArrayList<>(columnsToCopyMap.keySet())
                 .subList(0, newSize).toArray(new String[newSize]));
 
@@ -74,12 +81,21 @@ public class CopyHBaseColumnDriver extends AbstractHBaseDriver {
     protected void parseAndValidateParameters() throws IOException {
         super.parseAndValidateParameters();
         columnsToCopyMap = getColumnsToCopy(getConf());
+        String param = getParam(COLUMNS_TO_INCLUDE, "");
+        if (param.isEmpty()) {
+            columnsToInclude = Collections.emptyList();
+        } else {
+            columnsToInclude = Arrays.asList(param.split(","));
+        }
     }
 
-    public static String[] buildArgs(String table, Map<String, String> columnsToCopyMap, ObjectMap options) {
+    public static String[] buildArgs(String table, Map<String, String> columnsToCopyMap, List<String> columnsToInclude, ObjectMap options) {
         options = options == null ? new ObjectMap() : new ObjectMap(options);
         if (columnsToCopyMap == null || columnsToCopyMap.isEmpty()) {
             throw new IllegalArgumentException("Invalid empty ColumnsToCopy");
+        }
+        if (columnsToInclude != null) {
+            options.put(COLUMNS_TO_INCLUDE, String.join(",", columnsToInclude));
         }
         options.put(COLUMNS_TO_COPY, columnsToCopyMap.entrySet()
                 .stream()
@@ -138,23 +154,39 @@ public class CopyHBaseColumnDriver extends AbstractHBaseDriver {
 
         @Override
         protected void map(ImmutableBytesWritable key, Result result, Context context) throws IOException, InterruptedException {
+            context.getCounter(COUNTER_GROUP_NAME, "results").increment(1);
+            boolean anyCopy = false;
             for (Cell cell : result.rawCells()) {
                 byte[] family = CellUtil.cloneFamily(cell);
                 byte[] qualifier = CellUtil.cloneQualifier(cell);
                 String c = Bytes.toString(family) + ":" + Bytes.toString(qualifier);
-                String[] split = columnsToCopy.get(c).split(":", 2);
+                String target = columnsToCopy.get(c);
+                if (target != null) {
+                    anyCopy = true;
+                    String[] split = target.split(":", 2);
 
-                context.write(key, new Put(result.getRow())
-                        .addColumn(Bytes.toBytes(split[0]), ByteBuffer.wrap(Bytes.toBytes(split[1])), HConstants.LATEST_TIMESTAMP,
-                                CellUtil.getValueBufferShallowCopy(cell)));
+                    context.write(key, new Put(result.getRow())
+                            .addColumn(Bytes.toBytes(split[0]), ByteBuffer.wrap(Bytes.toBytes(split[1])), HConstants.LATEST_TIMESTAMP,
+                                    CellUtil.getValueBufferShallowCopy(cell)));
+                    context.getCounter(COUNTER_GROUP_NAME, "put").increment(1);
 
-                if (deleteAfterCopy) {
-                    context.write(key, new Delete(result.getRow()).addColumns(family, qualifier));
-                }
-                if (columnsToCount.contains(c)) {
-                    context.getCounter("CopyColumn", c).increment(1);
+                    if (deleteAfterCopy) {
+                        context.getCounter(COUNTER_GROUP_NAME, "delete").increment(1);
+                        context.write(key, new Delete(result.getRow()).addColumns(family, qualifier));
+                    }
+                    if (columnsToCount.contains(c)) {
+                        context.getCounter("CopyColumn", c).increment(1);
+                    }
+                } else {
+                    context.getCounter(COUNTER_GROUP_NAME, "skip_column").increment(1);
                 }
             }
+            if (anyCopy) {
+                context.getCounter(COUNTER_GROUP_NAME, "copy_row").increment(1);
+            } else {
+                context.getCounter(COUNTER_GROUP_NAME, "skip_row").increment(1);
+            }
+
         }
     }
 

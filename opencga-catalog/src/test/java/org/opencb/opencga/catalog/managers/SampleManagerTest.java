@@ -915,9 +915,13 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(3, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
         assertEquals(3, clinicalResult.getFamily().getMembers().get(1).getSamples().get(0).getVersion());   // father sample3 version
 
-        catalogManager.getSampleManager().updateSampleInternalGenotypeIndex(
+        catalogManager.getSampleManager().updateSampleInternalVariantSecondarySampleIndex(
                 catalogManager.getSampleManager().get(studyFqn, "sample3", null, token).first(),
-                new SampleInternalVariantGenotypeIndex(new IndexStatus(IndexStatus.READY, "This should be doable!")), token);
+                new SampleInternalVariantSecondarySampleIndex(
+                        new IndexStatus(IndexStatus.READY, "This should be doable!"),
+                        new IndexStatus(IndexStatus.READY, "This should be doable!"),
+                        12
+                ), token);
 
         // Update sample 2 from proband
         catalogManager.getSampleManager().update(studyFqn, "sample2", new SampleUpdateParams().setDescription("asda"),
@@ -2121,6 +2125,32 @@ public class SampleManagerTest extends AbstractManagerTest {
                 .append(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())
                 .append(SAMPLE_INCLUDE_INDIVIDUAL_PARAM, true), token).first();
         assertNotNull(sample.getAttributes());
+    }
+
+    @Test
+    public void associateSameSampleAndIndividualInDifferentStudies() throws CatalogException {
+        String id = "myUniqueId";
+        for (String studyId : Arrays.asList("st1", "st2")) {
+            System.out.println("Study " + studyId);
+            catalogManager.getStudyManager().create(project1, new Study().setId(studyId), QueryOptions.empty(), token);
+
+            catalogManager.getSampleManager().create(studyId, new Sample().setId(id), QueryOptions.empty(), token);
+            catalogManager.getIndividualManager().create(studyId, new Individual().setId(id), QueryOptions.empty(), token);
+            catalogManager.getSampleManager().update(studyId, id, new SampleUpdateParams().setIndividualId(id), QueryOptions.empty(), token);
+
+            OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(studyId, id, QueryOptions.empty(), token);
+            assertEquals(1, sampleResult.getNumResults());
+            assertEquals(id, sampleResult.first().getIndividualId());
+            assertEquals(2, sampleResult.first().getVersion());
+
+            OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager().get(studyId, id, QueryOptions.empty(), token);
+            assertEquals(1, individualResult.getNumResults());
+            assertEquals(2, individualResult.first().getVersion());
+            assertEquals(1, individualResult.first().getSamples().size());
+            assertEquals(id, individualResult.first().getSamples().get(0).getId());
+            assertEquals(2, individualResult.first().getSamples().get(0).getVersion());
+        }
+
     }
 
     @Test

@@ -22,20 +22,24 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.StorageManager;
+import org.opencb.opencga.analysis.tools.ToolRunner;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -58,6 +62,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
     Logger logger = LoggerFactory.getLogger(OpenCGATestExternalResource.class);
     private StorageConfiguration storageConfiguration;
     private StorageEngineFactory storageEngineFactory;
+    private ToolRunner toolRunner;
 
 
 //    public HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource;
@@ -92,6 +97,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
         Files.createDirectory(opencgaHome.resolve("storage"));
         VariantStorageBaseTest.setRootDir(opencgaHome.resolve("storage"));
 
+        toolRunner = new ToolRunner(opencgaHome.toString(), getCatalogManager(), getStorageEngineFactory());
 //        ExecutorFactory.LOCAL_EXECUTOR_FACTORY.set((c, s) -> new StorageLocalExecutorManager(s));
     }
 
@@ -100,6 +106,13 @@ public class OpenCGATestExternalResource extends ExternalResource {
         super.after();
 
         catalogManagerExternalResource.after();
+        try {
+            if (storageEngineFactory != null) {
+                storageEngineFactory.close();
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
 //        if (storageHadoop) {
 //            hadoopExternalResource.after();
 //        }
@@ -119,6 +132,32 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
     public StorageConfiguration getStorageConfiguration() {
         return storageConfiguration;
+    }
+
+    public ToolRunner getToolRunner() {
+        return toolRunner;
+    }
+
+    public VariantStorageManager getVariantStorageManager() {
+        return new VariantStorageManager(getCatalogManager(), getStorageEngineFactory());
+    }
+
+    public VariantStorageManager getVariantStorageManager(VariantSolrExternalResource solrExternalResource) {
+        return new VariantStorageManager(getCatalogManager(), getStorageEngineFactory()) {
+            @Override
+            protected VariantStorageEngine getVariantStorageEngineByProject(String project, ObjectMap params, String token) throws StorageEngineException, CatalogException {
+                VariantStorageEngine engine = super.getVariantStorageEngineByProject(project, params, token);
+                solrExternalResource.configure(engine);
+                return engine;
+            }
+
+            @Override
+            protected VariantStorageEngine getVariantStorageEngineForStudyOperation(String studyStr, ObjectMap params, String token) throws StorageEngineException, CatalogException {
+                VariantStorageEngine engine = super.getVariantStorageEngineForStudyOperation(studyStr, params, token);
+                solrExternalResource.configure(engine);
+                return engine;
+            }
+        };
     }
 
     public Path isolateOpenCGA() throws IOException {
@@ -201,6 +240,8 @@ public class OpenCGATestExternalResource extends ExternalResource {
             MongoDataStoreManager mongoManager = new MongoDataStoreManager("localhost", 27017);
             MongoDataStore mongoDataStore = mongoManager.get(dbName);
             mongoManager.drop(dbName);
+        } else if (storageEngine.equals(DummyVariantStorageEngine.STORAGE_ENGINE_ID)) {
+            DummyVariantStorageMetadataDBAdaptorFactory.clear();
         } else {
             throw new UnsupportedOperationException();
         }

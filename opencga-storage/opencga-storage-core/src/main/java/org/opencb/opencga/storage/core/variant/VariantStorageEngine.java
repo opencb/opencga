@@ -140,6 +140,14 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         REGION,
         MULTI;
 
+        public static boolean isPartial(ObjectMap options) {
+            return isPartial(from(options));
+        }
+
+        public static boolean isPartial(SplitData splitData) {
+            return splitData == CHROMOSOME || splitData == REGION;
+        }
+
         public static SplitData from(ObjectMap options) {
             Objects.requireNonNull(options);
             String loadSplitDataStr = options.getString(LOAD_SPLIT_DATA.key());
@@ -662,33 +670,91 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         VariantDBAdaptor dbAdaptor = getDBAdaptor();
 
         VariantSearchManager variantSearchManager = getVariantSearchManager();
-        // first, create the collection it it does not exist
+        // first, create the collection if it does not exist
         variantSearchManager.create(dbName);
         if (!secondaryAnnotationIndexActiveAndAlive(variantSearchManager, dbName)) {
             throw new StorageEngineException("Solr is not alive!");
         }
 
-        // then, load variants
-        queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES, VariantField.STUDIES_FILES));
-        try (VariantDBIterator iterator = getVariantsToSecondaryIndex(overwrite, query, queryOptions, dbAdaptor)) {
-            VariantSearchLoadResult load = variantSearchManager.load(dbName, iterator, newVariantSearchDataWriter(dbName));
-
-            if (isValidParam(query, VariantQueryParam.REGION)) {
-                logger.info("Partial secondary index. Do not update {} timestamp", SEARCH_INDEX_LAST_TIMESTAMP.key());
-            } else {
-                long value = System.currentTimeMillis();
-                getMetadataManager().updateProjectMetadata(projectMetadata -> {
-                    projectMetadata.getAttributes().put(SEARCH_INDEX_LAST_TIMESTAMP.key(), value);
-                    return projectMetadata;
-                });
+        // check files and samples that will be affected
+        boolean partialLoad = isValidParam(query, VariantQueryParam.REGION);
+        long newTimestamp = System.currentTimeMillis();
+        VariantStorageMetadataManager mm = getMetadataManager();
+        Map<Integer, Set<Integer>> filesToBeUpdated = new HashMap<>();
+        Map<Integer, Set<Integer>> samplesToBeUpdated = new HashMap<>();
+        if (partialLoad) {
+            logger.info("Partial secondary index.");
+        } else {
+            for (Integer studyId : mm.getStudyIds()) {
+                HashSet<Integer> filesFromStudy = new HashSet<>();
+                HashSet<Integer> samplesFromStudy = new HashSet<>();
+                filesToBeUpdated.put(studyId, filesFromStudy);
+                samplesToBeUpdated.put(studyId, samplesFromStudy);
+                for (FileMetadata fileMetadata : mm.fileMetadataIterable(studyId)) {
+                    if (fileMetadata.getIndexStatus() == TaskMetadata.Status.READY
+                            && fileMetadata.getAnnotationStatus() == TaskMetadata.Status.READY) {
+                        if (fileMetadata.getSecondaryAnnotationIndexStatus() != TaskMetadata.Status.READY) {
+                            filesFromStudy.add(fileMetadata.getId());
+                        }
+                    }
+                }
+                for (SampleMetadata sampleMetadata : mm.sampleMetadataIterable(studyId)) {
+                    if (sampleMetadata.getIndexStatus() == TaskMetadata.Status.READY
+                            && sampleMetadata.getAnnotationStatus() == TaskMetadata.Status.READY) {
+                        if (sampleMetadata.getSecondaryAnnotationIndexStatus() != TaskMetadata.Status.READY) {
+                            samplesFromStudy.add(sampleMetadata.getId());
+                        }
+                    }
+                }
             }
 
-            return load;
+            logger.info("Running secondary annotation index for {} new files and {} new samples",
+                    filesToBeUpdated.values().stream().mapToInt(Collection::size).sum(),
+                    samplesToBeUpdated.values().stream().mapToInt(Collection::size).sum());
+        }
+
+        // then, load variants
+        queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES, VariantField.STUDIES_FILES));
+        VariantSearchLoadResult load;
+        try (VariantDBIterator iterator = getVariantsToSecondaryIndex(overwrite, query, queryOptions, dbAdaptor)) {
+            load = variantSearchManager.load(dbName, iterator, newVariantSearchDataWriter(dbName));
         } catch (StorageEngineException e) {
             throw e;
         } catch (Exception e) {
             throw new StorageEngineException("Exception building secondary index", e);
         }
+
+        if (partialLoad) {
+            logger.info("Partial secondary annotation index. Do not update {} timestamp", SEARCH_INDEX_LAST_TIMESTAMP.key());
+        } else {
+            logger.info("Update secondary annotation index status for {} new files and {} new samples",
+                    filesToBeUpdated.values().stream().mapToInt(Collection::size).sum(),
+                    samplesToBeUpdated.values().stream().mapToInt(Collection::size).sum());
+            mm.updateProjectMetadata(projectMetadata -> {
+                projectMetadata.getAttributes().put(SEARCH_INDEX_LAST_TIMESTAMP.key(), newTimestamp);
+                return projectMetadata;
+            });
+
+            for (Map.Entry<Integer, Set<Integer>> entry : filesToBeUpdated.entrySet()) {
+                Integer study = entry.getKey();
+                for (Integer file : entry.getValue()) {
+                    mm.updateFileMetadata(study, file, fileMetadata -> {
+                        fileMetadata.setSecondaryAnnotationIndexStatus(TaskMetadata.Status.READY);
+                    });
+                }
+            }
+            for (Map.Entry<Integer, Set<Integer>> entry : samplesToBeUpdated.entrySet()) {
+                Integer study = entry.getKey();
+                for (Integer sample : entry.getValue()) {
+                    mm.updateSampleMetadata(study, sample, sampleMetadata -> {
+                        sampleMetadata.setSecondaryAnnotationIndexStatus(TaskMetadata.Status.READY);
+                    });
+                }
+            }
+        }
+
+        return load;
+
     }
 
     protected VariantDBIterator getVariantsToSecondaryIndex(boolean overwrite, Query query, QueryOptions queryOptions,
@@ -880,6 +946,13 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 FileMetadata fileMetadata = metadataManager.getFileMetadata(studyMetadata.getId(), file);
                 if (fileMetadata == null) {
                     throw VariantQueryException.fileNotFound(file, study);
+                }
+                if (fileMetadata.getType() == FileMetadata.Type.PARTIAL) {
+                    String virtualFileName = metadataManager.getFileName(
+                            studyMetadata.getId(),
+                            fileMetadata.getAttributes().getInt(FileMetadata.VIRTUAL_PARENT));
+                    throw new StorageEngineException("Unable to remove " + FileMetadata.Type.PARTIAL + " file. "
+                            + "Try removing its virtual file : '" + virtualFileName + "'");
                 }
                 fileIds.add(fileMetadata.getId());
                 if (!fileMetadata.isIndexed()) {

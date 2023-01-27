@@ -172,7 +172,12 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 }
                 return existingStudyMetadata;
             });
-            setFileId(smm.registerFile(studyMetadata.getId(), input.getPath()));
+            if (VariantStorageEngine.SplitData.isPartial(options)
+                    && !options.getString(LOAD_VIRTUAL_FILE.key(), "").isEmpty()) {
+                setFileId(smm.registerPartialFile(studyMetadata.getId(), input.getPath()));
+            } else {
+                setFileId(smm.registerFile(studyMetadata.getId(), input.getPath()));
+            }
         }
 
         return input;
@@ -244,8 +249,8 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             throw new IllegalArgumentException("Unknown compression method " + compression);
         }
 
-        URI outputMalformedVariants = output.resolve(fileName + '.' + VariantReaderUtils.MALFORMED_FILE + ".txt");
-        URI outputVariantsFile = output.resolve(fileName + '.' + VariantReaderUtils.VARIANTS_FILE + '.' + format + extension);
+        URI outputMalformedVariants = UriUtils.resolve(output, fileName + '.' + VariantReaderUtils.MALFORMED_FILE + ".txt");
+        URI outputVariantsFile = UriUtils.resolve(output, fileName + '.' + VariantReaderUtils.VARIANTS_FILE + '.' + format + extension);
         URI outputMetaFile = VariantReaderUtils.getMetaFromTransformedFile(outputVariantsFile);
 
         // Close at the end!
@@ -541,7 +546,27 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     }
 
     protected void preLoadRegisterAndValidateFile(int studyId, VariantFileMetadata fileMetadata) throws StorageEngineException {
-        int fileId = getMetadataManager().registerFile(studyId, fileMetadata);
+        final int fileId;
+        String virtualFile = options.getString(LOAD_VIRTUAL_FILE.key());
+
+        if (VariantStorageEngine.SplitData.isPartial(options)) {
+            if (StringUtils.isEmpty(virtualFile)) {
+                fileId = getMetadataManager().registerFile(studyId, fileMetadata);
+//                throw new StorageEngineException("Unable to load file with 'split-data'. Missing virtual file belonging! "
+//                        + "Please, define " + LOAD_VIRTUAL_FILE.key());
+            } else {
+                fileId = getMetadataManager().registerPartialFile(studyId, virtualFile, fileMetadata);
+            }
+        } else {
+            if (StringUtils.isNotEmpty(virtualFile)) {
+                throw new StorageEngineException("Unable to use virtual file when not loading as split data! "
+                        + "Please, set " + LOAD_SPLIT_DATA.key()
+                        + " to " + VariantStorageEngine.SplitData.REGION
+                        + " or " + VariantStorageEngine.SplitData.CHROMOSOME);
+            } else {
+                fileId = getMetadataManager().registerFile(studyId, fileMetadata);
+            }
+        }
         setFileId(fileId);
     }
 

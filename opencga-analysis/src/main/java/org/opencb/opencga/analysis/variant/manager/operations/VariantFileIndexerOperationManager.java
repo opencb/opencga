@@ -33,6 +33,7 @@ import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
@@ -120,6 +121,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
             return Collections.emptyList();
         }
 
+        variantStorageEngine.getOptions().putAll(params);
         return indexFiles(fileUris, token, params);
     }
 
@@ -155,7 +157,6 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         toFileSystemPath(studyFqn, params, VariantStorageOptions.NORMALIZATION_REFERENCE_GENOME.key(), token);
         toFileSystemPath(studyFqn, params, VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), token);
 
-        variantStorageEngine.getOptions().putAll(params);
     }
 
     private void updateProject(String studyFqn, String token) throws CatalogException, StorageEngineException {
@@ -249,10 +250,24 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
         // Check that we are not indexing two or more files with the same name at the same time
         Set<String> fileNamesToIndexSet = new HashSet<>();
+        String virtualFile = null;
         for (File fileToIndex : filesToIndex) {
             if (!fileNamesToIndexSet.add(fileToIndex.getName())) {
                 throw new CatalogException("Unable to " + step + " multiple files with the same name");
             }
+            if (FileUtils.isPartial(fileToIndex)) {
+                String thisVirtualFile = FileUtils.getVirtualFileFromPartial(fileToIndex).getName();
+                if (virtualFile == null) {
+                    virtualFile = thisVirtualFile;
+                } else {
+                    if (!virtualFile.equals(thisVirtualFile)) {
+                        throw new CatalogException("Unable to index multiple files at the same time form different virtual files");
+                    }
+                }
+            }
+        }
+        if (virtualFile != null) {
+            params.put(VariantStorageOptions.LOAD_VIRTUAL_FILE.key(), virtualFile);
         }
 
         // Only if we are not transforming or if a path has been passed, we will update catalog information
