@@ -17,7 +17,6 @@
 package org.opencb.opencga.storage.mongodb.variant.adaptors;
 
 import com.mongodb.BasicDBList;
-import com.mongodb.MongoClient;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import htsjdk.variant.vcf.VCFConstants;
@@ -313,8 +312,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
 
         Bson update = combine(updates);
-        logger.debug("removeFile: query = " + query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        logger.debug("removeFile: update = " + update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("removeFile: query = " + query.toBsonDocument());
+        logger.debug("removeFile: update = " + update.toBsonDocument());
 
         logger.info("Remove files from variants collection - step 2/3"); // Other studies
         DataResult result2 = getVariantsCollection().update(query, update, new QueryOptions(MULTI, true));
@@ -357,8 +356,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         Bson eq = eq(StageDocumentToVariantConverter.STUDY_FILE_FIELD, studyId.toString());
         Bson combine = combine(pull(StageDocumentToVariantConverter.STUDY_FILE_FIELD, studyId.toString()), unset(studyId.toString()));
-        logger.debug("removeStudy: stage query = " + eq.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        logger.debug("removeStudy: stage update = " + combine.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("removeStudy: stage query = " + eq.toBsonDocument());
+        logger.debug("removeStudy: stage update = " + combine.toBsonDocument());
         logger.info("Remove study from stage collection - step 1/" + (purge ? '2' : '1'));
         getStageCollection(studyId).update(eq, combine, new QueryOptions(MULTI, true));
 
@@ -376,8 +375,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 pull(DocumentToVariantConverter.STATS_FIELD, eq(DocumentToVariantStatsConverter.STUDY_ID, studyId)),
                 getSetIndexNotSynchronized(timestamp)
         );
-        logger.debug("removeStudy: query = {}", query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        logger.debug("removeStudy: update = {}", update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("removeStudy: query = {}", query.toBsonDocument());
+        logger.debug("removeStudy: update = {}", update.toBsonDocument());
 
         DataResult result = variantsCollection.update(query, update, new QueryOptions(MULTI, true));
         logger.debug("removeStudy: matched  = {}", result.getNumMatches());
@@ -493,7 +492,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         if (options.getBoolean("explain", false)) {
             Document explain = variantsCollection.nativeQuery().explain(mongoQuery, projection, options);
-            logger.debug("MongoDB Explain = {}", explain.toJson(new JsonWriterSettings(JsonMode.SHELL, true)));
+            logger.debug("MongoDB Explain = {}",
+                    explain.toJson(JsonWriterSettings.builder().outputMode(JsonMode.SHELL).indent(true).build()));
         }
 
         DocumentToVariantConverter converter = getDocumentToVariantConverter(variantQuery.getQuery(), variantQueryProjection);

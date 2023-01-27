@@ -20,11 +20,14 @@ import com.google.common.collect.Iterables;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.QueryBuilder;
+import com.mongodb.client.model.Accumulators;
+import com.mongodb.client.model.Filters;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.opencb.biodata.models.core.Region;
@@ -85,7 +88,8 @@ public class VariantMongoDBQueryParser {
     }
 
     protected Document parseQuery(ParsedVariantQuery parsedVariantQuery) {
-        QueryBuilder builder = new QueryBuilder();
+
+        List<Bson> bsonList = new ArrayList<>();
         if (parsedVariantQuery != null) {
             // Copy given query. It may be modified
             Query query = new Query(parsedVariantQuery.getInputQuery());
@@ -96,7 +100,7 @@ public class VariantMongoDBQueryParser {
                 nonGeneRegionFilter = true;
                 List<Region> regions = Region.parseRegions(query.getString(REGION.key()), true);
                 if (!regions.isEmpty()) {
-                    getRegionFilter(regions, builder);
+                    getRegionFilter(regions, bsonList);
                 }
             }
 
@@ -107,8 +111,8 @@ public class VariantMongoDBQueryParser {
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + '.' + DocumentToVariantAnnotationConverter.XREFS_FIELD
                         + '.' + DocumentToVariantAnnotationConverter.XREF_ID_FIELD,
-                        variantQueryXref.getIds(), builder, QueryOperation.OR);
-                addQueryStringFilter(DocumentToVariantConverter.IDS_FIELD, variantQueryXref.getIds(), builder, QueryOperation.OR);
+                        variantQueryXref.getIds(), bsonList, QueryOperation.OR);
+                addQueryStringFilter(DocumentToVariantConverter.IDS_FIELD, variantQueryXref.getIds(), bsonList, QueryOperation.OR);
             }
 
             if (!variantQueryXref.getOtherXrefs().isEmpty()) {
@@ -116,7 +120,7 @@ public class VariantMongoDBQueryParser {
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                                 + '.' + DocumentToVariantAnnotationConverter.XREFS_FIELD
                                 + '.' + DocumentToVariantAnnotationConverter.XREF_ID_FIELD,
-                        variantQueryXref.getOtherXrefs(), builder, QueryOperation.OR);
+                        variantQueryXref.getOtherXrefs(), bsonList, QueryOperation.OR);
             }
 
             List<Variant> idIntersect = query.getAsStringList(ID_INTERSECT.key()).stream().map(Variant::new).collect(Collectors.toList());

@@ -36,7 +36,6 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.Collections;
 
@@ -178,7 +177,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             catalogManager.installCatalogDB(configuration.getAdmin().getSecretKey(), commandOptions.commonOptions.adminPassword,
-                    commandOptions.email, commandOptions.organization, commandOptions.force, true);
+                    commandOptions.email, commandOptions.organization, commandOptions.force);
         }
     }
 

@@ -98,21 +98,18 @@ public class ConfigurationTest {
 
     @Test
     public void testLoad() throws Exception {
-        URL url = new URL("http://resources.opencb.org/opencb/opencga/disease-panels/sources.txt");
-        BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), Charset.defaultCharset()));
-
-        Set<String> sources = new HashSet<>();
-        String line;
-        while((line = reader.readLine()) != null) {
-            sources.add(line);
-        }
-        System.out.println(sources);
-
-
-
-
-        File file = new File(url.toURI());
-        System.out.println(file.list());
+//        URL url = new URL("http://resources.opencb.org/opencb/opencga/disease-panels/sources.txt");
+//        BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), Charset.defaultCharset()));
+//
+//        Set<String> sources = new HashSet<>();
+//        String line;
+//        while((line = reader.readLine()) != null) {
+//            sources.add(line);
+//        }
+//        System.out.println(sources);
+//
+//        File file = new File(url.toURI());
+//        System.out.println(file.list());
 
         Configuration configuration = Configuration
                 .load(getClass().getResource("/configuration-test.yml").openStream());

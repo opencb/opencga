@@ -321,7 +321,7 @@ public class FamilyManagerTest extends GenericTest {
 
         Map<String, Family.FamiliarRelationship> pGrandfather = roles.get("p_grandfather");
         assertEquals(5, pGrandfather.size());
-        assertEquals(Family.FamiliarRelationship.SON, pGrandfather.get("father"));
+        assertEquals(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX, pGrandfather.get("father"));
         assertEquals(Family.FamiliarRelationship.GRANDCHILD, pGrandfather.get("proband"));
         assertEquals(Family.FamiliarRelationship.GRANDCHILD, pGrandfather.get("sibling"));
         assertEquals(Family.FamiliarRelationship.GRANDSON, pGrandfather.get("brother"));
@@ -329,7 +329,7 @@ public class FamilyManagerTest extends GenericTest {
 
         Map<String, Family.FamiliarRelationship> pGrandmother = roles.get("p_grandmother");
         assertEquals(5, pGrandmother.size());
-        assertEquals(Family.FamiliarRelationship.SON, pGrandmother.get("father"));
+        assertEquals(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX, pGrandmother.get("father"));
         assertEquals(Family.FamiliarRelationship.GRANDCHILD, pGrandmother.get("proband"));
         assertEquals(Family.FamiliarRelationship.GRANDCHILD, pGrandmother.get("sibling"));
         assertEquals(Family.FamiliarRelationship.GRANDSON, pGrandmother.get("brother"));
@@ -337,7 +337,7 @@ public class FamilyManagerTest extends GenericTest {
 
         Map<String, Family.FamiliarRelationship> mGrandfather = roles.get("m_grandfather");
         assertEquals(5, mGrandfather.size());
-        assertEquals(Family.FamiliarRelationship.DAUGHTER, mGrandfather.get("mother"));
+        assertEquals(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX, mGrandfather.get("mother"));
         assertEquals(Family.FamiliarRelationship.GRANDCHILD, mGrandfather.get("proband"));
         assertEquals(Family.FamiliarRelationship.GRANDCHILD, mGrandfather.get("sibling"));
         assertEquals(Family.FamiliarRelationship.GRANDSON, mGrandfather.get("brother"));
@@ -345,7 +345,7 @@ public class FamilyManagerTest extends GenericTest {
 
         Map<String, Family.FamiliarRelationship> mGrandmother = roles.get("m_grandmother");
         assertEquals(5, mGrandmother.size());
-        assertEquals(Family.FamiliarRelationship.DAUGHTER, mGrandmother.get("mother"));
+        assertEquals(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX, mGrandmother.get("mother"));
         assertEquals(Family.FamiliarRelationship.GRANDCHILD, mGrandmother.get("proband"));
         assertEquals(Family.FamiliarRelationship.GRANDCHILD, mGrandmother.get("sibling"));
         assertEquals(Family.FamiliarRelationship.GRANDSON, mGrandmother.get("brother"));
@@ -1050,9 +1050,10 @@ public class FamilyManagerTest extends GenericTest {
         Family family = new Family("Martinez-Martinez", "Martinez-Martinez", Arrays.asList(phenotype1, phenotype2), null,
                 Arrays.asList(relFather, relChild1, relChild2), "", 3, Collections.emptyList(), Collections.emptyMap());
 
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage("not present in the members list");
-        familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+        family = familyManager.create(STUDY, family, new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionIdUser).first();
+        assertEquals(3, family.getMembers().size());
+        assertTrue(Arrays.asList(relFather.getId(), relChild2.getId(), relChild1.getId())
+                .containsAll(family.getMembers().stream().map(Individual::getId).collect(Collectors.toList())));
     }
 
     @Test
@@ -1182,9 +1183,12 @@ public class FamilyManagerTest extends GenericTest {
                 new IndividualReferenceParam().setId("child3"),
                 new IndividualReferenceParam().setId("father")));
 
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage("not present in the members list");
-        familyManager.update(STUDY, originalFamily.first().getId(), updateParams, QueryOptions.empty(), sessionIdUser);
+        Family family = familyManager.update(STUDY, originalFamily.first().getId(), updateParams,
+                new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionIdUser).first();
+        assertEquals(2, family.getMembers().size());
+        assertEquals(2, family.getRoles().size());
+        assertTrue(Arrays.asList("child3", "father")
+                .containsAll(family.getMembers().stream().map(Individual::getId).collect(Collectors.toList())));
     }
 
     @Test

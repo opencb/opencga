@@ -20,6 +20,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
 
 import java.util.Map;
@@ -36,20 +37,27 @@ public interface DBAdaptorFactory extends AutoCloseable {
     boolean isCatalogDBReady();
 
     /**
-     * Installs the catalog database with their corresponding indexes.
+     * Create all collections for the database.
      *
      * @param configuration Configuration of catalog.
      * @throws CatalogException if there is any problem with the installation.
      */
-    void installCatalogDB(Configuration configuration) throws CatalogException;
+    void createAllCollections(Configuration configuration) throws CatalogException;
+
+    /**
+     * Initialise meta collection.
+     *
+     * @param admin Admin information.
+     * @throws CatalogException if there is any problem with the installation.
+     */
+    void initialiseMetaCollection(Admin admin) throws CatalogException;
 
     /**
      * Creates the indexes needed to make queries faster.
      *
-     * @param wholeIndexes boolean indicating whether to generate all indexes or only the unique ones.
      * @throws CatalogDBException if there is any problem creating the indexes.
      */
-    void createIndexes(boolean wholeIndexes) throws CatalogDBException;
+    void createIndexes() throws CatalogDBException;
 
     String getCatalogDatabase(String prefix);
 

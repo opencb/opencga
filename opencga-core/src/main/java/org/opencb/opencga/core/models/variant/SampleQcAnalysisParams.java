@@ -21,8 +21,18 @@ import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class SampleQcAnalysisParams extends ToolParams {
+    public static final String VARIANT_STATS_SKIP_VALUE = "variant-stats";
+    public static final String SIGNATURE_SKIP_VALUE = "signature";
+    public static final String SIGNATURE_CATALOGUE_SKIP_VALUE = "signature-catalogue";
+    public static final String SIGNATURE_FITTING_SKIP_VALUE = "signature-fitting";
+    public static final String GENOME_PLOT_SKIP_VALUE = "genome-plot";
+
     public static final String DESCRIPTION = "Sample QC analysis params. Mutational signature and genome plot are calculated for somatic"
-    + " samples only";
+            + " samples only. In order to skip some metrics, use the following keywords (separated by commas): " + VARIANT_STATS_SKIP_VALUE
+            + ", " + SIGNATURE_SKIP_VALUE  + ", " + SIGNATURE_CATALOGUE_SKIP_VALUE + ", " + SIGNATURE_FITTING_SKIP_VALUE + ", "
+            + GENOME_PLOT_SKIP_VALUE;
+
+    @DataField(id = "sample", description = FieldConstants.SAMPLE_ID_DESCRIPTION)
     private String sample;
 
     // Variant stats params
@@ -46,32 +56,38 @@ public class SampleQcAnalysisParams extends ToolParams {
     @DataField(id = "msQuery", description = FieldConstants.MUTATIONAL_SIGNATURE_QUERY_DESCRIPTION)
     private String msQuery;
 
+    @DataField(id = "msFitId", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION)
+    private String msFitId;
+
     @DataField(id = "msFitMethod", defaultValue = "FitMS", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION)
     private String msFitMethod;
 
-    @DataField(id = "msNBoot", description = FieldConstants.MUTATIONAL_SIGNATURE_N_BOOT_DESCRIPTION)
-    private Integer msNBoot;
+    @DataField(id = "msFitNBoot", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_N_BOOT_DESCRIPTION)
+    private Integer msFitNBoot;
 
-    @DataField(id = "msSigVersion", defaultValue = "RefSigv2", description = FieldConstants.MUTATIONAL_SIGNATURE_SIG_VERSION_DESCRIPTION)
-    private String msSigVersion;
+    @DataField(id = "msFitSigVersion", defaultValue = "RefSigv2",
+            description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_SIG_VERSION_DESCRIPTION)
+    private String msFitSigVersion;
 
-    @DataField(id = "msOrgan", description = FieldConstants.MUTATIONAL_SIGNATURE_ORGAN_DESCRIPTION)
-    private String msOrgan;
+    @DataField(id = "msFitOrgan", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_ORGAN_DESCRIPTION)
+    private String msFitOrgan;
 
-    @DataField(id = "msThresholdPerc", defaultValue = "5f", description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PERC_DESCRIPTION)
-    private Float msThresholdPerc;
+    @DataField(id = "msFitThresholdPerc", defaultValue = "5f",
+            description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_THRESHOLD_PERC_DESCRIPTION)
+    private Float msFitThresholdPerc;
 
-    @DataField(id = "msThresholdPval", defaultValue = "0.05f", description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PVAL_DESCRIPTION)
-    private Float msThresholdPval;
+    @DataField(id = "msFitThresholdPval", defaultValue = "0.05f",
+            description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_THRESHOLD_PVAL_DESCRIPTION)
+    private Float msFitThresholdPval;
 
-    @DataField(id = "msMaxRareSigs", defaultValue = "1", description = FieldConstants.MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION)
-    private Integer msMaxRareSigs;
+    @DataField(id = "msFitMaxRareSigs", defaultValue = "1", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_MAX_RARE_SIGS_DESCRIPTION)
+    private Integer msFitMaxRareSigs;
 
-    @DataField(id = "msSignaturesFile", description = FieldConstants.MUTATIONAL_SIGNATURE_SIGNATURES_FILE_DESCRIPTION)
-    private String msSignaturesFile;
+    @DataField(id = "msFitSignaturesFile", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_SIGNATURES_FILE_DESCRIPTION)
+    private String msFitSignaturesFile;
 
-    @DataField(id = "msRareSignaturesFile", description = FieldConstants.MUTATIONAL_SIGNATURE_RARE_SIGNATURES_FILE_DESCRIPTION)
-    private String msRareSignaturesFile;
+    @DataField(id = "msFitRareSignaturesFile", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_RARE_SIGNATURES_FILE_DESCRIPTION)
+    private String msFitRareSignaturesFile;
 
     // Genome plot
 
@@ -84,6 +100,10 @@ public class SampleQcAnalysisParams extends ToolParams {
     @DataField(id = "gpConfigFile", description = FieldConstants.GENOME_PLOT_CONFIGURATION_FILE_DESCRIPTION)
     private String gpConfigFile;
 
+    // Other
+    @DataField(id = "skip", description = FieldConstants.SAMPLE_QUALITY_CONTROL_SKIP_DESCRIPTION)
+    private String skip;
+
     @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
 
@@ -91,10 +111,10 @@ public class SampleQcAnalysisParams extends ToolParams {
     }
 
     public SampleQcAnalysisParams(String sample, String vsId, String vsDescription, AnnotationVariantQueryParams vsQuery, String msId,
-                                  String msDescription, String msQuery, String msFitMethod, Integer msNBoot, String msSigVersion,
-                                  String msOrgan, Float msThresholdPerc, Float msThresholdPval, Integer msMaxRareSigs,
-                                  String msSignaturesFile, String msRareSignaturesFile, String gpId, String gpDescription,
-                                  String gpConfigFile, String outdir) {
+                                  String msDescription, String msQuery, String msFitId, String msFitMethod, Integer msFitNBoot,
+                                  String msFitSigVersion, String msFitOrgan, Float msFitThresholdPerc, Float msFitThresholdPval,
+                                  Integer msFitMaxRareSigs, String msFitSignaturesFile, String msFitRareSignaturesFile, String gpId,
+                                  String gpDescription, String gpConfigFile, String skip, String outdir) {
         this.sample = sample;
         this.vsId = vsId;
         this.vsDescription = vsDescription;
@@ -102,18 +122,20 @@ public class SampleQcAnalysisParams extends ToolParams {
         this.msId = msId;
         this.msDescription = msDescription;
         this.msQuery = msQuery;
+        this.msFitId = msFitId;
         this.msFitMethod = msFitMethod;
-        this.msNBoot = msNBoot;
-        this.msSigVersion = msSigVersion;
-        this.msOrgan = msOrgan;
-        this.msThresholdPerc = msThresholdPerc;
-        this.msThresholdPval = msThresholdPval;
-        this.msMaxRareSigs = msMaxRareSigs;
-        this.msSignaturesFile = msSignaturesFile;
-        this.msRareSignaturesFile = msRareSignaturesFile;
+        this.msFitNBoot = msFitNBoot;
+        this.msFitSigVersion = msFitSigVersion;
+        this.msFitOrgan = msFitOrgan;
+        this.msFitThresholdPerc = msFitThresholdPerc;
+        this.msFitThresholdPval = msFitThresholdPval;
+        this.msFitMaxRareSigs = msFitMaxRareSigs;
+        this.msFitSignaturesFile = msFitSignaturesFile;
+        this.msFitRareSignaturesFile = msFitRareSignaturesFile;
         this.gpId = gpId;
         this.gpDescription = gpDescription;
         this.gpConfigFile = gpConfigFile;
+        this.skip = skip;
         this.outdir = outdir;
     }
 
@@ -127,18 +149,20 @@ public class SampleQcAnalysisParams extends ToolParams {
         sb.append(", msId='").append(msId).append('\'');
         sb.append(", msDescription='").append(msDescription).append('\'');
         sb.append(", msQuery='").append(msQuery).append('\'');
+        sb.append(", msFitId='").append(msFitId).append('\'');
         sb.append(", msFitMethod='").append(msFitMethod).append('\'');
-        sb.append(", msNBoot=").append(msNBoot);
-        sb.append(", msSigVersion='").append(msSigVersion).append('\'');
-        sb.append(", msOrgan='").append(msOrgan).append('\'');
-        sb.append(", msThresholdPerc=").append(msThresholdPerc);
-        sb.append(", msThresholdPval=").append(msThresholdPval);
-        sb.append(", msMaxRareSigs=").append(msMaxRareSigs);
-        sb.append(", msSignaturesFile='").append(msSignaturesFile).append('\'');
-        sb.append(", msRareSignaturesFile='").append(msRareSignaturesFile).append('\'');
+        sb.append(", msFitNBoot=").append(msFitNBoot);
+        sb.append(", msFitSigVersion='").append(msFitSigVersion).append('\'');
+        sb.append(", msFitOrgan='").append(msFitOrgan).append('\'');
+        sb.append(", msFitThresholdPerc=").append(msFitThresholdPerc);
+        sb.append(", msFitThresholdPval=").append(msFitThresholdPval);
+        sb.append(", msFitMaxRareSigs=").append(msFitMaxRareSigs);
+        sb.append(", msFitSignaturesFile='").append(msFitSignaturesFile).append('\'');
+        sb.append(", msFitRareSignaturesFile='").append(msFitRareSignaturesFile).append('\'');
         sb.append(", gpId='").append(gpId).append('\'');
         sb.append(", gpDescription='").append(gpDescription).append('\'');
         sb.append(", gpConfigFile='").append(gpConfigFile).append('\'');
+        sb.append(", skip='").append(skip).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -207,6 +231,15 @@ public class SampleQcAnalysisParams extends ToolParams {
         return this;
     }
 
+    public String getMsFitId() {
+        return msFitId;
+    }
+
+    public SampleQcAnalysisParams setMsFitId(String msFitId) {
+        this.msFitId = msFitId;
+        return this;
+    }
+
     public String getMsFitMethod() {
         return msFitMethod;
     }
@@ -216,75 +249,75 @@ public class SampleQcAnalysisParams extends ToolParams {
         return this;
     }
 
-    public Integer getMsNBoot() {
-        return msNBoot;
+    public Integer getMsFitNBoot() {
+        return msFitNBoot;
     }
 
-    public SampleQcAnalysisParams setMsNBoot(Integer msNBoot) {
-        this.msNBoot = msNBoot;
+    public SampleQcAnalysisParams setMsFitNBoot(Integer msFitNBoot) {
+        this.msFitNBoot = msFitNBoot;
         return this;
     }
 
-    public String getMsSigVersion() {
-        return msSigVersion;
+    public String getMsFitSigVersion() {
+        return msFitSigVersion;
     }
 
-    public SampleQcAnalysisParams setMsSigVersion(String msSigVersion) {
-        this.msSigVersion = msSigVersion;
+    public SampleQcAnalysisParams setMsFitSigVersion(String msFitSigVersion) {
+        this.msFitSigVersion = msFitSigVersion;
         return this;
     }
 
-    public String getMsOrgan() {
-        return msOrgan;
+    public String getMsFitOrgan() {
+        return msFitOrgan;
     }
 
-    public SampleQcAnalysisParams setMsOrgan(String msOrgan) {
-        this.msOrgan = msOrgan;
+    public SampleQcAnalysisParams setMsFitOrgan(String msFitOrgan) {
+        this.msFitOrgan = msFitOrgan;
         return this;
     }
 
-    public Float getMsThresholdPerc() {
-        return msThresholdPerc;
+    public Float getMsFitThresholdPerc() {
+        return msFitThresholdPerc;
     }
 
-    public SampleQcAnalysisParams setMsThresholdPerc(Float msThresholdPerc) {
-        this.msThresholdPerc = msThresholdPerc;
+    public SampleQcAnalysisParams setMsFitThresholdPerc(Float msFitThresholdPerc) {
+        this.msFitThresholdPerc = msFitThresholdPerc;
         return this;
     }
 
-    public Float getMsThresholdPval() {
-        return msThresholdPval;
+    public Float getMsFitThresholdPval() {
+        return msFitThresholdPval;
     }
 
-    public SampleQcAnalysisParams setMsThresholdPval(Float msThresholdPval) {
-        this.msThresholdPval = msThresholdPval;
+    public SampleQcAnalysisParams setMsFitThresholdPval(Float msFitThresholdPval) {
+        this.msFitThresholdPval = msFitThresholdPval;
         return this;
     }
 
-    public Integer getMsMaxRareSigs() {
-        return msMaxRareSigs;
+    public Integer getMsFitMaxRareSigs() {
+        return msFitMaxRareSigs;
     }
 
-    public SampleQcAnalysisParams setMsMaxRareSigs(Integer msMaxRareSigs) {
-        this.msMaxRareSigs = msMaxRareSigs;
+    public SampleQcAnalysisParams setMsFitMaxRareSigs(Integer msFitMaxRareSigs) {
+        this.msFitMaxRareSigs = msFitMaxRareSigs;
         return this;
     }
 
-    public String getMsSignaturesFile() {
-        return msSignaturesFile;
+    public String getMsFitSignaturesFile() {
+        return msFitSignaturesFile;
     }
 
-    public SampleQcAnalysisParams setMsSignaturesFile(String msSignaturesFile) {
-        this.msSignaturesFile = msSignaturesFile;
+    public SampleQcAnalysisParams setMsFitSignaturesFile(String msFitSignaturesFile) {
+        this.msFitSignaturesFile = msFitSignaturesFile;
         return this;
     }
 
-    public String getMsRareSignaturesFile() {
-        return msRareSignaturesFile;
+    public String getMsFitRareSignaturesFile() {
+        return msFitRareSignaturesFile;
     }
 
-    public SampleQcAnalysisParams setMsRareSignaturesFile(String msRareSignaturesFile) {
-        this.msRareSignaturesFile = msRareSignaturesFile;
+    public SampleQcAnalysisParams setMsFitRareSignaturesFile(String msFitRareSignaturesFile) {
+        this.msFitRareSignaturesFile = msFitRareSignaturesFile;
         return this;
     }
 
@@ -312,6 +345,15 @@ public class SampleQcAnalysisParams extends ToolParams {
 
     public SampleQcAnalysisParams setGpConfigFile(String gpConfigFile) {
         this.gpConfigFile = gpConfigFile;
+        return this;
+    }
+
+    public String getSkip() {
+        return skip;
+    }
+
+    public SampleQcAnalysisParams setSkip(String skip) {
+        this.skip = skip;
         return this;
     }
 

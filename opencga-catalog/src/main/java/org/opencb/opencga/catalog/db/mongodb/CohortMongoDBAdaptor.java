@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import org.apache.commons.collections4.CollectionUtils;
@@ -212,7 +211,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     private OpenCGAResult<Long> count(ClientSession clientSession, final Query query, final String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, user);
-        logger.debug("Cohort count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Cohort count: query : {}", bson.toBsonDocument());
         return new OpenCGAResult<>(cohortCollection.count(clientSession, bson));
     }
 
@@ -308,9 +307,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         List<Event> events = new ArrayList<>();
         if (!cohortUpdate.isEmpty()) {
             Bson finalQuery = parseQuery(tmpQuery);
-            logger.debug("Cohort update: query : {}, update: {}",
-                    finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    cohortUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            logger.debug("Cohort update: query : {}, update: {}", finalQuery.toBsonDocument(), cohortUpdate.toBsonDocument());
             result = cohortCollection.update(clientSession, finalQuery, cohortUpdate, null);
 
             if (result.getNumMatches() == 0) {
@@ -762,7 +759,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         qOptions = filterOptions(qOptions, FILTER_ROUTE_COHORTS);
         fixAclProjection(qOptions);
 
-        logger.debug("Cohort query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Cohort query : {}", bson.toBsonDocument());
         if (!query.getBoolean(QueryParams.DELETED.key())) {
             return cohortCollection.iterator(clientSession, bson, null, null, qOptions);
         } else {
@@ -985,9 +982,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
         QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
 
-        logger.debug("Sample references extraction. Query: {}, update: {}",
-                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Sample references extraction. Query: {}, update: {}", bsonQuery.toBsonDocument(), update.toBsonDocument());
         DataResult result = cohortCollection.update(clientSession, bsonQuery, update, multi);
         logger.debug("Sample uid '" + sampleUid + "' references removed from " + result.getNumUpdated() + " out of "
                 + result.getNumMatches() + " cohorts");

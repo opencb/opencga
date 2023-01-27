@@ -47,7 +47,7 @@ public final class CatalogDemo {
     public static void createDemoDatabase(CatalogManager catalogManager, String adminPassword, boolean force)
             throws CatalogException {
         catalogManager.installCatalogDB(catalogManager.getConfiguration().getAdmin().getSecretKey(), adminPassword, "opencga@admin.com",
-                "", force, true);
+                "", force);
         try {
             populateDatabase(catalogManager);
         } catch (IOException e) {

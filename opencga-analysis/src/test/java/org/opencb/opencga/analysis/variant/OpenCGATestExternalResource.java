@@ -44,6 +44,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -209,6 +210,12 @@ public class OpenCGATestExternalResource extends ExternalResource {
 //        inputStream = new FileInputStream("app/examples/1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
 //        Files.copy(inputStream, opencgaHome.resolve("examples")
 //                .resolve("1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), StandardCopyOption.REPLACE_EXISTING);
+
+        // Analysis
+        Files.createDirectories(opencgaHome.resolve("analysis/mutational-signature"));
+
+        inputStream = new FileInputStream("../opencga-app/app/analysis/mutational-signature/sv_clustering.R");
+        Files.copy(inputStream, opencgaHome.resolve("analysis/mutational-signature/sv_clustering.R"), StandardCopyOption.REPLACE_EXISTING);
 
         return opencgaHome;
     }

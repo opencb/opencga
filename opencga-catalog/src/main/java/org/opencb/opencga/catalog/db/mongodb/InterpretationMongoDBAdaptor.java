@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
@@ -333,7 +332,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
     public OpenCGAResult<Long> count(ClientSession clientSession, Query query) throws CatalogDBException {
         Bson bson = parseQuery(query);
-        logger.debug("Interpretation count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Interpretation count: query : {}", bson.toBsonDocument());
         return new OpenCGAResult<>(interpretationCollection.count(clientSession, bson));
     }
 
@@ -695,8 +694,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     interpretation.setVersion(interpretation.getVersion() + 1);
                     updateClinicalAnalysisInterpretationReference(clientSession, interpretation, clinicalAuditList);
                     if (!updateOperation.isEmpty()) {
-                        logger.debug("Update interpretation. Query: {}, Update: {}", bsonQuery.toBsonDocument(Document.class,
-                                MongoClient.getDefaultCodecRegistry()), updateDocument);
+                        logger.debug("Update interpretation. Query: {}, Update: {}", bsonQuery.toBsonDocument(), updateDocument);
                         update = interpretationCollection.update(clientSession, bsonQuery, updateOperation, null);
 
                         if (update.getNumMatches() == 0) {
@@ -710,8 +708,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                             Bson nestedBsonQuery = parseQuery(nestedDocument.getQuery()
                                     .append(QueryParams.UID.key(), interpretation.getUid()));
                             logger.debug("Update nested element from interpretation. Query: {}, Update: {}",
-                                    nestedBsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                                    nestedDocument.getSet());
+                                    nestedBsonQuery.toBsonDocument(), nestedDocument.getSet());
 
                             update = interpretationCollection.update(clientSession, nestedBsonQuery, nestedDocument.getSet(), null);
 
@@ -731,8 +728,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
                         UpdateDocument updateStatsDocument = parseAndValidateUpdateParams(clientSession,
                                 new ObjectMap(QueryParams.STATS.key(), stats), iQuery, QueryOptions.empty());
-                        logger.debug("Update interpretation stats. Query: {}, Update: {}",
-                                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                        logger.debug("Update interpretation stats. Query: {}, Update: {}", bsonQuery.toBsonDocument(),
                                 updateStatsDocument.toFinalUpdateDocument());
 
                         DataResult statsUpdate = interpretationCollection.update(clientSession, bsonQuery,
@@ -947,7 +943,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         qOptions = filterQueryOptions(qOptions, Arrays.asList(QueryParams.ID.key(), QueryParams.UUID.key(), QueryParams.UID.key(),
                 QueryParams.VERSION.key(), QueryParams.CLINICAL_ANALYSIS_ID.key()));
 
-        logger.debug("Interpretation query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Interpretation query : {}", bson.toBsonDocument());
         MongoDBCollection collection = getQueryCollection(query, interpretationCollection, archiveInterpretationCollection,
                 deleteInterpretationCollection);
         return collection.iterator(clientSession, bson, null, null, qOptions);
