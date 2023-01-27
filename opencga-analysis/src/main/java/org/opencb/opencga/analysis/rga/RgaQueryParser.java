@@ -314,13 +314,19 @@ public class RgaQueryParser {
             // KT + FILTER
             List<String> orFilterList = new LinkedList<>();
             for (String koValue : koValues) {
-                List<String> finalFilterValues = koValue.equals(encodedChString) ? chFilterValues : filterValues;
-                List<String> ctList = koValue.equals(delOverlap) ? INCLUDED_DEL_OVERLAP_CONSEQUENCE_TYPES : ALL_CONSEQUENCE_TYPES;
-                for (String filterVal : finalFilterValues) {
-                    // This is how it should be filtered
-//                    orFilterList.add(koValue + SEPARATOR + filterVal);
-                    for (String ctValue : ctList) {
-                        orFilterList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue);
+                if (koValue.equals(delOverlap)) {
+                    for (String filterVal : filterValues) {
+                        for (String ctValue : INCLUDED_DEL_OVERLAP_CONSEQUENCE_TYPES) {
+                            orFilterList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue);
+                        }
+                    }
+                } else if (compHetQueryMode.equals(CompHetQueryMode.PAIR) && koValue.equals(encodedChString)) {
+                    for (String filterVal : chFilterValues) {
+                        orFilterList.add(koValue + SEPARATOR + filterVal);
+                    }
+                } else {
+                    for (String filterVal : filterValues) {
+                        orFilterList.add(koValue + SEPARATOR + filterVal);
                     }
                 }
             }
@@ -353,20 +359,23 @@ public class RgaQueryParser {
             } else {
                 for (List<String> tmpPopFreqList : popFreqQueryList.values()) {
                     List<String> orQueryList = new LinkedList<>();
-                    for (String popFreq : tmpPopFreqList) {
-                        for (String koValue : koValues) {
-                            List<String> finalFilterValues = koValue.equals(encodedChString) ? chFilterValues : filterValues;
-                            List<String> finalCtValues = koValue.equals(encodedChString) ? chCtValues : ctValues;
-                            for (String filterVal : finalFilterValues) {
-                                for (String ctValue : finalCtValues) {
-                                    if (koValue.equals(delOverlap) && !INCLUDED_DEL_OVERLAP_CONSEQUENCE_TYPES.contains(ctValue)) {
-                                        // Don't process this filter
-                                        continue;
+                    for (String koValue : koValues) {
+                        List<String> finalFilterValues = koValue.equals(encodedChString) ? chFilterValues : filterValues;
+                        List<String> finalCtValues = koValue.equals(encodedChString) ? chCtValues : ctValues;
+                        for (String filterVal : finalFilterValues) {
+                            for (String ctValue : finalCtValues) {
+                                if (koValue.equals(delOverlap) && !INCLUDED_DEL_OVERLAP_CONSEQUENCE_TYPES.contains(ctValue)) {
+                                    // Don't process this filter
+                                    continue;
+                                }
+                                if (compHetQueryMode.equals(CompHetQueryMode.PAIR) && koValue.equals(encodedChString)
+                                        && tmpPopFreqList.size() > 1) {
+                                    List<String> sortedCombinations = generateSortedCombinations(tmpPopFreqList);
+                                    for (String popFreqPair : sortedCombinations) {
+                                        orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR + popFreqPair);
                                     }
-                                    if (compHetQueryMode.equals(CompHetQueryMode.PAIR) && koValue.equals(encodedChString)) {
-                                        orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR + popFreq
-                                                + SEPARATOR + popFreq);
-                                    } else {
+                                } else {
+                                    for (String popFreq : tmpPopFreqList) {
                                         orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR + popFreq);
                                     }
                                 }

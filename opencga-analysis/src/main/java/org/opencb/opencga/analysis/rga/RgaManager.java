@@ -1326,8 +1326,8 @@ public class RgaManager implements AutoCloseable {
                                                         ExecutorService executor)  throws RgaException, IOException {
         Future<Integer> numMatchesFuture = null;
         List<String> ids;
-        Query mainCollQuery = generateQuery(query, AuxiliarRgaDataModel.MAIN_TO_AUXILIAR_DATA_MODEL_MAP.keySet(), true);
-        Query auxCollQuery = generateQuery(query, AuxiliarRgaDataModel.MAIN_TO_AUXILIAR_DATA_MODEL_MAP.keySet(), false);
+        Query mainCollQuery = new Query(query); // Everything is used for the main collection
+        Query auxCollQuery = generateQuery(query, AuxiliarRgaDataModel.MAIN_TO_AUXILIAR_DATA_MODEL_MAP.keySet());
 
         // Make a join with the main collection to get all the data we need !!
 
@@ -1369,15 +1369,14 @@ public class RgaManager implements AutoCloseable {
     /**
      * Generate a new query based on the original query.
      *
-     * @param query Original query from where it will be generated the new query.
-     * @param fields Fields to be added in the new query (unless inverse is true).
-     * @param inverse Flag indicating to generate a new query with the fields passed or absent.
+     * @param query  Original query from where it will be generated the new query.
+     * @param fields Fields to be added in the new query.
      * @return a new query object.
      */
-    private Query generateQuery(Query query, Set<String> fields, boolean inverse) {
+    private Query generateQuery(Query query, Set<String> fields) {
         Query newQuery = new Query();
         for (Map.Entry<String, Object> entry : query.entrySet()) {
-            if ((fields.contains(entry.getKey()) && !inverse) || (!fields.contains(entry.getKey()) && inverse)) {
+            if (fields.contains(entry.getKey())) {
                 newQuery.put(entry.getKey(), entry.getValue());
             }
         }
