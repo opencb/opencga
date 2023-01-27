@@ -16,6 +16,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -25,7 +26,6 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
-import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -2337,18 +2337,19 @@ public class FileManager extends AnnotationSetManager<File> {
                     result.first().getUuid(), study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
-        } catch (CatalogException e) {
+        } catch (Exception e) {
             try {
                 OpenCGAResult<File> result = privateLink(study, params, parents, token);
                 auditManager.auditCreate(userId, Enums.Action.LINK, Enums.Resource.FILE, result.first().getId(),
                         result.first().getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
                 return result;
-            } catch (CatalogException e2) {
+            } catch (Exception e2) {
                 auditManager.auditCreate(userId, Enums.Action.LINK, Enums.Resource.FILE, params.getUri(), "",
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                 new Error(0, "", e2.getMessage())));
-                throw new CatalogException(e2.getMessage(), e2);
+                e.addSuppressed(e2);
+                throw new CatalogException(e.getMessage(), e);
             }
         }
     }
@@ -3312,8 +3313,7 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
-    private OpenCGAResult<File> privateLink(Study study, FileLinkParams params, boolean parents, String token)
-            throws CatalogException {
+    private OpenCGAResult<File> privateLink(Study study, FileLinkParams params, boolean parents, String token) throws CatalogException {
         ParamUtils.checkObj(params, "FileLinkParams");
         ParamUtils.checkParameter(params.getUri(), "uri");
         URI uriOrigin;
@@ -3522,7 +3522,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         }
                     }
                 } catch (CatalogException e) {
-                    logger.error("An error occurred when trying to create folder {}", dir.toString());
+                    throw new IOException(e);
                 }
 
                 return FileVisitResult.CONTINUE;
@@ -3578,8 +3578,62 @@ public class FileManager extends AnnotationSetManager<File> {
                         List<Sample> nonExistingSamples = new LinkedList<>();
                         validateNewSamples(study, subfile, existingSamples, nonExistingSamples, token);
 
-                        fileDBAdaptor.insert(study.getUid(), subfile, existingSamples, nonExistingSamples, Collections.emptyList(),
-                                new QueryOptions());
+                        File virtualFile;
+                        if (StringUtils.isNotEmpty(params.getVirtualFileName())) {
+                            virtualFile = new File();
+                            if (params.getVirtualFileName().contains("/")) {
+                                virtualFile.setPath(params.getVirtualFileName());
+                            } else if (params.getVirtualFileName().contains(":")) {
+                                virtualFile.setPath(params.getVirtualFileName().replaceAll(":", "/"));
+                            } else {
+                                virtualFile.setPath(params.getVirtualFileName());
+                            }
+
+                            // Check if the file exists
+                            Query tmpQuery = new Query(FileDBAdaptor.QueryParams.PATH.key(), virtualFile.getPath());
+                            QueryOptions tmpOptions = keepFieldsInQueryOptions(INCLUDE_FILE_URI_PATH, Arrays.asList(
+                                    FileDBAdaptor.QueryParams.TYPE.key(),
+                                    FileDBAdaptor.QueryParams.SAMPLE_IDS.key(),
+                                    FileDBAdaptor.QueryParams.INTERNAL_MISSING_SAMPLES.key()));
+                            OpenCGAResult<File> vFileResult = fileDBAdaptor.get(study.getUid(), tmpQuery, tmpOptions, userId);
+
+                            if (vFileResult.getNumResults() == 1) {
+                                if (!vFileResult.first().getType().equals(File.Type.VIRTUAL)) {
+                                    throw new IOException("A file with path '" + virtualFile.getPath()
+                                            + "' already existed which is not of " + "type " + File.Type.VIRTUAL);
+                                }
+                                virtualFile = vFileResult.first();
+
+                                // Validate sample ids are exactly the same as in the virtual file
+                                Set<String> sampleIds;
+                                if (virtualFile.getInternal().getStatus().getId().equals(FileStatus.MISSING_SAMPLES)) {
+                                    MissingSamples missingSamples = virtualFile.getInternal().getMissingSamples();
+                                    sampleIds = new HashSet<>(missingSamples.getExisting());
+                                    sampleIds.addAll(missingSamples.getNonExisting());
+                                } else {
+                                    sampleIds = new HashSet<>(virtualFile.getSampleIds());
+                                }
+                                if (sampleIds.size() != subfile.getSampleIds().size() || !sampleIds.containsAll(subfile.getSampleIds())) {
+                                    throw new IOException("A virtual file '" + virtualFile.getPath() + "' already exists but the list "
+                                            + "of samples differ.");
+                                }
+                            } else {
+                                validateNewFile(study, virtualFile, true);
+                                virtualFile.setSampleIds(subfile.getSampleIds());
+                                virtualFile.setUri(null);
+                                virtualFile.setType(File.Type.VIRTUAL);
+                                virtualFile.setFormat(subfile.getFormat());
+                                virtualFile.setBioformat(subfile.getBioformat());
+                            }
+
+                            subfile.setSampleIds(null);
+                            fileDBAdaptor.insertWithVirtualFile(study.getUid(), subfile, virtualFile, existingSamples, nonExistingSamples,
+                                    Collections.emptyList(), new QueryOptions());
+                        } else {
+                            fileDBAdaptor.insert(study.getUid(), subfile, existingSamples, nonExistingSamples, Collections.emptyList(),
+                                    new QueryOptions());
+                        }
+
                         subfile = getFile(study.getUid(), subfile.getUuid(), QueryOptions.empty()).first();
 
                         // Propagate ACLs
@@ -3593,11 +3647,11 @@ public class FileManager extends AnnotationSetManager<File> {
                             transformedFiles.add(subfile);
                         }
                     } else {
-                        throw new CatalogException("Cannot link the file " + Paths.get(fileUri).getFileName().toString()
+                        throw new IOException("Cannot link the file " + Paths.get(fileUri).getFileName().toString()
                                 + ". There is already a file in the path " + destinyPath + " with the same name.");
                     }
                 } catch (CatalogException e) {
-                    logger.error(e.getMessage());
+                    throw new IOException(e);
                 }
 
                 return FileVisitResult.CONTINUE;

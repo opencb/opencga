@@ -203,8 +203,18 @@ public class VariantPhoenixSchemaManager implements AutoCloseable {
     private List<PhoenixHelper.Column> buildNewFilesAndSamplesColumns(Integer studyId, Collection<Integer> fileIds) {
         List<PhoenixHelper.Column> columns = new LinkedList<>();
         Set<Integer> newSamples = new LinkedHashSet<>();
-
+        Set<Integer> virtualFiles = new HashSet<>();
         for (Integer fileId : fileIds) {
+            FileMetadata fileMetadata = metadataManager.getFileMetadata(studyId, fileId);
+            if (fileMetadata.getType() == FileMetadata.Type.PARTIAL) {
+                virtualFiles.add(fileMetadata.getAttributes().getInt(FileMetadata.VIRTUAL_PARENT));
+                // Skip partial files. Instead, process the virtual file.
+            } else {
+                newSamples.addAll(fileMetadata.getSamples());
+                columns.add(getFileColumn(studyId, fileId));
+            }
+        }
+        for (Integer fileId : virtualFiles) {
             FileMetadata fileMetadata = metadataManager.getFileMetadata(studyId, fileId);
             newSamples.addAll(fileMetadata.getSamples());
             columns.add(getFileColumn(studyId, fileId));

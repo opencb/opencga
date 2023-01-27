@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.models.common.Annotable;
+import org.opencb.opencga.core.models.file.File;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -155,6 +156,7 @@ public class FileCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIterat
             // Add the files obtained to the corresponding related files
             fileListBuffer.forEach(fileDocument -> {
                 String fileId = String.valueOf(fileDocument.get(FileDBAdaptor.QueryParams.UID.key()));
+                File.Type fileType = File.Type.valueOf(fileDocument.getString(FileDBAdaptor.QueryParams.TYPE.key()));
 
                 List<Document> tmpFileList = new ArrayList<>();
 
@@ -167,8 +169,16 @@ public class FileCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIterat
                                     .longValue();
                             String auxFileId = fileId + "-" + relatedFileUid;
                             String relation = relatedFileMap.get(auxFileId);
+                            Document relatedFileDocument = fileMap.get(relatedFileUid);
+                            if (fileType == File.Type.VIRTUAL) {
+                                relatedFileDocument = new Document()
+                                        .append("id", relatedFileDocument.get("id"))
+                                        .append("path", relatedFileDocument.get("path"))
+                                        .append("uuid", relatedFileDocument.get("uuid"))
+                                        .append("uid", relatedFileDocument.get("uid"));
+                            }
                             tmpFileList.add(new Document()
-                                    .append("file", fileMap.get(relatedFileUid))
+                                    .append("file", relatedFileDocument)
                                     .append("relation", relation));
                         });
                     }
