@@ -64,8 +64,7 @@ public class ClinicalAnalysisUtilsTest {
         catalogManagerResource.getConfiguration().serialize(
                 new FileOutputStream(catalogManagerResource.getOpencgaHome().resolve("conf").resolve("configuration.yml").toString()));
 
-        InputStream inputStream = MongoDBVariantStorageTest.class.getClassLoader()
-                .getResourceAsStream("storage-configuration.yml");
+        InputStream inputStream = MongoDBVariantStorageTest.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
         Files.copy(inputStream, catalogManagerResource.getOpencgaHome().resolve("conf").resolve("storage-configuration.yml"),
                 StandardCopyOption.REPLACE_EXISTING);
 
@@ -94,8 +93,11 @@ public class ClinicalAnalysisUtilsTest {
         Path outDir = Paths.get("target/test-data").resolve("junit_clinical_analysis_" + RandomStringUtils.randomAlphabetic(10));
         Files.createDirectories(outDir);
 
-        variantStorageManager.index(clinicalTest.studyFqn, "family.vcf", outDir.toString(), storageOptions, clinicalTest.token);
+//        variantStorageManager.index(clinicalTest.studyFqn, "family.vcf", outDir.toString(), storageOptions, clinicalTest.token);
         variantStorageManager.index(clinicalTest.studyFqn, "exomiser.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+        variantStorageManager.index(clinicalTest.studyFqn, "HG005.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+        variantStorageManager.index(clinicalTest.studyFqn, "HG006.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+        variantStorageManager.index(clinicalTest.studyFqn, "HG007.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
 
         return clinicalTest;
     }

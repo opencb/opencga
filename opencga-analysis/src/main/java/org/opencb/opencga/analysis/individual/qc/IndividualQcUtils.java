@@ -198,13 +198,13 @@ public class IndividualQcUtils {
         return individualResult.first();
     }
 
-    public static Individual getIndividualBySampleId(String studyId, String sampleId, CatalogManager catalogManager, String token) throws ToolException {
+    public static Individual getIndividualBySampleId(String studyId, String sampleId, CatalogManager catalogManager, String token)
+            throws ToolException {
         Query query = new Query();
         query.put("samples", sampleId);
         OpenCGAResult<Individual> individualResult;
         try {
-            individualResult = catalogManager.getIndividualManager().search(studyId, query, QueryOptions.empty(),
-                    token);
+            individualResult = catalogManager.getIndividualManager().search(studyId, query, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
