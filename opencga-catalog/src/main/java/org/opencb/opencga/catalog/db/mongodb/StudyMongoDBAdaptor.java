@@ -269,7 +269,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         studyObject.put(PRIVATE_UID, studyUid);
         studyObject.put(QueryParams.VARIABLE_SET.key(), variableSetDocuments);
 
-        //Set ProjectId
+        //Set ProjectId - This is in use in ProjectMongoDBAdaptor. Any changes here should force changes in ProjectMongoDBAdaptor as well
         studyObject.put(PRIVATE_PROJECT, new Document()
                 .append(ID, project.getId())
                 .append(PRIVATE_UID, project.getUid())

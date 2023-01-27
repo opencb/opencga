@@ -665,6 +665,26 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
+        List<Long> studyUids = query.getAsLongList(QueryParams.STUDY_UID.key());
+        if (!studyUids.isEmpty()) {
+            query.remove(QueryParams.STUDY_UID.key());
+            Query studyQuery = new Query(PRIVATE_UID, studyUids);
+            QueryOptions studyOptions = new QueryOptions(QueryOptions.INCLUDE, PRIVATE_PROJECT);
+            OpenCGAResult<Document> result = dbAdaptorFactory.getCatalogStudyDBAdaptor()
+                    .nativeGet(clientSession, studyQuery, studyOptions, user);
+            if (result.getNumResults() == 0) {
+                return new MongoDBIterator<>(MongoDBIterator.EMPTY_MONGO_CURSOR_ITERATOR, 0);
+            }
+            // Add all project uids to the main query parameter
+            query.put(PRIVATE_UID,
+                    result.getResults()
+                            .stream()
+                            .map(x -> x.get(PRIVATE_PROJECT, Document.class))
+                            .map(x -> x.get(PRIVATE_UID, Long.class))
+                            .distinct()
+                            .collect(Collectors.toList()));
+        }
+
         String requestedUser = query.getString(QueryParams.USER_ID.key());
         if (StringUtils.isNotEmpty(requestedUser)) {
             if (requestedUser.equals(user)) {
