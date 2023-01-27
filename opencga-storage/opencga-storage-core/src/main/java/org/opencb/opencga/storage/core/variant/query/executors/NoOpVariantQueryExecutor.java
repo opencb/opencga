@@ -12,10 +12,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.query.KeyOpValue;
-import org.opencb.opencga.storage.core.variant.query.Values;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.GENOTYPE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
 
 /**
  * Look for technically correct queries that will return 0 results.
@@ -65,6 +63,13 @@ public class NoOpVariantQueryExecutor extends VariantQueryExecutor {
             }
         }
 
+        if (VariantQueryUtils.NON_EXISTING_REGION.equals(query.getString(REGION.key()))) {
+            ParsedVariantQuery.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
+            if (xrefs.getGenes().isEmpty() && xrefs.getVariants().isEmpty()) {
+                // Nothing to return
+                return true;
+            }
+        }
 
         return false;
     }
