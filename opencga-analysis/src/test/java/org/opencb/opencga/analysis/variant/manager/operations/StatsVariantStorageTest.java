@@ -146,8 +146,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
                 DataResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, new Cohort()
                         .setId(cohortName)
                         .setSamples(Collections.emptyList())
-                        .setType(Enums.CohortType.COLLECTION),
-                        new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId);
+                        .setType(Enums.CohortType.COLLECTION), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId);
                 queryResults.add(cohort.first());
             } else {
                 logger.warn("cohort {} was already created", cohortName);

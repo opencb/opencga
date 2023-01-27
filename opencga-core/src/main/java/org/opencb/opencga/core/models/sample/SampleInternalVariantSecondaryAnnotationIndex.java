@@ -4,20 +4,20 @@ import org.opencb.opencga.core.models.common.IndexStatus;
 
 import java.util.Objects;
 
-public class SampleInternalVariantGenotypeIndex {
+public class SampleInternalVariantSecondaryAnnotationIndex {
 
     private IndexStatus status;
 
-    public SampleInternalVariantGenotypeIndex() {
+    public SampleInternalVariantSecondaryAnnotationIndex() {
     }
 
-    public SampleInternalVariantGenotypeIndex(IndexStatus status) {
+    public SampleInternalVariantSecondaryAnnotationIndex(IndexStatus status) {
         this.status = status;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("SampleInternalVariantGenotypeIndex{");
+        final StringBuilder sb = new StringBuilder("SampleInternalVariantSecondaryIndex{");
         sb.append("status=").append(status);
         sb.append('}');
         return sb.toString();
@@ -27,7 +27,7 @@ public class SampleInternalVariantGenotypeIndex {
         return status;
     }
 
-    public SampleInternalVariantGenotypeIndex setStatus(IndexStatus status) {
+    public SampleInternalVariantSecondaryAnnotationIndex setStatus(IndexStatus status) {
         this.status = status;
         return this;
     }
@@ -36,7 +36,7 @@ public class SampleInternalVariantGenotypeIndex {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        SampleInternalVariantGenotypeIndex that = (SampleInternalVariantGenotypeIndex) o;
+        SampleInternalVariantSecondaryAnnotationIndex that = (SampleInternalVariantSecondaryAnnotationIndex) o;
         return Objects.equals(status, that.status);
     }
 

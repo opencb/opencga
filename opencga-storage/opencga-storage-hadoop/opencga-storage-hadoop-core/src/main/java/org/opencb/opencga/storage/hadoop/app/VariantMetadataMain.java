@@ -1,10 +1,13 @@
 package org.opencb.opencga.storage.hadoop.app;
 
 import com.google.common.collect.Iterators;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -59,10 +62,12 @@ public class VariantMetadataMain extends AbstractMain {
         public VariantMetadataCommandExecutor(String argsContext) {
             super(argsContext);
             addSubCommand(Arrays.asList("tables", "table"), "[help|list]", new HBaseTablesCommandExecutor());
-            addSubCommand(Arrays.asList("study-metadata", "sm", "study", "studies"), "[help|list|id|read|write] <metadata_table> ...",
+            addSubCommand(Arrays.asList("study-metadata", "sm", "study", "studies"), "[help|list|id|read|write|rename] <metadata_table> ..",
                     new StudyCommandExecutor());
             addSubCommand(Arrays.asList("file-metadata", "fm", "file", "files"), "[help|list|id|read|write] <metadata_table> ...",
                     new FileCommandExecutor());
+            addSubCommand(Arrays.asList("variant-file-metadata", "vfm"), "[help|list|id|read|write] <metadata_table> ...",
+                    new VariantFileCommandExecutor());
             addSubCommand(Arrays.asList("sample-metadata", "sample", "samples"), "[help|list|id|read|write] <metadata_table> ...",
                     new SampleCommandExecutor());
             addSubCommand(Arrays.asList("cohort-metadata", "cohort", "cohorts"), "[help|list|id|read|write] <metadata_table> ...",
@@ -156,7 +161,7 @@ public class VariantMetadataMain extends AbstractMain {
         }
     }
 
-    public static class FileCommandExecutor extends ResourceCommandExecutor<FileMetadata> {
+    public static class FileCommandExecutor extends StudyResourceCommandExecutor<FileMetadata> {
         protected FileCommandExecutor() {
             super(FileMetadata.class);
             addSubCommand(Collections.singletonList("create-virtual-file"),
@@ -184,7 +189,7 @@ public class VariantMetadataMain extends AbstractMain {
             mm.unsecureUpdateFileMetadata(studyId, file);
         }
 
-        public class CreateVirtualFileParams extends ToolParams {
+        public static class CreateVirtualFileParams extends ToolParams {
             protected String virtualFileName;
             protected List<String> files;
         }
@@ -203,7 +208,41 @@ public class VariantMetadataMain extends AbstractMain {
         }
     }
 
-    public static class CohortCommandExecutor extends ResourceCommandExecutor<CohortMetadata> {
+    public static class VariantFileCommandExecutor extends ResourceCommandExecutor<VariantFileMetadata> {
+        protected VariantFileCommandExecutor() {
+            super(VariantFileMetadata.class);
+        }
+
+        @Override
+        protected Iterator<VariantFileMetadata> list(int studyId) {
+            try {
+                return mm.variantFileMetadataIterator(studyId, new QueryOptions());
+            } catch (StorageEngineException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        protected int id(int studyId, Object object) {
+            return mm.getFileIdOrFail(studyId, object);
+        }
+
+        @Override
+        protected VariantFileMetadata read(int studyId, int id) {
+            try {
+                return mm.getVariantFileMetadata(studyId, id, new QueryOptions()).first();
+            } catch (StorageEngineException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        protected void write(int studyId, VariantFileMetadata file) throws StorageEngineException {
+            mm.updateVariantFileMetadata(studyId, file);
+        }
+    }
+
+    public static class CohortCommandExecutor extends StudyResourceCommandExecutor<CohortMetadata> {
         protected CohortCommandExecutor() {
             super(CohortMetadata.class);
         }
@@ -229,7 +268,7 @@ public class VariantMetadataMain extends AbstractMain {
         }
     }
 
-    public static class SampleCommandExecutor extends ResourceCommandExecutor<SampleMetadata> {
+    public static class SampleCommandExecutor extends StudyResourceCommandExecutor<SampleMetadata> {
         protected SampleCommandExecutor() {
             super(SampleMetadata.class);
         }
@@ -299,6 +338,36 @@ public class VariantMetadataMain extends AbstractMain {
                 default:
                     return getDefaultFilters(k, v);
             }
+        }
+    }
+
+    public abstract static class StudyResourceCommandExecutor<T extends StudyResourceMetadata<T>> extends ResourceCommandExecutor<T> {
+
+        protected StudyResourceCommandExecutor(Class<T> clazz) {
+            super(clazz);
+        }
+
+        @Override
+        protected Predicate<T> getFilter(String k, String v) throws NoSuchMethodException {
+            if (k.startsWith("status.")) {
+                String statusKey = StringUtils.removeStart(k, "status.");
+                TaskMetadata.Status expectedStatus = TaskMetadata.Status.valueOf(v.toUpperCase(Locale.ROOT));
+                return (t) -> expectedStatus == t.getStatus(statusKey);
+            }
+            switch (k.toLowerCase(Locale.ROOT)) {
+                case "id":
+                    int expectedId = Integer.parseInt(v);
+                    return (t) -> t.getId() == expectedId;
+                case "studyid":
+                case "study":
+                    int expectedStudy = Integer.parseInt(v);
+                    return (t) -> t.getStudyId() == expectedStudy;
+                case "name":
+                    return (t) -> t.getName().equals(v);
+                default:
+                    return super.getFilter(k, v);
+            }
+
         }
     }
 

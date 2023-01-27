@@ -815,7 +815,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             updateFileMetadata(studyId, fileId, fileMetadata -> {
                 samples.addAll(fileMetadata.getSamples());
                 fileMetadata.setIndexStatus(TaskMetadata.Status.NONE);
-                fileMetadata.setSecondaryIndexStatus(TaskMetadata.Status.NONE);
+                fileMetadata.setSecondaryAnnotationIndexStatus(TaskMetadata.Status.NONE);
                 fileMetadata.setAnnotationStatus(TaskMetadata.Status.NONE);
                 if (fileMetadata.getType() == FileMetadata.Type.VIRTUAL) {
                     partialFiles.addAll(fileMetadata.getAttributes().getAsIntegerList(FileMetadata.VIRTUAL_FILES));
@@ -827,7 +827,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             updateFileMetadata(studyId, fileId, fileMetadata -> {
                 samples.addAll(fileMetadata.getSamples());
                 fileMetadata.setIndexStatus(TaskMetadata.Status.NONE);
-                fileMetadata.setSecondaryIndexStatus(TaskMetadata.Status.NONE);
+                fileMetadata.setSecondaryAnnotationIndexStatus(TaskMetadata.Status.NONE);
                 fileMetadata.setAnnotationStatus(TaskMetadata.Status.NONE);
             });
 //            deleteVariantFileMetadata(studyId, fileId);
@@ -848,6 +848,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             });
         }
         fileDBAdaptor.removeIndexedFiles(studyId, fileIds);
+    }
+
+    public Iterable<FileMetadata> fileMetadataIterable(int studyId) {
+        return () -> fileDBAdaptor.fileIterator(studyId);
     }
 
     public Iterator<FileMetadata> fileMetadataIterator(int studyId) {

@@ -49,7 +49,11 @@ public abstract class ToolParams {
     }
 
     public ObjectMap toObjectMap(Map<String, ?> other) {
-        return toObjectMap().appendAll(other);
+        ObjectMap objectMap = toObjectMap();
+        if (other != null) {
+            objectMap.appendAll(other);
+        }
+        return objectMap;
     }
 
     public Map<String, Object> toParams() {

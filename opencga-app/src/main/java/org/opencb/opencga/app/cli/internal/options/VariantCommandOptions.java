@@ -31,7 +31,7 @@ import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.VariantFamilyIndexOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
-import org.opencb.opencga.analysis.variant.operations.VariantSampleIndexOperationTool;
+import org.opencb.opencga.analysis.variant.operations.VariantSecondarySampleIndexOperationTool;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
@@ -504,7 +504,7 @@ public class VariantCommandOptions {
     @Parameters(commandNames = {SAMPLE_INDEX_COMMAND}, commandDescription = SAMPLE_INDEX_COMMAND_DESCRIPTION)
     public class SampleIndexCommandOptions extends GeneralCliOptions.StudyOption {
         public static final String SAMPLE_INDEX_COMMAND = "sample-index";
-        public static final String SAMPLE_INDEX_COMMAND_DESCRIPTION = VariantSampleIndexOperationTool.DESCRIPTION;
+        public static final String SAMPLE_INDEX_COMMAND_DESCRIPTION = VariantSecondarySampleIndexOperationTool.DESCRIPTION;
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;

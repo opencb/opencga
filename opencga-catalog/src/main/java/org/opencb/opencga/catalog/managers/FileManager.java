@@ -76,6 +76,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
@@ -445,9 +446,13 @@ public class FileManager extends AnnotationSetManager<File> {
         return updateFileInternalField(file, index, FileDBAdaptor.QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(), token);
     }
 
-    public OpenCGAResult<?> updateFileInternalVariantSecondaryIndex(File file, FileInternalVariantSecondaryIndex index, String token)
+    public OpenCGAResult<?> updateFileInternalVariantSecondaryAnnotationIndex(File file, FileInternalVariantSecondaryAnnotationIndex index,
+                                                                              String token)
             throws CatalogException {
-        return updateFileInternalField(file, index, FileDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_INDEX.key(), token);
+        return updateFileInternalField(file, index, Arrays.asList(
+                FileDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX.key(),
+                FileDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_INDEX.key()
+        ), token);
     }
 
     public OpenCGAResult<?> updateFileInternalAlignmentIndex(File file, FileInternalAlignmentIndex index, String token)
@@ -456,19 +461,30 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     private OpenCGAResult<?> updateFileInternalField(File file, Object value, String fieldKey, String token) throws CatalogException {
+        return updateFileInternalField(file, value, Collections.singletonList(fieldKey), token);
+    }
+
+    private OpenCGAResult<?> updateFileInternalField(File file, Object value, List<String> fieldKeys, String token)
+            throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyDBAdaptor.get(file.getStudyUid(), StudyManager.INCLUDE_STUDY_IDS).first();
 
         ObjectMap auditParams = new ObjectMap()
                 .append("file", file)
-                .append(fieldKey, value)
                 .append("token", token);
+        for (String fieldKey : fieldKeys) {
+            auditParams.append(fieldKey, value);
+        }
 
         authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FilePermissions.WRITE);
 
         ObjectMap params;
         try {
-            params = new ObjectMap(fieldKey, new ObjectMap(getUpdateObjectMapper().writeValueAsString(value)));
+            params = new ObjectMap();
+            ObjectMap valueAsObjectMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(value));
+            for (String fieldKey : fieldKeys) {
+                params.append(fieldKey, valueAsObjectMap);
+            }
         } catch (JsonProcessingException e) {
             throw new CatalogException("Cannot parse index object: " + e.getMessage(), e);
         }
@@ -1736,7 +1752,6 @@ public class FileManager extends AnnotationSetManager<File> {
         } catch (IOException e) {
             throw CatalogIOException.ioManagerException(folder.getUri(), e);
         }
-        Iterator<URI> iterator = ioManager.listFilesStream(folder.getUri()).iterator();
 
         if (filter == null) {
             filter = uri -> true;
@@ -1747,34 +1762,38 @@ public class FileManager extends AnnotationSetManager<File> {
         OpenCGAResult<File> result = OpenCGAResult.empty();
         List<File> fileList = new ArrayList<>();
         List<Event> eventList = new ArrayList<>();
-        while (iterator.hasNext()) {
-            URI fileUri = iterator.next().normalize();
 
-            numMatches++;
+        try (Stream<URI> stream = ioManager.listFilesStream(folder.getUri())) {
+            Iterator<URI> iterator = stream.iterator();
+            while (iterator.hasNext()) {
+                URI fileUri = iterator.next().normalize();
 
-            if (!filter.test(fileUri)) {
-                continue;
-            }
+                numMatches++;
 
-            String relativeFilePath = folder.getUri().relativize(fileUri).getPath();
-            String finalCatalogPath = Paths.get(folder.getPath()).resolve(relativeFilePath).toString();
-            if (relativeFilePath.endsWith("/") && !finalCatalogPath.endsWith("/")) {
-                finalCatalogPath += "/";
-            }
-
-            try {
-                File registeredFile = internalGet(study.getUid(), finalCatalogPath, INCLUDE_FILE_URI_PATH, userId).first();
-                if (!registeredFile.getUri().equals(fileUri)) {
-                    eventList.add(new Event(Event.Type.WARNING, registeredFile.getPath(), "The uri registered in Catalog '"
-                            + registeredFile.getUri().getPath() + "' for the path does not match the uri that would have been synced '"
-                            + fileUri.getPath() + "'"));
+                if (!filter.test(fileUri)) {
+                    continue;
                 }
-                fileList.add(registeredFile);
-            } catch (CatalogException e) {
-                File file = registerFile(study, finalCatalogPath, fileUri, jobId, token).first();
 
-                result.setNumInserted(result.getNumInserted() + 1);
-                fileList.add(file);
+                String relativeFilePath = folder.getUri().relativize(fileUri).getPath();
+                String finalCatalogPath = Paths.get(folder.getPath()).resolve(relativeFilePath).toString();
+                if (relativeFilePath.endsWith("/") && !finalCatalogPath.endsWith("/")) {
+                    finalCatalogPath += "/";
+                }
+
+                try {
+                    File registeredFile = internalGet(study.getUid(), finalCatalogPath, INCLUDE_FILE_URI_PATH, userId).first();
+                    if (!registeredFile.getUri().equals(fileUri)) {
+                        eventList.add(new Event(Event.Type.WARNING, registeredFile.getPath(), "The uri registered in Catalog '"
+                                + registeredFile.getUri().getPath() + "' for the path does not match the uri that would have been synced '"
+                                + fileUri.getPath() + "'"));
+                    }
+                    fileList.add(registeredFile);
+                } catch (CatalogException e) {
+                    File file = registerFile(study, finalCatalogPath, fileUri, jobId, token).first();
+
+                    result.setNumInserted(result.getNumInserted() + 1);
+                    fileList.add(file);
+                }
             }
         }
         result.setNumMatches(numMatches);
