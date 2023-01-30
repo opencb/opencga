@@ -1190,11 +1190,13 @@ public class RgaManager implements AutoCloseable {
         // the condition below.
 //        if (COMP_HET_QUERY_MODE.equals(RgaQueryParams.CompHetQueryMode.PAIR) && !myQuery.containsKey(RgaQueryParams.KNOCKOUT.key())) {
             // Fill with all knockout types to ensure comp_het queries are performed as pairs
+        if (!myQuery.containsKey(RgaQueryParams.KNOCKOUT.key())) {
             List<String> knockoutValues = EnumSet.allOf(KnockoutVariant.KnockoutType.class)
                     .stream()
                     .map(Enum::name)
                     .collect(Collectors.toList());
             myQuery.append(RgaQueryParams.KNOCKOUT.key(), knockoutValues);
+        }
 //        }
         return myQuery;
     }
