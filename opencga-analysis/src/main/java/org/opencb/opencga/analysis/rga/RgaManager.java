@@ -77,7 +77,7 @@ public class RgaManager implements AutoCloseable {
 
     private static final int KNOCKOUT_INSERT_BATCH_SIZE = 25;
 
-    private Map<String, OpenCGAResult<?>> cacheMap;
+    private ConcurrentHashMap<String, OpenCGAResult<?>> cacheMap;
     private final int CACHE_SIZE;
     private static final int DEFAULT_CACHE_SIZE = 1000;
 
@@ -2138,7 +2138,7 @@ public class RgaManager implements AutoCloseable {
         }
 
         String cacheKey = generateCacheKey(method, studyStr, query, options);
-        cacheMap.put(cacheKey, result);
+        cacheMap.putIfAbsent(cacheKey, result);
     }
 
     private <T> OpenCGAResult<T> getCacheResults(String method, String studyStr, Query query, QueryOptions options, StopWatch stopWatch) {
