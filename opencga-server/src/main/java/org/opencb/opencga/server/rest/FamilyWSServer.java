@@ -22,6 +22,9 @@ import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.family.FamilyTsvAnnotationLoader;
+import org.opencb.opencga.analysis.tools.ToolRunner;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -31,12 +34,16 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.family.*;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.tools.annotations.*;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -115,6 +122,38 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.FAMILY_RELEASE_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_RELEASE_PARAM) String release,
             @ApiParam(value = ParamConstants.FAMILY_SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_SNAPSHOT_PARAM) Integer snapshot) {
         try {
+            query.remove(ParamConstants.STUDY_PARAM);
+            return createOkResponse(familyManager.search(studyStr, query, queryOptions, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/pedigreeGraph")
+    @ApiOperation(value = "Compute pedigree graph image", response = Object.class)
+    public Response pedigreeGraph(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.FAMILY_ID_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_ID_PARAM) String familyId) {
+        try {
+            // Create temporal directory
+            java.nio.file.Path outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "pedigree-graph-" + System.nanoTime());
+            outDir.toFile().mkdir();
+            if (!outDir.toFile().exists()) {
+                return createErrorResponse(new Exception("Error creating temporal directory for pedigree graph analysis"));
+            }
+
+            VariantStorageManager variantStorageManager = new VariantStorageManager(catalogManager, storageEngineFactory);
+            ToolRunner toolRunner = new ToolRunner(opencgaHome.toAbsolutePath().toString(), catalogManager,
+                    StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
+
+            // Pedigree gramp params
+            PedigreeGraphAnalysisParams params = new PedigreeGraphAnalysisParams();
+            params.setFamilyId(familyId);
+
+            toolRunner.execute(MutationalSignatureAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, studyStr), outDir,
+                    null, token);
+
             query.remove(ParamConstants.STUDY_PARAM);
             return createOkResponse(familyManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
