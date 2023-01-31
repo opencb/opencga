@@ -18,6 +18,7 @@ public class ProjectMetadata {
     private String species;
     private String assembly;
     private String dataRelease;
+    private String token;
 
     private int release;
 
@@ -217,26 +218,27 @@ public class ProjectMetadata {
                     .append("commit", commit)
                     .toString();
         }
-
-
     }
 
     public ProjectMetadata() {
         release = 1;
+        dataRelease = "";
+        token = "";
         annotation = new VariantAnnotationSets();
         counters = new HashMap<>();
         attributes = new ObjectMap();
     }
 
     public ProjectMetadata(String species, String assembly, int release) {
-        this(species, assembly, null, release, null, null, null);
+        this(species, assembly, null, "", release, null, null, null);
     }
 
-    public ProjectMetadata(String species, String assembly, String dataRelease, int release, ObjectMap attributes,
+    public ProjectMetadata(String species, String assembly, String dataRelease, String token, int release, ObjectMap attributes,
                            Map<String, Integer> counters, VariantAnnotationSets annotation) {
         this.species = species;
         this.assembly = assembly;
         this.dataRelease = dataRelease;
+        this.token = token;
         this.release = release;
         this.attributes = attributes != null ? attributes : new ObjectMap();
         this.annotation = annotation != null ? annotation : new VariantAnnotationSets();
@@ -244,7 +246,8 @@ public class ProjectMetadata {
     }
 
     public ProjectMetadata copy() {
-        return new ProjectMetadata(species, assembly, dataRelease, release, new ObjectMap(attributes), new HashMap<>(counters), annotation);
+        return new ProjectMetadata(species, assembly, dataRelease, token, release, new ObjectMap(attributes), new HashMap<>(counters),
+                annotation);
     }
 
     public String getSpecies() {
@@ -271,6 +274,15 @@ public class ProjectMetadata {
 
     public ProjectMetadata setDataRelease(String dataRelease) {
         this.dataRelease = dataRelease;
+        return this;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public ProjectMetadata setToken(String token) {
+        this.token = token;
         return this;
     }
 

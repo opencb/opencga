@@ -42,7 +42,7 @@ public class CellBaseConfiguration {
     @DataField(id = "dataRelease", description = "CellBase data release version to be used. If empty, will use the active one")
     private String dataRelease;
 
-    @DataField(id = "token", description = "CellBase token to access to the licensed data sources such as COSMIC or HGMD")
+    @DataField(id = "token", description = "CellBase token to access to the licensed/restricted data sources such as COSMIC, HGMD,...")
     private String token;
 
     public CellBaseConfiguration() {

@@ -50,6 +50,8 @@ public class CellBaseUtilsTest {
     @Parameters(name = "{0}{1}/?assembly={2}%dataRelease={3}")
     public static List<Object[]> data() {
         return Arrays.asList(
+                new Object[]{"http://127.0.0.1:8080/cellbase-5.3.0-SNAPSHOT/", "v5", "grch37", "1"},
+                new Object[]{"http://ws.opencb.org/cellbase-4.7.3/", "v4", "grch37", null},
                 new Object[]{"http://ws.opencb.org/cellbase-4.7.3/", "v4", "grch37", null},
                 new Object[]{"http://ws.opencb.org/cellbase-4.8.2/", "v4", "grch37", null},
 //                new Object[]{"http://ws.opencb.org/cellbase-4.8.3/", "v4", "grch37", null},
@@ -74,12 +76,9 @@ public class CellBaseUtilsTest {
     @Parameter(3)
     public String dataRelease;
 
-    @Parameter(4)
-    public String token;
-
     @Before
     public void setUp() throws Exception {
-        cellBaseClient = new CellBaseClient("hsapiens", assembly, dataRelease, token,
+        cellBaseClient = new CellBaseClient("hsapiens", assembly, dataRelease, "",
                 new ClientConfiguration().setVersion(version)
                         .setRest(new RestConfig(Collections.singletonList(url), 10000)));
         cellBaseUtils = new CellBaseUtils(cellBaseClient);
@@ -242,4 +241,40 @@ public class CellBaseUtilsTest {
         assertTrue(withTranscriptFlags);
     }
 
+    @Test
+    public void testAnnotationWithHGMDToken() throws IOException {
+        Assume.assumeTrue("Testing local CellBase", url.contains("127.0.0.1"));
+
+        String hgmdToken = "eyJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VzIjp7ImNvc21pYyI6LTU1Njk4MDIyODAwMDAwLCJoZ21kIjo5MjIzMzcyMDM2ODU0Nzc1ODA3fSwidmVyc2lvbiI6IjEuMCIsInN1YiI6IlVDQU0iLCJpYXQiOjE2NzQxNTQ0Nzh9.SursjDxHyjxroH9xllPJCOAnGEGLvTLG5pi1mUhIiUQ";
+
+        cellBaseClient = new CellBaseClient("hsapiens", assembly, dataRelease, hgmdToken,
+                new ClientConfiguration().setVersion(version)
+                        .setRest(new RestConfig(Collections.singletonList(url), 10000)));
+        cellBaseUtils = new CellBaseUtils(cellBaseClient);
+
+        QueryOptions queryOptions = new QueryOptions("include", "clinical");
+        CellBaseDataResponse<VariantAnnotation> v = cellBaseClient.getVariantClient()
+                .getAnnotationByVariantIds(Collections.singletonList("10:113588287:G:A"), queryOptions);
+        VariantAnnotation variantAnnotation = v.firstResult();
+        assertEquals(2, variantAnnotation.getTraitAssociation().size());
+        assertEquals("clinvar", variantAnnotation.getTraitAssociation().get(0).getSource().getName());
+        assertEquals("hgmd", variantAnnotation.getTraitAssociation().get(1).getSource().getName());
+    }
+
+    @Test
+    public void testAnnotationWithoutHGMDToken() throws IOException {
+        Assume.assumeTrue("The local CellBase", url.contains("127.0.0.1"));
+
+        cellBaseClient = new CellBaseClient("hsapiens", assembly, dataRelease, "",
+                new ClientConfiguration().setVersion(version)
+                        .setRest(new RestConfig(Collections.singletonList(url), 10000)));
+        cellBaseUtils = new CellBaseUtils(cellBaseClient);
+
+        QueryOptions queryOptions = new QueryOptions("include", "clinical");
+        CellBaseDataResponse<VariantAnnotation> v = cellBaseClient.getVariantClient()
+                .getAnnotationByVariantIds(Collections.singletonList("10:113588287:G:A"), queryOptions);
+        VariantAnnotation variantAnnotation = v.firstResult();
+        assertEquals(1, variantAnnotation.getTraitAssociation().size());
+        assertEquals("clinvar", variantAnnotation.getTraitAssociation().get(0).getSource().getName());
+    }
 }

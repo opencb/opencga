@@ -423,6 +423,10 @@ public class CellBaseUtils {
         return cellBaseClient.getDataRelease();
     }
 
+    public String getToken() {
+        return cellBaseClient.getToken();
+    }
+
     public String getURL() {
         return cellBaseClient.getClientConfiguration().getRest().getHosts().get(0);
     }
@@ -517,7 +521,8 @@ public class CellBaseUtils {
                 + "version '" + getVersion() + "', "
                 + "species '" + getSpecies() + "', "
                 + "assembly '" + getAssembly() + "', "
-                + "dataRelease '" + getDataRelease() + "'";
+                + "dataRelease '" + getDataRelease() + "', "
+                + "token '" + getToken() + "'";
 
     }
 }
