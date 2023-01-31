@@ -75,6 +75,14 @@ public class NoOpVariantQueryExecutor extends VariantQueryExecutor {
                 return true;
             }
         }
+
+        if (VariantQueryUtils.NON_EXISTING_REGION.equals(query.getString(REGION.key()))) {
+            if (xrefs.getGenes().isEmpty() && xrefs.getVariants().isEmpty()) {
+                // Nothing to return
+                return true;
+            }
+        }
+
         return false;
     }
 

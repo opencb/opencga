@@ -213,7 +213,7 @@ public abstract class AbstractHBaseDBAdaptor {
         }
     }
 
-    private <T> T convertResult(Result result, Class<T> clazz) throws IOException {
+    protected <T> T convertResult(Result result, Class<T> clazz) throws IOException {
         if (result == null || result.isEmpty()) {
             return null;
         } else {

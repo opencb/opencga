@@ -59,7 +59,7 @@ public class DummyFileMetadataDBAdaptor implements FileMetadataDBAdaptor {
     }
 
     @Override
-    public LinkedHashSet<Integer> getIndexedFiles(int studyId) {
+    public LinkedHashSet<Integer> getIndexedFiles(int studyId, boolean includePartial) {
         return new LinkedHashSet<>(FILE_METADATA_MAP.getOrDefault(studyId, Collections.emptyMap()).values()
                 .stream()
                 .filter(FileMetadata::isIndexed)

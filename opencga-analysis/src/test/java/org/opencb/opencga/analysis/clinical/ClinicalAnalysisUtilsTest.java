@@ -67,8 +67,11 @@ public class ClinicalAnalysisUtilsTest {
         Path outDir = Paths.get("target/test-data").resolve("junit_clinical_analysis_" + RandomStringUtils.randomAlphabetic(10));
         Files.createDirectories(outDir);
 
-        variantStorageManager.index(clinicalTest.studyFqn, "family.vcf", outDir.toString(), storageOptions, clinicalTest.token);
+//        variantStorageManager.index(clinicalTest.studyFqn, "family.vcf", outDir.toString(), storageOptions, clinicalTest.token);
         variantStorageManager.index(clinicalTest.studyFqn, "exomiser.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+        variantStorageManager.index(clinicalTest.studyFqn, "HG005.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+        variantStorageManager.index(clinicalTest.studyFqn, "HG006.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+        variantStorageManager.index(clinicalTest.studyFqn, "HG007.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
 
         return clinicalTest;
     }

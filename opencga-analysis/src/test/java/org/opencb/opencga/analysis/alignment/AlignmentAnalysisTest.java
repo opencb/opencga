@@ -16,101 +16,40 @@
 
 package org.opencb.opencga.analysis.alignment;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.hamcrest.CoreMatchers;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
-import org.opencb.biodata.models.clinical.qc.HRDetect;
-import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
-import org.opencb.biodata.models.clinical.qc.Signature;
-import org.opencb.biodata.models.clinical.qc.SignatureFitting;
-import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
-import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentGeneCoverageStatsAnalysis;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
-import org.opencb.opencga.analysis.variant.VariantExportTool;
-import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
-import org.opencb.opencga.analysis.variant.hrdetect.HRDetectAnalysis;
-import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
-import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
-import org.opencb.opencga.analysis.variant.operations.VariantSampleIndexOperationTool;
-import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
-import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
-import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
-import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.common.ExceptionUtils;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.AlignmentGeneCoverageStatsParams;
-import org.opencb.opencga.core.models.cohort.Cohort;
-import org.opencb.opencga.core.models.cohort.CohortCreateParams;
-import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
-import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
-import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.individual.IndividualInternal;
-import org.opencb.opencga.core.models.individual.Location;
-import org.opencb.opencga.core.models.operations.variant.VariantSampleIndexParams;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleQualityControl;
-import org.opencb.opencga.core.models.sample.SampleReferenceParam;
-import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.user.Account;
-import org.opencb.opencga.core.models.variant.*;
-import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.tools.result.ExecutionResult;
-import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
-import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Arrays;
+import java.util.Map;
 
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.junit.Assert.*;
-import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
+import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
 public class AlignmentAnalysisTest {
@@ -317,7 +256,7 @@ public class AlignmentAnalysisTest {
         String bamFilename = getClass().getResource("/biofiles/HG00096.chrom20.small.bam").getFile();
         //String bamFilename = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
         File bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFilename, "", "", "", null, null, null,
-                null), false, token).first();
+                null, null), false, token).first();
          assertEquals(0, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().size());
 
         AlignmentGeneCoverageStatsParams params = new AlignmentGeneCoverageStatsParams();
@@ -328,7 +267,7 @@ public class AlignmentAnalysisTest {
         toolRunner.execute(AlignmentGeneCoverageStatsAnalysis.class, params, new ObjectMap(), outdir, null, token);
 
         bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFilename, "", "", "", null, null, null,
-                null), false, token).first();
+                null, null), false, token).first();
         assertEquals(1, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().size());
         assertEquals(geneName, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().get(0).getGeneName());
         assertEquals(10, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().get(0).getStats().size());
