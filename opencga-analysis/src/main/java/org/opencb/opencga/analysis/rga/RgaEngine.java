@@ -192,7 +192,7 @@ public class RgaEngine implements Closeable {
     public RgaIterator geneQuery(String collection, Query query, QueryOptions queryOptions) throws RgaException {
         SolrQuery solrQuery = parser.parseQuery(query);
         fixGeneOptions(queryOptions, query, solrQuery);
-        solrQuery.setRows(Integer.MAX_VALUE);
+        solrQuery.setRows(queryOptions.getInt(QueryOptions.LIMIT, Integer.MAX_VALUE));
         try {
             return new RgaIterator(solrManager.getSolrClient(), collection, solrQuery);
         } catch (SolrServerException e) {
@@ -226,7 +226,7 @@ public class RgaEngine implements Closeable {
     public RgaIterator variantQuery(String collection, Query query, QueryOptions queryOptions) throws RgaException {
         SolrQuery solrQuery = parser.parseQuery(query);
         fixVariantOptions(queryOptions, query, solrQuery);
-        solrQuery.setRows(Integer.MAX_VALUE);
+        solrQuery.setRows(queryOptions.getInt(QueryOptions.LIMIT, Integer.MAX_VALUE));
         try {
             return new RgaIterator(solrManager.getSolrClient(), collection, solrQuery);
         } catch (SolrServerException e) {
