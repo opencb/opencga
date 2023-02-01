@@ -27,6 +27,12 @@ def deprecated(func):
     return new_func
 
 
+def snake_to_camel_case(text):
+    """Converts snake_case to camelCase"""
+    components = text.split('_')
+    return components[0] + ''.join(x.title() for x in components[1:])
+
+
 def _create_rest_url(host, version, sid, category, resource, subcategory=None, query_id=None,
                      second_query_id=None, options=None):
     """Creates the URL for querying the REST service"""
@@ -58,6 +64,7 @@ def _create_rest_url(host, version, sid, category, resource, subcategory=None, q
     if options is not None:
         opts = []
         for k, v in options.items():
+            k = snake_to_camel_case(k)
             if k == 'debug':
                 continue
             if isinstance(v, list):

@@ -25,15 +25,8 @@ Family data model hosts information about any family.
 ## Data Model
 
 ### Family
-<<<<<<< HEAD
-<<<<<<< HEAD
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/family/Family.java).
-=======
-You can find the Java code [here](https://github.com/opencb/opencga/tree/release-2.2.x/opencga-core/src/main/java/org/opencb/opencga/core/models/family/Family.java).
->>>>>>> release-2.2.x
-=======
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-1587/opencga-core/src/main/java/org/opencb/opencga/core/models/family/Family.java).
->>>>>>> release-2.2.x
+
 
 | Field | Description |
 | :---  | :--- |

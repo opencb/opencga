@@ -99,6 +99,13 @@ public class ProjectManagerTest extends GenericTest {
     }
 
     @Test
+    public void searchProjectByStudy() throws CatalogException {
+        OpenCGAResult<Project> result = catalogManager.getProjectManager().search(new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), "phase1"), null, sessionIdUser);
+        assertEquals(1, result.getNumResults());
+        assertEquals(project1, result.first().getId());
+    }
+
+    @Test
     public void getOwnProjectNoStudies() throws CatalogException {
         DataResult<Project> projectDataResult = catalogManager.getProjectManager().get(project3, null, sessionIdUser3);
         assertEquals(1, projectDataResult.getNumResults());

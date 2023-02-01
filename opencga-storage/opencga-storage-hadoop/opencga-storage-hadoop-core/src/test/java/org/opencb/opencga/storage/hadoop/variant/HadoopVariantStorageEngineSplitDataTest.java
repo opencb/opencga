@@ -127,6 +127,71 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
     }
 
     @Test
+    public void testMultiChromosomeSplitDataVirtualFile() throws Exception {
+        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.CHROMOSOME);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_VIRTUAL_FILE.key(), "virtual-variant-test-file.vcf");
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr20.variant-test-file.vcf.gz")),
+                outputUri, true, true, true);
+
+        VariantStorageMetadataManager mm = variantStorageEngine.getMetadataManager();
+        int studyId = mm.getStudyId(STUDY_NAME);
+        for (String sample : SAMPLES) {
+            SampleMetadata sampleMetadata = mm.getSampleMetadata(studyId, mm.getSampleId(studyId, sample));
+            assertEquals(TaskMetadata.Status.READY, sampleMetadata.getIndexStatus());
+            assertEquals(TaskMetadata.Status.NONE, sampleMetadata.getAnnotationStatus());
+            assertEquals(TaskMetadata.Status.NONE, sampleMetadata.getSampleIndexAnnotationStatus(1));
+        }
+
+        variantStorageEngine.annotate(outputUri, new QueryOptions());
+        for (String sample : SAMPLES) {
+            SampleMetadata sampleMetadata = mm.getSampleMetadata(studyId, mm.getSampleId(studyId, sample));
+            assertEquals(TaskMetadata.Status.READY, sampleMetadata.getIndexStatus());
+            assertEquals(TaskMetadata.Status.READY, sampleMetadata.getAnnotationStatus());
+            assertEquals(TaskMetadata.Status.READY, sampleMetadata.getSampleIndexAnnotationStatus(1));
+        }
+
+        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.CHROMOSOME);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_VIRTUAL_FILE.key(), "virtual-variant-test-file.vcf");
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr21.variant-test-file.vcf.gz")),
+                outputUri, true, true, true);
+
+        for (String sample : SAMPLES) {
+            SampleMetadata sampleMetadata = mm.getSampleMetadata(studyId, mm.getSampleId(studyId, sample));
+            assertEquals(TaskMetadata.Status.READY, sampleMetadata.getIndexStatus());
+            assertEquals(TaskMetadata.Status.NONE, sampleMetadata.getAnnotationStatus());
+            assertEquals(TaskMetadata.Status.NONE, sampleMetadata.getSampleIndexAnnotationStatus(1));
+        }
+        variantStorageEngine.annotate(outputUri, new QueryOptions());
+        for (String sample : SAMPLES) {
+            SampleMetadata sampleMetadata = mm.getSampleMetadata(studyId, mm.getSampleId(studyId, sample));
+            assertEquals(TaskMetadata.Status.READY, sampleMetadata.getIndexStatus());
+            assertEquals(TaskMetadata.Status.READY, sampleMetadata.getAnnotationStatus());
+            assertEquals(TaskMetadata.Status.READY, sampleMetadata.getSampleIndexAnnotationStatus(1));
+        }
+
+
+        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.CHROMOSOME);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_VIRTUAL_FILE.key(), "virtual-variant-test-file.vcf");
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22.variant-test-file.vcf.gz")),
+                outputUri);
+
+        for (Variant variant : variantStorageEngine.iterable(new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL), null)) {
+            String expectedFile = "virtual-variant-test-file.vcf";
+            assertEquals(1, variant.getStudies().get(0).getFiles().size());
+            assertEquals(expectedFile, variant.getStudies().get(0).getFiles().get(0).getFileId());
+            if (variant.getChromosome().equals("20") || variant.getChromosome().equals("21")) {
+                Assert.assertNotNull(variant.getAnnotation().getConsequenceTypes());
+                Assert.assertFalse(variant.getAnnotation().getConsequenceTypes().isEmpty());
+            } else {
+                assertTrue(variant.getAnnotation() == null || variant.getAnnotation().getConsequenceTypes().isEmpty());
+            }
+        }
+    }
+
+    @Test
     public void testMultiChromosomeFail() throws Exception {
         URI outDir = newOutputUri();
 

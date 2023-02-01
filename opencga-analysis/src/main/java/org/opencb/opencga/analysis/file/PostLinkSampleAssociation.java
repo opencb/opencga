@@ -9,6 +9,7 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -20,9 +21,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 @Tool(id = PostLinkSampleAssociation.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION,
         description = PostLinkSampleAssociation.DESCRIPTION)
@@ -52,6 +51,8 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
         List<String> includeList = new ArrayList<>(options.getAsStringList(QueryOptions.INCLUDE));
         includeList.add(FileDBAdaptor.QueryParams.INTERNAL_MISSING_SAMPLES.key());
         includeList.add(FileDBAdaptor.QueryParams.INTERNAL_STATUS.key());
+        includeList.add(FileDBAdaptor.QueryParams.TYPE.key());
+        includeList.add(FileDBAdaptor.QueryParams.RELATED_FILES.key());
         options.put(QueryOptions.INCLUDE, includeList);
         options.put(QueryOptions.LIMIT, 20);
         options.put(QueryOptions.COUNT, true);
@@ -85,7 +86,28 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
                 numPendingFiles = ((int) fileResult.getNumMatches());
             }
 
+            List<File> fileList = new ArrayList<>(fileResult.getResults().size());
+            Set<String> virtualFiles =new HashSet<>();
             for (File file : fileResult.getResults()) {
+                boolean foundVirtual = false;
+                File virtualFile = FileUtils.getVirtualFileFromPartial(file);
+                if (virtualFile != null) {
+                    logger.info("Found associated virtual file for file '" + file.getPath() + "'. Will automatically associate"
+                            + " samples to the virtual file '" + virtualFile.getPath() + "' instead");
+                    virtualFiles.add(virtualFile.getPath());
+                    foundVirtual = true;
+                }
+                if (!foundVirtual) {
+                    // Process current file if not associated to any virtual file
+                    fileList.add(file);
+                }
+            }
+            if (!virtualFiles.isEmpty()) {
+                fileResult = catalogManager.getFileManager().get(study, new ArrayList<>(virtualFiles), options, token);
+                fileList.addAll(fileResult.getResults());
+            }
+
+            for (File file : fileList) {
                 numFiles++;
                 logger.info("Processing file {}/{} - {}", numFiles, numPendingFiles, file.getId());
                 // Validate status

@@ -268,7 +268,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         studyObject.put(PRIVATE_UID, studyUid);
         studyObject.put(QueryParams.VARIABLE_SET.key(), variableSetDocuments);
 
-        //Set ProjectId
+        //Set ProjectId - This is in use in ProjectMongoDBAdaptor. Any changes here should force changes in ProjectMongoDBAdaptor as well
         studyObject.put(PRIVATE_PROJECT, new Document()
                 .append(ID, project.getId())
                 .append(PRIVATE_UID, project.getUid())
@@ -1681,7 +1681,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         return nativeGet(null, query, options);
     }
 
-    OpenCGAResult<Document> nativeGet(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Document> nativeGet(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options)) {
             return endQuery(startTime, dbIterator);
@@ -1694,7 +1694,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         return nativeGet(null, query, options, user);
     }
 
-    OpenCGAResult nativeGet(ClientSession clientSession, Query query, QueryOptions options, String user)
+    public OpenCGAResult nativeGet(ClientSession clientSession, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options, user)) {
