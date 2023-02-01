@@ -32,7 +32,6 @@ import org.opencb.opencga.core.models.user.FilterUpdateParams;
 import org.opencb.opencga.core.models.user.LoginParams;
 import org.opencb.opencga.core.models.user.PasswordChangeParams;
 import org.opencb.opencga.core.models.user.User;
-import org.opencb.opencga.core.models.user.UserCreateParams;
 import org.opencb.opencga.core.models.user.UserFilter;
 import org.opencb.opencga.core.models.user.UserUpdateParams;
 
@@ -69,9 +68,6 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
         RestResponse queryResponse = null;
 
         switch (subCommandString) {
-            case "create":
-                queryResponse = create();
-                break;
             case "login":
                 queryResponse = login();
                 break;
@@ -109,37 +105,6 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
 
         createOutput(queryResponse);
 
-    }
-
-    private RestResponse<User> create() throws Exception {
-
-        logger.debug("Executing create in Users command line");
-
-        UsersCommandOptions.CreateCommandOptions commandOptions = usersCommandOptions.createCommandOptions;
-
-        UserCreateParams userCreateParams= null;
-        if (commandOptions.jsonDataModel) {
-            userCreateParams = new UserCreateParams();
-            RestResponse<User> res = new RestResponse<>();
-            res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(userCreateParams));
-            return res;
-        } else if (commandOptions.jsonFile != null) {
-            userCreateParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), UserCreateParams.class);
-        } else {
-            ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
-             putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
-             putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
- 
-            userCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), UserCreateParams.class);
-        }
-        return openCGAClient.getUserClient().create(userCreateParams);
     }
 
     protected RestResponse<AuthenticationResponse> login() throws Exception {

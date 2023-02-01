@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.family.FamilyTsvAnnotationLoader;
+import org.opencb.opencga.analysis.family.PedigreeGraphAnalysis;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
@@ -131,10 +132,10 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/pedigreeGraph")
-    @ApiOperation(value = "Compute pedigree graph image", response = Object.class)
+    @ApiOperation(value = "Compute pedigree graph image", response = String.class)
     public Response pedigreeGraph(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.FAMILY_ID_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_ID_PARAM) String familyId) {
+            @ApiParam(value = "Family ID") @QueryParam("familyId") String familyId) {
         try {
             // Create temporal directory
             java.nio.file.Path outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "pedigree-graph-" + System.nanoTime());
@@ -151,11 +152,11 @@ public class FamilyWSServer extends OpenCGAWSServer {
             PedigreeGraphAnalysisParams params = new PedigreeGraphAnalysisParams();
             params.setFamilyId(familyId);
 
-            toolRunner.execute(MutationalSignatureAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, studyStr), outDir,
-                    null, token);
+            toolRunner.execute(PedigreeGraphAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, studyStr), outDir, null,
+                    token);
 
-            query.remove(ParamConstants.STUDY_PARAM);
-            return createOkResponse(familyManager.search(studyStr, query, queryOptions, token));
+            String b64Image = "hello";
+            return createOkResponse(b64Image);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

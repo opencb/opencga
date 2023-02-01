@@ -38,6 +38,7 @@ public class FamiliesCommandOptions {
         public LoadAnnotationSetsCommandOptions loadAnnotationSetsCommandOptions;
         public CreateCommandOptions createCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
+        public PedigreeGraphCommandOptions pedigreeGraphCommandOptions;
         public SearchCommandOptions searchCommandOptions;
         public AclCommandOptions aclCommandOptions;
         public DeleteCommandOptions deleteCommandOptions;
@@ -55,6 +56,7 @@ public class FamiliesCommandOptions {
         this.loadAnnotationSetsCommandOptions = new LoadAnnotationSetsCommandOptions();
         this.createCommandOptions = new CreateCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
+        this.pedigreeGraphCommandOptions = new PedigreeGraphCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
         this.aclCommandOptions = new AclCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
@@ -305,6 +307,20 @@ public class FamiliesCommandOptions {
     
         @Parameter(names = {"--field"}, description = "Comma separated list of fields for which to obtain the distinct values", required = true, arity = 1)
         public String field; 
+    
+    }
+
+    @Parameters(commandNames = {"pedigreegraph"}, commandDescription ="Compute pedigree graph image")
+    public class PedigreeGraphCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--family-id"}, description = "Family ID", required = false, arity = 1)
+        public String familyId; 
     
     }
 

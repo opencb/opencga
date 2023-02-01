@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2023-01-10 OpenCB
+* Copyright 2015-2023-02-01 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -213,6 +213,7 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         familiesSubCommands.addCommand("annotation-sets-load", familiesCommandOptions.loadAnnotationSetsCommandOptions);
         familiesSubCommands.addCommand("create", familiesCommandOptions.createCommandOptions);
         familiesSubCommands.addCommand("distinct", familiesCommandOptions.distinctCommandOptions);
+        familiesSubCommands.addCommand("pedigreegraph", familiesCommandOptions.pedigreeGraphCommandOptions);
         familiesSubCommands.addCommand("search", familiesCommandOptions.searchCommandOptions);
         familiesSubCommands.addCommand("acl", familiesCommandOptions.aclCommandOptions);
         familiesSubCommands.addCommand("delete", familiesCommandOptions.deleteCommandOptions);
@@ -223,7 +224,6 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         usersCommandOptions = new UsersCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("users", usersCommandOptions);
         JCommander usersSubCommands = jCommander.getCommands().get("users");
-        usersSubCommands.addCommand("create", usersCommandOptions.createCommandOptions);
         usersSubCommands.addCommand("login", usersCommandOptions.loginCommandOptions);
         usersSubCommands.addCommand("password", usersCommandOptions.passwordCommandOptions);
         usersSubCommands.addCommand("info", usersCommandOptions.infoCommandOptions);

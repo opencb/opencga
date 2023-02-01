@@ -82,6 +82,9 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             case "distinct":
                 queryResponse = distinct();
                 break;
+            case "pedigreegraph":
+                queryResponse = pedigreeGraph();
+                break;
             case "search":
                 queryResponse = search();
                 break;
@@ -288,6 +291,22 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         }
 
         return openCGAClient.getFamilyClient().distinct(commandOptions.field, queryParams);
+    }
+
+    private RestResponse<String> pedigreeGraph() throws Exception {
+
+        logger.debug("Executing pedigreeGraph in Families command line");
+
+        FamiliesCommandOptions.PedigreeGraphCommandOptions commandOptions = familiesCommandOptions.pedigreeGraphCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("familyId", commandOptions.familyId);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+        return openCGAClient.getFamilyClient().pedigreeGraph(queryParams);
     }
 
     private RestResponse<Family> search() throws Exception {

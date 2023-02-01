@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2023-01-10 OpenCB
+* Copyright 2015-2023-02-01 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -80,12 +80,12 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> familiesList = asList( "acl-update","aggregationstats","annotation-sets-load","create","distinct","search","acl","delete","info","update","annotation-sets-annotations-update")
+    private List<Candidate> familiesList = asList( "acl-update","aggregationstats","annotation-sets-load","create","distinct","pedigreegraph","search","acl","delete","info","update","annotation-sets-annotations-update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> usersList = asList( "create","login","password","info","configs","configs-update","filters","password-reset","projects","update")
+    private List<Candidate> usersList = asList( "login","password","info","configs","configs-update","filters","password-reset","projects","update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
