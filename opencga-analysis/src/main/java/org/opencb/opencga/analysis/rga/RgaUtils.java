@@ -798,23 +798,28 @@ class RgaUtils {
 
     }
 
-    public static class KnockoutTypeCount {
-        private Set<String> variantIdQuery;
-        private Set<String> dbSnpQuery;
-        private Set<String> typeQuery;
-        private Set<String> knockoutTypeQuery;
-        private Set<String> clinicalSignificanceQuery;
-        private Set<String> consequenceTypeQuery;
-        private List<Set<String>> popFreqQuery;
-
-        // Valid CH pair variants
-        private Map<String, Set<String>> validChPairVariants;
+    public abstract static class KnockoutTypeCount {
+        private final Set<String> variantIdQuery;
+        private final Set<String> dbSnpQuery;
+        private final Set<String> typeQuery;
+        private final Set<String> knockoutTypeQuery;
+        private final Set<String> clinicalSignificanceQuery;
+        private final Set<String> consequenceTypeQuery;
+        private final List<Set<String>> popFreqQuery;
 
         private Set<String> ids;
-        private Map<String, Set<String>> transcriptCompHetIdsMap;
-        private Map<String, Set<String>> transcriptDelOverlapIdsMap;
-        private Set<String> homIds;
-        private Set<String> hetIds;
+        protected Map<String, Set<String>> transcriptCompHetIdsMap;
+        protected Map<String, Set<String>> transcriptDelOverlapIdsMap;
+        protected Set<String> compHetIds;
+        protected Set<String> deletionOverlapIds;
+        protected Set<String> homIds;
+        protected Set<String> hetIds;
+
+        private int numIds;
+        private int numHomAltIds;
+        private int numHetIds;
+        private int numCompHetIds;
+        private int numDelOverlapIds;
 
         public KnockoutTypeCount(Query query) throws RgaException {
             variantIdQuery = new HashSet<>();
@@ -824,10 +829,11 @@ class RgaUtils {
             clinicalSignificanceQuery = new HashSet<>();
             typeQuery = new HashSet<>();
             consequenceTypeQuery = new HashSet<>();
-            validChPairVariants = new HashMap<>();
             ids = new HashSet<>();
             transcriptCompHetIdsMap = new HashMap<>();
             transcriptDelOverlapIdsMap = new HashMap<>();
+            compHetIds = new HashSet<>();
+            deletionOverlapIds = new HashSet<>();
             homIds = new HashSet<>();
             hetIds = new HashSet<>();
 
@@ -849,6 +855,12 @@ class RgaUtils {
                     popFreqQuery.add(new HashSet<>(values));
                 }
             }
+
+            numIds = 0;
+            numHomAltIds = 0;
+            numHetIds = 0;
+            numCompHetIds = 0;
+            numDelOverlapIds = 0;
         }
 
         public boolean passesFilter(RgaUtils.CodedFeature codedFeature) {
@@ -893,7 +905,7 @@ class RgaUtils {
                 return;
             }
 
-            ids.add(codedFeature.getId());
+//            ids.add(codedFeature.getId());
             KnockoutVariant.KnockoutType knockoutType = KnockoutVariant.KnockoutType.valueOf(codedFeature.getKnockoutType());
             switch (knockoutType) {
                 case HOM_ALT:
@@ -919,20 +931,17 @@ class RgaUtils {
             }
         }
 
-        public void processChPairFeature(RgaUtils.CodedChPairVariants codedFeature) {
-            String leftVariant = codedFeature.getMaternalCodedVariant().getId();
-            String rightVariant = codedFeature.getPaternalCodedVariant().getId();
-            if (rightVariant.compareTo(leftVariant) < 0) {
-                String auxVariant = leftVariant;
-                leftVariant = rightVariant;
-                rightVariant = auxVariant;
-            }
+        protected void calculateStats() {
+            numCompHetIds = compHetIds.size();
+            numDelOverlapIds = deletionOverlapIds.size();
+            numHomAltIds = homIds.size();
+            numHetIds = hetIds.size();
 
-            // Keys are always lexicographically less than variants as values
-            if (!validChPairVariants.containsKey(leftVariant)) {
-                validChPairVariants.put(leftVariant, new HashSet<>());
-            }
-            validChPairVariants.get(leftVariant).add(rightVariant);
+            ids.addAll(homIds);
+            ids.addAll(hetIds);
+            ids.addAll(compHetIds);
+            ids.addAll(deletionOverlapIds);
+            numIds = ids.size();
         }
 
         public Set<String> getIds() {
@@ -940,87 +949,23 @@ class RgaUtils {
         }
 
         public int getNumIds() {
-            return ids.size();
+            return numIds;
         }
 
         public int getNumCompHetIds() {
-            return (int) transcriptCompHetIdsMap.values().stream().flatMap(Set::stream).distinct().count();
+            return numCompHetIds;
         }
 
-        public int getNumPairedCompHetIds() {
-            int threshold = 250;
-            Set<String> chPairs = new HashSet<>();
-            for (Map.Entry<String, Set<String>> entry : transcriptCompHetIdsMap.entrySet()) {
-                Set<String> chSet = entry.getValue();
-                if (chSet.size() > 1) {
-                    if (chSet.size() > threshold) {
-                        logger.warn("Showing a -1 value for the numPairedCompHet stats. More than {} COMP_HET variants found in"
-                                + " transcript {}", threshold, entry.getKey());
-                        // Don't calculate this if the number of possible pairs is too big
-                        return -1;
-                    }
-
-                    // Sort variants lexicographically so we just need to check once
-                    List<String> sortedVariants = chSet.stream().sorted(String::compareTo).collect(Collectors.toList());
-                    for (int i = 0; i < sortedVariants.size() - 1; i++) {
-                        String leftVariant = sortedVariants.get(i);
-                        for (int j = i + 1; j < sortedVariants.size(); j++) {
-                            String rightVariant = sortedVariants.get(j);
-
-                            if (validChPairVariants.containsKey(leftVariant)
-                                    && validChPairVariants.get(leftVariant).contains(rightVariant)) {
-                                chPairs.add(leftVariant + "-" + rightVariant);
-                            }
-                        }
-                    }
-                }
-            }
-            return chPairs.size();
-        }
-
-        public int getNumPairedDelOverlapIds() {
-            Set<String> delOverlapPairs = new HashSet<>();
-            for (Map.Entry<String, Set<String>> entry : transcriptDelOverlapIdsMap.entrySet()) {
-                Set<String> chSet = entry.getValue();
-                if (chSet.size() > 1) {
-                    List<Variant> variantList = chSet.stream().map(Variant::new).collect(Collectors.toList());
-                    for (int i = 0; i < variantList.size() - 1; i++) {
-                        for (int j = i + 1; j < variantList.size(); j++) {
-                            // We simply check if two variants overlap. If they do, they are a valid pair
-                            if (variantList.get(i).overlapWith(variantList.get(j), true)) {
-                                String pair = concatSortedVariants(variantList.get(i).toString(), variantList.get(j).toString());
-                                delOverlapPairs.add(pair);
-                            }
-                        }
-                    }
-                }
-            }
-            return delOverlapPairs.size();
-        }
-
-        public int getNumHomIds() {
-            return homIds.size();
+        public int getNumHomAltIds() {
+            return numHomAltIds;
         }
 
         public int getNumHetIds() {
-            return hetIds.size();
+            return numHetIds;
         }
 
         public int getNumDelOverlapIds() {
-            return (int) transcriptDelOverlapIdsMap.values().stream().flatMap(Set::stream).distinct().count();
-        }
-
-        public int getNumHomAltCompHetIds() {
-            Set<String> ids = new HashSet<>(homIds);
-            ids.addAll(transcriptCompHetIdsMap.values().stream().flatMap(Set::stream).collect(Collectors.toSet()));
-            return ids.size();
-        }
-
-        public int getNumCompHetDelOverlapIds() {
-            Set<String> ids = new HashSet<>();
-            ids.addAll(transcriptDelOverlapIdsMap.values().stream().flatMap(Set::stream).collect(Collectors.toSet()));
-            ids.addAll(transcriptCompHetIdsMap.values().stream().flatMap(Set::stream).collect(Collectors.toSet()));
-            return ids.size();
+            return numDelOverlapIds;
         }
 
         public Map<String, List<String>> getTranscriptCompHetIdsMap() {
@@ -1032,10 +977,163 @@ class RgaUtils {
             }
             return compHetMap;
         }
+    }
+
+    public static class IndividualKnockoutTypeCount extends KnockoutTypeCount {
+
+        private int numHomAltCompHetIds;
+        private int numCompHetDelOverlapIds;
+
+        public IndividualKnockoutTypeCount(Query query) throws RgaException {
+            super(query);
+        }
+
+        @Override
+        public void calculateStats() {
+            compHetIds = transcriptCompHetIdsMap.values()
+                    .stream()
+                    .flatMap(Set::stream)
+                    .collect(Collectors.toSet());
+
+            deletionOverlapIds = transcriptDelOverlapIdsMap.values()
+                    .stream()
+                    .flatMap(Set::stream)
+                    .collect(Collectors.toSet());
+
+            Set<String> homAltCompHetIds = new HashSet<>(homIds);
+            homAltCompHetIds.addAll(compHetIds);
+            numHomAltCompHetIds = homAltCompHetIds.size();
+
+            Set<String> compHetDelOverlapIds = new HashSet<>(compHetIds);
+            compHetDelOverlapIds.addAll(deletionOverlapIds);
+            numCompHetDelOverlapIds = compHetDelOverlapIds.size();
+
+            super.calculateStats();
+        }
+
+        public int getNumHomAltCompHetIds() {
+            return numHomAltCompHetIds;
+        }
+
+        public int getNumCompHetDelOverlapIds() {
+            return numCompHetDelOverlapIds;
+        }
+    }
+
+    public static class VariantKnockoutTypeCount extends KnockoutTypeCount {
+
+        // Valid CH pair variants
+        private Map<String, Set<String>> validPairedChPairVariants;
+        private Set<String> validChPairVariants;
+
+        private final RgaQueryParams.CompHetQueryMode compHetQueryMode;
+
+        private int numPairedCompHetIds;
+        private int numPairedDelOverlapIds;
+
+        public VariantKnockoutTypeCount(Query query, RgaQueryParams.CompHetQueryMode compHetQueryMode) throws RgaException {
+            super(query);
+            this.compHetQueryMode = compHetQueryMode;
+
+            this.validPairedChPairVariants = new HashMap<>();
+            this.validChPairVariants = new HashSet<>();
+        }
+
+        public void processChPairFeature(RgaUtils.CodedChPairVariants codedFeature) {
+            String leftVariant = codedFeature.getMaternalCodedVariant().getId();
+            String rightVariant = codedFeature.getPaternalCodedVariant().getId();
+            if (rightVariant.compareTo(leftVariant) < 0) {
+                String auxVariant = leftVariant;
+                leftVariant = rightVariant;
+                rightVariant = auxVariant;
+            }
+
+            // Keys are always lexicographically less than variants as values
+            if (!validPairedChPairVariants.containsKey(leftVariant)) {
+                validPairedChPairVariants.put(leftVariant, new HashSet<>());
+            }
+            validPairedChPairVariants.get(leftVariant).add(rightVariant);
+            validChPairVariants.add(leftVariant);
+            validChPairVariants.add(rightVariant);
+        }
+
+
+        @Override
+        public void calculateStats() {
+            // Calculate number of comp_het pairs
+            Set<String> chPairs = new HashSet<>();
+            Set<String> pairedChPairs = new HashSet<>();
+            for (Map.Entry<String, Set<String>> entry : transcriptCompHetIdsMap.entrySet()) {
+                Set<String> chSet = entry.getValue();
+                if (chSet.size() > 1) {
+                    // Sort variants lexicographically so we just need to check once
+                    List<String> sortedVariants = chSet.stream().sorted(String::compareTo).collect(Collectors.toList());
+                    for (int i = 0; i < sortedVariants.size() - 1; i++) {
+                        String leftVariant = sortedVariants.get(i);
+                        for (int j = i + 1; j < sortedVariants.size(); j++) {
+                            String rightVariant = sortedVariants.get(j);
+
+                            if (validPairedChPairVariants.containsKey(leftVariant)
+                                    && validPairedChPairVariants.get(leftVariant).contains(rightVariant)) {
+                                pairedChPairs.add(leftVariant + "-" + rightVariant);
+                                chPairs.add(leftVariant);
+                                chPairs.add(rightVariant);
+                            }
+                        }
+                    }
+                }
+            }
+            numPairedCompHetIds = pairedChPairs.size();
+
+            // If we are searching by pairs, we should only count those that actually formed a pair
+            if (compHetQueryMode.equals(RgaQueryParams.CompHetQueryMode.PAIR)) {
+                compHetIds = transcriptCompHetIdsMap.values()
+                        .stream()
+                        .flatMap(Set::stream)
+                        .filter(chPairs::contains)
+                        .collect(Collectors.toSet());
+            } else {
+                compHetIds = transcriptCompHetIdsMap.values()
+                        .stream()
+                        .flatMap(Set::stream)
+                        .collect(Collectors.toSet());
+            }
+
+            // Process deletion overlap pairs
+            Set<String> delOverlapPairs = new HashSet<>();
+            for (Map.Entry<String, Set<String>> entry : transcriptDelOverlapIdsMap.entrySet()) {
+                Set<String> chSet = entry.getValue();
+                if (chSet.size() > 1) {
+                    List<Variant> variantList = chSet.stream().map(Variant::new).collect(Collectors.toList());
+                    for (int i = 0; i < variantList.size() - 1; i++) {
+                        for (int j = i + 1; j < variantList.size(); j++) {
+                            deletionOverlapIds.add(variantList.get(i).toString());
+                            deletionOverlapIds.add(variantList.get(j).toString());
+
+                            // We simply check if two variants overlap. If they do, they are a valid pair
+                            if (variantList.get(i).overlapWith(variantList.get(j), true)) {
+                                String pair = concatSortedVariants(variantList.get(i).toString(), variantList.get(j).toString());
+                                delOverlapPairs.add(pair);
+                            }
+                        }
+                    }
+                }
+            }
+            numPairedDelOverlapIds = delOverlapPairs.size();
+
+            super.calculateStats();
+        }
 
         private String concatSortedVariants(String v1, String v2) {
             return StringUtils.compare(v1, v2) <= 0 ? v1 + "__" + v2 : v2 + "__" + v1;
         }
-    }
 
+        public int getNumPairedCompHetIds() {
+            return numPairedCompHetIds;
+        }
+
+        public int getNumPairedDelOverlapIds() {
+            return numPairedDelOverlapIds;
+        }
+    }
 }
