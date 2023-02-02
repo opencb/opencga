@@ -1111,16 +1111,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     /**
-     * <<<<<<< HEAD
-     * VariableSet methods ***************************
-     * =======
-     * <<<<<<< HEAD
-     * VariableSet methods ***************************
-     * =======
      * VariableSet methods
      * ***************************
-     * >>>>>>> release-2.1.x
-     * >>>>>>> develop
      */
 
     @Test
