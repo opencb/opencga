@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.db.mongodb.iterators.ProjectCatalogMongoDBIter
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -705,13 +706,14 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.UID.key(), query.getString(QueryParams.STUDY_UID.key()));
                 studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.ID.key(), query.getString(QueryParams.STUDY_ID.key()));
                 studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.OWNER.key(), query.getString(QueryParams.USER_ID.key()));
-                OpenCGAResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(clientSession, studyQuery,
+                OpenCGAResult<Document> studiesResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(clientSession, studyQuery,
                         new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), user);
 
-                if (queryResult.getNumResults() > 0) {
+                if (studiesResult.getNumResults() > 0) {
                     Set<String> projectFqn = new HashSet<>();
-                    for (Document result : queryResult.getResults()) {
-                        projectFqn.add(result.getString(StudyDBAdaptor.QueryParams.FQN.key()).split(":")[0]);
+                    for (Document study : studiesResult.getResults()) {
+                        String studyFqn = study.getString(StudyDBAdaptor.QueryParams.FQN.key());
+                        projectFqn.add(FqnUtils.toProjectFqn(studyFqn));
                     }
                     query.put(QueryParams.FQN.key(), new ArrayList<>(projectFqn));
                     return getMongoCursor(clientSession, query, options);
@@ -730,7 +732,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             List<Long> externalUids = new ArrayList<>(); // Project uids from projects owned by a user other than "user"
             while (iterator.hasNext()) {
                 Project project = iterator.next();
-                if (project.getFqn().startsWith(user + "@")) {
+                if (FqnUtils.getUser(project.getFqn()).equals(user)) {
                     ownerFqns.add(project.getFqn());
                 } else {
                     externalUids.add(project.getUid());
@@ -741,12 +743,13 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             List<String> externalFqns = new ArrayList<>();
             if (!externalUids.isEmpty()) {
                 Query studyQuery = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), externalUids);
-                OpenCGAResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(clientSession, studyQuery,
+                OpenCGAResult<Document> studiesResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(clientSession, studyQuery,
                         new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), user);
-                if (queryResult.getNumResults() > 0) {
+                if (studiesResult.getNumResults() > 0) {
                     Set<String> projectFqn = new HashSet<>();
-                    for (Document result : queryResult.getResults()) {
-                        projectFqn.add(result.getString(StudyDBAdaptor.QueryParams.FQN.key().split(":")[0]));
+                    for (Document study : studiesResult.getResults()) {
+                        String studyFqn = study.getString(StudyDBAdaptor.QueryParams.FQN.key());
+                        projectFqn.add(FqnUtils.toProjectFqn(studyFqn));
                     }
                     externalFqns.addAll(projectFqn);
                 }
