@@ -125,11 +125,24 @@ public class ProjectManagerTest extends GenericTest {
 
     @Test
     public void searchProjects() throws CatalogException {
-        catalogManager.getUserManager().create("userid", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
-        String token = catalogManager.getUserManager().login("userid", TestParamConstants.PASSWORD).getToken();
-        OpenCGAResult<Project> projectOpenCGAResult = catalogManager.getProjectManager().search(new Query(), QueryOptions.empty(), token);
-        assertTrue(projectOpenCGAResult.getResults().isEmpty());
-        assertEquals(0, projectOpenCGAResult.getEvents().size());
+        String otherUser = "user_tmp";
+        catalogManager.getUserManager().create(otherUser, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
+        String otherUsertoken = catalogManager.getUserManager().login(otherUser, TestParamConstants.PASSWORD).getToken();
+        OpenCGAResult<Project> result = catalogManager.getProjectManager()
+                .search(new Query(), QueryOptions.empty(), otherUsertoken);
+        assertTrue(result.getResults().isEmpty());
+        assertEquals(0, result.getEvents().size());
+
+        // Create a new study in project2 with some dummy permissions for user
+        String s2 = catalogManager.getStudyManager().create(project2, "s2", null, "Study 2", "", null, null, null, null, INCLUDE_RESULT, sessionIdUser2).first().getId();
+        catalogManager.getStudyManager().updateGroup(s2, "@members", ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList(otherUser)), sessionIdUser2);
+
+        result = catalogManager.getProjectManager()
+                .search(new Query(), QueryOptions.empty(), otherUsertoken);
+        assertEquals(1, result.getNumResults());
+        assertEquals(project2, result.first().getId());
+        assertEquals("user2@pmp", result.first().getFqn());
     }
 
     @Test
