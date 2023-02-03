@@ -1632,7 +1632,7 @@ public class RgaManager implements AutoCloseable {
         QueryOptions variantFacet = new QueryOptions()
                 .append(QueryOptions.LIMIT, -1)
                 .append(QueryOptions.FACET, RgaDataModel.CH_PAIRS);
-        DataResult<FacetField> facetFieldDataResult = rgaEngine.facetedQuery(collection, geneQuery, variantFacet);
+        DataResult<FacetField> facetFieldDataResult = rgaEngine.facetedQuery(collection, auxQuery, variantFacet);
         logger.debug("Gene CH pairs facet: {} ms", stopWatch.getTime(TimeUnit.MILLISECONDS));
         for (FacetField.Bucket variantBucket : facetFieldDataResult.first().getBuckets()) {
             CodedChPairVariants codedChPairVariants = CodedChPairVariants.parseEncodedId(variantBucket.getValue());
