@@ -324,8 +324,6 @@ class RgaUtils {
         /* Compound heterozygous combinations:
          * KO - F1 - F2
          * KO - F1 - F2 - CT1 - CT2
-         * KO - F1 - F2 - CT1 - CT2 - PF1 - PF2
-         * KO - F1 - F2 - PF1 - PF2
          * KO - F1 - F2 - PF' ; where PF' is equivalent to the highest PF of both variants (to easily respond to PF<=x)
          * KO - F1 - F2 - PF1' - PF2' ; where PF' is equivalent to the highest PF of both variants (to easily respond to PF<=x)
          * KO - F1 - F2 - CT1 - CT2 - PF1' - PF2' ; where PF' is equivalent to the highest PF of both variants (to easily respond to PF<=x)
@@ -333,9 +331,9 @@ class RgaUtils {
         String knockout = RgaUtils.encode(KnockoutVariant.KnockoutType.COMP_HET.name());
         result.add(Collections.singletonList(knockout));
 
-        // Generate combinations: KO - F1 - F2; KO - F1 - F2 - CT1 - CT2; KO - F1 - F2 - CT1 - CT2 - PF1 - PF2; KO - F1 - F2 - PF1 - PF2
+        // Generate combinations: KO - F1 - F2; KO - F1 - F2 - CT1 - CT2;
         List<List<String>> previousIteration = result;
-        for (int i = 1; i < 4; i++) {
+        for (int i = 1; i < 3; i++) {
             // The list will contain all Filter, CT or PF combinations between variant1 and variant2 in a sorted manner to reduce the
             // number of terms
             List<List<String>> sortedCombinations = generateSortedCombinations(variant1.get(i), variant2.get(i));
@@ -351,16 +349,6 @@ class RgaUtils {
             if (i == 1) {
                 // Remove single Knockout string list because there is already a filter just for that field
                 result.clear();
-            } else if (i == 2) {
-                // Generate this particular combination KO - F1 - F2 - PF1 - PF2
-                List<List<String>> sortedPfCombinations = generateSortedCombinations(variant1.get(3), variant2.get(3));
-                for (List<String> previousValues : previousIteration) {
-                    for (List<String> values : sortedPfCombinations) {
-                        List<String> newValues = new ArrayList<>(previousValues);
-                        newValues.addAll(values);
-                        result.add(newValues);
-                    }
-                }
             }
             result.addAll(newResults);
             previousIteration = newResults;
