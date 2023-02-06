@@ -327,6 +327,8 @@ class RgaUtils {
          * KO - F1 - F2 - CT1 - CT2 - PF1 - PF2
          * KO - F1 - F2 - PF1 - PF2
          * KO - F1 - F2 - PF' ; where PF' is equivalent to the highest PF of both variants (to easily respond to PF<=x)
+         * KO - F1 - F2 - PF1' - PF2' ; where PF' is equivalent to the highest PF of both variants (to easily respond to PF<=x)
+         * KO - F1 - F2 - CT1 - CT2 - PF1' - PF2' ; where PF' is equivalent to the highest PF of both variants (to easily respond to PF<=x)
          */
         String knockout = RgaUtils.encode(KnockoutVariant.KnockoutType.COMP_HET.name());
         result.add(Collections.singletonList(knockout));
@@ -366,6 +368,7 @@ class RgaUtils {
 
         // Generate also combination: KO - F1 - F2 - PF' ; where PF' is equivalent to the highest PF of both variants
         List<List<String>> sortedFilterList = generateSortedCombinations(variant1.get(1), variant2.get(1));
+        List<List<String>> sortedCtList = generateSortedCombinations(variant1.get(2), variant2.get(2));
         List<String> simplifiedPopFreqList = generateSimplifiedPopulationFrequencyList(variant1.get(3), variant2.get(3));
         for (List<String> filterList : sortedFilterList) {
             for (String popFreq : simplifiedPopFreqList) {
@@ -373,6 +376,23 @@ class RgaUtils {
                 terms.add(knockout);
                 terms.addAll(filterList);
                 terms.add(popFreq);
+                result.add(terms);
+            }
+
+            // And: KO - F1 - F2 - PF1' - PF2' ; where PF' is equivalent to the highest PF of both variants
+            List<String> terms = new LinkedList<>();
+            terms.add(knockout);
+            terms.addAll(filterList);
+            terms.addAll(simplifiedPopFreqList);
+            result.add(terms);
+
+            // And: KO - F1 - F2 - CT1 - CT2 - PF1' - PF2' ; where PF' is equivalent to the highest PF of both variants
+            for (List<String> ctList : sortedCtList) {
+                terms = new LinkedList<>();
+                terms.add(knockout);
+                terms.addAll(filterList);
+                terms.addAll(ctList);
+                terms.addAll(simplifiedPopFreqList);
                 result.add(terms);
             }
         }
