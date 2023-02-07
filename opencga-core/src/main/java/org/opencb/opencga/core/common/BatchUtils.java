@@ -1,7 +1,10 @@
 package org.opencb.opencga.core.common;
 
+import org.opencb.commons.io.DataReader;
+
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 public class BatchUtils {
@@ -58,6 +61,24 @@ public class BatchUtils {
     private static int ceilDiv(int a, int b) {
         return (a + b - 1) / b;
 //        return (int) Math.round(Math.ceil(a / (float) b));
+    }
+
+    public static <T> DataReader<T> toDataReader(Iterable<T> values) {
+        return toDataReader(values.iterator());
+    }
+
+    public static <T> DataReader<T> toDataReader(Iterator<T> values) {
+        return batchSize -> {
+            List<T> batch = new ArrayList<>(batchSize);
+            for (int i = 0; i < batchSize; i++) {
+                if (values.hasNext()) {
+                    batch.add(values.next());
+                } else {
+                    break;
+                }
+            }
+            return batch;
+        };
     }
 
 }

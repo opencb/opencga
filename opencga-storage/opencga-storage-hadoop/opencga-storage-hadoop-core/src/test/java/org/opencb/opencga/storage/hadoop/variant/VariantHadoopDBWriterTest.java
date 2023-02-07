@@ -98,8 +98,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
     @Before
     public void setUp() throws Exception {
         HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
-        clearDB(variantStorageManager.getVariantTableName());
-        clearDB(variantStorageManager.getArchiveTableName(STUDY_ID));
+        clearDB(variantStorageManager.getDBName());
         //Force HBaseConverter to fail if something goes wrong
         HBaseToVariantConverter.setFailOnWrongVariants(true);
         engine = getVariantStorageEngine();

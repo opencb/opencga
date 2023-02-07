@@ -91,37 +91,37 @@ class Test_init_script(unittest.TestCase):
             "cellbase",
         )
         self.assertEqual(
-            storage_config["variant"]["engines"][1]["options"][
+            storage_config["variant"]["engines"][0]["options"][
                 "storage.hadoop.mr.executor"
             ],
             "ssh",
         )
         self.assertEqual(
-            storage_config["variant"]["engines"][1]["options"][
+            storage_config["variant"]["engines"][0]["options"][
                 "storage.hadoop.mr.executor.ssh.host"
             ],
             "test-hadoop-ssh-host",
         )
         self.assertEqual(
-            storage_config["variant"]["engines"][1]["options"][
+            storage_config["variant"]["engines"][0]["options"][
                 "storage.hadoop.mr.executor.ssh.user"
             ],
             "test-hadoop-ssh-user",
         )
         self.assertEqual(
-            storage_config["variant"]["engines"][1]["options"][
+            storage_config["variant"]["engines"][0]["options"][
                 "storage.hadoop.mr.executor.ssh.password"
             ],
             "test-hadoop-ssh-password",
         )
         self.assertEqual(
-            storage_config["variant"]["engines"][1]["options"][
+            storage_config["variant"]["engines"][0]["options"][
                 "storage.hadoop.mr.executor.ssh.key"
             ],
             "",
         )
         self.assertEqual(
-            storage_config["variant"]["engines"][1]["options"][
+            storage_config["variant"]["engines"][0]["options"][
                 "storage.hadoop.mr.executor.ssh.remoteOpenCgaHome"
             ],
             "test-hadoop-ssh-remote-opencga-home",

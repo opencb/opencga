@@ -1,16 +1,10 @@
 package org.opencb.opencga.app.cli.main.options;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.Parameters;
-import com.beust.jcommander.DynamicParameter;
-import com.beust.jcommander.ParametersDelegate;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.List;
+import com.beust.jcommander.*;
 
 import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandOptions;
+
+import java.util.HashMap;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
@@ -262,7 +256,7 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String description;
     
-        @Parameter(names = {"--type"}, description = "Enum param allowed values: FILE, DIRECTORY", required = false, arity = 1)
+        @Parameter(names = {"--type"}, description = "Enum param allowed values: FILE, VIRTUAL, DIRECTORY", required = false, arity = 1)
         public String type;
     
         @Parameter(names = {"--format"}, description = "Enum param allowed values: VCF, BCF, GVCF, TBI, BIGWIG, SAM, BAM, BAI, CRAM, CRAI, FASTQ, FASTA, PED, TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, IMAGE, PLAIN, BINARY, NONE, UNKNOWN", required = false, arity = 1)
@@ -483,6 +477,9 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--modification-date", "--md"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
         public String modificationDate;
     
+        @Parameter(names = {"--virtual-file-name"}, description = "The body web service virtualFile parameter", required = false, arity = 1)
+        public String virtualFileName;
+    
         @Parameter(names = {"--status-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String statusId;
     
@@ -532,6 +529,9 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
     
         @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String description;
+    
+        @Parameter(names = {"--virtual-file-name"}, description = "The body web service virtualFile parameter", required = false, arity = 1)
+        public String virtualFileName;
     
         @Parameter(names = {"--parents"}, description = "The body web service parents parameter", required = false, help = true, arity = 0)
         public boolean parents = false;

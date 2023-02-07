@@ -29,6 +29,7 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
@@ -42,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
+import java.util.zip.DataFormatException;
 
 import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMetadataUtils.*;
 
@@ -52,6 +54,7 @@ import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMet
  */
 public class HBaseFileMetadataDBAdaptor extends AbstractHBaseDBAdaptor implements FileMetadataDBAdaptor {
 
+    public static final int COMPRESS_THRESHOLD = 5 * 1024;
     protected static Logger logger = LoggerFactory.getLogger(HBaseFileMetadataDBAdaptor.class);
 
     @Deprecated
@@ -67,11 +70,19 @@ public class HBaseFileMetadataDBAdaptor extends AbstractHBaseDBAdaptor implement
     }
 
     @Override
-    public LinkedHashSet<Integer> getIndexedFiles(int studyId) {
+    public LinkedHashSet<Integer> getIndexedFiles(int studyId, boolean includePartial) {
         // FIXME!
         LinkedHashSet<Integer> indexedFiles = new LinkedHashSet<>();
         fileIterator(studyId).forEachRemaining(file -> {
             if (file.isIndexed()) {
+                if (!includePartial) {
+                    // Exclude partial files
+                    if (file.getType() == FileMetadata.Type.PARTIAL
+                        && file.getAttributes().get(FileMetadata.VIRTUAL_PARENT) != null) {
+                        // This is a partial file. Skip it
+                        return;
+                    }
+                }
                 indexedFiles.add(file.getId());
             }
         });
@@ -158,15 +169,42 @@ public class HBaseFileMetadataDBAdaptor extends AbstractHBaseDBAdaptor implement
         }
     }
 
+    @Override
+    protected <T> T convertResult(Result result, Class<T> clazz) throws IOException {
+        if (clazz.equals(VariantFileMetadata.class)) {
+            return clazz.cast(resultToVariantFileMetadata(result));
+        }
+        return super.convertResult(result, clazz);
+    }
+
     private VariantFileMetadata resultToVariantFileMetadata(Result result) {
         if (result == null || result.isEmpty()) {
             return null;
         }
         byte[] value = result.getValue(family, getValueColumn());
-        try {
-            return objectMapper.readValue(value, VariantFileMetadata.class);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Problem with " + Bytes.toString(result.getRow()), e);
+        if (value.length > 0 && value[0] != '{') {
+            try {
+                try {
+                    value = CompressionUtils.decompress(value);
+                } catch (DataFormatException e) {
+                    throw new IOException(e);
+                }
+                return objectMapper.readValue(value, VariantFileMetadata.class);
+            } catch (IOException e) {
+                throw new UncheckedIOException("Problem with " + Bytes.toString(result.getRow()), e);
+            }
+        } else {
+            try {
+                return objectMapper.readValue(value, VariantFileMetadata.class);
+            } catch (IOException e) {
+                try {
+                    value = CompressionUtils.decompress(value);
+                    return objectMapper.readValue(value, VariantFileMetadata.class);
+                } catch (Exception e1) {
+                    e.addSuppressed(e1);
+                }
+                throw new UncheckedIOException("Problem with " + Bytes.toString(result.getRow()), e);
+            }
         }
     }
 
@@ -184,8 +222,12 @@ public class HBaseFileMetadataDBAdaptor extends AbstractHBaseDBAdaptor implement
         ensureTableExists();
         Integer fileId = Integer.valueOf(metadata.getId());
         checkFileId(fileId);
-        Put put = new Put(getVariantFileMetadataRowKey(Integer.valueOf(studyId), fileId));
-        put.addColumn(this.family, getValueColumn(), metadata.getImpl().toString().getBytes());
+        Put put = new Put(getVariantFileMetadataRowKey(Integer.parseInt(studyId), fileId));
+        byte[] bytes = metadata.getImpl().toString().getBytes();
+        if (bytes.length > COMPRESS_THRESHOLD) {
+            bytes = CompressionUtils.compress(bytes);
+        }
+        put.addColumn(this.family, getValueColumn(), bytes);
         put.addColumn(this.family, getTypeColumn(), Type.VARIANT_FILE_METADATA.bytes());
         hBaseManager.act(tableName, table -> {
             table.put(put);

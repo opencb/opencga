@@ -31,7 +31,7 @@ import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -66,7 +66,7 @@ public class RgaManagerTest {
 
     public static RgaSolrExtenalResource solr = new RgaSolrExtenalResource();
 
-    private static String storageEngine = MongoDBVariantStorageEngine.STORAGE_ENGINE_ID;
+    private static String storageEngine = HadoopVariantStorageEngine.STORAGE_ENGINE_ID;
     private static RgaEngine rgaEngine;
     private static boolean indexed = false;
     private static String ownerToken;
@@ -80,9 +80,9 @@ public class RgaManagerTest {
             opencga.before();
 
             catalogManager = opencga.getCatalogManager();
-            variantStorageManager = new VariantStorageManager(catalogManager, opencga.getStorageEngineFactory());
+            variantStorageManager = opencga.getVariantStorageManager();
 
-            opencga.clearStorageDB(DB_NAME);
+            opencga.clearStorageDB();
 
             StorageConfiguration storageConfiguration = opencga.getStorageConfiguration();
             storageConfiguration.getVariant().setDefaultEngine(storageEngine);
@@ -147,7 +147,7 @@ public class RgaManagerTest {
         }
 
         catalogManager = opencga.getCatalogManager();
-        variantStorageManager = new VariantStorageManager(catalogManager, opencga.getStorageEngineFactory());
+        variantStorageManager = opencga.getVariantStorageManager();
         rgaManager = new RgaManager(catalogManager, variantStorageManager, rgaEngine);
 
         if (!indexed) {

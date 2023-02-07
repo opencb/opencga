@@ -279,7 +279,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                 columnFamily + ':' + targetColumn);
         String[] args = CopyHBaseColumnDriver.buildArgs(
                 dbAdaptor.getTableNameGenerator().getVariantTableName(),
-                columnsToCopyMap, options);
+                columnsToCopyMap, null, options);
 
         mrExecutor.run(CopyHBaseColumnDriver.class, args, "Create new annotation snapshot with name '" + name + '\'');
     }
