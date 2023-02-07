@@ -1,0 +1,106 @@
+suppressMessages(library(optparse))
+suppressMessages(library(kinship2))
+set.seed(42)
+
+# Load file data
+load_file_data <- function(ped_fpath) {
+  # Load all pedigree
+  family_ped <- read.table(ped_fpath, header=TRUE,
+                           colClasses = c(id="character",
+                                          dadid="character",
+                                          momid="character",
+                                          relation="character"))
+  
+  # Extract affected info
+  affected <- as.data.frame(family_ped[, grepl("affected", names(family_ped))])
+  if (ncol(affected) > 4) {
+    stop("[ERROR] Input data contains more than 4 disorders.")
+  }
+  if (ncol(affected) == 1) {
+    affected <- family_ped$affected
+  } else {
+    colnames(affected) <- unlist(lapply(colnames(affected), function (x) sub('affected.', '', x)))
+    affected <- as.matrix(affected)
+  }
+
+  # Extract relation info
+  columns <- c("id1", "id2", "code")
+  rel_df <- data.frame(matrix(nrow = 0, ncol = length(columns)))  # Create empty relationship data frame
+  colnames(rel_df) = columns
+  relation <- family_ped[!is.na(family_ped$relation), c("id", "relation")]  # Remove NA and subset
+  if(nrow(relation) > 0) {
+    group_and_rel <- strsplit(as.character(relation$relation),',')  # Split group and relationship code
+    relation <- data.frame(relation$id, do.call(rbind, group_and_rel))  # Combine id, group and relationship code
+    colnames(relation) <- c("id", "group", "code")
+    agg <- aggregate(id~group, data = relation, paste0, collapse=",")  # Concatenate ids by group
+    for (row in 1:nrow(agg)) {  # Get pair combinations of all ids in the same group
+      ids <- strsplit(as.character(agg$id),',')
+      ids_comb_matrix <- t(do.call(cbind, lapply(ids, function(x) combn(x,2))))
+    }
+    codes <- do.call(rbind, lapply(ids_comb_matrix[,1], function(x) relation[relation$id==x, ]$code))  # Get code for each pair of ids
+    rel_matrix = cbind(ids_comb_matrix, codes)  # Merge pair of ids and their corresponding code
+    colnames(rel_matrix) <- c("id1", "id2", "code")
+    rel_df <- as.data.frame(rel_matrix)  # Convert matrix to data frame
+    rel_df$code <- as.numeric(rel_df$code)  # Relationship code has to be numeric
+  }
+
+  ped_info <- list("family_ped" = family_ped, "affected" = affected, "relation" = rel_df)
+  return(ped_info)
+}
+
+# Main function
+plot_pedigree <- function(ped_fpath, out_dir, plot_format) {
+  # Gather pedigree info
+  ped_info <- load_file_data(ped_fpath)
+  family_ped <- ped_info$family_ped
+  affected <- ped_info$affected
+  relation <- ped_info$relation
+  
+  # Create pedigree
+  ped_all <- pedigree(id=family_ped$id,
+                      dadid=family_ped$dadid,
+                      momid=family_ped$momid,
+                      sex=family_ped$sex,
+                      affected=affected,
+                      status = family_ped$status,
+                      relation = relation)
+  
+  # Print pedigree plot
+  formats <- unlist(strsplit(plot_format, ','))
+  if ("png" %in% formats) {
+    png(file=paste(out_dir, "pedigree.png", sep='/'))
+    plot_df <- plot(ped_all)
+    if (ncol(as.data.frame(affected)) > 1) {
+      pedigree.legend(ped_all, location="topright", radius=.2)
+    }
+    garbage <-dev.off()
+  }
+  if ("svg" %in% formats) {
+    svg(file=paste(out_dir, "pedigree.svg", sep='/'))
+    plot_df <- plot(ped_all)
+    if (ncol(as.data.frame(affected)) > 1) {
+      pedigree.legend(ped_all, location="topright", radius=.2)
+    }
+    garbage <-dev.off()
+  }
+  
+  ped_coords <- cbind(family_ped, round(plot_df$x, 2), round(plot_df$y, 2), round(plot_df$boxw, 2), round(plot_df$boxh, 2))
+  write.table(ped_coords, file=paste(out_dir, "ped_coords.tsv", sep='/'), sep = '\t', quote=FALSE, row.names=FALSE,
+              col.names=c(colnames(family_ped), c("x", "y", "boxw", "boxh")))
+}
+
+
+# Command line interface
+option_list <- list(
+  make_option(c("--plot_format"), type="character", default="svg", help="Plot format, options: [svg, png]. Default: \"svg\"")
+)
+parser <- OptionParser(usage = "%prog [options] ped_fpath out_dir", option_list=option_list)
+arguments <- parse_args(parser, positional_arguments = 2)
+opt <- arguments$options
+args <- arguments$args
+
+# Run main function
+plot_pedigree(args[1],
+              args[2],
+              plot_format=opt$plot_format)
+

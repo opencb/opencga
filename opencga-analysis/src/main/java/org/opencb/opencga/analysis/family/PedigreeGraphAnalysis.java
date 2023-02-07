@@ -34,6 +34,9 @@ public class PedigreeGraphAnalysis extends OpenCgaToolScopeStudy {
     public static final String ID = "pedigree-graph";
     public static final String DESCRIPTION = "Compute the family pedigree graph image.";
 
+    public static final String PEDIGREE_FILENAME = "pedigree.ped";
+    public static final String PEDIGREE_IMAGE_FILENAME = "pedigree.png";
+
     @ToolParams
     private PedigreeGraphAnalysisParams pedigreeParams = new PedigreeGraphAnalysisParams();
 
@@ -72,49 +75,6 @@ public class PedigreeGraphAnalysis extends OpenCgaToolScopeStudy {
                     .setFamily(family)
                     .execute();
         });
-
-//
-//        Signature signature = null;
-//        SignatureFitting signatureFitting = null;
-//        try {
-//            File signatureFile = getOutDir().resolve(MUTATIONAL_SIGNATURE_DATA_MODEL_FILENAME).toFile();
-//            if (signatureFile.exists()) {
-//                signature = JacksonUtils.getDefaultObjectMapper().readerFor(Signature.class).readValue(signatureFile);
-//            }
-//            File signatureFittingFile = getOutDir().resolve(MUTATIONAL_SIGNATURE_FITTING_DATA_MODEL_FILENAME).toFile();
-//            if (signatureFittingFile.exists()) {
-//                signatureFitting = JacksonUtils.getDefaultObjectMapper().readerFor(SignatureFitting.class).readValue(signatureFittingFile);
-//            }
-//        } catch (IOException e) {
-//            throw new ToolException("Something happened when parsing result files from mutational signature (or fitting)", e);
-//        }
-//        if (signature != null) {
-//            logger.info("Adding new mutational signature to the signature data model before saving quality control");
-//            qc.getVariant().getSignatures().add(signature);
-//        }
-//        if (signatureFitting != null) {
-//            for (Signature sig : qc.getVariant().getSignatures()) {
-//                if (StringUtils.isNotEmpty(sig.getId())) {
-//                    if (sig.getId().equals(signatureParams.getId())) {
-//                        if (CollectionUtils.isEmpty(sig.getFittings())) {
-//                            sig.setFittings(new ArrayList<>());
-//                        }
-//                        logger.info("Fitting {} was added to the mutational siganture {} before saving quality control",
-//                                signatureParams.getFitId(), signatureParams.getId());
-//                        sig.getFittings().add(signatureFitting);
-//                        break;
-//                    }
-//                }
-//            }
-//        }
-//        // Update sample quality control
-//        try {
-//            catalogManager.getSampleManager().update(getStudy(), sample.getId(), new SampleUpdateParams().setQualityControl(qc),
-//                    QueryOptions.empty(), getToken());
-//            logger.info("Quality control saved for sample {}", sample.getId());
-//        } catch (CatalogException e) {
-//            throw new ToolException("Something happened when saving sample quality control", e);
-//        }
     }
 }
 

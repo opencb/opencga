@@ -147,6 +147,8 @@ public class FieldConstants {
     public static final String FAMILY_ROLES = "Map of members ids and enum of roles (FATHER, MOTHER, IDENTICAL_TWIN, SON, UNCLE,"
             + " PATERNAL_GRANDFATHER.)  .";
 
+    public static final String DISORDER_ID = "Disorder ID.";
+
     //FamilyQualityControl
     public static final String FAMILY_QUALITY_CONTROL_RELATEDNESS_DESCRIPTION = "Reports of family relationship.";
     public static final String INDIVIDUAL_QUALITY_CONTROL_INFERRED_SEX_REPORT_DESCRIPTION = "List of inferred sex reports, it depends on"

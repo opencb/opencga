@@ -17,6 +17,7 @@
 package org.opencb.opencga.server.rest;
 
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -24,6 +25,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.family.FamilyTsvAnnotationLoader;
 import org.opencb.opencga.analysis.family.PedigreeGraphAnalysis;
 import org.opencb.opencga.analysis.tools.ToolRunner;
+import org.opencb.opencga.analysis.variant.circos.CircosAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
@@ -36,6 +38,7 @@ import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.family.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 
@@ -43,11 +46,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by pfurio on 03/05/17.
@@ -137,6 +140,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Family ID") @QueryParam("familyId") String familyId) {
         try {
+            StopWatch watch = StopWatch.createStarted();
+
             // Create temporal directory
             java.nio.file.Path outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "pedigree-graph-" + System.nanoTime());
             outDir.toFile().mkdir();
@@ -155,8 +160,30 @@ public class FamilyWSServer extends OpenCGAWSServer {
             toolRunner.execute(PedigreeGraphAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, studyStr), outDir, null,
                     token);
 
-            String b64Image = "hello";
-            return createOkResponse(b64Image);
+            // Check results by reading the output file
+            File imgFile = null;
+            for (File file : outDir.toFile().listFiles()) {
+                if (file.getName().endsWith("png")) {
+                    imgFile = file;
+                    break;
+                }
+            }
+            if (imgFile != null) {
+                FileInputStream fileInputStreamReader = new FileInputStream(imgFile);
+                byte[] bytes = new byte[(int) imgFile.length()];
+                fileInputStreamReader.read(bytes);
+
+                String img = new String(Base64.getEncoder().encode(bytes), StandardCharsets.UTF_8);
+
+                watch.stop();
+                OpenCGAResult<String> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
+                        Collections.singletonList(img), 1);
+
+                //System.out.println(result.toString());
+                return createOkResponse(result);
+            } else {
+                return createErrorResponse(new Exception("Couldn't find the pedigree graph file. Please, check log messages"));
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }

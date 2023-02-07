@@ -16,6 +16,10 @@
 
 package org.opencb.opencga.analysis.family;
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.Disorder;
+import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -26,9 +30,13 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.*;
 
 @ToolExecutor(id="opencga-local", tool = PedigreeGraphAnalysis.ID,
         framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.MONGODB)
@@ -48,119 +56,118 @@ public class PedigreeGraphLocalAnalysisExecutor extends PedigreeGraphAnalysisExe
     }
 
     private void computeRScript() throws IOException, ToolException, CatalogException {
-        for (Individual member : getFamily().getMembers()) {
-            logger.info("Member: " + member.toString());
+        File pedFile = createPedFile();
+
+        // Build command line to execute
+        List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
+        inputBindings.add(new AbstractMap.SimpleEntry<>(opencgaHome.resolve("analysis/" + PedigreeGraphAnalysis.ID).toAbsolutePath()
+                .toString(), "/script"));
+
+        AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),
+                "/data");
+
+        StringBuilder scriptParams = new StringBuilder("R CMD Rscript --vanilla")
+                .append(" /script/ped.R")
+                .append(" /data/").append(pedFile.getName())
+                .append(" /data/")
+                .append(" --plot_format png");
+
+        String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams.toString(), null);
+        logger.info("Docker command line: " + cmdline);
+    }
+
+    private File createPedFile() throws FileNotFoundException {
+        File file = getOutDir().resolve(PedigreeGraphAnalysis.PEDIGREE_FILENAME).toFile();
+        try (PrintWriter pw = new PrintWriter(file)) {
+            List<Disorder> disorders = getFamily().getDisorders();
+            StringBuilder sbDisorders = new StringBuilder();
+            if (disorders.size() == 1) {
+                sbDisorders.append("affected").append("\t");
+            } else {
+                for (Disorder disorder : getFamily().getDisorders()) {
+                    sbDisorders.append("affected.").append(disorder.getId()).append("\t");
+                }
+            }
+            pw.println("id\tdadid\tmomid\tsex\t" + sbDisorders + "status\trelation");
+
+            for (Individual member : getFamily().getMembers()) {
+                StringBuilder sb = new StringBuilder(member.getId()).append("\t");
+
+                // Father
+                if (member.getFather() == null || (member.getFather() != null && StringUtils.isEmpty(member.getFather().getId()))) {
+                    sb.append("NA").append("\t");
+                } else {
+                    sb.append(member.getFather().getId()).append("\t");
+                }
+
+                // Mother
+                if (member.getMother() == null || (member.getMother() != null && StringUtils.isEmpty(member.getMother().getId()))) {
+                    sb.append("NA").append("\t");
+                } else {
+                    sb.append(member.getMother().getId()).append("\t");
+                }
+
+                // Sex
+                if (member.getSex() != null && member.getSex().getSex() != null) {
+                    switch (member.getSex().getSex()) {
+                        case MALE:
+                            sb.append("1").append("\t");
+                            break;
+                        case FEMALE:
+                            sb.append("2").append("\t");
+                            break;
+                        case UNKNOWN:
+                            sb.append("3").append("\t");
+                            break;
+                        case UNDETERMINED:
+                            sb.append("4").append("\t");
+                            break;
+                    }
+                } else {
+                    // Unknown sex
+                    sb.append("3").append("\t");
+                }
+
+                // Affected
+                for (Disorder disorder : disorders) {
+                    if (CollectionUtils.isNotEmpty(member.getDisorders())) {
+                        boolean match = member.getDisorders().stream().anyMatch(e -> e.getId().equals(disorder.getId()));
+                        if (match) {
+                            sb.append("1").append("\t");
+                        } else {
+                            sb.append("2").append("\t");
+                        }
+                    } else {
+                        sb.append("2").append("\t");
+                    }
+                }
+
+                // Status
+                if (member.getLifeStatus() == null) {
+                    sb.append("NA").append("\t");
+                } else {
+                    switch (member.getLifeStatus()) {
+                        case ALIVE:
+                            sb.append("0").append("\t");
+                            break;
+                        case DECEASED:
+                        case ABORTED:
+                        case STILLBORN:
+                        case MISCARRIAGE:
+                            sb.append("1").append("\t");
+                            break;
+                        default:
+                            sb.append("NA").append("\t");
+                    }
+                }
+
+                // Relation
+                sb.append("NA").append("\t");
+
+                // Write line
+                pw.println(sb);
+            }
         }
-//        File cataloguesFile = getOutDir().resolve(CATALOGUES_FILENAME_DEFAULT).toFile();
-//        if (!cataloguesFile.exists()) {
-//            // Get counts from sample
-//            CatalogManager catalogManager = getVariantStorageManager().getCatalogManager();
-//            // Check sample
-//            String study = catalogManager.getStudyManager().get(getStudy(), QueryOptions.empty(), getToken()).first().getFqn();
-//            OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(study, getSample(), QueryOptions.empty(),
-//                    getToken());
-//            if (sampleResult.getNumResults() != 1) {
-//                throw new ToolException("Unable to compute mutational signature analysis. Sample '" + getSample() + "' not found");
-//            }
-//            Sample sample = sampleResult.first();
-//            logger.info("Searching catalogue counts from quality control for sample " + getSample());
-//            if (sample.getQualityControl() != null && sample.getQualityControl().getVariant() != null
-//                    && CollectionUtils.isNotEmpty(sample.getQualityControl().getVariant().getSignatures())) {
-//                logger.info("Searching in " + sample.getQualityControl().getVariant().getSignatures().size() + " signatures");
-//                for (Signature signature : sample.getQualityControl().getVariant().getSignatures()) {
-//                    logger.info("Matching ? " + getQueryId() + " vs " + signature.getId());
-//                    if (getQueryId().equals(signature.getId())) {
-//                        // Write catalogue file
-//                        try (PrintWriter pw = new PrintWriter(cataloguesFile)) {
-//                            pw.println(getSample());
-//                            for (Signature.GenomeContextCount count : signature.getCounts()) {
-//                                pw.println(count.getContext() + "\t" + count.getTotal());
-//                            }
-//                            pw.close();
-//                        } catch (Exception e) {
-//                            throw new ToolException("Error writing catalogue output file: " + cataloguesFile.getName(), e);
-//                        }
-//                        logger.info("Found catalogue {} and written in {}", signature.getId(), cataloguesFile.getAbsolutePath());
-//                        break;
-//                    }
-//                }
-//            }
-//            if (!cataloguesFile.exists()) {
-//                throw new ToolException("Could not find mutational signagure catalogue (counts) file: " + cataloguesFile.getName());
-//            }
-//        }
-//
-//        List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
-//        inputBindings.add(new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(), "/data/input"));
-//        if (StringUtils.isNotEmpty(getSignaturesFile())) {
-//            File signaturesFile = new File(getSignaturesFile());
-//            if (signaturesFile.exists()) {
-//                inputBindings.add(new AbstractMap.SimpleEntry<>(signaturesFile.getParent(), "/data/signaturesFile"));
-//            }
-//        }
-//        if (StringUtils.isNotEmpty(getRareSignaturesFile())) {
-//            File rareSignaturesFile = new File(getRareSignaturesFile());
-//            if (rareSignaturesFile.exists()) {
-//                inputBindings.add(new AbstractMap.SimpleEntry<>(rareSignaturesFile.getParent(), "/data/rareSignaturesFile"));
-//            }
-//        }
-//        AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir()
-//                .toAbsolutePath().toString(), "/data/output");
-//        StringBuilder scriptParams = new StringBuilder("R CMD Rscript --vanilla ")
-//                .append("/opt/opencga/signature.tools.lib/scripts/signatureFit")
-//                .append(" --catalogues=/data/input/").append(cataloguesFile.getName())
-//                .append(" --outdir=/data/output");
-//        if (StringUtils.isNotEmpty(getFitMethod())) {
-//            scriptParams.append(" --fitmethod=").append(getFitMethod());
-//        }
-//        if (StringUtils.isNotEmpty(getSigVersion())) {
-//            scriptParams.append(" --sigversion=").append(getSigVersion());
-//        }
-//        if (StringUtils.isNotEmpty(getOrgan())) {
-//            scriptParams.append(" --organ=").append(getOrgan());
-//        }
-//        if (getThresholdPerc() != null) {
-//            scriptParams.append(" --thresholdperc=").append(getThresholdPerc());
-//        }
-//        if (getThresholdPval() != null) {
-//            scriptParams.append(" --thresholdpval=").append(getThresholdPval());
-//        }
-//        if (getMaxRareSigs() != null) {
-//            scriptParams.append(" --maxraresigs=").append(getMaxRareSigs());
-//        }
-//        if (getnBoot() != null) {
-//            scriptParams.append(" -b --nboot=").append(getnBoot());
-//        }
-//        if (StringUtils.isNotEmpty(getSignaturesFile()) && new File(getSignaturesFile()).exists()) {
-//            scriptParams.append(" --signaturesfile=/data/signaturesFile/").append(new File(getSignaturesFile()).getName());
-//        }
-//        if (StringUtils.isNotEmpty(getRareSignaturesFile()) && new File(getRareSignaturesFile()).exists()) {
-//            scriptParams.append(" --raresignaturesfile=/data/rareSignaturesFile/").append(new File(getRareSignaturesFile()).getName());
-//        }
-//        switch (getAssembly()) {
-//            case "GRCh37": {
-//                scriptParams.append(" --genomev=hg19");
-//                break;
-//            }
-//            case "GRCh38": {
-//                scriptParams.append(" --genomev=hg38");
-//                break;
-//            }
-//        }
-//
-//        String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams.toString(),
-//                null);
-//        logger.info("Docker command line: " + cmdline);
-//
-//        // Check fitting file before parsing and creating the mutational signature fitting data model
-//        File signatureCoeffsFile = getOutDir().resolve(SIGNATURE_COEFFS_FILENAME).toFile();
-//        if (!signatureCoeffsFile.exists()) {
-//            throw new ToolExecutorException("Something wrong happened: signature coeffs. file " + SIGNATURE_COEFFS_FILENAME + " could not"
-//                    + " be generated");
-//        }
-//        SignatureFitting signatureFitting = parseFittingResults(getOutDir(), getFitId(), getFitMethod(), getSigVersion(), getnBoot(),
-//                getOrgan(), getThresholdPerc(), getThresholdPval(), getMaxRareSigs());
-//        JacksonUtils.getDefaultObjectMapper().writerFor(SignatureFitting.class).writeValue(getOutDir()
-//                .resolve(MutationalSignatureAnalysis.MUTATIONAL_SIGNATURE_FITTING_DATA_MODEL_FILENAME).toFile(), signatureFitting);
+        return file;
     }
 }

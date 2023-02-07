@@ -15,7 +15,7 @@ RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt
     libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
     gnuplot pandoc samtools bcftools tabix fastqc plink1.9 bwa r-base && \
     ## Installation dependencies using R install.packages() is slower than apt-get but final size is 400GB smaller.
-    R -e "install.packages(c('BiocManager', 'RCircos', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr'))" && \
+    R -e "install.packages(c('BiocManager', 'RCircos', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr', 'kinship2'))" && \
     R -e "BiocManager::install('BiocStyle')" && \
     ## signature.tools.lib installation
     R -e 'install.packages(c("devtools", "getopt"), repos="https://www.stats.bris.ac.uk/R/")' && \
