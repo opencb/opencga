@@ -27,6 +27,14 @@ public class StudyEntryMultiFileToHBaseConverter extends StudyEntryToHBaseConver
         });
     }
 
+    @Override
+    protected byte[] getFileColumnKey(int fileId) {
+        byte[] fileColumnKey = VariantPhoenixSchema
+                .buildFileColumnKey(studyMetadata.getId(), fileId);
+        return fileColumnKey;
+    }
+
+    @Override
     protected byte[] getSampleColumn(Integer sampleId) {
         return VariantPhoenixSchema.buildSampleColumnKey(studyMetadata.getId(), sampleId);
     }

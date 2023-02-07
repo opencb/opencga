@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileRelatedFile;
 import org.opencb.opencga.core.models.file.FileStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -435,6 +436,28 @@ public class FileUtils {
                 break;
         }
         return compression;
+    }
+
+    public static boolean isPartial(File file) {
+        if (file.getType() == File.Type.FILE && file.getRelatedFiles() != null) {
+            for (FileRelatedFile relatedFile : file.getRelatedFiles()) {
+                if (relatedFile.getRelation() == FileRelatedFile.Relation.MULTIPART) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public static File getVirtualFileFromPartial(File file) {
+        if (file.getType() == File.Type.FILE && file.getRelatedFiles() != null) {
+            for (FileRelatedFile relatedFile : file.getRelatedFiles()) {
+                if (relatedFile.getRelation() == FileRelatedFile.Relation.MULTIPART) {
+                    return relatedFile.getFile();
+                }
+            }
+        }
+        return null;
     }
 
 }

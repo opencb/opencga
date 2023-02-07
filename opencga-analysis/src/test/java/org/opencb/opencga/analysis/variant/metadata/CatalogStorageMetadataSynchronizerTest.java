@@ -18,14 +18,13 @@ package org.opencb.opencga.analysis.variant.metadata;
 
 import org.junit.*;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
-import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.cohort.Cohort;
@@ -39,7 +38,6 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
-import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
@@ -58,7 +56,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer.*;
+import static org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer.secureGet;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 /**
@@ -74,10 +72,6 @@ public class CatalogStorageMetadataSynchronizerTest {
     static private String sessionId;
     static private String projectId;
     static private String studyId;
-    static private long studyUid;
-    static private FileMetadataReader fileMetadataReader;
-    static private FileUtils catalogFileUtils;
-    static private long outputId;
     static Logger logger = LoggerFactory.getLogger(CatalogStorageMetadataSynchronizerTest.class);
     static private final String userId = "user";
     static private List<File> files = new ArrayList<>();
@@ -92,20 +86,17 @@ public class CatalogStorageMetadataSynchronizerTest {
 //        stderr.setThreshold(Level.toLevel("debug"));
 
         catalogManager = catalogManagerExternalResource.getCatalogManager();
-        fileMetadataReader = FileMetadataReader.get(catalogManager);
-        catalogFileUtils = new FileUtils(catalogManager);
 
-        User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.AccountType.FULL, null).first();
+        catalogManager.getUserManager().create(userId, "User", "user@email.org", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, null).first();
 
-        sessionId = catalogManager.getUserManager().login(userId, "user").getToken();
+        sessionId = catalogManager.getUserManager().login(userId, TestParamConstants.PASSWORD).getToken();
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionId).first().getId();
         Study study = catalogManager.getStudyManager().create(projectId, "s1", null, "s1", "Study " + "1", null, null,
                 null, null, INCLUDE_RESULT, sessionId).first();
         studyId = study.getFqn();
-        studyUid = study.getUid();
-        outputId = catalogManager.getFileManager().createFolder(studyId, Paths.get("data", "index").toString(),
-                true, null, INCLUDE_RESULT, sessionId).first().getUid();
+        catalogManager.getFileManager().createFolder(studyId, Paths.get("data", "index").toString(),
+                true, null, INCLUDE_RESULT, sessionId);
 //        files.add(create("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
 //        files.add(create("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", true));
 //        files.add(create("1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
@@ -218,7 +209,8 @@ public class CatalogStorageMetadataSynchronizerTest {
 
         assertEquals(IndexStatus.READY, secureGet(sample, s -> s.getInternal().getVariant().getIndex().getStatus().getId(), null));
         assertEquals(IndexStatus.NONE, secureGet(sample, s->s.getInternal().getVariant().getAnnotationIndex().getStatus().getId(), null));
-        assertEquals(IndexStatus.NONE, secureGet(sample, s->s.getInternal().getVariant().getSampleGenotypeIndex().getStatus().getId(), null));
+        assertEquals(IndexStatus.NONE, secureGet(sample, s->s.getInternal().getVariant().getSecondarySampleIndex().getStatus().getId(), null));
+        assertEquals(IndexStatus.NONE, secureGet(sample, s->s.getInternal().getVariant().getSecondarySampleIndex().getFamilyStatus().getId(), null));
 
         //--------------
         metadataManager.updateSampleMetadata(sm.getId(), metadataManager.getSampleId(sm.getId(), sampleName), s -> s.setAnnotationStatus(TaskMetadata.Status.READY));
@@ -227,7 +219,8 @@ public class CatalogStorageMetadataSynchronizerTest {
         sample = catalogManager.getSampleManager().get(studyId, sampleName, null, sessionId).first();
         assertEquals(IndexStatus.READY, secureGet(sample, s->s.getInternal().getVariant().getIndex().getStatus().getId(), null));
         assertEquals(IndexStatus.READY, secureGet(sample, s->s.getInternal().getVariant().getAnnotationIndex().getStatus().getId(), null));
-        assertEquals(IndexStatus.NONE, secureGet(sample, s->s.getInternal().getVariant().getSampleGenotypeIndex().getStatus().getId(), null));
+        assertEquals(IndexStatus.NONE, secureGet(sample, s->s.getInternal().getVariant().getSecondarySampleIndex().getStatus().getId(), null));
+        assertEquals(IndexStatus.NONE, secureGet(sample, s->s.getInternal().getVariant().getSecondarySampleIndex().getFamilyStatus().getId(), null));
 
         //--------------
         metadataManager.updateSampleMetadata(sm.getId(), metadataManager.getSampleId(sm.getId(), sampleName), s -> s.setSampleIndexStatus(TaskMetadata.Status.READY, version));
@@ -236,7 +229,8 @@ public class CatalogStorageMetadataSynchronizerTest {
         sample = catalogManager.getSampleManager().get(studyId, sampleName, null, sessionId).first();
         assertEquals(IndexStatus.READY, secureGet(sample, s->s.getInternal().getVariant().getIndex().getStatus().getId(), null));
         assertEquals(IndexStatus.READY, secureGet(sample, s->s.getInternal().getVariant().getAnnotationIndex().getStatus().getId(), null));
-        assertEquals(IndexStatus.NONE, secureGet(sample, s->s.getInternal().getVariant().getSampleGenotypeIndex().getStatus().getId(), null));
+        assertEquals(IndexStatus.NONE, secureGet(sample, s->s.getInternal().getVariant().getSecondarySampleIndex().getStatus().getId(), null));
+        assertEquals(IndexStatus.NONE, secureGet(sample, s->s.getInternal().getVariant().getSecondarySampleIndex().getFamilyStatus().getId(), null));
 
 
         //--------------
@@ -246,7 +240,18 @@ public class CatalogStorageMetadataSynchronizerTest {
         sample = catalogManager.getSampleManager().get(studyId, sampleName, null, sessionId).first();
         assertEquals(IndexStatus.READY, secureGet(sample, s->s.getInternal().getVariant().getIndex().getStatus().getId(), null));
         assertEquals(IndexStatus.READY, secureGet(sample, s->s.getInternal().getVariant().getAnnotationIndex().getStatus().getId(), null));
-        assertEquals(IndexStatus.READY, secureGet(sample, s->s.getInternal().getVariant().getSampleGenotypeIndex().getStatus().getId(), null));
+        assertEquals(IndexStatus.READY, secureGet(sample, s->s.getInternal().getVariant().getSecondarySampleIndex().getStatus().getId(), null));
+        assertEquals(IndexStatus.NONE, secureGet(sample, s->s.getInternal().getVariant().getSecondarySampleIndex().getFamilyStatus().getId(), null));
+
+        //--------------
+        metadataManager.updateSampleMetadata(sm.getId(), metadataManager.getSampleId(sm.getId(), sampleName), s -> s.setFamilyIndexStatus(TaskMetadata.Status.READY, version));
+        studyConfigurationFactory.synchronizeCatalogStudyFromStorage(sm, sessionId);
+
+        sample = catalogManager.getSampleManager().get(studyId, sampleName, null, sessionId).first();
+        assertEquals(IndexStatus.READY, secureGet(sample, s->s.getInternal().getVariant().getIndex().getStatus().getId(), null));
+        assertEquals(IndexStatus.READY, secureGet(sample, s->s.getInternal().getVariant().getAnnotationIndex().getStatus().getId(), null));
+        assertEquals(IndexStatus.READY, secureGet(sample, s->s.getInternal().getVariant().getSecondarySampleIndex().getStatus().getId(), null));
+        assertEquals(IndexStatus.READY, secureGet(sample, s->s.getInternal().getVariant().getSecondarySampleIndex().getFamilyStatus().getId(), null));
 
         //--------------
         sm = metadataManager.updateStudyMetadata(sm.getId(), s -> {
@@ -260,7 +265,9 @@ public class CatalogStorageMetadataSynchronizerTest {
         sample = catalogManager.getSampleManager().get(studyId, sampleName, null, sessionId).first();
         assertEquals(IndexStatus.READY, secureGet(sample, s -> s.getInternal().getVariant().getIndex().getStatus().getId(), null));
         assertEquals(IndexStatus.READY, secureGet(sample, s -> s.getInternal().getVariant().getAnnotationIndex().getStatus().getId(), null));
-        assertEquals(IndexStatus.NONE, secureGet(sample, s -> s.getInternal().getVariant().getSampleGenotypeIndex().getStatus().getId(), null));
+        assertEquals(IndexStatus.NONE, secureGet(sample, s -> s.getInternal().getVariant().getSecondarySampleIndex().getStatus().getId(), null));
+        assertEquals(IndexStatus.NONE, secureGet(sample, s->s.getInternal().getVariant().getSecondarySampleIndex().getFamilyStatus().getId(), null));
+        assertEquals(1, secureGet(sample, s -> s.getInternal().getVariant().getSecondarySampleIndex().getVersion(), null).intValue());
     }
 
     @Test
@@ -274,7 +281,7 @@ public class CatalogStorageMetadataSynchronizerTest {
 
         assertEquals(IndexStatus.READY, file.getInternal().getVariant().getIndex().getStatus().getId());
         assertEquals(IndexStatus.NONE, file.getInternal().getVariant().getAnnotationIndex().getStatus().getId());
-        assertEquals(IndexStatus.NONE, file.getInternal().getVariant().getSecondaryIndex().getStatus().getId());
+        assertEquals(IndexStatus.NONE, file.getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
 
         // --------------------
         metadataManager.updateFileMetadata(sm.getId(), metadataManager.getFileId(sm.getId(), fileName),
@@ -284,17 +291,17 @@ public class CatalogStorageMetadataSynchronizerTest {
         file = catalogManager.getFileManager().get(studyId, fileName, null, sessionId).first();
         assertEquals(IndexStatus.READY, file.getInternal().getVariant().getIndex().getStatus().getId());
         assertEquals(IndexStatus.READY, file.getInternal().getVariant().getAnnotationIndex().getStatus().getId());
-        assertEquals(IndexStatus.NONE, file.getInternal().getVariant().getSecondaryIndex().getStatus().getId());
+        assertEquals(IndexStatus.NONE, file.getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
 
         // --------------------
         metadataManager.updateFileMetadata(sm.getId(), metadataManager.getFileId(sm.getId(), fileName),
-                fm -> fm.setSecondaryIndexStatus(TaskMetadata.Status.READY));
+                fm -> fm.setSecondaryAnnotationIndexStatus(TaskMetadata.Status.READY));
         studyConfigurationFactory.synchronizeCatalogStudyFromStorage(sm, sessionId);
 
         file = catalogManager.getFileManager().get(studyId, fileName, null, sessionId).first();
         assertEquals(IndexStatus.READY, file.getInternal().getVariant().getIndex().getStatus().getId());
         assertEquals(IndexStatus.READY, file.getInternal().getVariant().getAnnotationIndex().getStatus().getId());
-        assertEquals(IndexStatus.READY, file.getInternal().getVariant().getSecondaryIndex().getStatus().getId());
+        assertEquals(IndexStatus.READY, file.getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
 
         // --------------------
         metadataManager.updateFileMetadata(sm.getId(), metadataManager.getFileId(sm.getId(), fileName),
@@ -304,7 +311,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         file = catalogManager.getFileManager().get(studyId, fileName, null, sessionId).first();
         assertEquals(IndexStatus.READY, file.getInternal().getVariant().getIndex().getStatus().getId());
         assertEquals(IndexStatus.NONE, file.getInternal().getVariant().getAnnotationIndex().getStatus().getId());
-        assertEquals(IndexStatus.READY, file.getInternal().getVariant().getSecondaryIndex().getStatus().getId());
+        assertEquals(IndexStatus.READY, file.getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
     }
 
     @Test
