@@ -20,6 +20,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.clinical.ClinicalProperty;
+import org.opencb.biodata.models.clinical.interpretation.CancerPanel;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.core.OntologyTerm;
 import org.opencb.commons.datastore.core.DataResult;
@@ -361,6 +363,8 @@ public class PanelManagerTest extends GenericTest {
         DiseasePanel.GenePanel gene = new DiseasePanel.GenePanel();
         gene.setId(id);
         gene.setName(name);
+        gene.setModesOfInheritance(Arrays.asList(ClinicalProperty.ModeOfInheritance.AUTOSOMAL_DOMINANT, ClinicalProperty.ModeOfInheritance.AUTOSOMAL_RECESSIVE));
+        gene.setCancer(new CancerPanel().setRoles(Arrays.asList(ClinicalProperty.RoleInCancer.BOTH, ClinicalProperty.RoleInCancer.ONCOGENE)));
         return gene;
     }
 
