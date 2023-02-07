@@ -128,6 +128,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         this.jCommander.addCommand("storage", this.storageCommandOptions);
         JCommander storageSubCommands = this.jCommander.getCommands().get("storage");
         storageSubCommands.addCommand("status", this.storageCommandOptions.getStatusCommandOptions());
+        storageSubCommands.addCommand("update-database-prefix", this.storageCommandOptions.getUpdateDatabasePrefix());
     }
 
     @Override

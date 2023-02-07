@@ -15,12 +15,14 @@ import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 public class StorageCommandOptions extends GeneralCliOptions {
 
     private final StatusCommandOptions statusCommandOptions;
+    private final UpdateDatabasePrefix updateDatabasePrefix;
     private final AdminCliOptionsParser.AdminCommonCommandOptions commonOptions;
 
     public StorageCommandOptions(JCommander jCommander, AdminCliOptionsParser.AdminCommonCommandOptions commonOptions) {
         super(jCommander);
         this.commonOptions = commonOptions;
         this.statusCommandOptions = new StatusCommandOptions();
+        this.updateDatabasePrefix = new UpdateDatabasePrefix();
     }
 
 
@@ -34,8 +36,22 @@ public class StorageCommandOptions extends GeneralCliOptions {
 
     }
 
+    @Parameters(commandNames = {"update-database-prefix"}, commandDescription = "Update database prefix on the variant storage")
+    public class UpdateDatabasePrefix extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+//        public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = StorageCommandOptions.this.commonOptions;
+        public AdminCliOptionsParser.IgnorePasswordCommonCommandOptions commonOptions =
+                new AdminCliOptionsParser.IgnorePasswordCommonCommandOptions(getCommonOptions().commonOptions);
+
+    }
+
     public StatusCommandOptions getStatusCommandOptions() {
         return statusCommandOptions;
+    }
+
+    public UpdateDatabasePrefix getUpdateDatabasePrefix() {
+        return updateDatabasePrefix;
     }
 
     public AdminCliOptionsParser.AdminCommonCommandOptions getCommonOptions() {

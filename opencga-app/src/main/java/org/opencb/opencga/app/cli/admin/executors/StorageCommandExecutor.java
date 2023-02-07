@@ -29,6 +29,7 @@ import org.opencb.opencga.app.cli.admin.options.StorageCommandOptions;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.project.DataStore;
+import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 
@@ -55,6 +56,9 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
         switch (subCommandString) {
             case "status":
                 status();
+                break;
+            case "update-database-prefix":
+                updateDatabasePrefix();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -111,6 +115,40 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
         }
     }
 
+    private void updateDatabasePrefix() throws Exception {
+        StorageCommandOptions.UpdateDatabasePrefix commandOptions = storageCommandOptions.getUpdateDatabasePrefix();
+        StorageEngineFactory.configure(storageConfiguration);
+
+        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+            String adminPassword = getAdminPassword(true);
+            token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
+
+            for (Project project : catalogManager.getProjectManager().search(new Query(), new QueryOptions(), token).getResults()) {
+                final DataStore actualDataStore;
+                if (project.getInternal() != null && project.getInternal().getDatastores() != null) {
+                    actualDataStore = project.getInternal().getDatastores().getVariant();
+                } else {
+                    actualDataStore = null;
+                }
+                final DataStore defaultDataStore = VariantStorageManager.defaultDataStore(catalogManager, project, token);
+
+                final DataStore newDataStore;
+                logger.info("------");
+                logger.info("Project " + project.getFqn());
+                if (actualDataStore == null) {
+                    newDataStore = defaultDataStore;
+                    logger.info("Old DBName: null");
+                } else {
+                    actualDataStore.setDbName(defaultDataStore.getDbName());
+                    newDataStore = actualDataStore;
+                    logger.info("Old DBName: " + actualDataStore.getDbName());
+                }
+                logger.info("New DBName: " + newDataStore.getDbName());
+
+                catalogManager.getProjectManager().setDatastoreVariant(project.getUuid(), newDataStore, token);                catalogManager.getProjectManager().setDatastoreVariant(project.getUuid(), defaultDataStore, token);
+            }
+        }
+    }
 
     /**
      * Get list of projects that exist at the VariantStorage.
