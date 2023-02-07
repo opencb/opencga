@@ -20,6 +20,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.commons.utils.DockerUtils;
+import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -39,7 +40,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 @ToolExecutor(id="opencga-local", tool = PedigreeGraphAnalysis.ID,
-        framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.MONGODB)
+        framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.STORAGE)
 public class PedigreeGraphLocalAnalysisExecutor extends PedigreeGraphAnalysisExecutor {
 
     public final static String R_DOCKER_IMAGE = "opencb/opencga-ext-tools:" + GitRepositoryState.get().getBuildVersion();

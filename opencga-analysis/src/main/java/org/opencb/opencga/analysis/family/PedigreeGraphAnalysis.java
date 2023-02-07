@@ -28,7 +28,7 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.core.tools.family.PedigreeGraphAnalysisExecutor;
 
-@Tool(id = PedigreeGraphAnalysis.ID, resource = Enums.Resource.VARIANT)
+@Tool(id = PedigreeGraphAnalysis.ID, resource = Enums.Resource.FAMILY)
 public class PedigreeGraphAnalysis extends OpenCgaToolScopeStudy {
 
     public static final String ID = "pedigree-graph";
