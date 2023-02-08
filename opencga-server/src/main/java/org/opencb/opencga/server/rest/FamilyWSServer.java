@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.server.rest;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.DataResult;
@@ -139,12 +140,14 @@ public class FamilyWSServer extends OpenCGAWSServer {
     public Response pedigreeGraph(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Family ID") @QueryParam("familyId") String familyId) {
+        java.nio.file.Path outDir = null;
         try {
             StopWatch watch = StopWatch.createStarted();
 
             // Create temporal directory
-            java.nio.file.Path outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "pedigree-graph-" + System.nanoTime());
+            outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "pedigree-graph-" + System.nanoTime());
             outDir.toFile().mkdir();
+            Runtime.getRuntime().exec("chmod 777 " + outDir.toAbsolutePath());
             if (!outDir.toFile().exists()) {
                 return createErrorResponse(new Exception("Error creating temporal directory for pedigree graph analysis"));
             }
@@ -186,6 +189,18 @@ public class FamilyWSServer extends OpenCGAWSServer {
             }
         } catch (Exception e) {
             return createErrorResponse(e);
+        } finally {
+            if (outDir != null) {
+                // Delete temporal directory
+                try {
+                    if (outDir.toFile().exists()) {
+                        logger.info("Deleting scratch directory {}", outDir);
+                        FileUtils.deleteDirectory(outDir.toFile());
+                    }
+                } catch (IOException e) {
+                    logger.info("Error cleaning scratch directory {}", outDir, e);
+                }
+            }
         }
     }
 
