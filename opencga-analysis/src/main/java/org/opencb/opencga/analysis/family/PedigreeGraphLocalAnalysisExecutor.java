@@ -145,20 +145,19 @@ public class PedigreeGraphLocalAnalysisExecutor extends PedigreeGraphAnalysisExe
 
                 // Status
                 if (member.getLifeStatus() == null) {
-                    sb.append("NA").append("\t");
+                    sb.append("0").append("\t");
                 } else {
                     switch (member.getLifeStatus()) {
-                        case ALIVE:
-                            sb.append("0").append("\t");
-                            break;
                         case DECEASED:
                         case ABORTED:
                         case STILLBORN:
                         case MISCARRIAGE:
                             sb.append("1").append("\t");
                             break;
+                        case ALIVE:
                         default:
-                            sb.append("NA").append("\t");
+                            sb.append("0").append("\t");
+                            break;
                     }
                 }
 
