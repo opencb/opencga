@@ -18,8 +18,10 @@ package org.opencb.opencga.analysis.tools;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.tools.ToolParams;
@@ -33,18 +35,22 @@ import java.nio.file.Paths;
 
 public class ToolRunner {
 
+    private final VariantStorageManager variantStorageManager;
     private Logger logger = LoggerFactory.getLogger(ToolRunner.class);
 
     private final CatalogManager catalogManager;
-    private final StorageEngineFactory storageEngineFactory;
     private final String opencgaHome;
     private final ToolFactory toolFactory;
 
     public ToolRunner(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory storageEngineFactory) {
+        this(opencgaHome, catalogManager, new VariantStorageManager(catalogManager, storageEngineFactory));
+    }
+
+    public ToolRunner(String opencgaHome, CatalogManager catalogManager, VariantStorageManager variantStorageManager) {
         this.opencgaHome = opencgaHome;
         this.catalogManager = catalogManager;
 
-        this.storageEngineFactory = storageEngineFactory;
+        this.variantStorageManager = variantStorageManager;
         this.toolFactory = new ToolFactory();
     }
 
@@ -60,7 +66,30 @@ public class ToolRunner {
         // We get the job information.
         Job job = catalogManager.getJobManager().get(study, jobId, QueryOptions.empty(), token).first();
 
-        return execute(job.getTool().getId(), new ObjectMap(job.getParams()), Paths.get(job.getOutDir().getUri()), jobId, token);
+        return execute(job, token);
+    }
+
+    /**
+     * Execute a command tool.
+     * @param job job to execute
+     * @param token session id of the user that will execute the tool.
+     * @return Execution result
+     * @throws ToolException if the execution fails
+     */
+    public ExecutionResult execute(Job job, String token) throws CatalogException, ToolException {
+        return execute(job, Paths.get(job.getOutDir().getUri()), token);
+    }
+
+    /**
+     * Execute a command tool.
+     * @param job job to execute
+     * @param outDir job output directory
+     * @param token session id of the user that will execute the tool.
+     * @return Execution result
+     * @throws ToolException if the execution fails
+     */
+    public ExecutionResult execute(Job job, Path outDir, String token) throws CatalogException, ToolException {
+        return execute(job.getTool().getId(), new ObjectMap(job.getParams()), outDir, job.getId(), token);
     }
 
     /**
@@ -75,25 +104,26 @@ public class ToolRunner {
     public ExecutionResult execute(String toolId, ObjectMap params, Path outDir, String jobId, String token) throws ToolException {
         return toolFactory
                 .createTool(toolId)
-                .setUp(opencgaHome, catalogManager, storageEngineFactory, params, outDir, jobId, token)
+                .setUp(opencgaHome, catalogManager, variantStorageManager, params, outDir, jobId, token)
                 .start();
     }
 
     /**
      * Execute a tool
      * @param tool Tool class
-     * @param params Params for the execution.
+     * @param study Study id
+     * @param toolParams Specific ToolParams for the execution.
      * @param outDir Output directory. Mandatory
      * @param jobId Job Id (if any)
      * @param token session id of the user that will execute the tool.
      * @return Execution result
      * @throws ToolException if the execution fails
      */
-    public ExecutionResult execute(Class<? extends OpenCgaTool> tool, ObjectMap params, Path outDir, String jobId, String token) throws ToolException {
-        return toolFactory
-                .createTool(tool)
-                .setUp(opencgaHome, catalogManager, storageEngineFactory, params, outDir, jobId, token)
-                .start();
+    public ExecutionResult execute(Class<? extends OpenCgaTool> tool, String study, ToolParams toolParams, Path outDir, String jobId, String token)
+            throws ToolException {
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(ParamConstants.STUDY_PARAM, study);
+        return execute(tool, toolParams, params, outDir, jobId, token);
     }
 
     /**
@@ -112,9 +142,44 @@ public class ToolRunner {
         if (toolParams != null) {
             params = toolParams.toObjectMap(params);
         }
+        return execute(tool, params, outDir, jobId, token);
+    }
+
+    /**
+     * Execute a tool
+     * @param tool Tool class
+     * @param toolParams Specific ToolParams for the execution.
+     * @param outDir Output directory. Mandatory
+     * @param jobId Job Id (if any)
+     * @param token session id of the user that will execute the tool.
+     * @return Execution result
+     * @throws ToolException if the execution fails
+     */
+    public ExecutionResult execute(Class<? extends OpenCgaTool> tool, ToolParams toolParams, Path outDir, String jobId, String token)
+            throws ToolException {
+        ObjectMap params;
+        if (toolParams != null) {
+            params = toolParams.toObjectMap();
+        } else {
+            params = new ObjectMap();
+        }
+        return execute(tool, params, outDir, jobId, token);
+    }
+
+    /**
+     * Execute a tool
+     * @param tool Tool class
+     * @param params Params for the execution.
+     * @param outDir Output directory. Mandatory
+     * @param jobId Job Id (if any)
+     * @param token session id of the user that will execute the tool.
+     * @return Execution result
+     * @throws ToolException if the execution fails
+     */
+    public ExecutionResult execute(Class<? extends OpenCgaTool> tool, ObjectMap params, Path outDir, String jobId, String token) throws ToolException {
         return toolFactory
                 .createTool(tool)
-                .setUp(opencgaHome, catalogManager, storageEngineFactory, params, outDir, jobId, token)
+                .setUp(opencgaHome, catalogManager, variantStorageManager, params, outDir, jobId, token)
                 .start();
     }
 

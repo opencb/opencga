@@ -3,6 +3,7 @@ package org.opencb.opencga.analysis.file;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Enums;
@@ -35,7 +36,8 @@ public class FileLinkTask extends OpenCgaToolScopeStudy {
             FileLinkParams linkParams = new FileLinkParams()
                     .setUri(uri)
                     .setPath(toolParams.getPath())
-                    .setDescription(toolParams.getDescription());
+                    .setDescription(toolParams.getDescription())
+                    .setVirtualFileName(toolParams.getVirtualFileName());
             logger.info("Linking file " + uri);
             OpenCGAResult<File> result
                     = catalogManager.getFileManager().link(getStudy(), linkParams, toolParams.isParents(), getToken());
@@ -43,11 +45,20 @@ public class FileLinkTask extends OpenCgaToolScopeStudy {
                 logger.info("File already linked - SKIP");
             } else {
                 logger.info("File link took " + TimeUtils.durationToString(stopWatch));
-                addGeneratedFile(result.first());
+                File file = result.first();
+                addGeneratedFile(file);
 
                 // Prepare list to lunch new job when this one finishes to run postlink automatically
-                if (!toolParams.isSkipPostLink() && result.first().getInternal().getStatus().getId().equals(FileStatus.MISSING_SAMPLES)) {
-                    postLinkFileIds.add(result.first().getId());
+                if (!toolParams.isSkipPostLink()) {
+                    if (file.getInternal().getStatus().getId().equals(FileStatus.MISSING_SAMPLES)) {
+                        postLinkFileIds.add(file.getId());
+                    }
+                    if (FileUtils.isPartial(file)) {
+                        File virtualFile = FileUtils.getVirtualFileFromPartial(file);
+                        if (virtualFile.getInternal().getStatus().getId().equals(FileStatus.MISSING_SAMPLES)) {
+                            postLinkFileIds.add(virtualFile.getId());
+                        }
+                    }
                 }
             }
         }
