@@ -67,7 +67,7 @@ jobs:
       - name: Check for file
         id: file_check
         run: |
-          if git status -s | grep -x "** ${{ matrix.module }}"; then
+          if [ -d "${{ matrix.module }}" ]; then
             echo "check_result=true" >> $GITHUB_OUTPUT
           else
             echo "check_result=false" >> $GITHUB_OUTPUT
