@@ -1,0 +1,17 @@
+name: "Merge Workflow"
+
+on:
+  pull_request:
+    branches:
+      - "develop"
+      - "release-*"
+    types:
+      - closed
+
+jobs:
+  delete-docker:
+    uses: opencb/java-common-libs/.github/workflows/delete-docker-hub-workflow.yml@TASK-2270
+    secrets:
+      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD}}
+      DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER}}
+      DOCKER_HUB_ORGANISATION: ${{ secrets.DOCKER_HUB_ORGANISATION}}

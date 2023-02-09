@@ -27,7 +27,7 @@ jobs:
     needs: build
     strategy:
       matrix:
-        mongodb: ["4.2"]
+        mongodb: [ "5.0" ]
     steps:
       - uses: actions/checkout@v2
         with:
