@@ -79,10 +79,8 @@ public class HBaseLockManager {
     private static final byte DEPRECATED_LOCK_SEPARATOR_BYTE = '_';
     private static final String CURRENT = "CURRENT" + LOCK_PREFIX_SEPARATOR_STR;
     private static final String REFRESH = "REFRESH" + LOCK_PREFIX_SEPARATOR_STR;
-    protected static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool(
-            new ThreadFactoryBuilder()
-                    .setNameFormat("hbase-lock-%d")
-                    .build());
+    // Make non-final for testing purposes
+    protected static ExecutorService threadPool = buildThreadPool();
 
     protected final HBaseManager hbaseManager;
     protected final String tableName;
@@ -187,7 +185,7 @@ public class HBaseLockManager {
         logger.debug("Won the lock with token " + token + " (" + tokenHash + ")");
 
         long finalLockDuration = lockDuration;
-        return new Lock(THREAD_POOL, (int) (finalLockDuration / 4), tokenHash) {
+        return new Lock(threadPool, (int) (finalLockDuration / 4), tokenHash) {
             @Override
             public void unlock0() {
                 try {
@@ -397,4 +395,12 @@ public class HBaseLockManager {
             }
         }
     }
+
+    protected static ExecutorService buildThreadPool() {
+        return Executors.newCachedThreadPool(
+                new ThreadFactoryBuilder()
+                        .setNameFormat("hbase-lock-%d")
+                        .build());
+    }
+
 }

@@ -239,7 +239,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
                         FileEntry fileEntry = studyEntry.getFile(fileName);
                         if (fileEntry != null) {
                             if (fileEntry.getCall() != null) {
-                                System.out.println("fileEntry.getCall().getVariantId() = " + fileEntry.getCall().getVariantId());
+//                                System.out.println("fileEntry.getCall().getVariantId() = " + fileEntry.getCall().getVariantId());
                                 Variant v = new Variant(fileEntry.getCall().getVariantId());
                                 if (v.getType().equals(VariantType.NO_VARIATION)) {
                                     continue;

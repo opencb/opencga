@@ -81,8 +81,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.core.utils.CellBaseUtils.toCellBaseSpeciesName;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.buildSamplesIndexCollectionName;
 
@@ -1258,6 +1258,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         try {
             for (VariantQueryExecutor executor : getVariantQueryExecutors()) {
                 if (executor.canUseThisExecutor(query, options)) {
+                    logger.info("Using VariantQueryExecutor : " + executor.getClass().getName());
+                    logger.info("  Query : " + VariantQueryUtils.printQuery(query));
+                    logger.info("  Options : " + options.toJson());
                     return executor;
                 }
             }
@@ -1310,12 +1313,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public DataResult<Long> count(Query query) throws StorageEngineException {
-        query = preProcessQuery(query, QueryOptions.empty());
-        VariantQueryExecutor variantQueryExecutor = getVariantQueryExecutor(query, new QueryOptions(QueryOptions.COUNT, true));
-        return variantQueryExecutor.count(query);
+        VariantQueryResult<Variant> result = get(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ID)
+                .append(QueryOptions.LIMIT, 1)
+                .append(QueryOptions.COUNT, true));
+        return new DataResult<>(
+                result.getTime(),
+                result.getEvents(),
+                1,
+                Collections.singletonList(result.getNumMatches()), 1L, result.getAttributes());
     }
-
-
 
     public DataResult<SampleVariantStats> sampleStatsQuery(String studyStr, String sample, Query query, QueryOptions options)
             throws StorageEngineException {

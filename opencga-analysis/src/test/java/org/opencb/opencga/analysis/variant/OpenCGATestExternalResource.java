@@ -152,6 +152,10 @@ public class OpenCGATestExternalResource extends ExternalResource {
         return catalogManagerExternalResource;
     }
 
+    public String getAdminToken() {
+        return catalogManagerExternalResource.getAdminToken();
+    }
+
     public StorageEngineFactory getStorageEngineFactory() {
         return storageEngineFactory;
     }

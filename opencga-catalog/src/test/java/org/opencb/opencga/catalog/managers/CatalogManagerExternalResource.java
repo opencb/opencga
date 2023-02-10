@@ -30,6 +30,7 @@ import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.user.AuthenticationResponse;
 
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -48,6 +49,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
     private static CatalogManager catalogManager;
     private Configuration configuration;
     private Path opencgaHome;
+    private String adminToken;
 
 
     public CatalogManagerExternalResource() {
@@ -79,6 +81,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
         // FIXME!! Should not need to create again the catalogManager
         //  Have to create again the CatalogManager, as it has a random "secretKey" inside
         catalogManager = new CatalogManager(configuration);
+        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
     }
 
     @Override
@@ -88,6 +91,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
             if (catalogManager != null) {
                 catalogManager.close();
             }
+            adminToken = null;
         } catch (CatalogException e) {
             throw new RuntimeException(e);
         }
@@ -99,6 +103,10 @@ public class CatalogManagerExternalResource extends ExternalResource {
 
     public CatalogManager getCatalogManager() {
         return catalogManager;
+    }
+
+    public String getAdminToken() {
+        return adminToken;
     }
 
     public Path getOpencgaHome() {

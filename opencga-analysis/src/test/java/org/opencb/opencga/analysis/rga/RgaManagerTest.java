@@ -10,6 +10,7 @@ import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.analysis.rga.exceptions.RgaException;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
@@ -18,6 +19,7 @@ import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.analysis.knockout.*;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
@@ -45,7 +47,7 @@ public class RgaManagerTest {
 
     public static final String OWNER = "owner";
     public static final String USER = "user";
-    public static final String PASSWORD = "asdf";
+    public static final String PASSWORD = TestParamConstants.PASSWORD;
     public static final String PROJECT = "project";
     public static final String STUDY = "study";
     public static final String PHENOTYPE_NAME = "myPhenotype";
@@ -66,7 +68,6 @@ public class RgaManagerTest {
 
     public static RgaSolrExtenalResource solr = new RgaSolrExtenalResource();
 
-    private static String storageEngine = HadoopVariantStorageEngine.STORAGE_ENGINE_ID;
     private static RgaEngine rgaEngine;
     private static boolean indexed = false;
     private static String ownerToken;
@@ -77,15 +78,12 @@ public class RgaManagerTest {
     public void setUp() throws Throwable {
         if (!indexed) {
             opencga.after();
-            opencga.before();
+            opencga.before(HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
 
             catalogManager = opencga.getCatalogManager();
             variantStorageManager = opencga.getVariantStorageManager();
 
             opencga.clearStorageDB();
-
-            StorageConfiguration storageConfiguration = opencga.getStorageConfiguration();
-            storageConfiguration.getVariant().setDefaultEngine(storageEngine);
 
             setUpCatalogManager();
 
@@ -178,11 +176,11 @@ public class RgaManagerTest {
     }
 
     public void setUpCatalogManager() throws CatalogException {
-        catalogManager.getUserManager().create(OWNER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create(OWNER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, opencga.getAdminToken());
         ownerToken = catalogManager.getUserManager().login(OWNER, PASSWORD).getToken();
 
         String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "Homo sapiens",
-                null, "GRCh37", new QueryOptions(), ownerToken).first().getId();
+                null, "GRCh37", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), ownerToken).first().getId();
         catalogManager.getStudyManager().create(projectId, STUDY, null, "Phase 1", "Done", null, null, null, null, null, ownerToken);
 
         // Create 10 samples not indexed
@@ -194,7 +192,7 @@ public class RgaManagerTest {
             catalogManager.getSampleManager().create(STUDY, sample, null, ownerToken);
         }
 
-        catalogManager.getUserManager().create(USER, "Other Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create(USER, "Other Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.GUEST, opencga.getAdminToken());
         userToken = catalogManager.getUserManager().login(USER, PASSWORD).getToken();
     }
 

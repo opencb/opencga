@@ -96,7 +96,7 @@ public class InternalMainTest {
         opencga.clearStorageDB(STORAGE_ENGINE, dbNameVariants);
         opencga.clearStorageDB(STORAGE_ENGINE, dbNameAlignments);
 
-        User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.AccountType.FULL, null).first();
+        User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.AccountType.FULL, opencga.getAdminToken()).first();
 
         sessionId = catalogManager.getUserManager().login(userId, "user").getToken();
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "Homo sapiens",
