@@ -365,7 +365,7 @@ function backup_collection() {
   COLLECTION=
   LOCATION=
   BACKUP_NAME=
-  REQUEST_ID="${BACKUP_NAME}"
+  REQUEST_ID=
 
   while [[ $# -gt 0 ]]; do
     key="$1"
@@ -406,7 +406,7 @@ function backup_collection() {
       action BACKUP \
       name "${BACKUP_NAME}" \
       collection "${COLLECTION}" \
-      async "${REQUEST_ID}" \
+      async "${REQUEST_ID:-$BACKUP_NAME}" \
       location "${LOCATION}" | jq .
 }
 
@@ -414,7 +414,7 @@ function restore_collection() {
   COLLECTION=
   LOCATION=
   BACKUP_NAME=
-  REQUEST_ID="${BACKUP_NAME}_restore"
+  REQUEST_ID=
 
   while [[ $# -gt 0 ]]; do
     key="$1"
@@ -455,7 +455,7 @@ function restore_collection() {
       action RESTORE \
       name "${BACKUP_NAME}" \
       collection "${COLLECTION}" \
-      async "${REQUEST_ID}" \
+      async "${REQUEST_ID:-${BACKUP_NAME}_restore}" \
       location "${LOCATION}" | jq .
 }
 
