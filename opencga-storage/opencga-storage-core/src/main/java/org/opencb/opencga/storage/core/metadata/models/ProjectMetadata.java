@@ -18,7 +18,6 @@ public class ProjectMetadata {
     private String species;
     private String assembly;
     private String dataRelease;
-    private String token;
 
     private int release;
 
@@ -80,6 +79,7 @@ public class ProjectMetadata {
         private VariantAnnotatorProgram annotator;
         private List<ObjectMap> sourceVersion;
         private DataRelease dataRelease;
+        private List<String> privateSources;
 
         public VariantAnnotationMetadata() {
             sourceVersion = new ArrayList<>();
@@ -87,12 +87,17 @@ public class ProjectMetadata {
 
         public VariantAnnotationMetadata(int id, String name, Date creationDate, VariantAnnotatorProgram annotator,
                                          List<ObjectMap> sourceVersion, DataRelease dataRelease) {
+
+        }
+        public VariantAnnotationMetadata(int id, String name, Date creationDate, VariantAnnotatorProgram annotator,
+                                         List<ObjectMap> sourceVersion, DataRelease dataRelease, List<String> privateSources) {
             this.id = id;
             this.name = name;
             this.creationDate = creationDate;
             this.annotator = annotator;
             this.sourceVersion = sourceVersion != null ? sourceVersion : new ArrayList<>();
             this.dataRelease = dataRelease;
+            this.privateSources = privateSources;
         }
 
         public int getId() {
@@ -146,6 +151,15 @@ public class ProjectMetadata {
 
         public VariantAnnotationMetadata setDataRelease(DataRelease dataRelease) {
             this.dataRelease = dataRelease;
+            return this;
+        }
+
+        public List<String> getPrivateSources() {
+            return privateSources;
+        }
+
+        public VariantAnnotationMetadata setPrivateSources(List<String> privateSources) {
+            this.privateSources = privateSources;
             return this;
         }
     }
@@ -223,22 +237,20 @@ public class ProjectMetadata {
     public ProjectMetadata() {
         release = 1;
         dataRelease = "";
-        token = "";
         annotation = new VariantAnnotationSets();
         counters = new HashMap<>();
         attributes = new ObjectMap();
     }
 
     public ProjectMetadata(String species, String assembly, int release) {
-        this(species, assembly, null, "", release, null, null, null);
+        this(species, assembly, null, release, null, null, null);
     }
 
-    public ProjectMetadata(String species, String assembly, String dataRelease, String token, int release, ObjectMap attributes,
+    public ProjectMetadata(String species, String assembly, String dataRelease, int release, ObjectMap attributes,
                            Map<String, Integer> counters, VariantAnnotationSets annotation) {
         this.species = species;
         this.assembly = assembly;
         this.dataRelease = dataRelease;
-        this.token = token;
         this.release = release;
         this.attributes = attributes != null ? attributes : new ObjectMap();
         this.annotation = annotation != null ? annotation : new VariantAnnotationSets();
@@ -246,7 +258,7 @@ public class ProjectMetadata {
     }
 
     public ProjectMetadata copy() {
-        return new ProjectMetadata(species, assembly, dataRelease, token, release, new ObjectMap(attributes), new HashMap<>(counters),
+        return new ProjectMetadata(species, assembly, dataRelease, release, new ObjectMap(attributes), new HashMap<>(counters),
                 annotation);
     }
 
@@ -274,15 +286,6 @@ public class ProjectMetadata {
 
     public ProjectMetadata setDataRelease(String dataRelease) {
         this.dataRelease = dataRelease;
-        return this;
-    }
-
-    public String getToken() {
-        return token;
-    }
-
-    public ProjectMetadata setToken(String token) {
-        this.token = token;
         return this;
     }
 

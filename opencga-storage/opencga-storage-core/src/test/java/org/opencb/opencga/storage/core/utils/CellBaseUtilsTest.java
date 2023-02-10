@@ -1,5 +1,7 @@
 package org.opencb.opencga.storage.core.utils;
 
+import org.apache.commons.lang.StringUtils;
+import org.hamcrest.CoreMatchers;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
@@ -50,8 +52,6 @@ public class CellBaseUtilsTest {
     @Parameters(name = "{0}{1}/?assembly={2}%dataRelease={3}")
     public static List<Object[]> data() {
         return Arrays.asList(
-                new Object[]{"http://127.0.0.1:8080/cellbase-5.3.0-SNAPSHOT/", "v5", "grch37", "1"},
-                new Object[]{"http://ws.opencb.org/cellbase-4.7.3/", "v4", "grch37", null},
                 new Object[]{"http://ws.opencb.org/cellbase-4.7.3/", "v4", "grch37", null},
                 new Object[]{"http://ws.opencb.org/cellbase-4.8.2/", "v4", "grch37", null},
 //                new Object[]{"http://ws.opencb.org/cellbase-4.8.3/", "v4", "grch37", null},
@@ -59,6 +59,8 @@ public class CellBaseUtilsTest {
 //                new Object[]{"http://ws.opencb.org/cellbase/", "v4", "grch37", null},
                 new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "grch37", "1"},
                 new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "grch38", "2"},
+                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.3", "grch37", "1"},
+                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.3", "grch38", "2"},
                 new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5", "grch38", null},
                 new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5.1", "grch38", "1"},
                 new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5.1", "grch38", "2"});
@@ -82,6 +84,12 @@ public class CellBaseUtilsTest {
                 new ClientConfiguration().setVersion(version)
                         .setRest(new RestConfig(Collections.singletonList(url), 10000)));
         cellBaseUtils = new CellBaseUtils(cellBaseClient);
+
+        try {
+            cellBaseUtils.validateCellBaseConnection();
+        } catch (RuntimeException e) {
+            Assume.assumeNoException("Cellbase '" + url + "' not available", e);
+        }
     }
 
     @Test
@@ -243,9 +251,10 @@ public class CellBaseUtilsTest {
 
     @Test
     public void testAnnotationWithHGMDToken() throws IOException {
-        Assume.assumeTrue("Testing local CellBase", url.contains("127.0.0.1"));
-
-        String hgmdToken = "eyJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VzIjp7ImNvc21pYyI6LTU1Njk4MDIyODAwMDAwLCJoZ21kIjo5MjIzMzcyMDM2ODU0Nzc1ODA3fSwidmVyc2lvbiI6IjEuMCIsInN1YiI6IlVDQU0iLCJpYXQiOjE2NzQxNTQ0Nzh9.SursjDxHyjxroH9xllPJCOAnGEGLvTLG5pi1mUhIiUQ";
+        Assume.assumeTrue(cellBaseUtils.isMinVersion("5.3.0"));
+        Assume.assumeThat(assembly, CoreMatchers.equalTo("grch37"));
+        String hgmdToken = System.getenv("CELLBASE_HGMD_TOKEN");
+        Assume.assumeTrue(StringUtils.isNotEmpty(hgmdToken));
 
         cellBaseClient = new CellBaseClient("hsapiens", assembly, dataRelease, hgmdToken,
                 new ClientConfiguration().setVersion(version)
@@ -263,7 +272,8 @@ public class CellBaseUtilsTest {
 
     @Test
     public void testAnnotationWithoutHGMDToken() throws IOException {
-        Assume.assumeTrue("The local CellBase", url.contains("127.0.0.1"));
+        Assume.assumeTrue(cellBaseUtils.isMinVersion("5.3.0"));
+        Assume.assumeThat(assembly, CoreMatchers.equalTo("grch37"));
 
         cellBaseClient = new CellBaseClient("hsapiens", assembly, dataRelease, "",
                 new ClientConfiguration().setVersion(version)

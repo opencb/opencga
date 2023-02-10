@@ -34,10 +34,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -112,10 +109,21 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
             throw new VariantAnnotatorException("Error fetching CellBase information from "
                     + getDebugInfo("/meta/" + species + "/dataReleases") + ". ");
         }
+        List<String> privateSources;
+        if (StringUtils.isNotEmpty(cellBaseUtils.getToken())) {
+            String[] chunks = cellBaseUtils.getToken().split("\\.");
+            Base64.Decoder decoder = Base64.getUrlDecoder();
+            String payload = new String(decoder.decode(chunks[1]));
+            ObjectMap payloadMap = new ObjectMap(payload);
+            privateSources = new ArrayList<>(payloadMap.getMap("sources", Collections.emptyMap()).keySet());
+        } else {
+            privateSources = new ArrayList<>();
+        }
+
         return new ProjectMetadata.VariantAnnotationMetadata(-1, null, null,
                 getVariantAnnotatorProgram(),
                 getVariantAnnotatorSourceVersion(),
-                dataRelease);
+                dataRelease, privateSources);
     }
 
     private ProjectMetadata.VariantAnnotatorProgram getVariantAnnotatorProgram() throws VariantAnnotatorException {

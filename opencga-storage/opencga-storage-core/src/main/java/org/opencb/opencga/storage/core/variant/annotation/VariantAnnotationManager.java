@@ -128,6 +128,26 @@ public abstract class VariantAnnotationManager {
             }
         }
 
+        List<String> currentPrivateSources = current.getPrivateSources();
+        List<String> newPrivateSources = newVariantAnnotationMetadata.getPrivateSources();
+        if (currentPrivateSources == null) {
+            currentPrivateSources = Collections.emptyList();
+        }
+        if (newPrivateSources == null) {
+            newPrivateSources = Collections.emptyList();
+        }
+        if (!new HashSet<>(currentPrivateSources).equals(new HashSet<>(newPrivateSources))) {
+            String msg = "Private sources has changed. "
+                    + "Existing annotation calculated with private sources " + currentPrivateSources
+                    + ", attempting to annotate with " + newPrivateSources;
+
+            if (overwrite) {
+                logger.info(msg);
+            } else {
+                throw new VariantAnnotatorException(msg);
+            }
+        }
+
         if (newVariantAnnotationMetadata.getDataRelease() != null) {
             if (current.getDataRelease() == null) {
                 // Missing current dataRelease. Continue.
@@ -215,6 +235,7 @@ public abstract class VariantAnnotationManager {
         current.setAnnotator(newAnnotator);
         current.setSourceVersion(newSourceVersion);
         current.setDataRelease(newAnnotationMetadata.getDataRelease());
+        current.setPrivateSources(newAnnotationMetadata.getPrivateSources());
     }
 
     protected final VariantAnnotationMetadata registerNewAnnotationSnapshot(String name, VariantAnnotator annotator,
@@ -242,7 +263,8 @@ public abstract class VariantAnnotationManager {
                 Date.from(Instant.now()),
                 current.getAnnotator(),
                 current.getSourceVersion(),
-                current.getDataRelease());
+                current.getDataRelease(),
+                current.getPrivateSources());
         projectMetadata.getAnnotation().getSaved().add(newSnapshot);
 
         // Increment ID of the current annotation
