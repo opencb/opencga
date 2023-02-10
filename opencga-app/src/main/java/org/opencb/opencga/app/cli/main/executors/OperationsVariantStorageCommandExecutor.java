@@ -1,26 +1,18 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.common.JacksonUtils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.List;
-import java.util.HashMap;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.OperationsVariantStorageCommandOptions;
 
-import org.opencb.biodata.models.variant.metadata.Aggregation;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.job.Job;
@@ -195,10 +187,10 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), CellBaseConfiguration.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "url",commandOptions.url, true);
-            putNestedIfNotEmpty(beanParams, "version",commandOptions.version, true);
-            putNestedIfNotEmpty(beanParams, "dataRelease",commandOptions.dataRelease, true);
-            putNestedIfNotEmpty(beanParams, "token",commandOptions.token, true);
+            putNestedIfNotEmpty(beanParams, "url", commandOptions.url, true);
+            putNestedIfNotEmpty(beanParams, "version", commandOptions.version, true);
+            putNestedIfNotEmpty(beanParams, "dataRelease", commandOptions.dataRelease, true);
+            putNestedIfNotEmpty(beanParams, "token", commandOptions.dataToken, true);
 
             cellBaseConfiguration = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
