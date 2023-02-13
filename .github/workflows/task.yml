@@ -17,9 +17,9 @@ jobs:
       SSH_TESTING_SERVER_PASSWORD: ${{ secrets.SSH_TESTING_SERVER_PASSWORD }}
 
   echo-version:
+    name: test-version-from-check
     needs: test
     #if: contains( ${{ needs.test.build.outputs.version }} , "TASK")
-    name: test-version-from-check
     run: echo "Project version is " ${{ needs.test.build.outputs.version }}
 
 #  deploy-docker:
