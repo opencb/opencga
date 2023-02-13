@@ -7,49 +7,30 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
-    with:
-      maven_opts: -P storage-hadoop,hdp3.1,RClient -Dopencga.war.name=opencga
-
-  sonar:
-    uses: opencb/java-common-libs/.github/workflows/sonar-analysis-workflow.yml@develop
-    needs: build
-    with:
-      sonarProjectKey: opencb_opencga
+  test:
+    uses: opencb/opencga/.github/workflows/build-test.yml@TASK-2270
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SSH_TESTING_SERVER_HOST: ${{ secrets.SSH_TESTING_SERVER_HOST}}
+      SSH_TESTING_SERVER_PORT: ${{ secrets.SSH_TESTING_SERVER_PORT}}
+      SSH_TESTING_SERVER_USER: ${{ secrets.SSH_TESTING_SERVER_USER }}
+      SSH_TESTING_SERVER_PASSWORD: ${{ secrets.SSH_TESTING_SERVER_PASSWORD }}
 
-  test:
-    name: Test OpenCGA
-    runs-on: ubuntu-20.04
-    needs: build
-    strategy:
-      matrix:
-        mongodb: ["4.2"]
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: '10'
-      - name: Set up JDK 8
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '8'
-          cache: 'maven'
-      - name: Start MongoDB v${{ matrix.mongodb }}
-        uses: supercharge/mongodb-github-action@1.7.0
-        with:
-          mongodb-version: ${{ matrix.mongodb }}
-          mongodb-replica-set: rs-test
-      - name: Run Maven Tests
-        run: mvn -T 2 clean install -P storage-hadoop,hdp3.1 -DskipTests
-
-  deploy-docker:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+  echo-version:
+    name: check version
+    runs-on: ubuntu-22.04
     needs: test
-    with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag ${{ github.ref_name }}
-    secrets:
-      DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
-      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+    steps:
+      - name: Check retrieved value
+        #if: contains( ${{ needs.test.build.outputs.version }} , "TASK")
+        run: echo "Project version is " ${{ needs.build.outputs.version }}
+
+#  deploy-docker:
+#    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+#    needs: test
+#    if: contains( ${{ needs.test.outputs.version }} , "TASK")
+#    with:
+#      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag ${{ github.ref_name }}
+#    secrets:
+#      DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
+#      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
