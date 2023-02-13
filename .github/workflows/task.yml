@@ -17,10 +17,12 @@ jobs:
       SSH_TESTING_SERVER_PASSWORD: ${{ secrets.SSH_TESTING_SERVER_PASSWORD }}
 
   echo-version:
-    name: test-version-from-check
+    name: Test and push Sonar analysis
+    runs-on: ubuntu-22.04
     needs: test
-    #if: contains( ${{ needs.test.build.outputs.version }} , "TASK")
-    run: echo "Project version is " ${{ needs.test.build.outputs.version }}
+    steps:
+      #if: contains( ${{ needs.test.build.outputs.version }} , "TASK")
+      run: echo "Project version is " ${{ needs.test.build.outputs.version }}
 
 #  deploy-docker:
 #    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
