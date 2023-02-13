@@ -141,7 +141,7 @@ public class PhoenixMain extends AbstractMain {
             for (Map.Entry<String, Integer> entry : dbAdaptor.getMetadataManager().getStudies().entrySet()) {
                 String studyName = entry.getKey();
                 Integer studyId = entry.getValue();
-                LOGGER.info("Create columns for study {}:{}", studyName, studyId);
+                LOGGER.info("Create columns for study '{}' (id : {})", studyName, studyId);
 
                 schemaManager.registerStudyColumns(studyId);
             }
