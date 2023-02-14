@@ -20,7 +20,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.analysis.knockout.*;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.family.Family;
@@ -88,6 +88,7 @@ public class RgaManagerTest {
             setUpCatalogManager();
 
             file = opencga.createFile(STUDY, "variant-test-file.vcf.gz", ownerToken);
+            variantStorageManager.setCellbaseConfiguration(PROJECT, new CellBaseConfiguration("https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "1"), false, null, ownerToken);
             variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), ownerToken);
 
             for (int i = 0; i < file.getSampleIds().size(); i++) {

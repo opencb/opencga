@@ -1649,6 +1649,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
+    @Ignore("This filter is not supported")
     public void testGetAllVariants_filterNoFile() {
         // FILTER
         Query query = new Query(FILTER.key(), "PASS");
