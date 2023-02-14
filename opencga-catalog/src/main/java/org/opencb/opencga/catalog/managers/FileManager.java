@@ -2352,7 +2352,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                 new Error(0, "", e2.getMessage())));
                 e.addSuppressed(e2);
-                throw new CatalogException(e.getMessage(), e);
+                throw e;
             }
         }
     }
@@ -3525,7 +3525,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         }
                     }
                 } catch (CatalogException e) {
-                    throw new IOException(e);
+                    throw new IOException("An error occurred when trying to create folder " + dir, e);
                 }
 
                 return FileVisitResult.CONTINUE;
