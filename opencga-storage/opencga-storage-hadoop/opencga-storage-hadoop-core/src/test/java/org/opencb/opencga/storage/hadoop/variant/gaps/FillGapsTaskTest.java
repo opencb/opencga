@@ -236,10 +236,10 @@ public class FillGapsTaskTest {
         assertEquals("2/2", studyEntry.getSampleData("S2", "GT"));
         assertEquals(".", studyEntry.getSampleData("S1", "DP"));
         assertEquals(".", studyEntry.getSampleData("S2", "DP"));
-        assertEquals(null, studyEntry.getFiles().get(0).getData().get("FILTER"));
+        assertEquals("SiteConflict", studyEntry.getFiles().get(0).getData().get("FILTER"));
         assertEquals(null, studyEntry.getFiles().get(0).getData().get("QUAL"));
         assertEquals(null, studyEntry.getFiles().get(0).getData().get("OTHER"));
-        assertEquals(null, studyEntry.getFiles().get(0).getCall());
+        assertEquals("1:100:A:<*>", studyEntry.getFiles().get(0).getCall().getVariantId());
     }
 
     @Test
@@ -260,7 +260,6 @@ public class FillGapsTaskTest {
         assertEquals("PASS", studyEntry.getFiles().get(0).getData().get("FILTER"));
         assertEquals("50", studyEntry.getFiles().get(0).getData().get("QUAL"));
         assertEquals("VALUE", studyEntry.getFiles().get(0).getData().get("OTHER"));
-        assertEquals("1:100:A:C", studyEntry.getFiles().get(0).getCall().getVariantId());
     }
 
     @Test

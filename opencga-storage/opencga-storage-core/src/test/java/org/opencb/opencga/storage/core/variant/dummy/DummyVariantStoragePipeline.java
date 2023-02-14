@@ -21,11 +21,16 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.dedup.AbstractDuplicatedVariantsResolver;
@@ -36,8 +41,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.LOAD_SAMPLE_INDEX;
 
 /**
  * Created on 28/11/16.
@@ -60,8 +66,8 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     @Override
-    protected void securePreLoad(StudyMetadata studyMetadata, VariantFileMetadata source) throws StorageEngineException {
-        super.securePreLoad(studyMetadata, source);
+    protected void securePreLoad(StudyMetadata studyMetadata, VariantFileMetadata variantFileMetadata) throws StorageEngineException {
+        super.securePreLoad(studyMetadata, variantFileMetadata);
 
         List<Integer> fileIds = Collections.singletonList(getFileId());
         getMetadataManager().addRunningTask(getStudyId(), "load", fileIds, false, TaskMetadata.Type.LOAD);
@@ -107,6 +113,20 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
         VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
         fileMetadata.setId(String.valueOf(getFileId()));
         dbAdaptor.getMetadataManager().updateVariantFileMetadata(getStudyId(), fileMetadata);
+
+        boolean loadSampleIndex = YesNoAuto.parse(getOptions(), LOAD_SAMPLE_INDEX.key()).orYes().booleanValue();
+        if (loadSampleIndex) {
+            VariantStorageMetadataManager metadataManager = getMetadataManager();
+            int sampleIndexVersion = metadataManager.getStudyMetadata(getStudyId()).getSampleIndexConfigurationLatest(true).getVersion();
+            for (Integer sampleId : metadataManager.getSampleIdsFromFileId(getStudyId(), getFileId())) {
+                // Worth to check first to avoid too many updates in scenarios like 1000G
+                SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(getStudyId(), sampleId);
+                if (sampleMetadata.getSampleIndexStatus(sampleIndexVersion) != TaskMetadata.Status.READY) {
+                    metadataManager.updateSampleMetadata(getStudyId(), sampleId,
+                            s -> s.setSampleIndexStatus(TaskMetadata.Status.READY, sampleIndexVersion));
+                }
+            }
+        }
 
         return super.postLoad(input, output);
     }

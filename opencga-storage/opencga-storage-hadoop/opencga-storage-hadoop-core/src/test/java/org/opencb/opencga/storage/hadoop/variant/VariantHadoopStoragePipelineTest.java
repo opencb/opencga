@@ -69,8 +69,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
     @BeforeClass
     public static void beforeClass() throws Exception {
         HadoopVariantStorageEngine variantStorageManager = externalResource.getVariantStorageEngine();
-        externalResource.clearDB(variantStorageManager.getVariantTableName());
-        externalResource.clearDB(variantStorageManager.getArchiveTableName(STUDY_ID));
+        externalResource.clearDB(variantStorageManager.getDBName());
 
 //        URI inputUri = VariantStorageBaseTest.getResourceUri("sample1.genome.vcf");
         URI inputUri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");

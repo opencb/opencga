@@ -38,6 +38,7 @@ import org.apache.phoenix.schema.types.PDataType;
 import org.apache.phoenix.schema.types.PInteger;
 import org.apache.phoenix.schema.types.PhoenixArray;
 import org.apache.phoenix.util.*;
+import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -218,11 +219,8 @@ public class PhoenixHelper {
             List<Column> missingColumnsList = new ArrayList<>(missingColumns);
             // Run alter table in batches
             int batchSize = 5000;
-            int numBatches = missingColumnsList.size() / batchSize + 1;
-            for (int batch = 0; batch < numBatches; batch++) {
-                String sql = buildAlterAddColumns(tableName,
-                        missingColumnsList.subList(batch * batchSize, Math.min(missingColumnsList.size(),
-                                (batch + 1) * batchSize)), true, tableType);
+            for (List<Column> batch : BatchUtils.splitBatches(missingColumnsList, batchSize)) {
+                String sql = buildAlterAddColumns(tableName, batch, true, tableType);
                 logger.info(sql);
                 StopWatch stopWatch = new StopWatch();
                 stopWatch.start();
@@ -251,20 +249,34 @@ public class PhoenixHelper {
     public void dropColumns(Connection con, String tableName, Collection<CharSequence> columns, PTableType tableType)
             throws SQLException {
 
-        Set<String> existingColumns = getColumns(con, tableName, tableType).stream().map(Column::column).collect(Collectors.toSet());
+        Set<String> existingColumns = getColumns(con, tableName, tableType)
+                .stream()
+                .map(Column::column)
+                .collect(Collectors.toSet());
         columns = new HashSet<>(columns);
         // Remove non existing columns
         columns.removeIf(c -> !existingColumns.contains(c.toString()));
         if (columns.isEmpty()) {
             // No column exists
+            logger.info("Nothing to drop! Columns not defined in table '{}' : {}", tableName, columns);
             return;
+        } else {
+            logger.info("Dropping columns from table '{}' : {}", tableName, columns);
         }
 
-        logger.info("Dropping columns: " + columns);
-        String sql = buildAlterDropColumns(tableName, columns, true, tableType);
-        logger.info(sql);
+        // Run alter table in batches
+        int batchSize = 5000;
+        for (List<CharSequence> batch : BatchUtils.splitBatches(new ArrayList<>(columns), batchSize)) {
+            String sql = buildAlterDropColumns(tableName, batch, true, tableType);
+            logger.info(sql);
 
-        execute(con, sql);
+            StopWatch stopWatch = new StopWatch();
+            stopWatch.start();
+            execute(con, sql);
+            if (stopWatch.getTime() > SLOW_OPERATION_MILLIS) {
+                logger.warn("Slow ALTER DROP " + tableType.name() + ". Took " + TimeUtils.durationToString(stopWatch));
+            }
+        }
     }
 
     public Connection openJdbcConnection() throws SQLException, ClassNotFoundException {
@@ -388,10 +400,6 @@ public class PhoenixHelper {
             systemCatalog = TableName.valueOf("SYSTEM:CATALOG");
         }
         return systemCatalog;
-    }
-
-    public List<Column> getColumns(HBaseManager hBaseManager, String fullTableName, PTableType tableType) throws IOException {
-        return getColumns(hBaseManager, fullTableName, tableType, null);
     }
 
     public List<Column> getColumns(HBaseManager hBaseManager, String fullTableName, PTableType tableType, List<String> columnsFilter)

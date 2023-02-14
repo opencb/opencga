@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.analysis.variant.hrdetect;
 
-import com.mongodb.client.ListCollectionsIterable;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FileUtils;
@@ -40,12 +39,10 @@ import org.opencb.opencga.core.models.sample.SampleQualityControl;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.sample.SampleVariantQualityControlMetrics;
 import org.opencb.opencga.core.models.variant.HRDetectAnalysisParams;
-import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.core.tools.variant.HRDetectAnalysisExecutor;
-import org.opencb.opencga.core.tools.variant.MutationalSignatureAnalysisExecutor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.io.File;
@@ -54,8 +51,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 
 @Tool(id = HRDetectAnalysis.ID, resource = Enums.Resource.VARIANT)
@@ -232,7 +227,7 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
 
             // Parse results and update quality control for the catalog sample
             Sample sample = checkSample(hrdetectParams.getSampleId());
-            HRDetect hrDetect = parseResult(getOutDir());
+            HRDetect hrDetect = parseResult(hrdetectParams, getOutDir());
             SampleQualityControl qc = sample.getQualityControl();
             if (qc == null) {
                 qc = new SampleQualityControl();
@@ -249,7 +244,7 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
         });
     }
 
-    public HRDetect parseResult(Path dir) throws IOException {
+    public static HRDetect parseResult(HRDetectAnalysisParams hrdetectParams, Path dir) throws IOException {
         HRDetect result = new HRDetect()
                 .setId(hrdetectParams.getId())
                 .setDescription(hrdetectParams.getDescription())

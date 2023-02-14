@@ -34,6 +34,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class VariantSearchTest extends VariantStorageBaseTest implements DummyVariantStorageTest {
@@ -70,15 +71,13 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
             Map<String, ConsequenceType> inMap = getConsequenceTypeMap(annotatedVariants.get(i));
             Map<String, ConsequenceType> outMap = getConsequenceTypeMap(results.getResults().get(i));
 
-            System.out.println(inMap.size() + " vs " + outMap.size());
-            assert(inMap.size() == outMap.size());
+            assertEquals(inMap.size(), outMap.size());
             for (String key: inMap.keySet()) {
                 ConsequenceType inCT = inMap.get(key);
                 ConsequenceType outCT = outMap.get(key);
 
                 // Check biotype
-                System.out.println(inCT.getBiotype() + " vs " + outCT.getBiotype());
-                assert(inCT.getBiotype().equals(outCT.getBiotype()));
+                assertEquals(inCT.getBiotype(), outCT.getBiotype());
 
                 // Check annotation flags
                 System.out.println("inCT, annotation flags:");

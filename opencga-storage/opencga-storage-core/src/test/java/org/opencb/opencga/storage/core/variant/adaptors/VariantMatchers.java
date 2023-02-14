@@ -405,6 +405,15 @@ public class VariantMatchers {
         };
     }
 
+    public static Matcher<? super StudyEntry> withSampleGt(String sample) {
+        return new FeatureMatcher<StudyEntry, String>(matcher(GenotypeClass.MAIN_ALT.predicate(), "main alternate genotype"), "with sample " + sample, "Samples") {
+            @Override
+            protected String featureValueOf(StudyEntry actual) {
+                return actual.getSampleData(sample, "GT");
+            }
+        };
+    }
+
     public static Matcher<? super StudyEntry> withSampleData(String sampleName, String formatField, Matcher<String> subMatcher) {
         return new FeatureMatcher<StudyEntry, String>(subMatcher, "with sample " + sampleName + " with " + formatField, "SampleData") {
             @Override

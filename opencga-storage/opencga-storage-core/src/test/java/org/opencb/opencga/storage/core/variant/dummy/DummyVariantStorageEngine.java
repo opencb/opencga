@@ -19,7 +19,10 @@ package org.opencb.opencga.storage.core.variant.dummy;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -56,6 +59,29 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     private Logger logger = LoggerFactory.getLogger(DummyVariantStorageEngine.class);
 
     public static final String STORAGE_ENGINE_ID = "dummy";
+
+    public static void configure(StorageEngineFactory factory) {
+        configure(factory, false);
+    }
+
+    public static void configure(StorageEngineFactory factory, boolean clear) {
+        StorageConfiguration storageConfiguration = factory.getStorageConfiguration();
+        factory.unregisterVariantStorageEngine(DummyVariantStorageEngine.STORAGE_ENGINE_ID);
+
+        storageConfiguration.getVariant().setDefaultEngine(STORAGE_ENGINE_ID);
+//        storageConfiguration.getVariant().getEngines().clear();
+        storageConfiguration.getVariant().getEngines().removeIf(c -> c.getId().equals(STORAGE_ENGINE_ID));
+        storageConfiguration.getVariant().getEngines()
+                .add(new StorageEngineConfiguration()
+                        .setId(STORAGE_ENGINE_ID)
+                        .setEngine(DummyVariantStorageEngine.class.getName())
+                        .setOptions(new ObjectMap())
+                        .setDatabase(new DatabaseCredentials()));
+
+        if (clear) {
+            DummyVariantStorageMetadataDBAdaptorFactory.clear();
+        }
+    }
 
     @Override
     public String getStorageEngineId() {

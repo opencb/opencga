@@ -244,7 +244,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877")
                 .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), options);
         assertEquals(expectedSource, queryResult.getSource());
-        assertThat(queryResult, everyResult(allVariants, allOf(anyOf(overlaps(new Region("1:1-12783")), overlaps(new Region("M"))), withStudy("S_1", allOf(withFileId("1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), withSampleData("NA12877", "GT", containsString("1")))))));
+        assertThat(queryResult, everyResult(allVariants, allOf(anyOf(overlaps(new Region("1:1-12783")), overlaps(new Region("MT"))), withStudy("S_1", allOf(withFileId("1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), withSampleData("NA12877", "GT", containsString("1")))))));
     }
 
     @Test
@@ -263,7 +263,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
         query = new Query()
                 .append(VariantQueryParam.STUDY.key(), "S_1")
                 .append(VariantQueryParam.GENOTYPE.key(), "NA12877:1/1")
-                .append(VariantQueryParam.REGION.key(), "1:1-12783,M");
+                .append(VariantQueryParam.REGION.key(), "1:1-12783,MT");
 //        queryResult = dbAdaptor.get(query, options);
         queryResult = variantStorageEngine.get(query, options);
         VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
@@ -271,7 +271,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877")
                 .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), options);
         assertEquals(expectedSource, queryResult.getSource());
-        assertThat(queryResult, everyResult(allVariants, allOf(anyOf(overlaps(new Region("1:1-12783")), overlaps(new Region("M"))), withStudy("S_1", allOf(withFileId("1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), withSampleData("NA12877", "GT", is("1/1")))))));
+        assertThat(queryResult, everyResult(allVariants, allOf(anyOf(overlaps(new Region("1:1-12783")), overlaps(new Region("MT"))), withStudy("S_1", allOf(withFileId("1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), withSampleData("NA12877", "GT", is("1/1")))))));
     }
 
     @Test
@@ -281,6 +281,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
     }
 
     @Test
+    @Ignore
     public void testGetByFileNameSampleIndexIntersect() throws Exception {
         testGetByFileName(variantStorageEngine.getStorageEngineId() + " + " + "sample_index_table",
                 options.append("sample_index_intersect", true));

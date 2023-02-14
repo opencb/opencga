@@ -43,6 +43,8 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.project.ProjectCreateParams;
+import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.user.Account;
@@ -83,7 +85,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testCreateExistingUser() throws Exception {
         thrown.expect(CatalogException.class);
         thrown.expectMessage(containsString("already exists"));
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
     }
 
     @Test
@@ -91,7 +93,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogParameterException.class);
         thrown.expectMessage(containsString("reserved"));
         catalogManager.getUserManager().create(ParamConstants.ANONYMOUS_USER_ID, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
-                Account.AccountType.FULL, null);
+                Account.AccountType.FULL, opencgaToken);
     }
 
     @Test
@@ -99,7 +101,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogParameterException.class);
         thrown.expectMessage(containsString("reserved"));
         catalogManager.getUserManager().create(ParamConstants.REGISTERED_USERS, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
-                Account.AccountType.FULL, null);
+                Account.AccountType.FULL, opencgaToken);
     }
 
     @Test
@@ -359,7 +361,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void createEmptyGroup() throws CatalogException {
-        catalogManager.getUserManager().create("test", "test", "test@mail.com", TestParamConstants.PASSWORD, null, 100L, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("test", "test", "test@mail.com", TestParamConstants.PASSWORD, null, 100L, Account.AccountType.GUEST, opencgaToken);
         catalogManager.getStudyManager().createGroup("user@1000G:phase1", "group_cancer_some_thing_else", null, token);
         catalogManager.getStudyManager().updateGroup("user@1000G:phase1", "group_cancer_some_thing_else", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("test")), token);
@@ -367,7 +369,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void testAssignPermissions() throws CatalogException {
-        catalogManager.getUserManager().create("test", "test", "test@mail.com", TestParamConstants.PASSWORD, null, 100L, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("test", "test", "test@mail.com", TestParamConstants.PASSWORD, null, 100L, Account.AccountType.GUEST, opencgaToken);
 
         catalogManager.getStudyManager().createGroup("user@1000G:phase1", "group_cancer_some_thing_else",
                 Collections.singletonList("test"), token);
@@ -457,6 +459,23 @@ public class CatalogManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not found");
         catalogManager.getProjectManager().update(projectId, options, null, token);
+    }
+
+    @Test
+    public void testLimitProjects() throws CatalogException {
+        for (int i = 0; i < 20; i++) {
+            catalogManager.getProjectManager().create(new ProjectCreateParams()
+                    .setId("project_" + i)
+                    .setOrganism(new ProjectOrganism("a", "b")), QueryOptions.empty(), token);
+            for (int j = 0; j < 2; j++) {
+                catalogManager.getStudyManager().create("project_" + i, new Study().setId("study_" + i + "_" + j), QueryOptions.empty(),
+                        token);
+            }
+        }
+
+        OpenCGAResult<Project> results = catalogManager.getProjectManager().search(new Query(), new QueryOptions(QueryOptions.LIMIT, 10),
+                token);
+        assertEquals(10, results.getNumResults());
     }
 
     /**

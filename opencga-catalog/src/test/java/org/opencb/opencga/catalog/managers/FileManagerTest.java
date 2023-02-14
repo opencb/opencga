@@ -74,6 +74,8 @@ public class FileManagerTest extends AbstractManagerTest {
     public void setUp() throws IOException, CatalogException {
         super.setUp();
         fileManager = catalogManager.getFileManager();
+        // Ensure this threshold is restored
+        fileManager.setFileSampleLinkThreshold(5000);
     }
 
     private DataResult<File> link(URI uriOrigin, String pathDestiny, String studyIdStr, ObjectMap params, String sessionId)
@@ -147,7 +149,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testLinkAnalystUser() throws CatalogException {
-        catalogManager.getUserManager().create("analyst", "analyst", "a@mail.com", TestParamConstants.PASSWORD, "", 200000L, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("analyst", "analyst", "a@mail.com", TestParamConstants.PASSWORD, "", 200000L, Account.AccountType.GUEST, opencgaToken);
         catalogManager.getStudyManager().updateAcl(studyFqn, "analyst", new StudyAclParams("", "analyst"), ParamUtils.AclAction.SET, token);
         String analystToken = catalogManager.getUserManager().login("analyst", TestParamConstants.PASSWORD).getToken();
 
@@ -159,7 +161,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testLinkUserWithNoWritePermissions() throws CatalogException {
-        catalogManager.getUserManager().create("view_user", "view_user", "a@mail.com", TestParamConstants.PASSWORD, "", 200000L, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("view_user", "view_user", "a@mail.com", TestParamConstants.PASSWORD, "", 200000L, Account.AccountType.GUEST, opencgaToken);
         catalogManager.getStudyManager().updateAcl(studyFqn, "view_user", new StudyAclParams("", "view_only"), ParamUtils.AclAction.SET, token);
         String analystToken = catalogManager.getUserManager().login("view_user", TestParamConstants.PASSWORD).getToken();
 
@@ -168,6 +170,15 @@ public class FileManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("WRITE_FILES");
         fileManager.link(studyFqn, Paths.get(reference).toUri(), "", null, analystToken).first();
+    }
+
+    @Test
+    public void testLinkFileWithoutReadPermissions() throws IOException, CatalogException {
+        java.io.File file = createDebugFile("/tmp/file_" + RandomStringUtils.randomAlphanumeric(5) + ".vcf");
+        Files.setPosixFilePermissions(Paths.get(file.toURI()), new HashSet<>());
+        thrown.expect(CatalogIOException.class);
+        thrown.expectMessage("read VariantSource");
+        fileManager.link(studyFqn, new FileLinkParams().setUri(file.getPath()), false, token);
     }
 
     @Test
@@ -358,10 +369,10 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void testLinkVCFandBAMPair() throws CatalogException {
         String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
-        fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, null, null, null), false, token);
+        fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, null, null, null, null), false, token);
 
         String bamFile = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
-        fileManager.link(studyFqn, new FileLinkParams(bamFile, "", "", "", null, null, null, null), false, token);
+        fileManager.link(studyFqn, new FileLinkParams(bamFile, "", "", "", null, null, null, null, null), false, token);
 
         Sample sample = catalogManager.getSampleManager().get(studyFqn, "NA19600",
                 new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.FILE_IDS.key()), token).first();
@@ -370,9 +381,102 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testLinkVirtualWithDifferentSamples() throws CatalogException {
+        String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
+        fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, "biofiles/virtual_file.vcf", null, null, null), false, token);
+
+        String bamFile = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("samples differ");
+        fileManager.link(studyFqn, new FileLinkParams(bamFile, "", "", "", null, "biofiles/virtual_file.vcf", null, null, null), false, token);
+    }
+
+    @Test
+    public void testLinkVirtualExcludeType() throws CatalogException {
+        String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
+        fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, "biofiles/virtual_file.vcf", null, null, null), false, token);
+
+        OpenCGAResult<File> result;
+
+        result = fileManager.get(studyFqn,
+                Arrays.asList("variant-test-file.vcf.gz"),
+                new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.RELATED_FILES.key()), token);
+        assertEquals(1, result.getNumResults());
+
+        result = fileManager.get(studyFqn,
+                Arrays.asList("variant-test-file.vcf.gz"),
+                new QueryOptions(QueryOptions.EXCLUDE, "type"), token);
+        assertEquals(1, result.getNumResults());
+
+    }
+
+    @Test
+    public void testLinkVirtual() throws CatalogException {
+        String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
+        fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, "biofiles/virtual_file.vcf", null, null, null), false, token);
+
+        String vcfFileCopy = getClass().getResource("/biofiles/variant-test-file-copy.vcf.gz").getFile();
+        fileManager.link(studyFqn, new FileLinkParams(vcfFileCopy, "", "", "", null, "biofiles/virtual_file.vcf", null, null, null), false, token);
+
+        checkTestLinkVirtualFile(false);
+    }
+
+    @Test
+    public void testLinkVirtualOverSampleLinkThreshold() throws CatalogException {
+        String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
+        fileManager.setFileSampleLinkThreshold(2);
+
+        fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, "biofiles/virtual_file.vcf", null, null, null), false, token);
+
+        String vcfFileCopy = getClass().getResource("/biofiles/variant-test-file-copy.vcf.gz").getFile();
+        fileManager.link(studyFqn, new FileLinkParams(vcfFileCopy, "", "", "", null, "biofiles/virtual_file.vcf", null, null, null), false, token);
+
+        checkTestLinkVirtualFile(true);
+    }
+
+    private void checkTestLinkVirtualFile(boolean missingSamples) throws CatalogException {
+        OpenCGAResult<File> result = fileManager.get(studyFqn,
+                Arrays.asList("variant-test-file.vcf.gz", "variant-test-file-copy.vcf.gz", "virtual_file.vcf"), QueryOptions.empty(), token);
+
+        assertEquals(3, result.getNumResults());
+
+        assertEquals(0, result.getResults().get(0).getSampleIds().size());
+        assertEquals(0, result.getResults().get(1).getSampleIds().size());
+        if (missingSamples) {
+            assertEquals(FileStatus.MISSING_SAMPLES, result.getResults().get(2).getInternal().getStatus().getId());
+            assertEquals(0, result.getResults().get(2).getSampleIds().size());
+        } else {
+            assertEquals(FileStatus.READY, result.getResults().get(2).getInternal().getStatus().getId());
+            assertEquals(4, result.getResults().get(2).getSampleIds().size());
+        }
+
+        assertEquals(File.Type.FILE, result.getResults().get(0).getType());
+        assertEquals(File.Type.FILE, result.getResults().get(1).getType());
+        assertEquals(File.Type.VIRTUAL, result.getResults().get(2).getType());
+
+        assertTrue(FileUtils.isPartial(result.getResults().get(0)));
+        assertTrue(FileUtils.isPartial(result.getResults().get(1)));
+        assertFalse(FileUtils.isPartial(result.getResults().get(2)));
+
+        assertEquals(1, result.getResults().get(0).getRelatedFiles().size());
+        assertEquals(1, result.getResults().get(1).getRelatedFiles().size());
+        assertEquals(2, result.getResults().get(2).getRelatedFiles().size());
+
+        assertEquals(FileRelatedFile.Relation.MULTIPART, result.getResults().get(0).getRelatedFiles().get(0).getRelation());
+        assertEquals(FileRelatedFile.Relation.MULTIPART, result.getResults().get(1).getRelatedFiles().get(0).getRelation());
+        assertEquals(FileRelatedFile.Relation.MULTIPART, result.getResults().get(2).getRelatedFiles().get(0).getRelation());
+        assertEquals(FileRelatedFile.Relation.MULTIPART, result.getResults().get(2).getRelatedFiles().get(1).getRelation());
+
+        assertNotNull(result.getResults().get(0).getRelatedFiles().get(0).getFile().getInternal());
+        assertNotNull(result.getResults().get(1).getRelatedFiles().get(0).getFile().getInternal());
+        assertNull(result.getResults().get(2).getRelatedFiles().get(0).getFile().getInternal());
+        assertNull(result.getResults().get(2).getRelatedFiles().get(1).getFile().getInternal());
+    }
+
+    @Test
     public void testGetBase64Image() throws CatalogException {
         String qualityImageFile = getClass().getResource("/fastqc-per_base_sequence_quality.png").getFile();
-        fileManager.link(studyFqn, new FileLinkParams(qualityImageFile, "", "", "", null, null, null, null), false, token);
+        fileManager.link(studyFqn, new FileLinkParams(qualityImageFile, "", "", "", null, null, null, null, null), false, token);
 
         OpenCGAResult<FileContent> result = fileManager.image(studyFqn, "fastqc-per_base_sequence_quality.png", token);
         assertEquals(1, result.getNumResults());

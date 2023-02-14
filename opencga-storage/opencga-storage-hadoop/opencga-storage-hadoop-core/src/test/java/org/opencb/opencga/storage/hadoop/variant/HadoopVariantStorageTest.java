@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.hadoop.variant;
 
+import org.apache.commons.lang3.RegExUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
@@ -84,9 +85,11 @@ import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,6 +98,7 @@ import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.*;
@@ -115,7 +119,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
         Logger logger = LoggerFactory.getLogger(this.getClass());
         @Override
-        public void before() throws Throwable {
+        public void before() throws Exception {
             if (utility.get() == null) {
 
                 // Disable most of the useless loggers
@@ -439,25 +443,23 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
     default void clearHBase() throws Exception {
         try (Connection con = ConnectionFactory.createConnection(configuration.get()); Admin admin = con.getAdmin()) {
             for (TableName tableName : admin.listTableNames()) {
-                utility.get().deleteTableIfAny(tableName);
+                if (!tableName.getNameAsString().startsWith("SYSTEM")) {
+                    deleteTable(tableName.getNameAsString());
+                }
             }
         }
     }
 
     @Override
     default void clearDB(String tableName) throws Exception {
-        if (Objects.equals(tableName, VariantStorageBaseTest.DB_NAME)) {
-            try (Connection con = ConnectionFactory.createConnection(configuration.get()); Admin admin = con.getAdmin()) {
-                for (TableName table : admin.listTableNames()) {
-                    if (table.getNameAsString().startsWith(tableName)) {
-                        deleteTable(table.getNameAsString());
-                    }
+        try (Connection con = ConnectionFactory.createConnection(configuration.get()); Admin admin = con.getAdmin()) {
+            for (TableName table : admin.listTableNames()) {
+                if (table.getNameAsString().startsWith(tableName)) {
+                    deleteTable(table.getNameAsString());
                 }
             }
-            getVariantStorageEngine().getMetadataManager().clearCaches();
-        } else {
-            deleteTable(tableName);
         }
+        getVariantStorageEngine().getMetadataManager().clearCaches();
     }
 
     default void deleteTable(String tableName) throws Exception {
