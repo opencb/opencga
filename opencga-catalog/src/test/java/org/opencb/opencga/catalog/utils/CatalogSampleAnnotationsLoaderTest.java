@@ -75,7 +75,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         pedigree = loader.readPedigree(pedFileURL.getPath());
 
         userId = "user1";
-        catalogManager.getUserManager().create(userId, userId, "asdasd@asd.asd", TestParamConstants.PASSWORD, "", -1L, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create(userId, userId, "asdasd@asd.asd", TestParamConstants.PASSWORD, "", -1L, Account.AccountType.FULL, catalogManagerResource.getAdminToken());
         sessionId = catalogManager.getUserManager().login(userId, TestParamConstants.PASSWORD).getToken();
         Project project = catalogManager.getProjectManager().create("def", "default", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).getResults().get(0);
