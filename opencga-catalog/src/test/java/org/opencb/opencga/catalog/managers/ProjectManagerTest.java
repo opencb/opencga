@@ -136,7 +136,7 @@ public class ProjectManagerTest extends GenericTest {
         assertEquals(0, projectOpenCGAResult.getEvents().size());
 
         String otherUser = "user_tmp";
-        catalogManager.getUserManager().create(otherUser, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create(otherUser, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
         String otherUsertoken = catalogManager.getUserManager().login(otherUser, TestParamConstants.PASSWORD).getToken();
         OpenCGAResult<Project> result = catalogManager.getProjectManager()
                 .search(new Query(), QueryOptions.empty(), otherUsertoken);
