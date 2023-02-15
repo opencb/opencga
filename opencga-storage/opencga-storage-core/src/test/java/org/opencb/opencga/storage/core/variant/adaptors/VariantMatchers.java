@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.adaptors;
 
+import org.apache.commons.lang3.EnumUtils;
 import org.hamcrest.*;
 import org.hamcrest.core.Every;
 import org.opencb.biodata.models.core.Region;
@@ -24,6 +25,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.util.*;
 import java.util.function.BiPredicate;
@@ -198,13 +200,8 @@ public class VariantMatchers {
 
     public static Matcher<VariantAnnotation> withClinicalSignificance(Matcher<Iterable<? super ClinicalSignificance>> subMatcher) {
         return with("clinicalSignificance",
-                va -> va == null || va.getTraitAssociation() == null
-                        ? Collections.emptyList()
-                        : va.getTraitAssociation()
-                        .stream()
-                        .map(EvidenceEntry::getVariantClassification)
-                        .filter(Objects::nonNull)
-                        .map(VariantClassification::getClinicalSignificance)
+                va -> VariantQueryUtils.buildClinicalCombinations(va).stream()
+                        .map(cs -> EnumUtils.getEnum(ClinicalSignificance.class, cs))
                         .filter(Objects::nonNull)
                         .collect(Collectors.toList()),
                 subMatcher);

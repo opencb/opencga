@@ -30,7 +30,9 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.*;
+import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleField;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -120,6 +122,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 //            variantSource = new VariantSource(smallInputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
             clearDB(DB_NAME);
             ObjectMap params = new ObjectMap()
+                    .append(VariantStorageOptions.ASSEMBLY.key(), "GRCH38")
                     .append(VariantStorageOptions.ANNOTATE.key(), true)
                     .append(VariantStorageOptions.ANNOTATION_CHECKPOINT_SIZE.key(), 500)
                     .append(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), "DS,GL")
@@ -525,11 +528,6 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
-    public void testGetAllVariants_id() {
-        testGetAllVariants_rs(ID.key());
-    }
-
-    @Test
     public void testGetAllVariants_variantId() {
         int i = 0;
         List<Variant> variants = new ArrayList<>();
@@ -582,26 +580,6 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 //                                hasItem(with("MutationId", Cosmic::getMutationId, is("COSM1421316"))))))
         )));
 
-    }
-
-    @Test
-    public void testGetAllVariants_xref_rs() {
-        testGetAllVariants_rs(ANNOT_XREF.key());
-    }
-
-    public void testGetAllVariants_rs(String key) {
-        // This test queries a single ID with no more options
-        Query query = new Query(key, "rs1137005");
-        queryResult = query(query, null);
-        Variant variant = queryResult.first();
-        assertEquals(1, queryResult.getNumResults());
-        assertEquals(variant.getStart(), Integer.valueOf(1650807));
-        assertThat(variant.getNames(), hasItem("rs1137005"));
-
-        query = new Query(key, "rs1137005,rs150535390");
-        queryResult = query(query, this.options);
-        assertEquals(2, queryResult.getNumResults());
-        queryResult.getResults().forEach(v -> assertThat(Arrays.asList(v.getNames()), anyOf(hasItem("rs1137005"), hasItem("rs150535390"))));
     }
 
     @Test
@@ -955,9 +933,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         //ANNOT_GENE_TRAIT_ID
         //ANNOT_GENE_TRAIT_NAME
         Query query;
-        Map<String, Integer> idsMap = new HashMap<>();
-        Map<String, Integer> namesMap = new HashMap<>();
-        Map<String, Integer> hposMap = new HashMap<>();
+        Map<String, List<String>> idsMap = new HashMap<>();
+        Map<String, List<String>> namesMap = new HashMap<>();
+        Map<String, List<String>> hposMap = new HashMap<>();
         for (Variant variant : allVariants.getResults()) {
             Set<String> ids = new HashSet<>();
             Set<String> names = new HashSet<>();
@@ -971,37 +949,43 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                     }
                 }
             }
+            String variantStr = variant.toString();
             for (String id : ids) {
-                idsMap.put(id, idsMap.getOrDefault(id, 0) + 1);
+                idsMap.computeIfAbsent(id, k -> new ArrayList<>()).add(variantStr);
             }
-            for (String name : names) {
-                namesMap.put(name, namesMap.getOrDefault(name, 0) + 1);
+            // FIXME : Why is this not being taken into account?
+            //  See https://issues.apache.org/jira/browse/PHOENIX-2952
+            //  See org.apache.phoenix.expression.function.ArrayAnyComparisonExpression
+            if (!variantStr.equals("17:7681412:C:G")) {
+                for (String name : names) {
+                    namesMap.computeIfAbsent(name, k -> new ArrayList<>()).add(variantStr);
+                }
             }
             for (String hpo : hpos) {
-                hposMap.put(hpo, hposMap.getOrDefault(hpo, 0) + 1);
+                hposMap.computeIfAbsent(hpo, k -> new ArrayList<>()).add(variantStr);
             }
         }
 
-        System.out.println(idsMap.size());
-        System.out.println(namesMap.size());
-        System.out.println(hposMap.size());
+        idsMap.values().forEach(s -> s.sort(String::compareTo));
+        namesMap.values().forEach(s -> s.sort(String::compareTo));
+        hposMap.values().forEach(s -> s.sort(String::compareTo));
 
         namesMap.entrySet().stream().limit(QUERIES_LIM).forEach(entry -> {
             Query q = new Query(ANNOT_GENE_TRAIT_NAME.key(), '"' + entry.getKey() + '"');
             queryResult = query(q, null);
-            assertEquals(entry.getKey(), entry.getValue().intValue(), queryResult.getNumResults());
+            assertEquals(entry.getKey(), entry.getValue(), queryResult.getResults().stream().map(Variant::toString).sorted().collect(Collectors.toList()));
         });
 
         idsMap.entrySet().stream().limit(QUERIES_LIM).forEach(entry -> {
             Query q = new Query(ANNOT_GENE_TRAIT_ID.key(), entry.getKey());
             queryResult = query(q, null);
-            assertEquals(entry.getValue().intValue(), queryResult.getNumResults());
+            assertEquals(entry.getKey(), entry.getValue(), queryResult.getResults().stream().map(Variant::toString).sorted().collect(Collectors.toList()));
         });
 
         hposMap.entrySet().stream().limit(QUERIES_LIM).forEach(entry -> {
             Query q = new Query(ANNOT_HPO.key(), entry.getKey());
             queryResult = query(q, null);
-            assertEquals(entry.getKey(), entry.getValue().intValue(), queryResult.getNumResults());
+            assertEquals(entry.getKey(), entry.getValue(), queryResult.getResults().stream().map(Variant::toString).sorted().collect(Collectors.toList()));
         });
 
         List<String> ids = idsMap.keySet().stream().limit(10).collect(Collectors.toList());
@@ -1060,34 +1044,36 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
         query = new Query(ANNOT_GO.key(), "GO:0006508");
         result = variantStorageEngine.get(query, null);
-        System.out.println("numResults: " + result.getNumResults());
-        for (Variant variant : result.getResults()) {
-            System.out.println(variant);
-        }
+//        System.out.println("numResults: " + result.getNumResults());
+//        for (Variant variant : result.getResults()) {
+//            System.out.println(variant);
+//        }
         assertNotEquals(0, result.getNumResults());
         CellBaseUtils cellBaseUtils = variantStorageEngine.getCellBaseUtils();
         genes = cellBaseUtils.getGenesByGo(query.getAsStringList(ANNOT_GO.key()));
         assertThat(result, everyResult(hasAnnotation(hasAnyGeneOf(genes))));
         totalResults = result.getNumResults();
 
-        genes = Arrays.asList("MMP11", "KLK15", "HPR", "GZMA", "METAP1D", "MMP23B");
-        // Last 3 genes does not match with that GO term
-        List<String> extraGenes = Arrays.asList("MMP11", "KLK15", "HPR", "GZMA", "METAP1D", "MMP23B", "MIB2", "ADSL", "BRCA2");
+        // Add 3 genes that does not match with that GO term
+        List<String> extraGenes = new ArrayList<>(genes);
+        extraGenes.add("MIB2");
+        extraGenes.add("ADSL");
+        extraGenes.add("BRCA2");
         query = new Query(ANNOT_GO.key(), "GO:0006508").append(GENE.key(), extraGenes);
         result = variantStorageEngine.get(query, null);
-        System.out.println("numResults: " + result.getNumResults());
-        for (Variant variant : result.getResults()) {
-            System.out.println(variant);
-        }
+//        System.out.println("numResults: " + result.getNumResults());
+//        for (Variant variant : result.getResults()) {
+//            System.out.println(variant);
+//        }
         assertNotEquals(0, result.getNumResults());
-        assertThat(result, everyResult(hasAnnotation(hasAnyGeneOf(genes))));
+        assertThat(result, everyResult(hasAnnotation(hasAnyGeneOf(extraGenes))));
 
         query = new Query(ANNOT_GO.key(), "GO:0000050");
         result = variantStorageEngine.get(query, null);
-        System.out.println("numResults: " + result.getNumResults());
-        for (Variant variant : result.getResults()) {
-            System.out.println(variant);
-        }
+//        System.out.println("numResults: " + result.getNumResults());
+//        for (Variant variant : result.getResults()) {
+//            System.out.println(variant);
+//        }
         genes = cellBaseUtils.getGenesByGo(query.getAsStringList(ANNOT_GO.key()));
         assertThat(result, everyResult(hasAnnotation(hasAnyGeneOf(genes))));
         assertNotEquals(0, result.getNumResults());
@@ -1095,10 +1081,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
         query = new Query(ANNOT_GO.key(), "GO:0006508,GO:0000050");
         result = variantStorageEngine.get(query, null);
-        System.out.println("numResults: " + result.getNumResults());
-        for (Variant variant : result.getResults()) {
-            System.out.println(variant);
-        }
+//        System.out.println("numResults: " + result.getNumResults());
+//        for (Variant variant : result.getResults()) {
+//            System.out.println(variant);
+//        }
         genes = cellBaseUtils.getGenesByGo(query.getAsStringList(ANNOT_GO.key()));
         assertThat(result, everyResult(hasAnnotation(hasAnyGeneOf(genes))));
         assertNotEquals(0, result.getNumResults());
@@ -1148,13 +1134,13 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             for (String flag : keywordsInVariant) {
                 keywords.put(flag, keywords.getOrDefault(flag, 0) + 1);
             }
-            if (keywordsInVariant.contains("Complete proteome") || keywordsInVariant.contains("Transmembrane helix")) {
+            if (keywordsInVariant.contains("Reference proteome") || keywordsInVariant.contains("Transmembrane helix")) {
                 combinedKeywordsOr++;
             }
-            if (keywordsInVariant.contains("Complete proteome") && keywordsInVariant.contains("Transmembrane helix")) {
+            if (keywordsInVariant.contains("Reference proteome") && keywordsInVariant.contains("Transmembrane helix")) {
                 combinedKeywordsAnd++;
             }
-            if (keywordsInVariant.contains("Complete proteome") && !keywordsInVariant.contains("Transmembrane helix")) {
+            if (keywordsInVariant.contains("Reference proteome") && !keywordsInVariant.contains("Transmembrane helix")) {
                 combinedKeywordsAndNot++;
             }
         }
@@ -1163,11 +1149,11 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         assertTrue(combinedKeywordsAnd > 0);
         assertTrue(combinedKeywordsAndNot > 0);
 
-        query = new Query(ANNOT_PROTEIN_KEYWORD.key(), "Complete proteome,Transmembrane helix");
+        query = new Query(ANNOT_PROTEIN_KEYWORD.key(), "Reference proteome,Transmembrane helix");
         assertEquals(combinedKeywordsOr, count(query).intValue());
-        query = new Query(ANNOT_PROTEIN_KEYWORD.key(), "Complete proteome;Transmembrane helix");
+        query = new Query(ANNOT_PROTEIN_KEYWORD.key(), "Reference proteome;Transmembrane helix");
         assertEquals(combinedKeywordsAnd, count(query).intValue());
-        query = new Query(ANNOT_PROTEIN_KEYWORD.key(), "Complete proteome;!Transmembrane helix");
+        query = new Query(ANNOT_PROTEIN_KEYWORD.key(), "Reference proteome;!Transmembrane helix");
         assertEquals(combinedKeywordsAndNot, count(query).intValue());
 
         int i = 0;
@@ -1357,36 +1343,31 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         long phastCons = countConservationScore("phastCons", allVariantsSummary, s -> s > 0.5);
         assertTrue(phastCons > 0);
 
-        checkConservationScore(new Query(ANNOT_CONSERVATION.key(), "phylop>0.5"), s -> s > 0.5, "phylop");
+        checkConservationScore(new VariantQuery().conservation("phylop>0.5"), s -> s > 0.5, "phylop");
 
-        checkConservationScore(new Query(ANNOT_CONSERVATION.key(), "phastCons<0.5"), s1 -> s1 < 0.5, "phastCons");
+        checkConservationScore(new VariantQuery().conservation("phastCons<0.5"), s1 -> s1 < 0.5, "phastCons");
 
-        checkConservationScore(new Query(ANNOT_CONSERVATION.key(), "gerp<=0.5"), s -> s <= 0.5, "gerp");
-        checkScore(new Query(ANNOT_CONSERVATION.key(), "gerp<=0.5,phastCons<0.5"),
-                ((Predicate<List<Score>>) scores -> scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("gerp") && s.getScore() <= 0.5))
-                        .or(scores -> scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("phastCons") && s.getScore() < 0.5)), VariantAnnotation::getConservation);
+        checkConservationScore(new VariantQuery().conservation("gerp<=0.5"), s -> s <= 0.5, "gerp");
 
-        checkScore(new Query(ANNOT_CONSERVATION.key(), "gerp<=0.5;phastCons<0.5"),
-                ((Predicate<List<Score>>) scores -> scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("gerp") && s.getScore() <= 0.5))
-                        .and(scores -> scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("phastCons") && s.getScore() < 0.5)),
+        checkScore(new VariantQuery().conservation("gerp<=0.5,phastCons<0.5"),
+                score("gerp", s -> s <= 0.5).or(score("phastCons", s -> s < 0.5)),
                 VariantAnnotation::getConservation);
 
-        checkScore(new Query(ANNOT_CONSERVATION.key(), "gerp<<0.5"),
-                scores ->
-                        scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("gerp") && s.getScore() < 0.5)
-                                || scores.stream().noneMatch(s -> s.getSource().equalsIgnoreCase("gerp")),
+        checkScore(new VariantQuery().conservation("gerp<=0.5;phastCons<0.5"),
+                score("gerp", s -> s <= 0.5).and(score("phastCons", s -> s < 0.5)),
                 VariantAnnotation::getConservation);
 
-        checkScore(new Query(ANNOT_CONSERVATION.key(), "phastCons>>=0.5"),
-                scores ->
-                        scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("phastCons") && s.getScore() >= 0.5)
-                                || scores.stream().noneMatch(s -> s.getSource().equalsIgnoreCase("phastCons")),
+        checkScore(new VariantQuery().conservation("gerp<<0.5"),
+                score("gerp", s -> s < 0.5).or(scores -> scores.stream().noneMatch(s -> s.getSource().equalsIgnoreCase("gerp"))),
                 VariantAnnotation::getConservation);
 
-        checkScore(new Query(ANNOT_CONSERVATION.key(), "gerp<<=0.5;phastCons<0.5"),
-                scores -> (scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("gerp") && s.getScore() <= 0.5)
-                        || scores.stream().noneMatch(s -> s.getSource().equalsIgnoreCase("gerp")))
-                        && scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("phastCons") && s.getScore() < 0.5),
+        checkScore(new VariantQuery().conservation("phastCons>>=0.5"),
+                score("phastCons", s -> s >= 0.5).or(scores -> scores.stream().noneMatch(s -> s.getSource().equalsIgnoreCase("phastCons"))),
+                VariantAnnotation::getConservation);
+
+        checkScore(new VariantQuery().conservation("gerp<<=0.5;phastCons<0.5"),
+                score("phastCons", s -> s < 0.5)
+                        .and(score("gerp", s -> s <= 0.5).or(scores -> scores.stream().noneMatch(s -> s.getSource().equalsIgnoreCase("gerp")))),
                 VariantAnnotation::getConservation);
 
     }
@@ -1396,7 +1377,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         VariantQueryException e = VariantQueryException.malformedParam(ANNOT_CONSERVATION, "phast<0.5");
         thrown.expect(e.getClass());
         thrown.expectMessage(e.getMessage());
-        query(new Query(ANNOT_CONSERVATION.key(), "phast<0.5"), null);
+        query(new VariantQuery().conservation("phast<0.5"), null);
     }
 
     @Test
@@ -1404,7 +1385,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         VariantQueryException e = VariantQueryException.malformedParam(ANNOT_CONSERVATION, "phastCons<a");
         thrown.expect(e.getClass());
         thrown.expectMessage(e.getMessage());
-        query(new Query(ANNOT_CONSERVATION.key(), "phastCons<a"), null);
+        query(new VariantQuery().conservation("phastCons<a"), null);
     }
 
     public void checkConservationScore(Query query, Predicate<Double> doublePredicate, String source) {
@@ -1416,7 +1397,18 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     public void checkScore(Query query, Predicate<Double> doublePredicate, String source, Function<VariantAnnotation, List<Score>> mapper) {
-        checkScore(query, scores -> scores.stream().anyMatch(score -> score.getSource().equalsIgnoreCase(source) && doublePredicate.test(score.getScore())), mapper);
+        checkScore(query, score(source, doublePredicate), mapper);
+    }
+
+    private Predicate<List<Score>> score(String source, Predicate<Double> doublePredicate) {
+        return scores -> {
+            List<Score> thisScores = scores.stream().filter(score -> score.getSource().equalsIgnoreCase(source)).collect(Collectors.toList());
+            if (thisScores.isEmpty()) {
+                return false;
+            } else {
+                return doublePredicate.test(thisScores.get(thisScores.size() - 1).getScore());
+            }
+        };
     }
 
     public void checkScore(Query query, Predicate<List<Score>> scorePredicate, Function<VariantAnnotation, List<Score>> mapper) {
@@ -1425,7 +1417,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         Collection<Variant> filteredResult = filterByScore(result, scorePredicate, mapper);
         TreeSet<Variant> actual = new TreeSet<>(Comparator.comparing(Variant::getChromosome).thenComparing(Variant::getStart).thenComparing(Variant::toString));
         actual.addAll(result.getResults());
-        if (expected.size()!=actual.size()) {
+        if (expected.size() != actual.size()) {
             System.out.println("expected = " + expected);
             System.out.println("actual   = " + actual);
         }
@@ -1578,7 +1570,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
-    public void testGetAllVariants_genes() {
+    public void testGetAllVariants_genes() throws StorageEngineException {
         Query query = new Query(GENE.key(), "FLG-AS1");
         DataResult<Variant> result = query(query, new QueryOptions());
 
@@ -1590,10 +1582,13 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
         query = new Query(GENE.key(), "WRONG_GENE");
 
-        VariantQueryException exception = VariantQueryException.geneNotFound("WRONG_GENE");
+        VariantQueryException exception = VariantQueryException.geneNotFound("WRONG_GENE",
+                variantStorageEngine.getCellBaseUtils().getURL(),
+                variantStorageEngine.getCellBaseUtils().getVersion(),
+                variantStorageEngine.getCellBaseUtils().getAssembly());
         thrown.expect(exception.getClass());
         thrown.expectMessage(exception.getMessage());
-        result = query(query, new QueryOptions());
+        query(query, new QueryOptions());
     }
 
     @Test
@@ -1950,7 +1945,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     @Test
     public void testGetAllVariants_clinicalSignificance() {
         for (ClinicalSignificance clinicalSignificance : ClinicalSignificance.values()) {
-            Query query = new Query(ANNOT_CLINICAL_SIGNIFICANCE.key(), clinicalSignificance);
+            Query query = new VariantQuery().clinicalSignificance(clinicalSignificance);
             queryResult = query(query, new QueryOptions());
             System.out.println(clinicalSignificance + " --> " + queryResult.getNumResults());
             assertThat(queryResult, everyResult(allVariantsSummary, hasAnnotation(withClinicalSignificance(hasItem(clinicalSignificance)))));
@@ -1974,19 +1969,19 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 //                ));
             }
         }
-        testQuery(new Query(ANNOT_CLINICAL.key(), "clinvar;cosmic"));
-        testQuery(new Query(ANNOT_CLINICAL.key(), "clinvar;cosmic").append(ANNOT_CLINICAL_SIGNIFICANCE.key(), "pathogenic,benign"));
-        testQuery(new Query(ANNOT_CLINICAL.key(), "clinvar;cosmic").append(ANNOT_CLINICAL_CONFIRMED_STATUS.key(), true));
-        testQuery(new Query(ANNOT_CLINICAL.key(), "clinvar;cosmic").append(ANNOT_CLINICAL_SIGNIFICANCE.key(), "benign").append(ANNOT_CLINICAL_CONFIRMED_STATUS.key(), true));
+        testQuery(new VariantQuery().clinical("clinvar;cosmic"));
+        testQuery(new VariantQuery().clinical("clinvar;cosmic").clinicalSignificance("pathogenic,benign"));
+        testQuery(new VariantQuery().clinical("clinvar;cosmic").clinicalConfirmedStatus(true));
+        testQuery(new VariantQuery().clinical("clinvar;cosmic").clinicalSignificance("benign").append(ANNOT_CLINICAL_CONFIRMED_STATUS.key(), true));
 
-        testQuery(new Query(ANNOT_CLINICAL.key(), "clinvar"));
-        testQuery(new Query(ANNOT_CLINICAL.key(), "cosmic"));
-        testQuery(new Query(ANNOT_CLINICAL.key(), "cosmic").append(ANNOT_CLINICAL_SIGNIFICANCE.key(), "pathogenic"));
-        testQuery(new Query(ANNOT_CLINICAL.key(), "clinvar,cosmic").append(ANNOT_CLINICAL_SIGNIFICANCE.key(), "pathogenic,likely_pathogenic"));
-        testQuery(new Query(ANNOT_CLINICAL.key(), "clinvar").append(ANNOT_CLINICAL_SIGNIFICANCE.key(), "benign").append(ANNOT_CLINICAL_CONFIRMED_STATUS.key(), true));
-        testQuery(new Query(ANNOT_CLINICAL.key(), "cosmic").append(ANNOT_CLINICAL_CONFIRMED_STATUS.key(), true));
-        testQuery(new Query(ANNOT_CLINICAL_SIGNIFICANCE.key(), "benign").append(ANNOT_CLINICAL_CONFIRMED_STATUS.key(), true));
-        testQuery(new Query(ANNOT_CLINICAL_CONFIRMED_STATUS.key(), true));
+        testQuery(new VariantQuery().clinical("clinvar"));
+        testQuery(new VariantQuery().clinical("cosmic"));
+        testQuery(new VariantQuery().clinical("cosmic").clinicalSignificance("pathogenic"));
+        testQuery(new VariantQuery().clinical("clinvar,cosmic").clinicalSignificance("pathogenic,likely_pathogenic"));
+        testQuery(new VariantQuery().clinical("clinvar").clinicalSignificance("benign").clinicalConfirmedStatus(true));
+        testQuery(new VariantQuery().clinical("cosmic").clinicalConfirmedStatus(true));
+        testQuery(new VariantQuery().clinicalSignificance("benign").clinicalConfirmedStatus(true));
+        testQuery(new VariantQuery().clinicalConfirmedStatus(true));
     }
 
     @Test

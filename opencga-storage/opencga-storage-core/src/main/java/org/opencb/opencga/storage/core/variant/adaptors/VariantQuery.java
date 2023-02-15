@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.core.variant.query.Values;
@@ -492,6 +493,10 @@ public class VariantQuery extends Query {
     }
 
     public VariantQuery clinicalSignificance(String value) {
+        put(VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE.key(), value);
+        return this;
+    }
+    public VariantQuery clinicalSignificance(ClinicalSignificance value) {
         put(VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE.key(), value);
         return this;
     }
