@@ -2,23 +2,31 @@ package org.opencb.opencga.analysis.clinical.exomiser;
 
 import org.junit.*;
 import org.eclipse.jetty.util.Scanner;
+import org.opencb.biodata.models.clinical.interpretation.GenomicFeature;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.clinical.ClinicalAnalysisUtilsTest;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.*;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeThat;
 
 public class ExomiserInterpretationAnalysisTest  {
 
@@ -40,8 +48,10 @@ public class ExomiserInterpretationAnalysisTest  {
         opencga.clear();
     }
 
-    //@Test
+    @Test
     public void singleExomiserAnalysis() throws IOException, CatalogException, ToolException {
+        assumeThat(Paths.get("/opt/opencga/analysis/resources/exomiser").toFile().exists(), is(true));
+
         prepareExomiserData();
         outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis_single"));
 
@@ -65,8 +75,10 @@ public class ExomiserInterpretationAnalysisTest  {
         assertEquals(22, clinicalAnalysis.getSecondaryInterpretations().get(0).getPrimaryFindings().size());
     }
 
-    //@Test
+    @Test
     public void familyExomiserAnalysis() throws IOException, CatalogException, ToolException {
+        assumeThat(Paths.get("/opt/opencga/analysis/resources/exomiser").toFile().exists(), is(true));
+
         prepareExomiserData();
         outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis_family"));
 
@@ -88,7 +100,7 @@ public class ExomiserInterpretationAnalysisTest  {
         clinicalAnalysis = clinicalTest.catalogManager.getClinicalAnalysisManager()
                 .get(clinicalTest.studyFqn, clinicalTest.CA_ID3, QueryOptions.empty(), clinicalTest.token).first();
         assertEquals(1, clinicalAnalysis.getSecondaryInterpretations().size());
-        assertEquals(1, clinicalAnalysis.getSecondaryInterpretations().get(0).getPrimaryFindings().size());
+        assertEquals(2, clinicalAnalysis.getSecondaryInterpretations().get(0).getPrimaryFindings().size());
     }
 
     private void prepareExomiserData() throws IOException {
@@ -100,7 +112,6 @@ public class ExomiserInterpretationAnalysisTest  {
         if (!opencgaHome.resolve("analysis/resources/exomiser").toAbsolutePath().toFile().exists()) {
             if (Paths.get("/opt/opencga/analysis/resources/exomiser").toFile().exists()) {
                 Path symbolicLink = Files.createSymbolicLink(opencgaHome.resolve("analysis/resources/exomiser").toAbsolutePath(), Paths.get("/opt/opencga/analysis/resources/exomiser"));
-                System.out.println("symbolicLink = " + symbolicLink.toAbsolutePath());
             }
         }
     }

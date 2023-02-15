@@ -158,8 +158,15 @@ public class AbstractClinicalManagerTest extends GenericTest {
                 .setSex(SexOntologyTermAnnotation.initMale())
                 .setSamples(Collections.singletonList(new Sample().setId("HG005")));
 
+        Individual hg004Individual =  new Individual().setId("HG004_individual")
+                .setFather(hg006Individual)
+                .setMother(hg007Individual)
+                .setSex(SexOntologyTermAnnotation.initFemale())
+                .setSamples(Collections.singletonList(new Sample().setId("HG004")));
+
         Family chineseFamily = new Family("chinese_family", "chinese_family", null, null,
-                Arrays.asList(hg005Individual, hg006Individual, hg007Individual), "", 3, Collections.emptyList(), Collections.emptyMap());
+                Arrays.asList(hg005Individual, hg006Individual, hg007Individual, hg004Individual), "", 4, Collections.emptyList(),
+                Collections.emptyMap());
         catalogManager.getFamilyManager().create(studyFqn, chineseFamily, QueryOptions.empty(), token).first();
 
         auxClinicalAnalysis = new ClinicalAnalysis()
@@ -173,6 +180,12 @@ public class AbstractClinicalManagerTest extends GenericTest {
 
         catalogManager.getClinicalAnalysisManager().create(studyFqn, auxClinicalAnalysis, QueryOptions.empty(), token)
                 .first();
+
+        vcf = getClass().getResource("/biofiles/HG004.1k.vcf.gz").toURI();
+        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcf)))) {
+            catalogManager.getFileManager().upload(studyFqn, inputStream,
+                    new File().setPath(Paths.get(vcf).getFileName().toString()), false, true, false, token);
+        }
 
         vcf = getClass().getResource("/biofiles/HG005.1k.vcf.gz").toURI();
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcf)))) {

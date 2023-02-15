@@ -16,21 +16,22 @@
 
 package org.opencb.opencga.analysis.clinical.exomiser;
 
+import htsjdk.samtools.util.BufferedLineReader;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.formats.pubmed.v233jaxb.B;
 import org.opencb.biodata.formats.variant.io.VariantReader;
+import org.opencb.biodata.models.clinical.ClinicalAcmg;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
-import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
-import org.opencb.biodata.models.clinical.interpretation.Software;
+import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.GeneCancerAssociation;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.tools.clinical.ClinicalVariantCreator;
 import org.opencb.biodata.tools.clinical.DefaultClinicalVariantCreator;
@@ -60,11 +61,12 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Path;
 import java.util.*;
 
+import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.calculateAcmgClassification;
+import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.computeClinicalSignificance;
 import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
 
 @Tool(id = ExomiserInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
@@ -149,7 +151,8 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         });
     }
 
-    protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis) throws ToolException {
+    protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis) throws ToolException, StorageEngineException,
+            InterpretationAnalysisException, CatalogException, IOException {
         // Interpretation method
         InterpretationMethod method = new InterpretationMethod(getId(), GitRepositoryState.get().getBuildVersion(),
                 GitRepositoryState.get().getCommitId(), Collections.singletonList(
@@ -161,20 +164,9 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         // Analyst
         ClinicalAnalyst analyst = clinicalInterpretationManager.getAnalyst(token);
 
-        List<ClinicalVariant> primaryFindings;
-        try {
-            primaryFindings = getPrimaryFindings();
-            for (ClinicalVariant primaryFinding : primaryFindings) {
-                for (ClinicalVariantEvidence evidence : primaryFinding.getEvidences()) {
-                    evidence.setInterpretationMethodName(method.getName());
-                }
-            }
-        } catch (InterpretationAnalysisException | IOException | StorageEngineException | CatalogException e) {
-            throw new ToolException("Error retrieving primary findings", e);
-        }
+        List<ClinicalVariant> primaryFindings = getPrimaryFindings();
 
         org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation = new Interpretation()
-                //.setId(getId() + "." + TimeUtils.getTimeMillis())
                 .setPrimaryFindings(primaryFindings)
                 .setSecondaryFindings(new ArrayList<>())
                 .setAnalyst(analyst)
@@ -201,135 +193,174 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
 
     private List<ClinicalVariant> getPrimaryFindings() throws InterpretationAnalysisException, IOException, StorageEngineException,
             CatalogException, ToolException {
-        Map<String, ClinicalVariant> cvMap = new HashMap<>();
 
-        VariantNormalizer normalizer = new VariantNormalizer();
+        List<ClinicalVariant> primaryFindings = new ArrayList<>();
 
         // Prepare variant query
         List<String> sampleIds = new ArrayList<>();
-        sampleIds.add(clinicalAnalysis.getProband().getSamples().get(0).getId());
-        if (clinicalAnalysis.getProband().getFather() != null
-                && StringUtils.isNotEmpty(clinicalAnalysis.getProband().getFather().getId())) {
-            Individual father = IndividualQcUtils.getIndividualById(studyId, clinicalAnalysis.getProband().getFather().getId(),
-                    getCatalogManager(), getToken());
-            if (CollectionUtils.isNotEmpty(father.getSamples())) {
-                sampleIds.add(father.getSamples().get(0).getId());
+        if (clinicalAnalysis.getFamily() != null && CollectionUtils.isNotEmpty(clinicalAnalysis.getFamily().getMembers())) {
+            for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
+                Individual individual = IndividualQcUtils.getIndividualById(studyId, member.getId(), getCatalogManager(), getToken());
+                if (CollectionUtils.isNotEmpty(individual.getSamples())) {
+                    // Get first sample
+                    sampleIds.add(individual.getSamples().get(0).getId());
+                }
             }
+        } else {
+            sampleIds.add(clinicalAnalysis.getProband().getSamples().get(0).getId());
         }
-        if (clinicalAnalysis.getProband().getMother() != null
-                && StringUtils.isNotEmpty(clinicalAnalysis.getProband().getMother().getId())) {
-            Individual mother = IndividualQcUtils.getIndividualById(studyId, clinicalAnalysis.getProband().getMother().getId(),
-                    getCatalogManager(), getToken());
-            if (CollectionUtils.isNotEmpty(mother.getSamples())) {
-                sampleIds.add(mother.getSamples().get(0).getId());
-            }
-        }
-        Query query = new Query(VariantQueryParam.STUDY.key(), getStudyId())
+        Query query = new Query(VariantQueryParam.STUDY.key(), studyId)
                 .append(VariantQueryParam.INCLUDE_SAMPLE_ID.key(), true)
                 .append(VariantQueryParam.INCLUDE_STUDY.key(), "all")
                 .append(VariantQueryParam.SAMPLE.key(), StringUtils.join(sampleIds, ","));
 
-        // Parse all Exomiser output files (VCF)
-        for (File file : getOutDir().toFile().listFiles()) {
-            String filename = file.getName();
-            if (filename.startsWith("exomiser_output") && filename.endsWith("vcf")) {
-                Map<String, ObjectMap> variantExomiserAttrMaps = new HashMap<>();
+        // Parse all Exomiser output file (TSV_VARIANT):
+        //
+        // 0    1   2           3               4   5       6                               7
+        // RANK	ID	GENE_SYMBOL	ENTREZ_GENE_ID	MOI	P-VALUE	EXOMISER_GENE_COMBINED_SCORE	EXOMISER_GENE_PHENO_SCORE
+        // 8                            9                       10                      11                  12      13      14      15
+        // EXOMISER_GENE_VARIANT_SCORE	EXOMISER_VARIANT_SCORE	CONTRIBUTING_VARIANT	WHITELIST_VARIANT	VCF_ID	RS_ID	CONTIG	START
+        // 16   17  18  19              20      21      22          23                  24      25
+        // END	REF	ALT	CHANGE_LENGTH	QUAL	FILTER	GENOTYPE	FUNCTIONAL_CLASS	HGVS	EXOMISER_ACMG_CLASSIFICATION
+        // 26                       27                          28                          29
+        // EXOMISER_ACMG_EVIDENCE	EXOMISER_ACMG_DISEASE_ID	EXOMISER_ACMG_DISEASE_NAME	CLINVAR_ALLELE_ID
+        // 30                               31                  32                      33
+        // CLINVAR_PRIMARY_INTERPRETATION	CLINVAR_STAR_RATING	GENE_CONSTRAINT_LOEUF	GENE_CONSTRAINT_LOEUF_LOWER
+        // 34                           35              36          37          38              39          40
+        // GENE_CONSTRAINT_LOEUF_UPPER	MAX_FREQ_SOURCE	MAX_FREQ	ALL_FREQ	MAX_PATH_SOURCE	MAX_PATH	ALL_PATH
 
-                // Read variants from VCF file
-                VariantStudyMetadata variantStudyMetadata = new VariantFileMetadata(filename, "").toVariantStudyMetadata(studyId);
-                VariantReader reader = new VariantVcfHtsjdkReader(file.toPath(), variantStudyMetadata, normalizer);
-                List<String> variantIds = new ArrayList<>();
-                Iterator<Variant> iterator = reader.iterator();
-                while (iterator.hasNext()) {
-                    Variant variant = iterator.next();
-                    String variantId = StringUtils.isEmpty(variant.getId()) ? variant.toStringSimple() : variant.getId();
+        Map<String, List<String[]>> variantTsvMap = new HashMap<>();
+        Map<String, ObjectMap> variantExomiserAttrMaps = new HashMap<>();
 
-                    // Get Exomiser attributes and put it into a map to further processing
-                    variantExomiserAttrMaps.put(variantId, getExomiserAttributes(variant));
+        File exomiserJsonFile = getOutDir().resolve("exomiser_output.json").toFile();
+        Map<String, Set<String>> variantTranscriptMap = getTranscriptsFromJsonFile(exomiserJsonFile);
 
-                    // Add variant into the list
-                    variantIds.add(variantId);
-                }
-                if (CollectionUtils.isNotEmpty(variantIds)) {
-                    query.put(VariantQueryParam.ID.key(), StringUtils.join(variantIds, ","));
-                    logger.info("Query (including father/mother samples): {}", query.toJson());
-                    VariantQueryResult<Variant> variantResults = getVariantStorageManager().get(query, QueryOptions.empty(), getToken());
-
-                    if (variantResults != null && CollectionUtils.isNotEmpty(variantResults.getResults())) {
-                        // Convert variants to clinical variants
-                        ClinicalVariantCreator clinicalVariantCreator = getClinicalVariantCreator(filename);
-                        List<ClinicalVariant> clinicalVariants = clinicalVariantCreator.create(variantResults.getResults());
-                        if (CollectionUtils.isNotEmpty(clinicalVariants)) {
-                            for (ClinicalVariant cv : clinicalVariants) {
-                                String variantId = StringUtils.isEmpty(cv.getId()) ? cv.toStringSimple() : cv.getId();
-
-                                // Add Exomiser attributes to the clinical variant evidences
-                                if (variantExomiserAttrMaps.containsKey(variantId) && CollectionUtils.isNotEmpty(cv.getEvidences())) {
-                                    for (ClinicalVariantEvidence cve : cv.getEvidences()) {
-                                        if (cve.getAttributes() == null) {
-                                            // Initialize map before populating
-                                            cve.setAttributes(new HashMap<>());
-                                        }
-                                        cve.getAttributes().putAll(variantExomiserAttrMaps.get(cv.getId()));
-                                    }
-                                }
-
-                                // Add clinical variant to the map (to group by mode of inheritance)
-                                if (cvMap.containsKey(variantId)) {
-                                    cvMap.get(variantId).getEvidences().addAll(cv.getEvidences());
-                                } else {
-                                    cvMap.put(variantId, cv);
-                                }
-                            }
-                        }
+        File variantTsvFile = getOutDir().resolve("exomiser_output.variants.tsv").toFile();
+        if (variantTsvFile.exists()) {
+            try (BufferedReader br = new BufferedLineReader(new FileInputStream(variantTsvFile))) {
+                // Read header line
+                br.readLine();
+                String line = br.readLine();
+                while (line != null) {
+                    String[] fields = line.split("\t");
+                    Variant variant = new Variant(fields[14], Integer.parseInt(fields[15]), Integer.parseInt(fields[16]), fields[17],
+                            fields[18]);
+                    String variantId = variant.toStringSimple();
+                    if (!variantTsvMap.containsKey(variantId)) {
+                        variantTsvMap.put(variantId, new ArrayList<>());
                     }
-                }
+                    variantTsvMap.get(variantId).add(fields);
 
-                // close
-                reader.close();
+                    // Next line
+                    line = br.readLine();
+                }
             }
         }
 
-        return new ArrayList<>(cvMap.values());
+        List<String> variantIds = new ArrayList<>(variantTsvMap.keySet());
+        if (CollectionUtils.isNotEmpty(variantIds)) {
+            query.put(VariantQueryParam.ID.key(), StringUtils.join(variantIds, ","));
+            logger.info("Query (including all family samples): {}", query.toJson());
+            VariantQueryResult<Variant> variantResults = getVariantStorageManager().get(query, QueryOptions.empty(), getToken());
+
+            if (variantResults != null && CollectionUtils.isNotEmpty(variantResults.getResults())) {
+                // Exomiser clinical variant creator
+                ExomiserClinicalVariantCreator clinicalVariantCreator = new ExomiserClinicalVariantCreator();
+
+                // Convert variants to clinical variants
+                for (Variant variant : variantResults.getResults()) {
+                    ClinicalVariant clinicalVariant = clinicalVariantCreator.create(variant);
+                    List<String> transcripts = new ArrayList<>(variantTranscriptMap.get(variant.toStringSimple()));
+                    for (String[] fields : variantTsvMap.get(variant.toStringSimple())) {
+                        ClinicalProperty.ModeOfInheritance moi = getModeOfInheritance(fields[4]);
+                        Map<String, Object> attributes = getAttributesFromTsv(fields);
+
+                        clinicalVariantCreator.addClinicalVariantEvidences(clinicalVariant, transcripts, moi, attributes);
+                    }
+                    primaryFindings.add(clinicalVariant);
+                }
+            }
+        }
+
+        return primaryFindings;
     }
 
-    private ObjectMap getExomiserAttributes(Variant variant) {
-        ObjectMap attributes = new ObjectMap();
-        if (variant != null && CollectionUtils.isNotEmpty(variant.getStudies())) {
-            StudyEntry studyEntry = variant.getStudies().get(0);
-            if (CollectionUtils.isNotEmpty(studyEntry.getFiles())) {
-                FileEntry fileEntry = studyEntry.getFiles().get(0);
-                if (MapUtils.isNotEmpty(fileEntry.getData())) {
-                    for (Map.Entry<String, String> entry : fileEntry.getData().entrySet()) {
-                        if (entry.getKey().startsWith("Ex")) {
-                            // Only Exomiser attributes, i.e., those starting with "Ex"
-                            attributes.put(entry.getKey(), entry.getValue());
+    private Map<String, Set<String>> getTranscriptsFromJsonFile(File file) throws IOException {
+        Map<String, Set<String>> results = new HashMap<>();
+        String content = org.apache.commons.io.FileUtils.readFileToString(file);
+        Object obj = JacksonUtils.getDefaultNonNullObjectMapper().readValue(content, Object.class);
+        List<Object> list = (ArrayList<Object>) obj;
+        System.out.println(list.size());
+        for (Object item : list) {
+            List<Map> geneScores = (ArrayList) ((Map) item).get("geneScores");
+            for (Map geneScore : geneScores) {
+                if (geneScore.containsKey("contributingVariants")) {
+                    List<Map> contributingVariants = (ArrayList) geneScore.get("contributingVariants");
+                    for (Map contributingVariant : contributingVariants) {
+                        String variantId = contributingVariant.get("contigName") + ":" + contributingVariant.get("start") + ":"
+                                + contributingVariant.get("ref") + ":" + contributingVariant.get("alt");
+                        if (!results.containsKey(variantId)) {
+                            results.put(variantId, new HashSet<>());
+                        }
+                        List<Map> transcriptAnnotations = (ArrayList) contributingVariant.get("transcriptAnnotations");
+                        for (Map transcriptAnnotation : transcriptAnnotations) {
+                            results.get(variantId).add((String) transcriptAnnotation.get("accession"));
                         }
                     }
                 }
             }
         }
+        return results;
+    }
+
+    private ObjectMap getAttributesFromTsv(String[] fields) {
+        ObjectMap attributes = new ObjectMap();
+
+        // 0    1   2           3               4   5       6                               7
+        // RANK	ID	GENE_SYMBOL	ENTREZ_GENE_ID	MOI	P-VALUE	EXOMISER_GENE_COMBINED_SCORE	EXOMISER_GENE_PHENO_SCORE
+        attributes.put("RANK", fields[0]);
+        attributes.put("P-VALUE", fields[5]);
+        attributes.put("EXOMISER_GENE_COMBINED_SCORE", fields[6]);
+        attributes.put("EXOMISER_GENE_PHENO_SCORE", fields[7]);
+
+        // 8                            9                       10                      11                  12      13      14      15
+        // EXOMISER_GENE_VARIANT_SCORE	EXOMISER_VARIANT_SCORE	CONTRIBUTING_VARIANT	WHITELIST_VARIANT	VCF_ID	RS_ID	CONTIG	START
+        attributes.put("EXOMISER_GENE_VARIANT_SCORE", fields[8]);
+        attributes.put("EXOMISER_VARIANT_SCORE", fields[9]);
+
+        // 16   17  18  19              20      21      22          23                  24      25
+        // END	REF	ALT	CHANGE_LENGTH	QUAL	FILTER	GENOTYPE	FUNCTIONAL_CLASS	HGVS	EXOMISER_ACMG_CLASSIFICATION
+        attributes.put("EXOMISER_ACMG_CLASSIFICATION", fields[25]);
+
+        // 26                       27                          28                          29
+        // EXOMISER_ACMG_EVIDENCE	EXOMISER_ACMG_DISEASE_ID	EXOMISER_ACMG_DISEASE_NAME	CLINVAR_ALLELE_ID
+        attributes.put("EXOMISER_ACMG_EVIDENCE", fields[26]);
+        attributes.put("EXOMISER_ACMG_DISEASE_ID", fields[27]);
+        attributes.put("EXOMISER_ACMG_DISEASE_NAME", fields[28]);
+
+        // 30                               31                  32                      33
+        // CLINVAR_PRIMARY_INTERPRETATION	CLINVAR_STAR_RATING	GENE_CONSTRAINT_LOEUF	GENE_CONSTRAINT_LOEUF_LOWER
+        // 34                           35              36          37          38              39          40
+        // GENE_CONSTRAINT_LOEUF_UPPER	MAX_FREQ_SOURCE	MAX_FREQ	ALL_FREQ	MAX_PATH_SOURCE	MAX_PATH	ALL_PATH
+
         return attributes;
     }
 
-    private ClinicalVariantCreator getClinicalVariantCreator(String filename) {
-        ClinicalProperty.ModeOfInheritance moi;
-        if (filename.endsWith("AD.vcf")) {
-            moi = ClinicalProperty.ModeOfInheritance.AUTOSOMAL_DOMINANT;
-        } else if (filename.endsWith("AR.vcf")) {
-            moi = ClinicalProperty.ModeOfInheritance.AUTOSOMAL_RECESSIVE;
-        } else if (filename.endsWith("XD.vcf")) {
-            moi = ClinicalProperty.ModeOfInheritance.X_LINKED_DOMINANT;
-        } else if (filename.endsWith("XR.vcf")) {
-            moi = ClinicalProperty.ModeOfInheritance.X_LINKED_RECESSIVE;
-        } else if (filename.endsWith("MT.vcf")) {
-            moi = ClinicalProperty.ModeOfInheritance.MITOCHONDRIAL;
-        } else {
-            moi = ClinicalProperty.ModeOfInheritance.UNKNOWN;
+    private ClinicalProperty.ModeOfInheritance getModeOfInheritance(String moi) {
+        switch (moi) {
+            case "AD":
+                return ClinicalProperty.ModeOfInheritance.AUTOSOMAL_DOMINANT;
+            case "AR":
+                return ClinicalProperty.ModeOfInheritance.AUTOSOMAL_RECESSIVE;
+            case "XD":
+                return ClinicalProperty.ModeOfInheritance.X_LINKED_DOMINANT;
+            case "XR":
+                return ClinicalProperty.ModeOfInheritance.X_LINKED_RECESSIVE;
+            case "MT":
+                return ClinicalProperty.ModeOfInheritance.MITOCHONDRIAL;
+            default:
+                return ClinicalProperty.ModeOfInheritance.UNKNOWN;
         }
-
-        return new DefaultClinicalVariantCreator(null, Collections.singletonList(moi), ClinicalProperty.Penetrance.COMPLETE,
-                new ArrayList<>(), new ArrayList<>(ModeOfInheritance.proteinCoding), new ArrayList<>(ModeOfInheritance.extendedLof), true);
     }
 
     public String getStudyId() {
