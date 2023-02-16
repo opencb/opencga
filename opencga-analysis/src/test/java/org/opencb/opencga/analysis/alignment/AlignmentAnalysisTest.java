@@ -253,7 +253,8 @@ public class AlignmentAnalysisTest {
         Path outdir = Paths.get(opencga.createTmpOutdir("_genecoveragestats"));
 
         // setup BAM files
-        String bamFilename = getClass().getResource("/biofiles/HG00096.chrom20.small.bam").getFile();
+        String bamFilename = opencga.getResourceUri("biofiles/HG00096.chrom20.small.bam").toString();
+        String baiFilename = opencga.getResourceUri("biofiles/HG00096.chrom20.small.bam.bai").toString();
         //String bamFilename = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
         File bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFilename, "", "", "", null, null, null,
                 null, null), false, token).first();

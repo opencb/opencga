@@ -34,11 +34,8 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -75,11 +72,10 @@ public class AbstractClinicalManagerTest extends GenericTest {
     @Before
     public void setUp() throws IOException, CatalogException, URISyntaxException {
         catalogManager = catalogManagerResource.getCatalogManager();
-        setUpCatalogManager(catalogManager);
+        setUpCatalogManager();
     }
 
-    public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException, URISyntaxException {
-        URI vcf;
+    public void setUpCatalogManager() throws IOException, CatalogException, URISyntaxException {
         ClinicalAnalysis auxClinicalAnalysis;
 
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, catalogManagerResource.getAdminToken());
@@ -107,12 +103,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
                         new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token)
                 .first();
 //
-        vcf = getClass().getResource("/biofiles/family.vcf").toURI();
-
-        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcf)))) {
-            catalogManager.getFileManager().upload(studyFqn, inputStream,
-                    new File().setPath(Paths.get(vcf).getFileName().toString()), false, true, false, token);
-        }
+        catalogUploadFile("/biofiles/family.vcf");
 
         //---------------------------------------------------------------------
         // Clinical analysis for exomiser test (SINGLE, manuel)
@@ -130,12 +121,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
                 .create(studyFqn, auxClinicalAnalysis, new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token)
                 .first();
 
-        vcf = getClass().getResource("/biofiles/exomiser.vcf.gz").toURI();
-
-        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcf)))) {
-            catalogManager.getFileManager().upload(studyFqn, inputStream,
-                    new File().setPath(Paths.get(vcf).getFileName().toString()), false, true, false, token);
-        }
+        catalogUploadFile("/biofiles/exomiser.vcf.gz");
 
         //---------------------------------------------------------------------
         // Chinese trio (clinicalAnalysis3)
@@ -175,22 +161,16 @@ public class AbstractClinicalManagerTest extends GenericTest {
         catalogManager.getClinicalAnalysisManager().create(studyFqn, auxClinicalAnalysis, QueryOptions.empty(), token)
                 .first();
 
-        vcf = getClass().getResource("/biofiles/HG005.1k.vcf.gz").toURI();
-        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcf)))) {
-            catalogManager.getFileManager().upload(studyFqn, inputStream,
-                    new File().setPath(Paths.get(vcf).getFileName().toString()), false, true, false, token);
-        }
 
-        vcf = getClass().getResource("/biofiles/HG006.1k.vcf.gz").toURI();
-        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcf)))) {
-            catalogManager.getFileManager().upload(studyFqn, inputStream,
-                    new File().setPath(Paths.get(vcf).getFileName().toString()), false, true, false, token);
-        }
+        catalogUploadFile("/biofiles/HG005.1k.vcf.gz");
+        catalogUploadFile("/biofiles/HG006.1k.vcf.gz");
+        catalogUploadFile("/biofiles/HG007.1k.vcf.gz");
+    }
 
-        vcf = getClass().getResource("/biofiles/HG007.1k.vcf.gz").toURI();
-        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcf)))) {
+    private void catalogUploadFile(String path) throws IOException, CatalogException {
+        try (InputStream inputStream = getClass().getResource(path).openStream()) {
             catalogManager.getFileManager().upload(studyFqn, inputStream,
-                    new File().setPath(Paths.get(vcf).getFileName().toString()), false, true, false, token);
+                    new File().setPath(Paths.get(path).getFileName().toString()), false, true, false, token);
         }
     }
 
