@@ -48,6 +48,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
     private static CatalogManager catalogManager;
     private Configuration configuration;
     private Path opencgaHome;
+    private String opencgaToken;
 
 
     public CatalogManagerExternalResource() {
@@ -79,6 +80,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
         // FIXME!! Should not need to create again the catalogManager
         //  Have to create again the CatalogManager, as it has a random "secretKey" inside
         catalogManager = new CatalogManager(configuration);
+        opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
     }
 
     @Override
@@ -103,6 +105,10 @@ public class CatalogManagerExternalResource extends ExternalResource {
 
     public Path getOpencgaHome() {
         return opencgaHome;
+    }
+
+    public String getOpencgaToken() {
+        return opencgaToken;
     }
 
     public ObjectMapper generateNewObjectMapper() {

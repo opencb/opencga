@@ -1,28 +1,29 @@
 package org.opencb.opencga.analysis.clinical.exomiser;
 
-import org.junit.*;
-import org.eclipse.jetty.util.Scanner;
-import org.opencb.biodata.models.clinical.interpretation.GenomicFeature;
+import org.junit.After;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleField;
+import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.clinical.ClinicalAnalysisUtilsTest;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 
-import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Collections;
+import java.util.Optional;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
@@ -46,6 +47,21 @@ public class ExomiserInterpretationAnalysisTest  {
     @After
     public void tearDown() throws Exception {
         opencga.clear();
+    }
+
+    @Test
+    public void testNormalization() throws NonStandardCompliantSampleField {
+        Variant normalized = new VariantNormalizer().normalize(Collections.singletonList(new Variant("12:878367:N:NT")), false).get(0);
+        System.out.println("normalized = " + normalized.toStringSimple());
+        assertEquals(878368, (long) normalized.getStart());
+        assertEquals("", normalized.getReference());
+        assertEquals("T", normalized.getAlternate());
+
+        normalized = new VariantNormalizer().normalize(Collections.singletonList(new Variant("18:9887391:NGAAGCCATCCAGCCCAAGGAGGGTGACATCCCCAAGTCCCCAGAA:N")), false).get(0);
+        System.out.println("normalized + " + normalized.toStringSimple());
+        assertEquals(9887392, (long) normalized.getStart());
+        assertEquals("GAAGCCATCCAGCCCAAGGAGGGTGACATCCCCAAGTCCCCAGAA", normalized.getReference());
+        assertEquals("", normalized.getAlternate());
     }
 
     @Test

@@ -82,7 +82,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
         URI vcf;
         ClinicalAnalysis auxClinicalAnalysis;
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, catalogManagerResource.getOpencgaToken());
 
         token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
 

@@ -18,32 +18,19 @@ package org.opencb.opencga.analysis.clinical.exomiser;
 
 import htsjdk.samtools.util.BufferedLineReader;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.formats.pubmed.v233jaxb.B;
-import org.opencb.biodata.formats.variant.io.VariantReader;
-import org.opencb.biodata.models.clinical.ClinicalAcmg;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.avro.FileEntry;
-import org.opencb.biodata.models.variant.avro.GeneCancerAssociation;
-import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
-import org.opencb.biodata.tools.clinical.ClinicalVariantCreator;
-import org.opencb.biodata.tools.clinical.DefaultClinicalVariantCreator;
-import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
+import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleField;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
-import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
-import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -152,7 +139,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
     }
 
     protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis) throws ToolException, StorageEngineException,
-            InterpretationAnalysisException, CatalogException, IOException {
+            InterpretationAnalysisException, CatalogException, IOException, NonStandardCompliantSampleField {
         // Interpretation method
         InterpretationMethod method = new InterpretationMethod(getId(), GitRepositoryState.get().getBuildVersion(),
                 GitRepositoryState.get().getCommitId(), Collections.singletonList(
@@ -229,11 +216,11 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         // 34                           35              36          37          38              39          40
         // GENE_CONSTRAINT_LOEUF_UPPER	MAX_FREQ_SOURCE	MAX_FREQ	ALL_FREQ	MAX_PATH_SOURCE	MAX_PATH	ALL_PATH
 
+        VariantNormalizer normalizer = new VariantNormalizer();
+
         Map<String, List<String[]>> variantTsvMap = new HashMap<>();
         Map<String, ObjectMap> variantExomiserAttrMaps = new HashMap<>();
-
-        File exomiserJsonFile = getOutDir().resolve("exomiser_output.json").toFile();
-        Map<String, Set<String>> variantTranscriptMap = getTranscriptsFromJsonFile(exomiserJsonFile);
+        Map<String, String> normalizedToTsv = new HashMap<>();
 
         File variantTsvFile = getOutDir().resolve("exomiser_output.variants.tsv").toFile();
         if (variantTsvFile.exists()) {
@@ -245,17 +232,26 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                     String[] fields = line.split("\t");
                     Variant variant = new Variant(fields[14], Integer.parseInt(fields[15]), Integer.parseInt(fields[16]), fields[17],
                             fields[18]);
-                    String variantId = variant.toStringSimple();
-                    if (!variantTsvMap.containsKey(variantId)) {
-                        variantTsvMap.put(variantId, new ArrayList<>());
+                    try {
+                        Variant normalized = normalizer.normalize(Collections.singletonList(variant), false).get(0);
+                        String variantId = normalized.toStringSimple();
+                        normalizedToTsv.put(variantId, variant.toStringSimple());
+                        if (!variantTsvMap.containsKey(variantId)) {
+                            variantTsvMap.put(variantId, new ArrayList<>());
+                        }
+                        variantTsvMap.get(variantId).add(fields);
+                    } catch (NonStandardCompliantSampleField e) {
+                        logger.warn("Skipping variant {}, it could not be normalized", variant.toStringSimple());
                     }
-                    variantTsvMap.get(variantId).add(fields);
 
                     // Next line
                     line = br.readLine();
                 }
             }
         }
+
+        File exomiserJsonFile = getOutDir().resolve("exomiser_output.json").toFile();
+        Map<String, Set<ExomiserTranscriptAnnotation>> variantTranscriptMap = getExomiserTranscriptAnnotationsFromFile(exomiserJsonFile);
 
         List<String> variantIds = new ArrayList<>(variantTsvMap.keySet());
         if (CollectionUtils.isNotEmpty(variantIds)) {
@@ -270,12 +266,13 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                 // Convert variants to clinical variants
                 for (Variant variant : variantResults.getResults()) {
                     ClinicalVariant clinicalVariant = clinicalVariantCreator.create(variant);
-                    List<String> transcripts = new ArrayList<>(variantTranscriptMap.get(variant.toStringSimple()));
+                    List<ExomiserTranscriptAnnotation> exomiserTranscripts = new ArrayList<>(variantTranscriptMap.get(normalizedToTsv
+                            .get(variant.toStringSimple())));
                     for (String[] fields : variantTsvMap.get(variant.toStringSimple())) {
                         ClinicalProperty.ModeOfInheritance moi = getModeOfInheritance(fields[4]);
                         Map<String, Object> attributes = getAttributesFromTsv(fields);
 
-                        clinicalVariantCreator.addClinicalVariantEvidences(clinicalVariant, transcripts, moi, attributes);
+                        clinicalVariantCreator.addClinicalVariantEvidences(clinicalVariant, exomiserTranscripts, moi, attributes);
                     }
                     primaryFindings.add(clinicalVariant);
                 }
@@ -285,8 +282,8 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         return primaryFindings;
     }
 
-    private Map<String, Set<String>> getTranscriptsFromJsonFile(File file) throws IOException {
-        Map<String, Set<String>> results = new HashMap<>();
+    private Map<String, Set<ExomiserTranscriptAnnotation>> getExomiserTranscriptAnnotationsFromFile(File file) throws IOException {
+        Map<String, Set<ExomiserTranscriptAnnotation>> results = new HashMap<>();
         String content = org.apache.commons.io.FileUtils.readFileToString(file);
         Object obj = JacksonUtils.getDefaultNonNullObjectMapper().readValue(content, Object.class);
         List<Object> list = (ArrayList<Object>) obj;
@@ -304,7 +301,35 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                         }
                         List<Map> transcriptAnnotations = (ArrayList) contributingVariant.get("transcriptAnnotations");
                         for (Map transcriptAnnotation : transcriptAnnotations) {
-                            results.get(variantId).add((String) transcriptAnnotation.get("accession"));
+                            ExomiserTranscriptAnnotation exTranscriptAnnotation = new ExomiserTranscriptAnnotation();
+                            if (transcriptAnnotation.containsKey("variantEffect")) {
+                                exTranscriptAnnotation.setVariantEffect((String) transcriptAnnotation.get("variantEffect"));
+                            }
+                            if (transcriptAnnotation.containsKey("geneSymbol")) {
+                                exTranscriptAnnotation.setGeneSymbol((String) transcriptAnnotation.get("geneSymbol"));
+                            }
+                            if (transcriptAnnotation.containsKey("accession")) {
+                                exTranscriptAnnotation.setAccession((String) transcriptAnnotation.get("accession"));
+                            }
+                            if (transcriptAnnotation.containsKey("hgvsGenomic")) {
+                                exTranscriptAnnotation.setHgvsGenomic((String) transcriptAnnotation.get("hgvsGenomic"));
+                            }
+                            if (transcriptAnnotation.containsKey("hgvsCdna")) {
+                                exTranscriptAnnotation.setHgvsCdna((String) transcriptAnnotation.get("hgvsCdna"));
+                            }
+                            if (transcriptAnnotation.containsKey("hgvsProtein")) {
+                                exTranscriptAnnotation.setHgvsProtein((String) transcriptAnnotation.get("hgvsProtein"));
+                            }
+                            if (transcriptAnnotation.containsKey("rankType")) {
+                                exTranscriptAnnotation.setRankType((String) transcriptAnnotation.get("rankType"));
+                            }
+                            if (transcriptAnnotation.containsKey("rank")) {
+                                exTranscriptAnnotation.setRank((Integer) transcriptAnnotation.get("rank"));
+                            }
+                            if (transcriptAnnotation.containsKey("rankTotal")) {
+                                exTranscriptAnnotation.setRankTotal((Integer) transcriptAnnotation.get("rankTotal"));
+                            }
+                            results.get(variantId).add(exTranscriptAnnotation);
                         }
                     }
                 }

@@ -1,6 +1,7 @@
 package org.opencb.opencga.analysis.clinical.exomiser;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalAcmg;
 import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
@@ -38,11 +39,11 @@ public class ExomiserClinicalVariantCreator {
                 null, ClinicalVariant.Status.NOT_REVIEWED, new ArrayList<>(), new HashMap<>());
     }
 
-    public void addClinicalVariantEvidences(ClinicalVariant clinicalVariant, List<String> transcripts,
+    public void addClinicalVariantEvidences(ClinicalVariant clinicalVariant, List<ExomiserTranscriptAnnotation> exomiserTranscripts,
                                             ClinicalProperty.ModeOfInheritance moi, Map<String, Object> attributes) {
         // Sanity check
         if (clinicalVariant == null) {
-            logger.warn("Input clinical variant is null, so no clinical variant evidences was addes to it.");
+            logger.warn("Input clinical variant is null, so no clinical variant evidences was added to it.");
             return;
         }
 
@@ -53,11 +54,18 @@ public class ExomiserClinicalVariantCreator {
             return;
         }
 
-        for (String transcript : transcripts) {
+        for (ExomiserTranscriptAnnotation exomisertranscript : exomiserTranscripts) {
+            boolean found = false;
             for (ConsequenceType ct : clinicalVariant.getAnnotation().getConsequenceTypes()) {
-                if (transcript.equals(ct.getEnsemblTranscriptId())) {
+                if (StringUtils.isNotEmpty(exomisertranscript.getAccession()) && StringUtils.isNotEmpty(ct.getEnsemblTranscriptId())
+                        && exomisertranscript.getAccession().equals(ct.getEnsemblTranscriptId())) {
                     clinicalVariantEvidences.add(createClinicalVariantEvidences(ct, moi, attributes, clinicalVariant));
+                    found = true;
+                    break;
                 }
+            }
+            if (!found) {
+                clinicalVariantEvidences.add(createClinicalVariantEvidences(exomisertranscript, moi, attributes, clinicalVariant));
             }
         }
 
@@ -71,8 +79,20 @@ public class ExomiserClinicalVariantCreator {
         clinicalVariant.getEvidences().addAll(clinicalVariantEvidences);
     }
 
+    private ClinicalVariantEvidence createClinicalVariantEvidences(ExomiserTranscriptAnnotation exomiserTranscript,
+                                                                   ClinicalProperty.ModeOfInheritance moi, Map<String, Object> attributes,
+                                                                   Variant variant) {
+        List<ClinicalVariantEvidence> clinicalVariantEvidences = new ArrayList<>();
+
+        List<SequenceOntologyTerm> soTerms = new ArrayList<>();
+        GenomicFeature genomicFeature = new GenomicFeature(String.valueOf(exomiserTranscript.getRank()), "TRANSCRIPT",
+                exomiserTranscript.getAccession(), exomiserTranscript.getGeneSymbol(), Collections.emptyList(), null);
+
+        return createClinicalVariantEvidence(genomicFeature, moi, attributes, variant);
+    }
+
     private ClinicalVariantEvidence createClinicalVariantEvidences(ConsequenceType ct, ClinicalProperty.ModeOfInheritance moi,
-                                                                     Map<String, Object> attributes, Variant variant) {
+                                                                   Map<String, Object> attributes, Variant variant) {
         List<ClinicalVariantEvidence> clinicalVariantEvidences = new ArrayList<>();
 
         List<SequenceOntologyTerm> soTerms = new ArrayList<>();
@@ -83,14 +103,14 @@ public class ExomiserClinicalVariantCreator {
                 }
             }
         }
-        GenomicFeature genomicFeature = new GenomicFeature(ct.getEnsemblGeneId(), "GENE", ct.getEnsemblTranscriptId(), ct.getGeneName(),
-                soTerms, null);
+        GenomicFeature genomicFeature = new GenomicFeature(ct.getEnsemblGeneId(), "TRANSCRIPT", ct.getEnsemblTranscriptId(),
+                ct.getGeneName(), soTerms, null);
 
         return createClinicalVariantEvidence(genomicFeature, moi, attributes, variant);
     }
 
     private ClinicalVariantEvidence createClinicalVariantEvidence(GenomicFeature genomicFeature, ClinicalProperty.ModeOfInheritance moi,
-                                                                    Map<String, Object> attributes, Variant variant) {
+                                                                  Map<String, Object> attributes, Variant variant) {
         ClinicalVariantEvidence clinicalVariantEvidence = new ClinicalVariantEvidence();
 
         // Interpretation method name
