@@ -20,7 +20,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.ToolRunner;
@@ -202,8 +201,8 @@ public class PlatinumFileIndexerTest extends AbstractVariantOperationManagerTest
         for (int i = 77; i <= 93; i++) {
             create("platinum/1K.end.platinum-genomes-vcf-NA128" + i + "_S1.genome.vcf.gz");
         }
-        toolRunner.execute(VariantFileIndexJobLauncherTool.class, new VariantFileIndexJobLauncherParams().setDirectory("data/vcfs"),
-                new ObjectMap("study", studyFqn), Paths.get(opencga.createTmpOutdir(studyId, "_LOAD_", sessionId)), "", sessionId);
+        toolRunner.execute(VariantFileIndexJobLauncherTool.class, studyFqn, new VariantFileIndexJobLauncherParams().setDirectory("data/vcfs"),
+                Paths.get(opencga.createTmpOutdir(studyId, "_LOAD_", sessionId)), "", sessionId);
     }
 
 }

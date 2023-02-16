@@ -95,6 +95,8 @@ public class VariantAnnotationOperationManager extends OperationManager {
 
         if (StringUtils.isEmpty(loadFileStr)) {
             variantStorageEngine.annotate(outdir.toUri(), annotationQuery, annotationOptions);
+            new CatalogStorageMetadataSynchronizer(catalogManager, variantStorageEngine.getMetadataManager())
+                    .synchronizeCatalogFromStorage(token);
         } else {
             Path loadFilePath = Paths.get(loadFileStr);
             boolean fileExists = Files.exists(loadFilePath);
@@ -121,7 +123,7 @@ public class VariantAnnotationOperationManager extends OperationManager {
     }
 
     private void synchronizeProjectMetadata(String projectStr, String token) throws CatalogException, StorageEngineException {
-        Project project = catalogManager.getProjectManager().get(projectStr, null, token).first();
+        Project project = catalogManager.getProjectManager().get(projectStr, QueryOptions.empty(), token).first();
         ProjectOrganism organism = project.getOrganism();
         int currentRelease = project.getCurrentRelease();
         CatalogStorageMetadataSynchronizer.updateProjectMetadata(variantStorageEngine.getMetadataManager(), organism, currentRelease,

@@ -184,8 +184,7 @@ public class UserManager extends AbstractManager {
         }
 
         String userId = user.getId();
-        // We add a condition to check if the registration is private + user (or system) is not trying to create the ADMINISTRATOR user
-        if (!authorizationManager.isPublicRegistration() && !OPENCGA.equals(user.getId())) {
+        if (!OPENCGA.equals(user.getId())) {
             userId = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token);
             if (!OPENCGA.equals(userId)) {
                 String errorMsg = "The registration is closed to the public: Please talk to your administrator.";

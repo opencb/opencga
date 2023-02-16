@@ -72,16 +72,12 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private final FamilyDBAdaptor familyDBAdaptor;
     private final ClinicalAnalysisDBAdaptor clinicalAnalysisDBAdaptor;
 
-    private final boolean openRegister;
-
     private final AuthorizationDBAdaptor aclDBAdaptor;
 
     public CatalogAuthorizationManager(DBAdaptorFactory dbFactory, Configuration configuration)
             throws CatalogDBException {
         this.logger = LoggerFactory.getLogger(CatalogAuthorizationManager.class);
         this.aclDBAdaptor = new AuthorizationMongoDBAdaptor(dbFactory, configuration);
-
-        this.openRegister = configuration.isOpenRegister();
 
         projectDBAdaptor = dbFactory.getCatalogProjectDbAdaptor();
         studyDBAdaptor = dbFactory.getCatalogStudyDBAdaptor();
@@ -96,12 +92,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public boolean isPublicRegistration() {
-        return openRegister;
-    }
-
-    @Override
     public void checkCanEditProject(long projectId, String userId) throws CatalogException {
+        if (isInstallationAdministrator(userId)) {
+            return;
+        }
         if (projectDBAdaptor.getOwnerId(projectId).equals(userId)) {
             return;
         }

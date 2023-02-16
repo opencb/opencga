@@ -915,9 +915,13 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(3, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
         assertEquals(3, clinicalResult.getFamily().getMembers().get(1).getSamples().get(0).getVersion());   // father sample3 version
 
-        catalogManager.getSampleManager().updateSampleInternalGenotypeIndex(
+        catalogManager.getSampleManager().updateSampleInternalVariantSecondarySampleIndex(
                 catalogManager.getSampleManager().get(studyFqn, "sample3", null, token).first(),
-                new SampleInternalVariantGenotypeIndex(new IndexStatus(IndexStatus.READY, "This should be doable!")), token);
+                new SampleInternalVariantSecondarySampleIndex(
+                        new IndexStatus(IndexStatus.READY, "This should be doable!"),
+                        new IndexStatus(IndexStatus.READY, "This should be doable!"),
+                        12
+                ), token);
 
         // Update sample 2 from proband
         catalogManager.getSampleManager().update(studyFqn, "sample2", new SampleUpdateParams().setDescription("asda"),
@@ -2319,7 +2323,7 @@ public class SampleManagerTest extends AbstractManagerTest {
     @Test
     public void getSharedProject() throws CatalogException, IOException {
         catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L,
-                Account.AccountType.GUEST, null);
+                Account.AccountType.GUEST, opencgaToken);
         catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("dummy")), token);
 
@@ -2343,7 +2347,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
     @Test
     public void checkRegisteredUserPermissions() throws CatalogException {
-        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L, Account.AccountType.GUEST, opencgaToken);
         String token = catalogManager.getUserManager().login("dummy", TestParamConstants.PASSWORD).getToken();
 
         catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
@@ -2356,7 +2360,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
     @Test
     public void checkRegisteredUserPermissions2() throws CatalogException {
-        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L, Account.AccountType.GUEST, opencgaToken);
         String token = catalogManager.getUserManager().login("dummy", TestParamConstants.PASSWORD).getToken();
 
         catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
@@ -2404,7 +2408,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertTrue(catalogManager.getSampleManager().search(studyFqn, new Query(), new QueryOptions(), "").getNumResults() > 0);
         assertTrue(catalogManager.getFileManager().search(studyFqn, new Query(), new QueryOptions(), "").getNumResults() > 0);
 
-        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L, Account.AccountType.GUEST, opencgaToken);
         String token = catalogManager.getUserManager().login("dummy", TestParamConstants.PASSWORD).getToken();
         studyResult = catalogManager.getStudyManager().get(studyFqn, QueryOptions.empty(), token);
         assertEquals(1, studyResult.getNumResults());

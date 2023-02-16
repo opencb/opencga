@@ -126,25 +126,6 @@ variant:
 
   ## The following section defines all available storage engine plugins installed
   engines:
-    ## MongoDB Storage Engine
-    - id: "mongodb"
-      engine: "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine"
-      database:
-        hosts:
-          - "${OPENCGA.STORAGE.VARIANT.DB.HOSTS}"
-        user: "${OPENCGA.STORAGE.VARIANT.DB.USER}"
-        password: "${OPENCGA.STORAGE.VARIANT.DB.PASSWORD}"
-        options:    ## This is intended for database specific options such as --authenticationDatabase in MongoDB
-          authenticationDatabase: ${OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION_DATABASE}
-          connectionsPerHost: ${OPENCGA.STORAGE.MONGODB.VARIANT.DB.CONNECTIONS_PER_HOST}
-          readPreference: "secondaryPreferred"
-      options:
-        storage.mongodb.parallelWrite: false
-        storage.mongodb.stage.parallelWrite: false
-        storage.mongodb.directLoad.parallelWrite: false
-        storage.mongodb.merge.parallelWrite: false
-        storage.mongodb.merge.batchSize: 10 #Number of files to merge directly from first to second collection
-
     ## Hadoop Storage Engine
     - id: "hadoop"
       engine: "org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine"

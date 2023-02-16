@@ -89,7 +89,11 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         INTERNAL_VARIANT_INDEX_STATUS_ID("internal.variant.index.status.id", TEXT_ARRAY, ""),
         INTERNAL_VARIANT_ANNOTATION_INDEX("internal.variant.annotationIndex", TEXT_ARRAY, ""),
         INTERNAL_VARIANT_ANNOTATION_INDEX_STATUS_ID("internal.variant.annotationIndex.status.id", TEXT_ARRAY, ""),
+        INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX("internal.variant.secondaryAnnotationIndex", TEXT_ARRAY, ""),
+        INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX_STATUS_ID("internal.variant.secondaryAnnotationIndex.status.id", TEXT_ARRAY, ""),
+        @Deprecated // use INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX
         INTERNAL_VARIANT_SECONDARY_INDEX("internal.variant.secondaryIndex", TEXT_ARRAY, ""),
+        @Deprecated // Deprecated filter. Should use INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX_STATUS_ID once the migration is completed
         INTERNAL_VARIANT_SECONDARY_INDEX_STATUS_ID("internal.variant.secondaryIndex.status.id", TEXT_ARRAY, ""),
         INTERNAL_ALIGNMENT_INDEX("internal.alignment.index", TEXT_ARRAY, ""),
         INTERNAL_ALIGNMENT_INDEX_STATUS_ID("internal.alignment.index.status.id", TEXT_ARRAY, ""),
@@ -236,6 +240,25 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      */
     OpenCGAResult insert(long studyId, File file, List<Sample> existingSamples, List<Sample> nonExistingSamples,
                          List<VariableSet> variableSetList, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    /***
+     * Inserts the passed file in the database.
+     *
+     * @param studyId Id of the study where the file belongs to.
+     * @param file The file to be inserted in the database.
+     * @param virtualFile The virtualFile to be inserted (if not already inserted) in the database.
+     * @param existingSamples List of existing samples to associate to the File.
+     * @param nonExistingSamples List of non-existing samples to create and associate to the File.
+     * @param variableSetList Variable set list.
+     * @param options Options to filter the output that will be returned after the insertion of the file.
+     * @return A OpenCGAResult object containing the time spent.
+     * @throws CatalogDBException when the file could not be inserted due to different reasons.
+     * @throws CatalogParameterException if there is any formatting error.
+     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
+     */
+    OpenCGAResult insertWithVirtualFile(long studyId, File file, File virtualFile, List<Sample> existingSamples,
+                                        List<Sample> nonExistingSamples, List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /***
