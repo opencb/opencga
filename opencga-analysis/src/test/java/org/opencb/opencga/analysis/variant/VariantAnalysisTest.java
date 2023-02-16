@@ -355,25 +355,22 @@ public class VariantAnalysisTest {
         List<String> samples = file.getSampleIds();
 
         String region = "22";
-        VariantStatsAnalysis variantStatsAnalysis = new VariantStatsAnalysis()
-                .setStudy(STUDY)
+        VariantStatsAnalysisParams params = new VariantStatsAnalysisParams()
                 .setSamples(samples.subList(1, 3))
                 .setRegion(region);
-        variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
-
-        ExecutionResult ar = variantStatsAnalysis.start();
+        ExecutionResult ar = toolRunner.execute(VariantStatsAnalysis.class, STUDY, params, outDir, "", token);
         checkExecutionResult(ar);
 
         MutableInt count = new MutableInt();
         java.io.File file = getOutputFile(outDir);
+
         FileUtils.lineIterator(file).forEachRemaining(line -> {
             if (!line.startsWith("#")) {
                 count.increment();
             }
         });
-        Query variantsQuery = new Query(VariantQueryParam.REGION.key(), region);
-        System.out.println("variantsQuery = " + variantsQuery.toJson());
-        assertEquals(variantStorageManager.count(new Query(variantsQuery).append(VariantQueryParam.STUDY.key(), STUDY), token).getNumMatches(),
+        Query variantsQuery = new VariantQuery().region(region).study(STUDY);
+        assertEquals(variantStorageManager.count(variantsQuery, token).first().intValue(),
                 count.intValue());
     }
 

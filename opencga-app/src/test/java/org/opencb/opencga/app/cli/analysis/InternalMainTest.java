@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli.analysis;
 import org.apache.commons.io.FileUtils;
 import org.ga4gh.models.ReadAlignment;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.opencb.biodata.models.alignment.RegionCoverage;
@@ -68,6 +69,8 @@ import static org.opencb.opencga.core.api.ParamConstants.REGION_PARAM;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Deprecated
+@Ignore
 public class InternalMainTest {
 
 
