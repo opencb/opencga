@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.bson.Document;
+import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
@@ -30,12 +31,15 @@ import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.user.AuthenticationResponse;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
@@ -169,4 +173,23 @@ public class CatalogManagerExternalResource extends ExternalResource {
         }
         folder.delete();
     }
+
+    public URI getResourceUri(String resourceName) throws IOException {
+        return getResourceUri(resourceName, resourceName);
+    }
+
+    public URI getResourceUri(String resourceName, String targetName) throws IOException {
+        Path resourcePath = opencgaHome.resolve("resources").resolve(targetName);
+        if (!resourcePath.getParent().toFile().exists()) {
+            Files.createDirectories(resourcePath.getParent());
+        }
+        if (!resourcePath.toFile().exists()) {
+            try (InputStream stream = this.getClass().getClassLoader().getResourceAsStream(resourceName)) {
+                Assert.assertNotNull(resourceName, stream);
+                Files.copy(stream, resourcePath, StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+        return resourcePath.toUri();
+    }
+
 }
