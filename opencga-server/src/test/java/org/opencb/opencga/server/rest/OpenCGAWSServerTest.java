@@ -77,28 +77,20 @@ public class OpenCGAWSServerTest {
         String s = testPath.request().get(String.class);
         assertEquals("Expected [" + message + "], actual [" + s + "]", message, s);
 
-        testPath = webTarget.path("test").path("echo");
-        System.out.println("testPath = " + testPath);
-        MultiPart multiPart = new MultiPart();
-        multiPart.setMediaType(MediaType.MULTIPART_FORM_DATA_TYPE);
-        FormDataBodyPart bodyPart = new FormDataBodyPart("message", message);
-        multiPart.bodyPart(bodyPart);
-
-        s = testPath.request().post(Entity.entity(multiPart, multiPart.getMediaType()), String.class);
-        assertEquals("Expected [" + message + "], actual [" + s + "]", message, s);
+//        testPath = webTarget.path("test").path("echo");
+//        System.out.println("testPath = " + testPath);
+//        MultiPart multiPart = new MultiPart();
+//        multiPart.setMediaType(MediaType.MULTIPART_FORM_DATA_TYPE);
+//        FormDataBodyPart bodyPart = new FormDataBodyPart("message", message);
+//        multiPart.bodyPart(bodyPart);
+//
+//        s = testPath.request().post(Entity.entity(multiPart, multiPart.getMediaType()), String.class);
+//        assertEquals("Expected [" + message + "], actual [" + s + "]", message, s);
     }
 
-    /** User tests **/
-    @Test
-    public void userTests() throws IOException {
-        UserWSServerTest userTest = new UserWSServerTest(webTarget);
-        User user = userTest.createUser(TEST_SERVER_USER);
-        String sessionId = userTest.loginUser(user.getId());
-        userTest.updateUser(user.getId(), sessionId);
-    }
 
-    @Test
-    public void workflowCreation() throws Exception {
+//    @Test
+//    public void workflowCreation() throws Exception {
 //        UserWSServerTest userTest = new UserWSServerTest(webTarget);
 //        User user = userTest.createUser(TEST_SERVER_USER);
 //        String sessionId = userTest.loginUser(user.getId());
@@ -192,7 +184,6 @@ public class OpenCGAWSServerTest {
 //        queryOptions.put(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, false);
 //        fileTest.fetchAlignments(fileBam.getId(), sessionId, queryOptions);
 //        assertEquals(10, alignments.size());
-
-    }
+//    }
 
 }

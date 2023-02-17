@@ -220,11 +220,11 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         HashMap<String, Object> params = new HashMap<>();
         String jobId = catalogManager.getJobManager().submit(studyFqn, VariantAnnotationIndexOperationTool.ID, Enums.Priority.MEDIUM,
-                params, token).first().getId();
+                params, "job1", "", null, null, token).first().getId();
         String jobId2 = catalogManager.getJobManager().submit(studyFqn, VariantAnnotationIndexOperationTool.ID, Enums.Priority.MEDIUM,
-                params, sessionIdUser2).first().getId();
+                params, "job2", "", null, null, sessionIdUser2).first().getId();
         String jobId3 = catalogManager.getJobManager().submit(studyFqn, VariantAnnotationIndexOperationTool.ID, Enums.Priority.MEDIUM,
-                params, sessionIdUser3).first().getId();
+                params, "job3", "", null, null, sessionIdUser3).first().getId();
 
         daemon.checkPendingJobs();
 

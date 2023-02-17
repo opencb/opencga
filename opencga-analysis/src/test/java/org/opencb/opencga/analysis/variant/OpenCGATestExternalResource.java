@@ -52,8 +52,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
-
 /**
  * Created on 26/08/15
  *
@@ -152,6 +150,10 @@ public class OpenCGATestExternalResource extends ExternalResource {
         return catalogManagerExternalResource;
     }
 
+    public String getAdminToken() {
+        return catalogManagerExternalResource.getAdminToken();
+    }
+
     public StorageEngineFactory getStorageEngineFactory() {
         return storageEngineFactory;
     }
@@ -170,6 +172,14 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
     public VariantStorageManager getVariantStorageManager() {
         return new VariantStorageManager(getCatalogManager(), getStorageEngineFactory());
+    }
+
+    public URI getResourceUri(String resourceName) throws IOException {
+        return getResourceUri(resourceName, resourceName);
+    }
+
+    public URI getResourceUri(String resourceName, String targetName) throws IOException {
+        return VariantStorageBaseTest.getResourceUri(resourceName, targetName, opencgaHome.resolve("resources"));
     }
 
     public VariantStorageManager getVariantStorageManager(VariantSolrExternalResource solrExternalResource) {

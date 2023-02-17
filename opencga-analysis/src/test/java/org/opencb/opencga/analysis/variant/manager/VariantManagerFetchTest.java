@@ -117,12 +117,12 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
         // Without studies
         Map<String, List<String>> samples = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
-        Assert.assertEquals(Collections.singletonMap(studyFqn, Collections.emptyList()), samples);
+        Assert.assertEquals(Collections.emptyMap(), samples);
 
         // With studies
         query.append(VariantQueryParam.STUDY.key(), studyFqn);
         samples = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
-        Assert.assertEquals(Collections.singletonMap(studyFqn, Collections.emptyList()), samples);
+        Assert.assertEquals(Collections.emptyMap(), samples);
     }
 
     @Test

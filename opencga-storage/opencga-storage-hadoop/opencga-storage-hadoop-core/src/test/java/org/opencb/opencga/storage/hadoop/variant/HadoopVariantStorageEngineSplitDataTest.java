@@ -419,22 +419,22 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
 
         VariantStorageMetadataManager mm = variantStorageEngine.getMetadataManager();
 
-        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME + "_split");
-        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-1.variant-test-file.vcf.gz")), outDir);
+        String studyActual = "study_actual_split";
 
-        int studyId_actual = mm.getStudyId(STUDY_NAME + "_split");
-
+        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), studyActual);
         variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.REGION);
-        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz")), outputUri);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-1.variant-test-file.vcf.gz")), outDir);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz")), outDir);
+        variantStorageEngine.removeFiles(studyActual, Collections.singletonList("chr22_1-2.variant-test-file.vcf.gz"), outDir);
 
-        variantStorageEngine.removeFiles(STUDY_NAME + "_split", Collections.singletonList("chr22_1-2.variant-test-file.vcf.gz"), outputUri);
 
-
+        String studyExpected = "study_expected";
+        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), studyExpected);
         variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), null);
-        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
         variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-1.variant-test-file.vcf.gz")), outDir);
 
-        int studyId_expected = mm.getStudyId(STUDY_NAME);
+        int studyId_actual = mm.getStudyId(studyActual);
+        int studyId_expected = mm.getStudyId(studyExpected);
 
         checkVariantsTable(studyId_actual, studyId_expected, new Query(VariantQueryParam.FILE.key(), "chr22_1-1.variant-test-file.vcf.gz"),
                 new QueryOptions());

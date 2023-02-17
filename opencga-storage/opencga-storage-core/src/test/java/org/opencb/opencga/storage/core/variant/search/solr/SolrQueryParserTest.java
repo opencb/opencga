@@ -869,9 +869,11 @@ public class SolrQueryParserTest {
         Query query = new Query();
         query.put(ANNOT_CLINICAL_SIGNIFICANCE.key(), "benign;likely_benign");
 
+        thrown.expectMessage("Unable to filter values with logical AND (;)");
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
-        display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=(clinicalSig:\"benign\"+AND+clinicalSig:\"likely_benign\")", solrQuery.toString());
+//        display(query, queryOptions, solrQuery);
+//        System.out.println("solrQuery = " + solrQuery);
+//        assertEquals(flDefault1 + "&q=*:*&fq=(clinicalSig:\"benign\"+AND+clinicalSig:\"likely_benign\")", solrQuery.toString());
     }
 
     @Test

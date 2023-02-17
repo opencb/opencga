@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.variant;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.hamcrest.CoreMatchers;
@@ -68,10 +69,7 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.Location;
 import org.opencb.opencga.core.models.operations.variant.VariantSecondarySampleIndexParams;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleQualityControl;
-import org.opencb.opencga.core.models.sample.SampleReferenceParam;
-import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -255,7 +253,7 @@ public class VariantAnalysisTest {
     }
 
     public void setUpCatalogManager() throws IOException, CatalogException {
-        catalogManager.getUserManager().create(USER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create(USER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, opencga.getAdminToken());
         token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
 
         String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "Homo sapiens",
@@ -357,25 +355,22 @@ public class VariantAnalysisTest {
         List<String> samples = file.getSampleIds();
 
         String region = "22";
-        VariantStatsAnalysis variantStatsAnalysis = new VariantStatsAnalysis()
-                .setStudy(STUDY)
+        VariantStatsAnalysisParams params = new VariantStatsAnalysisParams()
                 .setSamples(samples.subList(1, 3))
                 .setRegion(region);
-        variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
-
-        ExecutionResult ar = variantStatsAnalysis.start();
+        ExecutionResult ar = toolRunner.execute(VariantStatsAnalysis.class, STUDY, params, outDir, "", token);
         checkExecutionResult(ar);
 
         MutableInt count = new MutableInt();
         java.io.File file = getOutputFile(outDir);
+
         FileUtils.lineIterator(file).forEachRemaining(line -> {
             if (!line.startsWith("#")) {
                 count.increment();
             }
         });
-        Query variantsQuery = new Query(VariantQueryParam.REGION.key(), region);
-        System.out.println("variantsQuery = " + variantsQuery.toJson());
-        assertEquals(variantStorageManager.count(new Query(variantsQuery).append(VariantQueryParam.STUDY.key(), STUDY), token).getNumMatches(),
+        Query variantsQuery = new VariantQuery().region(region).study(STUDY);
+        assertEquals(variantStorageManager.count(variantsQuery, token).first().intValue(),
                 count.intValue());
     }
 
@@ -389,6 +384,15 @@ public class VariantAnalysisTest {
     @Test
     public void testSampleStatsSampleFilter() throws Exception {
         Assume.assumeThat(storageEngine, CoreMatchers.is(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
+        // Reset quality control stats
+        for (Sample sample : catalogManager.getSampleManager().search(STUDY, new Query(), new QueryOptions(), token).getResults()) {
+            SampleQualityControl qualityControl = sample.getQualityControl();
+            if (qualityControl != null && qualityControl.getVariant() != null && CollectionUtils.isNotEmpty(qualityControl.getVariant().getVariantStats())) {
+                qualityControl.getVariant().setVariantStats(Collections.emptyList());
+                catalogManager.getSampleManager().update(STUDY, sample.getId(), new SampleUpdateParams()
+                        .setQualityControl(qualityControl), new QueryOptions(), token);
+            }
+        }
         sampleVariantStats(null, "stats_filter_GT", false, 1, Collections.singletonList(ParamConstants.ALL), false,
                 new Query(VariantQueryParam.SAMPLE_DATA.key(), "GT=1|1"));
         sampleVariantStats(null, "stats_filter_DS", false, 2, Collections.singletonList(ParamConstants.ALL), false,
@@ -1053,11 +1057,7 @@ public class VariantAnalysisTest {
         hrdParams.setCnvQuery("{\"sample\": \"" + cancer_sample + "\", \"type\": \"" + VariantType.CNV + "\"}");
         hrdParams.setIndelQuery("{\"sample\": \"" + cancer_sample + "\", \"type\": \"" + VariantType.INDEL + "\"}");
 
-        HRDetectAnalysis analysis = new HRDetectAnalysis();
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager,
-                hrdParams.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), hrdetectOutDir,
-                "job-1", token);
-        HRDetect hrDetect = analysis.parseResult(hrdetectOutDir);
+        HRDetect hrDetect = HRDetectAnalysis.parseResult(hrdParams, hrdetectOutDir);
         for (Map.Entry<String, Object> entry : hrDetect.getScores().entrySet()) {
             System.out.println(entry.getKey() + " -> " + entry.getValue());
         }
@@ -1067,7 +1067,7 @@ public class VariantAnalysisTest {
         assertEquals(0.998444f, hrDetect.getScores().getFloat("Probability"), 0.00001f);
     }
 
-        public void checkExecutionResult(ExecutionResult er) {
+    public void checkExecutionResult(ExecutionResult er) {
         checkExecutionResult(er, true);
     }
 

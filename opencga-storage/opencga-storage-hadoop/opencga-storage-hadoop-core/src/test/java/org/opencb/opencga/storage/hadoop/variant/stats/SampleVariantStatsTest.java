@@ -9,7 +9,6 @@ import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.tools.variant.stats.SampleVariantStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;

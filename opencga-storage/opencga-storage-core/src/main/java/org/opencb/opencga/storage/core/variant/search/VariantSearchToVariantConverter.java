@@ -334,6 +334,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     // siftScore -- siftDescr -- poliphenScore -- poliphenDescr
                     ConsequenceType consequenceType = new ConsequenceType();
                     if (fields.length > 2) {
+                        consequenceType.setTranscriptId(fields[1]);
                         consequenceType.setEnsemblTranscriptId(fields[1]);
                         consequenceType.setBiotype(fields[2]);
                     }
@@ -419,12 +420,14 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     ConsequenceType consequenceType = consequenceTypeMap.getOrDefault(name, null);
                     if (consequenceType == null) {
                         consequenceType = new ConsequenceType();
+                        consequenceType.setTranscriptId(name);
                         consequenceType.setEnsemblTranscriptId(name);
                         consequenceTypeMap.put(name, consequenceType);
                         logger.warn("No information found in Solr field 'other' for transcript '{}'", name);
 //                        throw new InternalError("Transcript '" + name + "' missing in schema field name 'other'");
                     }
                     consequenceType.setGeneName(geneName);
+                    consequenceType.setGeneId(ensGene);
                     consequenceType.setEnsemblGeneId(ensGene);
                 }
             }
@@ -478,8 +481,10 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     sequenceOntologyTerm.setName(ConsequenceTypeMappings.accessionToTerm.get(soAcc));
 
                     ConsequenceType consequenceType = new ConsequenceType();
+                    consequenceType.setGeneId("");
                     consequenceType.setEnsemblGeneId("");
                     consequenceType.setGeneName("");
+                    consequenceType.setTranscriptId("");
                     consequenceType.setEnsemblTranscriptId("");
                     consequenceType.setSequenceOntologyTerms(Collections.singletonList(sequenceOntologyTerm));
                     consequenceTypes.add(consequenceType);
