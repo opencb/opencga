@@ -67,8 +67,7 @@ done
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CURRENT_DIR=$PWD
-cd "$SCRIPT_DIR" || exit 2
-cd ..
+cd "$REPO_DIR" || exit 2
 
 if [[ "$TAG_VERSION" == "v"* ]]; then
   git checkout "$TAG_VERSION"
