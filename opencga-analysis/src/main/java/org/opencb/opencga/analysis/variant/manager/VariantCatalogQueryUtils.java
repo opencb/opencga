@@ -922,8 +922,18 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     continue;
                 }
             }
+            // Do not filter out if undefined
+            if (!panelModeOfInheritance.isEmpty()) {
+                if (CollectionUtils.isEmpty(genePanel.getModesOfInheritance())
+                        || genePanel.getModesOfInheritance().stream().noneMatch(panelModeOfInheritance::contains)) {
+                    // Discard this gene
+                    continue;
+                }
+            }
+            // Do not filter out if undefined
             if (!panelRoleInCancer.isEmpty()) {
-                if (genePanel.getCancer() == null || !panelRoleInCancer.contains(genePanel.getCancer().getRole())) {
+                if (genePanel.getCancer() == null || CollectionUtils.isEmpty(genePanel.getCancer().getRoles())
+                        || genePanel.getCancer().getRoles().stream().noneMatch(panelRoleInCancer::contains)) {
                     // Discard this gene
                     continue;
                 }
