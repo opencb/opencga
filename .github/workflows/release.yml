@@ -16,11 +16,11 @@ jobs:
     uses: opencb/opencga/.github/workflows/build-test.yml@develop
     needs: build
     secrets:
-    SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-    SSH_TESTING_SERVER_HOST: ${{ secrets.SSH_TESTING_SERVER_HOST}}
-    SSH_TESTING_SERVER_PORT: ${{ secrets.SSH_TESTING_SERVER_PORT}}
-    SSH_TESTING_SERVER_USER: ${{ secrets.SSH_TESTING_SERVER_USER }}
-    SSH_TESTING_SERVER_PASSWORD: ${{ secrets.SSH_TESTING_SERVER_PASSWORD }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SSH_TESTING_SERVER_HOST: ${{ secrets.SSH_TESTING_SERVER_HOST}}
+      SSH_TESTING_SERVER_PORT: ${{ secrets.SSH_TESTING_SERVER_PORT}}
+      SSH_TESTING_SERVER_USER: ${{ secrets.SSH_TESTING_SERVER_USER }}
+      SSH_TESTING_SERVER_PASSWORD: ${{ secrets.SSH_TESTING_SERVER_PASSWORD }}
 
   deploy-maven:
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
