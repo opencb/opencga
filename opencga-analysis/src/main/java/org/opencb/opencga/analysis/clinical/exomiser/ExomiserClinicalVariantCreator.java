@@ -49,8 +49,9 @@ public class ExomiserClinicalVariantCreator {
 
         List<ClinicalVariantEvidence> clinicalVariantEvidences = new ArrayList<>();
         if (clinicalVariant.getAnnotation() == null || CollectionUtils.isEmpty(clinicalVariant.getAnnotation().getConsequenceTypes())) {
+            String varaintId = clinicalVariant.toStringSimple();
             logger.warn("Clinical variant annotation is null or no consequence types found for clinical variant {}, so no clinical variant"
-                    + " was created.", clinicalVariant.toStringSimple());
+                    + " was created.", varaintId);
             return;
         }
 
@@ -71,8 +72,8 @@ public class ExomiserClinicalVariantCreator {
 
         // Create a clinical variant only if we have evidences
         if (CollectionUtils.isEmpty(clinicalVariantEvidences)) {
-            logger.warn("No evidences found for clinical variant {}, so no clinical variant evidences were added.",
-                    clinicalVariant.toStringSimple());
+            String varaintId = clinicalVariant.toStringSimple();
+            logger.warn("No evidences found for clinical variant {}, so no clinical variant evidences were added.", varaintId);
             return;
         }
 
@@ -82,19 +83,15 @@ public class ExomiserClinicalVariantCreator {
     private ClinicalVariantEvidence createClinicalVariantEvidences(ExomiserTranscriptAnnotation exomiserTranscript,
                                                                    ClinicalProperty.ModeOfInheritance moi, Map<String, Object> attributes,
                                                                    Variant variant) {
-        List<ClinicalVariantEvidence> clinicalVariantEvidences = new ArrayList<>();
-
-        List<SequenceOntologyTerm> soTerms = new ArrayList<>();
-        GenomicFeature genomicFeature = new GenomicFeature(String.valueOf(exomiserTranscript.getRank()), "TRANSCRIPT",
-                exomiserTranscript.getAccession(), exomiserTranscript.getGeneSymbol(), Collections.emptyList(), null);
+        SequenceOntologyTerm soTerm = new SequenceOntologyTerm(" SO:0002220", "function_uncertain_variant");
+        GenomicFeature genomicFeature = new GenomicFeature(String.valueOf(exomiserTranscript.getRank()), "GENE",
+                exomiserTranscript.getAccession(), exomiserTranscript.getGeneSymbol(), Collections.singletonList(soTerm), null);
 
         return createClinicalVariantEvidence(genomicFeature, moi, attributes, variant);
     }
 
     private ClinicalVariantEvidence createClinicalVariantEvidences(ConsequenceType ct, ClinicalProperty.ModeOfInheritance moi,
                                                                    Map<String, Object> attributes, Variant variant) {
-        List<ClinicalVariantEvidence> clinicalVariantEvidences = new ArrayList<>();
-
         List<SequenceOntologyTerm> soTerms = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(ct.getSequenceOntologyTerms())) {
             for (SequenceOntologyTerm soTerm : ct.getSequenceOntologyTerms()) {
@@ -103,7 +100,7 @@ public class ExomiserClinicalVariantCreator {
                 }
             }
         }
-        GenomicFeature genomicFeature = new GenomicFeature(ct.getEnsemblGeneId(), "TRANSCRIPT", ct.getEnsemblTranscriptId(),
+        GenomicFeature genomicFeature = new GenomicFeature(ct.getEnsemblGeneId(), "GENE", ct.getEnsemblTranscriptId(),
                 ct.getGeneName(), soTerms, null);
 
         return createClinicalVariantEvidence(genomicFeature, moi, attributes, variant);
@@ -130,7 +127,8 @@ public class ExomiserClinicalVariantCreator {
         clinicalVariantEvidence.setClassification(new VariantClassification());
 
         // Variant classification: ACMG
-        List<ClinicalAcmg> acmgs = calculateAcmgClassification(variant, Collections.singletonList(moi));
+        List<ClinicalAcmg> acmgs = calculateAcmgClassification(getConsequenceType(genomicFeature.getTranscriptId(), variant),
+                variant.getAnnotation(), Collections.singletonList(moi));
         clinicalVariantEvidence.getClassification().setAcmg(acmgs);
 
         // Variant classification: clinical significance
@@ -160,5 +158,18 @@ public class ExomiserClinicalVariantCreator {
         clinicalVariantEvidence.setAttributes(attributes);
 
         return clinicalVariantEvidence;
+    }
+
+    private ConsequenceType getConsequenceType(String transcriptId, Variant variant) {
+        if (variant.getAnnotation() != null && CollectionUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
+            for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
+                if (StringUtils.isNotEmpty(transcriptId) &&
+                        ((StringUtils.isNotEmpty(ct.getEnsemblTranscriptId()) && transcriptId.equals(ct.getEnsemblTranscriptId()))
+                                || (StringUtils.isNotEmpty(ct.getTranscriptId()) && transcriptId.equals(ct.getTranscriptId())))) {
+                    return ct;
+                }
+            }
+        }
+        return null;
     }
 }
