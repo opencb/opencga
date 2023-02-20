@@ -14,7 +14,7 @@ jobs:
 
   test:
     uses: opencb/opencga/.github/workflows/build-test.yml@develop
-    depends: build
+    needs: build
     secrets:
     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     SSH_TESTING_SERVER_HOST: ${{ secrets.SSH_TESTING_SERVER_HOST}}
