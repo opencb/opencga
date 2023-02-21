@@ -21,8 +21,9 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
-import org.opencb.biodata.models.clinical.interpretation.*;
-import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
+import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleField;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
@@ -48,18 +49,20 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.*;
 
-import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.calculateAcmgClassification;
-import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.computeClinicalSignificance;
 import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
 
 @Tool(id = ExomiserInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
 public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
 
-    public final static String ID = "interpretation-exomiser";
+    public static final String ID = "interpretation-exomiser";
     public static final String DESCRIPTION = "Run exomiser interpretation analysis";
 
     private String studyId;
@@ -67,7 +70,6 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
     private String sampleId;
 
     private ClinicalAnalysis clinicalAnalysis;
-    private Individual individual;
 
     @Override
     protected InterpretationMethod getInterpretationMethod() {
@@ -114,10 +116,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         }
         sampleId = clinicalAnalysis.getProband().getSamples().get(0).getId();
 
-        // Check primary
-//        checkPrimaryInterpretation(clinicalAnalysis);
-//
-//        // Check interpretation method
+        // Check interpretation method
 //        checkInterpretationMethod(getInterpretationMethod(ID).getName(), clinicalAnalysis);
 
         // Update executor params with OpenCGA home and session ID
@@ -139,7 +138,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
     }
 
     protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis) throws ToolException, StorageEngineException,
-            InterpretationAnalysisException, CatalogException, IOException, NonStandardCompliantSampleField {
+            CatalogException, IOException {
         // Interpretation method
         InterpretationMethod method = new InterpretationMethod(getId(), GitRepositoryState.get().getBuildVersion(),
                 GitRepositoryState.get().getCommitId(), Collections.singletonList(
@@ -178,7 +177,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         }
     }
 
-    private List<ClinicalVariant> getPrimaryFindings() throws InterpretationAnalysisException, IOException, StorageEngineException,
+    private List<ClinicalVariant> getPrimaryFindings() throws IOException, StorageEngineException,
             CatalogException, ToolException {
 
         List<ClinicalVariant> primaryFindings = new ArrayList<>();
@@ -219,15 +218,15 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         VariantNormalizer normalizer = new VariantNormalizer();
 
         Map<String, List<String[]>> variantTsvMap = new HashMap<>();
-        Map<String, ObjectMap> variantExomiserAttrMaps = new HashMap<>();
         Map<String, String> normalizedToTsv = new HashMap<>();
 
         File variantTsvFile = getOutDir().resolve("exomiser_output.variants.tsv").toFile();
         if (variantTsvFile.exists()) {
             try (BufferedReader br = new BufferedLineReader(new FileInputStream(variantTsvFile))) {
-                // Read header line
-                br.readLine();
+                // Read and skip header line
                 String line = br.readLine();
+                // First line to be processed
+                line = br.readLine();
                 while (line != null) {
                     String[] fields = line.split("\t");
                     Variant variant = new Variant(fields[14], Integer.parseInt(fields[15]), Integer.parseInt(fields[16]), fields[17],
@@ -256,7 +255,8 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         List<String> variantIds = new ArrayList<>(variantTsvMap.keySet());
         if (CollectionUtils.isNotEmpty(variantIds)) {
             query.put(VariantQueryParam.ID.key(), StringUtils.join(variantIds, ","));
-            logger.info("Query (including all family samples): {}", query.toJson());
+            String jsonQuery = query.toJson();
+            logger.info("Query (including all family samples): {}", jsonQuery);
             VariantQueryResult<Variant> variantResults = getVariantStorageManager().get(query, QueryOptions.empty(), getToken());
 
             if (variantResults != null && CollectionUtils.isNotEmpty(variantResults.getResults())) {
@@ -284,23 +284,22 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
 
     private Map<String, Set<ExomiserTranscriptAnnotation>> getExomiserTranscriptAnnotationsFromFile(File file) throws IOException {
         Map<String, Set<ExomiserTranscriptAnnotation>> results = new HashMap<>();
-        String content = org.apache.commons.io.FileUtils.readFileToString(file);
+        String content = org.apache.commons.io.FileUtils.readFileToString(file, Charset.defaultCharset());
         Object obj = JacksonUtils.getDefaultNonNullObjectMapper().readValue(content, Object.class);
         List<Object> list = (ArrayList<Object>) obj;
-        System.out.println(list.size());
         for (Object item : list) {
-            List<Map> geneScores = (ArrayList) ((Map) item).get("geneScores");
-            for (Map geneScore : geneScores) {
+            List<Map<String, Object>> geneScores = (ArrayList) ((Map) item).get("geneScores");
+            for (Map<String, Object> geneScore : geneScores) {
                 if (geneScore.containsKey("contributingVariants")) {
-                    List<Map> contributingVariants = (ArrayList) geneScore.get("contributingVariants");
-                    for (Map contributingVariant : contributingVariants) {
+                    List<Map<String, Object>> contributingVariants = (ArrayList) geneScore.get("contributingVariants");
+                    for (Map<String, Object> contributingVariant : contributingVariants) {
                         String variantId = contributingVariant.get("contigName") + ":" + contributingVariant.get("start") + ":"
                                 + contributingVariant.get("ref") + ":" + contributingVariant.get("alt");
                         if (!results.containsKey(variantId)) {
                             results.put(variantId, new HashSet<>());
                         }
-                        List<Map> transcriptAnnotations = (ArrayList) contributingVariant.get("transcriptAnnotations");
-                        for (Map transcriptAnnotation : transcriptAnnotations) {
+                        List<Map<String, Object>> transcriptAnnotations = (ArrayList) contributingVariant.get("transcriptAnnotations");
+                        for (Map<String, Object> transcriptAnnotation : transcriptAnnotations) {
                             ExomiserTranscriptAnnotation exTranscriptAnnotation = new ExomiserTranscriptAnnotation();
                             if (transcriptAnnotation.containsKey("variantEffect")) {
                                 exTranscriptAnnotation.setVariantEffect((String) transcriptAnnotation.get("variantEffect"));
@@ -339,36 +338,90 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
     }
 
     private ObjectMap getAttributesFromTsv(String[] fields) {
-        ObjectMap attributes = new ObjectMap();
+        ObjectMap exAttributes = new ObjectMap();
 
         // 0    1   2           3               4   5       6                               7
         // RANK	ID	GENE_SYMBOL	ENTREZ_GENE_ID	MOI	P-VALUE	EXOMISER_GENE_COMBINED_SCORE	EXOMISER_GENE_PHENO_SCORE
-        attributes.put("RANK", fields[0]);
-        attributes.put("P-VALUE", fields[5]);
-        attributes.put("EXOMISER_GENE_COMBINED_SCORE", fields[6]);
-        attributes.put("EXOMISER_GENE_PHENO_SCORE", fields[7]);
+        if (fields.length >= 1) {
+            exAttributes.put("RANK", fields[0]);
+        }
+        if (fields.length >= 6) {
+            exAttributes.put("P-VALUE", fields[5]);
+        }
+        if (fields.length >= 7) {
+            exAttributes.put("EXOMISER_GENE_COMBINED_SCORE", fields[6]);
+        }
+        if (fields.length >= 8) {
+            exAttributes.put("EXOMISER_GENE_PHENO_SCORE", fields[7]);
+        }
 
         // 8                            9                       10                      11                  12      13      14      15
         // EXOMISER_GENE_VARIANT_SCORE	EXOMISER_VARIANT_SCORE	CONTRIBUTING_VARIANT	WHITELIST_VARIANT	VCF_ID	RS_ID	CONTIG	START
-        attributes.put("EXOMISER_GENE_VARIANT_SCORE", fields[8]);
-        attributes.put("EXOMISER_VARIANT_SCORE", fields[9]);
+        if (fields.length >= 9) {
+            exAttributes.put("EXOMISER_GENE_VARIANT_SCORE", fields[8]);
+        }
+        if (fields.length >= 10) {
+            exAttributes.put("EXOMISER_VARIANT_SCORE", fields[9]);
+        }
 
         // 16   17  18  19              20      21      22          23                  24      25
         // END	REF	ALT	CHANGE_LENGTH	QUAL	FILTER	GENOTYPE	FUNCTIONAL_CLASS	HGVS	EXOMISER_ACMG_CLASSIFICATION
-        attributes.put("EXOMISER_ACMG_CLASSIFICATION", fields[25]);
+        if (fields.length >= 24) {
+            exAttributes.put("FUNCTIONAL_CLASS", fields[23]);
+        }
+        if (fields.length >= 25) {
+            exAttributes.put("HGVS", fields[24]);
+        }
+        if (fields.length >= 26) {
+            exAttributes.put("EXOMISER_ACMG_CLASSIFICATION", fields[25]);
+        }
 
         // 26                       27                          28                          29
         // EXOMISER_ACMG_EVIDENCE	EXOMISER_ACMG_DISEASE_ID	EXOMISER_ACMG_DISEASE_NAME	CLINVAR_ALLELE_ID
-        attributes.put("EXOMISER_ACMG_EVIDENCE", fields[26]);
-        attributes.put("EXOMISER_ACMG_DISEASE_ID", fields[27]);
-        attributes.put("EXOMISER_ACMG_DISEASE_NAME", fields[28]);
+        if (fields.length >= 27) {
+            exAttributes.put("EXOMISER_ACMG_EVIDENCE", fields[26]);
+        }
+        if (fields.length >= 28) {
+            exAttributes.put("EXOMISER_ACMG_DISEASE_ID", fields[27]);
+        }
+        if (fields.length >= 29) {
+            exAttributes.put("EXOMISER_ACMG_DISEASE_NAME", fields[28]);
+        }
+        if (fields.length >= 30) {
+            exAttributes.put("CLINVAR_ALLELE_ID", fields[29]);
+        }
 
         // 30                               31                  32                      33
         // CLINVAR_PRIMARY_INTERPRETATION	CLINVAR_STAR_RATING	GENE_CONSTRAINT_LOEUF	GENE_CONSTRAINT_LOEUF_LOWER
+        if (fields.length >= 31) {
+            exAttributes.put("CLINVAR_PRIMARY_INTERPRETATION", fields[30]);
+        }
+        if (fields.length >= 32) {
+            exAttributes.put("CLINVAR_STAR_RATING", fields[31]);
+        }
+        if (fields.length >= 33) {
+            exAttributes.put("GENE_CONSTRAINT_LOEUF", fields[32]);
+        }
+        if (fields.length >= 34) {
+            exAttributes.put("GENE_CONSTRAINT_LOEUF_LOWER", fields[33]);
+        }
+
         // 34                           35              36          37          38              39          40
         // GENE_CONSTRAINT_LOEUF_UPPER	MAX_FREQ_SOURCE	MAX_FREQ	ALL_FREQ	MAX_PATH_SOURCE	MAX_PATH	ALL_PATH
+        if (fields.length >= 35) {
+            exAttributes.put("GENE_CONSTRAINT_LOEUF_UPPER", fields[34]);
+        }
+        if (fields.length >= 39) {
+            exAttributes.put("MAX_PATH_SOURCE", fields[38]);
+        }
+        if (fields.length >= 40) {
+            exAttributes.put("MAX_PATH", fields[39]);
+        }
+        if (fields.length >= 41) {
+            exAttributes.put("ALL_PATH", fields[40]);
+        }
 
-        return attributes;
+        return new ObjectMap("exomiser", exAttributes);
     }
 
     private ClinicalProperty.ModeOfInheritance getModeOfInheritance(String moi) {

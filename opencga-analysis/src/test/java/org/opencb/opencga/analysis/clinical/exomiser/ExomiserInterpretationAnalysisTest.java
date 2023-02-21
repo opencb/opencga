@@ -110,13 +110,12 @@ public class ExomiserInterpretationAnalysisTest  {
 
         ExecutionResult result = exomiser.start();
 
-        System.out.println(result);
-
         // Refresh clinical analysis
         clinicalAnalysis = clinicalTest.catalogManager.getClinicalAnalysisManager()
                 .get(clinicalTest.studyFqn, clinicalTest.CA_ID3, QueryOptions.empty(), clinicalTest.token).first();
         assertEquals(1, clinicalAnalysis.getSecondaryInterpretations().size());
         assertEquals(2, clinicalAnalysis.getSecondaryInterpretations().get(0).getPrimaryFindings().size());
+        System.out.println("results at out dir = " + outDir.toAbsolutePath());
     }
 
     private void prepareExomiserData() throws IOException {
