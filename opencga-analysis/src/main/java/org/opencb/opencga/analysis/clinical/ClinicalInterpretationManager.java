@@ -327,6 +327,7 @@ public class ClinicalInterpretationManager extends StorageManager {
                                         for (ClinicalVariantEvidence clinicalVariantEvidence : clinicalVariant.getEvidences()) {
                                             if (ClinicalUtils.matchEvidence(primaryFindingEvidence, clinicalVariantEvidence)) {
                                                 clinicalVariantEvidence.setReview(primaryFindingEvidence.getReview());
+                                                clinicalVariantEvidence.setAttributes(primaryFindingEvidence.getAttributes());
                                             }
                                         }
                                     }

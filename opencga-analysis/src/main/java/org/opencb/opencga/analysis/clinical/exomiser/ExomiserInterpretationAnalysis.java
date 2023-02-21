@@ -116,9 +116,6 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         }
         sampleId = clinicalAnalysis.getProband().getSamples().get(0).getId();
 
-        // Check interpretation method
-//        checkInterpretationMethod(getInterpretationMethod(ID).getName(), clinicalAnalysis);
-
         // Update executor params with OpenCGA home and session ID
         setUpStorageEngineExecutor(studyId);
     }
@@ -368,9 +365,6 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         // END	REF	ALT	CHANGE_LENGTH	QUAL	FILTER	GENOTYPE	FUNCTIONAL_CLASS	HGVS	EXOMISER_ACMG_CLASSIFICATION
         if (fields.length >= 24) {
             exAttributes.put("FUNCTIONAL_CLASS", fields[23]);
-        }
-        if (fields.length >= 25) {
-            exAttributes.put("HGVS", fields[24]);
         }
         if (fields.length >= 26) {
             exAttributes.put("EXOMISER_ACMG_CLASSIFICATION", fields[25]);
