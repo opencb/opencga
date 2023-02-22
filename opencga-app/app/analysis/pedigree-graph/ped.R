@@ -13,9 +13,6 @@ load_file_data <- function(ped_fpath) {
   
   # Extract affected info
   affected <- as.data.frame(family_ped[, grepl("affected", names(family_ped))])
-  if (ncol(affected) > 4) {
-    stop("[ERROR] Input data contains more than 4 disorders.")
-  }
   if (ncol(affected) == 1) {
     affected <- family_ped$affected
   } else {
@@ -49,7 +46,7 @@ load_file_data <- function(ped_fpath) {
 }
 
 # Main function
-plot_pedigree <- function(ped_fpath, out_dir, plot_format) {
+plot_pedigree <- function(ped_fpath, out_dir, plot_format, no_legend, legend_pos) {
   # Gather pedigree info
   ped_info <- load_file_data(ped_fpath)
   family_ped <- ped_info$family_ped
@@ -66,33 +63,53 @@ plot_pedigree <- function(ped_fpath, out_dir, plot_format) {
                       relation = relation)
   
   # Print pedigree plot
+  if (legend_pos %in% c("topright", "bottomright")) {
+    margins <- c(5.1, 4.1, 4.1, 10.1)  # bottom, left, top, right
+  } else {
+    margins <- c(5.1, 12.1, 4.1, 2.1)
+  }
   formats <- unlist(strsplit(plot_format, ','))
   if ("png" %in% formats) {
     png(file=paste(out_dir, "pedigree.png", sep='/'))
-    plot_df <- plot(ped_all)
-    if (ncol(as.data.frame(affected)) > 1) {
-      pedigree.legend(ped_all, location="topright", radius=.2)
+    if (no_legend | ncol(as.data.frame(affected)) == 1) {
+      plot_df <- plot(ped_all)
+    } else{
+      plot_df <- plot(ped_all,
+                      mar=margins,
+                      density = seq(-1, 90, 90/ncol(affected)),
+                      angle = rev(seq(-1, 90, 90/ncol(affected))))
+      pedigree.legend(ped_all, location=legend_pos, radius=plot_df$boxh)
     }
     garbage <-dev.off()
   }
   if ("svg" %in% formats) {
     svg(file=paste(out_dir, "pedigree.svg", sep='/'))
-    plot_df <- plot(ped_all)
-    if (ncol(as.data.frame(affected)) > 1) {
-      pedigree.legend(ped_all, location="topright", radius=.2)
+    if (no_legend | ncol(as.data.frame(affected)) == 1) {
+      plot_df <- plot(ped_all)
+    } else{
+      plot_df <- plot(ped_all,
+                      mar=margins,
+                      density = seq(-1, 90, 90/ncol(affected)),
+                      angle = rev(seq(-1, 90, 90/ncol(affected))))
+      pedigree.legend(ped_all, location=legend_pos, radius=plot_df$boxh)
     }
     garbage <-dev.off()
   }
   
-  ped_coords <- cbind(family_ped, round(plot_df$x, 2), round(plot_df$y, 2), round(plot_df$boxw, 2), round(plot_df$boxh, 2))
+  ped_coords <- cbind(family_ped, round(plot_df$x, 2), round(plot_df$y, 2))
   write.table(ped_coords, file=paste(out_dir, "ped_coords.tsv", sep='/'), sep = '\t', quote=FALSE, row.names=FALSE,
-              col.names=c(colnames(family_ped), c("x", "y", "boxw", "boxh")))
+              col.names=c(colnames(family_ped), c("x", "y")))
 }
 
 
 # Command line interface
 option_list <- list(
-  make_option(c("--plot_format"), type="character", default="svg", help="Plot format, options: [svg, png]. Default: \"svg\"")
+  make_option(c("--plot_format"), type="character", default="svg",
+              help="Plot format, options: [\"svg\", \"png\"]. Default: \"svg\""),
+  make_option(c("--no_legend"), type="logical", default=FALSE, action = "store_true",
+              help="Removes plot legend"),
+  make_option(c("--legend_pos"), type="character", default="topright",
+              help="Legend position, options: [\"bottomright\", \"bottomleft\", \"topleft\", or \"topright\"]. Default: \"topright\"")
 )
 parser <- OptionParser(usage = "%prog [options] ped_fpath out_dir", option_list=option_list)
 arguments <- parse_args(parser, positional_arguments = 2)
@@ -102,5 +119,7 @@ args <- arguments$args
 # Run main function
 plot_pedigree(args[1],
               args[2],
-              plot_format=opt$plot_format)
+              plot_format=opt$plot_format,
+              no_legend=opt$no_legend,
+              legend_pos=opt$legend_pos)
 
