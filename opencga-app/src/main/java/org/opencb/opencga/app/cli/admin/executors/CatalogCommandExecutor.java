@@ -126,7 +126,8 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             if (commandOptions.uri) {
                 // check login
                 catalogManager.getUserManager().loginAsAdmin(getAdminPassword(true));
-                result.put("mongodbUri", MongoDBUtils.getMongoDBUri(
+                result.put("mongodbUri", MongoDBUtils.getMongoDBUri(configuration.getCatalog().getDatabase()));
+                result.put("mongodbUriWithDatabase", MongoDBUtils.getMongoDBUri(
                         configuration.getCatalog().getDatabase(), catalogManager.getCatalogDatabase()));
                 result.put("mongodbCliOpts", MongoDBUtils.getMongoDBCliOpts(configuration.getCatalog().getDatabase()));
                 result.put("mongodbCli", MongoDBUtils.getMongoDBCli(

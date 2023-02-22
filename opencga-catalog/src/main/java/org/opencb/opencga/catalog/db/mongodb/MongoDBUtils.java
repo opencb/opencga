@@ -827,6 +827,10 @@ public class MongoDBUtils {
         return sb.toString();
     }
 
+    public static URI getMongoDBUri(DatabaseCredentials credentials) {
+        return getMongoDBUri(credentials, null);
+    }
+
     public static URI getMongoDBUri(DatabaseCredentials credentials, String database) {
         Map<String, String> options = credentials.getOptions();
         if (options == null) {
@@ -835,7 +839,13 @@ public class MongoDBUtils {
         URIBuilder builder = new URIBuilder();
         builder.setScheme("mongodb");
         builder.setHost(String.join(",", credentials.getHosts()));
-        builder.setPath(database);
+        if (StringUtils.isNotEmpty(database)) {
+            builder.setPath(database);
+        } else {
+            // Mandatory `/` , otherwise will fail with this error:
+            // > error parsing command line options: error parsing uri: must have a / before the query ?
+            builder.setPath("/");
+        }
         if (StringUtils.isNotEmpty(credentials.getUser())
                 && StringUtils.isNotEmpty(credentials.getPassword())) {
             builder.setUserInfo(credentials.getUser(), credentials.getPassword());
