@@ -34,9 +34,6 @@ public class PedigreeGraphAnalysis extends OpenCgaToolScopeStudy {
     public static final String ID = "pedigree-graph";
     public static final String DESCRIPTION = "Compute the family pedigree graph image.";
 
-    public static final String PEDIGREE_FILENAME = "pedigree.ped";
-    public static final String PEDIGREE_IMAGE_FILENAME = "pedigree.png";
-
     @ToolParams
     private PedigreeGraphAnalysisParams pedigreeParams = new PedigreeGraphAnalysisParams();
 

@@ -4,6 +4,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.yarn.webapp.hamlet2.Hamlet;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.ClinicalComment;
@@ -30,6 +31,7 @@ import org.opencb.opencga.catalog.managers.DummyModelUtils;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.PedigreeGraphUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.AclEntryList;
@@ -48,9 +50,13 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -64,9 +70,6 @@ public class FamilyAnalysisTest extends GenericTest {
 
     @ClassRule
     public static OpenCGATestExternalResource opencga = new OpenCGATestExternalResource();
-
-    @Rule
-    public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
 
     protected CatalogManager catalogManager;
     private FamilyManager familyManager;
@@ -82,7 +85,7 @@ public class FamilyAnalysisTest extends GenericTest {
 
     @Before
     public void setUp() throws IOException, CatalogException {
-        catalogManager = catalogManagerResource.getCatalogManager();
+        catalogManager = opencga.getCatalogManager();
         familyManager = catalogManager.getFamilyManager();
         setUpCatalogManager(catalogManager);
     }
@@ -103,17 +106,33 @@ public class FamilyAnalysisTest extends GenericTest {
     public void tearDown() throws Exception {
     }
 
+    @Test
+    public void creationTest() {
+        String b64PedigreeGraph = family.getB64PedigreeGraph();
+        assertTrue(b64PedigreeGraph.startsWith("iVBORw0KGgoAAAANSUhEUgAAAeAAAAHgCAM"));
+        assertTrue(b64PedigreeGraph.endsWith("U949gmplQAAAABJRU5ErkJggg=="));
+    }
+
+    @Test
+    public void updateTest() throws CatalogException {
+        FamilyUpdateParams updateParams = new FamilyUpdateParams();
+
+        QueryOptions queryOptions = new QueryOptions()
+                .append(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true)
+                .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
+        Family updatedFamily = catalogManager.getFamilyManager().update(studyId, family.getId(), updateParams, queryOptions, sessionIdUser).first();
+
+        String b64PedigreeGraph = updatedFamily.getB64PedigreeGraph();
+        assertTrue(b64PedigreeGraph.startsWith("iVBORw0KGgoAAAANSUhEUgAAAeAAAAHgCAM"));
+        assertTrue(b64PedigreeGraph.endsWith("U949gmplQAAAABJRU5ErkJggg=="));
+    }
 
     @Test
     public void testPedigreeGraphAnalysis() throws ToolException, IOException {
         Path outDir = Paths.get(opencga.createTmpOutdir("_pedigree_graph"));
         System.out.println("out dir = " + outDir.toAbsolutePath());
         System.out.println("opencga home = " + opencga.getOpencgaHome().toAbsolutePath());
-        Path pedigreeAnalysisPath = opencga.getOpencgaHome().resolve("analysis/" + PedigreeGraphAnalysis.ID);
-        pedigreeAnalysisPath.toFile().mkdirs();
-
-        File src = opencga.getOpencgaHome().toAbsolutePath().resolve("../../../../opencga-app/app/analysis/pedigree-graph/ped.R").toFile();
-        FileUtils.copyFile(src, pedigreeAnalysisPath.resolve("ped.R").toFile());
+        System.out.println(Paths.get("workspace parent = " + catalogManager.getConfiguration().getWorkspace()).getParent());
 
         VariantStorageManager variantStorageManager = new VariantStorageManager(catalogManager, opencga.getStorageEngineFactory());
         ToolRunner toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager,
@@ -126,9 +145,15 @@ public class FamilyAnalysisTest extends GenericTest {
         toolRunner.execute(PedigreeGraphAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, studyId), outDir, null,
                 sessionIdUser);
 
-        File imageFile = outDir.resolve(PedigreeGraphAnalysis.PEDIGREE_IMAGE_FILENAME).toFile();
-        System.out.println(imageFile.toPath().toAbsolutePath());
-        assertTrue(imageFile.exists());
+        String b64PedigreeGraph = PedigreeGraphUtils.getB64PedigreeGraph(outDir);
+        assertTrue(b64PedigreeGraph.startsWith("iVBORw0KGgoAAAANSUhEUgAAAeAAAAHgCAM"));
+        assertTrue(b64PedigreeGraph.endsWith("U949gmplQAAAABJRU5ErkJggg=="));
+
+        String tsvPedigreeGraph = PedigreeGraphUtils.getTsvPedigreeGraph(outDir);
+        assertTrue(tsvPedigreeGraph.startsWith("id\tdadid\tmomid\tsex\taffected"));
+        assertTrue(tsvPedigreeGraph.endsWith("2\t1\t2\t1\tNA\t2\t2\n"));
+
+        assertEquals(family.getB64PedigreeGraph(), b64PedigreeGraph);
     }
 
     private DataResult<Family> createDummyFamily(String familyName, boolean createMissingMembers) throws CatalogException {

@@ -156,7 +156,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             ToolRunner toolRunner = new ToolRunner(opencgaHome.toAbsolutePath().toString(), catalogManager,
                     StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
 
-            // Pedigree gramp params
+            // Pedigree graph params
             PedigreeGraphAnalysisParams params = new PedigreeGraphAnalysisParams();
             params.setFamilyId(familyId);
 

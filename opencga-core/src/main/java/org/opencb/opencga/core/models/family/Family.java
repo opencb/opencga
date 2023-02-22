@@ -153,6 +153,9 @@ public class Family extends Annotable {
             description = FieldConstants.FAMILY_ROLES)
     private Map<String, Map<String, FamiliarRelationship>> roles;
 
+    @DataField(id = "b64PedigreeGraph", description = FieldConstants.FAMILY_PEDIGREE_GRAPH)
+    private String b64PedigreeGraph;
+
     /**
      * You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.
      *
@@ -168,13 +171,13 @@ public class Family extends Annotable {
     public Family(String id, String name, List<Phenotype> phenotypes, List<Disorder> disorders, List<Individual> members,
                   String description, int expectedSize, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this(id, name, phenotypes, disorders, members, TimeUtils.getTime(), TimeUtils.getTime(), description, expectedSize, -1, 1,
-                annotationSets, new Status(), null, null, attributes);
+                annotationSets, new Status(), null, null, null, attributes);
     }
 
     public Family(String id, String name, List<Phenotype> phenotypes, List<Disorder> disorders, List<Individual> members,
                   String creationDate, String modificationDate, String description, int expectedSize, int release, int version,
                   List<AnnotationSet> annotationSets, Status status, FamilyInternal internal,
-                  Map<String, Map<String, FamiliarRelationship>> roles, Map<String, Object> attributes) {
+                  Map<String, Map<String, FamiliarRelationship>> roles, String b64PedigreeGraph, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.phenotypes = ObjectUtils.defaultIfNull(phenotypes, new ArrayList<>());
@@ -190,6 +193,7 @@ public class Family extends Annotable {
         this.status = status;
         this.internal = internal;
         this.roles = roles;
+        this.b64PedigreeGraph = b64PedigreeGraph;
         this.attributes = ObjectUtils.defaultIfNull(attributes, new HashMap<>());
     }
 
@@ -212,6 +216,7 @@ public class Family extends Annotable {
         sb.append(", status=").append(status);
         sb.append(", internal=").append(internal);
         sb.append(", roles=").append(roles);
+        sb.append(", b64PedigreeGraph=").append(b64PedigreeGraph);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -373,6 +378,15 @@ public class Family extends Annotable {
 
     public Family setRoles(Map<String, Map<String, FamiliarRelationship>> roles) {
         this.roles = roles;
+        return this;
+    }
+
+    public String getB64PedigreeGraph() {
+        return b64PedigreeGraph;
+    }
+
+    public Family setB64PedigreeGraph(String b64PedigreeGraph) {
+        this.b64PedigreeGraph = b64PedigreeGraph;
         return this;
     }
 

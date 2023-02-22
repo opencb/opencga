@@ -83,6 +83,7 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         QUALITY_CONTROL("qualityControl", TEXT_ARRAY, ""),
 
         ROLES("roles", TEXT_ARRAY, ""),
+        BASE64_PEDIGREE_GRAPH("b64PedigreeGraph", TEXT, ""),
 
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.

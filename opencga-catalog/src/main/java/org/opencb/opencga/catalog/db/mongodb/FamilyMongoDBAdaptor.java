@@ -42,6 +42,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.IndividualManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.PedigreeGraphUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -60,6 +61,8 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -109,7 +112,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
     @Override
     public OpenCGAResult<Family> insert(long studyId, Family family, List<Individual> members, List<VariableSet> variableSetList,
-                                QueryOptions options) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+                                        QueryOptions options) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
             return runTransaction(clientSession -> {
                 long tmpStartTime = startQuery();
@@ -184,6 +187,16 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
         Map<String, Map<String, Family.FamiliarRelationship>> roles = calculateRoles(clientSession, studyUid, family);
         family.setRoles(roles);
+
+        // Pedigree graph
+        try {
+            String b64PedigreeGraph = PedigreeGraphUtils.getPedigreeGraph(family, Paths.get(configuration.getWorkspace()).getParent(),
+                    Paths.get(configuration.getAnalysis().getScratchDir()));
+            family.setB64PedigreeGraph(b64PedigreeGraph);
+        } catch (IOException e) {
+            throw new CatalogDBException("Error computing pedigree graph for family " + family.getId(), e);
+        }
+
 
         Document familyDocument = familyConverter.convertToStorageType(family, variableSetList);
 
@@ -357,100 +370,125 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         Bson bsonQuery = parseQuery(tmpQuery);
         return versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
-            DataResult result = updateAnnotationSets(clientSession, family.getUid(), parameters, variableSetList, queryOptions, true);
-            List<String> familyMemberIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
-            boolean updateRoles = queryOptions.getBoolean(ParamConstants.FAMILY_UPDATE_ROLES_PARAM);
-            if (CollectionUtils.isNotEmpty(parameters.getAsList(QueryParams.MEMBERS.key()))) {
-                List<Map> newIndividuals = parameters.getAsList(QueryParams.MEMBERS.key(), Map.class);
-                Set<String> newIndividualIds = newIndividuals.stream().map(i -> (String) i.get(IndividualDBAdaptor.QueryParams.ID.key()))
-                        .collect(Collectors.toSet());
+                    DataResult result = updateAnnotationSets(clientSession, family.getUid(), parameters, variableSetList, queryOptions, true);
+                    List<String> familyMemberIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
+                    boolean updateRoles = queryOptions.getBoolean(ParamConstants.FAMILY_UPDATE_ROLES_PARAM);
+                    if (CollectionUtils.isNotEmpty(parameters.getAsList(QueryParams.MEMBERS.key()))) {
+                        List<Map> newIndividuals = parameters.getAsList(QueryParams.MEMBERS.key(), Map.class);
+                        Set<String> newIndividualIds = newIndividuals.stream().map(i -> (String) i.get(IndividualDBAdaptor.QueryParams.ID.key()))
+                                .collect(Collectors.toSet());
 
-                Set<String> currentIndividualIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toSet());
+                        Set<String> currentIndividualIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toSet());
 
-                // Obtain new members to be added to the family
-                List<String> missingIndividualIds = new ArrayList<>();
-                for (String newIndividualId : newIndividualIds) {
-                    if (!currentIndividualIds.contains(newIndividualId)) {
-                        missingIndividualIds.add(newIndividualId);
+                        // Obtain new members to be added to the family
+                        List<String> missingIndividualIds = new ArrayList<>();
+                        for (String newIndividualId : newIndividualIds) {
+                            if (!currentIndividualIds.contains(newIndividualId)) {
+                                missingIndividualIds.add(newIndividualId);
+                            }
+                        }
+
+                        // Obtain members to remove from family
+                        List<String> oldIndividualIds = new ArrayList<>();
+                        for (String currentIndividualId : currentIndividualIds) {
+                            if (!newIndividualIds.contains(currentIndividualId)) {
+                                oldIndividualIds.add(currentIndividualId);
+                            }
+                        }
+
+                        updateFamilyReferenceInIndividuals(clientSession, family, missingIndividualIds, oldIndividualIds);
+                        updateRoles = true;
+                        familyMemberIds = new ArrayList<>(newIndividualIds);
                     }
-                }
 
-                // Obtain members to remove from family
-                List<String> oldIndividualIds = new ArrayList<>();
-                for (String currentIndividualId : currentIndividualIds) {
-                    if (!newIndividualIds.contains(currentIndividualId)) {
-                        oldIndividualIds.add(currentIndividualId);
+                    if (updateRoles) {
+                        // CALCULATE ROLES
+                        if (!familyMemberIds.isEmpty()) {
+                            // Fetch individuals with relevant information to guess the relationship
+                            Query individualQuery = new Query()
+                                    .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), family.getStudyUid())
+                                    .append(IndividualDBAdaptor.QueryParams.ID.key(), familyMemberIds);
+                            QueryOptions relationshipOptions = dbAdaptorFactory.getCatalogIndividualDBAdaptor().fixOptionsForRelatives(null);
+                            OpenCGAResult<Individual> memberResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(clientSession,
+                                    individualQuery, relationshipOptions);
+                            family.setMembers(memberResult.getResults());
+                            Map<String, Map<String, Family.FamiliarRelationship>> roles = calculateRoles(clientSession, family.getStudyUid(),
+                                    family);
+                            parameters.put(QueryParams.ROLES.key(), roles);
+                        } else {
+                            parameters.put(QueryParams.ROLES.key(), Collections.emptyMap());
+                        }
                     }
-                }
 
-                updateFamilyReferenceInIndividuals(clientSession, family, missingIndividualIds, oldIndividualIds);
-                updateRoles = true;
-                familyMemberIds = new ArrayList<>(newIndividualIds);
-            }
+                    Document familyUpdate = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery).toFinalUpdateDocument();
 
-            if (updateRoles) {
-                // CALCULATE ROLES
-                if (!familyMemberIds.isEmpty()) {
-                    // Fetch individuals with relevant information to guess the relationship
-                    Query individualQuery = new Query()
-                            .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), family.getStudyUid())
-                            .append(IndividualDBAdaptor.QueryParams.ID.key(), familyMemberIds);
-                    QueryOptions relationshipOptions = dbAdaptorFactory.getCatalogIndividualDBAdaptor().fixOptionsForRelatives(null);
-                    OpenCGAResult<Individual> memberResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(clientSession,
-                            individualQuery, relationshipOptions);
-                    family.setMembers(memberResult.getResults());
-                    Map<String, Map<String, Family.FamiliarRelationship>> roles = calculateRoles(clientSession, family.getStudyUid(),
-                            family);
-                    parameters.put(QueryParams.ROLES.key(), roles);
-                } else {
-                    parameters.put(QueryParams.ROLES.key(), Collections.emptyMap());
-                }
-            }
+                    if (familyUpdate.isEmpty() && result.getNumUpdated() == 0) {
+                        if (!parameters.isEmpty()) {
+                            logger.error("Non-processed update parameters: {}", parameters.keySet());
+                        }
+                        throw new CatalogDBException("Nothing to be updated");
+                    }
 
-            Document familyUpdate = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery).toFinalUpdateDocument();
+                    List<Event> events = new ArrayList<>();
+                    if (!familyUpdate.isEmpty()) {
+                        Bson finalQuery = parseQuery(tmpQuery);
 
-            if (familyUpdate.isEmpty() && result.getNumUpdated() == 0) {
-                if (!parameters.isEmpty()) {
-                    logger.error("Non-processed update parameters: {}", parameters.keySet());
-                }
-                throw new CatalogDBException("Nothing to be updated");
-            }
+                        logger.debug("Family update: query : {}, update: {}", finalQuery.toBsonDocument(), familyUpdate.toBsonDocument());
+                        result = familyCollection.update(clientSession, finalQuery, familyUpdate, new QueryOptions("multi", true));
 
-            List<Event> events = new ArrayList<>();
-            if (!familyUpdate.isEmpty()) {
-                Bson finalQuery = parseQuery(tmpQuery);
+                        // Compute pedigree graph
+                        if (updateRoles) {
+                            try {
+                                String b64PedigreeGraph = "";
+                                if (!familyMemberIds.isEmpty()) {
+                                    Query query = new Query()
+                                            .append(QueryParams.UID.key(), family.getUid())
+                                            .append(QueryParams.STUDY_UID.key(), family.getStudyUid());
+                                    Family tmpFamily = get(clientSession, query, QueryOptions.empty()).first();
 
-                logger.debug("Family update: query : {}, update: {}", finalQuery.toBsonDocument(), familyUpdate.toBsonDocument());
-                result = familyCollection.update(clientSession, finalQuery, familyUpdate, new QueryOptions("multi", true));
+                                    b64PedigreeGraph = PedigreeGraphUtils.getPedigreeGraph(tmpFamily,
+                                            Paths.get(configuration.getWorkspace()).getParent(),
+                                            Paths.get(configuration.getAnalysis().getScratchDir()));
+                                }
+                                UpdateDocument updateDocument = new UpdateDocument()
+                                        .setSet(new Document(QueryParams.BASE64_PEDIGREE_GRAPH.key(), b64PedigreeGraph));
+                                familyUpdate = updateDocument.toFinalUpdateDocument();
+                                familyCollection.update(clientSession, finalQuery, familyUpdate, new QueryOptions("multi", true));
+                            } catch (IOException e) {
+                                logger.error("Error computing/updating the pedigree grapth for the family {}", family.getId());
+                                throw new CatalogDBException("Error computing/updating the pedigree graph for the family" + family.getId(),
+                                        e);
+                            }
+                        }
 
-                if (parameters.containsKey(QueryParams.ID.key())) {
-                    String newFamilyId = parameters.getString(QueryParams.ID.key());
+                        if (parameters.containsKey(QueryParams.ID.key())) {
+                            String newFamilyId = parameters.getString(QueryParams.ID.key());
 
-                    // Fetch members (we don't trust those from the Family object because they could have been updated previously)
-                    Query query = new Query()
-                            .append(IndividualDBAdaptor.QueryParams.FAMILY_IDS.key(), family.getId())
-                            .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), family.getStudyUid());
-                    OpenCGAResult<Individual> individualResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(clientSession, query,
-                            IndividualManager.INCLUDE_INDIVIDUAL_IDS);
-                    List<String> memberIds = individualResult.getResults().stream().map(Individual::getId).collect(Collectors.toList());
+                            // Fetch members (we don't trust those from the Family object because they could have been updated previously)
+                            Query query = new Query()
+                                    .append(IndividualDBAdaptor.QueryParams.FAMILY_IDS.key(), family.getId())
+                                    .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), family.getStudyUid());
+                            OpenCGAResult<Individual> individualResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(clientSession, query,
+                                    IndividualManager.INCLUDE_INDIVIDUAL_IDS);
+                            List<String> memberIds = individualResult.getResults().stream().map(Individual::getId).collect(Collectors.toList());
 
-                    // Remove familyId from all members
-                    updateFamilyReferenceInIndividuals(clientSession, family, null, memberIds);
-                    family.setId(newFamilyId);
-                    updateFamilyReferenceInIndividuals(clientSession, family, memberIds, null);
-                }
+                            // Remove familyId from all members
+                            updateFamilyReferenceInIndividuals(clientSession, family, null, memberIds);
+                            family.setId(newFamilyId);
+                            updateFamilyReferenceInIndividuals(clientSession, family, memberIds, null);
+                        }
 
-                if (result.getNumMatches() == 0) {
-                    throw new CatalogDBException("Family " + family.getId() + " not found");
-                }
-                if (result.getNumUpdated() == 0) {
-                    events.add(new Event(Event.Type.WARNING, family.getId(), "Family was already updated"));
-                }
-                logger.debug("Family {} successfully updated", family.getId());
-            }
+                        if (result.getNumMatches() == 0) {
+                            throw new CatalogDBException("Family " + family.getId() + " not found");
+                        }
+                        if (result.getNumUpdated() == 0) {
+                            events.add(new Event(Event.Type.WARNING, family.getId(), "Family was already updated"));
+                        }
+                        logger.debug("Family {} successfully updated", family.getId());
+                    }
 
-            return endWrite(tmpStartTime, 1, 1, events);
-        }, Arrays.asList(QueryParams.MEMBERS_ID.key(), QueryParams.MEMBERS_SAMPLES_ID.key()),
+                    return endWrite(tmpStartTime, 1, 1, events);
+                }, Arrays.asList(QueryParams.MEMBERS_ID.key(), QueryParams.MEMBERS_SAMPLES_ID.key()),
                 this::iterator, (DBIterator<Family> iterator) -> updateReferencesAfterFamilyVersionIncrement(clientSession, iterator));
     }
 
@@ -525,12 +563,12 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                 Document bsonUpdate = updateDocument.toFinalUpdateDocument();
                 Bson bsonQuery = parseQuery(tmpQuery);
                 versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
-                    DataResult<?> result = familyCollection.update(clientSession, bsonQuery, bsonUpdate, QueryOptions.empty());
-                    if (result.getNumUpdated() != 1) {
-                        throw new CatalogDBException("Family '" + family.getId() + "' could not be updated to the latest member versions");
-                    }
-                    return result;
-                }, Arrays.asList(QueryParams.MEMBERS_ID.key(), QueryParams.MEMBERS_SAMPLES_ID.key()),
+                            DataResult<?> result = familyCollection.update(clientSession, bsonQuery, bsonUpdate, QueryOptions.empty());
+                            if (result.getNumUpdated() != 1) {
+                                throw new CatalogDBException("Family '" + family.getId() + "' could not be updated to the latest member versions");
+                            }
+                            return result;
+                        }, Arrays.asList(QueryParams.MEMBERS_ID.key(), QueryParams.MEMBERS_SAMPLES_ID.key()),
                         this::iterator,
                         (DBIterator<Family> fIterator) -> updateReferencesAfterFamilyVersionIncrement(clientSession, fIterator));
             }
@@ -589,9 +627,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                                 .append(QueryParams.UID.key(), family.getUid())
                         );
                         versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
-                            Bson update = Updates.set(QueryParams.ROLES.key(), getMongoDBDocument(roles, QueryParams.ROLES.key()));
-                            return familyCollection.update(clientSession, bsonQuery, update, QueryOptions.empty());
-                        }, Arrays.asList(QueryParams.MEMBERS_ID.key(), QueryParams.MEMBERS_SAMPLES_ID.key()),
+                                    Bson update = Updates.set(QueryParams.ROLES.key(), getMongoDBDocument(roles, QueryParams.ROLES.key()));
+                                    return familyCollection.update(clientSession, bsonQuery, update, QueryOptions.empty());
+                                }, Arrays.asList(QueryParams.MEMBERS_ID.key(), QueryParams.MEMBERS_SAMPLES_ID.key()),
                                 this::iterator,
                                 (DBIterator<Family> fIterator) -> updateReferencesAfterFamilyVersionIncrement(clientSession, fIterator));
                     }
