@@ -27,6 +27,7 @@ Commands
   wait   - Waits for an asynchronous job to finish
       --id   --request-id          STRING     Request id
              --fail-on-missing     FLAG       Fail if the request is not found
+             --ignore-failed       FLAG       Do not fail when the async job failed
              --sleep               NUMBER     Seconds to sleep between request status check
 
   backup - Backs up Solr collections and associated configurations to a shared filesystem - for example a Network File System.
@@ -279,6 +280,7 @@ function request_status() {
 function wait_async_job() {
   REQUEST=
   FAIL_ON_MISSING="false"
+  IGNORE_FAILED="false"
   SLEEP=60
 
   while [[ $# -gt 0 ]]; do
@@ -292,6 +294,10 @@ function wait_async_job() {
       ;;
     --fail-on-missing)
       FAIL_ON_MISSING="true"
+      shift # past argument
+      ;;
+    --ignore-failed)
+      IGNORE_FAILED="true"
       shift # past argument
       ;;
     --sleep)
@@ -320,7 +326,11 @@ function wait_async_job() {
       ;;
     failed)
         echo "Error executing: $REQUEST"
-        return 1;
+        if [[ "$IGNORE_FAILED" == "true" ]]; then
+          return 0;
+        else
+          return 1;
+        fi
       ;;
     notfound)
         if [[ "$FAIL_ON_MISSING" == "true" ]]; then
