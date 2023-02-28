@@ -6,6 +6,8 @@ import org.apache.hadoop.hbase.TableName;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 
+import java.util.regex.Pattern;
+
 /**
  * Created on 02/02/18.
  *
@@ -16,6 +18,7 @@ public class HBaseVariantTableNameGenerator {
     private static final String VARIANTS_SUFIX = "_variants";
     private static final String META_SUFIX = "_meta";
     private static final String ARCHIVE_SUFIX = "_archive_";
+    private static final Pattern ARCHIVE_PATTERN = Pattern.compile(".*" + ARCHIVE_SUFIX + "[0-9]+$");
     private static final String SAMPLE_SUFIX = "_variant_sample_index_";
     private static final String PENDING_ANNOTATION_SUFIX = "_pending_annotation";
     private static final String PENDING_SECONDARY_INDEX_SUFIX = "_pending_secondary_index";
@@ -224,6 +227,10 @@ public class HBaseVariantTableNameGenerator {
             throw new IllegalArgumentException("Can not get archive table name. Invalid studyId!");
         }
         return buildTableName(namespace, dbName, ARCHIVE_SUFIX + studyId);
+    }
+
+    public static boolean isValidArchiveTableName(String archiveTable) {
+        return ARCHIVE_PATTERN.matcher(archiveTable).matches();
     }
 
     public static int getStudyIdFromArchiveTable(String archiveTable) {

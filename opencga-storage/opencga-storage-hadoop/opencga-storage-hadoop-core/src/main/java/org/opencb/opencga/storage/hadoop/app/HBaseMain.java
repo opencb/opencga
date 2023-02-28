@@ -33,6 +33,7 @@ public class HBaseMain extends AbstractMain {
     public static final String REGIONS_PER_TABLE = "regions-per-table";
     public static final String CLONE_TABLES = "clone-tables";
     public static final String SNAPSHOT_TABLES = "snapshot-tables";
+    public static final String SNAPSHOT_TABLE = "snapshot-table";
     public static final String DELETE_SNAPSHOTS = "delete-snapshots";
     public static final String CLONE_SNAPSHOTS = "clone-snapshots";
     public static final String DISABLE_TABLE = "disable-table";
@@ -109,6 +110,14 @@ public class HBaseMain extends AbstractMain {
             }
             case SNAPSHOT_TABLES: {
                 ObjectMap argsMap = getArgsMap(args, 2, "snapshotSuffix", "dryRun", "skipTablesWithSnapshot");
+                String tableNamePattern = getArg(args, 1) + ".*";
+                snapshotTables(tableNamePattern,
+                        argsMap.getString("snapshotSuffix", "_SNAPSHOT_" + TimeUtils.getTime()),
+                        argsMap.getBoolean("dryRun"), argsMap.getBoolean("skipTablesWithSnapshot"));
+                break;
+            }
+            case SNAPSHOT_TABLE: {
+                ObjectMap argsMap = getArgsMap(args, 2, "snapshotSuffix", "dryRun", "skipTablesWithSnapshot");
                 snapshotTables(getArg(args, 1),
                         argsMap.getString("snapshotSuffix", "_SNAPSHOT_" + TimeUtils.getTime()),
                         argsMap.getBoolean("dryRun"), argsMap.getBoolean("skipTablesWithSnapshot"));
@@ -167,6 +176,8 @@ public class HBaseMain extends AbstractMain {
                 System.out.println("      Clone all selected tables by creating an intermediate snapshot.");
                 System.out.println("        Optionally remove the intermediate snapshot.");
                 System.out.println("  " + SNAPSHOT_TABLES + " <table-name-prefix> [--dryRun] [--snapshotSuffix <snapshotNameSuffix>] "
+                                        + "[--skipTablesWithSnapshot]");
+                System.out.println("  " + SNAPSHOT_TABLE  + " <table-name> [--dryRun] [--snapshotSuffix <snapshotNameSuffix>] "
                                         + "[--skipTablesWithSnapshot]");
                 System.out.println("  " + DELETE_SNAPSHOTS + " <snapshots-list> [--dryRun] [--skipMissing]");
                 System.out.println("      Create a snapshot for all selected tables.");
@@ -435,13 +446,13 @@ public class HBaseMain extends AbstractMain {
         });
     }
 
-    private void snapshotTables(String tableNamePrefix, String snapshotSuffix, boolean dryRun, boolean skipTablesWithSnapshot)
+    private void snapshotTables(String tableNamePattern, String snapshotSuffix, boolean dryRun, boolean skipTablesWithSnapshot)
             throws Exception {
         Connection connection = hBaseManager.getConnection();
-        Map<String, TreeMap<Date, String>> tablesWithSnapshots = listSnapshots(tableNamePrefix + ".*", false);
+        Map<String, TreeMap<Date, String>> tablesWithSnapshots = listSnapshots(tableNamePattern, false);
         Map<String, String> newSnapshots = new HashMap<>();
         try (Admin admin = connection.getAdmin()) {
-            for (TableName tableName : listTables(tableNamePrefix + ".*")) {
+            for (TableName tableName : listTables(tableNamePattern)) {
                 if (skipTablesWithSnapshot && tablesWithSnapshots.containsKey(tableName.getNameAsString())) {
                     TreeMap<Date, String> map = tablesWithSnapshots.get(tableName.getNameAsString());
                     LOGGER.info("Skip snapshot from table '{}' . Already has a snapshot: {}", tableName.getNameAsString(), map);
