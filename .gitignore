@@ -19,6 +19,7 @@ make_env
 # Maven
 target/
 dependency-reduced-pom.xml
+out
 
 # IntelliJ
 *.iml
