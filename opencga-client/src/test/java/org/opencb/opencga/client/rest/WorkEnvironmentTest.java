@@ -18,6 +18,7 @@ package org.opencb.opencga.client.rest;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.rules.ExternalResource;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogDemo;
 import org.opencb.opencga.client.config.ClientConfiguration;
@@ -86,7 +87,7 @@ public class WorkEnvironmentTest extends ExternalResource {
 
         catalogManager = new CatalogManager(configuration);
 
-        CatalogDemo.createDemoDatabase(catalogManager, "admin", true);
+        CatalogDemo.createDemoDatabase(catalogManager, TestParamConstants.ADMIN_PASSWORD, true);
 
         restServer = new RestServer(opencgaHome);
         restServer.start();

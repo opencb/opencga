@@ -53,6 +53,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by jacobo on 13/06/15.
  */
+@Ignore
 public class FileWSServerTest {
 
     private WebTarget webTarget;

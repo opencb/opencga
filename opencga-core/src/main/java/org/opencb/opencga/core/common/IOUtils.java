@@ -367,4 +367,29 @@ public class IOUtils {
         String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp-1) + (si ? "" : "i");
         return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
     }
+
+    /**
+     * Get Bytes numbers from a human-readable string
+     *
+     * @param value     Human-readable value
+     * @return number of bytes
+     */
+    public static long fromHumanReadableToByte(String value) {
+        if (value.endsWith("B")) {
+            value = value.substring(0, value.length() - 1);
+        }
+        boolean si;
+        if (value.endsWith("i")) {
+            si = false;
+            value = value.substring(0, value.length() - 1);
+        } else {
+            si = true;
+        }
+        int unit = si ? 1000 : 1024;
+        int exp = (si ? "kMGTPE" : "KMGTPE").indexOf(value.charAt(value.length() - 1)) + 1;
+        if (exp > 0) {
+            value = value.substring(0, value.length() - 1);
+        }
+        return (long) (Double.parseDouble(value) * Math.pow(unit, exp));
+    }
 }

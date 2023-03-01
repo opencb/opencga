@@ -344,7 +344,7 @@ public final class VariantQueryUtils {
             return;
         }
         List<VariantQueryParam> acceptedParams = Arrays.asList(ID, REGION);
-        List<VariantQueryParam> ignoredParams = Arrays.asList(INCLUDE_STUDY, INCLUDE_SAMPLE, INCLUDE_FILE);
+        List<VariantQueryParam> ignoredParams = Arrays.asList(INCLUDE_STUDY, INCLUDE_SAMPLE, INCLUDE_FILE, SAMPLE_LIMIT);
         Set<VariantQueryParam> queryParams = VariantQueryUtils.validParams(query);
         queryParams.removeAll(acceptedParams);
         queryParams.removeAll(ignoredParams);
@@ -1392,13 +1392,16 @@ public final class VariantQueryUtils {
     }
 
     public static <T extends Enum<T>> List<T> getAsEnumList(Query query, QueryParam queryParam, Class<T> enumClass) {
-        return getAsEnumValues(query, queryParam, enumClass).getValues();
+        Values<T> values = getAsEnumValues(query, queryParam, enumClass);
+        if (values.getOperation() == QueryOperation.AND) {
+            throw VariantQueryException.malformedParam(queryParam, query.getString(queryParam.key()),
+                    "Unable to filter values with logical AND (;)");
+        }
+        return values.getValues();
     }
 
     public static <T extends Enum<T>> Values<T> getAsEnumValues(Query query, QueryParam queryParam, Class<T> enumClass) {
-        Values<String> values = splitValues(query.getString(queryParam.key()));
-        return new Values<>(values.getOperation(), values.getValues()
-                .stream()
+        return splitValues(query.getString(queryParam.key()))
                 .map(enumName -> {
                     String simplified = StringUtils.replaceChars(enumName, "_-", "");
                     for (final T each : enumClass.getEnumConstants()) {
@@ -1408,8 +1411,7 @@ public final class VariantQueryUtils {
                         }
                     }
                     throw VariantQueryException.malformedParam(queryParam, enumName, "Unknown value");
-                })
-                .collect(Collectors.toList()));
+                });
     }
 
     public static void convertExpressionToGeneQuery(Query query, CellBaseUtils cellBaseUtils) {

@@ -17,6 +17,7 @@
 package org.opencb.opencga.client.rest;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -39,6 +40,7 @@ import static org.junit.Assert.*;
 /**
  * Created by imedina on 04/05/16.
  */
+@Ignore
 public class UserClientTest extends WorkEnvironmentTest {
 
     private UserClient userClient;

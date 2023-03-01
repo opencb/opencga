@@ -409,7 +409,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
     private void secondaryIndex() throws ToolException {
         VariantCommandOptions.VariantSecondaryIndexCommandOptions cliOptions = variantCommandOptions.variantSecondaryIndexCommandOptions;
 
-        ObjectMap params = new VariantSecondaryIndexParams(
+        ObjectMap params = new VariantSecondaryAnnotationIndexParams(
                 cliOptions.region,
                 cliOptions.sample,
                 cliOptions.overwrite)
@@ -418,7 +418,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .append(ParamConstants.PROJECT_PARAM, cliOptions.project);
 
         if (CollectionUtils.isEmpty(cliOptions.sample)) {
-            toolRunner.execute(VariantSecondaryIndexOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, token);
+            toolRunner.execute(VariantSecondaryAnnotationIndexOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, token);
         } else {
             toolRunner.execute(VariantSecondaryIndexSamplesOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, token);
         }
@@ -504,7 +504,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
             throws ToolException {
         VariantCommandOptions.SampleIndexCommandOptions cliOptions = variantCommandOptions.sampleIndexCommandOptions;
 
-        VariantSampleIndexParams params = new VariantSampleIndexParams(
+        VariantSecondarySampleIndexParams params = new VariantSecondarySampleIndexParams(
                 cliOptions.sample,
                 cliOptions.buildIndex,
                 cliOptions.annotate,
@@ -512,7 +512,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.overwrite
         );
 
-        toolRunner.execute(VariantSampleIndexOperationTool.class,
+        toolRunner.execute(VariantSecondarySampleIndexOperationTool.class,
                 params.toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study),
                 Paths.get(cliOptions.outdir),
                 jobId, token);

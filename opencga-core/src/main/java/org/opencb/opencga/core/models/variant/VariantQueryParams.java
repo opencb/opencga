@@ -70,6 +70,7 @@ public class VariantQueryParams extends BasicVariantQueryParams {
 
     @Deprecated private String polyphen;
     @Deprecated private String sift;
+    private String geneRoleInCancer;
     private String geneTraitId;
     private String geneTraitName;
     private String trait;
@@ -413,6 +414,15 @@ public class VariantQueryParams extends BasicVariantQueryParams {
 
     public VariantQueryParams setSift(String sift) {
         this.sift = sift;
+        return this;
+    }
+
+    public String getGeneRoleInCancer() {
+        return geneRoleInCancer;
+    }
+
+    public VariantQueryParams setGeneRoleInCancer(String geneRoleInCancer) {
+        this.geneRoleInCancer = geneRoleInCancer;
         return this;
     }
 

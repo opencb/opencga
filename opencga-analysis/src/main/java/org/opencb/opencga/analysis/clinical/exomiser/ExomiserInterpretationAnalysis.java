@@ -41,6 +41,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
+import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -152,10 +153,10 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         // Interpretation method
         InterpretationMethod method = new InterpretationMethod(getId(), GitRepositoryState.get().getBuildVersion(),
                 GitRepositoryState.get().getCommitId(), Collections.singletonList(
-                        new Software()
-                                .setName("Exomiser")
-                                .setRepository("Docker: " + ExomiserWrapperAnalysisExecutor.DOCKER_IMAGE_NAME)
-                                .setVersion(ExomiserWrapperAnalysisExecutor.DOCKER_IMAGE_VERSION)));
+                new Software()
+                        .setName("Exomiser")
+                        .setRepository("Docker: " + ExomiserWrapperAnalysisExecutor.DOCKER_IMAGE_NAME)
+                        .setVersion(ExomiserWrapperAnalysisExecutor.DOCKER_IMAGE_VERSION)));
 
         // Analyst
         ClinicalAnalyst analyst = clinicalInterpretationManager.getAnalyst(token);
@@ -199,19 +200,29 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
     }
 
     private List<ClinicalVariant> getPrimaryFindings() throws InterpretationAnalysisException, IOException, StorageEngineException,
-            CatalogException {
+            CatalogException, ToolException {
         Map<String, ClinicalVariant> cvMap = new HashMap<>();
 
         VariantNormalizer normalizer = new VariantNormalizer();
 
         // Prepare variant query
         List<String> sampleIds = new ArrayList<>();
-        sampleIds.add(sampleId);
-        if (clinicalAnalysis.getProband().getFather() != null) {
-            sampleIds.add(clinicalAnalysis.getProband().getFather().getId());
+        sampleIds.add(clinicalAnalysis.getProband().getSamples().get(0).getId());
+        if (clinicalAnalysis.getProband().getFather() != null
+                && StringUtils.isNotEmpty(clinicalAnalysis.getProband().getFather().getId())) {
+            Individual father = IndividualQcUtils.getIndividualById(studyId, clinicalAnalysis.getProband().getFather().getId(),
+                    getCatalogManager(), getToken());
+            if (CollectionUtils.isNotEmpty(father.getSamples())) {
+                sampleIds.add(father.getSamples().get(0).getId());
+            }
         }
-        if (clinicalAnalysis.getProband().getMother() != null) {
-            sampleIds.add(clinicalAnalysis.getProband().getMother().getId());
+        if (clinicalAnalysis.getProband().getMother() != null
+                && StringUtils.isNotEmpty(clinicalAnalysis.getProband().getMother().getId())) {
+            Individual mother = IndividualQcUtils.getIndividualById(studyId, clinicalAnalysis.getProband().getMother().getId(),
+                    getCatalogManager(), getToken());
+            if (CollectionUtils.isNotEmpty(mother.getSamples())) {
+                sampleIds.add(mother.getSamples().get(0).getId());
+            }
         }
         Query query = new Query(VariantQueryParam.STUDY.key(), getStudyId())
                 .append(VariantQueryParam.INCLUDE_SAMPLE_ID.key(), true)

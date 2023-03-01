@@ -4,6 +4,9 @@ import htsjdk.variant.vcf.VCFHeader;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocument;
 import org.junit.Rule;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
@@ -24,6 +27,7 @@ import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageTest;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
@@ -34,6 +38,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class VariantSearchTest extends VariantStorageBaseTest implements DummyVariantStorageTest {
@@ -67,18 +72,20 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
                 new QueryOptions(QueryOptions.LIMIT, limit));
 
         for (int i = 0; i < limit; i++) {
-            Map<String, ConsequenceType> inMap = getConsequenceTypeMap(annotatedVariants.get(i));
-            Map<String, ConsequenceType> outMap = getConsequenceTypeMap(results.getResults().get(i));
+            Variant expectedVariant = annotatedVariants.get(i);
+            Variant actualVariant = results.getResults().get(i);
 
-            System.out.println(inMap.size() + " vs " + outMap.size());
-            assert(inMap.size() == outMap.size());
+            assertEquals(expectedVariant.toString(), actualVariant.toString());
+            Map<String, ConsequenceType> inMap = getConsequenceTypeMap(expectedVariant);
+            Map<String, ConsequenceType> outMap = getConsequenceTypeMap(actualVariant);
+
+            assertEquals(inMap.keySet(), outMap.keySet());
             for (String key: inMap.keySet()) {
                 ConsequenceType inCT = inMap.get(key);
                 ConsequenceType outCT = outMap.get(key);
 
                 // Check biotype
-                System.out.println(inCT.getBiotype() + " vs " + outCT.getBiotype());
-                assert(inCT.getBiotype().equals(outCT.getBiotype()));
+                assertEquals(inCT.getBiotype(), outCT.getBiotype());
 
                 // Check annotation flags
                 System.out.println("inCT, annotation flags:");

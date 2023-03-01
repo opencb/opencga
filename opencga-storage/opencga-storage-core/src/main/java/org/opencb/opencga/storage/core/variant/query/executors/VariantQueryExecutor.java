@@ -77,6 +77,7 @@ public abstract class VariantQueryExecutor implements VariantIterable {
      */
     public abstract boolean canUseThisExecutor(Query query, QueryOptions options) throws StorageEngineException;
 
+    @Deprecated
     public DataResult<Long> count(Query query) {
         VariantQueryResult<Variant> result = get(query, new QueryOptions(QueryOptions.COUNT, true).append(QueryOptions.LIMIT, 0));
         return new DataResult<>(
@@ -86,10 +87,6 @@ public abstract class VariantQueryExecutor implements VariantIterable {
                 Collections.singletonList(result.getNumMatches()),
                 result.getNumMatches(),
                 result.getAttributes());
-    }
-
-    public VariantQueryResult<Long> approximateCount(Query query, QueryOptions options) {
-        return new VariantQueryResult<>(count(query), null);
     }
 
     protected abstract Object getOrIterator(Query query, QueryOptions options, boolean iterator) throws StorageEngineException;

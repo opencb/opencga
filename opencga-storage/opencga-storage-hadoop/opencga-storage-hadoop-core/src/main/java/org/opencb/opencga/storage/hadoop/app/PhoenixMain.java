@@ -4,18 +4,21 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.phoenix.schema.PTableType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Map;
 
 public class PhoenixMain extends AbstractMain {
@@ -62,7 +65,6 @@ public class PhoenixMain extends AbstractMain {
 
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        SampleIndexQuery sampleIndexQuery;
         switch (command) {
             case "list-tables": {
                 print(hBaseManager.listTables()
@@ -76,12 +78,21 @@ public class PhoenixMain extends AbstractMain {
                 createView(dbAdaptor);
                 break;
 
+            case "list-columns":
+                listColumnsPhoenix(dbAdaptor);
+                break;
+//            case "list-columns-hb":
+//                listColumnsHBase(dbAdaptor);
+//                break;
+
             case "help":
             default:
                 System.out.println("Commands:");
                 System.out.println("  help");
                 System.out.println("  list-tables");
-                System.out.println("  create-view     <databaseName> ");
+                System.out.println("  list-columns      <databaseName> ");
+//                System.out.println("  list-columns-hb   <databaseName> ");
+                System.out.println("  create-view       <databaseName> ");
                 break;
         }
         System.err.println("--------------------------");
@@ -91,6 +102,24 @@ public class PhoenixMain extends AbstractMain {
             hBaseManager.close();
         }
     }
+
+    private void listColumnsPhoenix(VariantHadoopDBAdaptor dbAdaptor) throws SQLException {
+        println("# Print columns from Phoenix");
+        try (Connection connection = dbAdaptor.openJdbcConnection()) {
+            for (PhoenixHelper.Column column : new PhoenixHelper(dbAdaptor.getConfiguration())
+                    .getColumns(connection, dbAdaptor.getVariantTable(), PTableType.VIEW)) {
+                println(column.fullColumn() + "\t" + column.sqlType());
+            }
+        }
+    }
+
+//    private void listColumnsHBase(VariantHadoopDBAdaptor dbAdaptor) throws IOException {
+//        println("# Print columns from HBase");
+//        for (PhoenixHelper.Column column : new PhoenixHelper(dbAdaptor.getConfiguration()).getColumns(dbAdaptor.getHBaseManager(),
+//        dbAdaptor.getVariantTable(), PTableType.VIEW)) {
+//            println(column.fullColumn() + "\t" + column.sqlType());
+//        }
+//    }
 
     private void createView(VariantHadoopDBAdaptor dbAdaptor) throws StorageEngineException, IOException {
         if (!dbAdaptor.getHBaseManager().tableExists(dbAdaptor.getVariantTable())) {
