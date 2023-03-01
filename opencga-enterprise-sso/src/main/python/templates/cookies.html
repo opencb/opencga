@@ -1,0 +1,9 @@
+<p>Hooray! You can now close this tab</b>.</p>
+{% if args.JSESSIONID %}
+    <p>The following attributes were released to you:</p>
+    <p><em>
+        {{ args.JSESSIONID }}
+    </em></p>
+{% else %}
+    <p>No attributes were released to you.</p>
+{% endif %}

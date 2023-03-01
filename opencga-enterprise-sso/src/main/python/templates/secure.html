@@ -1,0 +1,12 @@
+<p>Hooray! You are logged in as <b>{{cas.username}}</b>.</p>
+{% if cas.attributes %}
+    <p>The following attributes were released to you:</p>
+    <p><em>
+        {{ cas.attributes }}
+    </em></p>
+    <p><em>
+        {{ cas.token }}
+    </em></p>
+{% else %}
+    <p>No attributes were released to you.</p>
+{% endif %}
