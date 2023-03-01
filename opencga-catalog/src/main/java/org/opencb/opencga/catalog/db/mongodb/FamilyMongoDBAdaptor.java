@@ -112,7 +112,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
     @Override
     public OpenCGAResult<Family> insert(long studyId, Family family, List<Individual> members, List<VariableSet> variableSetList,
-                                        QueryOptions options) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+                                        QueryOptions options) throws CatalogDBException, CatalogParameterException,
+            CatalogAuthorizationException {
         try {
             return runTransaction(clientSession -> {
                 long tmpStartTime = startQuery();
@@ -370,13 +371,14 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         Bson bsonQuery = parseQuery(tmpQuery);
         return versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
-                    DataResult result = updateAnnotationSets(clientSession, family.getUid(), parameters, variableSetList, queryOptions, true);
+                    DataResult result = updateAnnotationSets(clientSession, family.getUid(), parameters, variableSetList, queryOptions,
+                            true);
                     List<String> familyMemberIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
                     boolean updateRoles = queryOptions.getBoolean(ParamConstants.FAMILY_UPDATE_ROLES_PARAM);
                     if (CollectionUtils.isNotEmpty(parameters.getAsList(QueryParams.MEMBERS.key()))) {
                         List<Map> newIndividuals = parameters.getAsList(QueryParams.MEMBERS.key(), Map.class);
-                        Set<String> newIndividualIds = newIndividuals.stream().map(i -> (String) i.get(IndividualDBAdaptor.QueryParams.ID.key()))
-                                .collect(Collectors.toSet());
+                        Set<String> newIndividualIds = newIndividuals.stream().map(i -> (String) i.get(IndividualDBAdaptor.QueryParams.ID
+                                        .key())).collect(Collectors.toSet());
 
                         Set<String> currentIndividualIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toSet());
 
@@ -408,12 +410,13 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                             Query individualQuery = new Query()
                                     .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), family.getStudyUid())
                                     .append(IndividualDBAdaptor.QueryParams.ID.key(), familyMemberIds);
-                            QueryOptions relationshipOptions = dbAdaptorFactory.getCatalogIndividualDBAdaptor().fixOptionsForRelatives(null);
+                            QueryOptions relationshipOptions = dbAdaptorFactory.getCatalogIndividualDBAdaptor().fixOptionsForRelatives(
+                                    null);
                             OpenCGAResult<Individual> memberResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(clientSession,
                                     individualQuery, relationshipOptions);
                             family.setMembers(memberResult.getResults());
-                            Map<String, Map<String, Family.FamiliarRelationship>> roles = calculateRoles(clientSession, family.getStudyUid(),
-                                    family);
+                            Map<String, Map<String, Family.FamiliarRelationship>> roles = calculateRoles(clientSession, family
+                                            .getStudyUid(), family);
                             parameters.put(QueryParams.ROLES.key(), roles);
                         } else {
                             parameters.put(QueryParams.ROLES.key(), Collections.emptyMap());
@@ -468,9 +471,10 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                             Query query = new Query()
                                     .append(IndividualDBAdaptor.QueryParams.FAMILY_IDS.key(), family.getId())
                                     .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), family.getStudyUid());
-                            OpenCGAResult<Individual> individualResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(clientSession, query,
-                                    IndividualManager.INCLUDE_INDIVIDUAL_IDS);
-                            List<String> memberIds = individualResult.getResults().stream().map(Individual::getId).collect(Collectors.toList());
+                            OpenCGAResult<Individual> individualResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(clientSession,
+                                    query, IndividualManager.INCLUDE_INDIVIDUAL_IDS);
+                            List<String> memberIds = individualResult.getResults().stream().map(Individual::getId)
+                                    .collect(Collectors.toList());
 
                             // Remove familyId from all members
                             updateFamilyReferenceInIndividuals(clientSession, family, null, memberIds);
@@ -565,7 +569,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                 versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
                             DataResult<?> result = familyCollection.update(clientSession, bsonQuery, bsonUpdate, QueryOptions.empty());
                             if (result.getNumUpdated() != 1) {
-                                throw new CatalogDBException("Family '" + family.getId() + "' could not be updated to the latest member versions");
+                                throw new CatalogDBException("Family '" + family.getId() + "' could not be updated to the latest member"
+                                        + " versions");
                             }
                             return result;
                         }, Arrays.asList(QueryParams.MEMBERS_ID.key(), QueryParams.MEMBERS_SAMPLES_ID.key()),
