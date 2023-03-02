@@ -22,6 +22,7 @@ jobs:
       report_context: development
       report_dir: ${{ github.ref_name }}/java-common-libs/${{ github.sha }}
 
+
   deploy-maven:
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
     needs: test

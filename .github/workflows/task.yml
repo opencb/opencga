@@ -11,9 +11,8 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
       maven_opts: -P storage-hadoop,hdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
-
   test:
-    uses: opencb/opencga/.github/workflows/test-analysis.yml@develop
+    uses: opencb/opencga/.github/workflows/test-analysis.yml@TASK-3991
     secrets: inherit
     needs: build
     with:
@@ -45,5 +44,3 @@ jobs:
     steps:
       - name: test-version-from-check
         run: echo "Project version is " ${{ needs.build.outputs.version }}
-
-
