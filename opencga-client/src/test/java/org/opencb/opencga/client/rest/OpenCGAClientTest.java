@@ -13,7 +13,7 @@ public class OpenCGAClientTest {
 
     @Test
     public void testGetUserFromToken() {
-        String token = Jwts.builder().signWith(SignatureAlgorithm.HS256, "dummy")
+        String token = Jwts.builder().signWith(SignatureAlgorithm.HS256, "dummydummydummydummydummydummydummydummydummydummydummydummy")
                 .setExpiration(Date.from(Instant.now().plusMillis(1000)))
                 .setSubject("joe")
                 .compact();
@@ -23,7 +23,7 @@ public class OpenCGAClientTest {
 
     @Test
     public void testGetUserFromTokenExpired() {
-        String token = Jwts.builder().signWith(SignatureAlgorithm.HS256, "dummy")
+        String token = Jwts.builder().signWith(SignatureAlgorithm.HS256, "dummydummydummydummydummydummydummydummydummydummydummydummy")
                 .setExpiration(Date.from(Instant.ofEpochMilli(System.currentTimeMillis() - 1000)))
                 .setSubject("joe")
                 .compact();

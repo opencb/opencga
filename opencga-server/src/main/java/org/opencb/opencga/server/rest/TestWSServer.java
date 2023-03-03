@@ -41,16 +41,16 @@ public class TestWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "echo json")
     public Response formPost(@ApiParam(value = "json") Map<String, Object> json) {
 //        System.out.println("Received message " + message);
-        for (String s : json.keySet()) {
-            Object o = json.get(s);
-            if (o instanceof Map) {
-                System.out.println("It is a map");
-                for (Object key : ((Map) o).keySet()) {
-                    System.out.println(key + " = " + json.get(key));
-                }
-            }
-            System.out.println(s + " = " + json.get(s));
-        }
+//        for (String s : json.keySet()) {
+//            Object o = json.get(s);
+//            if (o instanceof Map) {
+//                System.out.println("It is a map");
+//                for (Object key : ((Map) o).keySet()) {
+//                    System.out.println(key + " = " + json.get(key));
+//                }
+//            }
+//            System.out.println(s + " = " + json.get(s));
+//        }
         return buildResponse(Response.ok("Hello, it worked"));
     }
 

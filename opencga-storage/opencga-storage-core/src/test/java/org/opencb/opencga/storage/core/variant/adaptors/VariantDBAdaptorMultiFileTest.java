@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
+import org.apache.commons.lang.StringUtils;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -9,7 +10,6 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -140,12 +140,17 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
     @Test
     public void testRelease() throws Exception {
-        List<Variant> variants = query(new Query(), new QueryOptions()).getResults();
+        List<Variant> variants = query(new VariantQuery().includeStudyAll().includeSampleAll(), new QueryOptions()).getResults();
         for (Variant variant : variants) {
             Integer minFileId = variant.getStudies().stream()
                     .flatMap(s -> s.getFiles().stream())
                     .map(FileEntry::getFileId)
-                    .map(s -> s.substring(30, 35))
+                    .map(s->{
+                        System.out.println("s = " + s);
+                        return s;
+                    })
+                    .map(s -> StringUtils.removeStart(s, "1K.end.platinum-genomes-vcf-NA"))
+                    .map(s -> StringUtils.removeEnd(s, "_S1.genome.vcf.gz"))
                     .map(Integer::valueOf)
                     .min(Integer::compareTo)
                     .orElse(0);
@@ -268,17 +273,19 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
     @Test
     public void testGetByStudies() throws Exception {
+        VariantQueryResult<Variant> allVariants = dbAdaptor.get(new VariantQuery()
+                .includeSampleAll()
+                .includeStudy(study1), options);
+
         query = new Query()
                 .append(VariantQueryParam.STUDY.key(), study1)
                 .append(INCLUDE_SAMPLE.key(), ALL);
         queryResult = query(query, options);
-        VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
-                .append(INCLUDE_SAMPLE.key(), ALL)
-                .append(VariantQueryParam.INCLUDE_STUDY.key(), study1), options);
         assertThat(queryResult, everyResult(allVariants, withStudy(study1)));
 
-
-        allVariants = dbAdaptor.get(new Query().append(INCLUDE_SAMPLE.key(), ALL), options);
+        allVariants = dbAdaptor.get(new VariantQuery()
+                        .includeSampleNone()
+                        .includeStudyAll(), options);
         query = new Query().append(VariantQueryParam.STUDY.key(), study1 + AND + study2);
         queryResult = query(query, options);
         assertThat(queryResult, everyResult(allVariants, allOf(withStudy(study1), withStudy(study2))));
@@ -1219,17 +1226,18 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
     @Test
     public void testGetByRelease() {
-        query = new Query().append(VariantQueryParam.RELEASE.key(), 1);
+        VariantQueryResult<Variant> allVariants = dbAdaptor.get(new VariantQuery()
+                        .study(study1)
+                        .file(file12877 + OR + file12878)
+                        .includeStudyAll()
+                        .includeSampleAll()
+                        .includeFileAll(), options);
+
+        query = new VariantQuery().study(study1).includeStudyAll().includeSampleAll().release(1);
         queryResult = query(query, options);
-        VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
-                .append(VariantQueryParam.STUDY.key(), study1)
-                .append(VariantQueryParam.FILE.key(), file12877 + OR + file12878)
-                .append(VariantQueryParam.INCLUDE_STUDY.key(), ALL)
-                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), ALL)
-                .append(VariantQueryParam.INCLUDE_FILE.key(), ALL), options);
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, anyOf(withFileId(file12877), withFileId(file12878)))));
 
-        query = new Query().append(VariantQueryParam.RELEASE.key(), 2);
+        query = new VariantQuery().study(study1).includeStudyAll().includeSampleAll().release(2);
         queryResult = query(query, options);
         allVariants = dbAdaptor.get(new Query()
                 .append(VariantQueryParam.STUDY.key(), study1)
@@ -1245,18 +1253,18 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         Query query = new Query(STUDY.key(), study1).append(SAMPLE.key(), sampleNA12877);
 
         DataResult<FacetField> facet = variantStorageEngine.facet(query, new QueryOptions(QueryOptions.FACET, "chromDensity[1:10109-17539]"));
-        assertEquals(variantStorageEngine.count(new Query(query).append(REGION.key(), "1:10109-17539")).first().longValue(), facet.getNumMatches());
+        assertEquals(variantStorageEngine.count(new VariantQuery(query).region("1:10109-17539")).first().longValue(), facet.getNumMatches());
 //        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet));
 
         facet = variantStorageEngine.facet(query, new QueryOptions(QueryOptions.FACET, "chromDensity[1:10109-17539]:500"));
 //        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet));
 
         facet = variantStorageEngine.facet(query, new QueryOptions(QueryOptions.FACET, "chromDensity[1]"));
-        assertEquals(variantStorageEngine.count(new Query(query).append(REGION.key(), "1")).first().longValue(), facet.getNumMatches());
+        assertEquals(variantStorageEngine.count(new VariantQuery(query).region("1")).first().longValue(), facet.getNumMatches());
 //        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet));
 
         facet = variantStorageEngine.facet(query, new QueryOptions(QueryOptions.FACET, "chromDensity[1:10109-17539]:500>>type"));
-        assertEquals(variantStorageEngine.count(new Query(query).append(REGION.key(), "1")).first().longValue(), facet.getNumMatches());
+        assertEquals(variantStorageEngine.count(new VariantQuery(query).region("1")).first().longValue(), facet.getNumMatches());
 //        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet));
     }
 
@@ -1343,7 +1351,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     }
 
     public void checkCount(Query query) throws StorageEngineException {
-        long expected = variantStorageEngine.count(query).first();
+        long expected = variantStorageEngine.count(query).first().longValue();
 
         VariantQueryResult<Variant> result;
         result = variantStorageEngine.get(query, new QueryOptions(QueryOptions.COUNT, false).append(QueryOptions.LIMIT, 1));

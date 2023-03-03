@@ -24,10 +24,13 @@ import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
+import org.opencb.commons.datastore.core.DataResponse;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.CatalogManagerTest;
+import org.opencb.opencga.core.response.RestResponse;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -53,7 +56,7 @@ public class WSServerTestUtils {
     public static final String DATABASE_PREFIX = "opencga_server_test_";
     private CatalogManagerExternalResource catalogManagerResource;
 
-
+    @Deprecated
     public static <T> QueryResponse<T> parseResult(String json, Class<T> clazz) throws IOException {
 //        ObjectReader reader = OpenCGAWSServer.jsonObjectMapper.reader(OpenCGAWSServer.jsonObjectMapper.getTypeFactory().constructParametrizedType(
 //                QueryResponse.class, QueryResponse.class, OpenCGAWSServer.jsonObjectMapper.getTypeFactory().constructParametrizedType(QueryResult.class, QueryResult.class, clazz)));
@@ -64,12 +67,20 @@ public class WSServerTestUtils {
         return reader.readValue(json);
     }
 
+    public static <T> RestResponse<T> parseResponse(String json, Class<T> clazz) throws IOException {
+        ObjectReader reader = getUpdateObjectMapper().readerFor(
+                getUpdateObjectMapper().getTypeFactory().constructParametrizedType(RestResponse.class, DataResult.class, clazz)
+        );
+        return reader.readValue(json);
+    }
+
     public void initServer() throws Exception {
 
         ResourceConfig resourceConfig = new ResourceConfig();
         resourceConfig.packages(false, "org.opencb.opencga.server.rest");
         resourceConfig.property("jersey.config.server.provider.packages", "org.opencb.opencga.server.ws;io.swagger.jersey.listing;com.jersey.jaxb;com.fasterxml.jackson.jaxrs.json");
         resourceConfig.property("jersey.config.server.provider.classnames", "org.glassfish.jersey.media.multipart.MultiPartFeature");
+        resourceConfig.property("OPENCGA_HOME", catalogManagerResource.getOpencgaHome().toFile().toString());
 
         // Registering MultiPart class for POST forms
         resourceConfig.register(MultiPartFeature.class);
@@ -81,8 +92,6 @@ public class WSServerTestUtils {
 
         ServletContextHandler context = new ServletContextHandler(server, null, ServletContextHandler.SESSIONS);
         context.addServlet(sh, "/opencga/webservices/rest/*");
-
-        context.setInitParameter("config-dir", configDir.toFile().toString());
 
         System.err.println("Starting server");
         server.start();

@@ -2,8 +2,6 @@
 logLevel: "INFO"
 logDir: null
 
-openRegister: true
-
 databasePrefix: "opencga_test"
 workspace: "/tmp/opencga/sessions"
 

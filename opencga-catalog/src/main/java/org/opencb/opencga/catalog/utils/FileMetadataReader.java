@@ -21,6 +21,7 @@ import htsjdk.samtools.SAMFileHeader;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.tools.alignment.BamManager;
 import org.opencb.biodata.tools.variant.metadata.VariantMetadataUtils;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -31,6 +32,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
+import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileRelatedFile;
@@ -103,21 +105,22 @@ public class FileMetadataReader {
                 if (updateParams.getSampleIds() != null && updateParams.getSampleIds().size() > samplesBatchSize) {
                     // Update sampleIds in batches
                     List<String> sampleIds = updateParams.getSampleIds();
+                    ProgressLogger progressLogger = new ProgressLogger("Add samples to file", sampleIds.size());
+
                     updateParams.setSampleIds(null);
-                    int numMatches = 1 + sampleIds.size() / samplesBatchSize;
-                    for (int i = 0; i < numMatches; i++) {
-                        List<String> subList = sampleIds.subList(
-                                i * samplesBatchSize,
-                                Math.min((i + 1) * samplesBatchSize, sampleIds.size()));
-                        FileUpdateParams partialUpdate = new FileUpdateParams().setSampleIds(subList);
+                    boolean first = true;
+                    for (List<String> samplesBatch : BatchUtils.splitBatches(sampleIds, samplesBatchSize)) {
+                        FileUpdateParams partialUpdate = new FileUpdateParams().setSampleIds(samplesBatch);
 
                         // SET for the first batch, then ADD
-                        ParamUtils.BasicUpdateAction action = i == 0
+                        ParamUtils.BasicUpdateAction action = first
                                 ? ParamUtils.BasicUpdateAction.SET
                                 : ParamUtils.BasicUpdateAction.ADD;
+                        first = false;
                         catalogManager.getFileManager().update(studyId, file.getUuid(), partialUpdate,
                                 new QueryOptions(Constants.ACTIONS,
                                         Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), action.toString())), token);
+                        progressLogger.increment(samplesBatch.size());
                     }
 
                     catalogManager.getFileManager().update(studyId, file.getUuid(), updateParams, QueryOptions.empty(), token);
@@ -203,9 +206,12 @@ public class FileMetadataReader {
         }
 
         if (bioformat == File.Bioformat.ALIGNMENT || bioformat == File.Bioformat.VARIANT) {
-            Map<String, String> sampleMap = file.getInternal() != null ? file.getInternal().getSampleMap() : null;
-            List<String> sampleList = getFileSamples(bioformat, updateParams.getAttributes(), sampleMap);
-            updateParams.setSampleIds(sampleList);
+            if (!FileUtils.isPartial(file)) {
+                // Do not update list of samples if the file is partial
+                Map<String, String> sampleMap = file.getInternal() != null ? file.getInternal().getSampleMap() : null;
+                List<String> sampleList = getFileSamples(bioformat, updateParams.getAttributes(), sampleMap);
+                updateParams.setSampleIds(sampleList);
+            }
         }
 
         IOManager ioManager;
@@ -325,7 +331,9 @@ public class FileMetadataReader {
                 || detectFormat == File.Format.BCF) {
             VariantFileMetadata metadata = new VariantFileMetadata(String.valueOf(file.getUid()), file.getName());
             metadata.setId(String.valueOf(file.getUid()));
-            return VariantMetadataUtils.readVariantFileMetadata(Paths.get(fileUri.getPath()), metadata);
+            VariantFileMetadata variantFileMetadata = VariantMetadataUtils.readVariantFileMetadata(Paths.get(fileUri.getPath()), metadata);
+            variantFileMetadata.getHeader().getSimpleLines().removeIf(s -> "bcftools_viewCommand".equals(s.getKey()));
+            return variantFileMetadata;
         } else {
             return null;
         }

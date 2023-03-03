@@ -117,12 +117,12 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
         // Without studies
         Map<String, List<String>> samples = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
-        Assert.assertEquals(Collections.singletonMap(studyFqn, Collections.emptyList()), samples);
+        Assert.assertEquals(Collections.emptyMap(), samples);
 
         // With studies
         query.append(VariantQueryParam.STUDY.key(), studyFqn);
         samples = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
-        Assert.assertEquals(Collections.singletonMap(studyFqn, Collections.emptyList()), samples);
+        Assert.assertEquals(Collections.emptyMap(), samples);
     }
 
     @Test
@@ -259,8 +259,9 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
     @Test
     public void testQueryAnonymousWithoutPermissions() throws Exception {
         Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
-        thrown.expectMessage("cannot view study");
-        thrown.expect(CatalogAuthorizationException.class);
+        CatalogAuthorizationException expected = CatalogAuthorizationException.denyAny(ParamConstants.ANONYMOUS_USER_ID, "view", "study");
+        thrown.expectMessage(expected.getMessage());
+        thrown.expect(expected.getClass());
         variantManager.get(query, new QueryOptions(), null);
     }
 
@@ -319,8 +320,9 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
             Assert.assertEquals(0, variant.getStudies().size());
         }
 
-        thrown.expectMessage("cannot view study");
-        thrown.expect(CatalogAuthorizationException.class);
+        CatalogAuthorizationException expected = CatalogAuthorizationException.denyAny(ParamConstants.ANONYMOUS_USER_ID, "view", "study");
+        thrown.expectMessage(expected.getMessage());
+        thrown.expect(expected.getClass());
         variantManager.get(new Query(VariantQueryParam.INCLUDE_STUDY.key(), studyId + "," + studyId2), new QueryOptions(), null);
     }
 

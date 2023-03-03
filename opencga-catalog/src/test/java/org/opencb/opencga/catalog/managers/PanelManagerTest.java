@@ -20,6 +20,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.clinical.ClinicalProperty;
+import org.opencb.biodata.models.clinical.interpretation.CancerPanel;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.core.OntologyTerm;
 import org.opencb.commons.datastore.core.DataResult;
@@ -61,7 +63,7 @@ public class PanelManagerTest extends GenericTest {
     protected String sessionIdUser;
 
     private PanelManager panelManager;
-    private String adminToken;
+    private String opencgaToken;
 
     private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
@@ -70,11 +72,12 @@ public class PanelManagerTest extends GenericTest {
         catalogManager = catalogManagerResource.getCatalogManager();
         panelManager = catalogManager.getPanelManager();
         setUpCatalogManager(catalogManager);
-        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
     }
 
     private void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
+        opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
         sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
 
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
@@ -361,6 +364,8 @@ public class PanelManagerTest extends GenericTest {
         DiseasePanel.GenePanel gene = new DiseasePanel.GenePanel();
         gene.setId(id);
         gene.setName(name);
+        gene.setModesOfInheritance(Arrays.asList(ClinicalProperty.ModeOfInheritance.AUTOSOMAL_DOMINANT, ClinicalProperty.ModeOfInheritance.AUTOSOMAL_RECESSIVE));
+        gene.setCancer(new CancerPanel().setRoles(Arrays.asList(ClinicalProperty.RoleInCancer.BOTH, ClinicalProperty.RoleInCancer.ONCOGENE)));
         return gene;
     }
 

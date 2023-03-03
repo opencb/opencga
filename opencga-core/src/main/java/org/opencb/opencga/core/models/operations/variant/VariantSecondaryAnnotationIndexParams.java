@@ -20,12 +20,12 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
-public class VariantSecondaryIndexParams extends ToolParams {
-    public static final String DESCRIPTION = "Variant secondary index params.";
+public class VariantSecondaryAnnotationIndexParams extends ToolParams {
+    public static final String DESCRIPTION = "Variant secondary annotation index params.";
 
-    public VariantSecondaryIndexParams() {
+    public VariantSecondaryAnnotationIndexParams() {
     }
-    public VariantSecondaryIndexParams(String region, List<String> sample, boolean overwrite) {
+    public VariantSecondaryAnnotationIndexParams(String region, List<String> sample, boolean overwrite) {
         this.region = region;
         this.sample = sample;
         this.overwrite = overwrite;
@@ -38,7 +38,7 @@ public class VariantSecondaryIndexParams extends ToolParams {
         return region;
     }
 
-    public VariantSecondaryIndexParams setRegion(String region) {
+    public VariantSecondaryAnnotationIndexParams setRegion(String region) {
         this.region = region;
         return this;
     }
@@ -47,7 +47,7 @@ public class VariantSecondaryIndexParams extends ToolParams {
         return sample;
     }
 
-    public VariantSecondaryIndexParams setSample(List<String> sample) {
+    public VariantSecondaryAnnotationIndexParams setSample(List<String> sample) {
         this.sample = sample;
         return this;
     }
@@ -56,7 +56,7 @@ public class VariantSecondaryIndexParams extends ToolParams {
         return overwrite;
     }
 
-    public VariantSecondaryIndexParams setOverwrite(boolean overwrite) {
+    public VariantSecondaryAnnotationIndexParams setOverwrite(boolean overwrite) {
         this.overwrite = overwrite;
         return this;
     }

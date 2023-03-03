@@ -89,6 +89,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
 
     protected CatalogManager catalogManager;
+    private String opencgaToken;
     protected String sessionIdUser;
     private FamilyManager familyManager;
 
@@ -102,12 +103,13 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
+        opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
         sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
 
         catalogManager.getUserManager().create("user2", "User Name2", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST,
-                null);
+                opencgaToken);
 
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first().getId();
@@ -198,16 +200,16 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         List<File> files = new LinkedList<>();
 
         String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
-        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(vcfFile, "", "", "", null, null, null,
+        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(vcfFile, "", "", "", null, null, null, null,
                 null), false, sessionIdUser).first());
         vcfFile = getClass().getResource("/biofiles/family.vcf").getFile();
-        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(vcfFile, "", "", "", null, null, null,
+        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(vcfFile, "", "", "", null, null, null, null,
                 null), false, sessionIdUser).first());
         String bamFile = getClass().getResource("/biofiles/HG00096.chrom20.small.bam").getFile();
-        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFile, "", "", "", null, null, null,
+        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFile, "", "", "", null, null, null, null,
                 null), false, sessionIdUser).first());
         bamFile = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
-        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFile, "", "", "", null, null, null,
+        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFile, "", "", "", null, null, null, null,
                 null), false, sessionIdUser).first());
 
         return files;
@@ -1083,7 +1085,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     public void assignPermissions() throws CatalogException {
         ClinicalAnalysis clinicalAnalysis = createDummyEnvironment(true, false).first();
         catalogManager.getUserManager().create("external", "User Name", "external@mail.com", TestParamConstants.PASSWORD, "", null,
-                Account.AccountType.GUEST, null);
+                Account.AccountType.GUEST, opencgaToken);
 
         OpenCGAResult<AclEntryList<ClinicalAnalysisPermissions>> aclResult =
                 catalogManager.getClinicalAnalysisManager().getAcls(STUDY, Collections.singletonList(clinicalAnalysis.getId()), "external",

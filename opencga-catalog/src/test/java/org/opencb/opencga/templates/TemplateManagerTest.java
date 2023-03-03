@@ -16,6 +16,7 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
 
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Paths;
 
@@ -49,16 +50,19 @@ public class TemplateManagerTest {
         catalogManager.getProjectManager().create("project", "Project", "", "name", "common", "GRCh38", QueryOptions.empty(), token);
         catalogManager.getStudyManager().create("project", new Study().setId("study"), QueryOptions.empty(), token);
 
-        URL resource = this.getClass().getResource("/templates_yaml/manifest.yml");
+        catalogManagerResource.getResourceUri("templates/families.members.txt");
+        catalogManagerResource.getResourceUri("templates/families.txt");
+        catalogManagerResource.getResourceUri("templates/individuals.samples.txt");
+        catalogManagerResource.getResourceUri("templates/individuals.txt");
+        catalogManagerResource.getResourceUri("templates/samples.txt");
+        URI resource = catalogManagerResource.getResourceUri("templates/manifest.yml");
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-        TemplateManifest manifest = objectMapper.readValue(resource, TemplateManifest.class);
-
+        TemplateManifest manifest = objectMapper.readValue(resource.toURL(), TemplateManifest.class);
         TemplateManager templateManager = new TemplateManager(catalogManager, false, false, token);
-        templateManager.execute(manifest, Paths.get(resource.toURI()).getParent());
+        templateManager.execute(manifest, Paths.get(resource).getParent());
 
         templateManager = new TemplateManager(catalogManager, true, true, token);
-        templateManager.execute(manifest, Paths.get(resource.toURI()).getParent());
-
+        templateManager.execute(manifest, Paths.get(resource).getParent());
     }
 
     @Test
@@ -76,15 +80,19 @@ public class TemplateManagerTest {
         catalogManager.getProjectManager().create("project", "Project", "", "name", "common", "GRCh38", QueryOptions.empty(), token);
         catalogManager.getStudyManager().create("project", new Study().setId("study"), QueryOptions.empty(), token);
 
-        URL resource = this.getClass().getResource("/templates_yaml/manifest.yml");
+        URI resource = catalogManagerResource.getResourceUri("templates_yaml/manifest.yml");
+        catalogManagerResource.getResourceUri("templates_yaml/families.members.txt");
+        catalogManagerResource.getResourceUri("templates_yaml/families.txt");
+        catalogManagerResource.getResourceUri("templates_yaml/samples.txt");
+        catalogManagerResource.getResourceUri("templates_yaml/individuals.yml");
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-        TemplateManifest manifest = objectMapper.readValue(resource, TemplateManifest.class);
+        TemplateManifest manifest = objectMapper.readValue(resource.toURL(), TemplateManifest.class);
 
         TemplateManager templateManager = new TemplateManager(catalogManager, false, false, token);
-        templateManager.execute(manifest, Paths.get(resource.toURI()).getParent());
+        templateManager.execute(manifest, Paths.get(resource).getParent());
 
         templateManager = new TemplateManager(catalogManager, true, true, token);
-        templateManager.execute(manifest, Paths.get(resource.toURI()).getParent());
+        templateManager.execute(manifest, Paths.get(resource).getParent());
 
     }
 
