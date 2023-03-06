@@ -50,7 +50,7 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
     public void linkTest() throws Exception {
         fileManager.setFileSampleLinkThreshold(1);
 
-        String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
+        String vcfFile = opencga.getResourceUri("biofiles/variant-test-file.vcf.gz").toString();
         OpenCGAResult<File> link = fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, null, null, null, null), false, token);
 
         assertEquals(0, link.first().getSampleIds().size());
@@ -104,7 +104,7 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
     public void postLinkPassingVirtualFile() throws Exception {
         fileManager.setFileSampleLinkThreshold(1);
 
-        String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
+        String vcfFile = opencga.getResourceUri("biofiles/variant-test-file.vcf.gz").toString();
         OpenCGAResult<File> link = fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, "biofiles/virtual_file.vcf", null, null, null), false, token);
 
         OpenCGAResult<File> virtualResult = fileManager.get(studyFqn, "virtual_file.vcf", QueryOptions.empty(), token);
@@ -166,7 +166,7 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
     public void postLinkPassingMultipartFile() throws Exception {
         fileManager.setFileSampleLinkThreshold(1);
 
-        String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
+        String vcfFile = opencga.getResourceUri("biofiles/variant-test-file.vcf.gz").toString();
         OpenCGAResult<File> link = fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, "biofiles/virtual_file.vcf", null, null, null), false, token);
 
         OpenCGAResult<File> virtualResult = fileManager.get(studyFqn, "virtual_file.vcf", QueryOptions.empty(), token);
@@ -228,7 +228,7 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
     public void linkTestFile() throws Exception {
         fileManager.setFileSampleLinkThreshold(1);
 
-        String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
+        String vcfFile = opencga.getResourceUri("biofiles/variant-test-file.vcf.gz").toString();
         OpenCGAResult<File> link = fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, null, null, null, null), false, token);
 
         assertEquals(0, link.first().getSampleIds().size());

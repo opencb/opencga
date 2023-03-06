@@ -77,21 +77,24 @@ public class VariantQueryParserTest implements DummyVariantStorageTest {
 
     @Test
     public void preProcessGenotypesFilter() {
-        assertEquals("S1:1/1,1|1", preProcessGenotypesFilter("S1:1/1", loadedGenotypes));
-        assertEquals("S1:1/1,1|1,1/2,1|2,2|1,1/3,1|3,3|1,1/4,1/5,1/6,1/16", preProcessGenotypesFilter("S1:1/1,1/2", loadedGenotypes));
-        assertEquals("S1:1/3,1|3,3|1,1/2,1|2,2|1,1/4,1/5,1/6,1/16", preProcessGenotypesFilter("S1:1/3", loadedGenotypes));
-        assertEquals("S1:0/2,0|2,2|0,0/3,0|3,3|0,0/4,0/5,0/6,0/16", preProcessGenotypesFilter("S1:0/2", loadedGenotypes));
-        assertEquals("S1:0/3,0|3,3|0,0/2,0|2,2|0,0/4,0/5,0/6,0/16", preProcessGenotypesFilter("S1:0/3", loadedGenotypes));
-        assertEquals("S1:0|3,0|2", preProcessGenotypesFilter("S1:0|3", loadedGenotypes));
-        assertEquals("S1:./2", preProcessGenotypesFilter("S1:./2", loadedGenotypes)); // check scape '.' in regex
+        assertEquals(set("1/1", "1|1"), preProcessGenotypesFilter("S1", "1/1", loadedGenotypes));
+        assertEquals(set("1/1", "1|1", "1/2", "1|2", "2|1", "1/3", "1|3", "3|1", "1/4", "1/5", "1/6", "1/16"), preProcessGenotypesFilter("S1", "1/1,1/2", loadedGenotypes));
+        assertEquals(set("1/3", "1|3", "3|1", "1/2", "1|2", "2|1", "1/4", "1/5", "1/6", "1/16"), preProcessGenotypesFilter("S1", "1/3", loadedGenotypes));
+        assertEquals(set("0/2", "0|2", "2|0", "0/3", "0|3", "3|0", "0/4", "0/5", "0/6", "0/16"), preProcessGenotypesFilter("S1", "0/2", loadedGenotypes));
+        assertEquals(set("0/3", "0|3", "3|0", "0/2", "0|2", "2|0", "0/4", "0/5", "0/6", "0/16"), preProcessGenotypesFilter("S1", "0/3", loadedGenotypes));
+        assertEquals(set("0|3", "0|2"), preProcessGenotypesFilter("S1", "0|3", loadedGenotypes));
+        assertEquals(set("./2"), preProcessGenotypesFilter("S1", "./2", loadedGenotypes)); // check scape '.' in regex
     }
 
-    protected String preProcessGenotypesFilter(String genotypeFilter, List<String> loadedGenotypes) {
+    protected Set<String> preProcessGenotypesFilter(String sample, String genotypeFilter, List<String> loadedGenotypes) {
         Map<Object, List<String>> map = new LinkedHashMap<>();
-        VariantQueryUtils.QueryOperation op = parseGenotypeFilter(genotypeFilter, map);
-        return VariantQueryParser.preProcessGenotypesFilter(map, op, loadedGenotypes);
+        VariantQueryUtils.QueryOperation op = parseGenotypeFilter(sample + ":" + genotypeFilter, map);
+        return set(VariantQueryParser.preProcessGenotypesFilter(map, op, loadedGenotypes).split(":")[1].split(","));
     }
 
+    public static <T> Set<T> set(T... ts) {
+        return new HashSet<>(Arrays.asList(ts));
+    }
 
     @Test
     public void testParseClinicalCombinations() {

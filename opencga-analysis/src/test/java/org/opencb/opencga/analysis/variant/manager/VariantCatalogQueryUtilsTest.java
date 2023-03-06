@@ -109,7 +109,7 @@ public class VariantCatalogQueryUtilsTest {
     public static void setUp() throws Exception {
         catalog = catalogManagerExternalResource.getCatalogManager();
 
-        User user = catalog.getUserManager().create("user", "user", "my@email.org", TestParamConstants.PASSWORD, "ACME", 1000L, Account.AccountType.FULL, null).first();
+        User user = catalog.getUserManager().create("user", "user", "my@email.org", TestParamConstants.PASSWORD, "ACME", 1000L, Account.AccountType.FULL, catalogManagerExternalResource.getAdminToken()).first();
 
         sessionId = catalog.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
         assembly = "GRCh38";

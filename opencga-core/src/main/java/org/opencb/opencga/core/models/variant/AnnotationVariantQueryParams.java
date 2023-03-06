@@ -15,6 +15,7 @@ public class AnnotationVariantQueryParams extends ToolParams {
     private String panelRoleInCancer;
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private boolean panelIntersection;
+    private String panelFeatureType;
     private String cohortStatsRef;
     private String cohortStatsAlt;
     private String cohortStatsMaf;
@@ -127,6 +128,15 @@ public class AnnotationVariantQueryParams extends ToolParams {
 
     public AnnotationVariantQueryParams setPanelIntersection(boolean panelIntersection) {
         this.panelIntersection = panelIntersection;
+        return this;
+    }
+
+    public String getPanelFeatureType() {
+        return panelFeatureType;
+    }
+
+    public AnnotationVariantQueryParams setPanelFeatureType(String panelFeatureType) {
+        this.panelFeatureType = panelFeatureType;
         return this;
     }
 

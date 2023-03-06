@@ -387,6 +387,10 @@ public class TemplateEntryIterator<T> implements Iterator<T>, AutoCloseable {
             if (declaredField.getType().getName().equals("org.apache.avro.Schema")) {
                 continue;
             }
+            // Ignore jacoco custom fields
+            if (declaredField.getName().equals("$jacocoData")) {
+                continue;
+            }
 
             String key = getMapKey(field, declaredField.getName());
             if (declaredField.getType().getName().startsWith("org.opencb") && !declaredField.getType().isEnum()
@@ -419,6 +423,7 @@ public class TemplateEntryIterator<T> implements Iterator<T>, AutoCloseable {
 
     // Scans fields in all super classes
     private List<Field> getAllUnderlyingDeclaredFields(Class<?> clazz) {
+        // FIXME: Use jackson to obtain list of fields. See ToolParams#buildPropertiesMap
         if (clazz == null) {
             return Collections.emptyList();
         }

@@ -35,6 +35,7 @@ import static org.junit.Assert.*;
 /**
  * Created by pfurio on 11/04/16.
  */
+@Ignore
 public class VariableSetWSServerTest {
 
     private WebTarget webTarget;

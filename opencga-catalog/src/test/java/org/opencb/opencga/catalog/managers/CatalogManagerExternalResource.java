@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.bson.Document;
+import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
@@ -31,10 +32,14 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
@@ -48,7 +53,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
     private static CatalogManager catalogManager;
     private Configuration configuration;
     private Path opencgaHome;
-    private String opencgaToken;
+    private String adminToken;
 
 
     public CatalogManagerExternalResource() {
@@ -80,7 +85,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
         // FIXME!! Should not need to create again the catalogManager
         //  Have to create again the CatalogManager, as it has a random "secretKey" inside
         catalogManager = new CatalogManager(configuration);
-        opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
     }
 
     @Override
@@ -90,6 +95,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
             if (catalogManager != null) {
                 catalogManager.close();
             }
+            adminToken = null;
         } catch (CatalogException e) {
             throw new RuntimeException(e);
         }
@@ -103,12 +109,12 @@ public class CatalogManagerExternalResource extends ExternalResource {
         return catalogManager;
     }
 
-    public Path getOpencgaHome() {
-        return opencgaHome;
+    public String getAdminToken() {
+        return adminToken;
     }
 
-    public String getOpencgaToken() {
-        return opencgaToken;
+    public Path getOpencgaHome() {
+        return opencgaHome;
     }
 
     public ObjectMapper generateNewObjectMapper() {
@@ -167,4 +173,23 @@ public class CatalogManagerExternalResource extends ExternalResource {
         }
         folder.delete();
     }
+
+    public URI getResourceUri(String resourceName) throws IOException {
+        return getResourceUri(resourceName, resourceName);
+    }
+
+    public URI getResourceUri(String resourceName, String targetName) throws IOException {
+        Path resourcePath = opencgaHome.resolve("resources").resolve(targetName);
+        if (!resourcePath.getParent().toFile().exists()) {
+            Files.createDirectories(resourcePath.getParent());
+        }
+        if (!resourcePath.toFile().exists()) {
+            try (InputStream stream = this.getClass().getClassLoader().getResourceAsStream(resourceName)) {
+                Assert.assertNotNull(resourceName, stream);
+                Files.copy(stream, resourcePath, StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+        return resourcePath.toUri();
+    }
+
 }

@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.hadoop.variant;
 
-import org.apache.commons.lang3.RegExUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
@@ -73,11 +72,12 @@ import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -85,11 +85,9 @@ import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
-import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,7 +96,6 @@ import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Pattern;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.*;
@@ -354,7 +351,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 manager.set(new HadoopVariantStorageEngine());
             }
         }
-        HadoopVariantStorageEngine manager = HadoopVariantStorageTest.manager.get();
+        HadoopVariantStorageEngine engine = HadoopVariantStorageTest.manager.get();
 
         //Make a copy of the configuration
         Configuration conf = new Configuration(false);
@@ -364,10 +361,15 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 .getOptions()
                 .putAll(otherStorageConfigurationOptions);
 
-        manager.setConfiguration(storageConfiguration, HadoopVariantStorageEngine.STORAGE_ENGINE_ID, VariantStorageBaseTest.DB_NAME);
-        manager.mrExecutor = new TestMRExecutor(configuration.get());
-        manager.conf = conf;
-        return manager;
+        CellBaseUtils cellBaseUtils = new CellBaseUtils(new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration()));
+        if (cellBaseUtils.supportsDataRelease()) {
+            storageConfiguration.getCellbase().setDataRelease("1");
+        }
+
+        engine.setConfiguration(storageConfiguration, HadoopVariantStorageEngine.STORAGE_ENGINE_ID, VariantStorageBaseTest.DB_NAME);
+        engine.mrExecutor = new TestMRExecutor(configuration.get());
+        engine.conf = conf;
+        return engine;
     }
 
     default TestMRExecutor getMrExecutor() {
@@ -459,7 +461,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 }
             }
         }
-        getVariantStorageEngine().getMetadataManager().clearCaches();
+        getVariantStorageEngine().close();
     }
 
     default void deleteTable(String tableName) throws Exception {

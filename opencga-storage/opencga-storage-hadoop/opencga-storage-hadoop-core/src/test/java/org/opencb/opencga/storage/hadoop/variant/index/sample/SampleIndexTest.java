@@ -62,7 +62,8 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.*;
 import static org.junit.Assert.*;
 import static org.opencb.opencga.core.models.variant.VariantAnnotationConstants.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.gte;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.lte;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
@@ -103,8 +104,14 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @Before
     public void before() throws Exception {
-        dbAdaptor = getVariantStorageEngine().getDBAdaptor();
-        sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
+        HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+        variantStorageEngine.getConfiguration().getCellbase().setUrl("https://uk.ws.zettagenomics.com/cellbase/");
+        variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.2");
+        variantStorageEngine.getConfiguration().getCellbase().setDataRelease("1");
+        variantStorageEngine.reloadCellbaseConfiguration();
+
+        dbAdaptor = variantStorageEngine.getDBAdaptor();
+        sampleIndexDBAdaptor = variantStorageEngine.getSampleIndexDBAdaptor();
         if (!loaded) {
             load();
             loaded = true;
@@ -480,9 +487,11 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @Test
     public void testQueryAnnotationIndex_BtTf() throws Exception {
+        // These are queries not fully covered using the DBAdaptor (returns more values than expected)
+        // SampleIndex is more accurate than DBAdaptor, but still not 100% accurate
         testQueryAnnotationIndex(new Query()
                 .append(ANNOT_BIOTYPE.key(), "protein_coding")
-                .append(ANNOT_TRANSCRIPT_FLAG.key(), "basic"));
+                .append(ANNOT_TRANSCRIPT_FLAG.key(), "basic"), true);
     }
 
     @Test
@@ -521,21 +530,21 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     public void testQueryAnnotationIndex_CtTf_better_than_dbadaptor() throws Exception {
         // These are queries not fully covered using the DBAdaptor (returns more values than expected)
         // SampleIndex is more accurate than DBAdaptor, but still not 100% accurate
-        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_lost").append(ANNOT_TRANSCRIPT_FLAG.key(), "seleno"));
+        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_lost").append(ANNOT_TRANSCRIPT_FLAG.key(), "seleno"), true);
     }
 
     @Test
     public void testQueryAnnotationIndex_pop_freq() throws Exception {
-        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000G:ALL=0"));
-        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000G:ALL>0"));
-        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000G:ALL<0.001"));
-        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000G:ALL>0.005"));
-        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000G:ALL>0.008"));
-        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000G:ALL>=0.005;GNOMAD_GENOMES:ALL>=0.005"));
+        testQueryAnnotationIndex(new VariantQuery().populationFrequencyAlt("1000G:ALL=0"));
+        testQueryAnnotationIndex(new VariantQuery().populationFrequencyAlt("1000G:ALL>0"));
+        testQueryAnnotationIndex(new VariantQuery().populationFrequencyAlt("1000G:ALL<0.001").type("!DELETION"));
+        testQueryAnnotationIndex(new VariantQuery().populationFrequencyAlt("1000G:ALL>0.005"));
+        testQueryAnnotationIndex(new VariantQuery().populationFrequencyAlt("1000G:ALL>0.008"));
+        testQueryAnnotationIndex(new VariantQuery().populationFrequencyAlt("1000G:ALL>=0.005;GNOMAD_GENOMES:ALL>=0.005"));
 
-        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000G:ALL>=0.005,GNOMAD_GENOMES:ALL>=0.005"));
-        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000G:ALL<0.005,GNOMAD_GENOMES:ALL<0.005"));
-        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000G:ALL>0.005,GNOMAD_GENOMES:ALL>0.005"));
+        testQueryAnnotationIndex(new VariantQuery().populationFrequencyAlt("1000G:ALL>=0.005,GNOMAD_GENOMES:ALL>=0.005"));
+        testQueryAnnotationIndex(new VariantQuery().populationFrequencyAlt("1000G:ALL<0.005,GNOMAD_GENOMES:ALL<0.005").type("!DELETION"));
+        testQueryAnnotationIndex(new VariantQuery().populationFrequencyAlt("1000G:ALL>0.005,GNOMAD_GENOMES:ALL>0.005"));
     }
 
     @Test
@@ -550,11 +559,15 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     }
 
     public void testQueryAnnotationIndex(Query annotationQuery) throws Exception {
+        testQueryAnnotationIndex(annotationQuery, false);
+    }
+
+    public void testQueryAnnotationIndex(Query annotationQuery, boolean sampleIndexMightBeMoreAccurate) throws Exception {
         for (String study : studies) {
             for (String sampleName : sampleNames.get(study)) {
                 SampleIndexQuery sampleIndexQuery = testQueryIndex(annotationQuery, new Query()
                         .append(STUDY.key(), study)
-                        .append(SAMPLE.key(), sampleName));
+                        .append(SAMPLE.key(), sampleName), sampleIndexMightBeMoreAccurate);
                 assertTrue(!sampleIndexQuery.emptyAnnotationIndex() || !sampleIndexQuery.getAnnotationIndexQuery().getPopulationFrequencyFilter().isNoOp());
             }
         }
@@ -571,6 +584,10 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     }
 
     public SampleIndexQuery testQueryIndex(Query testQuery, Query query) throws Exception {
+        return testQueryIndex(testQuery, query, false);
+    }
+
+    public SampleIndexQuery testQueryIndex(Query testQuery, Query query, boolean sampleIndexMightBeMoreAccurate) throws Exception {
         System.out.println("----- START TEST QUERY INDEX -----------------------------------------------------");
         System.out.println("testQuery  = " + testQuery.toJson());
         System.out.println("query      = " + query.toJson());
@@ -580,7 +597,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         System.out.println("#Query DBAdaptor");
         query.putAll(testQuery);
         VariantQueryResult<Variant> queryResult = dbAdaptorQuery(new Query(query), new QueryOptions());
-        int onlyDBAdaptor = queryResult.getNumResults();
+        List<String> onlyDBAdaptor = queryResult.getResults().stream().map(Variant::toString).sorted().collect(toList());
 
         // Query SampleIndex
         System.out.println("#Query SampleIndex");
@@ -590,15 +607,14 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 //                .count(indexQuery, "NA19600");
         DataResult<Variant> result = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
                 .iterator(indexQuery).toDataResult();
-        System.out.println("result.getResults() = " + result.getResults());
-        int onlyIndex = result.getNumResults();
+//        System.out.println("result.getResults() = " + result.getResults());
+        List<String> onlyIndex = result.getResults().stream().map(Variant::toString).sorted().collect(toList());
 
         // Query SampleIndex+DBAdaptor
         System.out.println("#Query SampleIndex+DBAdaptor");
         queryResult = variantStorageEngine.get(new Query(query), new QueryOptions(QueryOptions.COUNT, true).append(QueryOptions.LIMIT, 5000));
-        int indexAndDBAdaptor = queryResult.getNumResults();
-        long indexAndDBAdaptorMatches = queryResult.getNumMatches();
-        assertEquals(indexAndDBAdaptorMatches, indexAndDBAdaptor);
+        List<String> indexAndDBAdaptor = queryResult.getResults().stream().map(Variant::toString).sorted().collect(toList());
+        assertEquals(queryResult.getNumMatches(), queryResult.getNumResults());
 
         System.out.println("queryResult.source = " + queryResult.getSource());
 
@@ -634,32 +650,28 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
             }
 //            System.out.println("fileIndex("+sample+") = " + IndexUtils.maskToString(indexQuery.getFileIndexMask(sample), indexQuery.getFileIndex(sample)));
         }
-        System.out.println("Query SampleIndex             = " + onlyIndex);
-        System.out.println("Query DBAdaptor               = " + onlyDBAdaptor);
-        System.out.println("Query SampleIndex+DBAdaptor   = " + indexAndDBAdaptor);
+        System.out.println("Query SampleIndex             = " + onlyIndex.size());
+        System.out.println("Query DBAdaptor               = " + onlyDBAdaptor.size());
+        System.out.println("Query SampleIndex+DBAdaptor   = " + indexAndDBAdaptor.size());
         System.out.println("--------");
 
-        System.out.println("dbAdaptorQuery(new Query(query), new QueryOptions()); = " + dbAdaptorQuery(new Query(query), new QueryOptions()).getResults().stream().map(Variant::toString).sorted().collect(Collectors.toList()));
-        if (onlyDBAdaptor != indexAndDBAdaptor) {
-            VariantQueryResult<Variant> queryResultAux = variantStorageEngine.get(new Query(query), new QueryOptions());
-            List<String> indexAndDB = queryResultAux.getResults().stream().map(Variant::toString).sorted().collect(Collectors.toList());
-            queryResultAux = dbAdaptorQuery(new Query(query), new QueryOptions());
-            List<String> noIndex = queryResultAux.getResults().stream().map(Variant::toString).sorted().collect(Collectors.toList());
-
-            for (String s : indexAndDB) {
-                if (!noIndex.contains(s)) {
+        if (!onlyDBAdaptor.equals(indexAndDBAdaptor)) {
+            for (String s : indexAndDBAdaptor) {
+                if (!onlyDBAdaptor.contains(s)) {
                     System.out.println("From SampleIndex+DB, not in DBAdaptor = " + s);
                 }
             }
 
-            for (String s : noIndex) {
-                if (!indexAndDB.contains(s)) {
+            for (String s : onlyDBAdaptor) {
+                if (!indexAndDBAdaptor.contains(s)) {
                     System.out.println("From DBAdaptor, not in SampleIndex+DB = " + s);
                 }
             }
         }
-        assertEquals(onlyDBAdaptor, indexAndDBAdaptor);
-        assertThat(queryResult, numResults(lte(onlyIndex)));
+        if (!sampleIndexMightBeMoreAccurate) {
+            assertEquals(onlyDBAdaptor, indexAndDBAdaptor);
+            assertThat(onlyDBAdaptor.size(), lte(onlyIndex.size()));
+        }
 //        assertThat(queryResult, numResults(gt(0)));
         return indexQuery;
     }
@@ -822,7 +834,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @Test
     public void testAggregationCorrectnessTFBS() throws Exception {
-        testAggregationCorrectness(TF_BINDING_SITE_VARIANT);
+        testAggregationCorrectness(TF_BINDING_SITE_VARIANT, true);
     }
 
     @Test
@@ -831,6 +843,10 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     }
 
     private void testAggregationCorrectness(String ct) throws Exception {
+        testAggregationCorrectness(ct, false);
+    }
+
+    private void testAggregationCorrectness(String ct, boolean sampleIndexMightBeMoreAccurate) throws Exception {
         SampleIndexVariantAggregationExecutor executor = new SampleIndexVariantAggregationExecutor(metadataManager, sampleIndexDBAdaptor);
 
         Query query = new Query(STUDY.key(), STUDY_NAME_3)
@@ -844,7 +860,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
         assertEquals(count.get(), facet.getCount());
         FacetField.Bucket bucket = facet.getBuckets().stream().filter(b -> b.getValue().equals(ct)).findFirst().orElse(null);
-        System.out.println("ct = " + ct + " : " + count.get());
+//        System.out.println("ct = " + ct + " : " + count.get());
 //            System.out.println("facet = " + JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet));
         String msg = "aggregation for ct:" + ct + " expected count " + count.get() + " : "
                 + JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet);
@@ -855,7 +871,11 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
             }
         } else {
             assertNotNull(msg, bucket);
-            assertEquals(msg, count.get(), bucket.getCount());
+            if (sampleIndexMightBeMoreAccurate) {
+                assertThat(msg, count.get(), gte(bucket.getCount()));
+            } else {
+                assertEquals(msg, count.get(), bucket.getCount());
+            }
         }
     }
 

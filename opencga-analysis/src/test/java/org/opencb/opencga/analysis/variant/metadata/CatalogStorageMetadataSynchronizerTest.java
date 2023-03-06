@@ -87,7 +87,7 @@ public class CatalogStorageMetadataSynchronizerTest {
 
         catalogManager = catalogManagerExternalResource.getCatalogManager();
 
-        catalogManager.getUserManager().create(userId, "User", "user@email.org", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, null).first();
+        catalogManager.getUserManager().create(userId, "User", "user@email.org", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, catalogManagerExternalResource.getAdminToken()).first();
 
         sessionId = catalogManager.getUserManager().login(userId, TestParamConstants.PASSWORD).getToken();
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "Homo sapiens",
@@ -265,8 +265,9 @@ public class CatalogStorageMetadataSynchronizerTest {
         sample = catalogManager.getSampleManager().get(studyId, sampleName, null, sessionId).first();
         assertEquals(IndexStatus.READY, secureGet(sample, s -> s.getInternal().getVariant().getIndex().getStatus().getId(), null));
         assertEquals(IndexStatus.READY, secureGet(sample, s -> s.getInternal().getVariant().getAnnotationIndex().getStatus().getId(), null));
-        assertEquals(IndexStatus.NONE, secureGet(sample, s -> s.getInternal().getVariant().getSecondarySampleIndex().getStatus().getId(), null));
-        assertEquals(IndexStatus.NONE, secureGet(sample, s->s.getInternal().getVariant().getSecondarySampleIndex().getFamilyStatus().getId(), null));
+        assertEquals((Integer) 1, secureGet(sample, s -> s.getInternal().getVariant().getSecondarySampleIndex().getVersion(), null));
+        assertEquals(IndexStatus.READY, secureGet(sample, s -> s.getInternal().getVariant().getSecondarySampleIndex().getStatus().getId(), null));
+        assertEquals(IndexStatus.READY, secureGet(sample, s -> s.getInternal().getVariant().getSecondarySampleIndex().getFamilyStatus().getId(), null));
         assertEquals(1, secureGet(sample, s -> s.getInternal().getVariant().getSecondarySampleIndex().getVersion(), null).intValue());
     }
 

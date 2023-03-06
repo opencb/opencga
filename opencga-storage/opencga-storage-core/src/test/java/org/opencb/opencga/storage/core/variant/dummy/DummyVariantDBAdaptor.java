@@ -33,9 +33,9 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,7 +108,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
         logger.info("dbName " + dbName);
 
         List<Variant> variants = new ArrayList<>(TEMPLATES.size());
-        HashSet<String> variantIds = new HashSet<>(variantQuery.getQuery().getAsStringList(VariantQueryParam.ID.key()));
+        HashSet<String> variantIds = new HashSet<>(variantQuery.getQuery().getAsStringList(VariantQueryUtils.ID_INTERSECT.key()));
         for (String template : TEMPLATES) {
             if (!variantIds.isEmpty() && !variantIds.contains(template)) {
                 // Skip this variant
