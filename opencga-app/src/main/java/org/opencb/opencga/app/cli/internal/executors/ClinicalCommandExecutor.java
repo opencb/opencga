@@ -143,7 +143,6 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
 //        config.setSkipUntieredVariants(!cliOptions.includeUntieredVariants);
 
         Path outDir = Paths.get(cliOptions.outdir);
-        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
 
         // Execute tiering analysis
         TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis();
@@ -179,7 +178,6 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
 //        config.setSkipUntieredVariants(!cliOptions.includeUntieredVariants);
 
         Path outDir = Paths.get(cliOptions.outdir);
-        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
 
         // Execute tiering analysis
         TeamInterpretationAnalysis teamAnalysis = new TeamInterpretationAnalysis();
@@ -253,7 +251,6 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         query.putIfNotNull("trait", cliOptions.trait);
 
         Path outDir = Paths.get(cliOptions.outdir);
-        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
 
         ZettaInterpretationConfiguration config = new ZettaInterpretationConfiguration();
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
@@ -287,7 +284,6 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
 //        config.setSkipUntieredVariants(!cliOptions.includeUntieredVariants);
 
         Path outDir = Paths.get(cliOptions.outdir);
-        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
 
         // Execute cancer tiering analysis
         CancerTieringInterpretationAnalysis cancerTieringAnalysis = new CancerTieringInterpretationAnalysis();
@@ -309,7 +305,6 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         String token = cliOptions.commonOptions.token;
 
         Path outDir = Paths.get(cliOptions.outdir);
-        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
 
         // Execute cancer tiering analysis
         ExomiserInterpretationAnalysis exomiserInterpretationAnalysis = new ExomiserInterpretationAnalysis();
