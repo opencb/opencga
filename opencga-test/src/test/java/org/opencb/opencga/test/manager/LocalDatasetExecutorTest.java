@@ -1,6 +1,8 @@
 package org.opencb.opencga.test.manager;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.test.config.Variant;
 import org.opencb.opencga.test.execution.LocalDatasetExecutor;
 
@@ -8,6 +10,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+@Category(ShortTests.class)
 public class LocalDatasetExecutorTest {
 
 

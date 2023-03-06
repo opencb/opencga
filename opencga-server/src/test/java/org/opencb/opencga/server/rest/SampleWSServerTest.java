@@ -17,6 +17,7 @@
 package org.opencb.opencga.server.rest;
 
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -27,6 +28,7 @@ import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import javax.ws.rs.client.WebTarget;
 import java.io.IOException;
@@ -36,6 +38,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by jacobo on 25/06/15.
  */
+@Category(MediumTests.class)
 public class SampleWSServerTest {
 
     private static WSServerTestUtils serverTestUtils;

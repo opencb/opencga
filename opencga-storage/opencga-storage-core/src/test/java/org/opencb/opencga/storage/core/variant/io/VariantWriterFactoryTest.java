@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core.variant.io;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
@@ -25,9 +26,12 @@ import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -45,6 +49,7 @@ import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.Va
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(ShortTests.class)
 public class VariantWriterFactoryTest {
 
     @Rule
@@ -72,6 +77,7 @@ public class VariantWriterFactoryTest {
 
     @Test
     public void testContigLengthNull() throws IOException, StorageEngineException {
+        DummyVariantStorageMetadataDBAdaptorFactory.clear();
         DummyVariantDBAdaptor dbAdaptor = new DummyVariantDBAdaptor("opencga");
         VariantFileHeader header = new VariantFileHeader();
         header.setComplexLines(Arrays.asList(
@@ -95,6 +101,7 @@ public class VariantWriterFactoryTest {
         writer.close();
 
         String s = outputStream.toString();
+        System.out.println("s = " + s);
         assertThat(s, containsString("##contig=<ID=chr1>"));
         assertThat(s, containsString("##contig=<ID=chr2>"));
         assertThat(s, containsString("##contig=<ID=chr3>"));

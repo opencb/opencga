@@ -19,9 +19,11 @@ package org.opencb.opencga.storage.hadoop.variant.archive;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSample;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,6 +31,7 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
+@Category(ShortTests.class)
 public class VcfRecordComparatorTest {
     private VcfRecord sampleA = VcfRecord.newBuilder()
             .setRelativeStart(1).setRelativeEnd(2)

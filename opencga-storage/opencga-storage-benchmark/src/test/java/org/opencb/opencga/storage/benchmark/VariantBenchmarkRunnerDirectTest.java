@@ -2,12 +2,15 @@ package org.opencb.opencga.storage.benchmark;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 /**
  * Created by wasim on 05/11/18.
  */
 
 @Ignore("This test should be working")
+@Category(ShortTests.class)
 public class VariantBenchmarkRunnerDirectTest extends VariantBenchmarkRunnerTest {
 
     @Test

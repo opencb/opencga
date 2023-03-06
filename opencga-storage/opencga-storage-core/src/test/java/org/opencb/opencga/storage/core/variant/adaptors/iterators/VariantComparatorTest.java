@@ -3,8 +3,10 @@ package org.opencb.opencga.storage.core.variant.adaptors.iterators;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,6 +14,7 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
+@Category(ShortTests.class)
 public class VariantComparatorTest {
 
     @Test

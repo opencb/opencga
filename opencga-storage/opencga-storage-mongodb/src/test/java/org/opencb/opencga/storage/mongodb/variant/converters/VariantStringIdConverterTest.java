@@ -2,8 +2,10 @@ package org.opencb.opencga.storage.mongodb.variant.converters;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.utils.CryptoUtils;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import static org.junit.Assert.assertEquals;
 import static org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConverter.SV_SPLIT_LENGTH;
@@ -13,6 +15,7 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.VariantStrin
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(ShortTests.class)
 public class VariantStringIdConverterTest {
 
     private final VariantStringIdConverter converter = new VariantStringIdConverter();

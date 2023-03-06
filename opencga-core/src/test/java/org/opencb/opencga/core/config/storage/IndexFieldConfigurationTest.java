@@ -2,10 +2,13 @@ package org.opencb.opencga.core.config.storage;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import static org.junit.Assert.*;
 
+@Category(ShortTests.class)
 public class IndexFieldConfigurationTest {
 
     @Test

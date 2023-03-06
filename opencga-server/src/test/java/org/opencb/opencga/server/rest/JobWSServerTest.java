@@ -17,14 +17,17 @@
 package org.opencb.opencga.server.rest;
 
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.opencga.TestParamConstants;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import javax.ws.rs.client.WebTarget;
 
 /**
  * Created by jacobo on 23/06/15.
  */
+@Category(MediumTests.class)
 public class JobWSServerTest {
 
     private static WSServerTestUtils serverTestUtils;

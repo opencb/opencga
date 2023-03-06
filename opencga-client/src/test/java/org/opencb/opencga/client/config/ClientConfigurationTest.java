@@ -17,6 +17,8 @@
 package org.opencb.opencga.client.config;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -26,6 +28,7 @@ import java.util.List;
 /**
  * Created by imedina on 04/05/16.
  */
+@Category(ShortTests.class)
 public class ClientConfigurationTest {
 
     @Test

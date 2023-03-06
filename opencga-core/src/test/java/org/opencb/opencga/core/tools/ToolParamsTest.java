@@ -18,14 +18,17 @@ package org.opencb.opencga.core.tools;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.*;
 
+@Category(ShortTests.class)
 public class ToolParamsTest {
 
     @Rule

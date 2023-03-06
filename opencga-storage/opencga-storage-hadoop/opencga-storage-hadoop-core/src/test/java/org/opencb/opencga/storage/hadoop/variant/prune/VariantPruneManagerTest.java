@@ -5,9 +5,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -27,6 +29,7 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
+@Category(LongTests.class)
 public class VariantPruneManagerTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     public static final String STUDY_NAME_3 = "study_3";

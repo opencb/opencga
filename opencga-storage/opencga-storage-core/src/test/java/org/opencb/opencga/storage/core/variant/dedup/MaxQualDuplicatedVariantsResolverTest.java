@@ -1,13 +1,16 @@
 package org.opencb.opencga.storage.core.variant.dedup;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertSame;
 
+@Category(ShortTests.class)
 public class MaxQualDuplicatedVariantsResolverTest {
 
     @Test

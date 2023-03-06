@@ -15,6 +15,8 @@
  */
 package org.opencb.opencga.storage.mongodb.variant.io;
 
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.variant.io.VariantVcfExporterTest;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
@@ -23,5 +25,6 @@ import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
  *
  * @author Jose Miguel Mut Lopez &lt;jmmut@ebi.ac.uk&gt;
  */
+@Category(ShortTests.class)
 public class MongoVariantVcfDataWriterTest extends VariantVcfExporterTest implements MongoDBVariantStorageTest {
 }

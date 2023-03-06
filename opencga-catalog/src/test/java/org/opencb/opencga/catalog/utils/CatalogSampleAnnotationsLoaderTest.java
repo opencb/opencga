@@ -20,6 +20,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.pedigree.Individual;
 import org.opencb.biodata.models.pedigree.Pedigree;
 import org.opencb.commons.datastore.core.DataResult;
@@ -39,6 +40,7 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -46,6 +48,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
 
+@Category(MediumTests.class)
 public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
 
     @Rule

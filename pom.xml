@@ -81,6 +81,13 @@
 
         <maven.compiler.source>1.8</maven.compiler.source>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <surefire.skipDefaultTestExecution>false</surefire.skipDefaultTestExecution>
+        <surefire.skipShortTests>true</surefire.skipShortTests>
+        <surefire.skipMediumTests>true</surefire.skipMediumTests>
+        <surefire.skipLongTests>true</surefire.skipLongTests>
+        <surefire.testFailureIgnore>false</surefire.testFailureIgnore>
+        <surefire.timeout>900</surefire.timeout>
     </properties>
 
     <scm>
@@ -546,16 +553,6 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.2</version>
-                <configuration>
-                    <forkCount>1</forkCount>
-                    <reuseForks>false</reuseForks>
-                    <!--<argLine>-Xmx1024m -XX:MaxPermSize=256m</argLine>-->
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <version>2.17</version>
                 <dependencies>
@@ -578,6 +575,8 @@
                         org/opencb/opencga/storage/alignment/**,
                         org/opencb/opencga/storage/variant/**,
                         org/opencb/opencga/storage/datamanagers/**,
+                        org/opencb/opencga/storage/hadoop/variant/models/protobuf/**,
+                        org/opencb/opencga/storage/server/grpc/**,
                     </excludes>
                     <resourceExcludes>
                         benchmark/jmeter/**
@@ -636,6 +635,68 @@
                                 <!--                                    </limits>-->
                                 <!--                                </rule>-->
                             </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.2</version>
+                <executions>
+                    <execution>
+                        <id>default-test</id>
+                        <configuration>
+                            <skip>${surefire.skipDefaultTestExecution}</skip>
+                            <forkCount>1</forkCount>
+                            <reuseForks>false</reuseForks>
+                            <!--<argLine>-Xmx1024m -XX:MaxPermSize=256m</argLine>-->
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>shortTestsExecution</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${surefire.skipShortTests}</skip>
+                            <testFailureIgnore>${surefire.testFailureIgnore}</testFailureIgnore>
+                            <reuseForks>true</reuseForks>
+                            <forkCount>5</forkCount>
+                            <groups>org.opencb.opencga.core.testclassification.duration.ShortTests</groups>
+                            <forkedProcessTimeoutInSeconds>${surefire.timeout}</forkedProcessTimeoutInSeconds>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>mediumTestsExecution</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${surefire.skipMediumTests}</skip>
+                            <testFailureIgnore>${surefire.testFailureIgnore}</testFailureIgnore>
+<!--                            <reuseForks>true</reuseForks>-->
+                            <reuseForks>false</reuseForks>
+                            <forkCount>1</forkCount>
+                            <groups>org.opencb.opencga.core.testclassification.duration.MediumTests</groups>
+                            <forkedProcessTimeoutInSeconds>${surefire.timeout}</forkedProcessTimeoutInSeconds>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>longTestsExecution</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${surefire.skipLongTests}</skip>
+                            <testFailureIgnore>${surefire.testFailureIgnore}</testFailureIgnore>
+                            <reuseForks>false</reuseForks>
+                            <forkCount>1</forkCount>
+                            <groups>org.opencb.opencga.core.testclassification.duration.LongTests</groups>
                         </configuration>
                     </execution>
                 </executions>
@@ -859,6 +920,27 @@
                 <opencga-storage-hadoop-deps.id>hdp2.6</opencga-storage-hadoop-deps.id>
                 <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}
                 </opencga-storage-hadoop-deps.artifactId>
+            </properties>
+        </profile>
+        <profile>
+            <id>runShortTests</id>
+            <properties>
+                <surefire.skipDefaultTestExecution>true</surefire.skipDefaultTestExecution>
+                <surefire.skipShortTests>false</surefire.skipShortTests>
+            </properties>
+        </profile>
+        <profile>
+            <id>runMediumTests</id>
+            <properties>
+                <surefire.skipDefaultTestExecution>true</surefire.skipDefaultTestExecution>
+                <surefire.skipMediumTests>false</surefire.skipMediumTests>
+            </properties>
+        </profile>
+        <profile>
+            <id>runLongTests</id>
+            <properties>
+                <surefire.skipDefaultTestExecution>true</surefire.skipDefaultTestExecution>
+                <surefire.skipLongTests>false</surefire.skipLongTests>
             </properties>
         </profile>
     </profiles>

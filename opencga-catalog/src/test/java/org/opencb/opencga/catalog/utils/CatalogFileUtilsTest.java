@@ -20,6 +20,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
@@ -37,6 +38,7 @@ import org.opencb.opencga.core.models.file.FileCreateParams;
 import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -47,6 +49,7 @@ import static org.junit.Assert.*;
 /**
  * Created by jacobo on 28/01/15.
  */
+@Category(MediumTests.class)
 public class CatalogFileUtilsTest {
 
     @Rule

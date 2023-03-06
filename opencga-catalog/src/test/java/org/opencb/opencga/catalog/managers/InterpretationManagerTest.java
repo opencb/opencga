@@ -6,6 +6,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.DataResult;
@@ -25,12 +26,14 @@ import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.*;
 
+@Category(MediumTests.class)
 public class InterpretationManagerTest extends GenericTest {
 
     public final static String STUDY = "user@1000G:phase1";
