@@ -14,11 +14,11 @@ jobs:
 
   test:
     uses: opencb/opencga/.github/workflows/test-analysis.yml@develop
-    secrets: inherit
     needs: build
+    secrets: inherit
     with:
       report_context: development
-      report_dir: ${{ github.ref_name }}/java-common-libs/${{ github.sha }}
+      report_dir: ${{ github.ref_name }}/opencga/${{ github.sha }}
 
   deploy-maven:
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
@@ -48,7 +48,6 @@ jobs:
       cli: ./clients/python/python-build.sh push
       artifact: build-folder
     secrets: inherit
-
 
   release:
     uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop
