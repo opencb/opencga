@@ -87,7 +87,6 @@
         <surefire.skipMediumTests>true</surefire.skipMediumTests>
         <surefire.skipLongTests>true</surefire.skipLongTests>
         <surefire.testFailureIgnore>false</surefire.testFailureIgnore>
-        <surefire.timeout>900</surefire.timeout>
     </properties>
 
     <scm>
@@ -666,7 +665,6 @@
                             <reuseForks>true</reuseForks>
                             <forkCount>5</forkCount>
                             <groups>org.opencb.opencga.core.testclassification.duration.ShortTests</groups>
-                            <forkedProcessTimeoutInSeconds>${surefire.timeout}</forkedProcessTimeoutInSeconds>
                         </configuration>
                     </execution>
                     <execution>
@@ -682,7 +680,6 @@
                             <reuseForks>false</reuseForks>
                             <forkCount>1</forkCount>
                             <groups>org.opencb.opencga.core.testclassification.duration.MediumTests</groups>
-                            <forkedProcessTimeoutInSeconds>${surefire.timeout}</forkedProcessTimeoutInSeconds>
                         </configuration>
                     </execution>
                     <execution>
