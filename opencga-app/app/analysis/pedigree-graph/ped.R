@@ -1,4 +1,5 @@
 suppressMessages(library(optparse))
+suppressMessages(library(jsonlite))
 suppressMessages(library(kinship2))
 set.seed(42)
 
@@ -46,7 +47,7 @@ load_file_data <- function(ped_fpath) {
 }
 
 # Main function
-plot_pedigree <- function(ped_fpath, out_dir, plot_format, no_legend, legend_pos) {
+plot_pedigree <- function(ped_fpath, out_dir, plot_format, coords_format, no_legend, legend_pos) {
   # Gather pedigree info
   ped_info <- load_file_data(ped_fpath)
   family_ped <- ped_info$family_ped
@@ -68,8 +69,8 @@ plot_pedigree <- function(ped_fpath, out_dir, plot_format, no_legend, legend_pos
   } else {
     margins <- c(5.1, 12.1, 4.1, 2.1)
   }
-  formats <- unlist(strsplit(plot_format, ','))
-  if ("png" %in% formats) {
+  plot_formats <- unlist(strsplit(plot_format, ','))
+  if ("png" %in% plot_formats) {
     png(file=paste(out_dir, "pedigree.png", sep='/'))
     if (no_legend | ncol(as.data.frame(affected)) == 1) {
       plot_df <- plot(ped_all)
@@ -82,7 +83,7 @@ plot_pedigree <- function(ped_fpath, out_dir, plot_format, no_legend, legend_pos
     }
     garbage <-dev.off()
   }
-  if ("svg" %in% formats) {
+  if ("svg" %in% plot_formats) {
     svg(file=paste(out_dir, "pedigree.svg", sep='/'))
     if (no_legend | ncol(as.data.frame(affected)) == 1) {
       plot_df <- plot(ped_all)
@@ -96,9 +97,36 @@ plot_pedigree <- function(ped_fpath, out_dir, plot_format, no_legend, legend_pos
     garbage <-dev.off()
   }
   
+  # Adding coordinates
   ped_coords <- cbind(family_ped, round(plot_df$x, 2), round(plot_df$y, 2))
-  write.table(ped_coords, file=paste(out_dir, "ped_coords.tsv", sep='/'), sep = '\t', quote=FALSE, row.names=FALSE,
-              col.names=c(colnames(family_ped), c("x", "y")))
+  colnames(ped_coords) <- c(colnames(family_ped), c("x", "y"))
+  
+  # Adding spouses
+  spouses <- as.vector(t(plot_df$plist$spouse))  # Get spouses
+  ind_order <- as.vector(t(plot_df$plist$nid))  # Get ind order in plot
+  spouses <- spouses[ind_order!=0]  # Remove empty positions
+  ind_order <- ind_order[ind_order!=0]  # Remove empty positions
+  ped_coords$spouse <- NA  # Add new spouse column to family ped
+  for (i in 1:length(spouses)) {
+    if (spouses[i] == 1) {  # If ind is linked to next ind
+      ped_coords[ind_order[i],]$spouse <- c(ped_coords[ind_order[i+1],]$id)
+    }
+    if (i!=1 && spouses[i] == 1 && spouses[i-1] == 1) {  # If ind is linked to previous and next ind
+      ped_coords[ind_order[i],]$spouse <- paste(c(ped_coords[ind_order[i-1],]$id, ped_coords[ind_order[i],]$spouse), collapse=',')
+    }
+    if (i!=1 && spouses[i] == 0 && spouses[i-1] == 1) {  # If ind is linked to previous ind 
+      ped_coords[ind_order[i],]$spouse <- c(ped_coords[ind_order[i-1],]$id)
+    }
+  }
+  
+  # Output file with coordinates
+  coords_formats <- unlist(strsplit(coords_format, ','))
+  if ("tsv" %in% coords_formats) {
+    write.table(ped_coords, file=paste(out_dir, "ped_coords.tsv", sep='/'), sep = '\t', quote=FALSE, row.names=FALSE)
+  }
+  if ("json" %in% coords_formats) {
+    write_json(ped_coords, path=paste(out_dir, "ped_coords.json", sep='/'), na='null')
+  }
 }
 
 
@@ -106,12 +134,14 @@ plot_pedigree <- function(ped_fpath, out_dir, plot_format, no_legend, legend_pos
 option_list <- list(
   make_option(c("--plot_format"), type="character", default="svg",
               help="Plot format, options: [\"svg\", \"png\"]. Default: \"svg\""),
+  make_option(c("--coords_format"), type="character", default="json",
+              help="Coords file format, options: [\"json\", \"tsv\"]. Default: \"json\""),
   make_option(c("--no_legend"), type="logical", default=FALSE, action = "store_true",
               help="Removes plot legend"),
   make_option(c("--legend_pos"), type="character", default="topright",
-              help="Legend position, options: [\"bottomright\", \"bottomleft\", \"topleft\", or \"topright\"]. Default: \"topright\"")
+              help="Legend position, options: [\"bottomright\", \"bottomleft\", \"topleft\", \"topright\"]. Default: \"topright\"")
 )
-parser <- OptionParser(usage = "%prog [options] ped_fpath out_dir", option_list=option_list)
+parser <- OptionParser(usage = "%prog ped_fpath out_dir [options]", option_list=option_list)
 arguments <- parse_args(parser, positional_arguments = 2)
 opt <- arguments$options
 args <- arguments$args
@@ -120,6 +150,7 @@ args <- arguments$args
 plot_pedigree(args[1],
               args[2],
               plot_format=opt$plot_format,
+              coords_format=opt$coords_format,
               no_legend=opt$no_legend,
               legend_pos=opt$legend_pos)
 

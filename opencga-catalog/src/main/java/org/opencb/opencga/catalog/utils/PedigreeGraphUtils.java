@@ -6,6 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.PedigreeGraph;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -23,6 +24,7 @@ public class PedigreeGraphUtils {
 
     public static final String PEDIGREE_FILENAME = "pedigree.ped";
     public static final String PEDIGREE_IMAGE_FILENAME = "pedigree.png";
+    public static final String PEDIGREE_JSON_FILENAME = "ped_coords.json";
     public static final String PEDIGREE_TSV_FILENAME = "ped_coords.tsv";
 
     public static final String R_DOCKER_IMAGE = "opencb/opencga-ext-tools:" + GitRepositoryState.get().getBuildVersion();
@@ -40,6 +42,7 @@ public class PedigreeGraphUtils {
         // Execute R script and get b64 image
         createPedigreeGraph(family, rScriptPath, outDir);
         pedigreeGraph.setBase64(getB64Image(outDir));
+        pedigreeGraph.setJson(getJsonPedigreeGraph(outDir));
 
         // Clean
         if (outDir.toFile().exists()) {
@@ -89,14 +92,23 @@ public class PedigreeGraphUtils {
         return new String(Base64.getEncoder().encode(bytes), StandardCharsets.UTF_8);
     }
 
-    public static String getTsvPedigreeGraph(Path outDir) throws IOException {
-        File imgFile = outDir.resolve(PEDIGREE_TSV_FILENAME).toFile();
-        if (!imgFile.exists()) {
-            throw new IOException("Pedigree graph tsv file (" + PEDIGREE_TSV_FILENAME + ") not found at " + outDir);
+    public static Object getJsonPedigreeGraph(Path outDir) throws IOException {
+        File jsonFile = outDir.resolve(PEDIGREE_JSON_FILENAME).toFile();
+        if (!jsonFile.exists()) {
+            throw new IOException("Pedigree graph JSON file (" + PEDIGREE_JSON_FILENAME + ") not found at " + outDir);
         }
 
-        FileInputStream fileInputStreamReader = new FileInputStream(imgFile);
-        byte[] bytes = new byte[(int) imgFile.length()];
+        return JacksonUtils.getDefaultObjectMapper().readValue(jsonFile, Object.class);
+    }
+
+    public static String getTsvPedigreeGraph(Path outDir) throws IOException {
+        File tsvFile = outDir.resolve(PEDIGREE_TSV_FILENAME).toFile();
+        if (!tsvFile.exists()) {
+            throw new IOException("Pedigree graph TSV file (" + PEDIGREE_TSV_FILENAME + ") not found at " + outDir);
+        }
+
+        FileInputStream fileInputStreamReader = new FileInputStream(tsvFile);
+        byte[] bytes = new byte[(int) tsvFile.length()];
         fileInputStreamReader.read(bytes);
         return new String(bytes, StandardCharsets.UTF_8);
     }

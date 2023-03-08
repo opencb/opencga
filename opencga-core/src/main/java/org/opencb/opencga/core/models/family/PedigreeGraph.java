@@ -4,7 +4,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 
 public class PedigreeGraph {
     String base64;
-    ObjectMap json;
+    Object json;
 
     public PedigreeGraph() {
     }
@@ -32,11 +32,11 @@ public class PedigreeGraph {
         return this;
     }
 
-    public ObjectMap getJson() {
+    public Object getJson() {
         return json;
     }
 
-    public PedigreeGraph setJson(ObjectMap json) {
+    public PedigreeGraph setJson(Object json) {
         this.json = json;
         return this;
     }
