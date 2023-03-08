@@ -12,6 +12,7 @@
         <module>opencga-enterprise-app</module>
         <module>opencga-enterprise-cva</module>
         <module>opencga-enterprise-sso</module>
+        <module>opencga-enterprise-server</module>
     </modules>
 
 
