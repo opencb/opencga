@@ -54,6 +54,7 @@ import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyPermissions;
 import org.opencb.opencga.core.models.family.FamilyStatus;
+import org.opencb.opencga.core.models.family.PedigreeGraph;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.models.study.VariableSet;
@@ -191,13 +192,12 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         // Pedigree graph
         try {
-            String b64PedigreeGraph = PedigreeGraphUtils.getPedigreeGraph(family, Paths.get(configuration.getWorkspace()).getParent(),
+            PedigreeGraph pedigreeGraph = PedigreeGraphUtils.getPedigreeGraph(family, Paths.get(configuration.getWorkspace()).getParent(),
                     Paths.get(configuration.getAnalysis().getScratchDir()));
-            family.setB64PedigreeGraph(b64PedigreeGraph);
+            family.setPedigreeGraph(pedigreeGraph);
         } catch (IOException e) {
             throw new CatalogDBException("Error computing pedigree graph for family " + family.getId(), e);
         }
-
 
         Document familyDocument = familyConverter.convertToStorageType(family, variableSetList);
 
@@ -375,10 +375,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                             true);
                     List<String> familyMemberIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
                     boolean updateRoles = queryOptions.getBoolean(ParamConstants.FAMILY_UPDATE_ROLES_PARAM);
+                    boolean updatePedigree = queryOptions.getBoolean(ParamConstants.FAMILY_UPDATE_PEDIGREEE_GRAPH_PARAM);
                     if (CollectionUtils.isNotEmpty(parameters.getAsList(QueryParams.MEMBERS.key()))) {
                         List<Map> newIndividuals = parameters.getAsList(QueryParams.MEMBERS.key(), Map.class);
                         Set<String> newIndividualIds = newIndividuals.stream().map(i -> (String) i.get(IndividualDBAdaptor.QueryParams.ID
-                                        .key())).collect(Collectors.toSet());
+                                .key())).collect(Collectors.toSet());
 
                         Set<String> currentIndividualIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toSet());
 
@@ -416,11 +417,16 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                                     individualQuery, relationshipOptions);
                             family.setMembers(memberResult.getResults());
                             Map<String, Map<String, Family.FamiliarRelationship>> roles = calculateRoles(clientSession, family
-                                            .getStudyUid(), family);
+                                    .getStudyUid(), family);
                             parameters.put(QueryParams.ROLES.key(), roles);
                         } else {
                             parameters.put(QueryParams.ROLES.key(), Collections.emptyMap());
                         }
+                    }
+
+                    if (updatePedigree && !updateRoles && !parameters.containsKey(QueryParams.DISORDERS.key())) {
+                        PedigreeGraph pedigreeGraph = computePedigreeGraph(clientSession, family);
+                        parameters.put(QueryParams.PEDIGREE_GRAPH.key(), pedigreeGraph);
                     }
 
                     Document familyUpdate = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery).toFinalUpdateDocument();
@@ -440,28 +446,14 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                         result = familyCollection.update(clientSession, finalQuery, familyUpdate, new QueryOptions("multi", true));
 
                         // Compute pedigree graph
-                        if (updateRoles) {
-                            try {
-                                String b64PedigreeGraph = "";
-                                if (!familyMemberIds.isEmpty()) {
-                                    Query query = new Query()
-                                            .append(QueryParams.UID.key(), family.getUid())
-                                            .append(QueryParams.STUDY_UID.key(), family.getStudyUid());
-                                    Family tmpFamily = get(clientSession, query, QueryOptions.empty()).first();
+                        if (updateRoles || parameters.containsKey(QueryParams.DISORDERS.key())) {
+                            PedigreeGraph pedigreeGraph = computePedigreeGraph(clientSession, family);
+                            Document pedigreeGraphDoc = getMongoDBDocument(pedigreeGraph, "PedigreeGraph");
 
-                                    b64PedigreeGraph = PedigreeGraphUtils.getPedigreeGraph(tmpFamily,
-                                            Paths.get(configuration.getWorkspace()).getParent(),
-                                            Paths.get(configuration.getAnalysis().getScratchDir()));
-                                }
-                                UpdateDocument updateDocument = new UpdateDocument()
-                                        .setSet(new Document(QueryParams.BASE64_PEDIGREE_GRAPH.key(), b64PedigreeGraph));
-                                familyUpdate = updateDocument.toFinalUpdateDocument();
-                                familyCollection.update(clientSession, finalQuery, familyUpdate, new QueryOptions("multi", true));
-                            } catch (IOException e) {
-                                logger.error("Error computing/updating the pedigree grapth for the family {}", family.getId());
-                                throw new CatalogDBException("Error computing/updating the pedigree graph for the family" + family.getId(),
-                                        e);
-                            }
+                            UpdateDocument updateDocument = new UpdateDocument()
+                                    .setSet(new Document(QueryParams.PEDIGREE_GRAPH.key(), pedigreeGraphDoc));
+                            familyUpdate = updateDocument.toFinalUpdateDocument();
+                            familyCollection.update(clientSession, finalQuery, familyUpdate, new QueryOptions("multi", true));
                         }
 
                         if (parameters.containsKey(QueryParams.ID.key())) {
@@ -494,6 +486,23 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     return endWrite(tmpStartTime, 1, 1, events);
                 }, Arrays.asList(QueryParams.MEMBERS_ID.key(), QueryParams.MEMBERS_SAMPLES_ID.key()),
                 this::iterator, (DBIterator<Family> iterator) -> updateReferencesAfterFamilyVersionIncrement(clientSession, iterator));
+    }
+
+    private PedigreeGraph computePedigreeGraph(ClientSession clientSession, Family family)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Query query = new Query()
+                .append(QueryParams.UID.key(), family.getUid())
+                .append(QueryParams.STUDY_UID.key(), family.getStudyUid());
+        Family tmpFamily = get(clientSession, query, QueryOptions.empty()).first();
+
+        try {
+            return PedigreeGraphUtils.getPedigreeGraph(tmpFamily,
+                    Paths.get(configuration.getWorkspace()).getParent(),
+                    Paths.get(configuration.getAnalysis().getScratchDir()));
+        } catch (IOException e) {
+            logger.error("Error computing/updating the pedigree grapth for the family {}", family.getId());
+            throw new CatalogDBException("Error computing/updating the pedigree graph for the family" + family.getId(), e);
+        }
     }
 
     private void updateReferencesAfterFamilyVersionIncrement(ClientSession clientSession, DBIterator<Family> iterator)
@@ -667,7 +676,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
         final String[] acceptedObjectParams = {QueryParams.MEMBERS.key(), QueryParams.PHENOTYPES.key(), QueryParams.DISORDERS.key(),
-                QueryParams.STATUS.key(), QueryParams.QUALITY_CONTROL.key(), QueryParams.ROLES.key(), QueryParams.INTERNAL_STATUS.key()};
+                QueryParams.STATUS.key(), QueryParams.QUALITY_CONTROL.key(), QueryParams.ROLES.key(), QueryParams.INTERNAL_STATUS.key(),
+                QueryParams.PEDIGREE_GRAPH.key(), };
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());

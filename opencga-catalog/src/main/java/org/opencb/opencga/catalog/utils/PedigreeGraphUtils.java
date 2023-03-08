@@ -7,6 +7,7 @@ import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.PedigreeGraph;
 import org.opencb.opencga.core.models.individual.Individual;
 
 import java.io.*;
@@ -26,7 +27,9 @@ public class PedigreeGraphUtils {
 
     public static final String R_DOCKER_IMAGE = "opencb/opencga-ext-tools:" + GitRepositoryState.get().getBuildVersion();
 
-    public static String getPedigreeGraph(Family family, Path openCgaHome, Path scratchDir) throws IOException {
+    public static PedigreeGraph getPedigreeGraph(Family family, Path openCgaHome, Path scratchDir) throws IOException {
+        PedigreeGraph pedigreeGraph = new PedigreeGraph();
+
         // Prepare R script and out paths
         Path rScriptPath = openCgaHome.resolve("analysis/pedigree-graph");
 
@@ -36,13 +39,14 @@ public class PedigreeGraphUtils {
 
         // Execute R script and get b64 image
         createPedigreeGraph(family, rScriptPath, outDir);
-        String b64PedigreeGraph = getB64PedigreeGraph(outDir);
+        pedigreeGraph.setBase64(getB64Image(outDir));
 
         // Clean
         if (outDir.toFile().exists()) {
             FileUtils.deleteDirectory(outDir.toFile());
         }
-        return b64PedigreeGraph;
+
+        return pedigreeGraph;
     }
 
     public static void createPedigreeGraph(Family family, Path rScriptPath, Path outDir) throws IOException {
@@ -73,7 +77,7 @@ public class PedigreeGraphUtils {
         }
     }
 
-    public static String getB64PedigreeGraph(Path outDir) throws IOException {
+    public static String getB64Image(Path outDir) throws IOException {
         File imgFile = outDir.resolve(PEDIGREE_IMAGE_FILENAME).toFile();
         if (!imgFile.exists()) {
             throw new IOException("Pedigree graph image file (" + PEDIGREE_IMAGE_FILENAME + ") not found at " + outDir);

@@ -20,6 +20,7 @@ RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt
     ## signature.tools.lib installation
     R -e 'install.packages(c("devtools", "getopt"), repos="https://www.stats.bris.ac.uk/R/")' && \
     git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib && \
+#    git checkout tags/v2.3.0 && \
     git checkout d3d73db497b5b83abc55d6cd55840c34ed542628 && \
     sed -i '/Mmusculus/d' DESCRIPTION && \
     sed -i '/Cfamiliaris/d' DESCRIPTION && \
