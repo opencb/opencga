@@ -13,7 +13,7 @@ jobs:
       maven_opts: -P storage-hadoop,hdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
 
   test:
-    uses: opencb/opencga/.github/workflows/test-analysis.yml@TASK-3991
+    uses: opencb/opencga/.github/workflows/test-analysis.yml@develop
     needs: build
     secrets: inherit
     with:
@@ -26,7 +26,7 @@ jobs:
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag ${{ github.ref_name }}
     secrets: inherit
-      
+
   deploy-maven:
     name: Deploy in maven only for renamed versions
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
