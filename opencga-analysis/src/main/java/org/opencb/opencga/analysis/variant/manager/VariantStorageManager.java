@@ -50,6 +50,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
@@ -1189,6 +1190,10 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         StopWatch totalStopWatch = StopWatch.createStarted();
 
         try {
+            if (storageConfiguration.getMode() == StorageConfiguration.Mode.READ_ONLY) {
+                throw new StorageEngineException("Unable to execute operation '" + operationName + "'. "
+                        + "The storage engine is in mode=" + storageConfiguration.getMode());
+            }
             result = operation.apply(variantStorageEngine);
             return result;
         } catch (CatalogException | StorageEngineException e) {

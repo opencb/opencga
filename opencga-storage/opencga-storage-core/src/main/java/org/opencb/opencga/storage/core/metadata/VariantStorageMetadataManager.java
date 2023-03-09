@@ -588,7 +588,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return projectDBAdaptor.getProjectMetadata().first();
     }
 
-    public ProjectMetadata getProjectMetadata(ObjectMap options) throws StorageEngineException {
+    public ProjectMetadata getAndUpdateProjectMetadata(ObjectMap options) throws StorageEngineException {
         ProjectMetadata projectMetadata = getProjectMetadata();
         if (options != null && (projectMetadata == null
                 || StringUtils.isEmpty(projectMetadata.getSpecies()) && options.containsKey(SPECIES.key())

@@ -16,6 +16,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobReferenceParam;
@@ -41,6 +42,7 @@ public class MigrationManager {
 
     private final CatalogManager catalogManager;
     private final Configuration configuration;
+//    private final StorageConfiguration storageConfiguration;
     private final MigrationDBAdaptor migrationDBAdaptor;
 
     private final Logger logger;
@@ -561,6 +563,12 @@ public class MigrationManager {
             migrationRun.setId(annotation.id());
             migrationRun.setDescription(annotation.description());
             migrationRun.setVersion(annotation.version());
+            if (annotation.domain() == Migration.MigrationDomain.STORAGE) {
+                if (migrationTool.readStorageConfiguration().getMode() == StorageConfiguration.Mode.READ_ONLY) {
+                    migrationRun.setStatus(MigrationRun.MigrationStatus.ON_HOLD);
+                    migrationRun.setException("Unable to run migration over STORAGE with mode " + StorageConfiguration.Mode.READ_ONLY);
+                }
+            }
         } catch (CatalogDBException e) {
             throw new MigrationException("Error reading migration run from catalog", e);
         }
@@ -572,6 +580,7 @@ public class MigrationManager {
         logger.info("    {}", annotation.description());
         logger.info("------------------------------------------------------");
 
+        MigrationException exceptionToThrow = null;
         try {
             migrationTool.execute();
             logger.info("------------------------------------------------------");
@@ -612,8 +621,11 @@ public class MigrationManager {
             try {
                 migrationDBAdaptor.upsert(migrationRun);
             } catch (CatalogDBException e) {
-                throw new MigrationException("Could not register migration in OpenCGA", e);
+                exceptionToThrow = new MigrationException("Could not register migration in OpenCGA", e);
             }
+        }
+        if (exceptionToThrow != null) {
+            throw exceptionToThrow;
         }
         return migrationRun;
     }
