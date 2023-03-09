@@ -20,6 +20,13 @@ jobs:
       report_context: development
       report_dir: ${{ github.ref_name }}/opencga/${{ github.sha }}
 
+  deploy-docker:
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    needs: test
+    with:
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag ${{ github.ref_name }}
+    secrets: inherit
+      
   deploy-maven:
     name: Deploy in maven only for renamed versions
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
@@ -46,9 +53,3 @@ jobs:
       - name: test-version-from-check
         run: echo "Project version is " ${{ needs.build.outputs.version }}
 
-  deploy-docker:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
-    needs: test
-    with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init
-    secrets: inherit
