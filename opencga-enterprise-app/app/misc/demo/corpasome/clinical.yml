@@ -1,0 +1,10 @@
+id: cataract
+type: FAMILY
+proband:
+  id: ISDBM322015
+  samples:
+    - id: ISDBM322015
+family:
+  id: corpas
+disorder:
+  id: OMIM:611597

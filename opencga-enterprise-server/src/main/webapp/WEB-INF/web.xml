@@ -11,19 +11,26 @@
 
     <init-param>
       <param-name>jersey.config.server.provider.packages</param-name>
-      <param-value>com.zettagenomics.opencga.enterprise.server.rest.OpenCGAEnterpriseResourceConfig;com.jersey.jaxb;com.fasterxml.jackson.jaxrs.json</param-value>
+      <param-value>com.fasterxml.jackson.jaxrs.json</param-value>
     </init-param>
 
     <init-param>
-      <param-name>jersey.config.server.provider.classnames</param-name>
-      <param-value>
-        org.opencb.opencga.server.rest.SampleWSServer
-      </param-value>
+      <param-name>javax.ws.rs.Application</param-name>
+      <param-value>com.zettagenomics.opencga.enterprise.server.EnterpriseResourceConfig</param-value>
     </init-param>
+
+<!--    <init-param>-->
+<!--      <param-name>jersey.config.server.provider.classnames</param-name>-->
+<!--      <param-value>-->
+<!--        org.opencb.opencga.server.rest.SampleWSServer-->
+<!--        com.zettagenomics.opencga.enterprise.server.rest.CvaWSServer-->
+<!--        com.zettagenomics.opencga.enterprise.server.rest.EnterpriseMetaWSServer-->
+<!--      </param-value>-->
+<!--    </init-param>-->
 
     <init-param>
       <param-name>OPENCGA_HOME</param-name>
-      <param-value>${OPENCGA.INSTALLATION.DIR}</param-value>
+      <param-value>/opt/opencga</param-value>
     </init-param>
 
     <init-param>

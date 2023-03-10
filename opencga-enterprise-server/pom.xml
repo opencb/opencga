@@ -11,17 +11,24 @@
     <name>opencga-enterprise-server Maven Webapp</name>
     <url>http://maven.apache.org</url>
     <dependencies>
-<!--        <dependency>-->
-<!--            <groupId>org.opencb.opencga</groupId>-->
-<!--            <artifactId>opencga-catalog</artifactId>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>org.opencb.opencga</groupId>-->
-<!--            <artifactId>opencga-storage-core</artifactId>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-catalog</artifactId>
+            <version>2.8.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-core</artifactId>
+            <version>2.8.0-SNAPSHOT</version>
+        </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-server</artifactId>
+            <version>2.8.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.biodata</groupId>
+            <artifactId>biodata-tools</artifactId>
             <version>2.8.0-SNAPSHOT</version>
         </dependency>
 
@@ -43,16 +50,6 @@
 <!--            <groupId>org.glassfish.jersey.inject</groupId>-->
 <!--            <artifactId>jersey-hk2</artifactId>-->
 <!--        </dependency>-->
-        <!--        <dependency>-->
-        <!--            <groupId>com.fasterxml.jackson.jaxrs</groupId>-->
-        <!--            <artifactId>jackson-jaxrs-base</artifactId>-->
-        <!--            <version>${jackson.version}</version>-->
-        <!--        </dependency>-->
-        <!--        <dependency>-->
-        <!--            <groupId>com.fasterxml.jackson.jaxrs</groupId>-->
-        <!--            <artifactId>jackson-jaxrs-json-provider</artifactId>-->
-        <!--            <version>${jackson.version}</version>-->
-        <!--        </dependency>-->
 <!--        <dependency>-->
 <!--            <groupId>com.fasterxml.jackson.core</groupId>-->
 <!--            <artifactId>jackson-databind</artifactId>-->
@@ -61,19 +58,6 @@
 <!--            <groupId>com.fasterxml.jackson.dataformat</groupId>-->
 <!--            <artifactId>jackson-dataformat-yaml</artifactId>-->
 <!--        </dependency>-->
-        <!--        <dependency>-->
-        <!--            <groupId>javax.servlet</groupId>-->
-        <!--            <artifactId>javax.servlet-api</artifactId>-->
-        <!--            <version>3.1.0</version>-->
-        <!--            <scope>provided</scope>-->
-        <!--        </dependency>-->
-        <!--        <dependency>-->
-        <!--            <groupId>org.opencb.opencga</groupId>-->
-        <!--            <artifactId>opencga-catalog</artifactId>-->
-        <!--            <scope>test</scope>-->
-        <!--            <type>test-jar</type>-->
-        <!--            <version>${project.parent.version}</version>-->
-        <!--        </dependency>-->
 <!--        <dependency>-->
 <!--            <groupId>com.google.protobuf</groupId>-->
 <!--            <artifactId>protobuf-java</artifactId>-->
@@ -95,6 +79,7 @@
 <!--            <artifactId>junit</artifactId>-->
 <!--        </dependency>-->
     </dependencies>
+
     <build>
         <finalName>opencga-enterprise-server</finalName>
         <resources>
@@ -143,4 +128,34 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>GenerateCLIProfile</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.0.0</version>
+                        <executions>
+                            <execution>
+                                <id>CLIWriter</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>java</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <mainClass>com.zettagenomics.opencga.enterprise.server.generator.EnterpriseClientsGenerator</mainClass>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
