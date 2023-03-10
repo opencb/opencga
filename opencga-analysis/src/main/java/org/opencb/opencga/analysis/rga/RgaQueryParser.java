@@ -399,8 +399,11 @@ public class RgaQueryParser {
                         List<String> finalCtValues = koValue.equals(encodedChString) ? chCtValues : ctValues;
                         for (String filterVal : finalFilterValues) {
                             for (String ctValue : finalCtValues) {
-                                if (compHetQueryMode.equals(CompHetQueryMode.PAIR) && koValue.equals(encodedChString)
-                                        && tmpPopFreqList.size() > 1) {
+                                if (compHetQueryMode.equals(CompHetQueryMode.PAIR) && koValue.equals(encodedChString)) {
+                                    if (tmpPopFreqList.size() == 1) {
+                                        // Replicate the same value so it filters as a pair
+                                        tmpPopFreqList.add(tmpPopFreqList.get(0));
+                                    }
                                     List<String> sortedCombinations = generateSortedCombinations(tmpPopFreqList);
                                     for (String popFreqPair : sortedCombinations) {
                                         orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR + popFreqPair);
