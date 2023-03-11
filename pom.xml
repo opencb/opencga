@@ -9,6 +9,7 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <modules>
+        <module>opencga-enterprise-core</module>
         <module>opencga-enterprise-app</module>
         <module>opencga-enterprise-cva</module>
         <module>opencga-enterprise-sso</module>
@@ -67,6 +68,12 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>com.zettagenomics.opencga-enterprise</groupId>
+                <artifactId>opencga-enterprise-core</artifactId>
+                <version>${project.parent.version}</version>
+            </dependency>
+
             <!-- Intra-module dependencies -->
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
@@ -90,6 +97,11 @@
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-server</artifactId>
+                <version>${opencga.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-core</artifactId>
                 <version>${opencga.version}</version>
             </dependency>
@@ -98,30 +110,30 @@
                 <artifactId>opencga-client</artifactId>
                 <version>${opencga.version}</version>
             </dependency>
-<!--            <dependency>-->
-<!--                <groupId>org.opencb.opencga</groupId>-->
-<!--                <artifactId>opencga-storage-hadoop-core</artifactId>-->
-<!--                <version>${opencga.version}</version>-->
-<!--                <exclusions>-->
-<!--                    <exclusion>-->
-<!--                        <groupId>org.opencb.opencga</groupId>-->
-<!--                        <artifactId>${opencga-storage-hadoop-deps.artifactId-default}</artifactId>-->
-<!--                    </exclusion>-->
-<!--                </exclusions>-->
-<!--            </dependency>-->
-<!--            <dependency>-->
-<!--                <groupId>org.opencb.opencga</groupId>-->
-<!--                <artifactId>opencga-storage-hadoop-core</artifactId>-->
-<!--                <version>${project.parent.version}</version>-->
-<!--                <type>test-jar</type>-->
-<!--                <scope>test</scope>-->
-<!--                <exclusions>-->
-<!--                    <exclusion>-->
-<!--                        <groupId>org.opencb.opencga</groupId>-->
-<!--                        <artifactId>${opencga-storage-hadoop-deps.artifactId-default}</artifactId>-->
-<!--                    </exclusion>-->
-<!--                </exclusions>-->
-<!--            </dependency>-->
+            <!--            <dependency>-->
+            <!--                <groupId>org.opencb.opencga</groupId>-->
+            <!--                <artifactId>opencga-storage-hadoop-core</artifactId>-->
+            <!--                <version>${opencga.version}</version>-->
+            <!--                <exclusions>-->
+            <!--                    <exclusion>-->
+            <!--                        <groupId>org.opencb.opencga</groupId>-->
+            <!--                        <artifactId>${opencga-storage-hadoop-deps.artifactId-default}</artifactId>-->
+            <!--                    </exclusion>-->
+            <!--                </exclusions>-->
+            <!--            </dependency>-->
+            <!--            <dependency>-->
+            <!--                <groupId>org.opencb.opencga</groupId>-->
+            <!--                <artifactId>opencga-storage-hadoop-core</artifactId>-->
+            <!--                <version>${project.parent.version}</version>-->
+            <!--                <type>test-jar</type>-->
+            <!--                <scope>test</scope>-->
+            <!--                <exclusions>-->
+            <!--                    <exclusion>-->
+            <!--                        <groupId>org.opencb.opencga</groupId>-->
+            <!--                        <artifactId>${opencga-storage-hadoop-deps.artifactId-default}</artifactId>-->
+            <!--                    </exclusion>-->
+            <!--                </exclusions>-->
+            <!--            </dependency>-->
 
             <!-- OpenCB dependencies -->
             <dependency>
@@ -250,6 +262,7 @@
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j.version}</version>
             </dependency>
+
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
                 <artifactId>log4j-slf4j-impl</artifactId>
