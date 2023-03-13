@@ -59,8 +59,11 @@ public class ClientsGeneratorMain {
             ClientsGenerator clientsGenerator = new ClientsGenerator(config);
 
             // Generate code for all clients
+            String clientsGeneratorDir = "opencga-app/app/misc/clients/";
+            String clientOutputDir = "opencga-client";
+            String packagePath = "org.opencb.opencga.client.rest.clients";
             RestApi restApi = prepare(new RestApiParser().parse(classes, true));
-            clientsGenerator.libraries(restApi);
+            clientsGenerator.libraries(clientsGeneratorDir, restApi, packagePath, clientOutputDir);
 
             // Generate CLI code
             RestApi flatRestApi = prepare(new RestApiParser().parse(classes, true));

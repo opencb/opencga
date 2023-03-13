@@ -29,6 +29,9 @@ class JavaClientGenerator(RestClientGenerator):
         }
 
     def get_imports(self):
+        # Convert the Java output to package path.
+        package = self.output_dir.split('java/')[1].replace('/', '.')
+
         headers = []
         headers.append('/*')
         headers.append('* Copyright 2015-' + str(date.today().year) + ' OpenCB')
@@ -46,7 +49,8 @@ class JavaClientGenerator(RestClientGenerator):
         headers.append('* limitations under the License.')
         headers.append('*/')
         headers.append('')
-        headers.append('package org.opencb.opencga.client.rest.clients;')
+        # We need to calculate the Java package and no use: headers.append('package org.opencb.opencga.client.rest.clients;')
+        headers.append('package ' + package + ';')
         headers.append('')
 
         imports = set()

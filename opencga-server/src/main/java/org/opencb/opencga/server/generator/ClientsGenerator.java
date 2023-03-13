@@ -30,7 +30,7 @@ public class ClientsGenerator {
         logger = LoggerFactory.getLogger(ClientsGenerator.class);
     }
 
-    public void libraries(RestApi restApi) throws IOException {
+    public void libraries(String clientsGeneratorDir, RestApi restApi, String packagePath, String clientOutputDir) throws IOException {
         File outDir = new File("restApi.json");
         String restApiFilePath = outDir.getAbsolutePath();
         logger.info("Writing RestApi object temporarily in {}", restApiFilePath);
@@ -38,18 +38,17 @@ public class ClientsGenerator {
         ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
         mapper.writeValue(outDir, restApi);
 
-        generateLibrary("java", restApiFilePath, "opencga-client/src/main/java/org/opencb/opencga/client/rest/clients/");
-        generateLibrary("python", restApiFilePath, "opencga-client/src/main/python/pyopencga/rest_clients/");
-        generateLibrary("javascript", restApiFilePath, "opencga-client/src/main/javascript/");
-        generateLibrary("r", restApiFilePath, "opencga-client/src/main/R/R/");
+        generateLibrary(clientsGeneratorDir, "java", restApiFilePath, clientOutputDir + "/src/main/java/" + packagePath.replaceAll("\\.", "/"));
+        generateLibrary(clientsGeneratorDir, "python", restApiFilePath, clientOutputDir + "/src/main/python/pyopencga/rest_clients/");
+        generateLibrary(clientsGeneratorDir, "javascript", restApiFilePath, clientOutputDir + "/src/main/javascript/");
+        generateLibrary(clientsGeneratorDir, "r", restApiFilePath, clientOutputDir + "/src/main/R/R/");
 
         logger.info("Deleting temporal RestApi object from {}", restApiFilePath);
         Files.delete(outDir.toPath());
     }
 
-    public void generateLibrary(String language, String restFilePath, String outDir) {
-        String binary = "opencga-app/app/misc/clients/" + language + "_client_generator.py";
-
+    private void generateLibrary(String clientsGeneratorDir, String language, String restFilePath, String outDir) {
+        String binary = clientsGeneratorDir + "/" + language + "_client_generator.py";
         ProcessBuilder processBuilder = new ProcessBuilder("python3", binary, restFilePath, outDir);
         Process p;
         try {

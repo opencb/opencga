@@ -51,7 +51,13 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("package ").append(config.getOptions().getExecutorsPackage()).append(";\n\n");
 
         sb.append("import com.fasterxml.jackson.databind.DeserializationFeature;\n");
-        sb.append("import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;\n");
+
+        if (StringUtils.isEmpty(config.getApiConfig().getExecutorsParentClass())) {
+            sb.append("import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;\n");
+        } else {
+            sb.append("import " + config.getApiConfig().getExecutorsParentClass() + ";\n");
+        }
+
         sb.append("import org.opencb.opencga.app.cli.main.*;\n");
         sb.append("import org.opencb.opencga.core.response.RestResponse;\n");
         sb.append("import org.opencb.opencga.client.exceptions.ClientException;\n");
@@ -64,12 +70,13 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("import org.opencb.opencga.core.response.QueryType;\n");
         sb.append("import org.opencb.commons.utils.PrintUtils;\n\n");
 
-
+        // Add custom parent class
         sb.append("import " + config.getOptions().getOptionsPackage() + "." + getAsClassName(restCategory.getName()) + "CommandOptions;\n\n");
-        if (categoryConfig.isExecutorExtended()) {
+        if (categoryConfig.isExecutorExtended() && StringUtils.isEmpty(categoryConfig.getExecutorExtendedClassName())) {
             sb.append("import org.opencb.opencga.app.cli.main.parent."
                     + getExtendedClass(getAsClassName(restCategory.getName()), categoryConfig) + ";\n\n");
         }
+
         Set<String> imports = new TreeSet<>();
         for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
             if (isValidImport(restEndpoint.getResponseClass())) {
@@ -213,7 +220,11 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
     private String getExtendedClass(String name, CategoryConfig config) {
         String res = "OpencgaCommandExecutor";
         if (config.isExecutorExtended()) {
-            res = "Parent" + name + "CommandExecutor";
+            if (StringUtils.isNotEmpty(config.getExecutorExtendedClassName())) {
+                res = config.getExecutorExtendedClassName();
+            } else {
+                res = "Parent" + name + "CommandExecutor";
+            }
         }
         return res;
     }

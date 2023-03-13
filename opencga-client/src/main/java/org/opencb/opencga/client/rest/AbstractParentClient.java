@@ -157,7 +157,7 @@
          return clientBuilder.build();
      }
 
-     protected AbstractParentClient setThrowExceptionOnError(boolean throwExceptionOnError) {
+     public AbstractParentClient setThrowExceptionOnError(boolean throwExceptionOnError) {
          this.throwExceptionOnError = throwExceptionOnError;
          return this;
      }
