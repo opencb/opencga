@@ -152,13 +152,8 @@ public class PhoenixMain extends AbstractMain {
         if (!dbAdaptor.getHBaseManager().tableExists(dbAdaptor.getVariantTable())) {
             throw new IllegalStateException("Variants table '" + dbAdaptor.getVariantTable() + "' doesn't exist");
         }
-        if (!dbAdaptor.getHBaseManager().tableExists(dbAdaptor.getTableNameGenerator().getMetaTableName())) {
-            throw new IllegalStateException("Meta table '" + dbAdaptor.getTableNameGenerator().getMetaTableName() + "' doesn't exist");
-        }
 
-        try (VariantPhoenixSchemaManager schemaManager = new VariantPhoenixSchemaManager(dbAdaptor)) {
-            schemaManager.dropTable(true);
-        }
+        VariantPhoenixSchemaManager.dropTable(dbAdaptor.getHBaseManager(), dbAdaptor.getVariantTable(), true);
 
     }
 

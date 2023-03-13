@@ -81,7 +81,7 @@ public class SampleIndexMain extends AbstractMain {
                 print(hBaseManager.listTables()
                         .stream()
                         .map(TableName::getNameAsString)
-                        .filter(HBaseVariantTableNameGenerator::isSampleIndexTableName)
+                        .filter(HBaseVariantTableNameGenerator::isValidSampleIndexTableName)
                 );
                 break;
             }

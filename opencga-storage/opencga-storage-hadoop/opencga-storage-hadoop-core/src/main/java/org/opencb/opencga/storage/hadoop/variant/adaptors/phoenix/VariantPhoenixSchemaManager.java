@@ -343,6 +343,15 @@ public class VariantPhoenixSchemaManager implements AutoCloseable {
         phoenixHelper.dropTable(con, variantsTableName, VariantPhoenixSchema.DEFAULT_TABLE_TYPE, ifExists, true);
     }
 
+    public static void dropTable(HBaseManager hBaseManager, String variantsTableName, boolean ifExists)
+            throws SQLException, ClassNotFoundException {
+        // VariantStorageMetadataManager not needed for dropping table
+        try (VariantPhoenixSchemaManager manager =
+                     new VariantPhoenixSchemaManager(hBaseManager.getConf(), variantsTableName, null, hBaseManager)) {
+            manager.dropTable(ifExists);
+        }
+    }
+
     private String buildCreate(String variantsTableName) {
         PTableType tableType = DEFAULT_TABLE_TYPE;
         StringBuilder sb = new StringBuilder().append("CREATE ").append(tableType).append(" IF NOT EXISTS ")
