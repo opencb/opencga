@@ -101,15 +101,15 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
             solrStatus.put("collections", solrClient.request(new CollectionAdminRequest.List()).get("collections"));
             status.put("solr", solrStatus);
 
-            List<ObjectMap> engines = new ArrayList<>();
+            List<ObjectMap> dataStores = new ArrayList<>();
             List<String> variantStorageProjects = getVariantStorageProjects(catalogManager, variantStorageManager);
             for (String project : variantStorageProjects) {
                 DataStore dataStore = variantStorageManager.getDataStoreByProjectId(project, token);
                 ObjectMap map = new ObjectMap("project", project);
                 map.put("dataStore", dataStore);
-                engines.add(map);
+                dataStores.add(map);
             }
-            status.put("engines", engines);
+            status.put("dataStores", dataStores);
 
             System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(status));
         }
@@ -119,18 +119,71 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
         StorageCommandOptions.UpdateDatabasePrefix commandOptions = storageCommandOptions.getUpdateDatabasePrefix();
         StorageEngineFactory.configure(storageConfiguration);
 
-        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+        if (commandOptions.projectsWithoutStorage && commandOptions.projectsWithStorage) {
+            // If both true, ignore both.
+            commandOptions.projectsWithoutStorage = false;
+            commandOptions.projectsWithStorage = false;
+        }
+
+        Set<String> projects;
+        if (commandOptions.projects != null) {
+            projects = new HashSet<>(Arrays.asList(commandOptions.projects.split(",")));
+        } else {
+            projects = null;
+        }
+
+        StorageEngineFactory factory = StorageEngineFactory.get(storageConfiguration);
+        try (CatalogManager catalogManager = new CatalogManager(configuration);
+             VariantStorageManager variantStorageManager = new VariantStorageManager(catalogManager, factory)) {
             String adminPassword = getAdminPassword(true);
             token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
+            Set<String> variantStorageProjects = Collections.emptySet();
+            if (commandOptions.projectsWithoutStorage || commandOptions.projectsWithStorage) {
+                variantStorageProjects = new HashSet<>(getVariantStorageProjects(catalogManager, variantStorageManager));
+            }
 
             for (Project project : catalogManager.getProjectManager().search(new Query(), new QueryOptions(), token).getResults()) {
+                if (projects != null && !projects.contains(project.getFqn())) {
+                    logger.info("Skip project '{}'", project.getFqn());
+                    continue;
+                }
+                if (commandOptions.projectsWithoutStorage) {
+                    // Only accept projects WITHOUT storage. so discard projects with storage
+                    if (variantStorageProjects.contains(project.getFqn())) {
+                        logger.info("Skip project '{}' as it has a variant storage.", project.getFqn());
+                        continue;
+                    }
+                }
+                if (commandOptions.projectsWithStorage) {
+                    // Only accept projects WITH storage. so discard projects without storage
+                    if (!variantStorageProjects.contains(project.getFqn())) {
+                        logger.info("Skip project '{}' as it doesn't have a variant storage.", project.getFqn());
+                        continue;
+                    }
+                }
                 final DataStore actualDataStore;
                 if (project.getInternal() != null && project.getInternal().getDatastores() != null) {
                     actualDataStore = project.getInternal().getDatastores().getVariant();
                 } else {
                     actualDataStore = null;
                 }
-                final DataStore defaultDataStore = VariantStorageManager.defaultDataStore(catalogManager, project, token);
+                if (commandOptions.projectsWithUndefinedDBName) {
+                    // Only accept projects with UNDEFINED dbname. so discard projects with DEFINED (without undefined) dbname
+                    boolean undefinedDBName = actualDataStore == null || StringUtils.isEmpty(actualDataStore.getDbName());
+                    if (!undefinedDBName) {
+                        logger.info("Skip project '{}' as its dbName is already defined. dbName : '{}'",
+                                project.getFqn(),
+                                actualDataStore.getDbName());
+                        continue;
+                    }
+                }
+
+                final DataStore defaultDataStore;
+                if (StringUtils.isEmpty(commandOptions.dbPrefix)) {
+                    defaultDataStore = VariantStorageManager.defaultDataStore(catalogManager, project, token);
+                } else {
+                    defaultDataStore = VariantStorageManager.defaultDataStore(catalogManager, project, commandOptions.dbPrefix, token);
+                }
 
                 final DataStore newDataStore;
                 logger.info("------");
@@ -139,9 +192,9 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
                     newDataStore = defaultDataStore;
                     logger.info("Old DBName: null");
                 } else {
+                    logger.info("Old DBName: " + actualDataStore.getDbName());
                     actualDataStore.setDbName(defaultDataStore.getDbName());
                     newDataStore = actualDataStore;
-                    logger.info("Old DBName: " + actualDataStore.getDbName());
                 }
                 logger.info("New DBName: " + newDataStore.getDbName());
 
