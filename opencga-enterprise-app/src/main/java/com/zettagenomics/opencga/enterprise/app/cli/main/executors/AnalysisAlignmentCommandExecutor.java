@@ -1,7 +1,7 @@
 package com.zettagenomics.opencga.enterprise.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaCommandExecutor;
+import com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaEnterpriseCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -46,7 +46,7 @@ import org.opencb.opencga.core.models.job.Job;
  * This class contains methods for the Analysis - Alignment command line.
  *    PATH: /{apiVersion}/analysis/alignment
  */
-public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
+public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaEnterpriseCommandExecutor {
 
     private AnalysisAlignmentCommandOptions analysisAlignmentCommandOptions;
 
@@ -153,7 +153,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), BwaWrapperParams.class);
         }
-        return openCGAClient.getAlignmentClient().runBwa(bwaWrapperParams, queryParams);
+        return openCGAEnterpriseClient.getAlignmentClient().runBwa(bwaWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runCoverageIndex() throws Exception {
@@ -193,7 +193,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CoverageIndexParams.class);
         }
-        return openCGAClient.getAlignmentClient().runCoverageIndex(coverageIndexParams, queryParams);
+        return openCGAEnterpriseClient.getAlignmentClient().runCoverageIndex(coverageIndexParams, queryParams);
     }
 
     private RestResponse<Job> coverageQcGeneCoverageStatsRun() throws Exception {
@@ -233,7 +233,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), AlignmentGeneCoverageStatsParams.class);
         }
-        return openCGAClient.getAlignmentClient().coverageQcGeneCoverageStatsRun(alignmentGeneCoverageStatsParams, queryParams);
+        return openCGAEnterpriseClient.getAlignmentClient().coverageQcGeneCoverageStatsRun(alignmentGeneCoverageStatsParams, queryParams);
     }
 
     private RestResponse<RegionCoverage> queryCoverage() throws Exception {
@@ -255,7 +255,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getAlignmentClient().queryCoverage(commandOptions.file, queryParams);
+        return openCGAEnterpriseClient.getAlignmentClient().queryCoverage(commandOptions.file, queryParams);
     }
 
     private RestResponse<RegionCoverage> ratioCoverage() throws Exception {
@@ -277,7 +277,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getAlignmentClient().ratioCoverage(commandOptions.file1, commandOptions.file2, queryParams);
+        return openCGAEnterpriseClient.getAlignmentClient().ratioCoverage(commandOptions.file1, commandOptions.file2, queryParams);
     }
 
     private RestResponse<GeneCoverageStats> statsCoverage() throws Exception {
@@ -293,7 +293,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getAlignmentClient().statsCoverage(commandOptions.file, commandOptions.gene, queryParams);
+        return openCGAEnterpriseClient.getAlignmentClient().statsCoverage(commandOptions.file, commandOptions.gene, queryParams);
     }
 
     private RestResponse<Job> runDeeptools() throws Exception {
@@ -333,7 +333,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), DeeptoolsWrapperParams.class);
         }
-        return openCGAClient.getAlignmentClient().runDeeptools(deeptoolsWrapperParams, queryParams);
+        return openCGAEnterpriseClient.getAlignmentClient().runDeeptools(deeptoolsWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runFastqc() throws Exception {
@@ -373,7 +373,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FastqcWrapperParams.class);
         }
-        return openCGAClient.getAlignmentClient().runFastqc(fastqcWrapperParams, queryParams);
+        return openCGAEnterpriseClient.getAlignmentClient().runFastqc(fastqcWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runIndex() throws Exception {
@@ -412,7 +412,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), AlignmentIndexParams.class);
         }
-        return openCGAClient.getAlignmentClient().runIndex(alignmentIndexParams, queryParams);
+        return openCGAEnterpriseClient.getAlignmentClient().runIndex(alignmentIndexParams, queryParams);
     }
 
     private RestResponse<Job> runPicard() throws Exception {
@@ -452,7 +452,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PicardWrapperParams.class);
         }
-        return openCGAClient.getAlignmentClient().runPicard(picardWrapperParams, queryParams);
+        return openCGAEnterpriseClient.getAlignmentClient().runPicard(picardWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runQc() throws Exception {
@@ -493,7 +493,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), AlignmentQcParams.class);
         }
-        return openCGAClient.getAlignmentClient().runQc(alignmentQcParams, queryParams);
+        return openCGAEnterpriseClient.getAlignmentClient().runQc(alignmentQcParams, queryParams);
     }
 
     private RestResponse<ReadAlignment> query() throws Exception {
@@ -526,7 +526,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getAlignmentClient().query(commandOptions.file, queryParams);
+        return openCGAEnterpriseClient.getAlignmentClient().query(commandOptions.file, queryParams);
     }
 
     private RestResponse<Job> runSamtools() throws Exception {
@@ -567,6 +567,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SamtoolsWrapperParams.class);
         }
-        return openCGAClient.getAlignmentClient().runSamtools(samtoolsWrapperParams, queryParams);
+        return openCGAEnterpriseClient.getAlignmentClient().runSamtools(samtoolsWrapperParams, queryParams);
     }
 }

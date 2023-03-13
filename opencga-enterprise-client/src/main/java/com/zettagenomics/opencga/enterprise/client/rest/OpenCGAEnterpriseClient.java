@@ -34,10 +34,8 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-/**
- * Created by imedina on 04/05/16.
- */
-public class OpenCGAClient {
+
+public class OpenCGAEnterpriseClient {
 
     private String userId;
     private String token;
@@ -47,16 +45,16 @@ public class OpenCGAClient {
     private Map<String, AbstractParentClient> clients;
     private boolean throwExceptionOnError;
 
-    public OpenCGAClient(ClientConfiguration clientConfiguration) {
+    public OpenCGAEnterpriseClient(ClientConfiguration clientConfiguration) {
         this.init(null, clientConfiguration);
     }
 
-    public OpenCGAClient(String user, String password, ClientConfiguration clientConfiguration) throws ClientException {
+    public OpenCGAEnterpriseClient(String user, String password, ClientConfiguration clientConfiguration) throws ClientException {
         AuthenticationResponse login = login(user, password);
         this.init(login, clientConfiguration);
     }
 
-    public OpenCGAClient(AuthenticationResponse authenticationTokens, ClientConfiguration clientConfiguration) {
+    public OpenCGAEnterpriseClient(AuthenticationResponse authenticationTokens, ClientConfiguration clientConfiguration) {
         this.init(authenticationTokens, clientConfiguration);
     }
 
@@ -81,9 +79,7 @@ public class OpenCGAClient {
             this.userId = getUserFromToken(tokens.getToken());
         }
 
-
         this.clientConfiguration = clientConfiguration;
-
     }
 
     public UserClient getUserClient() {
@@ -189,7 +185,6 @@ public class OpenCGAClient {
         return login.firstResult();
     }
 
-
     /**
      * Logs in the user.
      *
@@ -262,7 +257,7 @@ public class OpenCGAClient {
         return refreshToken;
     }
 
-    public OpenCGAClient setRefreshToken(String refreshToken) {
+    public OpenCGAEnterpriseClient setRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
         return this;
     }
@@ -271,7 +266,7 @@ public class OpenCGAClient {
         return clientConfiguration;
     }
 
-    public OpenCGAClient setClientConfiguration(ClientConfiguration clientConfiguration) {
+    public OpenCGAEnterpriseClient setClientConfiguration(ClientConfiguration clientConfiguration) {
         this.clientConfiguration = clientConfiguration;
         return this;
     }
@@ -280,7 +275,7 @@ public class OpenCGAClient {
         return throwExceptionOnError;
     }
 
-    public OpenCGAClient setThrowExceptionOnError(boolean throwExceptionOnError) {
+    public OpenCGAEnterpriseClient setThrowExceptionOnError(boolean throwExceptionOnError) {
         this.throwExceptionOnError = throwExceptionOnError;
         // We have to set the value to all existing clients
         clients.values().stream()

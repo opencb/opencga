@@ -1,7 +1,7 @@
 package com.zettagenomics.opencga.enterprise.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaCommandExecutor;
+import com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaEnterpriseCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -59,7 +59,7 @@ import org.opencb.opencga.core.models.variant.VariantStudyDeleteParams;
  * This class contains methods for the Operations - Variant Storage command line.
  *    PATH: /{apiVersion}/operation
  */
-public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecutor {
+public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaEnterpriseCommandExecutor {
 
     private OperationsVariantStorageCommandOptions operationsVariantStorageCommandOptions;
 
@@ -203,7 +203,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CellBaseConfiguration.class);
         }
-        return openCGAClient.getVariantOperationClient().configureCellbase(cellBaseConfiguration, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().configureCellbase(cellBaseConfiguration, queryParams);
     }
 
     private RestResponse<Job> aggregateVariant() throws Exception {
@@ -242,7 +242,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantAggregateParams.class);
         }
-        return openCGAClient.getVariantOperationClient().aggregateVariant(variantAggregateParams, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().aggregateVariant(variantAggregateParams, queryParams);
     }
 
     private RestResponse<Job> deleteVariantAnnotation() throws Exception {
@@ -259,7 +259,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("annotationId", commandOptions.annotationId);
 
-        return openCGAClient.getVariantOperationClient().deleteVariantAnnotation(queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().deleteVariantAnnotation(queryParams);
     }
 
     private RestResponse<Job> indexVariantAnnotation() throws Exception {
@@ -306,7 +306,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantAnnotationIndexParams.class);
         }
-        return openCGAClient.getVariantOperationClient().indexVariantAnnotation(variantAnnotationIndexParams, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().indexVariantAnnotation(variantAnnotationIndexParams, queryParams);
     }
 
     private RestResponse<Job> saveVariantAnnotation() throws Exception {
@@ -341,7 +341,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantAnnotationSaveParams.class);
         }
-        return openCGAClient.getVariantOperationClient().saveVariantAnnotation(variantAnnotationSaveParams, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().saveVariantAnnotation(variantAnnotationSaveParams, queryParams);
     }
 
     private RestResponse<ObjectMap> configureVariant() throws Exception {
@@ -376,7 +376,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantConfigureParams.class);
         }
-        return openCGAClient.getVariantOperationClient().configureVariant(variantConfigureParams, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().configureVariant(variantConfigureParams, queryParams);
     }
 
     private RestResponse<Job> deleteVariant() throws Exception {
@@ -415,7 +415,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantFileDeleteParams.class);
         }
-        return openCGAClient.getVariantOperationClient().deleteVariant(variantFileDeleteParams, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().deleteVariant(variantFileDeleteParams, queryParams);
     }
 
     private RestResponse<Job> aggregateVariantFamily() throws Exception {
@@ -455,7 +455,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantAggregateFamilyParams.class);
         }
-        return openCGAClient.getVariantOperationClient().aggregateVariantFamily(variantAggregateFamilyParams, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().aggregateVariantFamily(variantAggregateFamilyParams, queryParams);
     }
 
     private RestResponse<Job> indexVariantFamily() throws Exception {
@@ -496,7 +496,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantFamilyIndexParams.class);
         }
-        return openCGAClient.getVariantOperationClient().indexVariantFamily(variantFamilyIndexParams, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().indexVariantFamily(variantFamilyIndexParams, queryParams);
     }
 
     private RestResponse<Job> indexVariant() throws Exception {
@@ -562,7 +562,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantIndexParams.class);
         }
-        return openCGAClient.getVariantOperationClient().indexVariant(variantIndexParams, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().indexVariant(variantIndexParams, queryParams);
     }
 
     private RestResponse<Job> launcherVariantIndex() throws Exception {
@@ -633,7 +633,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantFileIndexJobLauncherParams.class);
         }
-        return openCGAClient.getVariantOperationClient().launcherVariantIndex(variantFileIndexJobLauncherParams, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().launcherVariantIndex(variantFileIndexJobLauncherParams, queryParams);
     }
 
     private RestResponse<Job> runVariantJulie() throws Exception {
@@ -670,7 +670,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JulieParams.class);
         }
-        return openCGAClient.getVariantOperationClient().runVariantJulie(julieParams, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().runVariantJulie(julieParams, queryParams);
     }
 
     private RestResponse<Job> repairVariantMetadata() throws Exception {
@@ -705,7 +705,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantStorageMetadataRepairToolParams.class);
         }
-        return openCGAClient.getVariantOperationClient().repairVariantMetadata(variantStorageMetadataRepairToolParams, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().repairVariantMetadata(variantStorageMetadataRepairToolParams, queryParams);
     }
 
     private RestResponse<Job> synchronizeVariantMetadata() throws Exception {
@@ -744,7 +744,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantStorageMetadataSynchronizeParams.class);
         }
-        return openCGAClient.getVariantOperationClient().synchronizeVariantMetadata(variantStorageMetadataSynchronizeParams, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().synchronizeVariantMetadata(variantStorageMetadataSynchronizeParams, queryParams);
     }
 
     private RestResponse<Job> pruneVariant() throws Exception {
@@ -780,7 +780,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantPruneParams.class);
         }
-        return openCGAClient.getVariantOperationClient().pruneVariant(variantPruneParams, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().pruneVariant(variantPruneParams, queryParams);
     }
 
     private RestResponse<Job> deleteVariantSample() throws Exception {
@@ -820,7 +820,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantSampleDeleteParams.class);
         }
-        return openCGAClient.getVariantOperationClient().deleteVariantSample(variantSampleDeleteParams, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().deleteVariantSample(variantSampleDeleteParams, queryParams);
     }
 
     private RestResponse<Job> indexVariantSample() throws Exception {
@@ -862,7 +862,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantSecondarySampleIndexParams.class);
         }
-        return openCGAClient.getVariantOperationClient().indexVariantSample(variantSecondarySampleIndexParams, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().indexVariantSample(variantSecondarySampleIndexParams, queryParams);
     }
 
     private RestResponse<Job> variantSampleIndexConfigure() throws Exception {
@@ -890,7 +890,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             sampleIndexConfiguration = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), SampleIndexConfiguration.class);
         }
-        return openCGAClient.getVariantOperationClient().variantSampleIndexConfigure(sampleIndexConfiguration, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().variantSampleIndexConfigure(sampleIndexConfiguration, queryParams);
     }
 
     private RestResponse<Job> deleteVariantScore() throws Exception {
@@ -912,7 +912,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getVariantOperationClient().deleteVariantScore(queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().deleteVariantScore(queryParams);
     }
 
     private RestResponse<Job> indexVariantScore() throws Exception {
@@ -955,7 +955,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantScoreIndexParams.class);
         }
-        return openCGAClient.getVariantOperationClient().indexVariantScore(variantScoreIndexParams, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().indexVariantScore(variantScoreIndexParams, queryParams);
     }
 
     private RestResponse<Job> variantSecondaryAnnotationIndex() throws Exception {
@@ -996,7 +996,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantSecondaryAnnotationIndexParams.class);
         }
-        return openCGAClient.getVariantOperationClient().variantSecondaryAnnotationIndex(variantSecondaryAnnotationIndexParams, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().variantSecondaryAnnotationIndex(variantSecondaryAnnotationIndexParams, queryParams);
     }
 
     private RestResponse<Job> variantSecondarySampleIndex() throws Exception {
@@ -1038,7 +1038,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantSecondarySampleIndexParams.class);
         }
-        return openCGAClient.getVariantOperationClient().variantSecondarySampleIndex(variantSecondarySampleIndexParams, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().variantSecondarySampleIndex(variantSecondarySampleIndexParams, queryParams);
     }
 
     private RestResponse<Job> configureVariantSecondarySampleIndex() throws Exception {
@@ -1066,7 +1066,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             sampleIndexConfiguration = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), SampleIndexConfiguration.class);
         }
-        return openCGAClient.getVariantOperationClient().configureVariantSecondarySampleIndex(sampleIndexConfiguration, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().configureVariantSecondarySampleIndex(sampleIndexConfiguration, queryParams);
     }
 
     private RestResponse<Job> secondaryIndexVariant() throws Exception {
@@ -1107,7 +1107,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantSecondaryAnnotationIndexParams.class);
         }
-        return openCGAClient.getVariantOperationClient().secondaryIndexVariant(variantSecondaryAnnotationIndexParams, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().secondaryIndexVariant(variantSecondaryAnnotationIndexParams, queryParams);
     }
 
     private RestResponse<Job> deleteVariantSecondaryIndex() throws Exception {
@@ -1127,7 +1127,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getVariantOperationClient().deleteVariantSecondaryIndex(queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().deleteVariantSecondaryIndex(queryParams);
     }
 
     private RestResponse<Job> deleteVariantStats() throws Exception {
@@ -1166,7 +1166,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantStatsDeleteParams.class);
         }
-        return openCGAClient.getVariantOperationClient().deleteVariantStats(variantStatsDeleteParams, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().deleteVariantStats(variantStatsDeleteParams, queryParams);
     }
 
     private RestResponse<Job> indexVariantStats() throws Exception {
@@ -1209,7 +1209,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantStatsIndexParams.class);
         }
-        return openCGAClient.getVariantOperationClient().indexVariantStats(variantStatsIndexParams, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().indexVariantStats(variantStatsIndexParams, queryParams);
     }
 
     private RestResponse<Job> deleteVariantStudy() throws Exception {
@@ -1247,6 +1247,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantStudyDeleteParams.class);
         }
-        return openCGAClient.getVariantOperationClient().deleteVariantStudy(variantStudyDeleteParams, queryParams);
+        return openCGAEnterpriseClient.getVariantOperationClient().deleteVariantStudy(variantStudyDeleteParams, queryParams);
     }
 }

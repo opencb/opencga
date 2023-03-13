@@ -141,4 +141,43 @@
         </dependency>
     </dependencies>
 
+    <build>
+        <finalName>opencga-enterprise-app</finalName>
+        <sourceDirectory>src/main/java</sourceDirectory>
+
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>appassembler-maven-plugin</artifactId>
+                <version>1.10</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>assemble</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <repositoryName>libs</repositoryName>
+                    <repositoryLayout>flat</repositoryLayout>
+                    <useWildcardClassPath>false</useWildcardClassPath>
+                    <!--By default, "etc".-->
+                    <configurationDirectory>conf</configurationDirectory>
+                    <!--Do we need to include the configuration folder in the classpath?-->
+                    <includeConfigurationDirectoryInClasspath>false</includeConfigurationDirectoryInClasspath>
+                    <environmentSetupFileName>../conf/${opencga.env.file}</environmentSetupFileName>
+                    <programs>
+                        <program>
+                            <id>opencga-enterprise.sh</id>
+                            <mainClass>com.zettagenomics.opencga.enterprise.app.cli.main.OpencgaEnterpriseMain</mainClass>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
+                    </programs>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

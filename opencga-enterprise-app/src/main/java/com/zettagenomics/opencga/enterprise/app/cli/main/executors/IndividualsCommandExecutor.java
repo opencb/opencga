@@ -1,7 +1,7 @@
 package com.zettagenomics.opencga.enterprise.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaCommandExecutor;
+import com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaEnterpriseCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -54,7 +54,7 @@ import org.opencb.opencga.core.models.job.Job;
  * This class contains methods for the Individuals command line.
  *    PATH: /{apiVersion}/individuals
  */
-public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
+public class IndividualsCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaEnterpriseCommandExecutor {
 
     private IndividualsCommandOptions individualsCommandOptions;
 
@@ -152,7 +152,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), IndividualAclUpdateParams.class);
         }
-        return openCGAClient.getIndividualClient().updateAcl(commandOptions.members, commandOptions.action, individualAclUpdateParams, queryParams);
+        return openCGAEnterpriseClient.getIndividualClient().updateAcl(commandOptions.members, commandOptions.action, individualAclUpdateParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
@@ -187,7 +187,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getIndividualClient().aggregationStats(queryParams);
+        return openCGAEnterpriseClient.getIndividualClient().aggregationStats(queryParams);
     }
 
     private RestResponse<Job> loadAnnotationSets() throws Exception {
@@ -223,7 +223,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), TsvAnnotationParams.class);
         }
-        return openCGAClient.getIndividualClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
+        return openCGAEnterpriseClient.getIndividualClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
     }
 
     private RestResponse<Individual> create() throws Exception {
@@ -296,7 +296,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), IndividualCreateParams.class);
         }
-        return openCGAClient.getIndividualClient().create(individualCreateParams, queryParams);
+        return openCGAEnterpriseClient.getIndividualClient().create(individualCreateParams, queryParams);
     }
 
     private RestResponse<Object> distinct() throws Exception {
@@ -336,7 +336,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getIndividualClient().distinct(commandOptions.field, queryParams);
+        return openCGAEnterpriseClient.getIndividualClient().distinct(commandOptions.field, queryParams);
     }
 
     private RestResponse<Individual> search() throws Exception {
@@ -382,7 +382,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getIndividualClient().search(queryParams);
+        return openCGAEnterpriseClient.getIndividualClient().search(queryParams);
     }
 
     private RestResponse<IndividualAclEntryList> acl() throws Exception {
@@ -399,7 +399,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getIndividualClient().acl(commandOptions.individuals, queryParams);
+        return openCGAEnterpriseClient.getIndividualClient().acl(commandOptions.individuals, queryParams);
     }
 
     private RestResponse<Individual> delete() throws Exception {
@@ -415,7 +415,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getIndividualClient().delete(commandOptions.individuals, queryParams);
+        return openCGAEnterpriseClient.getIndividualClient().delete(commandOptions.individuals, queryParams);
     }
 
     private RestResponse<Individual> info() throws Exception {
@@ -435,7 +435,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getIndividualClient().info(commandOptions.individuals, queryParams);
+        return openCGAEnterpriseClient.getIndividualClient().info(commandOptions.individuals, queryParams);
     }
 
     private RestResponse<Individual> update() throws Exception {
@@ -508,7 +508,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), IndividualUpdateParams.class);
         }
-        return openCGAClient.getIndividualClient().update(commandOptions.individuals, individualUpdateParams, queryParams);
+        return openCGAEnterpriseClient.getIndividualClient().update(commandOptions.individuals, individualUpdateParams, queryParams);
     }
 
     private RestResponse<Individual> updateAnnotationSetsAnnotations() throws Exception {
@@ -536,7 +536,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             objectMap = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), ObjectMap.class);
         }
-        return openCGAClient.getIndividualClient().updateAnnotationSetsAnnotations(commandOptions.individual, commandOptions.annotationSet, objectMap, queryParams);
+        return openCGAEnterpriseClient.getIndividualClient().updateAnnotationSetsAnnotations(commandOptions.individual, commandOptions.annotationSet, objectMap, queryParams);
     }
 
     private RestResponse<Individual> relatives() throws Exception {
@@ -555,6 +555,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getIndividualClient().relatives(commandOptions.individual, queryParams);
+        return openCGAEnterpriseClient.getIndividualClient().relatives(commandOptions.individual, queryParams);
     }
 }

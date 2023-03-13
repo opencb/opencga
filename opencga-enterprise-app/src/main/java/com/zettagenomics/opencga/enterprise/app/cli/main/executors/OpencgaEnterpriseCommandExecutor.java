@@ -18,7 +18,7 @@ package com.zettagenomics.opencga.enterprise.app.cli.main.executors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zettagenomics.opencga.enterprise.client.rest.OpenCGAClient;
+import com.zettagenomics.opencga.enterprise.client.rest.OpenCGAEnterpriseClient;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -52,20 +52,21 @@ import java.util.List;
  *
  * @author imedina
  */
-public abstract class OpencgaCommandExecutor extends CommandExecutor {
+public abstract class OpencgaEnterpriseCommandExecutor extends CommandExecutor {
 
-    protected OpenCGAClient openCGAClient;
+    protected OpenCGAEnterpriseClient openCGAEnterpriseClient;
+
     protected AbstractOutputWriter writer;
-
 
     private Logger privateLogger;
 
-    public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options) throws CatalogAuthenticationException {
+    public OpencgaEnterpriseCommandExecutor(GeneralCliOptions.CommonCommandOptions options)
+            throws CatalogAuthenticationException {
         this(options, false);
     }
 
     @Deprecated
-    public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration)
+    public OpencgaEnterpriseCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration)
             throws CatalogAuthenticationException {
         super(options, true);
 
@@ -91,7 +92,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
     private void init(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) {
         try {
-            privateLogger = LoggerFactory.getLogger(OpencgaCommandExecutor.class);
+            privateLogger = LoggerFactory.getLogger(OpencgaEnterpriseCommandExecutor.class);
             privateLogger.debug("Executing OpencgaCommandExecutor 'init' method ...");
 
             // Configure CLI output writer
@@ -128,20 +129,14 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
                 // Update SessionManager and OpencgaClient with the new token
                 sessionManager.updateSessionToken(token, host);
-                openCGAClient = new OpenCGAClient(new AuthenticationResponse(options.token), clientConfiguration);
+                openCGAEnterpriseClient = new OpenCGAEnterpriseClient(new AuthenticationResponse(options.token), clientConfiguration);
             } else {
                 privateLogger.debug("No token has been provided, reading session file");
                 if (!StringUtils.isEmpty(sessionManager.getSession().getToken())
                         && !SessionManager.NO_TOKEN.equals(sessionManager.getSession().getToken())) {
-                    // FIXME it seems skipDuration is not longer used,
-                    //  this should be either implemented or removed
+                    // FIXME it seems skipDuration is not longer used, this should be either implemented or removed
                     if (skipDuration) {
                         privateLogger.debug("Skip duration set to {}, THIS MUST BE REMOVED", skipDuration);
-//                        openCGAClient = new OpenCGAClient(
-//                                new AuthenticationResponse(CliSessionManager.getInstance().getToken()
-//                                        , CliSessionManager.getInstance().getRefreshToken())
-//                                , clientConfiguration);
-//                        openCGAClient.setUserId(CliSessionManager.getInstance().getUser());
                     } else {
                         privateLogger.debug("Skip duration set to {}", skipDuration);
 
@@ -153,10 +148,10 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                         Date currentDate = new Date();
                         if (currentDate.before(expirationDate) || !claimsMap.containsKey("exp")) {
                             privateLogger.debug("Session expiration time is ok, valid until: {}", expirationDate);
-                            openCGAClient = new OpenCGAClient(
+                            openCGAEnterpriseClient = new OpenCGAEnterpriseClient(
                                     new AuthenticationResponse(sessionManager.getSession().getToken(), sessionManager.getSession().getRefreshToken()),
                                     clientConfiguration);
-                            openCGAClient.setUserId(sessionManager.getSession().getUser());
+                            openCGAEnterpriseClient.setUserId(sessionManager.getSession().getUser());
 
                             // FIXME This looks weird, commenting it
 //                            if (options.token == null) {
@@ -164,20 +159,19 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 //                            }
                         } else {
                             privateLogger.debug("Session has expired '{}'.", expirationDate);
-                            openCGAClient = new OpenCGAClient(clientConfiguration);
+                            openCGAEnterpriseClient = new OpenCGAEnterpriseClient(clientConfiguration);
                             //sessionManager.logoutSessionFile();
                         }
                     }
                 } else {
                     privateLogger.debug("No valid session found");
-                    openCGAClient = new OpenCGAClient(clientConfiguration);
+                    openCGAEnterpriseClient = new OpenCGAEnterpriseClient(clientConfiguration);
                 }
             }
 
-            if (openCGAClient != null) {
-                openCGAClient.setThrowExceptionOnError(true);
+            if (openCGAEnterpriseClient != null) {
+                openCGAEnterpriseClient.setThrowExceptionOnError(true);
             }
-
         } catch (IOException e) {
             logger.error("OpencgaCommandExecutorError", e);
             CommandLineUtils.error("OpencgaCommandExecutorError", e);
@@ -211,12 +205,12 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         return new ObjectMapper().readValue(decodedClaimsString, ObjectMap.class);
     }
 
-    public OpenCGAClient getOpenCGAClient() {
-        return openCGAClient;
+    public OpenCGAEnterpriseClient getOpenCGAClient() {
+        return openCGAEnterpriseClient;
     }
 
-    public OpencgaCommandExecutor setOpenCGAClient(OpenCGAClient openCGAClient) {
-        this.openCGAClient = openCGAClient;
+    public OpencgaEnterpriseCommandExecutor setOpenCGAClient(OpenCGAEnterpriseClient openCGAEnterpriseClient) {
+        this.openCGAEnterpriseClient = openCGAEnterpriseClient;
         return this;
     }
 
@@ -235,12 +229,12 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         if (response != null) {
             List<String> studies = new ArrayList<>();
             logger.debug(response.toString());
-            RestResponse<Project> projects = openCGAClient.getProjectClient().search(
-                    new ObjectMap(ProjectDBAdaptor.QueryParams.OWNER.key(), user));
+            RestResponse<Project> projects = openCGAEnterpriseClient.getProjectClient()
+                    .search(new ObjectMap(ProjectDBAdaptor.QueryParams.OWNER.key(), user));
 
             if (projects.getResponses().get(0).getNumResults() == 0) {
                 // We try to fetch shared projects and studies instead when the user does not own any project or study
-                projects = openCGAClient.getProjectClient().search(new ObjectMap());
+                projects = openCGAEnterpriseClient.getProjectClient().search(new ObjectMap());
             }
 
             for (Project project : projects.getResponses().get(0).getResults()) {
@@ -278,7 +272,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     }
 
     public boolean checkExpiredSession(String[] args) {
-        ObjectMap claimsMap = null;
+        ObjectMap claimsMap;
         try {
             claimsMap = parseTokenClaims(sessionManager.getSession().getToken());
         } catch (Exception e) {

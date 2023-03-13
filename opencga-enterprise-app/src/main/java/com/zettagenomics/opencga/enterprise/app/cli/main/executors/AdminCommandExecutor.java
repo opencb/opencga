@@ -1,7 +1,7 @@
 package com.zettagenomics.opencga.enterprise.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaCommandExecutor;
+import com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaEnterpriseCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -44,7 +44,7 @@ import org.opencb.opencga.core.models.user.User;
  * This class contains methods for the Admin command line.
  *    PATH: /{apiVersion}/admin
  */
-public class AdminCommandExecutor extends OpencgaCommandExecutor {
+public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaEnterpriseCommandExecutor {
 
     private AdminCommandOptions adminCommandOptions;
 
@@ -110,7 +110,7 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("after", commandOptions.after);
         queryParams.putIfNotEmpty("date", commandOptions.date);
 
-        return openCGAClient.getAdminClient().groupByAudit(commandOptions.fields, commandOptions.entity, queryParams);
+        return openCGAEnterpriseClient.getAdminClient().groupByAudit(commandOptions.fields, commandOptions.entity, queryParams);
     }
 
     private RestResponse<Boolean> indexStatsCatalog() throws Exception {
@@ -122,7 +122,7 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("collection", commandOptions.collection);
 
-        return openCGAClient.getAdminClient().indexStatsCatalog(queryParams);
+        return openCGAEnterpriseClient.getAdminClient().indexStatsCatalog(queryParams);
     }
 
     private RestResponse<ObjectMap> installCatalog() throws Exception {
@@ -152,7 +152,7 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), InstallationParams.class);
         }
-        return openCGAClient.getAdminClient().installCatalog(installationParams);
+        return openCGAEnterpriseClient.getAdminClient().installCatalog(installationParams);
     }
 
     private RestResponse<ObjectMap> jwtCatalog() throws Exception {
@@ -179,7 +179,7 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JWTParams.class);
         }
-        return openCGAClient.getAdminClient().jwtCatalog(jWTParams);
+        return openCGAEnterpriseClient.getAdminClient().jwtCatalog(jWTParams);
     }
 
     private RestResponse<User> createUsers() throws Exception {
@@ -211,7 +211,7 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), UserCreateParams.class);
         }
-        return openCGAClient.getAdminClient().createUsers(userCreateParams);
+        return openCGAEnterpriseClient.getAdminClient().createUsers(userCreateParams);
     }
 
     private RestResponse<User> importUsers() throws Exception {
@@ -242,7 +242,7 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), UserImportParams.class);
         }
-        return openCGAClient.getAdminClient().importUsers(userImportParams);
+        return openCGAEnterpriseClient.getAdminClient().importUsers(userImportParams);
     }
 
     private RestResponse<Sample> searchUsers() throws Exception {
@@ -261,7 +261,7 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("account", commandOptions.account);
         queryParams.putIfNotEmpty("authenticationId", commandOptions.authenticationId);
 
-        return openCGAClient.getAdminClient().searchUsers(queryParams);
+        return openCGAEnterpriseClient.getAdminClient().searchUsers(queryParams);
     }
 
     private RestResponse<Group> syncUsers() throws Exception {
@@ -294,6 +294,6 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), GroupSyncParams.class);
         }
-        return openCGAClient.getAdminClient().syncUsers(groupSyncParams);
+        return openCGAEnterpriseClient.getAdminClient().syncUsers(groupSyncParams);
     }
 }

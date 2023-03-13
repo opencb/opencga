@@ -1,7 +1,7 @@
 package com.zettagenomics.opencga.enterprise.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaCommandExecutor;
+import com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaEnterpriseCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -78,7 +78,7 @@ import org.opencb.opencga.core.models.study.configuration.InterpretationStudyCon
  * This class contains methods for the Analysis - Clinical command line.
  *    PATH: /{apiVersion}/analysis/clinical
  */
-public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
+public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaEnterpriseCommandExecutor {
 
     private AnalysisClinicalCommandOptions analysisClinicalCommandOptions;
 
@@ -232,7 +232,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ClinicalAnalysisAclUpdateParams.class);
         }
-        return openCGAClient.getClinicalAnalysisClient().updateAcl(commandOptions.members, commandOptions.action, clinicalAnalysisAclUpdateParams, queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().updateAcl(commandOptions.members, commandOptions.action, clinicalAnalysisAclUpdateParams, queryParams);
     }
 
     private RestResponse<ObjectMap> updateClinicalConfiguration() throws Exception {
@@ -266,7 +266,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ClinicalAnalysisStudyConfiguration.class);
         }
-        return openCGAClient.getClinicalAnalysisClient().updateClinicalConfiguration(clinicalAnalysisStudyConfiguration, queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().updateClinicalConfiguration(clinicalAnalysisStudyConfiguration, queryParams);
     }
 
     private RestResponse<ClinicalAnalysis> create() throws Exception {
@@ -330,7 +330,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ClinicalAnalysisCreateParams.class);
         }
-        return openCGAClient.getClinicalAnalysisClient().create(clinicalAnalysisCreateParams, queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().create(clinicalAnalysisCreateParams, queryParams);
     }
 
     private RestResponse<ObjectMap> distinct() throws Exception {
@@ -370,7 +370,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getClinicalAnalysisClient().distinct(commandOptions.field, queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().distinct(commandOptions.field, queryParams);
     }
 
     private RestResponse<ObjectMap> distinctInterpretation() throws Exception {
@@ -398,7 +398,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getClinicalAnalysisClient().distinctInterpretation(commandOptions.field, queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().distinctInterpretation(commandOptions.field, queryParams);
     }
 
     private RestResponse<Interpretation> searchInterpretation() throws Exception {
@@ -431,7 +431,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getClinicalAnalysisClient().searchInterpretation(queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().searchInterpretation(queryParams);
     }
 
     private RestResponse<Interpretation> infoInterpretation() throws Exception {
@@ -450,7 +450,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getClinicalAnalysisClient().infoInterpretation(commandOptions.interpretations, queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().infoInterpretation(commandOptions.interpretations, queryParams);
     }
 
     private RestResponse<Job> runInterpreterCancerTiering() throws Exception {
@@ -490,7 +490,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CancerTieringInterpretationAnalysisParams.class);
         }
-        return openCGAClient.getClinicalAnalysisClient().runInterpreterCancerTiering(cancerTieringInterpretationAnalysisParams, queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().runInterpreterCancerTiering(cancerTieringInterpretationAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runInterpreterExomiser() throws Exception {
@@ -528,7 +528,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ExomiserInterpretationAnalysisParams.class);
         }
-        return openCGAClient.getClinicalAnalysisClient().runInterpreterExomiser(exomiserInterpretationAnalysisParams, queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().runInterpreterExomiser(exomiserInterpretationAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runInterpreterTeam() throws Exception {
@@ -569,7 +569,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), TeamInterpretationAnalysisParams.class);
         }
-        return openCGAClient.getClinicalAnalysisClient().runInterpreterTeam(teamInterpretationAnalysisParams, queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().runInterpreterTeam(teamInterpretationAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runInterpreterTiering() throws Exception {
@@ -610,7 +610,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), TieringInterpretationAnalysisParams.class);
         }
-        return openCGAClient.getClinicalAnalysisClient().runInterpreterTiering(tieringInterpretationAnalysisParams, queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().runInterpreterTiering(tieringInterpretationAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runInterpreterZetta() throws Exception {
@@ -698,7 +698,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ZettaInterpretationAnalysisParams.class);
         }
-        return openCGAClient.getClinicalAnalysisClient().runInterpreterZetta(zettaInterpretationAnalysisParams, queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().runInterpreterZetta(zettaInterpretationAnalysisParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStatsRga() throws Exception {
@@ -735,7 +735,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getClinicalAnalysisClient().aggregationStatsRga(commandOptions.field, queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().aggregationStatsRga(commandOptions.field, queryParams);
     }
 
     private RestResponse<RgaKnockoutByGene> queryRgaGene() throws Exception {
@@ -778,7 +778,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getClinicalAnalysisClient().queryRgaGene(queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().queryRgaGene(queryParams);
     }
 
     private RestResponse<KnockoutByGeneSummary> summaryRgaGene() throws Exception {
@@ -816,7 +816,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getClinicalAnalysisClient().summaryRgaGene(queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().summaryRgaGene(queryParams);
     }
 
     private RestResponse<Job> runRgaIndex() throws Exception {
@@ -855,7 +855,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), RgaAnalysisParams.class);
         }
-        return openCGAClient.getClinicalAnalysisClient().runRgaIndex(rgaAnalysisParams, queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().runRgaIndex(rgaAnalysisParams, queryParams);
     }
 
     private RestResponse<KnockoutByIndividual> queryRgaIndividual() throws Exception {
@@ -895,7 +895,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getClinicalAnalysisClient().queryRgaIndividual(queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().queryRgaIndividual(queryParams);
     }
 
     private RestResponse<KnockoutByIndividualSummary> summaryRgaIndividual() throws Exception {
@@ -933,7 +933,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getClinicalAnalysisClient().summaryRgaIndividual(queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().summaryRgaIndividual(queryParams);
     }
 
     private RestResponse<KnockoutByVariant> queryRgaVariant() throws Exception {
@@ -976,7 +976,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getClinicalAnalysisClient().queryRgaVariant(queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().queryRgaVariant(queryParams);
     }
 
     private RestResponse<KnockoutByVariantSummary> summaryRgaVariant() throws Exception {
@@ -1014,7 +1014,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getClinicalAnalysisClient().summaryRgaVariant(queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().summaryRgaVariant(queryParams);
     }
 
     private RestResponse<ClinicalAnalysis> search() throws Exception {
@@ -1059,7 +1059,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getClinicalAnalysisClient().search(queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().search(queryParams);
     }
 
     private RestResponse<ClinicalVariant> queryVariant() throws Exception {
@@ -1134,7 +1134,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getClinicalAnalysisClient().queryVariant(queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().queryVariant(queryParams);
     }
 
     private RestResponse<ClinicalAnalysisAclEntryList> acl() throws Exception {
@@ -1151,7 +1151,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getClinicalAnalysisClient().acl(commandOptions.clinicalAnalyses, queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().acl(commandOptions.clinicalAnalyses, queryParams);
     }
 
     private RestResponse<ClinicalAnalysis> delete() throws Exception {
@@ -1167,7 +1167,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getClinicalAnalysisClient().delete(commandOptions.clinicalAnalyses, queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().delete(commandOptions.clinicalAnalyses, queryParams);
     }
 
     private RestResponse<ClinicalAnalysis> update() throws Exception {
@@ -1225,7 +1225,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ClinicalAnalysisUpdateParams.class);
         }
-        return openCGAClient.getClinicalAnalysisClient().update(commandOptions.clinicalAnalyses, clinicalAnalysisUpdateParams, queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().update(commandOptions.clinicalAnalyses, clinicalAnalysisUpdateParams, queryParams);
     }
 
     private RestResponse<ClinicalAnalysis> info() throws Exception {
@@ -1243,7 +1243,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getClinicalAnalysisClient().info(commandOptions.clinicalAnalysis, queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().info(commandOptions.clinicalAnalysis, queryParams);
     }
 
     private RestResponse<Interpretation> createInterpretation() throws Exception {
@@ -1291,7 +1291,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), InterpretationCreateParams.class);
         }
-        return openCGAClient.getClinicalAnalysisClient().createInterpretation(commandOptions.clinicalAnalysis, interpretationCreateParams, queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().createInterpretation(commandOptions.clinicalAnalysis, interpretationCreateParams, queryParams);
     }
 
     private RestResponse<Interpretation> clearInterpretation() throws Exception {
@@ -1306,7 +1306,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getClinicalAnalysisClient().clearInterpretation(commandOptions.clinicalAnalysis, commandOptions.interpretations, queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().clearInterpretation(commandOptions.clinicalAnalysis, commandOptions.interpretations, queryParams);
     }
 
     private RestResponse<Interpretation> deleteInterpretation() throws Exception {
@@ -1322,7 +1322,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getClinicalAnalysisClient().deleteInterpretation(commandOptions.clinicalAnalysis, commandOptions.interpretations, queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().deleteInterpretation(commandOptions.clinicalAnalysis, commandOptions.interpretations, queryParams);
     }
 
     private RestResponse<Interpretation> revertInterpretation() throws Exception {
@@ -1337,7 +1337,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getClinicalAnalysisClient().revertInterpretation(commandOptions.clinicalAnalysis, commandOptions.interpretation, commandOptions.version, queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().revertInterpretation(commandOptions.clinicalAnalysis, commandOptions.interpretation, commandOptions.version, queryParams);
     }
 
     private RestResponse<Interpretation> updateInterpretation() throws Exception {
@@ -1384,6 +1384,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), InterpretationUpdateParams.class);
         }
-        return openCGAClient.getClinicalAnalysisClient().updateInterpretation(commandOptions.clinicalAnalysis, commandOptions.interpretation, interpretationUpdateParams, queryParams);
+        return openCGAEnterpriseClient.getClinicalAnalysisClient().updateInterpretation(commandOptions.clinicalAnalysis, commandOptions.interpretation, interpretationUpdateParams, queryParams);
     }
 }

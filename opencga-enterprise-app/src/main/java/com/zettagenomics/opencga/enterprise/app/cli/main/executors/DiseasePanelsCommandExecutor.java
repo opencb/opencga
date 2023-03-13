@@ -1,7 +1,7 @@
 package com.zettagenomics.opencga.enterprise.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaCommandExecutor;
+import com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaEnterpriseCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -42,7 +42,7 @@ import org.opencb.opencga.core.models.panel.PanelUpdateParams;
  * This class contains methods for the Disease Panels command line.
  *    PATH: /{apiVersion}/panels
  */
-public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
+public class DiseasePanelsCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaEnterpriseCommandExecutor {
 
     private DiseasePanelsCommandOptions diseasePanelsCommandOptions;
 
@@ -129,7 +129,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PanelAclUpdateParams.class);
         }
-        return openCGAClient.getDiseasePanelClient().updateAcl(commandOptions.members, commandOptions.action, panelAclUpdateParams, queryParams);
+        return openCGAEnterpriseClient.getDiseasePanelClient().updateAcl(commandOptions.members, commandOptions.action, panelAclUpdateParams, queryParams);
     }
 
     private RestResponse<Panel> create() throws Exception {
@@ -176,7 +176,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PanelCreateParams.class);
         }
-        return openCGAClient.getDiseasePanelClient().create(panelCreateParams, queryParams);
+        return openCGAEnterpriseClient.getDiseasePanelClient().create(panelCreateParams, queryParams);
     }
 
     private RestResponse<Object> distinct() throws Exception {
@@ -209,7 +209,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getDiseasePanelClient().distinct(commandOptions.field, queryParams);
+        return openCGAEnterpriseClient.getDiseasePanelClient().distinct(commandOptions.field, queryParams);
     }
 
     private RestResponse<Job> importPanels() throws Exception {
@@ -248,7 +248,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PanelImportParams.class);
         }
-        return openCGAClient.getDiseasePanelClient().importPanels(panelImportParams, queryParams);
+        return openCGAEnterpriseClient.getDiseasePanelClient().importPanels(panelImportParams, queryParams);
     }
 
     private RestResponse<Panel> search() throws Exception {
@@ -286,7 +286,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getDiseasePanelClient().search(queryParams);
+        return openCGAEnterpriseClient.getDiseasePanelClient().search(queryParams);
     }
 
     private RestResponse<PanelAclEntryList> acl() throws Exception {
@@ -303,7 +303,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getDiseasePanelClient().acl(commandOptions.panels, queryParams);
+        return openCGAEnterpriseClient.getDiseasePanelClient().acl(commandOptions.panels, queryParams);
     }
 
     private RestResponse<Panel> delete() throws Exception {
@@ -318,7 +318,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getDiseasePanelClient().delete(commandOptions.panels, queryParams);
+        return openCGAEnterpriseClient.getDiseasePanelClient().delete(commandOptions.panels, queryParams);
     }
 
     private RestResponse<Panel> info() throws Exception {
@@ -337,7 +337,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getDiseasePanelClient().info(commandOptions.panels, queryParams);
+        return openCGAEnterpriseClient.getDiseasePanelClient().info(commandOptions.panels, queryParams);
     }
 
     private RestResponse<Panel> update() throws Exception {
@@ -384,6 +384,6 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PanelUpdateParams.class);
         }
-        return openCGAClient.getDiseasePanelClient().update(commandOptions.panels, panelUpdateParams, queryParams);
+        return openCGAEnterpriseClient.getDiseasePanelClient().update(commandOptions.panels, panelUpdateParams, queryParams);
     }
 }

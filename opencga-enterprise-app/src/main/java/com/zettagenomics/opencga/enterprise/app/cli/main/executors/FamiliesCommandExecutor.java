@@ -1,7 +1,7 @@
 package com.zettagenomics.opencga.enterprise.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaCommandExecutor;
+import com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaEnterpriseCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -48,7 +48,7 @@ import org.opencb.opencga.core.models.job.Job;
  * This class contains methods for the Families command line.
  *    PATH: /{apiVersion}/families
  */
-public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
+public class FamiliesCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaEnterpriseCommandExecutor {
 
     private FamiliesCommandOptions familiesCommandOptions;
 
@@ -144,7 +144,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FamilyAclUpdateParams.class);
         }
-        return openCGAClient.getFamilyClient().updateAcl(commandOptions.members, commandOptions.action, familyAclUpdateParams, queryParams);
+        return openCGAEnterpriseClient.getFamilyClient().updateAcl(commandOptions.members, commandOptions.action, familyAclUpdateParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
@@ -172,7 +172,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getFamilyClient().aggregationStats(queryParams);
+        return openCGAEnterpriseClient.getFamilyClient().aggregationStats(queryParams);
     }
 
     private RestResponse<Job> loadAnnotationSets() throws Exception {
@@ -208,7 +208,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), TsvAnnotationParams.class);
         }
-        return openCGAClient.getFamilyClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
+        return openCGAEnterpriseClient.getFamilyClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
     }
 
     private RestResponse<Family> create() throws Exception {
@@ -255,7 +255,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FamilyCreateParams.class);
         }
-        return openCGAClient.getFamilyClient().create(familyCreateParams, queryParams);
+        return openCGAEnterpriseClient.getFamilyClient().create(familyCreateParams, queryParams);
     }
 
     private RestResponse<Object> distinct() throws Exception {
@@ -287,7 +287,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getFamilyClient().distinct(commandOptions.field, queryParams);
+        return openCGAEnterpriseClient.getFamilyClient().distinct(commandOptions.field, queryParams);
     }
 
     private RestResponse<Family> search() throws Exception {
@@ -325,7 +325,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getFamilyClient().search(queryParams);
+        return openCGAEnterpriseClient.getFamilyClient().search(queryParams);
     }
 
     private RestResponse<FamilyAclEntryList> acl() throws Exception {
@@ -342,7 +342,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getFamilyClient().acl(commandOptions.families, queryParams);
+        return openCGAEnterpriseClient.getFamilyClient().acl(commandOptions.families, queryParams);
     }
 
     private RestResponse<Family> delete() throws Exception {
@@ -357,7 +357,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getFamilyClient().delete(commandOptions.families, queryParams);
+        return openCGAEnterpriseClient.getFamilyClient().delete(commandOptions.families, queryParams);
     }
 
     private RestResponse<Family> info() throws Exception {
@@ -377,7 +377,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getFamilyClient().info(commandOptions.families, queryParams);
+        return openCGAEnterpriseClient.getFamilyClient().info(commandOptions.families, queryParams);
     }
 
     private RestResponse<Family> update() throws Exception {
@@ -425,7 +425,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FamilyUpdateParams.class);
         }
-        return openCGAClient.getFamilyClient().update(commandOptions.families, familyUpdateParams, queryParams);
+        return openCGAEnterpriseClient.getFamilyClient().update(commandOptions.families, familyUpdateParams, queryParams);
     }
 
     private RestResponse<Family> updateAnnotationSetsAnnotations() throws Exception {
@@ -453,6 +453,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             objectMap = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), ObjectMap.class);
         }
-        return openCGAClient.getFamilyClient().updateAnnotationSetsAnnotations(commandOptions.family, commandOptions.annotationSet, objectMap, queryParams);
+        return openCGAEnterpriseClient.getFamilyClient().updateAnnotationSetsAnnotations(commandOptions.family, commandOptions.annotationSet, objectMap, queryParams);
     }
 }
