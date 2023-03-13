@@ -151,7 +151,7 @@
                             </execution>
                         </executions>
                         <configuration>
-                            <mainClass>com.zettagenomics.opencga.enterprise.server.generator.EnterpriseClientsGenerator</mainClass>
+                            <mainClass>com.zettagenomics.opencga.enterprise.server.generator.EnterpriseClientsGeneratorMain</mainClass>
                         </configuration>
                     </plugin>
                 </plugins>

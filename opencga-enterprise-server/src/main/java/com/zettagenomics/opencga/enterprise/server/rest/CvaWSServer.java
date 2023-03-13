@@ -23,7 +23,7 @@ public class CvaWSServer extends OpenCGAWSServer {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
     @GET
-    @Path("/{case}/info")
+    @Path("/{caseId}/info")
     @ApiOperation(value = "Get sample information", response = Sample.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, format = "", example = "name,attributes",
@@ -37,7 +37,7 @@ public class CvaWSServer extends OpenCGAWSServer {
                     dataType = "boolean", paramType = "query")
     })
     public Response infoSample(
-            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION, required = true) @PathParam("samples") String samplesStr,
+            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION, required = true) @PathParam("caseId") String samplesStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.SAMPLE_VERSION_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VERSION_PARAM) String version,
             @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted) {

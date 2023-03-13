@@ -1,5 +1,5 @@
 options:
-  outputDir: opencga-app/src/main/java/org/opencb/opencga/app/cli/main/
+  outputDir: opencga-enterprise-app/src/main/java/com/zettagenomics/opencga/enterprise/app/cli/main/
   ignoreTypes:
     - string
     - object
@@ -18,6 +18,8 @@ options:
     - java.lang.Float
     - java.lang.
 apiConfig:
+  executorsParentClass: com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaCommandExecutor
+  optionsParserParentClass: com.zettagenomics.opencga.enterprise.app.cli.main.options.*
   shortcuts:
     - name: user
       shortcut: u
@@ -45,6 +47,7 @@ apiConfig:
       key: User
       executorExtended: True
       optionExtended: True
+      optionExtendedClassName: org.opencb.opencga.app.cli.main.options.UsersCommandOptions
       commands:
         - name: update-filters
           ignore: True
@@ -62,6 +65,7 @@ apiConfig:
     - name: studies
       executorExtended: True
       optionExtended: True
+      optionExtendedClassName: org.opencb.opencga.app.cli.main.options.StudiesCommandOptions
       commands:
         - name: run-templates
           executorExtended: True
@@ -76,6 +80,7 @@ apiConfig:
       key: File
       executorExtended: True
       optionExtended: True
+      optionExtendedClassName: org.opencb.opencga.app.cli.main.options.FilesCommandOptions
       commands:
         - name: upload
           executorExtended: True
@@ -93,6 +98,7 @@ apiConfig:
       key: Job
       executorExtended: True
       optionExtended: True
+      optionExtendedClassName: org.opencb.opencga.app.cli.main.options.JobsCommandOptions
       commands:
         - name: top
           executorExtended: True
@@ -191,7 +197,7 @@ apiConfig:
       commandName: meta
       ignore: False
       key: Meta
-    - name: cva
+    - name: Cva
       commandName: cva
       ignore: False
       key: Cva

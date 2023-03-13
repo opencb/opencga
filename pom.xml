@@ -69,6 +69,11 @@
         <dependencies>
             <!-- Intra-module dependencies -->
             <dependency>
+                <groupId>com.zettagenomics.opencga-enterprise</groupId>
+                <artifactId>opencga-enterprise-client</artifactId>
+                <version>${project.parent.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-core</artifactId>
                 <version>${opencga.version}</version>
@@ -423,5 +428,11 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-core</artifactId>
+        </dependency>
+    </dependencies>
 
 </project>
