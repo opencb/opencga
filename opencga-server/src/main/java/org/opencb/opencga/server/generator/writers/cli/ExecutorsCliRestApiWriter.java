@@ -217,16 +217,18 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         return sb.toString();
     }
 
-    private String getExtendedClass(String name, CategoryConfig config) {
-        String res = "OpencgaCommandExecutor";
-        if (config.isExecutorExtended()) {
-            if (StringUtils.isNotEmpty(config.getExecutorExtendedClassName())) {
-                res = config.getExecutorExtendedClassName();
+    private String getExtendedClass(String name, CategoryConfig categoryConfig) {
+        String parentClass = StringUtils.isEmpty(this.config.getApiConfig().getExecutorsParentClass())
+                ? "OpencgaCommandExecutor"
+                : this.config.getApiConfig().getExecutorsParentClass();
+        if (categoryConfig.isExecutorExtended()) {
+            if (StringUtils.isNotEmpty(categoryConfig.getExecutorExtendedClassName())) {
+                parentClass = categoryConfig.getExecutorExtendedClassName();
             } else {
-                res = "Parent" + name + "CommandExecutor";
+                parentClass = "Parent" + name + "CommandExecutor";
             }
         }
-        return res;
+        return parentClass;
     }
 
     @Override
@@ -265,7 +267,12 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
     }
 
     private String getReturn(RestCategory restCategory, RestEndpoint restEndpoint, CategoryConfig config, String commandName) {
-        String res = "        return openCGAClient.get" + getAsClassName(config.getKey()) + "Client()."
+        String opencgaClientObjectName = StringUtils.isEmpty(this.config.getApiConfig().getOpencgaClientClassName())
+                ? "openCGAClient"
+                : this.config.getApiConfig().getOpencgaClientClassName().toLowerCase().charAt(0)
+                    + this.config.getApiConfig().getOpencgaClientClassName().substring(1);
+
+        String res = "        return " + opencgaClientObjectName + ".get" + getAsClassName(config.getKey()) + "Client()."
                 + getJavaMethodName(config, commandName) + "(";
         res += restEndpoint.getPathParams();
         res += restEndpoint.getMandatoryQueryParams(config, commandName);

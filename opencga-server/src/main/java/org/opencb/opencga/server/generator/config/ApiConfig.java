@@ -9,12 +9,22 @@ public class ApiConfig {
     private List<Shortcut> shortcuts;
     private String executorsParentClass;
     private String optionsParserParentClass;
+    private String opencgaClientClassName;
 
     public ApiConfig() {
     }
 
     public ApiConfig(List<CategoryConfig> categoryConfigList) {
         this.categoryConfigList = categoryConfigList;
+    }
+
+    public ApiConfig(List<CategoryConfig> categoryConfigList, List<Shortcut> shortcuts, String executorsParentClass,
+                     String optionsParserParentClass, String opencgaClientClassName) {
+        this.categoryConfigList = categoryConfigList;
+        this.shortcuts = shortcuts;
+        this.executorsParentClass = executorsParentClass;
+        this.optionsParserParentClass = optionsParserParentClass;
+        this.opencgaClientClassName = opencgaClientClassName;
     }
 
     @Override
@@ -24,6 +34,7 @@ public class ApiConfig {
         sb.append(", shortcuts=").append(shortcuts);
         sb.append(", executorsParentClass='").append(executorsParentClass).append('\'');
         sb.append(", optionsParserParentClass='").append(optionsParserParentClass).append('\'');
+        sb.append(", opencgaClientClassName='").append(opencgaClientClassName).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -61,6 +72,15 @@ public class ApiConfig {
 
     public ApiConfig setOptionsParserParentClass(String optionsParserParentClass) {
         this.optionsParserParentClass = optionsParserParentClass;
+        return this;
+    }
+
+    public String getOpencgaClientClassName() {
+        return opencgaClientClassName;
+    }
+
+    public ApiConfig setOpencgaClientClassName(String opencgaClientClassName) {
+        this.opencgaClientClassName = opencgaClientClassName;
         return this;
     }
 }
