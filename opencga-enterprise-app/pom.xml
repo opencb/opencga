@@ -6,12 +6,18 @@
     <parent>
         <groupId>com.zettagenomics.opencga-enterprise</groupId>
         <artifactId>opencga-enterprise</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>1.6.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>opencga-enterprise-app</artifactId>
+    <packaging>jar</packaging>
 
     <properties>
+        <build.dir>${project.basedir}/../build</build.dir>
+        <opencga.build.dir>${project.basedir}/../opencga-home/build</opencga.build.dir>
+        <app.dir>${project.basedir}/app</app.dir>
+        <opencga.client.dir>opencga-enterprise-client-${project.parent.version}</opencga.client.dir>
+
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -23,6 +29,11 @@
             <groupId>com.zettagenomics.opencga-enterprise</groupId>
             <artifactId>opencga-enterprise-client</artifactId>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.zettagenomics.opencga-enterprise</groupId>-->
+<!--            <artifactId>opencga-enterprise-server</artifactId>-->
+<!--            <version>${project.parent.version}</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-app</artifactId>
@@ -177,6 +188,273 @@
                         </program>
                     </programs>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                        <id>clean-libs</id>
+                        <phase>clean</phase>
+                        <configuration>
+                            <target>
+                                <echo>Preparing ${build.dir} folder</echo>
+                                <exec executable="rm">
+                                    <arg value="-rf"/>
+                                    <arg value="${build.dir}"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>install-app</id>
+                        <phase>install</phase>
+                        <configuration>
+                            <target>
+                                <echo>Preparing ${build.dir} folder</echo>
+                                <exec executable="rm">
+                                    <arg value="-rf"/>
+                                    <arg value="${build.dir}"/>
+                                </exec>
+
+                                <exec executable="mkdir">
+                                    <arg value="-p"/>
+                                    <arg value="${build.dir}/clients"/>
+                                    <arg value="${build.dir}/cloud"/>
+<!--                                    <arg value="${build.dir}/conf"/>-->
+<!--                                    <arg value="${build.dir}/test"/>-->
+                                </exec>
+
+                                <echo>Copying to ${build.dir}</echo>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${opencga.build.dir}/analysis"/>
+                                    <arg value="${opencga.build.dir}/bin"/>
+                                    <arg value="${opencga.build.dir}/conf"/>
+                                    <arg value="${opencga.build.dir}/libs"/>
+                                    <arg value="${opencga.build.dir}/misc"/>
+                                    <arg value="${build.dir}"/>
+                                </exec>
+
+                                <echo>Copying to ${build.dir}</echo>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+<!--                                    <arg value="${app.dir}/analysis"/>-->
+                                    <arg value="${app.dir}/cloud"/>
+<!--                                    <arg value="${app.dir}/cloud/docker/.dockerignore"/>-->
+<!--                                    <arg value="${app.dir}/conf"/>-->
+<!--                                    <arg value="${app.dir}/misc"/>-->
+<!--                                    <arg value="${app.dir}/monitor"/>-->
+                                    <arg value="${project.basedir}/target/appassembler/libs"/>
+<!--                                    <arg value="${project.basedir}/../LICENSE"/>-->
+<!--                                    <arg value="${project.basedir}/../README.md"/>-->
+                                    <arg value="${build.dir}"/>
+                                </exec>
+
+<!--                                <echo>Copying docker-compose files</echo>-->
+<!--                                <exec executable="cp">-->
+<!--                                    <arg value="${project.basedir}/target/docker-compose/docker-compose.yml"/>-->
+<!--                                    <arg value="${build.dir}/cloud/docker/compose"/>-->
+<!--                                </exec>-->
+<!--                                <exec executable="cp">-->
+<!--                                    <arg value="${project.basedir}/../opencga-core/src/main/resources/log4j2.xml"/>-->
+<!--                                    <arg value="${project.basedir}/../opencga-core/src/main/resources/log4j2.internal.xml"/>-->
+<!--                                    <arg value="${project.basedir}/../opencga-core/src/main/resources/log4j2.service.xml"/>-->
+<!--                                    <arg value="${build.dir}/cloud/docker/compose/conf"/>-->
+<!--                                </exec>-->
+
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/../opencga-enterprise-analysis/src/main/R/"/>
+                                    <arg value="${build.dir}/analysis"/>
+                                </exec>
+
+<!--                                <echo>Copying command lines and completion scripts to ${build.dir}/bin and-->
+<!--                                    ${build.dir}/completion-->
+<!--                                </echo>-->
+<!--                                <exec executable="cp">-->
+<!--                                    <arg value="${project.basedir}/target/appassembler/bin/opencga.sh"/>-->
+<!--                                    <arg value="${project.basedir}/target/appassembler/bin/opencga-admin.sh"/>-->
+<!--                                    <arg value="${project.basedir}/target/appassembler/bin/opencga-internal.sh"/>-->
+<!--                                    <arg value="${build.dir}/bin"/>-->
+<!--                                </exec>-->
+<!--                                <exec executable="cp">-->
+<!--                                    <arg value="${project.basedir}/target/appassembler/bin/opencga-clicompletion.sh"/>-->
+<!--                                    <arg value="${build.dir}/bin/utils"/>-->
+<!--                                </exec>-->
+<!--                                <exec executable="${project.basedir}/target/appassembler/bin/opencga-clicompletion.sh">-->
+<!--                                    <arg value="${build.dir}/misc/completion"/>-->
+<!--                                </exec>-->
+
+<!--                                <exec executable="mkdir">-->
+<!--                                    <arg value="${build.dir}/misc/git"/>-->
+<!--                                </exec>-->
+<!--                                <exec executable="cp">-->
+<!--                                    <arg value="${project.basedir}/../opencga-core/target/generated-resources/org/opencb/opencga/core/git.properties"/>-->
+<!--                                    <arg value="${build.dir}/misc/git"/>-->
+<!--                                </exec>-->
+
+<!--                                <echo>Copying Python and R to ${build.dir}/clients</echo>-->
+<!--                                <exec executable="cp">-->
+<!--                                    <arg value="-r"/>-->
+<!--                                    <arg value="${project.basedir}/../opencga-enterprise-client/src/main/python"/>-->
+<!--                                    <arg value="${build.dir}/clients"/>-->
+<!--                                </exec>-->
+<!--                                <exec executable="sed">-->
+<!--                                    <arg value="-i"/>-->
+<!--                                    <arg value="s/PYOPENCGA_VERSION/${pyopencga.version}/"/>-->
+<!--                                    <arg value="${build.dir}/clients/python/setup.py"/>-->
+<!--                                </exec>-->
+
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/../opencga-enterprise-client/src/main/R"/>
+                                    <arg value="${build.dir}/clients"/>
+                                </exec>
+                                <!-- We need to read DESCRIPTION from target folder because we have renamed the version -->
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/../opencga-enterprise-client/target/classes/DESCRIPTION"/>
+                                    <arg value="${build.dir}/clients/R/"/>
+                                </exec>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/../opencga-enterprise-client/src/main/javascript"/>
+                                    <arg value="${build.dir}/clients"/>
+                                </exec>
+
+<!--                                <echo>Copying configuration files</echo>-->
+<!--                                <exec executable="cp">-->
+<!--                                    <arg value="${project.basedir}/../opencga-core/target/classes/configuration.yml"/>-->
+<!--                                    <arg value="${project.basedir}/../opencga-core/target/classes/log4j2.xml"/>-->
+<!--                                    <arg value="${project.basedir}/../opencga-core/target/classes/log4j2.service.xml"/>-->
+<!--                                    <arg value="${project.basedir}/../opencga-core/target/classes/log4j2.internal.xml"/>-->
+<!--                                    <arg value="${project.basedir}/../opencga-storage/opencga-storage-core/target/classes/storage-configuration.yml"/>-->
+<!--                                    <arg value="${project.basedir}/../opencga-client/target/classes/client-configuration.yml"/>-->
+<!--                                    <arg value="${build.dir}/conf"/>-->
+<!--                                </exec>-->
+
+<!--                                <exec executable="${project.basedir}/app/misc/solr/prepare_configsets.sh">-->
+<!--                                    <arg value="${project.basedir}/.."/>-->
+<!--                                    <arg value="${project.parent.version}"/>-->
+<!--                                </exec>-->
+
+                                <echo>Copying war file</echo>
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/../opencga-enterprise-server/target/${opencga.war.name}.war"/>
+                                    <arg value="${build.dir}"/>
+                                </exec>
+
+<!--                                <echo>Copying Acceptance testing files</echo>-->
+<!--                                <exec executable="cp">-->
+<!--                                    <arg value="-r"/>-->
+<!--                                    <arg value="${project.basedir}/../opencga-test/target/appassembler/bin/opencga-test.sh"/>-->
+<!--                                    <arg value="${build.dir}/bin"/>-->
+<!--                                </exec>-->
+<!--                                <exec executable="cp">-->
+<!--                                    <arg value="-r"/>-->
+<!--                                    <arg value="${project.basedir}/../opencga-test/target/appassembler/libs"/>-->
+<!--                                    <arg value="${build.dir}"/>-->
+<!--                                </exec>-->
+
+<!--                                <exec executable="sed">-->
+<!--                                    <arg value="-i"/>-->
+<!--                                    <arg value="s/REPLACEME_OPENCGA_VERSION/${project.parent.version}/"/>-->
+<!--                                    <arg value="${build.dir}/misc/demo/main.yml"/>-->
+<!--                                    <arg value="${build.dir}/misc/demo/corpasome/manifest.yml"/>-->
+<!--                                    <arg value="${build.dir}/cloud/docker/opencga-demo/README.md"/>-->
+<!--                                    <arg value="${build.dir}/cloud/kubernetes/charts/opencga/Chart.yaml"/>-->
+<!--                                    <arg value="${build.dir}/cloud/azure/arm-kubernetes/solr/solr-setup.sh"/>-->
+<!--                                </exec>-->
+<!--                                <exec executable="sed">-->
+<!--                                    <arg value="-i"/>-->
+<!--                                    <arg value="s/REPLACEME_IVA_VERSION/${iva.version}/"/>-->
+<!--                                    <arg value="${build.dir}/cloud/docker/opencga-demo/README.md"/>-->
+<!--                                    <arg value="${build.dir}/cloud/kubernetes/charts/iva/Chart.yaml"/>-->
+<!--                                </exec>-->
+
+                                <chmod perm="u+x">
+                                    <fileset dir="${build.dir}">
+                                        <include name="**/*.sh"/>
+                                        <exclude name="**/opencga-env.sh"/>
+                                    </fileset>
+                                </chmod>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>opencga-client</id>
+                        <phase>install</phase>
+                        <configuration>
+                            <target>
+                                <echo>Preparing 'opencga-client' folder</echo>
+                                <exec executable="mkdir">
+                                    <arg value="${build.dir}/opencga-client-${project.parent.version}"/>
+                                    <arg value="${build.dir}/opencga-client-${project.parent.version}/bin"/>
+                                    <arg value="${build.dir}/opencga-client-${project.parent.version}/conf"/>
+                                    <arg value="${build.dir}/opencga-client-${project.parent.version}/completion"/>
+                                </exec>
+
+                                <echo>Copying files to 'opencga-client' folder</echo>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${build.dir}/libs"/>
+                                    <arg value="${build.dir}/clients/python"/>
+                                    <arg value="${build.dir}/clients/R"/>
+                                    <arg value="${build.dir}/clients/javascript"/>
+                                    <arg value="${build.dir}/LICENSE"/>
+                                    <arg value="${build.dir}/README.md"/>
+                                    <arg value="${build.dir}/${opencga.client.dir}"/>
+                                </exec>
+
+                                <exec executable="cp">
+                                    <arg value="${build.dir}/bin/opencga.sh"/>
+                                    <arg value="${build.dir}/${opencga.client.dir}/bin"/>
+                                </exec>
+
+                                <exec executable="cp">
+                                    <arg value="${build.dir}/conf/client-configuration.yml"/>
+                                    <arg value="${build.dir}/${opencga.client.dir}/conf"/>
+                                </exec>
+
+                                <exec executable="cp">
+                                    <arg value="${build.dir}/conf/client-configuration.yml"/>
+                                    <arg value="${build.dir}/${opencga.client.dir}/conf"/>
+                                </exec>
+
+                                <exec executable="cp">
+                                    <arg value="${build.dir}/misc/completion/opencga"/>
+                                    <arg value="${build.dir}/misc/completion/README.md"/>
+                                    <arg value="${build.dir}/${opencga.client.dir}/completion"/>
+                                </exec>
+
+                                <echo>Creating 'opencga-client' tar.gz file</echo>
+                                <exec executable="tar">
+                                    <arg value="-C"/>
+                                    <arg value="${build.dir}"/>
+                                    <arg value="-czf"/>
+                                    <arg value="${build.dir}/${opencga.client.dir}.tar.gz"/>
+                                    <arg value="${opencga.client.dir}"/>
+                                </exec>
+
+                                <echo>Deleting 'opencga-client' folder</echo>
+                                <exec executable="rm">
+                                    <arg value="-rf"/>
+                                    <arg value="${build.dir}/${opencga.client.dir}"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
