@@ -34,17 +34,21 @@ import org.opencb.opencga.app.cli.main.parent.ParentCliOptionsParser;
 
 public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
 
-    private final AnalysisAlignmentCommandOptions analysisAlignmentCommandOptions;
     private final AnalysisVariantCommandOptions analysisVariantCommandOptions;
     private final ProjectsCommandOptions projectsCommandOptions;
     private final DiseasePanelsCommandOptions diseasePanelsCommandOptions;
     private final AnalysisClinicalCommandOptions analysisClinicalCommandOptions;
-    private final MetaCommandOptions metaCommandOptions;
+    private final JobsCommandOptions jobsCommandOptions;
     private final AdminCommandOptions adminCommandOptions;
     private final IndividualsCommandOptions individualsCommandOptions;
     private final FamiliesCommandOptions familiesCommandOptions;
-    private final OperationsVariantStorageCommandOptions operationsVariantStorageCommandOptions;
+    private final UsersCommandOptions usersCommandOptions;
     private final SamplesCommandOptions samplesCommandOptions;
+    private final AnalysisAlignmentCommandOptions analysisAlignmentCommandOptions;
+    private final MetaCommandOptions metaCommandOptions;
+    private final StudiesCommandOptions studiesCommandOptions;
+    private final FilesCommandOptions filesCommandOptions;
+    private final OperationsVariantStorageCommandOptions operationsVariantStorageCommandOptions;
     private final CohortsCommandOptions cohortsCommandOptions;
 
     enum OutputFormat {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}
@@ -52,23 +56,6 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
     public OpencgaCliOptionsParser() {
 
         jCommander.setExpandAtSign(false);
-
-        analysisAlignmentCommandOptions = new AnalysisAlignmentCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("alignments", analysisAlignmentCommandOptions);
-        JCommander analysisAlignmentSubCommands = jCommander.getCommands().get("alignments");
-        analysisAlignmentSubCommands.addCommand("bwa-run", analysisAlignmentCommandOptions.runBwaCommandOptions);
-        analysisAlignmentSubCommands.addCommand("coverage-index-run", analysisAlignmentCommandOptions.runCoverageIndexCommandOptions);
-        analysisAlignmentSubCommands.addCommand("coverage-qc-genecoveragestats-run", analysisAlignmentCommandOptions.coverageQcGeneCoverageStatsRunCommandOptions);
-        analysisAlignmentSubCommands.addCommand("coverage-query", analysisAlignmentCommandOptions.queryCoverageCommandOptions);
-        analysisAlignmentSubCommands.addCommand("coverage-ratio", analysisAlignmentCommandOptions.ratioCoverageCommandOptions);
-        analysisAlignmentSubCommands.addCommand("coverage-stats", analysisAlignmentCommandOptions.statsCoverageCommandOptions);
-        analysisAlignmentSubCommands.addCommand("deeptools-run", analysisAlignmentCommandOptions.runDeeptoolsCommandOptions);
-        analysisAlignmentSubCommands.addCommand("fastqc-run", analysisAlignmentCommandOptions.runFastqcCommandOptions);
-        analysisAlignmentSubCommands.addCommand("index-run", analysisAlignmentCommandOptions.runIndexCommandOptions);
-        analysisAlignmentSubCommands.addCommand("picard-run", analysisAlignmentCommandOptions.runPicardCommandOptions);
-        analysisAlignmentSubCommands.addCommand("qc-run", analysisAlignmentCommandOptions.runQcCommandOptions);
-        analysisAlignmentSubCommands.addCommand("query", analysisAlignmentCommandOptions.queryCommandOptions);
-        analysisAlignmentSubCommands.addCommand("samtools-run", analysisAlignmentCommandOptions.runSamtoolsCommandOptions);
 
         analysisVariantCommandOptions = new AnalysisVariantCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("variant", analysisVariantCommandOptions);
@@ -172,16 +159,23 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         analysisClinicalSubCommands.addCommand("interpretation-revert", analysisClinicalCommandOptions.revertInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-update", analysisClinicalCommandOptions.updateInterpretationCommandOptions);
 
-        metaCommandOptions = new MetaCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("meta", metaCommandOptions);
-        JCommander metaSubCommands = jCommander.getCommands().get("meta");
-        metaSubCommands.addCommand("about", metaCommandOptions.aboutCommandOptions);
-        metaSubCommands.addCommand("about2", metaCommandOptions.about2CommandOptions);
-        metaSubCommands.addCommand("api", metaCommandOptions.apiCommandOptions);
-        metaSubCommands.addCommand("fail", metaCommandOptions.failCommandOptions);
-        metaSubCommands.addCommand("model", metaCommandOptions.modelCommandOptions);
-        metaSubCommands.addCommand("ping", metaCommandOptions.pingCommandOptions);
-        metaSubCommands.addCommand("status", metaCommandOptions.statusCommandOptions);
+        jobsCommandOptions = new JobsCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("jobs", jobsCommandOptions);
+        JCommander jobsSubCommands = jCommander.getCommands().get("jobs");
+        jobsSubCommands.addCommand("acl-update", jobsCommandOptions.updateAclCommandOptions);
+        jobsSubCommands.addCommand("aggregationstats", jobsCommandOptions.aggregationStatsCommandOptions);
+        jobsSubCommands.addCommand("create", jobsCommandOptions.createCommandOptions);
+        jobsSubCommands.addCommand("distinct", jobsCommandOptions.distinctCommandOptions);
+        jobsSubCommands.addCommand("retry", jobsCommandOptions.retryCommandOptions);
+        jobsSubCommands.addCommand("search", jobsCommandOptions.searchCommandOptions);
+        jobsSubCommands.addCommand("top", jobsCommandOptions.topCommandOptions);
+        jobsSubCommands.addCommand("acl", jobsCommandOptions.aclCommandOptions);
+        jobsSubCommands.addCommand("delete", jobsCommandOptions.deleteCommandOptions);
+        jobsSubCommands.addCommand("info", jobsCommandOptions.infoCommandOptions);
+        jobsSubCommands.addCommand("update", jobsCommandOptions.updateCommandOptions);
+        jobsSubCommands.addCommand("log-head", jobsCommandOptions.headLogCommandOptions);
+        jobsSubCommands.addCommand("log-tail", jobsCommandOptions.tailLogCommandOptions);
+        jobsSubCommands.addCommand("log", jobsCommandOptions.logCommandOptions);
 
         adminCommandOptions = new AdminCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("admin", adminCommandOptions);
@@ -226,6 +220,118 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         familiesSubCommands.addCommand("update", familiesCommandOptions.updateCommandOptions);
         familiesSubCommands.addCommand("annotation-sets-annotations-update", familiesCommandOptions.updateAnnotationSetsAnnotationsCommandOptions);
 
+        usersCommandOptions = new UsersCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("users", usersCommandOptions);
+        JCommander usersSubCommands = jCommander.getCommands().get("users");
+        usersSubCommands.addCommand("login", usersCommandOptions.loginCommandOptions);
+        usersSubCommands.addCommand("password", usersCommandOptions.passwordCommandOptions);
+        usersSubCommands.addCommand("info", usersCommandOptions.infoCommandOptions);
+        usersSubCommands.addCommand("configs", usersCommandOptions.configsCommandOptions);
+        usersSubCommands.addCommand("configs-update", usersCommandOptions.updateConfigsCommandOptions);
+        usersSubCommands.addCommand("filters", usersCommandOptions.filtersCommandOptions);
+        usersSubCommands.addCommand("password-reset", usersCommandOptions.resetPasswordCommandOptions);
+        usersSubCommands.addCommand("projects", usersCommandOptions.projectsCommandOptions);
+        usersSubCommands.addCommand("update", usersCommandOptions.updateCommandOptions);
+        usersSubCommands.addCommand("logout", usersCommandOptions.logoutCommandOptions);
+
+        samplesCommandOptions = new SamplesCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("samples", samplesCommandOptions);
+        JCommander samplesSubCommands = jCommander.getCommands().get("samples");
+        samplesSubCommands.addCommand("acl-update", samplesCommandOptions.updateAclCommandOptions);
+        samplesSubCommands.addCommand("aggregationstats", samplesCommandOptions.aggregationStatsCommandOptions);
+        samplesSubCommands.addCommand("annotation-sets-load", samplesCommandOptions.loadAnnotationSetsCommandOptions);
+        samplesSubCommands.addCommand("create", samplesCommandOptions.createCommandOptions);
+        samplesSubCommands.addCommand("distinct", samplesCommandOptions.distinctCommandOptions);
+        samplesSubCommands.addCommand("load", samplesCommandOptions.loadCommandOptions);
+        samplesSubCommands.addCommand("search", samplesCommandOptions.searchCommandOptions);
+        samplesSubCommands.addCommand("acl", samplesCommandOptions.aclCommandOptions);
+        samplesSubCommands.addCommand("delete", samplesCommandOptions.deleteCommandOptions);
+        samplesSubCommands.addCommand("info", samplesCommandOptions.infoCommandOptions);
+        samplesSubCommands.addCommand("update", samplesCommandOptions.updateCommandOptions);
+        samplesSubCommands.addCommand("annotation-sets-annotations-update", samplesCommandOptions.updateAnnotationSetsAnnotationsCommandOptions);
+
+        analysisAlignmentCommandOptions = new AnalysisAlignmentCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("alignments", analysisAlignmentCommandOptions);
+        JCommander analysisAlignmentSubCommands = jCommander.getCommands().get("alignments");
+        analysisAlignmentSubCommands.addCommand("bwa-run", analysisAlignmentCommandOptions.runBwaCommandOptions);
+        analysisAlignmentSubCommands.addCommand("coverage-index-run", analysisAlignmentCommandOptions.runCoverageIndexCommandOptions);
+        analysisAlignmentSubCommands.addCommand("coverage-qc-genecoveragestats-run", analysisAlignmentCommandOptions.coverageQcGeneCoverageStatsRunCommandOptions);
+        analysisAlignmentSubCommands.addCommand("coverage-query", analysisAlignmentCommandOptions.queryCoverageCommandOptions);
+        analysisAlignmentSubCommands.addCommand("coverage-ratio", analysisAlignmentCommandOptions.ratioCoverageCommandOptions);
+        analysisAlignmentSubCommands.addCommand("coverage-stats", analysisAlignmentCommandOptions.statsCoverageCommandOptions);
+        analysisAlignmentSubCommands.addCommand("deeptools-run", analysisAlignmentCommandOptions.runDeeptoolsCommandOptions);
+        analysisAlignmentSubCommands.addCommand("fastqc-run", analysisAlignmentCommandOptions.runFastqcCommandOptions);
+        analysisAlignmentSubCommands.addCommand("index-run", analysisAlignmentCommandOptions.runIndexCommandOptions);
+        analysisAlignmentSubCommands.addCommand("picard-run", analysisAlignmentCommandOptions.runPicardCommandOptions);
+        analysisAlignmentSubCommands.addCommand("qc-run", analysisAlignmentCommandOptions.runQcCommandOptions);
+        analysisAlignmentSubCommands.addCommand("query", analysisAlignmentCommandOptions.queryCommandOptions);
+        analysisAlignmentSubCommands.addCommand("samtools-run", analysisAlignmentCommandOptions.runSamtoolsCommandOptions);
+
+        metaCommandOptions = new MetaCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("meta", metaCommandOptions);
+        JCommander metaSubCommands = jCommander.getCommands().get("meta");
+        metaSubCommands.addCommand("about", metaCommandOptions.aboutCommandOptions);
+        metaSubCommands.addCommand("about2", metaCommandOptions.about2CommandOptions);
+        metaSubCommands.addCommand("api", metaCommandOptions.apiCommandOptions);
+        metaSubCommands.addCommand("fail", metaCommandOptions.failCommandOptions);
+        metaSubCommands.addCommand("model", metaCommandOptions.modelCommandOptions);
+        metaSubCommands.addCommand("ping", metaCommandOptions.pingCommandOptions);
+        metaSubCommands.addCommand("status", metaCommandOptions.statusCommandOptions);
+
+        studiesCommandOptions = new StudiesCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("studies", studiesCommandOptions);
+        JCommander studiesSubCommands = jCommander.getCommands().get("studies");
+        studiesSubCommands.addCommand("acl-update", studiesCommandOptions.updateAclCommandOptions);
+        studiesSubCommands.addCommand("create", studiesCommandOptions.createCommandOptions);
+        studiesSubCommands.addCommand("search", studiesCommandOptions.searchCommandOptions);
+        studiesSubCommands.addCommand("acl", studiesCommandOptions.aclCommandOptions);
+        studiesSubCommands.addCommand("aggregationstats", studiesCommandOptions.aggregationStatsCommandOptions);
+        studiesSubCommands.addCommand("info", studiesCommandOptions.infoCommandOptions);
+        studiesSubCommands.addCommand("audit-search", studiesCommandOptions.searchAuditCommandOptions);
+        studiesSubCommands.addCommand("groups", studiesCommandOptions.groupsCommandOptions);
+        studiesSubCommands.addCommand("groups-update", studiesCommandOptions.updateGroupsCommandOptions);
+        studiesSubCommands.addCommand("groups-users-update", studiesCommandOptions.updateGroupsUsersCommandOptions);
+        studiesSubCommands.addCommand("permissionrules", studiesCommandOptions.permissionRulesCommandOptions);
+        studiesSubCommands.addCommand("permission-rules-update", studiesCommandOptions.updatePermissionRulesCommandOptions);
+        studiesSubCommands.addCommand("templates-run", studiesCommandOptions.runTemplatesCommandOptions);
+        studiesSubCommands.addCommand("templates-upload", studiesCommandOptions.uploadTemplatesCommandOptions);
+        studiesSubCommands.addCommand("templates-delete", studiesCommandOptions.deleteTemplatesCommandOptions);
+        studiesSubCommands.addCommand("update", studiesCommandOptions.updateCommandOptions);
+        studiesSubCommands.addCommand("variablesets", studiesCommandOptions.variableSetsCommandOptions);
+        studiesSubCommands.addCommand("variable-sets-update", studiesCommandOptions.updateVariableSetsCommandOptions);
+        studiesSubCommands.addCommand("variable-sets-variables-update", studiesCommandOptions.updateVariableSetsVariablesCommandOptions);
+
+        filesCommandOptions = new FilesCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("files", filesCommandOptions);
+        JCommander filesSubCommands = jCommander.getCommands().get("files");
+        filesSubCommands.addCommand("acl-update", filesCommandOptions.updateAclCommandOptions);
+        filesSubCommands.addCommand("aggregationstats", filesCommandOptions.aggregationStatsCommandOptions);
+        filesSubCommands.addCommand("annotation-sets-load", filesCommandOptions.loadAnnotationSetsCommandOptions);
+        filesSubCommands.addCommand("bioformats", filesCommandOptions.bioformatsCommandOptions);
+        filesSubCommands.addCommand("create", filesCommandOptions.createCommandOptions);
+        filesSubCommands.addCommand("distinct", filesCommandOptions.distinctCommandOptions);
+        filesSubCommands.addCommand("fetch", filesCommandOptions.fetchCommandOptions);
+        filesSubCommands.addCommand("formats", filesCommandOptions.formatsCommandOptions);
+        filesSubCommands.addCommand("link", filesCommandOptions.linkCommandOptions);
+        filesSubCommands.addCommand("link-run", filesCommandOptions.runLinkCommandOptions);
+        filesSubCommands.addCommand("postlink-run", filesCommandOptions.runPostlinkCommandOptions);
+        filesSubCommands.addCommand("search", filesCommandOptions.searchCommandOptions);
+        filesSubCommands.addCommand("upload", filesCommandOptions.uploadCommandOptions);
+        filesSubCommands.addCommand("acl", filesCommandOptions.aclCommandOptions);
+        filesSubCommands.addCommand("delete", filesCommandOptions.deleteCommandOptions);
+        filesSubCommands.addCommand("info", filesCommandOptions.infoCommandOptions);
+        filesSubCommands.addCommand("unlink", filesCommandOptions.unlinkCommandOptions);
+        filesSubCommands.addCommand("update", filesCommandOptions.updateCommandOptions);
+        filesSubCommands.addCommand("annotation-sets-annotations-update", filesCommandOptions.updateAnnotationSetsAnnotationsCommandOptions);
+        filesSubCommands.addCommand("download", filesCommandOptions.downloadCommandOptions);
+        filesSubCommands.addCommand("grep", filesCommandOptions.grepCommandOptions);
+        filesSubCommands.addCommand("head", filesCommandOptions.headCommandOptions);
+        filesSubCommands.addCommand("image", filesCommandOptions.imageCommandOptions);
+        filesSubCommands.addCommand("refresh", filesCommandOptions.refreshCommandOptions);
+        filesSubCommands.addCommand("tail", filesCommandOptions.tailCommandOptions);
+        filesSubCommands.addCommand("list", filesCommandOptions.listCommandOptions);
+        filesSubCommands.addCommand("tree", filesCommandOptions.treeCommandOptions);
+
         operationsVariantStorageCommandOptions = new OperationsVariantStorageCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("operations", operationsVariantStorageCommandOptions);
         JCommander operationsVariantStorageSubCommands = jCommander.getCommands().get("operations");
@@ -258,22 +364,6 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         operationsVariantStorageSubCommands.addCommand("variant-stats-index", operationsVariantStorageCommandOptions.indexVariantStatsCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-study-delete", operationsVariantStorageCommandOptions.deleteVariantStudyCommandOptions);
 
-        samplesCommandOptions = new SamplesCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("samples", samplesCommandOptions);
-        JCommander samplesSubCommands = jCommander.getCommands().get("samples");
-        samplesSubCommands.addCommand("acl-update", samplesCommandOptions.updateAclCommandOptions);
-        samplesSubCommands.addCommand("aggregationstats", samplesCommandOptions.aggregationStatsCommandOptions);
-        samplesSubCommands.addCommand("annotation-sets-load", samplesCommandOptions.loadAnnotationSetsCommandOptions);
-        samplesSubCommands.addCommand("create", samplesCommandOptions.createCommandOptions);
-        samplesSubCommands.addCommand("distinct", samplesCommandOptions.distinctCommandOptions);
-        samplesSubCommands.addCommand("load", samplesCommandOptions.loadCommandOptions);
-        samplesSubCommands.addCommand("search", samplesCommandOptions.searchCommandOptions);
-        samplesSubCommands.addCommand("acl", samplesCommandOptions.aclCommandOptions);
-        samplesSubCommands.addCommand("delete", samplesCommandOptions.deleteCommandOptions);
-        samplesSubCommands.addCommand("info", samplesCommandOptions.infoCommandOptions);
-        samplesSubCommands.addCommand("update", samplesCommandOptions.updateCommandOptions);
-        samplesSubCommands.addCommand("annotation-sets-annotations-update", samplesCommandOptions.updateAnnotationSetsAnnotationsCommandOptions);
-
         cohortsCommandOptions = new CohortsCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("cohorts", cohortsCommandOptions);
         JCommander cohortsSubCommands = jCommander.getCommands().get("cohorts");
@@ -290,11 +380,6 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         cohortsSubCommands.addCommand("update", cohortsCommandOptions.updateCommandOptions);
         cohortsSubCommands.addCommand("annotation-sets-annotations-update", cohortsCommandOptions.updateAnnotationSetsAnnotationsCommandOptions);
     }
-    
-    public AnalysisAlignmentCommandOptions getAnalysisAlignmentCommandOptions() {
-        return analysisAlignmentCommandOptions;
-    }
-    
     
     public AnalysisVariantCommandOptions getAnalysisVariantCommandOptions() {
         return analysisVariantCommandOptions;
@@ -316,8 +401,8 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
     }
     
     
-    public MetaCommandOptions getMetaCommandOptions() {
-        return metaCommandOptions;
+    public JobsCommandOptions getJobsCommandOptions() {
+        return jobsCommandOptions;
     }
     
     
@@ -336,13 +421,38 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
     }
     
     
-    public OperationsVariantStorageCommandOptions getOperationsVariantStorageCommandOptions() {
-        return operationsVariantStorageCommandOptions;
+    public UsersCommandOptions getUsersCommandOptions() {
+        return usersCommandOptions;
     }
     
     
     public SamplesCommandOptions getSamplesCommandOptions() {
         return samplesCommandOptions;
+    }
+    
+    
+    public AnalysisAlignmentCommandOptions getAnalysisAlignmentCommandOptions() {
+        return analysisAlignmentCommandOptions;
+    }
+    
+    
+    public MetaCommandOptions getMetaCommandOptions() {
+        return metaCommandOptions;
+    }
+    
+    
+    public StudiesCommandOptions getStudiesCommandOptions() {
+        return studiesCommandOptions;
+    }
+    
+    
+    public FilesCommandOptions getFilesCommandOptions() {
+        return filesCommandOptions;
+    }
+    
+    
+    public OperationsVariantStorageCommandOptions getOperationsVariantStorageCommandOptions() {
+        return operationsVariantStorageCommandOptions;
     }
     
     

@@ -81,7 +81,6 @@ public abstract class OpencgaEnterpriseCommandExecutor extends CommandExecutor {
         List<String> result = null;
         if (value != null) {
             String[] splitFields = value.split(separator);
-
             result = new ArrayList<>(splitFields.length);
             for (String s : splitFields) {
                 result.add(s.trim());
@@ -93,7 +92,7 @@ public abstract class OpencgaEnterpriseCommandExecutor extends CommandExecutor {
     private void init(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) {
         try {
             privateLogger = LoggerFactory.getLogger(OpencgaEnterpriseCommandExecutor.class);
-            privateLogger.debug("Executing OpencgaCommandExecutor 'init' method ...");
+            privateLogger.debug("Executing OpencgaEnterpriseCommandExecutor 'init' method ...");
 
             // Configure CLI output writer
             WriterConfiguration writerConfiguration = new WriterConfiguration();
@@ -173,8 +172,8 @@ public abstract class OpencgaEnterpriseCommandExecutor extends CommandExecutor {
                 openCGAEnterpriseClient.setThrowExceptionOnError(true);
             }
         } catch (IOException e) {
-            logger.error("OpencgaCommandExecutorError", e);
-            CommandLineUtils.error("OpencgaCommandExecutorError", e);
+            logger.error("OpencgaEnterpriseCommandExecutorError", e);
+            CommandLineUtils.error("OpencgaEnterpriseCommandExecutorError", e);
         }
     }
 

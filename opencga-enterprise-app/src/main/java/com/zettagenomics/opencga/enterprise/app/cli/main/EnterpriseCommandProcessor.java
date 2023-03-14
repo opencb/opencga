@@ -99,25 +99,21 @@ public class EnterpriseCommandProcessor {
                     } catch (CatalogAuthenticationException e) {
                         printWarn("\n" + e.getMessage());
                         logger.error(e.getMessage(), e);
-
                     }
                 }
             }
-
         } catch (Exception e) {
             CommandLineUtils.error(e);
             cliOptionsParser.printUsage();
             logger.error(e.getMessage(), e);
-
         }
-
     }
 
     private void refreshToken(OpencgaEnterpriseCommandExecutor commandExecutor) throws ClientException, IOException {
-        AuthenticationResponse response = commandExecutor.getOpenCGAClient().
-                refresh(commandExecutor.getSessionManager().getSession().getRefreshToken());
+        AuthenticationResponse response = commandExecutor
+                .getOpenCGAClient()
+                .refresh(commandExecutor.getSessionManager().getSession().getRefreshToken());
         commandExecutor.refreshToken(response);
-
     }
 
     private boolean checkAutoRefresh(OpencgaEnterpriseCommandExecutor commandExecutor) {
@@ -138,8 +134,7 @@ public class EnterpriseCommandProcessor {
 
     public void loadSessionStudies(OpencgaEnterpriseCommandExecutor commandExecutor) {
         Session session = commandExecutor.getSessionManager().getSession();
-        logger.debug("Loading session studies using token: "
-                + session.getToken());
+        logger.debug("Loading session studies using token: " + session.getToken());
         OpenCGAEnterpriseClient openCGAClient = commandExecutor.getOpenCGAClient();
         try {
             // Query the server to retrieve the studies of user projects
@@ -244,13 +239,11 @@ public class EnterpriseCommandProcessor {
             case "admin":
                 commandExecutor = new AdminCommandExecutor(cliOptionsParser.getAdminCommandOptions());
                 break;
-
             default:
                 printError("Not valid command passed: '" + parsedCommand + "'");
                 break;
         }
         return commandExecutor;
     }
-
 
 }

@@ -40,12 +40,7 @@ import static java.util.stream.Collectors.toList;
 
 public abstract class OpenCgaCompleter implements Completer {
 
-    protected List<Candidate> commands = asList("login","logout","help","use","alignments","variant","projects","panels","clinical","meta","admin","individuals","families","operations","samples","cohorts")
-            .stream()
-            .map(Candidate::new)
-            .collect(toList());
-
-    private List<Candidate> alignmentsList = asList( "bwa-run","coverage-index-run","coverage-qc-genecoveragestats-run","coverage-query","coverage-ratio","coverage-stats","deeptools-run","fastqc-run","index-run","picard-run","qc-run","query","samtools-run")
+    protected List<Candidate> commands = asList("login","logout","help","use","variant","projects","panels","clinical","jobs","admin","individuals","families","users","samples","alignments","meta","studies","files","operations","cohorts")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -70,7 +65,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> metaList = asList( "about","about2","api","fail","model","ping","status")
+    private List<Candidate> jobsList = asList( "acl-update","aggregationstats","create","distinct","retry","search","top","acl","delete","info","update","log-head","log-tail")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -90,12 +85,37 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> operationsList = asList( "cellbase-configure","variant-aggregate","variant-annotation-delete","variant-annotation-index","variant-annotation-save","variant-configure","variant-delete","variant-family-aggregate","variant-family-index","variant-index","variant-index-launcher","variant-julie-run","variant-metadata-repair","variant-metadata-synchronize","variant-prune","variant-sample-delete","variant-sample-index","variant-sample-index-configure","variant-score-delete","variant-score-index","variant-secondary-annotation-index","variant-secondary-sample-index","configure-variant-secondary-sample-index","variant-secondary-index","variant-secondary-index-delete","variant-stats-delete","variant-stats-index","variant-study-delete")
+    private List<Candidate> usersList = asList( "login","password","info","configs","configs-update","filters","password-reset","projects","update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
 
     private List<Candidate> samplesList = asList( "acl-update","aggregationstats","annotation-sets-load","create","distinct","load","search","acl","delete","info","update","annotation-sets-annotations-update")
+            .stream()
+            .map(Candidate::new)
+            .collect(toList());
+
+    private List<Candidate> alignmentsList = asList( "bwa-run","coverage-index-run","coverage-qc-genecoveragestats-run","coverage-query","coverage-ratio","coverage-stats","deeptools-run","fastqc-run","index-run","picard-run","qc-run","query","samtools-run")
+            .stream()
+            .map(Candidate::new)
+            .collect(toList());
+
+    private List<Candidate> metaList = asList( "about","about2","api","fail","model","ping","status")
+            .stream()
+            .map(Candidate::new)
+            .collect(toList());
+
+    private List<Candidate> studiesList = asList( "acl-update","create","search","acl","aggregationstats","info","audit-search","groups","groups-update","groups-users-update","permissionrules","permission-rules-update","templates-run","templates-upload","templates-delete","update","variablesets","variable-sets-update","variable-sets-variables-update")
+            .stream()
+            .map(Candidate::new)
+            .collect(toList());
+
+    private List<Candidate> filesList = asList( "acl-update","aggregationstats","annotation-sets-load","bioformats","create","distinct","fetch","formats","link","link-run","postlink-run","search","upload","acl","delete","info","unlink","update","annotation-sets-annotations-update","download","grep","head","image","refresh","tail","list","tree")
+            .stream()
+            .map(Candidate::new)
+            .collect(toList());
+
+    private List<Candidate> operationsList = asList( "cellbase-configure","variant-aggregate","variant-annotation-delete","variant-annotation-index","variant-annotation-save","variant-configure","variant-delete","variant-family-aggregate","variant-family-index","variant-index","variant-index-launcher","variant-julie-run","variant-metadata-repair","variant-metadata-synchronize","variant-prune","variant-sample-delete","variant-sample-index","variant-sample-index-configure","variant-score-delete","variant-score-index","variant-secondary-annotation-index","variant-secondary-sample-index","configure-variant-secondary-sample-index","variant-secondary-index","variant-secondary-index-delete","variant-stats-delete","variant-stats-index","variant-study-delete")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -113,17 +133,21 @@ public abstract class OpenCgaCompleter implements Completer {
             return;
         }
         Map<String, List<Candidate>> mapCandidates=new HashMap();
-        mapCandidates.put( "alignments", alignmentsList);
         mapCandidates.put( "variant", variantList);
         mapCandidates.put( "projects", projectsList);
         mapCandidates.put( "panels", panelsList);
         mapCandidates.put( "clinical", clinicalList);
-        mapCandidates.put( "meta", metaList);
+        mapCandidates.put( "jobs", jobsList);
         mapCandidates.put( "admin", adminList);
         mapCandidates.put( "individuals", individualsList);
         mapCandidates.put( "families", familiesList);
-        mapCandidates.put( "operations", operationsList);
+        mapCandidates.put( "users", usersList);
         mapCandidates.put( "samples", samplesList);
+        mapCandidates.put( "alignments", alignmentsList);
+        mapCandidates.put( "meta", metaList);
+        mapCandidates.put( "studies", studiesList);
+        mapCandidates.put( "files", filesList);
+        mapCandidates.put( "operations", operationsList);
         mapCandidates.put( "cohorts", cohortsList);
          candidates.addAll(checkCandidates(mapCandidates,command)); 
      }

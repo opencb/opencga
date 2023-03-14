@@ -54,6 +54,7 @@ apiConfig:
           ignore: True
         - name: login
           executorExtended: True
+          executorExtendedClassName: enterprise
           optionExtended: True
         - name: logout
           executorExtended: True
