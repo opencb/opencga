@@ -16,29 +16,27 @@
 package org.opencb.opencga.app.cli.main.parent;
 
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.executors.JobsCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.JobsCommandOptions;
 import org.opencb.opencga.app.cli.main.utils.JobsLog;
 import org.opencb.opencga.app.cli.main.utils.JobsTopManager;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.job.JobTop;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
 
-public abstract class ParentJobsCommandExecutor extends OpencgaCommandExecutor {
+public class ParentJobsCommandExecutor {
 
     private final JobsCommandOptions jobsCommandOptions;
+    JobsCommandExecutor executor;
 
-    public ParentJobsCommandExecutor(GeneralCliOptions.CommonCommandOptions options,
-                                     JobsCommandOptions jobsCommandOptions) throws CatalogAuthenticationException {
-        super(options);
-        this.jobsCommandOptions = jobsCommandOptions;
+    public ParentJobsCommandExecutor(JobsCommandExecutor executor) {
+        this.executor = executor;
+        this.jobsCommandOptions = executor.jobsCommandOptions;
     }
 
-    protected RestResponse<JobTop> top() throws Exception {
+    public RestResponse<JobTop> top() throws Exception {
         JobsCommandOptions.TopCommandOptions c = jobsCommandOptions.topCommandOptions;
 
         Query query = new Query();
@@ -49,15 +47,15 @@ public abstract class ParentJobsCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(ParamConstants.JOB_PRIORITY_PARAM, c.priority);
         query.putAll(c.commonOptions.params);
 
-        new JobsTopManager(openCGAClient, query, c.iterations, c.jobsLimit, c.delay, c.plain, c.columns).run();
+        new JobsTopManager(executor.getOpenCGAClient(), query, c.iterations, c.jobsLimit, c.delay, c.plain, c.columns).run();
         RestResponse<JobTop> res = new RestResponse<>();
         res.setType(QueryType.VOID);
         return res;
     }
 
-    protected RestResponse<JobTop> log() throws Exception {
+    public RestResponse<JobTop> log() throws Exception {
         JobsCommandOptions.LogCommandOptions c = jobsCommandOptions.logCommandOptions;
-        new JobsLog(openCGAClient, c, System.out).run();
+        new JobsLog(executor.getOpenCGAClient(), c, System.out).run();
         RestResponse<JobTop> res = new RestResponse<>();
         res.setType(QueryType.VOID);
         return res;

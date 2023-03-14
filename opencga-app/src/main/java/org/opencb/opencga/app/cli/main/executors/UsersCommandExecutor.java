@@ -19,7 +19,16 @@ import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.options.UsersCommandOptions;
 
 import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
-
+import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
 import java.util.Map;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -32,7 +41,6 @@ import org.opencb.opencga.core.models.user.FilterUpdateParams;
 import org.opencb.opencga.core.models.user.LoginParams;
 import org.opencb.opencga.core.models.user.PasswordChangeParams;
 import org.opencb.opencga.core.models.user.User;
-import org.opencb.opencga.core.models.user.UserCreateParams;
 import org.opencb.opencga.core.models.user.UserFilter;
 import org.opencb.opencga.core.models.user.UserUpdateParams;
 
@@ -50,12 +58,12 @@ import org.opencb.opencga.core.models.user.UserUpdateParams;
  * This class contains methods for the Users command line.
  *    PATH: /{apiVersion}/users
  */
-public class UsersCommandExecutor extends ParentUsersCommandExecutor {
+public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
-    private UsersCommandOptions usersCommandOptions;
+    public UsersCommandOptions usersCommandOptions;
 
     public UsersCommandExecutor(UsersCommandOptions usersCommandOptions) throws CatalogAuthenticationException {
-        super(usersCommandOptions.commonCommandOptions,usersCommandOptions);
+        super(usersCommandOptions.commonCommandOptions);
         this.usersCommandOptions = usersCommandOptions;
     }
 
@@ -69,9 +77,6 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
         RestResponse queryResponse = null;
 
         switch (subCommandString) {
-            case "create":
-                queryResponse = create();
-                break;
             case "login":
                 queryResponse = login();
                 break;
@@ -100,7 +105,8 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
                 queryResponse = update();
                 break;
             case "logout":
-                queryResponse = logout();
+                ParentUsersCommandExecutor customUsersCommandExecutor = new ParentUsersCommandExecutor(this);
+                queryResponse = customUsersCommandExecutor.logout();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -111,42 +117,12 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
 
     }
 
-    private RestResponse<User> create() throws Exception {
-
-        logger.debug("Executing create in Users command line");
-
-        UsersCommandOptions.CreateCommandOptions commandOptions = usersCommandOptions.createCommandOptions;
-
-        UserCreateParams userCreateParams= null;
-        if (commandOptions.jsonDataModel) {
-            userCreateParams = new UserCreateParams();
-            RestResponse<User> res = new RestResponse<>();
-            res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(userCreateParams));
-            return res;
-        } else if (commandOptions.jsonFile != null) {
-            userCreateParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), UserCreateParams.class);
-        } else {
-            ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
-             putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
-             putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
- 
-            userCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), UserCreateParams.class);
-        }
-        return openCGAClient.getUserClient().create(userCreateParams);
-    }
-
-    protected RestResponse<AuthenticationResponse> login() throws Exception {
+    private RestResponse<AuthenticationResponse> login() throws Exception {
 
         logger.debug("Executing login in Users command line");
 
-        return super.login();
+   ParentUsersCommandExecutor customUsersCommandExecutor = new ParentUsersCommandExecutor(this);
+        return customUsersCommandExecutor.login();
 
     }
 

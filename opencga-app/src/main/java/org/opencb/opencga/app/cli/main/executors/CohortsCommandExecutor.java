@@ -50,7 +50,7 @@ import org.opencb.opencga.core.models.job.Job;
  */
 public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
-    private CohortsCommandOptions cohortsCommandOptions;
+    public CohortsCommandOptions cohortsCommandOptions;
 
     public CohortsCommandExecutor(CohortsCommandOptions cohortsCommandOptions) throws CatalogAuthenticationException {
         super(cohortsCommandOptions.commonCommandOptions);

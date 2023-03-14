@@ -50,7 +50,7 @@ import org.opencb.opencga.core.models.job.Job;
  */
 public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
 
-    private FamiliesCommandOptions familiesCommandOptions;
+    public FamiliesCommandOptions familiesCommandOptions;
 
     public FamiliesCommandExecutor(FamiliesCommandOptions familiesCommandOptions) throws CatalogAuthenticationException {
         super(familiesCommandOptions.commonCommandOptions);

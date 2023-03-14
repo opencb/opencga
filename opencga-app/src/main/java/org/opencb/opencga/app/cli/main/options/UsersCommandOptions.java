@@ -33,7 +33,6 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 public class UsersCommandOptions extends ParentUsersCommandOptions {
 
 
-        public CreateCommandOptions createCommandOptions;
         public LoginCommandOptions loginCommandOptions;
         public PasswordCommandOptions passwordCommandOptions;
         public InfoCommandOptions infoCommandOptions;
@@ -48,7 +47,6 @@ public class UsersCommandOptions extends ParentUsersCommandOptions {
     public UsersCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
     
         super(commonCommandOptions,jCommander);
-        this.createCommandOptions = new CreateCommandOptions();
         this.loginCommandOptions = new LoginCommandOptions();
         this.passwordCommandOptions = new PasswordCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
@@ -61,35 +59,6 @@ public class UsersCommandOptions extends ParentUsersCommandOptions {
     
     }
     
-    @Parameters(commandNames = {"create"}, commandDescription ="Create a new user")
-    public class CreateCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
-        public String jsonFile;
-    
-        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
-        public Boolean jsonDataModel = false;
-    
-        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = true, arity = 1)
-        public String id;
-    
-        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
-        public String name;
-    
-        @Parameter(names = {"--email"}, description = "The body web service email parameter", required = false, arity = 1)
-        public String email;
-    
-        @Parameter(names = {"--password"}, description = "The body web service password parameter", required = false, arity = 1)
-        public String password;
-    
-        @Parameter(names = {"--organization"}, description = "The body web service organization parameter", required = false, arity = 1)
-        public String organization;
-    
-    }
-
     @Parameters(commandNames = {"password"}, commandDescription ="Change the password of a user")
     public class PasswordCommandOptions {
     

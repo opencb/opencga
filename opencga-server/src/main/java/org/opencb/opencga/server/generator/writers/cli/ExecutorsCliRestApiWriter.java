@@ -72,11 +72,16 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
 
         // Add custom parent class
         sb.append("import " + config.getOptions().getOptionsPackage() + "." + getAsClassName(restCategory.getName()) + "CommandOptions;\n\n");
-        if (categoryConfig.isExecutorExtended() && StringUtils.isEmpty(categoryConfig.getExecutorExtendedClassName())) {
-            sb.append("import org.opencb.opencga.app.cli.main.parent."
-                    + getExtendedClass(getAsClassName(restCategory.getName()), categoryConfig) + ";\n\n");
+        if (categoryConfig.isExecutorExtended()) {
+            for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
+                String commandName = getCommandName(restCategory, restEndpoint);
+                if (categoryConfig.getCommand(commandName) != null && StringUtils.isNotEmpty(categoryConfig.getCommand(commandName).getExecutorExtendedClassName())) {
+                    sb.append("import " + categoryConfig.getCommand(commandName).getExecutorExtendedClassName() + ";\n");
+                } else {
+                    sb.append("import org.opencb.opencga.app.cli.main.parent.Parent" + getAsClassName(restCategory.getName()) + "CommandExecutor;\n");
+                }
+            }
         }
-
         Set<String> imports = new TreeSet<>();
         for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
             if (isValidImport(restEndpoint.getResponseClass())) {
@@ -163,17 +168,12 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         CategoryConfig config = availableCategoryConfigs.get(key);
         sb.append("public class " + getAsClassName(restCategory.getName()) + "CommandExecutor extends "
                 + getExtendedClass(getAsClassName(restCategory.getName()), config) + " {\n\n");
-        sb.append("    private " + getAsClassName(restCategory.getName()) + "CommandOptions "
+        sb.append("    public " + getAsClassName(restCategory.getName()) + "CommandOptions "
                 + getAsVariableName(getAsCamelCase(restCategory.getName())) + "CommandOptions;\n\n");
         sb.append("    public " + getAsClassName(restCategory.getName()) + "CommandExecutor(" + getAsClassName(restCategory.getName())
                 + "CommandOptions " + getAsVariableName(getAsCamelCase(restCategory.getName()))
                 + "CommandOptions) throws CatalogAuthenticationException {\n");
-        if (config.isExecutorExtended()) {
-            sb.append("        super(" + getAsVariableName(getAsCamelCase(restCategory.getName())) + "CommandOptions.commonCommandOptions," + getAsVariableName(getAsCamelCase(restCategory.getName())) +
-                    "CommandOptions);\n");
-        } else {
-            sb.append("        super(" + getAsVariableName(getAsCamelCase(restCategory.getName())) + "CommandOptions.commonCommandOptions);\n");
-        }
+        sb.append("        super(" + getAsVariableName(getAsCamelCase(restCategory.getName())) + "CommandOptions.commonCommandOptions);\n");
         sb.append("        this." + getAsVariableName(getAsCamelCase(restCategory.getName())) + "CommandOptions = "
                 + getAsVariableName(getAsCamelCase(restCategory.getName())) + "CommandOptions;\n");
         sb.append("    }\n\n");
@@ -181,7 +181,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         return sb.toString();
     }
 
-    private String methodExecute(RestCategory restCategory, CategoryConfig config) {
+    private String methodExecute(RestCategory restCategory, CategoryConfig categoryConfig) {
         StringBuilder sb = new StringBuilder();
         sb.append("    @Override\n");
         sb.append("    public void execute() throws Exception {\n\n");
@@ -194,17 +194,22 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
             String commandName = getCommandName(restCategory, restEndpoint);
             //  if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
-            if (config.isAvailableCommand(commandName)) {
+            if (categoryConfig.isAvailableCommand(commandName)) {
                 sb.append("            case \"" + reverseCommandName(commandName) + "\":\n");
-                sb.append("                queryResponse = " + getJavaMethodName(config, commandName) + "();\n");
+                sb.append("                queryResponse = " + getJavaMethodName(categoryConfig, commandName) + "();\n");
                 sb.append("                break;\n");
             }
             //    }
         }
-        if (CollectionUtils.isNotEmpty(config.getAddedMethods())) {
-            for (String methodName : config.getAddedMethods()) {
+        if (CollectionUtils.isNotEmpty(categoryConfig.getAddedMethods())) {
+            for (String methodName : categoryConfig.getAddedMethods()) {
                 sb.append("            case \"" + methodName + "\":\n");
-                sb.append("                queryResponse = " + getAsCamelCase(methodName) + "();\n");
+                if (categoryConfig.getCommand(methodName) != null && StringUtils.isNotEmpty(categoryConfig.getCommand(methodName).getExecutorExtendedClassName())) {
+                    sb.append("                " + categoryConfig.getCommand(methodName).getExecutorExtendedClassName() + " custom" + getAsClassName(restCategory.getName()) + "CommandExecutor = new " + categoryConfig.getCommand(methodName).getExecutorExtendedClassName() + "(this);\n");
+                } else {
+                    sb.append("                Parent" + getAsClassName(restCategory.getName()) + "CommandExecutor custom" + getAsClassName(restCategory.getName()) + "CommandExecutor = new Parent" + getAsClassName(restCategory.getName()) + "CommandExecutor(this);\n");
+                }
+                sb.append("                queryResponse = custom" + getAsClassName(restCategory.getName()) + "CommandExecutor." + getAsCamelCase(methodName) + "();\n");
                 sb.append("                break;\n");
             }
         }
@@ -218,16 +223,17 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
     }
 
     private String getExtendedClass(String name, CategoryConfig categoryConfig) {
+
         String parentClass = StringUtils.isEmpty(this.config.getApiConfig().getExecutorsParentClass())
                 ? "OpencgaCommandExecutor"
                 : this.config.getApiConfig().getExecutorsParentClass();
-        if (categoryConfig.isExecutorExtended()) {
+      /*  if (categoryConfig.isExecutorExtended()) {
             if (StringUtils.isNotEmpty(categoryConfig.getExecutorExtendedClassName())) {
                 parentClass = categoryConfig.getExecutorExtendedClassName();
-            } else {
+            } /*else {
                 parentClass = "Parent" + name + "CommandExecutor";
-            }
-        }
+            }*
+        }*/
         return parentClass;
     }
 
@@ -235,33 +241,39 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
     protected String getClassMethods(String key) {
         StringBuilder sb = new StringBuilder();
         RestCategory restCategory = availableCategories.get(key);
-        CategoryConfig config = availableCategoryConfigs.get(key);
-        sb.append(methodExecute(restCategory, config));
+        CategoryConfig categoryConfig = availableCategoryConfigs.get(key);
+        sb.append(methodExecute(restCategory, categoryConfig));
         for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
             String commandName = getCommandName(restCategory, restEndpoint);
             //  if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
-            if (config.isAvailableCommand(commandName)) {
+            if (categoryConfig.isAvailableCommand(commandName)) {
                 sb.append("\n");
-                sb.append("    " + (config.isExecutorExtendedCommand(commandName) ? "protected" :
-                        "private") + " RestResponse<" + getValidResponseNames(restEndpoint.getResponse()) + "> "
-                        + getJavaMethodName(config, commandName) + "() throws Exception {\n\n");
+                sb.append("    private RestResponse<" + getValidResponseNames(restEndpoint.getResponse()) + "> "
+                        + getJavaMethodName(categoryConfig, commandName) + "() throws Exception {\n\n");
                 sb.append("        logger.debug(\"Executing " + getAsCamelCase(commandName) + " in "
                         + restCategory.getName() + " command line\");\n\n");
-                if (config.isExecutorExtendedCommand(commandName)) {
-                    sb.append("        return super." + getAsCamelCase(commandName) + "();\n\n");
+                if (categoryConfig.isExecutorExtendedCommand(commandName)) {
+                    if (StringUtils.isNotEmpty(categoryConfig.getCommand(commandName).getExecutorExtendedClassName())) {
+                        sb.append("   " + categoryConfig.getCommand(commandName).getExecutorExtendedClassName() + " custom" + getAsClassName(restCategory.getName()) + "CommandExecutor = new " + categoryConfig.getCommand(commandName).getExecutorExtendedClassName() + "(this);\n");
+                    } else {
+                        sb.append("   Parent" + getAsClassName(restCategory.getName()) + "CommandExecutor custom" + getAsClassName(restCategory.getName()) + "CommandExecutor = new Parent" + getAsClassName(restCategory.getName()) + "CommandExecutor(this);\n");
+                    }
+
+                    sb.append("        return custom" + getAsClassName(restCategory.getName()) + "CommandExecutor." + getAsCamelCase(commandName) + "();\n\n");
                 } else {
                     sb.append("        " + getAsClassName(restCategory.getName()) + "CommandOptions." + getAsClassName(getAsCamelCase(commandName))
                             + "CommandOptions commandOptions = " + getAsVariableName(getAsCamelCase(restCategory.getName())) +
                             "CommandOptions."
                             + getAsCamelCase(commandName) + "CommandOptions;\n");
-                    sb.append(getQueryParams(restEndpoint, config, commandName));
-                    sb.append(getBodyParams(restCategory, restEndpoint, config, commandName));
-                    sb.append(getReturn(restCategory, restEndpoint, config, commandName));
+                    sb.append(getQueryParams(restEndpoint, categoryConfig, commandName));
+                    sb.append(getBodyParams(restCategory, restEndpoint, categoryConfig, commandName));
+                    sb.append(getReturn(restCategory, restEndpoint, categoryConfig, commandName));
                 }
                 sb.append("    }\n");
             }
             //  }
         }
+
 
         return sb.toString();
     }
@@ -270,7 +282,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         String opencgaClientObjectName = StringUtils.isEmpty(this.config.getApiConfig().getOpencgaClientClassName())
                 ? "openCGAClient"
                 : this.config.getApiConfig().getOpencgaClientClassName().toLowerCase().charAt(0)
-                    + this.config.getApiConfig().getOpencgaClientClassName().substring(1);
+                + this.config.getApiConfig().getOpencgaClientClassName().substring(1);
 
         String res = "        return " + opencgaClientObjectName + ".get" + getAsClassName(config.getKey()) + "Client()."
                 + getJavaMethodName(config, commandName) + "(";

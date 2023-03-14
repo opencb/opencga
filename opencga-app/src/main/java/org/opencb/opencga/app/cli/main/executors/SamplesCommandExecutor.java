@@ -55,7 +55,7 @@ import org.opencb.opencga.core.models.sample.SampleVariantQualityControlMetrics;
  */
 public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
-    private SamplesCommandOptions samplesCommandOptions;
+    public SamplesCommandOptions samplesCommandOptions;
 
     public SamplesCommandExecutor(SamplesCommandOptions samplesCommandOptions) throws CatalogAuthenticationException {
         super(samplesCommandOptions.commonCommandOptions);

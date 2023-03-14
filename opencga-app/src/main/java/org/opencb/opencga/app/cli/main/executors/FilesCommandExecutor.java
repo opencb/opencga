@@ -1,36 +1,83 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.common.JacksonUtils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.HashMap;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.FilesCommandOptions;
 
 import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
 import java.io.DataInputStream;
-
+import java.io.InputStream;
+import java.util.Map;
+import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.FacetField;
+import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
+import org.opencb.opencga.core.models.alignment.AlignmentFileQualityControl;
+import org.opencb.opencga.core.models.alignment.CoverageFileQualityControl;
+import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
+import org.opencb.opencga.core.models.file.File.Bioformat;
+import org.opencb.opencga.core.models.file.File.Format;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntryList;
 import org.opencb.opencga.core.models.file.FileAclUpdateParams;
 import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.core.models.file.FileCreateParams;
+import org.opencb.opencga.core.models.file.FileExperiment;
 import org.opencb.opencga.core.models.file.FileFetch;
+import org.opencb.opencga.core.models.file.FileLinkInternalParams;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.file.FileLinkToolParams;
+import org.opencb.opencga.core.models.file.FileQualityControl;
+import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.file.FileTree;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
+import org.opencb.opencga.core.models.file.MissingSamples;
 import org.opencb.opencga.core.models.file.PostLinkToolParams;
+import org.opencb.opencga.core.models.file.SmallFileInternal;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.variant.VariantFileQualityControl;
 
 
 /*
@@ -46,12 +93,12 @@ import org.opencb.opencga.core.models.job.Job;
  * This class contains methods for the Files command line.
  *    PATH: /{apiVersion}/files
  */
-public class FilesCommandExecutor extends ParentFilesCommandExecutor {
+public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
-    private FilesCommandOptions filesCommandOptions;
+    public FilesCommandOptions filesCommandOptions;
 
     public FilesCommandExecutor(FilesCommandOptions filesCommandOptions) throws CatalogAuthenticationException {
-        super(filesCommandOptions.commonCommandOptions,filesCommandOptions);
+        super(filesCommandOptions.commonCommandOptions);
         this.filesCommandOptions = filesCommandOptions;
     }
 
@@ -583,11 +630,12 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         return openCGAClient.getFileClient().search(queryParams);
     }
 
-    protected RestResponse<File> upload() throws Exception {
+    private RestResponse<File> upload() throws Exception {
 
         logger.debug("Executing upload in Files command line");
 
-        return super.upload();
+   ParentFilesCommandExecutor customFilesCommandExecutor = new ParentFilesCommandExecutor(this);
+        return customFilesCommandExecutor.upload();
 
     }
 

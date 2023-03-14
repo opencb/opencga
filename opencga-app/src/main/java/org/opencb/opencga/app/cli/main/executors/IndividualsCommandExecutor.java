@@ -56,7 +56,7 @@ import org.opencb.opencga.core.models.job.Job;
  */
 public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
-    private IndividualsCommandOptions individualsCommandOptions;
+    public IndividualsCommandOptions individualsCommandOptions;
 
     public IndividualsCommandExecutor(IndividualsCommandOptions individualsCommandOptions) throws CatalogAuthenticationException {
         super(individualsCommandOptions.commonCommandOptions);

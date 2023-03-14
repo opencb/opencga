@@ -19,7 +19,18 @@ import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.options.JobsCommandOptions;
 
 import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
-
+import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
 import java.util.Date;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -53,12 +64,12 @@ import org.opencb.opencga.core.tools.result.Status;
  * This class contains methods for the Jobs command line.
  *    PATH: /{apiVersion}/jobs
  */
-public class JobsCommandExecutor extends ParentJobsCommandExecutor {
+public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
-    private JobsCommandOptions jobsCommandOptions;
+    public JobsCommandOptions jobsCommandOptions;
 
     public JobsCommandExecutor(JobsCommandOptions jobsCommandOptions) throws CatalogAuthenticationException {
-        super(jobsCommandOptions.commonCommandOptions,jobsCommandOptions);
+        super(jobsCommandOptions.commonCommandOptions);
         this.jobsCommandOptions = jobsCommandOptions;
     }
 
@@ -112,7 +123,8 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
                 queryResponse = tailLog();
                 break;
             case "log":
-                queryResponse = log();
+                ParentJobsCommandExecutor customJobsCommandExecutor = new ParentJobsCommandExecutor(this);
+                queryResponse = customJobsCommandExecutor.log();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -346,11 +358,12 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
         return openCGAClient.getJobClient().search(queryParams);
     }
 
-    protected RestResponse<JobTop> top() throws Exception {
+    private RestResponse<JobTop> top() throws Exception {
 
         logger.debug("Executing top in Jobs command line");
 
-        return super.top();
+   ParentJobsCommandExecutor customJobsCommandExecutor = new ParentJobsCommandExecutor(this);
+        return customJobsCommandExecutor.top();
 
     }
 

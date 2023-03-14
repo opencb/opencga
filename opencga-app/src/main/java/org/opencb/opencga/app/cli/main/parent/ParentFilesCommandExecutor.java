@@ -16,26 +16,26 @@
 package org.opencb.opencga.app.cli.main.parent;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.CommandExecutor;
+import org.opencb.opencga.app.cli.main.executors.FilesCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.FilesCommandOptions;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.response.RestResponse;
 
-public abstract class ParentFilesCommandExecutor extends OpencgaCommandExecutor {
+public class ParentFilesCommandExecutor {
 
     private final FilesCommandOptions filesCommandOptions;
+    FilesCommandExecutor executor;
 
-    public ParentFilesCommandExecutor(GeneralCliOptions.CommonCommandOptions options,
-                                      FilesCommandOptions filesCommandOptions) throws CatalogAuthenticationException {
-        super(options);
-        this.filesCommandOptions = filesCommandOptions;
+    public ParentFilesCommandExecutor(CommandExecutor executor) {
+        this.executor = (FilesCommandExecutor) executor;
+
+        this.filesCommandOptions = executor.filesCommandOptions;
     }
 
-    protected RestResponse<File> upload() throws Exception {
-        logger.debug("uploading file");
+    public RestResponse<File> upload() throws Exception {
+        executor.getLogger().debug("uploading file");
 
         FilesCommandOptions.UploadCommandOptions commandOptions = filesCommandOptions.uploadCommandOptions;
 
@@ -44,7 +44,7 @@ public abstract class ParentFilesCommandExecutor extends OpencgaCommandExecutor 
                 .append("bioformat", ParamUtils.defaultString(commandOptions.bioformat, File.Bioformat.UNKNOWN.toString()))
                 .append("parents", commandOptions.parents);
         //If the DEPRECATED parameter fileFormat has set we only override it if the new parameter format is also set
-        params.append("fileFormat", ParamUtils.defaultString(commandOptions.format,params.getString("fileFormat")));
+        params.append("fileFormat", ParamUtils.defaultString(commandOptions.format, params.getString("fileFormat")));
 
         params.putIfNotEmpty("study", commandOptions.study);
         params.putIfNotEmpty("relativeFilePath", commandOptions.catalogPath);
@@ -55,6 +55,7 @@ public abstract class ParentFilesCommandExecutor extends OpencgaCommandExecutor 
         params.putIfNotEmpty("file", commandOptions.inputFile);
         params.put("uploadServlet", Boolean.FALSE);
 
-        return openCGAClient.getFileClient().upload(params);
+        return executor.getOpenCGAClient().getFileClient().upload(params);
     }
+
 }

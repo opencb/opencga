@@ -48,7 +48,7 @@ import org.opencb.opencga.core.models.job.Job;
  */
 public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
 
-    private AnalysisAlignmentCommandOptions analysisAlignmentCommandOptions;
+    public AnalysisAlignmentCommandOptions analysisAlignmentCommandOptions;
 
     public AnalysisAlignmentCommandExecutor(AnalysisAlignmentCommandOptions analysisAlignmentCommandOptions) throws CatalogAuthenticationException {
         super(analysisAlignmentCommandOptions.commonCommandOptions);

@@ -54,6 +54,7 @@ import java.util.List;
  */
 public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
+
     protected OpenCGAClient openCGAClient;
     protected AbstractOutputWriter writer;
 
@@ -288,4 +289,9 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         Date currentDate = new Date();
         return currentDate.before(expirationDate) || ArrayUtils.contains(args, "login") || ArrayUtils.contains(args, "logout") || "anonymous".equals(sessionManager.getSession().getUser());
     }
+
+    public Logger getLogger() {
+        return logger;
+    }
+
 }

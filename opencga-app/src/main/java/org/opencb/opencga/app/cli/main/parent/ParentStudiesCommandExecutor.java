@@ -18,10 +18,8 @@ package org.opencb.opencga.app.cli.main.parent;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.executors.StudiesCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.StudiesCommandOptions;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
@@ -39,29 +37,29 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.LinkedList;
 import java.util.List;
 
-public abstract class ParentStudiesCommandExecutor extends OpencgaCommandExecutor {
+public class ParentStudiesCommandExecutor {
 
     private final StudiesCommandOptions studiesCommandOptions;
+    StudiesCommandExecutor executor;
 
-    public ParentStudiesCommandExecutor(GeneralCliOptions.CommonCommandOptions options,
-                                        StudiesCommandOptions studiesCommandOptions) throws CatalogAuthenticationException {
-        super(options);
-        this.studiesCommandOptions = studiesCommandOptions;
+    public ParentStudiesCommandExecutor(StudiesCommandExecutor executor) {
+        this.executor = executor;
+        this.studiesCommandOptions = executor.studiesCommandOptions;
     }
 
-    protected RestResponse<Job> runTemplates() throws Exception {
-        logger.debug("Run template");
+    public RestResponse<Job> runTemplates() throws Exception {
+        executor.getLogger().debug("Run template");
         StudiesCommandOptions.RunTemplatesCommandOptions c = studiesCommandOptions.runTemplatesCommandOptions;
 
         c.study = getSingleValidStudy(c.study);
         TemplateParams templateParams = new TemplateParams(c.id, c.overwrite, c.resume);
         ObjectMap params = new ObjectMap();
 
-        return openCGAClient.getStudyClient().runTemplates(c.study, templateParams, params);
+        return executor.getOpenCGAClient().getStudyClient().runTemplates(c.study, templateParams, params);
     }
 
-    protected RestResponse<String> uploadTemplates() throws Exception {
-        logger.debug("Upload template file");
+    public RestResponse<String> uploadTemplates() throws Exception {
+        executor.getLogger().debug("Upload template file");
         StudiesCommandOptions.UploadTemplatesCommandOptions c = studiesCommandOptions.uploadTemplatesCommandOptions;
 
         ObjectMap params = new ObjectMap();
@@ -99,7 +97,7 @@ public abstract class ParentStudiesCommandExecutor extends OpencgaCommandExecuto
             });
 
             Path manifestPath = path.resolve("manifest.zip");
-            logger.debug("Compressing file in '" + manifestPath + "' before uploading");
+            executor.getLogger().debug("Compressing file in '" + manifestPath + "' before uploading");
             ioManager.zip(fileList, manifestPath.toFile());
             params.put("file", manifestPath.toString());
         } else if (c.inputFile.endsWith("zip")) {
@@ -108,10 +106,10 @@ public abstract class ParentStudiesCommandExecutor extends OpencgaCommandExecuto
             throw new CatalogException("File '" + c.inputFile + "' is not a zip file");
         }
 
-        RestResponse<String> uploadResponse = openCGAClient.getStudyClient().uploadTemplates(c.study, params);
+        RestResponse<String> uploadResponse = executor.getOpenCGAClient().getStudyClient().uploadTemplates(c.study, params);
         if (path.toFile().isDirectory()) {
             Path manifestPath = path.resolve("manifest.zip");
-            logger.debug("Removing generated zip file '" + manifestPath + "' after upload");
+            executor.getLogger().debug("Removing generated zip file '" + manifestPath + "' after upload");
             ioManager.deleteFile(manifestPath.toUri());
         }
 
@@ -126,13 +124,13 @@ public abstract class ParentStudiesCommandExecutor extends OpencgaCommandExecuto
      * @return a single valid Study from the CLI, configuration or from the session file
      * @throws CatalogException when no possible single study can be chosen
      */
-    private String getSingleValidStudy(String study) throws CatalogException {
+    public String getSingleValidStudy(String study) throws CatalogException {
         // First, check the study parameter, if is not empty we just return it, this the user's selection.
         if (StringUtils.isNotEmpty(study)) {
             return study;
         } else {
             // Third, check if there is only one single project and study for this user in the current CLI session file.
-            List<String> studies = sessionManager.getSession().getStudies();
+            List<String> studies = executor.getSessionManager().getSession().getStudies();
             if (CollectionUtils.isNotEmpty(studies) && studies.size() == 1) {
                 study = studies.get(0);
             } else {

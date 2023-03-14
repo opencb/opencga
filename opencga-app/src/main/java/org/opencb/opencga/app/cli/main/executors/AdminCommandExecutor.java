@@ -46,7 +46,7 @@ import org.opencb.opencga.core.models.user.User;
  */
 public class AdminCommandExecutor extends OpencgaCommandExecutor {
 
-    private AdminCommandOptions adminCommandOptions;
+    public AdminCommandOptions adminCommandOptions;
 
     public AdminCommandExecutor(AdminCommandOptions adminCommandOptions) throws CatalogAuthenticationException {
         super(adminCommandOptions.commonCommandOptions);

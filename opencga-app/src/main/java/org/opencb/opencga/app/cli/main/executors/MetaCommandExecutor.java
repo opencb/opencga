@@ -37,7 +37,7 @@ import java.util.Map;
  */
 public class MetaCommandExecutor extends OpencgaCommandExecutor {
 
-    private MetaCommandOptions metaCommandOptions;
+    public MetaCommandOptions metaCommandOptions;
 
     public MetaCommandExecutor(MetaCommandOptions metaCommandOptions) throws CatalogAuthenticationException {
         super(metaCommandOptions.commonCommandOptions);

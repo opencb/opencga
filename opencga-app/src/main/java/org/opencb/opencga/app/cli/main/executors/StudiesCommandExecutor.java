@@ -19,7 +19,24 @@ import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.options.StudiesCommandOptions;
 
 import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
-
+import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
 import java.io.InputStream;
 import java.lang.Object;
 import java.net.URL;
@@ -69,12 +86,12 @@ import org.opencb.opencga.core.models.study.VariableSetCreateParams;
  * This class contains methods for the Studies command line.
  *    PATH: /{apiVersion}/studies
  */
-public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
+public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
-    private StudiesCommandOptions studiesCommandOptions;
+    public StudiesCommandOptions studiesCommandOptions;
 
     public StudiesCommandExecutor(StudiesCommandOptions studiesCommandOptions) throws CatalogAuthenticationException {
-        super(studiesCommandOptions.commonCommandOptions,studiesCommandOptions);
+        super(studiesCommandOptions.commonCommandOptions);
         this.studiesCommandOptions = studiesCommandOptions;
     }
 
@@ -440,19 +457,21 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         return openCGAClient.getStudyClient().updatePermissionRules(commandOptions.study, commandOptions.entity, permissionRule, queryParams);
     }
 
-    protected RestResponse<Job> runTemplates() throws Exception {
+    private RestResponse<Job> runTemplates() throws Exception {
 
         logger.debug("Executing runTemplates in Studies command line");
 
-        return super.runTemplates();
+   ParentStudiesCommandExecutor customStudiesCommandExecutor = new ParentStudiesCommandExecutor(this);
+        return customStudiesCommandExecutor.runTemplates();
 
     }
 
-    protected RestResponse<String> uploadTemplates() throws Exception {
+    private RestResponse<String> uploadTemplates() throws Exception {
 
         logger.debug("Executing uploadTemplates in Studies command line");
 
-        return super.uploadTemplates();
+   ParentStudiesCommandExecutor customStudiesCommandExecutor = new ParentStudiesCommandExecutor(this);
+        return customStudiesCommandExecutor.uploadTemplates();
 
     }
 
