@@ -331,9 +331,10 @@
       * @param clazz  Expected return class.
       * @param method Method by which the query will be done (GET or POST).
       * @return A queryResponse object containing the results of the query.
+      * @param <T> Any entity
       * @throws ClientException if the path is wrong and cannot be converted to a proper url.
       */
-     private <T> RestResponse<T> callRest(WebTarget path, ObjectMap params, Class<T> clazz, String method) throws ClientException {
+     protected <T> RestResponse<T> callRest(WebTarget path, ObjectMap params, Class<T> clazz, String method) throws ClientException {
          Response response;
          switch (method) {
              case DELETE:
@@ -422,9 +423,10 @@
       * @param params Params to be passed to the WS.
       * @param clazz  Expected return class.
       * @return A queryResponse object containing the results of the query.
+      * @param <T> Any entity
       * @throws ClientException if the path is wrong and cannot be converted to a proper url.
       */
-     private <T> RestResponse<T> callUploadRest(WebTarget path, Map<String, Object> params, Class<T> clazz) throws ClientException {
+     protected <T> RestResponse<T> callUploadRest(WebTarget path, Map<String, Object> params, Class<T> clazz) throws ClientException {
          String filePath = ((String) params.get("file"));
          params.remove("file");
          params.remove("body");
