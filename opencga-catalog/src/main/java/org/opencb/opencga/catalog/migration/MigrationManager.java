@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
@@ -563,12 +564,6 @@ public class MigrationManager {
             migrationRun.setId(annotation.id());
             migrationRun.setDescription(annotation.description());
             migrationRun.setVersion(annotation.version());
-            if (annotation.domain() == Migration.MigrationDomain.STORAGE) {
-                if (migrationTool.readStorageConfiguration().getMode() == StorageConfiguration.Mode.READ_ONLY) {
-                    migrationRun.setStatus(MigrationRun.MigrationStatus.ON_HOLD);
-                    migrationRun.setException("Unable to run migration over STORAGE with mode " + StorageConfiguration.Mode.READ_ONLY);
-                }
-            }
         } catch (CatalogDBException e) {
             throw new MigrationException("Error reading migration run from catalog", e);
         }
@@ -582,13 +577,20 @@ public class MigrationManager {
 
         MigrationException exceptionToThrow = null;
         try {
-            migrationTool.execute();
             logger.info("------------------------------------------------------");
             MigrationRun.MigrationStatus status;
-            if (migrationRun.getJobs().isEmpty()) {
-                status = MigrationRun.MigrationStatus.DONE;
+            if (annotation.domain() == Migration.MigrationDomain.STORAGE
+                    && migrationTool.readStorageConfiguration().getMode() == StorageConfiguration.Mode.READ_ONLY) {
+                status = MigrationRun.MigrationStatus.ON_HOLD;
+                migrationRun.addEvent(Event.Type.INFO,
+                        "Unable to run migration over STORAGE with mode " + StorageConfiguration.Mode.READ_ONLY);
             } else {
-                status = getOnHoldMigrationRunStatus(migrationTool.getAnnotation(), migrationRun, token);
+                migrationTool.execute();
+                if (migrationRun.getJobs().isEmpty()) {
+                    status = MigrationRun.MigrationStatus.DONE;
+                } else {
+                    status = getOnHoldMigrationRunStatus(migrationTool.getAnnotation(), migrationRun, token);
+                }
             }
             // Clear exception
             migrationRun.setException(null);
