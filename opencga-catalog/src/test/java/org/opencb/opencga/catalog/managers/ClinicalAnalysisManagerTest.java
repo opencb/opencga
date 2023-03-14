@@ -559,6 +559,35 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
+    public void updateClinicalAnalysis() throws CatalogException {
+        Individual individual = new Individual()
+                .setId("proband")
+                .setSamples(Collections.singletonList(new Sample().setId("sample")));
+        catalogManager.getIndividualManager().create(STUDY, individual, QueryOptions.empty(), sessionIdUser);
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("Clinical")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setComments(Collections.singletonList(new ClinicalComment("", "My first comment", Arrays.asList("tag1", "tag2"), "")))
+                .setProband(individual);
+
+        ClinicalAnalysis clinical = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, INCLUDE_RESULT, sessionIdUser).first();
+        assertTrue(clinical.getAttributes().isEmpty());
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put("a", "a_value");
+        attributes.put("b", "b_value");
+
+        ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
+                .setAttributes(attributes);
+        clinical = catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), updateParams, INCLUDE_RESULT, sessionIdUser).first();
+        assertFalse(clinical.getAttributes().isEmpty());
+        assertEquals(2, clinical.getAttributes().size());
+        assertEquals(attributes.get("a"), clinical.getAttributes().get("a"));
+        assertEquals(attributes.get("b"), clinical.getAttributes().get("b"));
+    }
+
+    @Test
     public void createRepeatedInterpretationPrimaryFindings() throws CatalogException {
         Individual individual = new Individual()
                 .setId("proband")

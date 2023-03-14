@@ -339,7 +339,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         String[] acceptedObjectParams = {QueryParams.FAMILY.key(), QueryParams.DISORDER.key(), QUALITY_CONTROL.key(),
                 QueryParams.PROBAND.key(), QueryParams.ALERTS.key(), QueryParams.INTERNAL_STATUS.key(), QueryParams.PRIORITY.key(),
                 QueryParams.ANALYST.key(), QueryParams.CONSENT.key(), QueryParams.STATUS.key(), QueryParams.INTERPRETATION.key(),
-                REPORT.key()};
+                REPORT.key(), ATTRIBUTES.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         if (parameters.containsKey(INTERPRETATION.key()) && parameters.get(INTERPRETATION.key()) == null) {
