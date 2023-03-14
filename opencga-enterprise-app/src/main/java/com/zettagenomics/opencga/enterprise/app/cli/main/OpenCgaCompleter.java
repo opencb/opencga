@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2023-03-13 OpenCB
+* Copyright 2015-2023-03-14 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import static java.util.stream.Collectors.toList;
 
 public abstract class OpenCgaCompleter implements Completer {
 
-    protected List<Candidate> commands = asList("login","logout","help","use","variant","projects","panels","clinical","jobs","admin","individuals","families","users","samples","alignments","meta","studies","files","operations","cohorts")
+    protected List<Candidate> commands = asList("login","logout","help","use","variant","projects","panels","clinical","admin","individuals","families","samples","cva","alignments","meta","operations","cohorts")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -65,11 +65,6 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> jobsList = asList( "acl-update","aggregationstats","create","distinct","retry","search","top","acl","delete","info","update","log-head","log-tail")
-            .stream()
-            .map(Candidate::new)
-            .collect(toList());
-
     private List<Candidate> adminList = asList( "audit-group-by","catalog-index-stats","catalog-install","catalog-jwt","users-create","users-import","users-search","users-sync")
             .stream()
             .map(Candidate::new)
@@ -85,12 +80,12 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> usersList = asList( "login","password","info","configs","configs-update","filters","password-reset","projects","update")
+    private List<Candidate> samplesList = asList( "acl-update","aggregationstats","annotation-sets-load","create","distinct","load","search","acl","delete","info","update","annotation-sets-annotations-update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> samplesList = asList( "acl-update","aggregationstats","annotation-sets-load","create","distinct","load","search","acl","delete","info","update","annotation-sets-annotations-update")
+    private List<Candidate> cvaList = asList( "info")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -101,16 +96,6 @@ public abstract class OpenCgaCompleter implements Completer {
             .collect(toList());
 
     private List<Candidate> metaList = asList( "about","about2","api","fail","model","ping","status")
-            .stream()
-            .map(Candidate::new)
-            .collect(toList());
-
-    private List<Candidate> studiesList = asList( "acl-update","create","search","acl","aggregationstats","info","audit-search","groups","groups-update","groups-users-update","permissionrules","permission-rules-update","templates-run","templates-upload","templates-delete","update","variablesets","variable-sets-update","variable-sets-variables-update")
-            .stream()
-            .map(Candidate::new)
-            .collect(toList());
-
-    private List<Candidate> filesList = asList( "acl-update","aggregationstats","annotation-sets-load","bioformats","create","distinct","fetch","formats","link","link-run","postlink-run","search","upload","acl","delete","info","unlink","update","annotation-sets-annotations-update","download","grep","head","image","refresh","tail","list","tree")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -137,16 +122,13 @@ public abstract class OpenCgaCompleter implements Completer {
         mapCandidates.put( "projects", projectsList);
         mapCandidates.put( "panels", panelsList);
         mapCandidates.put( "clinical", clinicalList);
-        mapCandidates.put( "jobs", jobsList);
         mapCandidates.put( "admin", adminList);
         mapCandidates.put( "individuals", individualsList);
         mapCandidates.put( "families", familiesList);
-        mapCandidates.put( "users", usersList);
         mapCandidates.put( "samples", samplesList);
+        mapCandidates.put( "cva", cvaList);
         mapCandidates.put( "alignments", alignmentsList);
         mapCandidates.put( "meta", metaList);
-        mapCandidates.put( "studies", studiesList);
-        mapCandidates.put( "files", filesList);
         mapCandidates.put( "operations", operationsList);
         mapCandidates.put( "cohorts", cohortsList);
          candidates.addAll(checkCandidates(mapCandidates,command)); 

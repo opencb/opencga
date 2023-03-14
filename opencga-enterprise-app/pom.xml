@@ -249,6 +249,7 @@
 <!--                                    <arg value="${app.dir}/conf"/>-->
 <!--                                    <arg value="${app.dir}/misc"/>-->
 <!--                                    <arg value="${app.dir}/monitor"/>-->
+                                    <arg value="${project.basedir}/target/appassembler/bin"/>
                                     <arg value="${project.basedir}/target/appassembler/libs"/>
 <!--                                    <arg value="${project.basedir}/../LICENSE"/>-->
 <!--                                    <arg value="${project.basedir}/../README.md"/>-->

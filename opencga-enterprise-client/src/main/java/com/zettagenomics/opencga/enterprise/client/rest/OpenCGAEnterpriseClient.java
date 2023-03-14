@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.AbstractParentClient;
+import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.LoginParams;
 import org.opencb.opencga.core.response.RestResponse;
@@ -144,6 +145,10 @@ public class OpenCGAEnterpriseClient {
 
     public MetaClient getMetaClient() {
         return getClient(MetaClient.class, () -> new MetaClient(token, clientConfiguration));
+    }
+
+    public CvaClient getCvaClient() {
+        return getClient(CvaClient.class, () -> new CvaClient(token, clientConfiguration));
     }
 
     @SuppressWarnings("unchecked")
