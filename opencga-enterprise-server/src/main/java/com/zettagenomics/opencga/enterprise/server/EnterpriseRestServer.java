@@ -16,13 +16,20 @@
 
 package com.zettagenomics.opencga.enterprise.server;
 
+import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
+import com.zettagenomics.opencga.enterprise.core.configuration.SsoConfiguration;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.opencb.opencga.server.AbstractStorageServer;
 
+import javax.servlet.DispatcherType;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -70,8 +77,37 @@ public class EnterpriseRestServer extends AbstractStorageServer {
 //        webapp.setInitParameter("log4jConfiguration", opencgaHome.resolve("conf/log4j2.server.xml").toString());
         server.setHandler(webapp);
 
-        // TODO: to add CAS Filters
+        EnterpriseConfiguration configuration = new EnterpriseConfiguration();
+        configuration.setSsoConfiguration(new SsoConfiguration(true, "https://localhost:8443/cas", "http://localhost:9090"));
+        if (configuration.getSsoConfiguration() != null && configuration.getSsoConfiguration().isActive()) {
+            // Start CAS configuration
+            FilterHolder validationFilterHolder = new FilterHolder();
+            validationFilterHolder.setName("CAS Validation Filter");
+            validationFilterHolder.setClassName("org.jasig.cas.client.validation.Cas20ProxyReceivingTicketValidationFilter");
+            Map<String, String> initParameters = new HashMap<>();
+            initParameters.put("casServerUrlPrefix", configuration.getSsoConfiguration().getCasServerPrefixUrl());
+            initParameters.put("serverName", configuration.getSsoConfiguration().getServerName());
+            validationFilterHolder.setInitParameters(initParameters);
+            webapp.addFilter(validationFilterHolder, "/webservices/rest/v2/*", EnumSet.of(DispatcherType.REQUEST));
 
+            FilterHolder authenticationFilterHolder = new FilterHolder();
+            authenticationFilterHolder.setName("CAS Authentication Filter");
+            authenticationFilterHolder.setClassName("org.jasig.cas.client.authentication.AuthenticationFilter");
+            initParameters = new HashMap<>();
+            initParameters.put("casServerUrlPrefix", configuration.getSsoConfiguration().getCasServerPrefixUrl());
+            initParameters.put("serverName", configuration.getSsoConfiguration().getServerName());
+            authenticationFilterHolder.setInitParameters(initParameters);
+            webapp.addFilter(authenticationFilterHolder, "/webservices/rest/v2/*", EnumSet.of(DispatcherType.REQUEST));
+
+            FilterHolder requestWrapperFilterHolder = new FilterHolder();
+            requestWrapperFilterHolder.setName("CAS HttpServletRequest Wrapper Filter");
+            requestWrapperFilterHolder.setClassName("org.jasig.cas.client.util.HttpServletRequestWrapperFilter");
+            initParameters = new HashMap<>();
+            initParameters.put("casServerUrlPrefix", configuration.getSsoConfiguration().getCasServerPrefixUrl());
+            initParameters.put("serverName", configuration.getSsoConfiguration().getServerName());
+            webapp.addFilter(requestWrapperFilterHolder, "/webservices/rest/v2/*", EnumSet.of(DispatcherType.REQUEST));
+            // End of CAS configuration
+        }
 
         server.start();
         logger.info("REST server started, listening on {}", port);
