@@ -144,7 +144,7 @@
                                     <arg value="-p"/>
                                     <arg value="${build.dir}/clients"/>
                                     <arg value="${build.dir}/cloud"/>
-<!--                                    <arg value="${build.dir}/conf"/>-->
+                                    <arg value="${build.dir}/conf"/>
 <!--                                    <arg value="${build.dir}/test"/>-->
                                 </exec>
 
@@ -246,16 +246,17 @@
                                     <arg value="${build.dir}/clients"/>
                                 </exec>
 
-<!--                                <echo>Copying configuration files</echo>-->
-<!--                                <exec executable="cp">-->
+                                <echo>Copying configuration files</echo>
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/../opencga-enterprise-core/target/classes/enterprise-configuration.yml"/>
 <!--                                    <arg value="${project.basedir}/../opencga-core/target/classes/configuration.yml"/>-->
 <!--                                    <arg value="${project.basedir}/../opencga-core/target/classes/log4j2.xml"/>-->
 <!--                                    <arg value="${project.basedir}/../opencga-core/target/classes/log4j2.service.xml"/>-->
 <!--                                    <arg value="${project.basedir}/../opencga-core/target/classes/log4j2.internal.xml"/>-->
 <!--                                    <arg value="${project.basedir}/../opencga-storage/opencga-storage-core/target/classes/storage-configuration.yml"/>-->
 <!--                                    <arg value="${project.basedir}/../opencga-client/target/classes/client-configuration.yml"/>-->
-<!--                                    <arg value="${build.dir}/conf"/>-->
-<!--                                </exec>-->
+                                    <arg value="${build.dir}/conf"/>
+                                </exec>
 
 <!--                                <exec executable="${project.basedir}/app/misc/solr/prepare_configsets.sh">-->
 <!--                                    <arg value="${project.basedir}/.."/>-->

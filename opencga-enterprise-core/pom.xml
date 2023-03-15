@@ -52,8 +52,11 @@
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
                 <includes>
-                    <include>configuration.yml</include>
+                    <include>enterprise-configuration.yml</include>
                 </includes>
+<!--                <includes>-->
+<!--                    <include>configuration.yml</include>-->
+<!--                </includes>-->
             </resource>
 <!--            <resource>-->
 <!--                <directory>src/main/resources</directory>-->

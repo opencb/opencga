@@ -11,7 +11,7 @@ import java.io.OutputStream;
 
 public class EnterpriseConfiguration {
 
-    private SsoConfiguration ssoConfiguration;
+    private SsoConfiguration sso;
 
     private static Logger logger;
     private static final String DEFAULT_CONFIGURATION_FORMAT = "yaml";
@@ -21,7 +21,7 @@ public class EnterpriseConfiguration {
     }
 
     public EnterpriseConfiguration() {
-        ssoConfiguration = new SsoConfiguration();
+        sso = new SsoConfiguration();
     }
 
 
@@ -63,17 +63,17 @@ public class EnterpriseConfiguration {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("EnterpriseConfiguration{");
-        sb.append("ssoConfiguration=").append(ssoConfiguration);
+        sb.append("ssoConfiguration=").append(sso);
         sb.append('}');
         return sb.toString();
     }
 
-    public SsoConfiguration getSsoConfiguration() {
-        return ssoConfiguration;
+    public SsoConfiguration getSso() {
+        return sso;
     }
 
-    public EnterpriseConfiguration setSsoConfiguration(SsoConfiguration ssoConfiguration) {
-        this.ssoConfiguration = ssoConfiguration;
+    public EnterpriseConfiguration setSso(SsoConfiguration sso) {
+        this.sso = sso;
         return this;
     }
 }

@@ -1,6 +1,9 @@
 package com.zettagenomics.opencga.enterprise.server.rest;
 
+import io.jsonwebtoken.SignatureAlgorithm;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.catalog.auth.authentication.JwtManager;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -16,6 +19,8 @@ import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
 import org.opencb.opencga.server.rest.analysis.VariantWebService;
 import org.opencb.opencga.server.rest.operations.VariantOperationWebService;
 
+import javax.crypto.spec.SecretKeySpec;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -26,6 +31,9 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.security.Key;
 import java.util.*;
 
 @Path("/{apiVersion}/meta")
@@ -45,9 +53,9 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
     public Response getAbout() {
         Map<String, String> info = new HashMap<>(5);
         info.put("Program", "XetaBase!");
-        info.put("Version", GitRepositoryState.get("com/zettagenomics/opencga/enterprise/core/git.properties").getBuildVersion());
-        info.put("Git branch", GitRepositoryState.get("com/zettagenomics/opencga/enterprise/core/git.properties").getBranch());
-        info.put("Git commit", GitRepositoryState.get("com/zettagenomics/opencga/enterprise/core/git.properties").getCommitId());
+        info.put("Version", GitRepositoryState.get().getBuildVersion());
+        info.put("Git branch", GitRepositoryState.get().getBranch());
+        info.put("Git commit", GitRepositoryState.get().getCommitId());
         info.put("Description", "Big Data platform for processing and analysing NGS data");
         OpenCGAResult queryResult = new OpenCGAResult();
         queryResult.setTime(0);
@@ -96,6 +104,7 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
         RestApi restApi = new RestApiParser().parse(classes, summary);
         return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(restApi.getCategories()), 1));
     }
+
     @GET
     @Path("/about2")
     @ApiOperation(httpMethod = "GET", value = "Returns info about current OpenCGA code.", response = Map.class)
@@ -113,4 +122,40 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
         return createOkResponse(queryResult);
     }
 
+    @GET
+    @Path("/sso")
+    @ApiOperation(httpMethod = "GET", value = "Single Sign On.", response = Map.class)
+    public Response singleSignOn(@ApiParam(value = "Callback URL") @QueryParam("url") String service) {
+        if (StringUtils.isEmpty(service)) {
+            return createErrorResponse(new CatalogParameterException("Missing mandatory field 'service'"));
+        }
+        URI targetURIForRedirection;
+        try {
+            Cookie[] cookies = httpServletRequest.getCookies();
+            System.out.println("SSO cookies");
+            for (Cookie cookie : cookies) {
+                logger.debug("{}: {}", cookie.getName(), cookie.getValue());
+            }
+            StringBuilder queryParams = new StringBuilder();
+            if (!service.endsWith("?")) {
+                queryParams.append("?");
+            }
+
+            Key key = new SecretKeySpec(catalogManager.getConfiguration().getAdmin().getSecretKey().getBytes(), SignatureAlgorithm.HS256.getJcaName());
+            JwtManager jwtManager = new JwtManager(catalogManager.getConfiguration().getAdmin().getAlgorithm(), key);
+            String jwtToken = jwtManager.createJWTToken(httpServletRequest.getRemoteUser(), -1);
+
+            queryParams.append("token").append("=").append(jwtToken);
+            for (Cookie cookie : cookies) {
+                queryParams.append("&");
+                queryParams.append(cookie.getName()).append("=").append(cookie.getValue());
+            }
+
+            targetURIForRedirection = new URI(service + queryParams);
+            logger.debug("Redirecting /sso call to {}", targetURIForRedirection);
+        } catch (URISyntaxException e) {
+            return createErrorResponse(e);
+        }
+        return Response.temporaryRedirect(targetURIForRedirection).build();
+    }
 }

@@ -452,6 +452,10 @@
             <properties>
                 <opencga.war.name>opencga-enterprise-${project.parent.version}</opencga.war.name>
 
+                <ENTERPRISE.SSO.ACTIVE>false</ENTERPRISE.SSO.ACTIVE>
+                <ENTERPRISE.SSO.CAS.SERVER.PREFIX.URL></ENTERPRISE.SSO.CAS.SERVER.PREFIX.URL>
+                <ENTERPRISE.SSO.SERVER.NAME></ENTERPRISE.SSO.SERVER.NAME>
+
                 <!-- General -->
                 <OPENCGA.INSTALLATION.DIR>/opt/opencga</OPENCGA.INSTALLATION.DIR>
                 <OPENCGA.USER.WORKSPACE>/opt/opencga/sessions</OPENCGA.USER.WORKSPACE>

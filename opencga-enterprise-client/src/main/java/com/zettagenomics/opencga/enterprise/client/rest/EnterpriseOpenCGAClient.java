@@ -195,8 +195,8 @@ public class EnterpriseOpenCGAClient {
      * @throws ClientException when it is not possible logging in.
      */
     public AuthenticationResponse login(String user, String password) throws ClientException {
-        if (this.enterpriseConfiguration.getSsoConfiguration() != null
-                && this.enterpriseConfiguration.getSsoConfiguration().isActive()) {
+        if (this.enterpriseConfiguration.getSso() != null
+                && this.enterpriseConfiguration.getSso().isActive()) {
             return ssoLogin();
         } else {
             return nonSsoLogin(user, password);
