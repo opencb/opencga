@@ -29,127 +29,35 @@
             <groupId>com.zettagenomics.opencga-enterprise</groupId>
             <artifactId>opencga-enterprise-client</artifactId>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>com.zettagenomics.opencga-enterprise</groupId>-->
-<!--            <artifactId>opencga-enterprise-server</artifactId>-->
-<!--            <version>${project.parent.version}</version>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>com.zettagenomics.opencga-enterprise</groupId>
+            <artifactId>opencga-enterprise-server</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-app</artifactId>
             <version>${opencga.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-core</artifactId>
-            <version>${opencga.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-catalog</artifactId>
-            <version>${opencga.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-analysis</artifactId>
-            <version>${opencga.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-master</artifactId>
-            <version>${opencga.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-storage-app</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.opencb.opencga</groupId>
-                    <artifactId>opencga-storage-benchmark</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-client</artifactId>
-        </dependency>
-        <!--        <dependency>-->
-        <!--            <groupId>org.opencb.opencga</groupId>-->
-        <!--            <artifactId>opencga-test</artifactId>-->
-        <!--            <version>${project.parent.version}</version>-->
-        <!--            <type>pom</type>-->
-        <!--        </dependency>-->
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-server</artifactId>
-            <version>${opencga.version}</version>
-            <!--<type>war</type>-->
-        </dependency>
 
-        <!--        <dependency>-->
-        <!--            <groupId>com.beust</groupId>-->
-        <!--            <artifactId>jcommander</artifactId>-->
-        <!--            <version>1.82</version>-->
-        <!--        </dependency>-->
-        <!--        <dependency>-->
-        <!--            <groupId>org.glassfish.jersey.containers</groupId>-->
-        <!--            <artifactId>jersey-container-servlet-core</artifactId>-->
-        <!--            <version>${jersey.version}</version>-->
-        <!--        </dependency>-->
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-analysis</artifactId>
-            <version>${opencga.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-storage-core</artifactId>
-            <version>${opencga.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-catalog</artifactId>
-            <version>${opencga.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.opencb.commons</groupId>
-            <artifactId>commons-lib</artifactId>
-            <version>4.8.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.commons</groupId>
-            <artifactId>commons-datastore-core</artifactId>
-            <version>4.8.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
         <!--JLINE Terminal dependencies-->
-        <dependency>
-            <groupId>org.jline</groupId>
-            <artifactId>jline-reader</artifactId>
-            <version>${dep.jline.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.jline</groupId>-->
+<!--            <artifactId>jline-reader</artifactId>-->
+<!--            <version>${dep.jline.version}</version>-->
+<!--        </dependency>-->
 
-        <dependency>
-            <groupId>org.jline</groupId>
-            <artifactId>jline-terminal</artifactId>
-            <version>${dep.jline.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jline</groupId>
-            <artifactId>jline-terminal-jna</artifactId>
-            <version>${dep.jline.version}</version>
-            <scope>runtime</scope>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.jline</groupId>-->
+<!--            <artifactId>jline-terminal</artifactId>-->
+<!--            <version>${dep.jline.version}</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.jline</groupId>-->
+<!--            <artifactId>jline-terminal-jna</artifactId>-->
+<!--            <version>${dep.jline.version}</version>-->
+<!--            <scope>runtime</scope>-->
+<!--        </dependency>-->
     </dependencies>
 
     <build>
@@ -182,6 +90,13 @@
                         <program>
                             <id>opencga-enterprise.sh</id>
                             <mainClass>com.zettagenomics.opencga.enterprise.app.cli.main.OpencgaEnterpriseMain</mainClass>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
+                        <program>
+                            <id>opencga-enterprise-admin.sh</id>
+                            <mainClass>com.zettagenomics.opencga.enterprise.app.cli.admin.AdminMain</mainClass>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
@@ -291,13 +206,13 @@
 <!--                                    <arg value="${build.dir}/misc/completion"/>-->
 <!--                                </exec>-->
 
-<!--                                <exec executable="mkdir">-->
-<!--                                    <arg value="${build.dir}/misc/git"/>-->
-<!--                                </exec>-->
-<!--                                <exec executable="cp">-->
-<!--                                    <arg value="${project.basedir}/../opencga-core/target/generated-resources/org/opencb/opencga/core/git.properties"/>-->
-<!--                                    <arg value="${build.dir}/misc/git"/>-->
-<!--                                </exec>-->
+                                <exec executable="mkdir">
+                                    <arg value="${build.dir}/misc/git"/>
+                                </exec>
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/../opencga-enterprise-core/target/generated-resources/com/zettagenomics/opencga/enterprise/core/git.properties"/>
+                                    <arg value="${build.dir}/misc/git"/>
+                                </exec>
 
 <!--                                <echo>Copying Python and R to ${build.dir}/clients</echo>-->
 <!--                                <exec executable="cp">-->
