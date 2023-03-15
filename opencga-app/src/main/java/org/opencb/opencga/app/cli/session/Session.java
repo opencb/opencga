@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.session;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by imedina on 13/07/15.
@@ -33,6 +34,8 @@ public class Session {
     private long timestamp;
     private String currentStudy;
 
+    private Map<String, Object> attributes;
+
     public Session() {
     }
 
@@ -44,7 +47,8 @@ public class Session {
         this.studies = studies;
     }
 
-    public Session(String host, String user, String token, String refreshToken, String version, String login, List<String> studies, long timestamp, String currentStudy) {
+    public Session(String host, String user, String token, String refreshToken, String version,
+                   String login, List<String> studies, long timestamp, String currentStudy) {
         this.host = host;
         this.user = user;
         this.token = token;
@@ -56,9 +60,23 @@ public class Session {
         this.currentStudy = currentStudy;
     }
 
+    public Session(String host, String user, String token, String refreshToken, String version, String login,
+                   List<String> studies, long timestamp, String currentStudy, Map<String, Object> attributes) {
+        this.host = host;
+        this.user = user;
+        this.token = token;
+        this.refreshToken = refreshToken;
+        this.version = version;
+        this.login = login;
+        this.studies = studies;
+        this.timestamp = timestamp;
+        this.currentStudy = currentStudy;
+        this.attributes = attributes;
+    }
+
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("CliSession{");
+        final StringBuilder sb = new StringBuilder("Session{");
         sb.append("host='").append(host).append('\'');
         sb.append(", user='").append(user).append('\'');
         sb.append(", token='").append(token).append('\'');
@@ -68,6 +86,7 @@ public class Session {
         sb.append(", studies=").append(studies);
         sb.append(", timestamp=").append(timestamp);
         sb.append(", currentStudy='").append(currentStudy).append('\'');
+        sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
     }
@@ -150,6 +169,15 @@ public class Session {
 
     public Session setCurrentStudy(String currentStudy) {
         this.currentStudy = currentStudy;
+        return this;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public Session setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
         return this;
     }
 }

@@ -30,7 +30,7 @@ import java.util.Properties;
  */
 public class GitRepositoryState {
 
-    public static final String RESOURCE_NAME = "org/opencb/opencga/core/git.properties";
+    public static final String DEFAULT_RESOURCE_NAME = "org/opencb/opencga/core/git.properties";
     private static GitRepositoryState gitRepositoryState;
     private static final Logger logger = LoggerFactory.getLogger(GitRepositoryState.class);
 
@@ -58,22 +58,48 @@ public class GitRepositoryState {
     private String buildVersion;            // =${git.build.version}
 
     public static GitRepositoryState get() {
+//        if (gitRepositoryState == null) {
+//            Properties properties = new Properties();
+//            InputStream stream = null;
+//            try {
+//                stream = GitRepositoryState.class.getClassLoader().getResourceAsStream(DEFAULT_RESOURCE_NAME);
+//                if (stream != null) {
+//                    properties.load(stream);
+//                }
+//            } catch (IOException e) {
+//                logger.warn("Error reading " + DEFAULT_RESOURCE_NAME, e);
+//            } finally {
+//                if (stream != null) {
+//                    try {
+//                        stream.close();
+//                    } catch (IOException e) {
+//                        logger.warn("Error closing stream from " + DEFAULT_RESOURCE_NAME, e);
+//                    }
+//                }
+//            }
+//
+//            gitRepositoryState = new GitRepositoryState(properties);
+//        }
+        return get(DEFAULT_RESOURCE_NAME);
+    }
+
+    public static GitRepositoryState get(String resourceName) {
         if (gitRepositoryState == null) {
             Properties properties = new Properties();
             InputStream stream = null;
             try {
-                stream = GitRepositoryState.class.getClassLoader().getResourceAsStream(RESOURCE_NAME);
+                stream = GitRepositoryState.class.getClassLoader().getResourceAsStream(resourceName);
                 if (stream != null) {
                     properties.load(stream);
                 }
             } catch (IOException e) {
-                logger.warn("Error reading " + RESOURCE_NAME, e);
+                logger.warn("Error reading " + resourceName, e);
             } finally {
                 if (stream != null) {
                     try {
                         stream.close();
                     } catch (IOException e) {
-                        logger.warn("Error closing stream from " + RESOURCE_NAME, e);
+                        logger.warn("Error closing stream from " + resourceName, e);
                     }
                 }
             }
@@ -114,26 +140,26 @@ public class GitRepositoryState {
     @Override
     public String toString() {
         return "{\n" +
-                    "\ttags : '" + tags + '\'' + ",\n" +
-                    "\tbranch : '" + branch + '\'' + ",\n" +
-                    "\tdirty : '" + dirty + '\'' + ",\n" +
-                    "\tremoteOriginUrl : '" + remoteOriginUrl + '\'' + ",\n" +
-                    "\tcommitId : '" + commitId + '\'' + ",\n" +
-                    "\tcommitIdAbbrev : '" + commitIdAbbrev + '\'' + ",\n" +
-                    "\tdescribe : '" + describe + '\'' + ",\n" +
-                    "\tdescribeShort : '" + describeShort + '\'' + ",\n" +
-                    "\tcommitUserName : '" + commitUserName + '\'' + ",\n" +
-                    "\tcommitUserEmail : '" + commitUserEmail + '\'' + ",\n" +
-                    "\tcommitMessageFull : '" + commitMessageFull + '\'' + ",\n" +
-                    "\tcommitMessageShort : '" + commitMessageShort + '\'' + ",\n" +
-                    "\tcommitTime : '" + commitTime + '\'' + ",\n" +
-                    "\tclosestTagName : '" + closestTagName + '\'' + ",\n" +
-                    "\tclosestTagCommitCount : '" + closestTagCommitCount + '\'' + ",\n" +
-                    "\tbuildUserName : '" + buildUserName + '\'' + ",\n" +
-                    "\tbuildUserEmail : '" + buildUserEmail + '\'' + ",\n" +
-                    "\tbuildTime : '" + buildTime + '\'' + ",\n" +
-                    "\tbuildHost : '" + buildHost + '\'' + ",\n" +
-                    "\tbuildVersion : '" + buildVersion + '\'' + ",\n" +
+                "\ttags : '" + tags + '\'' + ",\n" +
+                "\tbranch : '" + branch + '\'' + ",\n" +
+                "\tdirty : '" + dirty + '\'' + ",\n" +
+                "\tremoteOriginUrl : '" + remoteOriginUrl + '\'' + ",\n" +
+                "\tcommitId : '" + commitId + '\'' + ",\n" +
+                "\tcommitIdAbbrev : '" + commitIdAbbrev + '\'' + ",\n" +
+                "\tdescribe : '" + describe + '\'' + ",\n" +
+                "\tdescribeShort : '" + describeShort + '\'' + ",\n" +
+                "\tcommitUserName : '" + commitUserName + '\'' + ",\n" +
+                "\tcommitUserEmail : '" + commitUserEmail + '\'' + ",\n" +
+                "\tcommitMessageFull : '" + commitMessageFull + '\'' + ",\n" +
+                "\tcommitMessageShort : '" + commitMessageShort + '\'' + ",\n" +
+                "\tcommitTime : '" + commitTime + '\'' + ",\n" +
+                "\tclosestTagName : '" + closestTagName + '\'' + ",\n" +
+                "\tclosestTagCommitCount : '" + closestTagCommitCount + '\'' + ",\n" +
+                "\tbuildUserName : '" + buildUserName + '\'' + ",\n" +
+                "\tbuildUserEmail : '" + buildUserEmail + '\'' + ",\n" +
+                "\tbuildTime : '" + buildTime + '\'' + ",\n" +
+                "\tbuildHost : '" + buildHost + '\'' + ",\n" +
+                "\tbuildVersion : '" + buildVersion + '\'' + ",\n" +
                 '}';
     }
 
