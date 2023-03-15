@@ -27,6 +27,10 @@
     <dependencies>
         <dependency>
             <groupId>com.zettagenomics.opencga-enterprise</groupId>
+            <artifactId>opencga-enterprise-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zettagenomics.opencga-enterprise</groupId>
             <artifactId>opencga-enterprise-client</artifactId>
         </dependency>
         <dependency>
@@ -95,7 +99,7 @@
                             </platforms>
                         </program>
                         <program>
-                            <id>opencga-enterprise-admin.sh</id>
+                            <id>opencga-admin.sh</id>
                             <mainClass>com.zettagenomics.opencga.enterprise.app.cli.admin.AdminMain</mainClass>
                             <platforms>
                                 <platform>unix</platform>

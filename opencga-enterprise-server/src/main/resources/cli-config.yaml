@@ -18,9 +18,9 @@ options:
     - java.lang.Float
     - java.lang.
 apiConfig:
-  executorsParentClass: com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaEnterpriseCommandExecutor
+  executorsParentClass: com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor
   optionsParserParentClass: com.zettagenomics.opencga.enterprise.app.cli.main.options.*
-  opencgaClientClassName: OpenCGAEnterpriseClient
+  opencgaClientClassName: EnterpriseOpenCGAClient
   shortcuts:
     - name: user
       shortcut: u

@@ -1,11 +1,9 @@
 package com.zettagenomics.opencga.enterprise.app.cli.main;
 
 import com.beust.jcommander.ParameterException;
-import com.zettagenomics.opencga.enterprise.app.cli.main.OpencgaCliOptionsParser;
-import com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaEnterpriseCommandExecutor;
+import com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor;
 import com.zettagenomics.opencga.enterprise.app.cli.main.executors.*;
-import com.zettagenomics.opencga.enterprise.client.rest.OpenCGAEnterpriseClient;
-import com.zettagenomics.opencga.enterprise.server.EnterpriseResourceConfig;
+import com.zettagenomics.opencga.enterprise.client.rest.EnterpriseOpenCGAClient;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -56,7 +54,7 @@ public class EnterpriseCommandProcessor {
                             logger.debug("COMMAND AND SUBCOMMAND ARE VALID");
                             String parsedSubCommand = cliOptionsParser.getSubCommand();
 
-                            OpencgaEnterpriseCommandExecutor commandExecutor = getOpencgaCommandExecutor(cliOptionsParser, parsedCommand);
+                            EnterpriseOpencgaCommandExecutor commandExecutor = getOpencgaCommandExecutor(cliOptionsParser, parsedCommand);
                             // 5. Execute parsed command with executor provided using CommandProcessor Implementation
                             logger.debug("EXECUTING ::: " + CommandLineUtils.argsToString(args));
 
@@ -110,14 +108,14 @@ public class EnterpriseCommandProcessor {
         }
     }
 
-    private void refreshToken(OpencgaEnterpriseCommandExecutor commandExecutor) throws ClientException, IOException {
+    private void refreshToken(EnterpriseOpencgaCommandExecutor commandExecutor) throws ClientException, IOException {
         AuthenticationResponse response = commandExecutor
                 .getOpenCGAClient()
                 .refresh(commandExecutor.getSessionManager().getSession().getRefreshToken());
         commandExecutor.refreshToken(response);
     }
 
-    private boolean checkAutoRefresh(OpencgaEnterpriseCommandExecutor commandExecutor) {
+    private boolean checkAutoRefresh(EnterpriseOpencgaCommandExecutor commandExecutor) {
         if (StringUtils.isEmpty(commandExecutor.getSessionManager().getSession().getRefreshToken())) {
             return false;
         }
@@ -133,10 +131,10 @@ public class EnterpriseCommandProcessor {
         return false;
     }
 
-    public void loadSessionStudies(OpencgaEnterpriseCommandExecutor commandExecutor) {
+    public void loadSessionStudies(EnterpriseOpencgaCommandExecutor commandExecutor) {
         Session session = commandExecutor.getSessionManager().getSession();
         logger.debug("Loading session studies using token: " + session.getToken());
-        OpenCGAEnterpriseClient openCGAClient = commandExecutor.getOpenCGAClient();
+        EnterpriseOpenCGAClient openCGAClient = commandExecutor.getOpenCGAClient();
         try {
             // Query the server to retrieve the studies of user projects
             RestResponse<Project> res = openCGAClient.getProjectClient().search(new ObjectMap());
@@ -185,8 +183,8 @@ public class EnterpriseCommandProcessor {
         logger.debug("Current study: " + commandExecutor.getSessionManager().getSession().getCurrentStudy());
     }
 
-    private OpencgaEnterpriseCommandExecutor getOpencgaCommandExecutor(OpencgaCliOptionsParser cliOptionsParser, String parsedCommand) throws CatalogAuthenticationException {
-        OpencgaEnterpriseCommandExecutor commandExecutor = null;
+    private EnterpriseOpencgaCommandExecutor getOpencgaCommandExecutor(OpencgaCliOptionsParser cliOptionsParser, String parsedCommand) throws CatalogAuthenticationException {
+        EnterpriseOpencgaCommandExecutor commandExecutor = null;
         switch (parsedCommand) {
 //            case "users":
 //                commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());

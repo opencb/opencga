@@ -1,7 +1,7 @@
 package com.zettagenomics.opencga.enterprise.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaEnterpriseCommandExecutor;
+import com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -35,7 +35,7 @@ import java.util.Map;
  * This class contains methods for the Meta command line.
  *    PATH: /{apiVersion}/meta
  */
-public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaEnterpriseCommandExecutor {
+public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
 
     private MetaCommandOptions metaCommandOptions;
 
@@ -89,7 +89,7 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         logger.debug("Executing about in Meta command line");
 
         MetaCommandOptions.AboutCommandOptions commandOptions = metaCommandOptions.aboutCommandOptions;
-        return openCGAEnterpriseClient.getMetaClient().about();
+        return enterpriseOpenCGAClient.getMetaClient().about();
     }
 
     private RestResponse<ObjectMap> about2() throws Exception {
@@ -97,7 +97,7 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         logger.debug("Executing about2 in Meta command line");
 
         MetaCommandOptions.About2CommandOptions commandOptions = metaCommandOptions.about2CommandOptions;
-        return openCGAEnterpriseClient.getMetaClient().about2();
+        return enterpriseOpenCGAClient.getMetaClient().about2();
     }
 
     private RestResponse<List> api() throws Exception {
@@ -109,7 +109,7 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("category", commandOptions.category);
 
-        return openCGAEnterpriseClient.getMetaClient().api(queryParams);
+        return enterpriseOpenCGAClient.getMetaClient().api(queryParams);
     }
 
     private RestResponse<ObjectMap> fail() throws Exception {
@@ -117,7 +117,7 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         logger.debug("Executing fail in Meta command line");
 
         MetaCommandOptions.FailCommandOptions commandOptions = metaCommandOptions.failCommandOptions;
-        return openCGAEnterpriseClient.getMetaClient().fail();
+        return enterpriseOpenCGAClient.getMetaClient().fail();
     }
 
     private RestResponse<String> model() throws Exception {
@@ -125,7 +125,7 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         logger.debug("Executing model in Meta command line");
 
         MetaCommandOptions.ModelCommandOptions commandOptions = metaCommandOptions.modelCommandOptions;
-        return openCGAEnterpriseClient.getMetaClient().model();
+        return enterpriseOpenCGAClient.getMetaClient().model();
     }
 
     private RestResponse<String> ping() throws Exception {
@@ -133,7 +133,7 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         logger.debug("Executing ping in Meta command line");
 
         MetaCommandOptions.PingCommandOptions commandOptions = metaCommandOptions.pingCommandOptions;
-        return openCGAEnterpriseClient.getMetaClient().ping();
+        return enterpriseOpenCGAClient.getMetaClient().ping();
     }
 
     private RestResponse<ObjectMap> status() throws Exception {
@@ -141,6 +141,6 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         logger.debug("Executing status in Meta command line");
 
         MetaCommandOptions.StatusCommandOptions commandOptions = metaCommandOptions.statusCommandOptions;
-        return openCGAEnterpriseClient.getMetaClient().status();
+        return enterpriseOpenCGAClient.getMetaClient().status();
     }
 }

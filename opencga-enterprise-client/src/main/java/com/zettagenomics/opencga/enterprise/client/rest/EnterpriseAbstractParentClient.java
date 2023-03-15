@@ -1,4 +1,4 @@
-package com.zettagenomics.opencga.enterprise.client.rest.clients;
+package com.zettagenomics.opencga.enterprise.client.rest;
 
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import org.glassfish.jersey.client.ClientProperties;
@@ -22,20 +22,21 @@ import java.util.Map;
 public abstract class EnterpriseAbstractParentClient extends AbstractParentClient {
 
     private EnterpriseConfiguration enterpriseConfiguration;
-    private Map<String, String> ssoCookies;
+    private Map<String, Object> ssoCookies;
 
     protected EnterpriseAbstractParentClient(String token, ClientConfiguration clientConfiguration) {
         super(token, clientConfiguration);
     }
 
-    public Map<String, String> getSsoCookies() {
+    public Map<String, Object> getSsoCookies() {
         return ssoCookies;
     }
 
-    public EnterpriseAbstractParentClient setSsoCookies(Map<String, String> ssoCookies) {
+    public EnterpriseAbstractParentClient setSsoCookies(Map<String, Object> ssoCookies) {
         this.ssoCookies = ssoCookies;
         return this;
     }
+
     /**
      * Call to upload WS.
      *
@@ -46,7 +47,7 @@ public abstract class EnterpriseAbstractParentClient extends AbstractParentClien
      * @throws ClientException if the path is wrong and cannot be converted to a proper url.
      */
     @Override
-    private <T> RestResponse<T> callUploadRest(WebTarget path, Map<String, Object> params, Class<T> clazz) throws ClientException {
+    protected <T> RestResponse<T> callUploadRest(WebTarget path, Map<String, Object> params, Class<T> clazz) throws ClientException {
         String filePath = ((String) params.get("file"));
         params.remove("file");
         params.remove("body");
@@ -64,12 +65,15 @@ public abstract class EnterpriseAbstractParentClient extends AbstractParentClien
         }
         final FormDataMultiPart multipart = (FormDataMultiPart) formDataMultiPart.bodyPart(filePart);
 
-        privateLogger.debug(POST + " URL: {}", path.getUri());
+        logger.debug(POST + " URL: {}", path.getUri());
         Response response = path.request()
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token)
                 .post(Entity.entity(multipart, multipart.getMediaType()));
-        if (response.getStatus() == 302)
-        RestResponse<T> restResponse = parseResult(response, clazz);
+
+        RestResponse<T> restResponse = null;
+        if (response.getStatus() == 302){
+            restResponse = parseResult(response, clazz);
+        }
 
         try {
             formDataMultiPart.close();

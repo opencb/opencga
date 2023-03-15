@@ -18,7 +18,8 @@ package com.zettagenomics.opencga.enterprise.app.cli.main.executors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zettagenomics.opencga.enterprise.client.rest.OpenCGAEnterpriseClient;
+import com.zettagenomics.opencga.enterprise.client.rest.EnterpriseOpenCGAClient;
+import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -30,6 +31,7 @@ import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
@@ -42,6 +44,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
@@ -52,25 +57,38 @@ import java.util.List;
  *
  * @author imedina
  */
-public abstract class OpencgaEnterpriseCommandExecutor extends CommandExecutor {
+public abstract class EnterpriseOpencgaCommandExecutor extends CommandExecutor {
 
-    protected OpenCGAEnterpriseClient openCGAEnterpriseClient;
-
+    protected EnterpriseOpenCGAClient enterpriseOpenCGAClient;
+    protected EnterpriseConfiguration enterpriseConfiguration;
     protected AbstractOutputWriter writer;
 
     private Logger privateLogger;
 
-    public OpencgaEnterpriseCommandExecutor(GeneralCliOptions.CommonCommandOptions options)
+    public EnterpriseOpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options)
             throws CatalogAuthenticationException {
         this(options, false);
     }
 
     @Deprecated
-    public OpencgaEnterpriseCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration)
+    public EnterpriseOpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration)
             throws CatalogAuthenticationException {
         super(options, true);
 
         init(options, skipDuration);
+    }
+
+    public void loadEnterpriseConfiguration() throws IOException {
+        // We load configuration file either from app home folder or from the JAR
+        Path path = Paths.get(this.conf).resolve("enterprise-configuration.yml");
+        if (Files.exists(path)) {
+            privateLogger.debug("Loading enterprise-configuration from '{}'", path.toAbsolutePath());
+            this.enterpriseConfiguration = EnterpriseConfiguration.load(Files.newInputStream(path.toFile().toPath()));
+        } else {
+            privateLogger.debug("Loading enterprise-configuration from JAR file");
+            this.enterpriseConfiguration = EnterpriseConfiguration
+                    .load(ClientConfiguration.class.getClassLoader().getResourceAsStream("enterprise-configuration.yml"));
+        }
     }
 
     public static List<String> splitWithTrim(String value) {
@@ -91,7 +109,9 @@ public abstract class OpencgaEnterpriseCommandExecutor extends CommandExecutor {
 
     private void init(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) {
         try {
-            privateLogger = LoggerFactory.getLogger(OpencgaEnterpriseCommandExecutor.class);
+            this.loadEnterpriseConfiguration();
+
+            privateLogger = LoggerFactory.getLogger(EnterpriseOpencgaCommandExecutor.class);
             privateLogger.debug("Executing OpencgaEnterpriseCommandExecutor 'init' method ...");
 
             // Configure CLI output writer
@@ -128,7 +148,7 @@ public abstract class OpencgaEnterpriseCommandExecutor extends CommandExecutor {
 
                 // Update SessionManager and OpencgaClient with the new token
                 sessionManager.updateSessionToken(token, host);
-                openCGAEnterpriseClient = new OpenCGAEnterpriseClient(new AuthenticationResponse(options.token), clientConfiguration);
+                enterpriseOpenCGAClient = new EnterpriseOpenCGAClient(new AuthenticationResponse(options.token), clientConfiguration, enterpriseConfiguration);
             } else {
                 privateLogger.debug("No token has been provided, reading session file");
                 if (!StringUtils.isEmpty(sessionManager.getSession().getToken())
@@ -147,10 +167,10 @@ public abstract class OpencgaEnterpriseCommandExecutor extends CommandExecutor {
                         Date currentDate = new Date();
                         if (currentDate.before(expirationDate) || !claimsMap.containsKey("exp")) {
                             privateLogger.debug("Session expiration time is ok, valid until: {}", expirationDate);
-                            openCGAEnterpriseClient = new OpenCGAEnterpriseClient(
+                            enterpriseOpenCGAClient = new EnterpriseOpenCGAClient(
                                     new AuthenticationResponse(sessionManager.getSession().getToken(), sessionManager.getSession().getRefreshToken()),
-                                    clientConfiguration);
-                            openCGAEnterpriseClient.setUserId(sessionManager.getSession().getUser());
+                                    clientConfiguration, enterpriseConfiguration);
+                            enterpriseOpenCGAClient.setUserId(sessionManager.getSession().getUser());
 
                             // FIXME This looks weird, commenting it
 //                            if (options.token == null) {
@@ -158,18 +178,18 @@ public abstract class OpencgaEnterpriseCommandExecutor extends CommandExecutor {
 //                            }
                         } else {
                             privateLogger.debug("Session has expired '{}'.", expirationDate);
-                            openCGAEnterpriseClient = new OpenCGAEnterpriseClient(clientConfiguration);
+                            enterpriseOpenCGAClient = new EnterpriseOpenCGAClient(clientConfiguration, enterpriseConfiguration);
                             //sessionManager.logoutSessionFile();
                         }
                     }
                 } else {
                     privateLogger.debug("No valid session found");
-                    openCGAEnterpriseClient = new OpenCGAEnterpriseClient(clientConfiguration);
+                    enterpriseOpenCGAClient = new EnterpriseOpenCGAClient(clientConfiguration, enterpriseConfiguration);
                 }
             }
 
-            if (openCGAEnterpriseClient != null) {
-                openCGAEnterpriseClient.setThrowExceptionOnError(true);
+            if (enterpriseOpenCGAClient != null) {
+                enterpriseOpenCGAClient.setThrowExceptionOnError(true);
             }
         } catch (IOException e) {
             logger.error("OpencgaEnterpriseCommandExecutorError", e);
@@ -204,12 +224,12 @@ public abstract class OpencgaEnterpriseCommandExecutor extends CommandExecutor {
         return new ObjectMapper().readValue(decodedClaimsString, ObjectMap.class);
     }
 
-    public OpenCGAEnterpriseClient getOpenCGAClient() {
-        return openCGAEnterpriseClient;
+    public EnterpriseOpenCGAClient getOpenCGAClient() {
+        return enterpriseOpenCGAClient;
     }
 
-    public OpencgaEnterpriseCommandExecutor setOpenCGAClient(OpenCGAEnterpriseClient openCGAEnterpriseClient) {
-        this.openCGAEnterpriseClient = openCGAEnterpriseClient;
+    public EnterpriseOpencgaCommandExecutor setOpenCGAClient(EnterpriseOpenCGAClient enterpriseOpenCGAClient) {
+        this.enterpriseOpenCGAClient = enterpriseOpenCGAClient;
         return this;
     }
 
@@ -228,12 +248,12 @@ public abstract class OpencgaEnterpriseCommandExecutor extends CommandExecutor {
         if (response != null) {
             List<String> studies = new ArrayList<>();
             logger.debug(response.toString());
-            RestResponse<Project> projects = openCGAEnterpriseClient.getProjectClient()
+            RestResponse<Project> projects = enterpriseOpenCGAClient.getProjectClient()
                     .search(new ObjectMap(ProjectDBAdaptor.QueryParams.OWNER.key(), user));
 
             if (projects.getResponses().get(0).getNumResults() == 0) {
                 // We try to fetch shared projects and studies instead when the user does not own any project or study
-                projects = openCGAEnterpriseClient.getProjectClient().search(new ObjectMap());
+                projects = enterpriseOpenCGAClient.getProjectClient().search(new ObjectMap());
             }
 
             for (Project project : projects.getResponses().get(0).getResults()) {

@@ -1,7 +1,7 @@
 package com.zettagenomics.opencga.enterprise.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaEnterpriseCommandExecutor;
+import com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -34,7 +34,7 @@ import org.opencb.opencga.core.models.sample.Sample;
  * This class contains methods for the Cva command line.
  *    PATH: /{apiVersion}/cva
  */
-public class CvaCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaEnterpriseCommandExecutor {
+public class CvaCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
 
     private CvaCommandOptions cvaCommandOptions;
 
@@ -83,6 +83,6 @@ public class CvaCommandExecutor extends com.zettagenomics.opencga.enterprise.app
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAEnterpriseClient.getCvaClient().info(commandOptions.caseId, queryParams);
+        return enterpriseOpenCGAClient.getCvaClient().info(commandOptions.caseId, queryParams);
     }
 }

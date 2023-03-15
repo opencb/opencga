@@ -67,7 +67,7 @@ def build():
     print_header('Building docker images: ' + ', '.join(images))
 
     for i in images:
-        image = org + "/opencga-ee-" + i + ":" + tag
+        image = org + "/opencga-" + i + ":" + tag
         print("\n" + shell_colors['blue'] + "Building " + image + " ..." + shell_colors['reset'])
 
         if i == "init" or i == "demo":
@@ -114,7 +114,7 @@ def tag_latest(image):
 def push():
     print("Pushing images to Docker hub")
     for i in images:
-        image = org + "/opencga-ee-" + i
+        image = org + "/opencga-" + i
         print("*********************************************")
         print("Pushing " + server + image + ":" + tag)
         print("*********************************************")
@@ -140,7 +140,7 @@ def delete():
         headers = {
             'Authorization': 'JWT ' + json_response["token"]
         }
-        requests.delete('https://hub.docker.com/v2/repositories/' + org + '/opencga-ee-' + i + '/tags/' + tag + '/',
+        requests.delete('https://hub.docker.com/v2/repositories/' + org + '/opencga-' + i + '/tags/' + tag + '/',
                         headers=headers)
 
 
@@ -185,7 +185,7 @@ else:
     # Create docker tag
     tag = version
     if hadoop_flavour:
-        tag = tag + "-" + hadoop_flavour
+        tag = "ee-" + tag + "-" + hadoop_flavour
 
 # 3. Set docker org to default value if not set
 org = args.org
