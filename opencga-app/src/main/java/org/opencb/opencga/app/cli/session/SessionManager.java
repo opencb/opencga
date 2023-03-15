@@ -21,11 +21,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.commons.collections4.CollectionUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.config.HostConfig;
 import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.AuthenticationResponse;
+import org.opencb.opencga.core.response.QueryType;
+import org.opencb.opencga.core.response.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +52,7 @@ public class SessionManager {
     private static final String NO_STUDY = "NO_STUDY";
     private static final String ANONYMOUS = "anonymous";
     private final ClientConfiguration clientConfiguration;
+//    private OpenCGAClient openCGAClient;
     private final String host;
     private Path sessionFolder;
     private ObjectWriter objectWriter;
@@ -75,6 +84,11 @@ public class SessionManager {
                     break;
                 }
             }
+
+            // TODO
+//            Session session = this.getSession();
+//            this.openCGAClient = new OpenCGAClient(clientConfiguration);
+//            this.openCGAClient.setToken(session.getToken());
         } else {
             CommandLineUtils.error("The client configuration can not be null. Please check configuration file.");
             System.exit(-1);
@@ -175,6 +189,30 @@ public class SessionManager {
 
     public void saveSession(Session session) throws IOException {
         saveSession(session, host);
+    }
+
+    public RestResponse<AuthenticationResponse> saveSession(String user, AuthenticationResponse response, OpenCGAClient openCGAClient) throws ClientException, IOException {
+        RestResponse<AuthenticationResponse> res = new RestResponse<>();
+        if (response != null) {
+            List<String> studies = new ArrayList<>();
+            logger.debug(response.toString());
+            RestResponse<Project> projects = openCGAClient.getProjectClient().search(
+                    new ObjectMap(ProjectDBAdaptor.QueryParams.OWNER.key(), user));
+
+            if (projects.getResponses().get(0).getNumResults() == 0) {
+                // We try to fetch shared projects and studies instead when the user does not own any project or study
+                projects = openCGAClient.getProjectClient().search(new ObjectMap());
+            }
+
+            for (Project project : projects.getResponses().get(0).getResults()) {
+                for (Study study : project.getStudies()) {
+                    studies.add(study.getFqn());
+                }
+            }
+            this.saveSession(user, response.getToken(), response.getRefreshToken(), studies, this.host);
+            res.setType(QueryType.VOID);
+        }
+        return res;
     }
 
     public void saveSession(Session session, String host) throws IOException {

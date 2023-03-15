@@ -40,6 +40,8 @@ public class ParentJobsCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @Parameter(names = {"--limit"}, description = "Number of rows", arity = 1)
+        public int limit = 10;
         @Parameter(names = {"-d", "--delay"}, description = "Delay between iterations in seconds", arity = 1)
         public int delay = 2;
 

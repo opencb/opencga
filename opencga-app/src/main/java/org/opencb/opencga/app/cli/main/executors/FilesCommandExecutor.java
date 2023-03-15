@@ -638,7 +638,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         ParentFilesCommandOptions.UploadCommandOptions commandOptions = filesCommandOptions.uploadCommandOptions;
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("file", commandOptions.file);
-        queryParams.putIfNotEmpty("filename", commandOptions.filename);
+        queryParams.putIfNotEmpty("fileName", commandOptions.fileName);
         queryParams.putIfNotNull("fileFormat", commandOptions.fileFormat);
         queryParams.putIfNotNull("bioformat", commandOptions.bioformat);
         queryParams.putIfNotEmpty("checksum", commandOptions.checksum);

@@ -43,11 +43,11 @@ public class ParentUsersCommandExecutor {
     private OpenCGAClient openCGAClient;
     private SessionManager session;
 
-    public ParentUsersCommandExecutor(ObjectMap map, Logger logger, OpenCGAClient openCGAClient, SessionManager session) {
+    public ParentUsersCommandExecutor(ObjectMap map, Logger logger, OpenCGAClient openCGAClient, SessionManager sessionManager) {
         this.map = map;
         this.logger = logger;
         this.openCGAClient = openCGAClient;
-        this.session = session;
+        this.session = sessionManager;
     }
 
     public RestResponse<AuthenticationResponse> login() throws Exception {
@@ -69,11 +69,11 @@ public class ParentUsersCommandExecutor {
                     res.getEvents().add(event);
                     return res;
                 }
-                logger.debug("Login token ::: " +session.getSession().getToken());
-                res = executor.saveSession(user, response);
+                logger.debug("Login token ::: " + session.getSession().getToken());
+                res = session.saveSession(user, response, openCGAClient);
                 println(getKeyValueAsFormattedString(LOGIN_OK, user));
             } else {
-                String sessionId = String.valueOf(map.get("token");
+                String sessionId = String.valueOf(map.get("token"));
                 String errorMsg = "Missing password. ";
                 if (StringUtils.isNotEmpty(sessionId)) {
                     errorMsg += "Active token detected ";
