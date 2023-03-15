@@ -71,7 +71,7 @@ public class FileManagerTest extends AbstractManagerTest {
     private FileManager fileManager;
 
     @Before
-    public void setUp() throws IOException, CatalogException {
+    public void setUp() throws Exception {
         super.setUp();
         fileManager = catalogManager.getFileManager();
         // Ensure this threshold is restored

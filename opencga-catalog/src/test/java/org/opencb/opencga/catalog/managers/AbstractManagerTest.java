@@ -82,7 +82,7 @@ public class AbstractManagerTest extends GenericTest {
     protected static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
     @Before
-    public void setUp() throws IOException, CatalogException {
+    public void setUp() throws Exception {
         catalogManager = catalogManagerResource.getCatalogManager();
         setUpCatalogManager(catalogManager);
     }

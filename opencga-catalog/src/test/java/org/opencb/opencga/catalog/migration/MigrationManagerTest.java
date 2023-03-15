@@ -12,11 +12,15 @@ import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobReferenceParam;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -89,12 +93,14 @@ public class MigrationManagerTest extends AbstractManagerTest {
         }
     }
 
-    @Migration(id = "test4-2", version = "0.2.2", description = "", domain = Migration.MigrationDomain.CATALOG,
+    @Migration(id = "test4-2", version = "0.2.2", description = "", domain = Migration.MigrationDomain.STORAGE,
             language = Migration.MigrationLanguage.JAVA, date = 20200401)
     public static class Migration8 extends MigrationTool {
         @Override
         protected void run() throws MigrationException {
-
+            logger.info("doing something");
+            logger.debug("doing quiet");
+            logger.info("finish something");
         }
     }
 
@@ -121,12 +127,16 @@ public class MigrationManagerTest extends AbstractManagerTest {
 
     @Override
     @Before
-    public void setUp() throws java.io.IOException, CatalogException {
+    public void setUp() throws Exception {
         super.setUp();
         try (MongoDBAdaptorFactory mongoDBAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration())) {
             mongoDBAdaptorFactory.getMongoDataStore()
                     .getCollection(MongoDBAdaptorFactory.MIGRATION_COLLECTION)
                     .remove(new Document(), new QueryOptions(MongoDBCollection.MULTI, true));
+        }
+        Files.createDirectories(catalogManagerResource.getOpencgaHome().resolve("conf"));
+        try (OutputStream os = new FileOutputStream(catalogManagerResource.getOpencgaHome().resolve("conf").resolve("storage-configuration.yml").toFile())) {
+            new StorageConfiguration().setMode(StorageConfiguration.Mode.READ_WRITE).serialize(os);
         }
     }
 
@@ -262,6 +272,22 @@ public class MigrationManagerTest extends AbstractManagerTest {
         assertEquals(MigrationRun.MigrationStatus.DONE, migrationRun.getStatus());
     }
 
+    @Test
+    public void testMigrationWithStorageReadOnly() throws Exception {
+        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+
+        try (OutputStream os = new FileOutputStream(catalogManagerResource.getOpencgaHome().resolve("conf").resolve("storage-configuration.yml").toFile())) {
+            new StorageConfiguration().setMode(StorageConfiguration.Mode.READ_ONLY).serialize(os);
+        }
+        MigrationRun migrationRun = catalogManager.getMigrationManager().runManualMigration("0.2.2", "test4-2", catalogManagerResource.getOpencgaHome(), new ObjectMap("key", "value"), token);
+        assertEquals(MigrationRun.MigrationStatus.PENDING, migrationRun.getStatus());
+
+        try (OutputStream os = new FileOutputStream(catalogManagerResource.getOpencgaHome().resolve("conf").resolve("storage-configuration.yml").toFile())) {
+            new StorageConfiguration().setMode(StorageConfiguration.Mode.READ_WRITE).serialize(os);
+        }
+        migrationRun = catalogManager.getMigrationManager().runManualMigration("0.2.2", "test4-2", catalogManagerResource.getOpencgaHome(), new ObjectMap("key", "value"), token);
+        assertEquals(MigrationRun.MigrationStatus.DONE, migrationRun.getStatus());
+    }
 
     @Test
     public void testMigrationVersionOrder() {

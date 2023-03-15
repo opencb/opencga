@@ -75,7 +75,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
     @Override
     @Before
-    public void setUp() throws IOException, CatalogException {
+    public void setUp() throws Exception {
         super.setUp();
 
         String expiringToken = this.catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
