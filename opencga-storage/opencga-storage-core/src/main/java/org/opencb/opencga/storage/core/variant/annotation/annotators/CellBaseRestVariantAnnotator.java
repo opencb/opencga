@@ -34,7 +34,10 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -111,11 +114,7 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
         }
         List<String> privateSources;
         if (StringUtils.isNotEmpty(cellBaseUtils.getToken())) {
-            String[] chunks = cellBaseUtils.getToken().split("\\.");
-            Base64.Decoder decoder = Base64.getUrlDecoder();
-            String payload = new String(decoder.decode(chunks[1]));
-            ObjectMap payloadMap = new ObjectMap(payload);
-            privateSources = new ArrayList<>(payloadMap.getMap("sources", Collections.emptyMap()).keySet());
+            privateSources = new ArrayList<>(cellBaseUtils.getTokenSources().getSources().keySet());
         } else {
             privateSources = new ArrayList<>();
         }
