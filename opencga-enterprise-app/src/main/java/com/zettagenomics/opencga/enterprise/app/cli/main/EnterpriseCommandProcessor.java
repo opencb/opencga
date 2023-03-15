@@ -5,6 +5,7 @@ import com.zettagenomics.opencga.enterprise.app.cli.main.OpencgaCliOptionsParser
 import com.zettagenomics.opencga.enterprise.app.cli.main.executors.OpencgaEnterpriseCommandExecutor;
 import com.zettagenomics.opencga.enterprise.app.cli.main.executors.*;
 import com.zettagenomics.opencga.enterprise.client.rest.OpenCGAEnterpriseClient;
+import com.zettagenomics.opencga.enterprise.server.EnterpriseResourceConfig;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -235,6 +236,9 @@ public class EnterpriseCommandProcessor {
                 break;
             case "meta":
                 commandExecutor = new MetaCommandExecutor(cliOptionsParser.getMetaCommandOptions());
+                break;
+            case "cva":
+                commandExecutor = new CvaCommandExecutor(cliOptionsParser.getCvaCommandOptions());
                 break;
             case "admin":
                 commandExecutor = new AdminCommandExecutor(cliOptionsParser.getAdminCommandOptions());

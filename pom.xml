@@ -41,7 +41,7 @@
         <jetty.version>9.4.17.v20190418</jetty.version>
         <junit.version>4.13.2</junit.version>
 
-        <opencga.war.name>opencga-enterprise</opencga.war.name>
+<!--        <opencga.war.name>opencga-enterprise</opencga.war.name>-->
         <opencga.env.file>opencga-env.sh</opencga.env.file>
         <opencga-storage-hadoop-deps.id-default>hdp3.1</opencga-storage-hadoop-deps.id-default>
         <opencga-storage-hadoop-deps.artifactId-default>
@@ -447,7 +447,7 @@
             <id>default-config</id>
             <activation>
                 <!-- Do not use "activeByDefault" as it might get deactivated when using any hadoop profile -->
-<!--                <activeByDefault>true</activeByDefault>-->
+                <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
                 <opencga.war.name>opencga-enterprise-${project.parent.version}</opencga.war.name>

@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2023-03-13 OpenCB
+* Copyright 2015-2023-03-15 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -38,16 +38,13 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
     private final ProjectsCommandOptions projectsCommandOptions;
     private final DiseasePanelsCommandOptions diseasePanelsCommandOptions;
     private final AnalysisClinicalCommandOptions analysisClinicalCommandOptions;
-    private final JobsCommandOptions jobsCommandOptions;
     private final AdminCommandOptions adminCommandOptions;
     private final IndividualsCommandOptions individualsCommandOptions;
     private final FamiliesCommandOptions familiesCommandOptions;
-    private final UsersCommandOptions usersCommandOptions;
     private final SamplesCommandOptions samplesCommandOptions;
+    private final CvaCommandOptions cvaCommandOptions;
     private final AnalysisAlignmentCommandOptions analysisAlignmentCommandOptions;
     private final MetaCommandOptions metaCommandOptions;
-    private final StudiesCommandOptions studiesCommandOptions;
-    private final FilesCommandOptions filesCommandOptions;
     private final OperationsVariantStorageCommandOptions operationsVariantStorageCommandOptions;
     private final CohortsCommandOptions cohortsCommandOptions;
 
@@ -159,24 +156,6 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         analysisClinicalSubCommands.addCommand("interpretation-revert", analysisClinicalCommandOptions.revertInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-update", analysisClinicalCommandOptions.updateInterpretationCommandOptions);
 
-        jobsCommandOptions = new JobsCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("jobs", jobsCommandOptions);
-        JCommander jobsSubCommands = jCommander.getCommands().get("jobs");
-        jobsSubCommands.addCommand("acl-update", jobsCommandOptions.updateAclCommandOptions);
-        jobsSubCommands.addCommand("aggregationstats", jobsCommandOptions.aggregationStatsCommandOptions);
-        jobsSubCommands.addCommand("create", jobsCommandOptions.createCommandOptions);
-        jobsSubCommands.addCommand("distinct", jobsCommandOptions.distinctCommandOptions);
-        jobsSubCommands.addCommand("retry", jobsCommandOptions.retryCommandOptions);
-        jobsSubCommands.addCommand("search", jobsCommandOptions.searchCommandOptions);
-        jobsSubCommands.addCommand("top", jobsCommandOptions.topCommandOptions);
-        jobsSubCommands.addCommand("acl", jobsCommandOptions.aclCommandOptions);
-        jobsSubCommands.addCommand("delete", jobsCommandOptions.deleteCommandOptions);
-        jobsSubCommands.addCommand("info", jobsCommandOptions.infoCommandOptions);
-        jobsSubCommands.addCommand("update", jobsCommandOptions.updateCommandOptions);
-        jobsSubCommands.addCommand("log-head", jobsCommandOptions.headLogCommandOptions);
-        jobsSubCommands.addCommand("log-tail", jobsCommandOptions.tailLogCommandOptions);
-        jobsSubCommands.addCommand("log", jobsCommandOptions.logCommandOptions);
-
         adminCommandOptions = new AdminCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("admin", adminCommandOptions);
         JCommander adminSubCommands = jCommander.getCommands().get("admin");
@@ -220,20 +199,6 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         familiesSubCommands.addCommand("update", familiesCommandOptions.updateCommandOptions);
         familiesSubCommands.addCommand("annotation-sets-annotations-update", familiesCommandOptions.updateAnnotationSetsAnnotationsCommandOptions);
 
-        usersCommandOptions = new UsersCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("users", usersCommandOptions);
-        JCommander usersSubCommands = jCommander.getCommands().get("users");
-        usersSubCommands.addCommand("login", usersCommandOptions.loginCommandOptions);
-        usersSubCommands.addCommand("password", usersCommandOptions.passwordCommandOptions);
-        usersSubCommands.addCommand("info", usersCommandOptions.infoCommandOptions);
-        usersSubCommands.addCommand("configs", usersCommandOptions.configsCommandOptions);
-        usersSubCommands.addCommand("configs-update", usersCommandOptions.updateConfigsCommandOptions);
-        usersSubCommands.addCommand("filters", usersCommandOptions.filtersCommandOptions);
-        usersSubCommands.addCommand("password-reset", usersCommandOptions.resetPasswordCommandOptions);
-        usersSubCommands.addCommand("projects", usersCommandOptions.projectsCommandOptions);
-        usersSubCommands.addCommand("update", usersCommandOptions.updateCommandOptions);
-        usersSubCommands.addCommand("logout", usersCommandOptions.logoutCommandOptions);
-
         samplesCommandOptions = new SamplesCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("samples", samplesCommandOptions);
         JCommander samplesSubCommands = jCommander.getCommands().get("samples");
@@ -249,6 +214,11 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         samplesSubCommands.addCommand("info", samplesCommandOptions.infoCommandOptions);
         samplesSubCommands.addCommand("update", samplesCommandOptions.updateCommandOptions);
         samplesSubCommands.addCommand("annotation-sets-annotations-update", samplesCommandOptions.updateAnnotationSetsAnnotationsCommandOptions);
+
+        cvaCommandOptions = new CvaCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("cva", cvaCommandOptions);
+        JCommander cvaSubCommands = jCommander.getCommands().get("cva");
+        cvaSubCommands.addCommand("info", cvaCommandOptions.infoCommandOptions);
 
         analysisAlignmentCommandOptions = new AnalysisAlignmentCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("alignments", analysisAlignmentCommandOptions);
@@ -277,60 +247,6 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         metaSubCommands.addCommand("model", metaCommandOptions.modelCommandOptions);
         metaSubCommands.addCommand("ping", metaCommandOptions.pingCommandOptions);
         metaSubCommands.addCommand("status", metaCommandOptions.statusCommandOptions);
-
-        studiesCommandOptions = new StudiesCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("studies", studiesCommandOptions);
-        JCommander studiesSubCommands = jCommander.getCommands().get("studies");
-        studiesSubCommands.addCommand("acl-update", studiesCommandOptions.updateAclCommandOptions);
-        studiesSubCommands.addCommand("create", studiesCommandOptions.createCommandOptions);
-        studiesSubCommands.addCommand("search", studiesCommandOptions.searchCommandOptions);
-        studiesSubCommands.addCommand("acl", studiesCommandOptions.aclCommandOptions);
-        studiesSubCommands.addCommand("aggregationstats", studiesCommandOptions.aggregationStatsCommandOptions);
-        studiesSubCommands.addCommand("info", studiesCommandOptions.infoCommandOptions);
-        studiesSubCommands.addCommand("audit-search", studiesCommandOptions.searchAuditCommandOptions);
-        studiesSubCommands.addCommand("groups", studiesCommandOptions.groupsCommandOptions);
-        studiesSubCommands.addCommand("groups-update", studiesCommandOptions.updateGroupsCommandOptions);
-        studiesSubCommands.addCommand("groups-users-update", studiesCommandOptions.updateGroupsUsersCommandOptions);
-        studiesSubCommands.addCommand("permissionrules", studiesCommandOptions.permissionRulesCommandOptions);
-        studiesSubCommands.addCommand("permission-rules-update", studiesCommandOptions.updatePermissionRulesCommandOptions);
-        studiesSubCommands.addCommand("templates-run", studiesCommandOptions.runTemplatesCommandOptions);
-        studiesSubCommands.addCommand("templates-upload", studiesCommandOptions.uploadTemplatesCommandOptions);
-        studiesSubCommands.addCommand("templates-delete", studiesCommandOptions.deleteTemplatesCommandOptions);
-        studiesSubCommands.addCommand("update", studiesCommandOptions.updateCommandOptions);
-        studiesSubCommands.addCommand("variablesets", studiesCommandOptions.variableSetsCommandOptions);
-        studiesSubCommands.addCommand("variable-sets-update", studiesCommandOptions.updateVariableSetsCommandOptions);
-        studiesSubCommands.addCommand("variable-sets-variables-update", studiesCommandOptions.updateVariableSetsVariablesCommandOptions);
-
-        filesCommandOptions = new FilesCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("files", filesCommandOptions);
-        JCommander filesSubCommands = jCommander.getCommands().get("files");
-        filesSubCommands.addCommand("acl-update", filesCommandOptions.updateAclCommandOptions);
-        filesSubCommands.addCommand("aggregationstats", filesCommandOptions.aggregationStatsCommandOptions);
-        filesSubCommands.addCommand("annotation-sets-load", filesCommandOptions.loadAnnotationSetsCommandOptions);
-        filesSubCommands.addCommand("bioformats", filesCommandOptions.bioformatsCommandOptions);
-        filesSubCommands.addCommand("create", filesCommandOptions.createCommandOptions);
-        filesSubCommands.addCommand("distinct", filesCommandOptions.distinctCommandOptions);
-        filesSubCommands.addCommand("fetch", filesCommandOptions.fetchCommandOptions);
-        filesSubCommands.addCommand("formats", filesCommandOptions.formatsCommandOptions);
-        filesSubCommands.addCommand("link", filesCommandOptions.linkCommandOptions);
-        filesSubCommands.addCommand("link-run", filesCommandOptions.runLinkCommandOptions);
-        filesSubCommands.addCommand("postlink-run", filesCommandOptions.runPostlinkCommandOptions);
-        filesSubCommands.addCommand("search", filesCommandOptions.searchCommandOptions);
-        filesSubCommands.addCommand("upload", filesCommandOptions.uploadCommandOptions);
-        filesSubCommands.addCommand("acl", filesCommandOptions.aclCommandOptions);
-        filesSubCommands.addCommand("delete", filesCommandOptions.deleteCommandOptions);
-        filesSubCommands.addCommand("info", filesCommandOptions.infoCommandOptions);
-        filesSubCommands.addCommand("unlink", filesCommandOptions.unlinkCommandOptions);
-        filesSubCommands.addCommand("update", filesCommandOptions.updateCommandOptions);
-        filesSubCommands.addCommand("annotation-sets-annotations-update", filesCommandOptions.updateAnnotationSetsAnnotationsCommandOptions);
-        filesSubCommands.addCommand("download", filesCommandOptions.downloadCommandOptions);
-        filesSubCommands.addCommand("grep", filesCommandOptions.grepCommandOptions);
-        filesSubCommands.addCommand("head", filesCommandOptions.headCommandOptions);
-        filesSubCommands.addCommand("image", filesCommandOptions.imageCommandOptions);
-        filesSubCommands.addCommand("refresh", filesCommandOptions.refreshCommandOptions);
-        filesSubCommands.addCommand("tail", filesCommandOptions.tailCommandOptions);
-        filesSubCommands.addCommand("list", filesCommandOptions.listCommandOptions);
-        filesSubCommands.addCommand("tree", filesCommandOptions.treeCommandOptions);
 
         operationsVariantStorageCommandOptions = new OperationsVariantStorageCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("operations", operationsVariantStorageCommandOptions);
@@ -401,11 +317,6 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
     }
     
     
-    public JobsCommandOptions getJobsCommandOptions() {
-        return jobsCommandOptions;
-    }
-    
-    
     public AdminCommandOptions getAdminCommandOptions() {
         return adminCommandOptions;
     }
@@ -421,13 +332,13 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
     }
     
     
-    public UsersCommandOptions getUsersCommandOptions() {
-        return usersCommandOptions;
+    public SamplesCommandOptions getSamplesCommandOptions() {
+        return samplesCommandOptions;
     }
     
     
-    public SamplesCommandOptions getSamplesCommandOptions() {
-        return samplesCommandOptions;
+    public CvaCommandOptions getCvaCommandOptions() {
+        return cvaCommandOptions;
     }
     
     
@@ -438,16 +349,6 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
     
     public MetaCommandOptions getMetaCommandOptions() {
         return metaCommandOptions;
-    }
-    
-    
-    public StudiesCommandOptions getStudiesCommandOptions() {
-        return studiesCommandOptions;
-    }
-    
-    
-    public FilesCommandOptions getFilesCommandOptions() {
-        return filesCommandOptions;
     }
     
     

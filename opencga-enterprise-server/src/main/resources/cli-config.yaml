@@ -54,7 +54,6 @@ apiConfig:
           ignore: True
         - name: login
           executorExtended: True
-          executorExtendedClassName: enterprise
           optionExtended: True
         - name: logout
           executorExtended: True
@@ -199,11 +198,11 @@ apiConfig:
       commandName: meta
       ignore: False
       key: Meta
-    - name: Cva
+    - name: cva
       commandName: cva
       ignore: False
       key: Cva
-      analysis: True
+#      analysis: True
     - name: ga4gh
       ignore: True
       key: GA4GH
