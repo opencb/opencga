@@ -79,7 +79,7 @@
      private final int defaultLimit;
      private final Logger privateLogger;
      protected Logger logger;
-     private String token;
+     protected String token;
      private boolean throwExceptionOnError = false;
 
      protected AbstractParentClient(String token, ClientConfiguration clientConfiguration) {
@@ -581,7 +581,7 @@
          return result.toString();
      }
 
-     private <T> RestResponse<T> parseResult(Response response, Class<T> clazz) throws ClientException {
+     protected <T> RestResponse<T> parseResult(Response response, Class<T> clazz) throws ClientException {
          String json = response.readEntity(String.class);
          if (StringUtils.isNotEmpty(json) && json.startsWith("<")) {
              return new RestResponse<>("", 0, Collections.singletonList(
@@ -604,7 +604,7 @@
          }
      }
 
-     private <T> void checkErrors(RestResponse<T> restResponse, Response.StatusType status, String method, WebTarget path)
+     protected <T> void checkErrors(RestResponse<T> restResponse, Response.StatusType status, String method, WebTarget path)
              throws ClientException {
          if (restResponse != null && restResponse.getEvents() != null) {
              for (Event event : restResponse.getEvents()) {
