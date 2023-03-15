@@ -17,12 +17,14 @@ package org.opencb.opencga.app.cli.main.parent;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
-import org.opencb.opencga.app.cli.main.executors.UsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.options.UsersCommandOptions;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
+import org.opencb.opencga.app.cli.session.SessionManager;
+import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 
@@ -35,25 +37,30 @@ public class ParentUsersCommandExecutor {
     public static final String LOGIN_FAIL = "Incorrect username or password.";
     public static final String LOGIN_ERROR = "Not available login service now. Please contact the system administrator.";
     public static final String LOGOUT = "You've been logged out.";
-    private final UsersCommandOptions usersCommandOptions;
-    UsersCommandExecutor executor;
 
-    public ParentUsersCommandExecutor(UsersCommandExecutor executor) {
-        this.executor = executor;
-        this.usersCommandOptions = executor.usersCommandOptions;
+    private ObjectMap map;
+    private Logger logger;
+    private OpenCGAClient openCGAClient;
+    private SessionManager session;
+
+    public ParentUsersCommandExecutor(ObjectMap map, Logger logger, OpenCGAClient openCGAClient, SessionManager session) {
+        this.map = map;
+        this.logger = logger;
+        this.openCGAClient = openCGAClient;
+        this.session = session;
     }
 
     public RestResponse<AuthenticationResponse> login() throws Exception {
-        executor.getLogger().debug("Login");
+        logger.debug("Login");
         RestResponse<AuthenticationResponse> res = new RestResponse<>();
         try {
-            String user = usersCommandOptions.loginCommandOptions.user;
-            String password = usersCommandOptions.loginCommandOptions.password;
+            String user = String.valueOf(map.get("user"));
+            String password = String.valueOf(map.get("password"));
 
             if (StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(password)) {
                 AuthenticationResponse response = null;
                 try {
-                    response = executor.getOpenCGAClient().login(user, password);
+                    response = openCGAClient.login(user, password);
                 } catch (Exception e) {
                     Event event = new Event();
                     event.setMessage(e.getMessage());
@@ -62,11 +69,11 @@ public class ParentUsersCommandExecutor {
                     res.getEvents().add(event);
                     return res;
                 }
-                executor.getLogger().debug("Login token ::: " + executor.getSessionManager().getSession().getToken());
+                logger.debug("Login token ::: " +session.getSession().getToken());
                 res = executor.saveSession(user, response);
                 println(getKeyValueAsFormattedString(LOGIN_OK, user));
             } else {
-                String sessionId = usersCommandOptions.commonCommandOptions.token;
+                String sessionId = String.valueOf(map.get("token");
                 String errorMsg = "Missing password. ";
                 if (StringUtils.isNotEmpty(sessionId)) {
                     errorMsg += "Active token detected ";
@@ -88,11 +95,11 @@ public class ParentUsersCommandExecutor {
 
 
     public RestResponse<AuthenticationResponse> logout() throws IOException {
-        executor.getLogger().debug("Logout");
+        logger.debug("Logout");
         RestResponse<AuthenticationResponse> res = new RestResponse();
         try {
-            executor.getSessionManager().logoutSessionFile();
-            executor.getOpenCGAClient().logout();
+            session.logoutSessionFile();
+            openCGAClient.logout();
             Event event = new Event();
             event.setMessage(LOGOUT);
             event.setType(Event.Type.INFO);

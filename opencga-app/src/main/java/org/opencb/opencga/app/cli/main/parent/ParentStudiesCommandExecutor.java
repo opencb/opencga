@@ -18,14 +18,15 @@ package org.opencb.opencga.app.cli.main.parent;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.app.cli.main.executors.StudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.options.StudiesCommandOptions;
+import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
+import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.TemplateParams;
 import org.opencb.opencga.core.response.RestResponse;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.net.URI;
@@ -39,28 +40,33 @@ import java.util.List;
 
 public class ParentStudiesCommandExecutor {
 
-    private final StudiesCommandOptions studiesCommandOptions;
-    StudiesCommandExecutor executor;
 
-    public ParentStudiesCommandExecutor(StudiesCommandExecutor executor) {
-        this.executor = executor;
-        this.studiesCommandOptions = executor.studiesCommandOptions;
+    private ObjectMap map;
+    private Logger logger;
+    private OpenCGAClient openCGAClient;
+    private SessionManager session;
+
+    public ParentStudiesCommandExecutor(ObjectMap map, Logger logger, OpenCGAClient openCGAClient, SessionManager session) {
+        this.map = map;
+        this.logger = logger;
+        this.openCGAClient = openCGAClient;
+        this.session = session;
     }
 
     public RestResponse<Job> runTemplates() throws Exception {
-        executor.getLogger().debug("Run template");
-        StudiesCommandOptions.RunTemplatesCommandOptions c = studiesCommandOptions.runTemplatesCommandOptions;
+        logger.debug("Run template");
+        //   StudiesCommandOptions.RunTemplatesCommandOptions c = studiesCommandOptions.runTemplatesCommandOptions;
 
         c.study = getSingleValidStudy(c.study);
         TemplateParams templateParams = new TemplateParams(c.id, c.overwrite, c.resume);
         ObjectMap params = new ObjectMap();
 
-        return executor.getOpenCGAClient().getStudyClient().runTemplates(c.study, templateParams, params);
+        return openCGAClient.getStudyClient().runTemplates(c.study, templateParams, params);
     }
 
     public RestResponse<String> uploadTemplates() throws Exception {
-        executor.getLogger().debug("Upload template file");
-        StudiesCommandOptions.UploadTemplatesCommandOptions c = studiesCommandOptions.uploadTemplatesCommandOptions;
+        logger.debug("Upload template file");
+        // StudiesCommandOptions.UploadTemplatesCommandOptions c = studiesCommandOptions.uploadTemplatesCommandOptions;
 
         ObjectMap params = new ObjectMap();
 
@@ -97,7 +103,7 @@ public class ParentStudiesCommandExecutor {
             });
 
             Path manifestPath = path.resolve("manifest.zip");
-            executor.getLogger().debug("Compressing file in '" + manifestPath + "' before uploading");
+            logger.debug("Compressing file in '" + manifestPath + "' before uploading");
             ioManager.zip(fileList, manifestPath.toFile());
             params.put("file", manifestPath.toString());
         } else if (c.inputFile.endsWith("zip")) {
@@ -106,10 +112,10 @@ public class ParentStudiesCommandExecutor {
             throw new CatalogException("File '" + c.inputFile + "' is not a zip file");
         }
 
-        RestResponse<String> uploadResponse = executor.getOpenCGAClient().getStudyClient().uploadTemplates(c.study, params);
+        RestResponse<String> uploadResponse = openCGAClient.getStudyClient().uploadTemplates(c.study, params);
         if (path.toFile().isDirectory()) {
             Path manifestPath = path.resolve("manifest.zip");
-            executor.getLogger().debug("Removing generated zip file '" + manifestPath + "' after upload");
+            logger.debug("Removing generated zip file '" + manifestPath + "' after upload");
             ioManager.deleteFile(manifestPath.toUri());
         }
 
@@ -130,7 +136,7 @@ public class ParentStudiesCommandExecutor {
             return study;
         } else {
             // Third, check if there is only one single project and study for this user in the current CLI session file.
-            List<String> studies = executor.getSessionManager().getSession().getStudies();
+            List<String> studies = session.getSession().getStudies();
             if (CollectionUtils.isNotEmpty(studies) && studies.size() == 1) {
                 study = studies.get(0);
             } else {

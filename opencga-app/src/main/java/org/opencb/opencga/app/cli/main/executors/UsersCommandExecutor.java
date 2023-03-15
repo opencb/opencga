@@ -19,6 +19,7 @@ import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.options.UsersCommandOptions;
 
 import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandOptions;
 import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
 import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
 import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
@@ -104,10 +105,6 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
             case "update":
                 queryResponse = update();
                 break;
-            case "logout":
-                ParentUsersCommandExecutor customUsersCommandExecutor = new ParentUsersCommandExecutor(this);
-                queryResponse = customUsersCommandExecutor.logout();
-                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -121,7 +118,10 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
         logger.debug("Executing login in Users command line");
 
-   ParentUsersCommandExecutor customUsersCommandExecutor = new ParentUsersCommandExecutor(this);
+        ParentUsersCommandOptions.LoginCommandOptions commandOptions = usersCommandOptions.loginCommandOptions;
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotNull("body", commandOptions.body);
+        ParentUsersCommandExecutor customUsersCommandExecutor = new ParentUsersCommandExecutor(queryParams,getLogger(),getOpenCGAClient(),getSessionManager());
         return customUsersCommandExecutor.login();
 
     }

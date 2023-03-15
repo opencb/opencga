@@ -15,29 +15,35 @@
  */
 package org.opencb.opencga.app.cli.main.parent;
 
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.app.cli.main.executors.JobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.options.JobsCommandOptions;
 import org.opencb.opencga.app.cli.main.utils.JobsLog;
 import org.opencb.opencga.app.cli.main.utils.JobsTopManager;
+import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.job.JobTop;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
+import org.slf4j.Logger;
 
 public class ParentJobsCommandExecutor {
 
-    private final JobsCommandOptions jobsCommandOptions;
-    JobsCommandExecutor executor;
+    private ObjectMap map;
+    private Logger logger;
+    private OpenCGAClient openCGAClient;
+    private SessionManager session;
 
-    public ParentJobsCommandExecutor(JobsCommandExecutor executor) {
-        this.executor = executor;
-        this.jobsCommandOptions = executor.jobsCommandOptions;
+    public ParentJobsCommandExecutor(ObjectMap map, Logger logger, OpenCGAClient openCGAClient, SessionManager session) {
+        this.map = map;
+        this.logger = logger;
+        this.openCGAClient = openCGAClient;
+        this.session = session;
     }
 
     public RestResponse<JobTop> top() throws Exception {
-        JobsCommandOptions.TopCommandOptions c = jobsCommandOptions.topCommandOptions;
+        //  JobsCommandOptions.TopCommandOptions c = jobsCommandOptions.topCommandOptions;
 
         Query query = new Query();
         query.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), c.study);
@@ -47,15 +53,15 @@ public class ParentJobsCommandExecutor {
         query.putIfNotEmpty(ParamConstants.JOB_PRIORITY_PARAM, c.priority);
         query.putAll(c.commonOptions.params);
 
-        new JobsTopManager(executor.getOpenCGAClient(), query, c.iterations, c.jobsLimit, c.delay, c.plain, c.columns).run();
+        new JobsTopManager(openCGAClient, query, c.iterations, c.jobsLimit, c.delay, c.plain, c.columns).run();
         RestResponse<JobTop> res = new RestResponse<>();
         res.setType(QueryType.VOID);
         return res;
     }
 
     public RestResponse<JobTop> log() throws Exception {
-        JobsCommandOptions.LogCommandOptions c = jobsCommandOptions.logCommandOptions;
-        new JobsLog(executor.getOpenCGAClient(), c, System.out).run();
+        //  JobsCommandOptions.LogCommandOptions c = jobsCommandOptions.logCommandOptions;
+        new JobsLog(openCGAClient, c, System.out).run();
         RestResponse<JobTop> res = new RestResponse<>();
         res.setType(QueryType.VOID);
         return res;

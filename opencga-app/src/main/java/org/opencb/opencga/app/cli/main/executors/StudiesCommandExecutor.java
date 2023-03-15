@@ -31,7 +31,9 @@ import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
 import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
 import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
 import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandOptions;
 import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandOptions;
 import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
 import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
 import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
@@ -461,7 +463,18 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         logger.debug("Executing runTemplates in Studies command line");
 
-   ParentStudiesCommandExecutor customStudiesCommandExecutor = new ParentStudiesCommandExecutor(this);
+        ParentStudiesCommandOptions.RunTemplatesCommandOptions commandOptions = studiesCommandOptions.runTemplatesCommandOptions;
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotNull("body", commandOptions.body);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+        ParentStudiesCommandExecutor customStudiesCommandExecutor = new ParentStudiesCommandExecutor(queryParams,getLogger(),getOpenCGAClient(),getSessionManager());
         return customStudiesCommandExecutor.runTemplates();
 
     }
@@ -470,7 +483,14 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         logger.debug("Executing uploadTemplates in Studies command line");
 
-   ParentStudiesCommandExecutor customStudiesCommandExecutor = new ParentStudiesCommandExecutor(this);
+        ParentStudiesCommandOptions.UploadTemplatesCommandOptions commandOptions = studiesCommandOptions.uploadTemplatesCommandOptions;
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotNull("file", commandOptions.file);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+        ParentStudiesCommandExecutor customStudiesCommandExecutor = new ParentStudiesCommandExecutor(queryParams,getLogger(),getOpenCGAClient(),getSessionManager());
         return customStudiesCommandExecutor.uploadTemplates();
 
     }

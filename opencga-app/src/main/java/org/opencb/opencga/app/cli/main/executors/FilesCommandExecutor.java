@@ -31,6 +31,7 @@ import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
 import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
 import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
 import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandOptions;
 import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
 import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
 import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
@@ -634,7 +635,21 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         logger.debug("Executing upload in Files command line");
 
-   ParentFilesCommandExecutor customFilesCommandExecutor = new ParentFilesCommandExecutor(this);
+        ParentFilesCommandOptions.UploadCommandOptions commandOptions = filesCommandOptions.uploadCommandOptions;
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotNull("file", commandOptions.file);
+        queryParams.putIfNotEmpty("filename", commandOptions.filename);
+        queryParams.putIfNotNull("fileFormat", commandOptions.fileFormat);
+        queryParams.putIfNotNull("bioformat", commandOptions.bioformat);
+        queryParams.putIfNotEmpty("checksum", commandOptions.checksum);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("relativeFilePath", commandOptions.relativeFilePath);
+        queryParams.putIfNotEmpty("description", commandOptions.description);
+        queryParams.putIfNotNull("parents", commandOptions.parents);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+        ParentFilesCommandExecutor customFilesCommandExecutor = new ParentFilesCommandExecutor(queryParams,getLogger(),getOpenCGAClient(),getSessionManager());
         return customFilesCommandExecutor.upload();
 
     }

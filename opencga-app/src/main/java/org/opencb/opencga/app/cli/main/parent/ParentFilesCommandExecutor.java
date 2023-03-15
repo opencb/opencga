@@ -16,46 +16,46 @@
 package org.opencb.opencga.app.cli.main.parent;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.app.cli.CommandExecutor;
-import org.opencb.opencga.app.cli.main.executors.FilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.options.FilesCommandOptions;
+import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.response.RestResponse;
+import org.slf4j.Logger;
 
 public class ParentFilesCommandExecutor {
 
-    private final FilesCommandOptions filesCommandOptions;
-    FilesCommandExecutor executor;
+    private ObjectMap map;
+    private Logger logger;
+    private OpenCGAClient openCGAClient;
+    private SessionManager session;
 
-    public ParentFilesCommandExecutor(CommandExecutor executor) {
-        this.executor = (FilesCommandExecutor) executor;
-
-        this.filesCommandOptions = executor.filesCommandOptions;
+    public ParentFilesCommandExecutor(ObjectMap map, Logger logger, OpenCGAClient openCGAClient, SessionManager session) {
+        this.map = map;
+        this.logger = logger;
+        this.openCGAClient = openCGAClient;
+        this.session = session;
     }
 
     public RestResponse<File> upload() throws Exception {
-        executor.getLogger().debug("uploading file");
 
-        FilesCommandOptions.UploadCommandOptions commandOptions = filesCommandOptions.uploadCommandOptions;
 
-        ObjectMap params = new ObjectMap()
-                .append("fileFormat", ParamUtils.defaultString(commandOptions.fileFormat, File.Format.UNKNOWN.toString()))
-                .append("bioformat", ParamUtils.defaultString(commandOptions.bioformat, File.Bioformat.UNKNOWN.toString()))
-                .append("parents", commandOptions.parents);
-        //If the DEPRECATED parameter fileFormat has set we only override it if the new parameter format is also set
-        params.append("fileFormat", ParamUtils.defaultString(commandOptions.format, params.getString("fileFormat")));
+//        ObjectMap params = new ObjectMap()
+        map.append("fileFormat", ParamUtils.defaultString(String.valueOf(map.get("fileFormat")), File.Format.UNKNOWN.toString()))
+                .append("bioformat", ParamUtils.defaultString(String.valueOf(map.get("bioformat")), File.Bioformat.UNKNOWN.toString()));
+//        //If the DEPRECATED parameter fileFormat has set we only override it if the new parameter format is also set
+//        params.append("fileFormat", ParamUtils.defaultString(commandOptions.format, params.getString("fileFormat")));
+//
+//        params.putIfNotEmpty("study", commandOptions.study);
+//        params.putIfNotEmpty("relativeFilePath", commandOptions.catalogPath);
+//        params.putIfNotEmpty("relativeFilePath", commandOptions.path);
+//        params.putIfNotEmpty("description", commandOptions.description);
+//        params.putIfNotEmpty("fileName", commandOptions.fileName);
+//        params.putIfNotEmpty("fileName", commandOptions.name);
+//        params.putIfNotEmpty("file", commandOptions.inputFile);
+        map.put("uploadServlet", Boolean.FALSE);
 
-        params.putIfNotEmpty("study", commandOptions.study);
-        params.putIfNotEmpty("relativeFilePath", commandOptions.catalogPath);
-        params.putIfNotEmpty("relativeFilePath", commandOptions.path);
-        params.putIfNotEmpty("description", commandOptions.description);
-        params.putIfNotEmpty("fileName", commandOptions.fileName);
-        params.putIfNotEmpty("fileName", commandOptions.name);
-        params.putIfNotEmpty("file", commandOptions.inputFile);
-        params.put("uploadServlet", Boolean.FALSE);
-
-        return executor.getOpenCGAClient().getFileClient().upload(params);
+        return openCGAClient.getFileClient().upload(map);
     }
 
 }

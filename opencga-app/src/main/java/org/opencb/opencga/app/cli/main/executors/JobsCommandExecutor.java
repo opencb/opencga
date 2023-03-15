@@ -25,6 +25,7 @@ import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
 import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
 import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
 import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandOptions;
 import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
 import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
 import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
@@ -121,10 +122,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "log-tail":
                 queryResponse = tailLog();
-                break;
-            case "log":
-                ParentJobsCommandExecutor customJobsCommandExecutor = new ParentJobsCommandExecutor(this);
-                queryResponse = customJobsCommandExecutor.log();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -362,7 +359,18 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
         logger.debug("Executing top in Jobs command line");
 
-   ParentJobsCommandExecutor customJobsCommandExecutor = new ParentJobsCommandExecutor(this);
+        ParentJobsCommandOptions.TopCommandOptions commandOptions = jobsCommandOptions.topCommandOptions;
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotNull("limit", commandOptions.limit);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
+        queryParams.putIfNotEmpty("priority", commandOptions.priority);
+        queryParams.putIfNotEmpty("userId", commandOptions.userId);
+        queryParams.putIfNotEmpty("toolId", commandOptions.toolId);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+        ParentJobsCommandExecutor customJobsCommandExecutor = new ParentJobsCommandExecutor(queryParams,getLogger(),getOpenCGAClient(),getSessionManager());
         return customJobsCommandExecutor.top();
 
     }
