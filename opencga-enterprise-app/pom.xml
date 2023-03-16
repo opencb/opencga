@@ -38,6 +38,7 @@
             <artifactId>opencga-enterprise-server</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-app</artifactId>
@@ -214,7 +215,7 @@
                                     <arg value="${build.dir}/misc/git"/>
                                 </exec>
                                 <exec executable="cp">
-                                    <arg value="${project.basedir}/../opencga-enterprise-core/target/generated-resources/com/zettagenomics/opencga/enterprise/core/git.properties"/>
+                                    <arg value="${project.basedir}/../opencga-enterprise-core/target/generated-resources/git.properties"/>
                                     <arg value="${build.dir}/misc/git"/>
                                 </exec>
 

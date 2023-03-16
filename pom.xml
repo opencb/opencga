@@ -10,12 +10,12 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>opencga-enterprise-core</module>
         <module>opencga-enterprise-app</module>
+        <module>opencga-enterprise-client</module>
+        <module>opencga-enterprise-core</module>
         <module>opencga-enterprise-cva</module>
         <module>opencga-enterprise-sso</module>
         <module>opencga-enterprise-server</module>
-        <module>opencga-enterprise-client</module>
     </modules>
 
     <properties>
@@ -60,7 +60,6 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -78,8 +77,13 @@
                 <artifactId>opencga-enterprise-client</artifactId>
                 <version>${project.parent.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.zettagenomics.opencga-enterprise</groupId>
+                <artifactId>opencga-enterprise-cva</artifactId>
+                <version>${project.parent.version}</version>
+            </dependency>
 
-            <!-- Intra-module dependencies -->
+            <!-- OpenCB dependencies -->
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-core</artifactId>
@@ -115,32 +119,6 @@
                 <artifactId>opencga-client</artifactId>
                 <version>${opencga.version}</version>
             </dependency>
-            <!--            <dependency>-->
-            <!--                <groupId>org.opencb.opencga</groupId>-->
-            <!--                <artifactId>opencga-storage-hadoop-core</artifactId>-->
-            <!--                <version>${opencga.version}</version>-->
-            <!--                <exclusions>-->
-            <!--                    <exclusion>-->
-            <!--                        <groupId>org.opencb.opencga</groupId>-->
-            <!--                        <artifactId>${opencga-storage-hadoop-deps.artifactId-default}</artifactId>-->
-            <!--                    </exclusion>-->
-            <!--                </exclusions>-->
-            <!--            </dependency>-->
-            <!--            <dependency>-->
-            <!--                <groupId>org.opencb.opencga</groupId>-->
-            <!--                <artifactId>opencga-storage-hadoop-core</artifactId>-->
-            <!--                <version>${project.parent.version}</version>-->
-            <!--                <type>test-jar</type>-->
-            <!--                <scope>test</scope>-->
-            <!--                <exclusions>-->
-            <!--                    <exclusion>-->
-            <!--                        <groupId>org.opencb.opencga</groupId>-->
-            <!--                        <artifactId>${opencga-storage-hadoop-deps.artifactId-default}</artifactId>-->
-            <!--                    </exclusion>-->
-            <!--                </exclusions>-->
-            <!--            </dependency>-->
-
-            <!-- OpenCB dependencies -->
             <dependency>
                 <groupId>org.opencb.oskar</groupId>
                 <artifactId>oskar-analysis</artifactId>
@@ -267,7 +245,6 @@
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
                 <artifactId>log4j-slf4j-impl</artifactId>
@@ -446,7 +423,6 @@
         <profile>
             <id>default-config</id>
             <activation>
-                <!-- Do not use "activeByDefault" as it might get deactivated when using any hadoop profile -->
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
@@ -493,15 +469,13 @@
                 <OPENCGA.STORAGE.VARIANT.DB.USER></OPENCGA.STORAGE.VARIANT.DB.USER>
                 <OPENCGA.STORAGE.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.VARIANT.DB.PASSWORD>
                 <OPENCGA.STORAGE.SEARCH.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.SEARCH.HOST>
-                <OPENCGA.STORAGE.SEARCH.CONFIG_SET>opencga-variant-configset-${project.parent.version}
-                </OPENCGA.STORAGE.SEARCH.CONFIG_SET>
+                <OPENCGA.STORAGE.SEARCH.CONFIG_SET>opencga-variant-configset-${project.parent.version}</OPENCGA.STORAGE.SEARCH.CONFIG_SET>
                 <OPENCGA.STORAGE.SEARCH.TIMEOUT>30000</OPENCGA.STORAGE.SEARCH.TIMEOUT>
                 <OPENCGA.STORAGE.CLINICAL.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.CLINICAL.HOST>
                 <OPENCGA.STORAGE.CLINICAL.MANAGER>""</OPENCGA.STORAGE.CLINICAL.MANAGER>
                 <OPENCGA.STORAGE.CLINICAL.TIMEOUT>30000</OPENCGA.STORAGE.CLINICAL.TIMEOUT>
                 <OPENCGA.STORAGE.RGA.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.RGA.HOST>
-                <OPENCGA.STORAGE.RGA.CONFIG_SET>opencga-rga-configset-${project.parent.version}
-                </OPENCGA.STORAGE.RGA.CONFIG_SET>
+                <OPENCGA.STORAGE.RGA.CONFIG_SET>opencga-rga-configset-${project.parent.version}</OPENCGA.STORAGE.RGA.CONFIG_SET>
                 <OPENCGA.STORAGE.RGA.TIMEOUT>30000</OPENCGA.STORAGE.RGA.TIMEOUT>
 
                 <!-- Storage Alignments general -->
@@ -510,9 +484,8 @@
                 <OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD></OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD>
 
                 <!-- Storage-mongodb -->
-                <OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION_DATABASE></OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION_DATABASE>
-                <OPENCGA.STORAGE.MONGODB.VARIANT.DB.CONNECTIONS_PER_HOST>20
-                </OPENCGA.STORAGE.MONGODB.VARIANT.DB.CONNECTIONS_PER_HOST>
+<!--                <OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION_DATABASE></OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION_DATABASE>-->
+<!--                <OPENCGA.STORAGE.MONGODB.VARIANT.DB.CONNECTIONS_PER_HOST>20</OPENCGA.STORAGE.MONGODB.VARIANT.DB.CONNECTIONS_PER_HOST>-->
 
                 <!-- Storage-hadoop -->
                 <OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER></OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER>
