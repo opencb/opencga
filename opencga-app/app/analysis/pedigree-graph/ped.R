@@ -12,6 +12,22 @@ load_file_data <- function(ped_fpath) {
                                           momid="character",
                                           relation="character"))
   
+  # Add missing parents
+  parents_fixed <- with(family_ped, fixParents(id, dadid, momid, sex, missid=0))  # Fix parents
+  if (nrow(parents_fixed) > nrow(family_ped)) {  # If new parents are added
+    # Create new rows to be able to merge family_ped and parents_fixed
+    na_df <- data.frame(matrix(NA, nrow = nrow(parents_fixed)-nrow(family_ped), ncol = ncol(family_ped)))
+    colnames(na_df) <- colnames(family_ped)
+    na_df$status <- 0  # set status "0=alive/missing"
+    # Rename added dadid and momid from 0 to NA
+    parents_fixed[parents_fixed$dadid == 0 & !is.na(parents_fixed$dadid),]$dadid <- NA
+    parents_fixed[parents_fixed$momid == 0 & !is.na(parents_fixed$momid),]$momid <- NA
+    # Add NA rows to original family_ped
+    family_ped <- rbind(family_ped, na_df)
+  }
+  family_ped <- cbind(parents_fixed, family_ped[5:ncol(family_ped)])  # Substitute new parents_fixed info to original family_ped
+  family_ped<- cbind(family_ped[, c("id", "dadid", "momid", "sex")], family_ped[, 5:ncol(family_ped)])  # Reorder columns
+  
   # Extract affected info
   affected <- as.data.frame(family_ped[, grepl("affected", names(family_ped))])
   if (ncol(affected) == 1) {
@@ -61,7 +77,8 @@ plot_pedigree <- function(ped_fpath, out_dir, plot_format, coords_format, no_leg
                       sex=family_ped$sex,
                       affected=affected,
                       status = family_ped$status,
-                      relation = relation)
+                      relation = relation,
+                      missid = 0)
   
   # Print pedigree plot
   if (legend_pos %in% c("topright", "bottomright")) {
