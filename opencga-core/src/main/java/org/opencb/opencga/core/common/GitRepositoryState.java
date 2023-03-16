@@ -30,7 +30,7 @@ import java.util.Properties;
  */
 public class GitRepositoryState {
 
-    public static final String DEFAULT_RESOURCE_NAME = "org/opencb/opencga/core/git.properties";
+    public static final String DEFAULT_RESOURCE_NAME = "git.properties";
     private static GitRepositoryState gitRepositoryState;
     private static final Logger logger = LoggerFactory.getLogger(GitRepositoryState.class);
 
@@ -58,48 +58,22 @@ public class GitRepositoryState {
     private String buildVersion;            // =${git.build.version}
 
     public static GitRepositoryState get() {
-//        if (gitRepositoryState == null) {
-//            Properties properties = new Properties();
-//            InputStream stream = null;
-//            try {
-//                stream = GitRepositoryState.class.getClassLoader().getResourceAsStream(DEFAULT_RESOURCE_NAME);
-//                if (stream != null) {
-//                    properties.load(stream);
-//                }
-//            } catch (IOException e) {
-//                logger.warn("Error reading " + DEFAULT_RESOURCE_NAME, e);
-//            } finally {
-//                if (stream != null) {
-//                    try {
-//                        stream.close();
-//                    } catch (IOException e) {
-//                        logger.warn("Error closing stream from " + DEFAULT_RESOURCE_NAME, e);
-//                    }
-//                }
-//            }
-//
-//            gitRepositoryState = new GitRepositoryState(properties);
-//        }
-        return get(DEFAULT_RESOURCE_NAME);
-    }
-
-    public static GitRepositoryState get(String resourceName) {
         if (gitRepositoryState == null) {
             Properties properties = new Properties();
             InputStream stream = null;
             try {
-                stream = GitRepositoryState.class.getClassLoader().getResourceAsStream(resourceName);
+                stream = GitRepositoryState.class.getClassLoader().getResourceAsStream(DEFAULT_RESOURCE_NAME);
                 if (stream != null) {
                     properties.load(stream);
                 }
             } catch (IOException e) {
-                logger.warn("Error reading " + resourceName, e);
+                logger.warn("Error reading " + DEFAULT_RESOURCE_NAME, e);
             } finally {
                 if (stream != null) {
                     try {
                         stream.close();
                     } catch (IOException e) {
-                        logger.warn("Error closing stream from " + resourceName, e);
+                        logger.warn("Error closing stream from " + DEFAULT_RESOURCE_NAME, e);
                     }
                 }
             }

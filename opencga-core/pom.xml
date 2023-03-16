@@ -139,8 +139,7 @@
                     <generateGitPropertiesFile>true</generateGitPropertiesFile>
 
                     <!-- The path for the to be generated properties file, it's relative to ${project.basedir} -->
-                    <generateGitPropertiesFilename>target/generated-resources/org/opencb/opencga/core/git.properties
-                    </generateGitPropertiesFilename>
+                    <generateGitPropertiesFilename>target/generated-resources/git.properties</generateGitPropertiesFilename>
                     <gitDescribe>
                         <!-- don't generate the describe property -->
                         <skip>false</skip>
