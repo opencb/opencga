@@ -57,11 +57,13 @@ public class ParentStudiesCommandExecutor {
         logger.debug("Run template");
         //   StudiesCommandOptions.RunTemplatesCommandOptions c = studiesCommandOptions.runTemplatesCommandOptions;
 
-        c.study = getSingleValidStudy(c.study);
-        TemplateParams templateParams = new TemplateParams(c.id, c.overwrite, c.resume);
+        String study = getSingleValidStudy(String.valueOf(map.get("study")));
+        TemplateParams templateParams = new TemplateParams(String.valueOf(map.get("id")),
+                Boolean.parseBoolean(String.valueOf(map.get("overwrite"))),
+                Boolean.parseBoolean(String.valueOf(map.get("resume"))));
         ObjectMap params = new ObjectMap();
 
-        return openCGAClient.getStudyClient().runTemplates(c.study, templateParams, params);
+        return openCGAClient.getStudyClient().runTemplates(study, templateParams, params);
     }
 
     public RestResponse<String> uploadTemplates() throws Exception {
@@ -70,10 +72,10 @@ public class ParentStudiesCommandExecutor {
 
         ObjectMap params = new ObjectMap();
 
-        c.study = getSingleValidStudy(c.study);
-        Path path = Paths.get(c.inputFile);
+        String study = getSingleValidStudy(String.valueOf(map.get("study")));
+        Path path = Paths.get(String.valueOf(map.get("inputFile")));
         if (!path.toFile().exists()) {
-            throw new CatalogException("File '" + c.inputFile + "' not found");
+            throw new CatalogException("File '" + map.get("inputFile") + "' not found");
         }
         IOManagerFactory ioManagerFactory = new IOManagerFactory();
         IOManager ioManager = ioManagerFactory.get(path.toUri());
@@ -106,13 +108,13 @@ public class ParentStudiesCommandExecutor {
             logger.debug("Compressing file in '" + manifestPath + "' before uploading");
             ioManager.zip(fileList, manifestPath.toFile());
             params.put("file", manifestPath.toString());
-        } else if (c.inputFile.endsWith("zip")) {
-            params.put("file", c.inputFile);
+        } else if (String.valueOf(map.get("inputFile")).endsWith("zip")) {
+            params.put("file", String.valueOf(map.get("inputFile")));
         } else {
-            throw new CatalogException("File '" + c.inputFile + "' is not a zip file");
+            throw new CatalogException("File '" + map.get("inputFile") + "' is not a zip file");
         }
 
-        RestResponse<String> uploadResponse = openCGAClient.getStudyClient().uploadTemplates(c.study, params);
+        RestResponse<String> uploadResponse = openCGAClient.getStudyClient().uploadTemplates(study, params);
         if (path.toFile().isDirectory()) {
             Path manifestPath = path.resolve("manifest.zip");
             logger.debug("Removing generated zip file '" + manifestPath + "' after upload");

@@ -120,7 +120,9 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
         ParentUsersCommandOptions.LoginCommandOptions commandOptions = usersCommandOptions.loginCommandOptions;
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotNull("body", commandOptions.body);
+        queryParams.putIfNotEmpty("user", commandOptions.user);
+        queryParams.putIfNotEmpty("password", commandOptions.password);
+        queryParams.putIfNotEmpty("refreshToken", commandOptions.refreshToken);
         ParentUsersCommandExecutor customUsersCommandExecutor = new ParentUsersCommandExecutor(queryParams,getLogger(),getOpenCGAClient(),getSessionManager());
         return customUsersCommandExecutor.login();
 

@@ -17,7 +17,6 @@ package org.opencb.opencga.app.cli.main.parent;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.app.cli.main.utils.JobsLog;
 import org.opencb.opencga.app.cli.main.utils.JobsTopManager;
 import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
@@ -43,28 +42,28 @@ public class ParentJobsCommandExecutor {
     }
 
     public RestResponse<JobTop> top() throws Exception {
-        //  JobsCommandOptions.TopCommandOptions c = jobsCommandOptions.topCommandOptions;
+        // JobsCommandOptions.TopCommandOptions c = jobsCommandOptions.topCommandOptions;
 
         Query query = new Query();
-        query.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), c.study);
-        query.putIfNotEmpty(ParamConstants.JOB_TOOL_ID_PARAM, c.toolId);
-        query.putIfNotEmpty(ParamConstants.INTERNAL_STATUS_PARAM, c.internalStatus);
-        query.putIfNotEmpty(ParamConstants.JOB_USER_PARAM, c.userId);
-        query.putIfNotEmpty(ParamConstants.JOB_PRIORITY_PARAM, c.priority);
-        query.putAll(c.commonOptions.params);
+        query.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), String.valueOf(map.get("study")));
+        query.putIfNotEmpty(ParamConstants.JOB_TOOL_ID_PARAM, String.valueOf(map.get("toolId")));
+        query.putIfNotEmpty(ParamConstants.INTERNAL_STATUS_PARAM, String.valueOf(map.get("internalStatus")));
+        query.putIfNotEmpty(ParamConstants.JOB_USER_PARAM, String.valueOf(map.get("userId")));
+        query.putIfNotEmpty(ParamConstants.JOB_PRIORITY_PARAM, String.valueOf(map.get("priority")));
+        query.putAll(map);
 
-        new JobsTopManager(openCGAClient, query, c.iterations, c.jobsLimit, c.delay, c.plain, c.columns).run();
+        new JobsTopManager(openCGAClient, query, 2, 20, 2, false).run();
         RestResponse<JobTop> res = new RestResponse<>();
         res.setType(QueryType.VOID);
         return res;
     }
-
-    public RestResponse<JobTop> log() throws Exception {
+/*
+    public RestResponse<JobTop> log(JobsCommandOptions.LogCommandOptions c) throws Exception {
         //  JobsCommandOptions.LogCommandOptions c = jobsCommandOptions.logCommandOptions;
         new JobsLog(openCGAClient, c, System.out).run();
         RestResponse<JobTop> res = new RestResponse<>();
         res.setType(QueryType.VOID);
         return res;
     }
-
+*/
 }

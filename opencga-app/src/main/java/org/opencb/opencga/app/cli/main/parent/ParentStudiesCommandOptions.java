@@ -32,7 +32,7 @@ public class ParentStudiesCommandOptions {
         public String study;
 
         @Parameter(names = {"-i", "--input"}, description = "ZIP file containing the template files or folder", required = true, arity = 1)
-        public String inputFile;
+        public String file;
     }
 
     @Parameters(commandNames = {"templates-run"}, commandDescription = "Execute template")
@@ -53,5 +53,17 @@ public class ParentStudiesCommandOptions {
 
         @Parameter(names = {"--resume"}, description = "Resume study metadata ingestion.", arity = 0)
         public boolean resume;
+
+        @Parameter(names = {"--jobId"}, description = "Job id.", arity = 1)
+        public String jobId;
+
+        @Parameter(names = {"--jobDependsOn"}, description = "Job depends on.", arity = 1)
+        public String jobDependsOn;
+
+        @Parameter(names = {"--jobDescription"}, description = "Job description.", arity = 1)
+        public String jobDescription;
+
+        @Parameter(names = {"--jobTags"}, description = "Job tags.", arity = 1)
+        public String jobTags;
     }
 }
