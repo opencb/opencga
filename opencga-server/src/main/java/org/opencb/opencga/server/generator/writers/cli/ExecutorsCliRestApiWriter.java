@@ -343,10 +343,10 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
     }
 
     private String getReturn(RestCategory restCategory, RestEndpoint restEndpoint, CategoryConfig config, String commandName) {
-        String opencgaClientObjectName = StringUtils.isEmpty(this.config.getApiConfig().getOpencgaClientClassName())
+        String opencgaClientObjectName = StringUtils.isEmpty(this.config.getApiConfig().getExecutorsOpencgaClientClassName())
                 ? "openCGAClient"
-                : this.config.getApiConfig().getOpencgaClientClassName().toLowerCase().charAt(0)
-                + this.config.getApiConfig().getOpencgaClientClassName().substring(1);
+                : this.config.getApiConfig().getExecutorsOpencgaClientClassName().toLowerCase().charAt(0)
+                + this.config.getApiConfig().getExecutorsOpencgaClientClassName().substring(1);
 
         String res = "        return " + opencgaClientObjectName + ".get" + getAsClassName(config.getKey()) + "Client()."
                 + getJavaMethodName(config, commandName) + "(";
