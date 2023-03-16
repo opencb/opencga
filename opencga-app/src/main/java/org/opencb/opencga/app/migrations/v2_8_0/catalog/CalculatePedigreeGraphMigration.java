@@ -1,17 +1,25 @@
 package org.opencb.opencga.app.migrations.v2_8_0.catalog;
 
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Projections;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.analysis.family.PedigreeGraphInitAnalysis;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.migration.Migration;
+import org.opencb.opencga.catalog.migration.MigrationRun;
 import org.opencb.opencga.catalog.migration.MigrationTool;
+import org.opencb.opencga.catalog.utils.PedigreeGraphUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobReferenceParam;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.study.Study;
+
+import java.util.*;
 
 @Migration(id = "calculate_pedigree_graph" ,
         description = "Calculate Pedigree Graph for all the families",
@@ -24,23 +32,58 @@ public class CalculatePedigreeGraphMigration extends MigrationTool {
 
     @Override
     protected void run() throws Exception {
-        queryMongo(MongoDBAdaptorFactory.FAMILY_COLLECTION,
-                Filters.exists("pedigreeGraph", false),
-                Projections.include("studyUid", "uid", "id"), document -> {
-                    Query query = new Query()
-                            .append("studyUid", document.get("studyUid"))
-                            .append("uid", document.get("uid"));
+        MigrationRun migrationRun = getMigrationRun();
 
-                    // Update pedigree graph
-                    QueryOptions options = new QueryOptions(ParamConstants.FAMILY_UPDATE_PEDIGREEE_GRAPH_PARAM, true);
-                    try {
-                        dbAdaptorFactory.getCatalogFamilyDBAdaptor().update(query, new ObjectMap(), options);
-                    } catch (CatalogDBException |CatalogParameterException | CatalogAuthorizationException e) {
-                        logger.error("Could not migrate family '{}' ({}) from study uid {}", document.get("id"), document.get("uid"),
-                                document.get("studyUid"));
-                        throw new RuntimeException(e);
-                    }
-                });
+        Map<String, Job> jobs = new HashMap<>();
+        for (JobReferenceParam jobReference : migrationRun.getJobs()) {
+            Job job = catalogManager.getJobManager().get(jobReference.getStudyId(), jobReference.getId(), new QueryOptions(), token)
+                    .first();
+            logger.info("Registering job {} for study {} to migrate", job.getId(), job.getStudy().getId());
+            jobs.put(job.getStudy().getId(), job);
+        }
+        for (String study : getStudies()) {
+            Job job = jobs.get(study);
+            if (job != null) {
+                String status = job.getInternal().getStatus().getId();
+                if (status.equals(Enums.ExecutionStatus.DONE)) {
+                    // Skip this study. Already migrated
+                    logger.info("Study {} already migrated", study);
+                    continue;
+                } else if (status.equals(Enums.ExecutionStatus.ERROR) || status.equals(Enums.ExecutionStatus.ABORTED)) {
+                    logger.info("Retry migration job for study {}", study);
+                } else {
+                    logger.info("Job {} for migrating study {} in status {}. Wait for completion", job.getId(), study, status);
+                    continue;
+                }
+                getMigrationRun().removeJob(job);
+            }
+
+            logger.info("Adding new job to migrate/initialize pedigree graph for study {}", study);
+            ObjectMap params = new ObjectMap()
+                    .append(ParamConstants.STUDY_PARAM, study);
+            getMigrationRun().addJob(catalogManager.getJobManager().submit(study, PedigreeGraphInitAnalysis.ID, Enums.Priority.MEDIUM,
+                    params, null, null, null, new ArrayList<>(), token).first());
+        }
     }
 
+    public List<String> getStudies() throws CatalogException {
+        Set<String> studies = new LinkedHashSet<>();
+        QueryOptions projectOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("id", "studies"));
+        QueryOptions familyOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("id", "members", "pedigreeGraph"));
+        for (Project project : catalogManager.getProjectManager().search(new Query(), projectOptions, token).getResults()) {
+            if (CollectionUtils.isNotEmpty(project.getStudies())) {
+                for (Study study : project.getStudies()) {
+                    String id = project.getId() + ":" + study.getId();
+                    for (Family family : catalogManager.getFamilyManager().search(id, new Query(), familyOptions, token).getResults()) {
+                        if (PedigreeGraphUtils.hasTrios(family)
+                                && (family.getPedigreeGraph() == null || StringUtils.isEmpty(family.getPedigreeGraph().getBase64()))) {
+                            studies.add(id);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return new ArrayList<>(studies);
+    }
 }
