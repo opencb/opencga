@@ -587,7 +587,11 @@ public class MigrationManager {
                 .resolve("opencga")
                 .resolve(TimeUtils.getDay())
                 .resolve(annotation.id()).toString();
-        String logFile = startMigrationLogger(annotation, Paths.get(configuration.getJobDir()).resolve(path));
+        String jobId = "migration"
+                + "-" + migrationRun.getId()
+                + "-" + TimeUtils.getTime(migrationRun.getStart())
+                + "-" + RandomStringUtils.randomAlphanumeric(5);
+        String logFile = startMigrationLogger(jobId, Paths.get(configuration.getJobDir()).resolve(path));
         logger.info("------------------------------------------------------");
         logger.info("Executing migration '{}' for version '{}'", annotation.id(), annotation.version());
         logger.info("    {}", annotation.description());
@@ -654,12 +658,10 @@ public class MigrationManager {
                                 .setUri(Paths.get(catalogManager.getConfiguration().getJobDir(), path, logFile).toUri().toString()),
                                 false, token);
 
-                String time = TimeUtils.getTime(migrationRun.getStart());
-
                 Job job = new Job()
-                        .setId("migration-" + migrationRun.getId() + "-" + time + "-" + RandomStringUtils.randomAlphanumeric(5))
+                        .setId(jobId)
                         .setDescription("Execution of migration '" + migrationRun.getId() + "'")
-                        .setCreationDate(time)
+                        .setCreationDate(TimeUtils.getTime(migrationRun.getStart()))
                         .setCommandLine("opencga-admin.sh")
                         .setParams(params)
                         .setOutDir(outdir.first())
@@ -737,9 +739,9 @@ public class MigrationManager {
         return migration.getAnnotation(Migration.class);
     }
 
-    private String startMigrationLogger(Migration annotation, Path path) {
+    private String startMigrationLogger(String jobId, Path path) {
         // Create file appender
-        String fileName = annotation.id() + "." + TimeUtils.getTimeMillis() + ".log";
+        String fileName = jobId + ".err";
         String fileNamePath = path.resolve(fileName).toAbsolutePath().toString();
 
         FileAppender fileAppender = FileAppender.newBuilder()
