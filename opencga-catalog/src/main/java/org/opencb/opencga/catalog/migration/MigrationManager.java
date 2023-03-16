@@ -589,7 +589,7 @@ public class MigrationManager {
                 .resolve(annotation.id()).toString();
         String jobId = "migration"
                 + "-" + migrationRun.getId()
-                + "-" + TimeUtils.getTime(migrationRun.getStart())
+                + "-" + TimeUtils.getTime(start)
                 + "-" + RandomStringUtils.randomAlphanumeric(5);
         String logFile = startMigrationLogger(jobId, Paths.get(configuration.getJobDir()).resolve(path));
         logger.info("------------------------------------------------------");
@@ -661,7 +661,7 @@ public class MigrationManager {
                 Job job = new Job()
                         .setId(jobId)
                         .setDescription("Execution of migration '" + migrationRun.getId() + "'")
-                        .setCreationDate(TimeUtils.getTime(migrationRun.getStart()))
+                        .setCreationDate(TimeUtils.getTime(start))
                         .setCommandLine("opencga-admin.sh")
                         .setParams(params)
                         .setOutDir(outdir.first())
