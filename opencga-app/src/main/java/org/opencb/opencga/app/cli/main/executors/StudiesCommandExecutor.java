@@ -470,7 +470,9 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotNull("body", commandOptions.body);
+        queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotNull("overwrite", commandOptions.overwrite);
+        queryParams.putIfNotNull("resume", commandOptions.resume);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }

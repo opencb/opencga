@@ -269,12 +269,19 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                             + getAsCamelCase(commandName) + "CommandOptions;\n");
                 }
                 if (categoryConfig.isExecutorExtendedCommand(commandName)) {
+                    List<RestParameter> body = new ArrayList<>();
+                    for (RestParameter restParameter : restEndpoint.getParameters()) {
+                        if (restParameter.getData() != null) {
+                            body.addAll(restParameter.getData());
+                        }
+                    }
                     sb.append("        ObjectMap queryParams = new ObjectMap();\n");
                     boolean enc = false;
                     boolean studyPresent = false;
+                    restEndpoint.getParameters().addAll(body);
                     for (RestParameter restParameter : restEndpoint.getParameters()) {
                         if (categoryConfig.isAvailableSubCommand(restParameter.getName(), commandName)) {
-                            if (restParameter.isAvailableType()) {
+                            if (restParameter.isAvailableType() && !restParameter.getName().equals("body")) {
                                 enc = true;
                                 if (normalizeNames(restParameter.getName()).equals("study")) {
                                     studyPresent = true;
@@ -301,6 +308,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                                     }
                                 }
                             }
+
                         }
                     }
                     if (enc) {

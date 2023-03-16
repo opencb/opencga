@@ -290,8 +290,5 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         return currentDate.before(expirationDate) || ArrayUtils.contains(args, "login") || ArrayUtils.contains(args, "logout") || "anonymous".equals(sessionManager.getSession().getUser());
     }
 
-    public Logger getLogger() {
-        return logger;
-    }
 
 }
