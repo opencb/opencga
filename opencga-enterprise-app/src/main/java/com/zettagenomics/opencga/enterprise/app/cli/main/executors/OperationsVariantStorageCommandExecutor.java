@@ -61,7 +61,7 @@ import org.opencb.opencga.core.models.variant.VariantStudyDeleteParams;
  */
 public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
 
-    private OperationsVariantStorageCommandOptions operationsVariantStorageCommandOptions;
+    public OperationsVariantStorageCommandOptions operationsVariantStorageCommandOptions;
 
     public OperationsVariantStorageCommandExecutor(OperationsVariantStorageCommandOptions operationsVariantStorageCommandOptions) throws CatalogAuthenticationException {
         super(operationsVariantStorageCommandOptions.commonCommandOptions);

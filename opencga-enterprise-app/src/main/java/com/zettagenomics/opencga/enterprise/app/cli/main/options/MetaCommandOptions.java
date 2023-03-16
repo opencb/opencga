@@ -39,6 +39,7 @@ public class MetaCommandOptions {
         public FailCommandOptions failCommandOptions;
         public ModelCommandOptions modelCommandOptions;
         public PingCommandOptions pingCommandOptions;
+        public SsoCommandOptions ssoCommandOptions;
         public StatusCommandOptions statusCommandOptions;
 
 
@@ -52,6 +53,7 @@ public class MetaCommandOptions {
         this.failCommandOptions = new FailCommandOptions();
         this.modelCommandOptions = new ModelCommandOptions();
         this.pingCommandOptions = new PingCommandOptions();
+        this.ssoCommandOptions = new SsoCommandOptions();
         this.statusCommandOptions = new StatusCommandOptions();
     
     }
@@ -104,6 +106,17 @@ public class MetaCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+    }
+
+    @Parameters(commandNames = {"sso"}, commandDescription ="Single Sign On.")
+    public class SsoCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--url"}, description = "Callback URL", required = false, arity = 1)
+        public String url; 
     
     }
 

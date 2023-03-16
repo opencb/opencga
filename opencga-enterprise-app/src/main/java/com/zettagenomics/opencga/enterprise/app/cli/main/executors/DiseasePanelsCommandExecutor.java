@@ -44,7 +44,7 @@ import org.opencb.opencga.core.models.panel.PanelUpdateParams;
  */
 public class DiseasePanelsCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
 
-    private DiseasePanelsCommandOptions diseasePanelsCommandOptions;
+    public DiseasePanelsCommandOptions diseasePanelsCommandOptions;
 
     public DiseasePanelsCommandExecutor(DiseasePanelsCommandOptions diseasePanelsCommandOptions) throws CatalogAuthenticationException {
         super(diseasePanelsCommandOptions.commonCommandOptions);

@@ -80,7 +80,7 @@ import org.opencb.opencga.core.models.study.configuration.InterpretationStudyCon
  */
 public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
 
-    private AnalysisClinicalCommandOptions analysisClinicalCommandOptions;
+    public AnalysisClinicalCommandOptions analysisClinicalCommandOptions;
 
     public AnalysisClinicalCommandExecutor(AnalysisClinicalCommandOptions analysisClinicalCommandOptions) throws CatalogAuthenticationException {
         super(analysisClinicalCommandOptions.commonCommandOptions);

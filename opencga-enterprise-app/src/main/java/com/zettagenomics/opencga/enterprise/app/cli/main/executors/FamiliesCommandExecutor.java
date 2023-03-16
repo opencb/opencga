@@ -50,7 +50,7 @@ import org.opencb.opencga.core.models.job.Job;
  */
 public class FamiliesCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
 
-    private FamiliesCommandOptions familiesCommandOptions;
+    public FamiliesCommandOptions familiesCommandOptions;
 
     public FamiliesCommandExecutor(FamiliesCommandOptions familiesCommandOptions) throws CatalogAuthenticationException {
         super(familiesCommandOptions.commonCommandOptions);

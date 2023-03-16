@@ -42,7 +42,7 @@ import org.opencb.opencga.core.models.study.Study;
  */
 public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
 
-    private ProjectsCommandOptions projectsCommandOptions;
+    public ProjectsCommandOptions projectsCommandOptions;
 
     public ProjectsCommandExecutor(ProjectsCommandOptions projectsCommandOptions) throws CatalogAuthenticationException {
         super(projectsCommandOptions.commonCommandOptions);

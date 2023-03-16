@@ -76,7 +76,7 @@ import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
  */
 public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
 
-    private AnalysisVariantCommandOptions analysisVariantCommandOptions;
+    public AnalysisVariantCommandOptions analysisVariantCommandOptions;
 
     public AnalysisVariantCommandExecutor(AnalysisVariantCommandOptions analysisVariantCommandOptions) throws CatalogAuthenticationException {
         super(analysisVariantCommandOptions.commonCommandOptions);

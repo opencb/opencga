@@ -91,8 +91,7 @@ public class EnterpriseOpenCGAClient {
                 .getBody();
         return claims.getSubject();
     }
-
-
+    
 
 //    public UserClient getUserClient() {
 //        return getClient(UserClient.class, () -> new UserClient(token, clientConfiguration));
@@ -258,7 +257,7 @@ public class EnterpriseOpenCGAClient {
         clients.values().stream()
                 .filter(Objects::nonNull)
                 .forEach(enterpriseAbstractParentClient -> {
-                    enterpriseAbstractParentClient.setSsoCookies(cookies);
+//                    enterpriseAbstractParentClient.setSsoCookies(cookies);
                 });
     }
 

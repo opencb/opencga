@@ -36,7 +36,7 @@ import org.opencb.opencga.core.models.sample.Sample;
  */
 public class CvaCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
 
-    private CvaCommandOptions cvaCommandOptions;
+    public CvaCommandOptions cvaCommandOptions;
 
     public CvaCommandExecutor(CvaCommandOptions cvaCommandOptions) throws CatalogAuthenticationException {
         super(cvaCommandOptions.commonCommandOptions);

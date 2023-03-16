@@ -37,7 +37,7 @@ import java.util.Map;
  */
 public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
 
-    private MetaCommandOptions metaCommandOptions;
+    public MetaCommandOptions metaCommandOptions;
 
     public MetaCommandExecutor(MetaCommandOptions metaCommandOptions) throws CatalogAuthenticationException {
         super(metaCommandOptions.commonCommandOptions);
@@ -71,6 +71,9 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
                 break;
             case "ping":
                 queryResponse = ping();
+                break;
+            case "sso":
+                queryResponse = sso();
                 break;
             case "status":
                 queryResponse = status();
@@ -134,6 +137,18 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
 
         MetaCommandOptions.PingCommandOptions commandOptions = metaCommandOptions.pingCommandOptions;
         return enterpriseOpenCGAClient.getMetaClient().ping();
+    }
+
+    private RestResponse<ObjectMap> sso() throws Exception {
+
+        logger.debug("Executing sso in Meta command line");
+
+        MetaCommandOptions.SsoCommandOptions commandOptions = metaCommandOptions.ssoCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("url", commandOptions.url);
+
+        return enterpriseOpenCGAClient.getMetaClient().sso(queryParams);
     }
 
     private RestResponse<ObjectMap> status() throws Exception {

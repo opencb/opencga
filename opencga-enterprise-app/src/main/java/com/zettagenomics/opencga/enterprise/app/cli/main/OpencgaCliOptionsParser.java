@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2023-03-15 OpenCB
+* Copyright 2015-2023-03-16 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -246,6 +246,7 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         metaSubCommands.addCommand("fail", metaCommandOptions.failCommandOptions);
         metaSubCommands.addCommand("model", metaCommandOptions.modelCommandOptions);
         metaSubCommands.addCommand("ping", metaCommandOptions.pingCommandOptions);
+        metaSubCommands.addCommand("sso", metaCommandOptions.ssoCommandOptions);
         metaSubCommands.addCommand("status", metaCommandOptions.statusCommandOptions);
 
         operationsVariantStorageCommandOptions = new OperationsVariantStorageCommandOptions(commonCommandOptions, jCommander);
