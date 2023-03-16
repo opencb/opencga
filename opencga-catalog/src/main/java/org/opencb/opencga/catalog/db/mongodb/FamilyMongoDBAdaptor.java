@@ -500,8 +500,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     Paths.get(configuration.getWorkspace()).getParent(),
                     Paths.get(configuration.getAnalysis().getScratchDir()));
         } catch (IOException e) {
-            logger.error("Error computing/updating the pedigree grapth for the family {}", family.getId());
-            throw new CatalogDBException("Error computing/updating the pedigree graph for the family" + family.getId(), e);
+            String msg = "Error computing/updating the pedigree graph for the family " + family.getId();
+            logger.error(msg);
+            throw new CatalogDBException(msg, e);
         }
     }
 

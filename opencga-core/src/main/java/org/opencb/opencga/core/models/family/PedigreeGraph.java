@@ -7,6 +7,7 @@ public class PedigreeGraph {
     Object json;
 
     public PedigreeGraph() {
+        this("", new ObjectMap());
     }
 
     public PedigreeGraph(String base64, ObjectMap json) {

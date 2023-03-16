@@ -15,10 +15,8 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class PedigreeGraphUtils {
 
@@ -32,21 +30,23 @@ public class PedigreeGraphUtils {
     public static PedigreeGraph getPedigreeGraph(Family family, Path openCgaHome, Path scratchDir) throws IOException {
         PedigreeGraph pedigreeGraph = new PedigreeGraph();
 
-        // Prepare R script and out paths
-        Path rScriptPath = openCgaHome.resolve("analysis/pedigree-graph");
+        if (hasTrios(family)) {
+            // Prepare R script and out paths
+            Path rScriptPath = openCgaHome.resolve("analysis/pedigree-graph");
 
-        Path outDir = Paths.get(scratchDir +  "/pedigree-graph-" + family.getUuid() + "-" + System.nanoTime());
-        outDir.toFile().mkdir();
-        Runtime.getRuntime().exec("chmod 777 " + outDir.toAbsolutePath());
+            Path outDir = Paths.get(scratchDir + "/pedigree-graph-" + family.getUuid() + "-" + System.nanoTime());
+            outDir.toFile().mkdir();
+            Runtime.getRuntime().exec("chmod 777 " + outDir.toAbsolutePath());
 
-        // Execute R script and get b64 image
-        createPedigreeGraph(family, rScriptPath, outDir);
-        pedigreeGraph.setBase64(getB64Image(outDir));
-        pedigreeGraph.setJson(getJsonPedigreeGraph(outDir));
+            // Execute R script and get b64 image
+            createPedigreeGraph(family, rScriptPath, outDir);
+            pedigreeGraph.setBase64(getB64Image(outDir));
+            pedigreeGraph.setJson(getJsonPedigreeGraph(outDir));
 
-        // Clean
-        if (outDir.toFile().exists()) {
-            FileUtils.deleteDirectory(outDir.toFile());
+            // Clean
+            if (outDir.toFile().exists()) {
+                FileUtils.deleteDirectory(outDir.toFile());
+            }
         }
 
         return pedigreeGraph;
@@ -118,12 +118,12 @@ public class PedigreeGraphUtils {
         try (PrintWriter pw = new PrintWriter(file)) {
             List<Disorder> disorders = family.getDisorders();
             StringBuilder sbDisorders = new StringBuilder();
-            if (disorders.size() == 1) {
-                sbDisorders.append("affected").append("\t");
-            } else {
+            if (CollectionUtils.isNotEmpty(disorders) && disorders.size() > 1) {
                 for (Disorder disorder : family.getDisorders()) {
                     sbDisorders.append("affected.").append(disorder.getId()).append("\t");
                 }
+            } else {
+                sbDisorders.append("affected").append("\t");
             }
             pw.println("id\tdadid\tmomid\tsex\t" + sbDisorders + "status\trelation");
 
@@ -167,16 +167,20 @@ public class PedigreeGraphUtils {
                 }
 
                 // Affected
-                for (Disorder disorder : disorders) {
-                    if (CollectionUtils.isNotEmpty(member.getDisorders())) {
-                        boolean match = member.getDisorders().stream().anyMatch(e -> e.getId().equals(disorder.getId()));
-                        if (match) {
-                            sb.append("1").append("\t");
+                if (CollectionUtils.isEmpty(disorders)) {
+                    sb.append("0").append("\t");
+                } else {
+                    for (Disorder disorder : disorders) {
+                        if (CollectionUtils.isNotEmpty(member.getDisorders())) {
+                            boolean match = member.getDisorders().stream().anyMatch(e -> e.getId().equals(disorder.getId()));
+                            if (match) {
+                                sb.append("1").append("\t");
+                            } else {
+                                sb.append("0").append("\t");
+                            }
                         } else {
-                            sb.append("2").append("\t");
+                            sb.append("0").append("\t");
                         }
-                    } else {
-                        sb.append("2").append("\t");
                     }
                 }
 
@@ -206,6 +210,19 @@ public class PedigreeGraphUtils {
             }
         }
         return file;
+    }
+
+    public static boolean hasTrios(Family family) {
+        if (CollectionUtils.isNotEmpty(family.getMembers())) {
+            Set<String> memberIds = new HashSet<>(family.getMembers().stream().map(m -> m.getId()).collect(Collectors.toList()));
+            for (Individual member : family.getMembers()) {
+                if (member.getFather() != null && memberIds.contains(member.getFather().getId())
+                    && member.getMother() != null && memberIds.contains(member.getMother().getId())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
 
