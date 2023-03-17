@@ -177,6 +177,14 @@
                                     <arg value="${build.dir}"/>
                                 </exec>
 
+                                <echo>Copying to ${build.dir}</echo>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${app.dir}/cloud/docker/opencga-base/cert1.pem"/>
+                                    <arg value="${app.dir}/cloud/docker/opencga-base/Dockerfile"/>
+                                    <arg value="${build.dir}//cloud/docker/opencga-base/"/>
+                                </exec>
+
 <!--                                <echo>Copying docker-compose files</echo>-->
 <!--                                <exec executable="cp">-->
 <!--                                    <arg value="${project.basedir}/target/docker-compose/docker-compose.yml"/>-->
