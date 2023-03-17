@@ -98,7 +98,6 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<PanelAclEntryList> updateAcl() throws Exception {
-
         logger.debug("Executing updateAcl in Disease Panels command line");
 
         DiseasePanelsCommandOptions.UpdateAclCommandOptions commandOptions = diseasePanelsCommandOptions.updateAclCommandOptions;
@@ -133,7 +132,6 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Panel> create() throws Exception {
-
         logger.debug("Executing create in Disease Panels command line");
 
         DiseasePanelsCommandOptions.CreateCommandOptions commandOptions = diseasePanelsCommandOptions.createCommandOptions;
@@ -180,7 +178,6 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Object> distinct() throws Exception {
-
         logger.debug("Executing distinct in Disease Panels command line");
 
         DiseasePanelsCommandOptions.DistinctCommandOptions commandOptions = diseasePanelsCommandOptions.distinctCommandOptions;
@@ -213,7 +210,6 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> importPanels() throws Exception {
-
         logger.debug("Executing import in Disease Panels command line");
 
         DiseasePanelsCommandOptions.ImportCommandOptions commandOptions = diseasePanelsCommandOptions.importCommandOptions;
@@ -252,7 +248,6 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Panel> search() throws Exception {
-
         logger.debug("Executing search in Disease Panels command line");
 
         DiseasePanelsCommandOptions.SearchCommandOptions commandOptions = diseasePanelsCommandOptions.searchCommandOptions;
@@ -290,7 +285,6 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<PanelAclEntryList> acl() throws Exception {
-
         logger.debug("Executing acl in Disease Panels command line");
 
         DiseasePanelsCommandOptions.AclCommandOptions commandOptions = diseasePanelsCommandOptions.aclCommandOptions;
@@ -307,7 +301,6 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Panel> delete() throws Exception {
-
         logger.debug("Executing delete in Disease Panels command line");
 
         DiseasePanelsCommandOptions.DeleteCommandOptions commandOptions = diseasePanelsCommandOptions.deleteCommandOptions;
@@ -322,7 +315,6 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Panel> info() throws Exception {
-
         logger.debug("Executing info in Disease Panels command line");
 
         DiseasePanelsCommandOptions.InfoCommandOptions commandOptions = diseasePanelsCommandOptions.infoCommandOptions;
@@ -341,7 +333,6 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Panel> update() throws Exception {
-
         logger.debug("Executing update in Disease Panels command line");
 
         DiseasePanelsCommandOptions.UpdateCommandOptions commandOptions = diseasePanelsCommandOptions.updateCommandOptions;

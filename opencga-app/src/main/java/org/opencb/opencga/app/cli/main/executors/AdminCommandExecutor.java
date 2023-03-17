@@ -97,7 +97,6 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<ObjectMap> groupByAudit() throws Exception {
-
         logger.debug("Executing groupByAudit in Admin command line");
 
         AdminCommandOptions.GroupByAuditCommandOptions commandOptions = adminCommandOptions.groupByAuditCommandOptions;
@@ -114,7 +113,6 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Boolean> indexStatsCatalog() throws Exception {
-
         logger.debug("Executing indexStatsCatalog in Admin command line");
 
         AdminCommandOptions.IndexStatsCatalogCommandOptions commandOptions = adminCommandOptions.indexStatsCatalogCommandOptions;
@@ -126,7 +124,6 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<ObjectMap> installCatalog() throws Exception {
-
         logger.debug("Executing installCatalog in Admin command line");
 
         AdminCommandOptions.InstallCatalogCommandOptions commandOptions = adminCommandOptions.installCatalogCommandOptions;
@@ -156,7 +153,6 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<ObjectMap> jwtCatalog() throws Exception {
-
         logger.debug("Executing jwtCatalog in Admin command line");
 
         AdminCommandOptions.JwtCatalogCommandOptions commandOptions = adminCommandOptions.jwtCatalogCommandOptions;
@@ -183,7 +179,6 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<User> createUsers() throws Exception {
-
         logger.debug("Executing createUsers in Admin command line");
 
         AdminCommandOptions.CreateUsersCommandOptions commandOptions = adminCommandOptions.createUsersCommandOptions;
@@ -215,7 +210,6 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<User> importUsers() throws Exception {
-
         logger.debug("Executing importUsers in Admin command line");
 
         AdminCommandOptions.ImportUsersCommandOptions commandOptions = adminCommandOptions.importUsersCommandOptions;
@@ -246,7 +240,6 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Sample> searchUsers() throws Exception {
-
         logger.debug("Executing searchUsers in Admin command line");
 
         AdminCommandOptions.SearchUsersCommandOptions commandOptions = adminCommandOptions.searchUsersCommandOptions;
@@ -265,7 +258,6 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Group> syncUsers() throws Exception {
-
         logger.debug("Executing syncUsers in Admin command line");
 
         AdminCommandOptions.SyncUsersCommandOptions commandOptions = adminCommandOptions.syncUsersCommandOptions;

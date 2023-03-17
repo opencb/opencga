@@ -119,7 +119,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<IndividualAclEntryList> updateAcl() throws Exception {
-
         logger.debug("Executing updateAcl in Individuals command line");
 
         IndividualsCommandOptions.UpdateAclCommandOptions commandOptions = individualsCommandOptions.updateAclCommandOptions;
@@ -156,7 +155,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
-
         logger.debug("Executing aggregationStats in Individuals command line");
 
         IndividualsCommandOptions.AggregationStatsCommandOptions commandOptions = individualsCommandOptions.aggregationStatsCommandOptions;
@@ -191,7 +189,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> loadAnnotationSets() throws Exception {
-
         logger.debug("Executing loadAnnotationSets in Individuals command line");
 
         IndividualsCommandOptions.LoadAnnotationSetsCommandOptions commandOptions = individualsCommandOptions.loadAnnotationSetsCommandOptions;
@@ -227,7 +224,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Individual> create() throws Exception {
-
         logger.debug("Executing create in Individuals command line");
 
         IndividualsCommandOptions.CreateCommandOptions commandOptions = individualsCommandOptions.createCommandOptions;
@@ -300,7 +296,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Object> distinct() throws Exception {
-
         logger.debug("Executing distinct in Individuals command line");
 
         IndividualsCommandOptions.DistinctCommandOptions commandOptions = individualsCommandOptions.distinctCommandOptions;
@@ -340,7 +335,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Individual> search() throws Exception {
-
         logger.debug("Executing search in Individuals command line");
 
         IndividualsCommandOptions.SearchCommandOptions commandOptions = individualsCommandOptions.searchCommandOptions;
@@ -386,7 +380,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<IndividualAclEntryList> acl() throws Exception {
-
         logger.debug("Executing acl in Individuals command line");
 
         IndividualsCommandOptions.AclCommandOptions commandOptions = individualsCommandOptions.aclCommandOptions;
@@ -403,7 +396,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Individual> delete() throws Exception {
-
         logger.debug("Executing delete in Individuals command line");
 
         IndividualsCommandOptions.DeleteCommandOptions commandOptions = individualsCommandOptions.deleteCommandOptions;
@@ -419,7 +411,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Individual> info() throws Exception {
-
         logger.debug("Executing info in Individuals command line");
 
         IndividualsCommandOptions.InfoCommandOptions commandOptions = individualsCommandOptions.infoCommandOptions;
@@ -439,7 +430,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Individual> update() throws Exception {
-
         logger.debug("Executing update in Individuals command line");
 
         IndividualsCommandOptions.UpdateCommandOptions commandOptions = individualsCommandOptions.updateCommandOptions;
@@ -512,7 +502,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Individual> updateAnnotationSetsAnnotations() throws Exception {
-
         logger.debug("Executing updateAnnotationSetsAnnotations in Individuals command line");
 
         IndividualsCommandOptions.UpdateAnnotationSetsAnnotationsCommandOptions commandOptions = individualsCommandOptions.updateAnnotationSetsAnnotationsCommandOptions;
@@ -540,7 +529,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Individual> relatives() throws Exception {
-
         logger.debug("Executing relatives in Individuals command line");
 
         IndividualsCommandOptions.RelativesCommandOptions commandOptions = individualsCommandOptions.relativesCommandOptions;

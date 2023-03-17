@@ -172,7 +172,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> configureCellbase() throws Exception {
-
         logger.debug("Executing configureCellbase in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.ConfigureCellbaseCommandOptions commandOptions = operationsVariantStorageCommandOptions.configureCellbaseCommandOptions;
@@ -207,7 +206,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> aggregateVariant() throws Exception {
-
         logger.debug("Executing aggregateVariant in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.AggregateVariantCommandOptions commandOptions = operationsVariantStorageCommandOptions.aggregateVariantCommandOptions;
@@ -246,7 +244,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> deleteVariantAnnotation() throws Exception {
-
         logger.debug("Executing deleteVariantAnnotation in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.DeleteVariantAnnotationCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantAnnotationCommandOptions;
@@ -263,7 +260,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> indexVariantAnnotation() throws Exception {
-
         logger.debug("Executing indexVariantAnnotation in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.IndexVariantAnnotationCommandOptions commandOptions = operationsVariantStorageCommandOptions.indexVariantAnnotationCommandOptions;
@@ -310,7 +306,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> saveVariantAnnotation() throws Exception {
-
         logger.debug("Executing saveVariantAnnotation in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.SaveVariantAnnotationCommandOptions commandOptions = operationsVariantStorageCommandOptions.saveVariantAnnotationCommandOptions;
@@ -345,7 +340,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<ObjectMap> configureVariant() throws Exception {
-
         logger.debug("Executing configureVariant in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.ConfigureVariantCommandOptions commandOptions = operationsVariantStorageCommandOptions.configureVariantCommandOptions;
@@ -380,7 +374,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> deleteVariant() throws Exception {
-
         logger.debug("Executing deleteVariant in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.DeleteVariantCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantCommandOptions;
@@ -419,7 +412,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> aggregateVariantFamily() throws Exception {
-
         logger.debug("Executing aggregateVariantFamily in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.AggregateVariantFamilyCommandOptions commandOptions = operationsVariantStorageCommandOptions.aggregateVariantFamilyCommandOptions;
@@ -459,7 +451,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> indexVariantFamily() throws Exception {
-
         logger.debug("Executing indexVariantFamily in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.IndexVariantFamilyCommandOptions commandOptions = operationsVariantStorageCommandOptions.indexVariantFamilyCommandOptions;
@@ -500,7 +491,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> indexVariant() throws Exception {
-
         logger.debug("Executing indexVariant in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.IndexVariantCommandOptions commandOptions = operationsVariantStorageCommandOptions.indexVariantCommandOptions;
@@ -566,7 +556,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> launcherVariantIndex() throws Exception {
-
         logger.debug("Executing launcherVariantIndex in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.LauncherVariantIndexCommandOptions commandOptions = operationsVariantStorageCommandOptions.launcherVariantIndexCommandOptions;
@@ -637,7 +626,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> runVariantJulie() throws Exception {
-
         logger.debug("Executing runVariantJulie in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.RunVariantJulieCommandOptions commandOptions = operationsVariantStorageCommandOptions.runVariantJulieCommandOptions;
@@ -674,7 +662,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> repairVariantMetadata() throws Exception {
-
         logger.debug("Executing repairVariantMetadata in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.RepairVariantMetadataCommandOptions commandOptions = operationsVariantStorageCommandOptions.repairVariantMetadataCommandOptions;
@@ -709,7 +696,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> synchronizeVariantMetadata() throws Exception {
-
         logger.debug("Executing synchronizeVariantMetadata in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.SynchronizeVariantMetadataCommandOptions commandOptions = operationsVariantStorageCommandOptions.synchronizeVariantMetadataCommandOptions;
@@ -748,7 +734,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> pruneVariant() throws Exception {
-
         logger.debug("Executing pruneVariant in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.PruneVariantCommandOptions commandOptions = operationsVariantStorageCommandOptions.pruneVariantCommandOptions;
@@ -784,7 +769,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> deleteVariantSample() throws Exception {
-
         logger.debug("Executing deleteVariantSample in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.DeleteVariantSampleCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantSampleCommandOptions;
@@ -824,7 +808,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> indexVariantSample() throws Exception {
-
         logger.debug("Executing indexVariantSample in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.IndexVariantSampleCommandOptions commandOptions = operationsVariantStorageCommandOptions.indexVariantSampleCommandOptions;
@@ -866,7 +849,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> variantSampleIndexConfigure() throws Exception {
-
         logger.debug("Executing variantSampleIndexConfigure in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.VariantSampleIndexConfigureCommandOptions commandOptions = operationsVariantStorageCommandOptions.variantSampleIndexConfigureCommandOptions;
@@ -894,7 +876,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> deleteVariantScore() throws Exception {
-
         logger.debug("Executing deleteVariantScore in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.DeleteVariantScoreCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantScoreCommandOptions;
@@ -916,7 +897,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> indexVariantScore() throws Exception {
-
         logger.debug("Executing indexVariantScore in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.IndexVariantScoreCommandOptions commandOptions = operationsVariantStorageCommandOptions.indexVariantScoreCommandOptions;
@@ -959,7 +939,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> variantSecondaryAnnotationIndex() throws Exception {
-
         logger.debug("Executing variantSecondaryAnnotationIndex in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.VariantSecondaryAnnotationIndexCommandOptions commandOptions = operationsVariantStorageCommandOptions.variantSecondaryAnnotationIndexCommandOptions;
@@ -1000,7 +979,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> variantSecondarySampleIndex() throws Exception {
-
         logger.debug("Executing variantSecondarySampleIndex in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.VariantSecondarySampleIndexCommandOptions commandOptions = operationsVariantStorageCommandOptions.variantSecondarySampleIndexCommandOptions;
@@ -1042,7 +1020,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> configureVariantSecondarySampleIndex() throws Exception {
-
         logger.debug("Executing configureVariantSecondarySampleIndex in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.ConfigureVariantSecondarySampleIndexCommandOptions commandOptions = operationsVariantStorageCommandOptions.configureVariantSecondarySampleIndexCommandOptions;
@@ -1070,7 +1047,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> secondaryIndexVariant() throws Exception {
-
         logger.debug("Executing secondaryIndexVariant in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.SecondaryIndexVariantCommandOptions commandOptions = operationsVariantStorageCommandOptions.secondaryIndexVariantCommandOptions;
@@ -1111,7 +1087,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> deleteVariantSecondaryIndex() throws Exception {
-
         logger.debug("Executing deleteVariantSecondaryIndex in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.DeleteVariantSecondaryIndexCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantSecondaryIndexCommandOptions;
@@ -1131,7 +1106,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> deleteVariantStats() throws Exception {
-
         logger.debug("Executing deleteVariantStats in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.DeleteVariantStatsCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantStatsCommandOptions;
@@ -1170,7 +1144,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> indexVariantStats() throws Exception {
-
         logger.debug("Executing indexVariantStats in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.IndexVariantStatsCommandOptions commandOptions = operationsVariantStorageCommandOptions.indexVariantStatsCommandOptions;
@@ -1213,7 +1186,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
     }
 
     private RestResponse<Job> deleteVariantStudy() throws Exception {
-
         logger.debug("Executing deleteVariantStudy in Operations - Variant Storage command line");
 
         OperationsVariantStorageCommandOptions.DeleteVariantStudyCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantStudyCommandOptions;

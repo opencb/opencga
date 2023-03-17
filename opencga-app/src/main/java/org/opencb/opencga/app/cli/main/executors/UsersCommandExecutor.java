@@ -115,7 +115,6 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<AuthenticationResponse> login() throws Exception {
-
         logger.debug("Executing login in Users command line");
 
         ParentUsersCommandOptions.LoginCommandOptions commandOptions = usersCommandOptions.loginCommandOptions;
@@ -123,13 +122,11 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("user", commandOptions.user);
         queryParams.putIfNotEmpty("password", commandOptions.password);
         queryParams.putIfNotEmpty("refreshToken", commandOptions.refreshToken);
-        ParentUsersCommandExecutor customUsersCommandExecutor = new ParentUsersCommandExecutor(queryParams,getLogger(),getOpenCGAClient(),getSessionManager());
+        ParentUsersCommandExecutor customUsersCommandExecutor = new ParentUsersCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
         return customUsersCommandExecutor.login();
-
     }
 
     private RestResponse<User> password() throws Exception {
-
         logger.debug("Executing password in Users command line");
 
         UsersCommandOptions.PasswordCommandOptions commandOptions = usersCommandOptions.passwordCommandOptions;
@@ -159,7 +156,6 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<User> info() throws Exception {
-
         logger.debug("Executing info in Users command line");
 
         UsersCommandOptions.InfoCommandOptions commandOptions = usersCommandOptions.infoCommandOptions;
@@ -172,7 +168,6 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<ObjectMap> configs() throws Exception {
-
         logger.debug("Executing configs in Users command line");
 
         UsersCommandOptions.ConfigsCommandOptions commandOptions = usersCommandOptions.configsCommandOptions;
@@ -184,7 +179,6 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<ObjectMap> updateConfigs() throws Exception {
-
         logger.debug("Executing updateConfigs in Users command line");
 
         UsersCommandOptions.UpdateConfigsCommandOptions commandOptions = usersCommandOptions.updateConfigsCommandOptions;
@@ -216,7 +210,6 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<UserFilter> filters() throws Exception {
-
         logger.debug("Executing filters in Users command line");
 
         UsersCommandOptions.FiltersCommandOptions commandOptions = usersCommandOptions.filtersCommandOptions;
@@ -228,7 +221,6 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<User> resetPassword() throws Exception {
-
         logger.debug("Executing resetPassword in Users command line");
 
         UsersCommandOptions.ResetPasswordCommandOptions commandOptions = usersCommandOptions.resetPasswordCommandOptions;
@@ -236,7 +228,6 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Project> projects() throws Exception {
-
         logger.debug("Executing projects in Users command line");
 
         UsersCommandOptions.ProjectsCommandOptions commandOptions = usersCommandOptions.projectsCommandOptions;
@@ -251,7 +242,6 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<User> update() throws Exception {
-
         logger.debug("Executing update in Users command line");
 
         UsersCommandOptions.UpdateCommandOptions commandOptions = usersCommandOptions.updateCommandOptions;

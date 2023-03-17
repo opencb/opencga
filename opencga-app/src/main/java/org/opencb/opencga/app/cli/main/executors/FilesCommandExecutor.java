@@ -204,7 +204,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FileAclEntryList> updateAcl() throws Exception {
-
         logger.debug("Executing updateAcl in Files command line");
 
         FilesCommandOptions.UpdateAclCommandOptions commandOptions = filesCommandOptions.updateAclCommandOptions;
@@ -240,7 +239,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
-
         logger.debug("Executing aggregationStats in Files command line");
 
         FilesCommandOptions.AggregationStatsCommandOptions commandOptions = filesCommandOptions.aggregationStatsCommandOptions;
@@ -274,7 +272,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> loadAnnotationSets() throws Exception {
-
         logger.debug("Executing loadAnnotationSets in Files command line");
 
         FilesCommandOptions.LoadAnnotationSetsCommandOptions commandOptions = filesCommandOptions.loadAnnotationSetsCommandOptions;
@@ -310,7 +307,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<File.Bioformat> bioformats() throws Exception {
-
         logger.debug("Executing bioformats in Files command line");
 
         FilesCommandOptions.BioformatsCommandOptions commandOptions = filesCommandOptions.bioformatsCommandOptions;
@@ -318,7 +314,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<File> create() throws Exception {
-
         logger.debug("Executing create in Files command line");
 
         FilesCommandOptions.CreateCommandOptions commandOptions = filesCommandOptions.createCommandOptions;
@@ -373,7 +368,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Object> distinct() throws Exception {
-
         logger.debug("Executing distinct in Files command line");
 
         FilesCommandOptions.DistinctCommandOptions commandOptions = filesCommandOptions.distinctCommandOptions;
@@ -413,7 +407,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> fetch() throws Exception {
-
         logger.debug("Executing fetch in Files command line");
 
         FilesCommandOptions.FetchCommandOptions commandOptions = filesCommandOptions.fetchCommandOptions;
@@ -452,7 +445,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<File.Format> formats() throws Exception {
-
         logger.debug("Executing formats in Files command line");
 
         FilesCommandOptions.FormatsCommandOptions commandOptions = filesCommandOptions.formatsCommandOptions;
@@ -460,7 +452,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<File> link() throws Exception {
-
         logger.debug("Executing link in Files command line");
 
         FilesCommandOptions.LinkCommandOptions commandOptions = filesCommandOptions.linkCommandOptions;
@@ -504,7 +495,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runLink() throws Exception {
-
         logger.debug("Executing runLink in Files command line");
 
         FilesCommandOptions.RunLinkCommandOptions commandOptions = filesCommandOptions.runLinkCommandOptions;
@@ -547,7 +537,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runPostlink() throws Exception {
-
         logger.debug("Executing runPostlink in Files command line");
 
         FilesCommandOptions.RunPostlinkCommandOptions commandOptions = filesCommandOptions.runPostlinkCommandOptions;
@@ -586,7 +575,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<File> search() throws Exception {
-
         logger.debug("Executing search in Files command line");
 
         FilesCommandOptions.SearchCommandOptions commandOptions = filesCommandOptions.searchCommandOptions;
@@ -632,7 +620,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<File> upload() throws Exception {
-
         logger.debug("Executing upload in Files command line");
 
         ParentFilesCommandOptions.UploadCommandOptions commandOptions = filesCommandOptions.uploadCommandOptions;
@@ -649,13 +636,11 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
-        ParentFilesCommandExecutor customFilesCommandExecutor = new ParentFilesCommandExecutor(queryParams,getLogger(),getOpenCGAClient(),getSessionManager());
+        ParentFilesCommandExecutor customFilesCommandExecutor = new ParentFilesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
         return customFilesCommandExecutor.upload();
-
     }
 
     private RestResponse<FileAclEntryList> acl() throws Exception {
-
         logger.debug("Executing acl in Files command line");
 
         FilesCommandOptions.AclCommandOptions commandOptions = filesCommandOptions.aclCommandOptions;
@@ -672,7 +657,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> delete() throws Exception {
-
         logger.debug("Executing delete in Files command line");
 
         FilesCommandOptions.DeleteCommandOptions commandOptions = filesCommandOptions.deleteCommandOptions;
@@ -688,7 +672,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<File> info() throws Exception {
-
         logger.debug("Executing info in Files command line");
 
         FilesCommandOptions.InfoCommandOptions commandOptions = filesCommandOptions.infoCommandOptions;
@@ -707,7 +690,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> unlink() throws Exception {
-
         logger.debug("Executing unlink in Files command line");
 
         FilesCommandOptions.UnlinkCommandOptions commandOptions = filesCommandOptions.unlinkCommandOptions;
@@ -722,7 +704,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<File> update() throws Exception {
-
         logger.debug("Executing update in Files command line");
 
         FilesCommandOptions.UpdateCommandOptions commandOptions = filesCommandOptions.updateCommandOptions;
@@ -792,7 +773,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<File> updateAnnotationSetsAnnotations() throws Exception {
-
         logger.debug("Executing updateAnnotationSetsAnnotations in Files command line");
 
         FilesCommandOptions.UpdateAnnotationSetsAnnotationsCommandOptions commandOptions = filesCommandOptions.updateAnnotationSetsAnnotationsCommandOptions;
@@ -820,7 +800,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<DataInputStream> download() throws Exception {
-
         logger.debug("Executing download in Files command line");
 
         FilesCommandOptions.DownloadCommandOptions commandOptions = filesCommandOptions.downloadCommandOptions;
@@ -835,7 +814,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FileContent> grep() throws Exception {
-
         logger.debug("Executing grep in Files command line");
 
         FilesCommandOptions.GrepCommandOptions commandOptions = filesCommandOptions.grepCommandOptions;
@@ -853,7 +831,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FileContent> head() throws Exception {
-
         logger.debug("Executing head in Files command line");
 
         FilesCommandOptions.HeadCommandOptions commandOptions = filesCommandOptions.headCommandOptions;
@@ -870,7 +847,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FileContent> image() throws Exception {
-
         logger.debug("Executing image in Files command line");
 
         FilesCommandOptions.ImageCommandOptions commandOptions = filesCommandOptions.imageCommandOptions;
@@ -885,7 +861,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<File> refresh() throws Exception {
-
         logger.debug("Executing refresh in Files command line");
 
         FilesCommandOptions.RefreshCommandOptions commandOptions = filesCommandOptions.refreshCommandOptions;
@@ -900,7 +875,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FileContent> tail() throws Exception {
-
         logger.debug("Executing tail in Files command line");
 
         FilesCommandOptions.TailCommandOptions commandOptions = filesCommandOptions.tailCommandOptions;
@@ -916,7 +890,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<File> list() throws Exception {
-
         logger.debug("Executing list in Files command line");
 
         FilesCommandOptions.ListCommandOptions commandOptions = filesCommandOptions.listCommandOptions;
@@ -936,7 +909,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FileTree> tree() throws Exception {
-
         logger.debug("Executing tree in Files command line");
 
         FilesCommandOptions.TreeCommandOptions commandOptions = filesCommandOptions.treeCommandOptions;

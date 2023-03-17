@@ -174,7 +174,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<StudyAclEntryList> updateAcl() throws Exception {
-
         logger.debug("Executing updateAcl in Studies command line");
 
         StudiesCommandOptions.UpdateAclCommandOptions commandOptions = studiesCommandOptions.updateAclCommandOptions;
@@ -203,7 +202,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Study> create() throws Exception {
-
         logger.debug("Executing create in Studies command line");
 
         StudiesCommandOptions.CreateCommandOptions commandOptions = studiesCommandOptions.createCommandOptions;
@@ -248,7 +246,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Study> search() throws Exception {
-
         logger.debug("Executing search in Studies command line");
 
         StudiesCommandOptions.SearchCommandOptions commandOptions = studiesCommandOptions.searchCommandOptions;
@@ -274,7 +271,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<AclEntryList> acl() throws Exception {
-
         logger.debug("Executing acl in Studies command line");
 
         StudiesCommandOptions.AclCommandOptions commandOptions = studiesCommandOptions.aclCommandOptions;
@@ -287,7 +283,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
-
         logger.debug("Executing aggregationStats in Studies command line");
 
         StudiesCommandOptions.AggregationStatsCommandOptions commandOptions = studiesCommandOptions.aggregationStatsCommandOptions;
@@ -305,7 +300,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Study> info() throws Exception {
-
         logger.debug("Executing info in Studies command line");
 
         StudiesCommandOptions.InfoCommandOptions commandOptions = studiesCommandOptions.infoCommandOptions;
@@ -318,7 +312,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<AuditRecord> searchAudit() throws Exception {
-
         logger.debug("Executing searchAudit in Studies command line");
 
         StudiesCommandOptions.SearchAuditCommandOptions commandOptions = studiesCommandOptions.searchAuditCommandOptions;
@@ -342,7 +335,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<CustomGroup> groups() throws Exception {
-
         logger.debug("Executing groups in Studies command line");
 
         StudiesCommandOptions.GroupsCommandOptions commandOptions = studiesCommandOptions.groupsCommandOptions;
@@ -355,7 +347,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Group> updateGroups() throws Exception {
-
         logger.debug("Executing updateGroups in Studies command line");
 
         StudiesCommandOptions.UpdateGroupsCommandOptions commandOptions = studiesCommandOptions.updateGroupsCommandOptions;
@@ -387,7 +378,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Group> updateGroupsUsers() throws Exception {
-
         logger.debug("Executing updateGroupsUsers in Studies command line");
 
         StudiesCommandOptions.UpdateGroupsUsersCommandOptions commandOptions = studiesCommandOptions.updateGroupsUsersCommandOptions;
@@ -418,7 +408,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<PermissionRule> permissionRules() throws Exception {
-
         logger.debug("Executing permissionRules in Studies command line");
 
         StudiesCommandOptions.PermissionRulesCommandOptions commandOptions = studiesCommandOptions.permissionRulesCommandOptions;
@@ -426,7 +415,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<PermissionRule> updatePermissionRules() throws Exception {
-
         logger.debug("Executing updatePermissionRules in Studies command line");
 
         StudiesCommandOptions.UpdatePermissionRulesCommandOptions commandOptions = studiesCommandOptions.updatePermissionRulesCommandOptions;
@@ -460,7 +448,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runTemplates() throws Exception {
-
         logger.debug("Executing runTemplates in Studies command line");
 
         ParentStudiesCommandOptions.RunTemplatesCommandOptions commandOptions = studiesCommandOptions.runTemplatesCommandOptions;
@@ -476,13 +463,11 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
-        ParentStudiesCommandExecutor customStudiesCommandExecutor = new ParentStudiesCommandExecutor(queryParams,getLogger(),getOpenCGAClient(),getSessionManager());
+        ParentStudiesCommandExecutor customStudiesCommandExecutor = new ParentStudiesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
         return customStudiesCommandExecutor.runTemplates();
-
     }
 
     private RestResponse<String> uploadTemplates() throws Exception {
-
         logger.debug("Executing uploadTemplates in Studies command line");
 
         ParentStudiesCommandOptions.UploadTemplatesCommandOptions commandOptions = studiesCommandOptions.uploadTemplatesCommandOptions;
@@ -492,13 +477,11 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
-        ParentStudiesCommandExecutor customStudiesCommandExecutor = new ParentStudiesCommandExecutor(queryParams,getLogger(),getOpenCGAClient(),getSessionManager());
+        ParentStudiesCommandExecutor customStudiesCommandExecutor = new ParentStudiesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
         return customStudiesCommandExecutor.uploadTemplates();
-
     }
 
     private RestResponse<Boolean> deleteTemplates() throws Exception {
-
         logger.debug("Executing deleteTemplates in Studies command line");
 
         StudiesCommandOptions.DeleteTemplatesCommandOptions commandOptions = studiesCommandOptions.deleteTemplatesCommandOptions;
@@ -513,7 +496,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Study> update() throws Exception {
-
         logger.debug("Executing update in Studies command line");
 
         StudiesCommandOptions.UpdateCommandOptions commandOptions = studiesCommandOptions.updateCommandOptions;
@@ -556,7 +538,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<VariableSet> variableSets() throws Exception {
-
         logger.debug("Executing variableSets in Studies command line");
 
         StudiesCommandOptions.VariableSetsCommandOptions commandOptions = studiesCommandOptions.variableSetsCommandOptions;
@@ -568,7 +549,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<VariableSet> updateVariableSets() throws Exception {
-
         logger.debug("Executing updateVariableSets in Studies command line");
 
         StudiesCommandOptions.UpdateVariableSetsCommandOptions commandOptions = studiesCommandOptions.updateVariableSetsCommandOptions;
@@ -603,7 +583,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<VariableSet> updateVariableSetsVariables() throws Exception {
-
         logger.debug("Executing updateVariableSetsVariables in Studies command line");
 
         StudiesCommandOptions.UpdateVariableSetsVariablesCommandOptions commandOptions = studiesCommandOptions.updateVariableSetsVariablesCommandOptions;

@@ -110,7 +110,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FamilyAclEntryList> updateAcl() throws Exception {
-
         logger.debug("Executing updateAcl in Families command line");
 
         FamiliesCommandOptions.UpdateAclCommandOptions commandOptions = familiesCommandOptions.updateAclCommandOptions;
@@ -148,7 +147,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
-
         logger.debug("Executing aggregationStats in Families command line");
 
         FamiliesCommandOptions.AggregationStatsCommandOptions commandOptions = familiesCommandOptions.aggregationStatsCommandOptions;
@@ -176,7 +174,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> loadAnnotationSets() throws Exception {
-
         logger.debug("Executing loadAnnotationSets in Families command line");
 
         FamiliesCommandOptions.LoadAnnotationSetsCommandOptions commandOptions = familiesCommandOptions.loadAnnotationSetsCommandOptions;
@@ -212,7 +209,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Family> create() throws Exception {
-
         logger.debug("Executing create in Families command line");
 
         FamiliesCommandOptions.CreateCommandOptions commandOptions = familiesCommandOptions.createCommandOptions;
@@ -259,7 +255,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Object> distinct() throws Exception {
-
         logger.debug("Executing distinct in Families command line");
 
         FamiliesCommandOptions.DistinctCommandOptions commandOptions = familiesCommandOptions.distinctCommandOptions;
@@ -291,7 +286,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Family> search() throws Exception {
-
         logger.debug("Executing search in Families command line");
 
         FamiliesCommandOptions.SearchCommandOptions commandOptions = familiesCommandOptions.searchCommandOptions;
@@ -329,7 +323,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FamilyAclEntryList> acl() throws Exception {
-
         logger.debug("Executing acl in Families command line");
 
         FamiliesCommandOptions.AclCommandOptions commandOptions = familiesCommandOptions.aclCommandOptions;
@@ -346,7 +339,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Family> delete() throws Exception {
-
         logger.debug("Executing delete in Families command line");
 
         FamiliesCommandOptions.DeleteCommandOptions commandOptions = familiesCommandOptions.deleteCommandOptions;
@@ -361,7 +353,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Family> info() throws Exception {
-
         logger.debug("Executing info in Families command line");
 
         FamiliesCommandOptions.InfoCommandOptions commandOptions = familiesCommandOptions.infoCommandOptions;
@@ -381,7 +372,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Family> update() throws Exception {
-
         logger.debug("Executing update in Families command line");
 
         FamiliesCommandOptions.UpdateCommandOptions commandOptions = familiesCommandOptions.updateCommandOptions;
@@ -429,7 +419,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Family> updateAnnotationSetsAnnotations() throws Exception {
-
         logger.debug("Executing updateAnnotationSetsAnnotations in Families command line");
 
         FamiliesCommandOptions.UpdateAnnotationSetsAnnotationsCommandOptions commandOptions = familiesCommandOptions.updateAnnotationSetsAnnotationsCommandOptions;

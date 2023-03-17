@@ -114,7 +114,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runBwa() throws Exception {
-
         logger.debug("Executing runBwa in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.RunBwaCommandOptions commandOptions = analysisAlignmentCommandOptions.runBwaCommandOptions;
@@ -157,7 +156,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runCoverageIndex() throws Exception {
-
         logger.debug("Executing runCoverageIndex in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.RunCoverageIndexCommandOptions commandOptions = analysisAlignmentCommandOptions.runCoverageIndexCommandOptions;
@@ -197,7 +195,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> coverageQcGeneCoverageStatsRun() throws Exception {
-
         logger.debug("Executing coverageQcGeneCoverageStatsRun in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.CoverageQcGeneCoverageStatsRunCommandOptions commandOptions = analysisAlignmentCommandOptions.coverageQcGeneCoverageStatsRunCommandOptions;
@@ -237,7 +234,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<RegionCoverage> queryCoverage() throws Exception {
-
         logger.debug("Executing queryCoverage in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.QueryCoverageCommandOptions commandOptions = analysisAlignmentCommandOptions.queryCoverageCommandOptions;
@@ -259,7 +255,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<RegionCoverage> ratioCoverage() throws Exception {
-
         logger.debug("Executing ratioCoverage in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.RatioCoverageCommandOptions commandOptions = analysisAlignmentCommandOptions.ratioCoverageCommandOptions;
@@ -281,7 +276,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<GeneCoverageStats> statsCoverage() throws Exception {
-
         logger.debug("Executing statsCoverage in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.StatsCoverageCommandOptions commandOptions = analysisAlignmentCommandOptions.statsCoverageCommandOptions;
@@ -297,7 +291,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runDeeptools() throws Exception {
-
         logger.debug("Executing runDeeptools in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.RunDeeptoolsCommandOptions commandOptions = analysisAlignmentCommandOptions.runDeeptoolsCommandOptions;
@@ -337,7 +330,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runFastqc() throws Exception {
-
         logger.debug("Executing runFastqc in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.RunFastqcCommandOptions commandOptions = analysisAlignmentCommandOptions.runFastqcCommandOptions;
@@ -377,7 +369,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runIndex() throws Exception {
-
         logger.debug("Executing runIndex in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.RunIndexCommandOptions commandOptions = analysisAlignmentCommandOptions.runIndexCommandOptions;
@@ -416,7 +407,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runPicard() throws Exception {
-
         logger.debug("Executing runPicard in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.RunPicardCommandOptions commandOptions = analysisAlignmentCommandOptions.runPicardCommandOptions;
@@ -456,7 +446,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runQc() throws Exception {
-
         logger.debug("Executing runQc in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.RunQcCommandOptions commandOptions = analysisAlignmentCommandOptions.runQcCommandOptions;
@@ -497,7 +486,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<ReadAlignment> query() throws Exception {
-
         logger.debug("Executing query in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.QueryCommandOptions commandOptions = analysisAlignmentCommandOptions.queryCommandOptions;
@@ -530,7 +518,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runSamtools() throws Exception {
-
         logger.debug("Executing runSamtools in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.RunSamtoolsCommandOptions commandOptions = analysisAlignmentCommandOptions.runSamtoolsCommandOptions;

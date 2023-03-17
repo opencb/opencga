@@ -90,7 +90,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Project> create() throws Exception {
-
         logger.debug("Executing create in Projects command line");
 
         ProjectsCommandOptions.CreateCommandOptions commandOptions = projectsCommandOptions.createCommandOptions;
@@ -134,7 +133,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Project> search() throws Exception {
-
         logger.debug("Executing search in Projects command line");
 
         ProjectsCommandOptions.SearchCommandOptions commandOptions = projectsCommandOptions.searchCommandOptions;
@@ -163,7 +161,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
-
         logger.debug("Executing aggregationStats in Projects command line");
 
         ProjectsCommandOptions.AggregationStatsCommandOptions commandOptions = projectsCommandOptions.aggregationStatsCommandOptions;
@@ -181,7 +178,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Project> info() throws Exception {
-
         logger.debug("Executing info in Projects command line");
 
         ProjectsCommandOptions.InfoCommandOptions commandOptions = projectsCommandOptions.infoCommandOptions;
@@ -194,7 +190,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Integer> incRelease() throws Exception {
-
         logger.debug("Executing incRelease in Projects command line");
 
         ProjectsCommandOptions.IncReleaseCommandOptions commandOptions = projectsCommandOptions.incReleaseCommandOptions;
@@ -202,7 +197,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Study> studies() throws Exception {
-
         logger.debug("Executing studies in Projects command line");
 
         ProjectsCommandOptions.StudiesCommandOptions commandOptions = projectsCommandOptions.studiesCommandOptions;
@@ -217,7 +211,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Project> update() throws Exception {
-
         logger.debug("Executing update in Projects command line");
 
         ProjectsCommandOptions.UpdateCommandOptions commandOptions = projectsCommandOptions.updateCommandOptions;

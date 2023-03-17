@@ -113,7 +113,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<CohortAclEntryList> updateAcl() throws Exception {
-
         logger.debug("Executing updateAcl in Cohorts command line");
 
         CohortsCommandOptions.UpdateAclCommandOptions commandOptions = cohortsCommandOptions.updateAclCommandOptions;
@@ -148,7 +147,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
-
         logger.debug("Executing aggregationStats in Cohorts command line");
 
         CohortsCommandOptions.AggregationStatsCommandOptions commandOptions = cohortsCommandOptions.aggregationStatsCommandOptions;
@@ -174,7 +172,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> loadAnnotationSets() throws Exception {
-
         logger.debug("Executing loadAnnotationSets in Cohorts command line");
 
         CohortsCommandOptions.LoadAnnotationSetsCommandOptions commandOptions = cohortsCommandOptions.loadAnnotationSetsCommandOptions;
@@ -210,7 +207,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Cohort> create() throws Exception {
-
         logger.debug("Executing create in Cohorts command line");
 
         CohortsCommandOptions.CreateCommandOptions commandOptions = cohortsCommandOptions.createCommandOptions;
@@ -258,7 +254,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Object> distinct() throws Exception {
-
         logger.debug("Executing distinct in Cohorts command line");
 
         CohortsCommandOptions.DistinctCommandOptions commandOptions = cohortsCommandOptions.distinctCommandOptions;
@@ -287,7 +282,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Cohort> generate() throws Exception {
-
         logger.debug("Executing generate in Cohorts command line");
 
         CohortsCommandOptions.GenerateCommandOptions commandOptions = cohortsCommandOptions.generateCommandOptions;
@@ -346,7 +340,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Cohort> search() throws Exception {
-
         logger.debug("Executing search in Cohorts command line");
 
         CohortsCommandOptions.SearchCommandOptions commandOptions = cohortsCommandOptions.searchCommandOptions;
@@ -381,7 +374,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<CohortAclEntryList> acl() throws Exception {
-
         logger.debug("Executing acl in Cohorts command line");
 
         CohortsCommandOptions.AclCommandOptions commandOptions = cohortsCommandOptions.aclCommandOptions;
@@ -398,7 +390,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Cohort> delete() throws Exception {
-
         logger.debug("Executing delete in Cohorts command line");
 
         CohortsCommandOptions.DeleteCommandOptions commandOptions = cohortsCommandOptions.deleteCommandOptions;
@@ -413,7 +404,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Cohort> info() throws Exception {
-
         logger.debug("Executing info in Cohorts command line");
 
         CohortsCommandOptions.InfoCommandOptions commandOptions = cohortsCommandOptions.infoCommandOptions;
@@ -432,7 +422,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Cohort> update() throws Exception {
-
         logger.debug("Executing update in Cohorts command line");
 
         CohortsCommandOptions.UpdateCommandOptions commandOptions = cohortsCommandOptions.updateCommandOptions;
@@ -478,7 +467,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Cohort> updateAnnotationSetsAnnotations() throws Exception {
-
         logger.debug("Executing updateAnnotationSetsAnnotations in Cohorts command line");
 
         CohortsCommandOptions.UpdateAnnotationSetsAnnotationsCommandOptions commandOptions = cohortsCommandOptions.updateAnnotationSetsAnnotationsCommandOptions;

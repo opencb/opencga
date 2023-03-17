@@ -220,7 +220,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<QueryResponse> aggregationStats() throws Exception {
-
         logger.debug("Executing aggregationStats in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.AggregationStatsCommandOptions commandOptions = analysisVariantCommandOptions.aggregationStatsCommandOptions;
@@ -271,7 +270,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<ObjectMap> metadataAnnotation() throws Exception {
-
         logger.debug("Executing metadataAnnotation in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.MetadataAnnotationCommandOptions commandOptions = analysisVariantCommandOptions.metadataAnnotationCommandOptions;
@@ -284,7 +282,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<VariantAnnotation> queryAnnotation() throws Exception {
-
         logger.debug("Executing queryAnnotation in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.QueryAnnotationCommandOptions commandOptions = analysisVariantCommandOptions.queryAnnotationCommandOptions;
@@ -302,7 +299,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<String> runCircos() throws Exception {
-
         logger.debug("Executing runCircos in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunCircosCommandOptions commandOptions = analysisVariantCommandOptions.runCircosCommandOptions;
@@ -339,7 +335,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<SampleVariantStats> deleteCohortStats() throws Exception {
-
         logger.debug("Executing deleteCohortStats in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.DeleteCohortStatsCommandOptions commandOptions = analysisVariantCommandOptions.deleteCohortStatsCommandOptions;
@@ -355,7 +350,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<VariantSetStats> infoCohortStats() throws Exception {
-
         logger.debug("Executing infoCohortStats in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.InfoCohortStatsCommandOptions commandOptions = analysisVariantCommandOptions.infoCohortStatsCommandOptions;
@@ -370,7 +364,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runCohortStats() throws Exception {
-
         logger.debug("Executing runCohortStats in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunCohortStatsCommandOptions commandOptions = analysisVariantCommandOptions.runCohortStatsCommandOptions;
@@ -412,7 +405,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runExomiser() throws Exception {
-
         logger.debug("Executing runExomiser in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunExomiserCommandOptions commandOptions = analysisVariantCommandOptions.runExomiserCommandOptions;
@@ -451,7 +443,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runExport() throws Exception {
-
         logger.debug("Executing runExport in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunExportCommandOptions commandOptions = analysisVariantCommandOptions.runExportCommandOptions;
@@ -578,7 +569,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<ObjectMap> genotypesFamily() throws Exception {
-
         logger.debug("Executing genotypesFamily in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.GenotypesFamilyCommandOptions commandOptions = analysisVariantCommandOptions.genotypesFamilyCommandOptions;
@@ -597,7 +587,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runFamilyQc() throws Exception {
-
         logger.debug("Executing runFamilyQc in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunFamilyQcCommandOptions commandOptions = analysisVariantCommandOptions.runFamilyQcCommandOptions;
@@ -638,7 +627,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> deleteFile() throws Exception {
-
         logger.debug("Executing deleteFile in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.DeleteFileCommandOptions commandOptions = analysisVariantCommandOptions.deleteFileCommandOptions;
@@ -659,7 +647,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runGatk() throws Exception {
-
         logger.debug("Executing runGatk in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunGatkCommandOptions commandOptions = analysisVariantCommandOptions.runGatkCommandOptions;
@@ -699,7 +686,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runGenomePlot() throws Exception {
-
         logger.debug("Executing runGenomePlot in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunGenomePlotCommandOptions commandOptions = analysisVariantCommandOptions.runGenomePlotCommandOptions;
@@ -741,7 +727,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runGwas() throws Exception {
-
         logger.debug("Executing runGwas in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunGwasCommandOptions commandOptions = analysisVariantCommandOptions.runGwasCommandOptions;
@@ -790,7 +775,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runHrDetect() throws Exception {
-
         logger.debug("Executing runHrDetect in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunHrDetectCommandOptions commandOptions = analysisVariantCommandOptions.runHrDetectCommandOptions;
@@ -840,7 +824,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runIndex() throws Exception {
-
         logger.debug("Executing runIndex in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunIndexCommandOptions commandOptions = analysisVariantCommandOptions.runIndexCommandOptions;
@@ -906,7 +889,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runIndividualQc() throws Exception {
-
         logger.debug("Executing runIndividualQc in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunIndividualQcCommandOptions commandOptions = analysisVariantCommandOptions.runIndividualQcCommandOptions;
@@ -947,7 +929,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runInferredSex() throws Exception {
-
         logger.debug("Executing runInferredSex in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunInferredSexCommandOptions commandOptions = analysisVariantCommandOptions.runInferredSexCommandOptions;
@@ -987,7 +968,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<KnockoutByGene> queryKnockoutGene() throws Exception {
-
         logger.debug("Executing queryKnockoutGene in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.QueryKnockoutGeneCommandOptions commandOptions = analysisVariantCommandOptions.queryKnockoutGeneCommandOptions;
@@ -1005,7 +985,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<KnockoutByIndividual> queryKnockoutIndividual() throws Exception {
-
         logger.debug("Executing queryKnockoutIndividual in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.QueryKnockoutIndividualCommandOptions commandOptions = analysisVariantCommandOptions.queryKnockoutIndividualCommandOptions;
@@ -1023,7 +1002,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runKnockout() throws Exception {
-
         logger.debug("Executing runKnockout in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunKnockoutCommandOptions commandOptions = analysisVariantCommandOptions.runKnockoutCommandOptions;
@@ -1070,7 +1048,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runMendelianError() throws Exception {
-
         logger.debug("Executing runMendelianError in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunMendelianErrorCommandOptions commandOptions = analysisVariantCommandOptions.runMendelianErrorCommandOptions;
@@ -1111,7 +1088,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<VariantMetadata> metadata() throws Exception {
-
         logger.debug("Executing metadata in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.MetadataCommandOptions commandOptions = analysisVariantCommandOptions.metadataCommandOptions;
@@ -1134,7 +1110,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Signature> queryMutationalSignature() throws Exception {
-
         logger.debug("Executing queryMutationalSignature in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.QueryMutationalSignatureCommandOptions commandOptions = analysisVariantCommandOptions.queryMutationalSignatureCommandOptions;
@@ -1166,7 +1141,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runMutationalSignature() throws Exception {
-
         logger.debug("Executing runMutationalSignature in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunMutationalSignatureCommandOptions commandOptions = analysisVariantCommandOptions.runMutationalSignatureCommandOptions;
@@ -1219,7 +1193,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runPlink() throws Exception {
-
         logger.debug("Executing runPlink in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunPlinkCommandOptions commandOptions = analysisVariantCommandOptions.runPlinkCommandOptions;
@@ -1258,7 +1231,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Variant> query() throws Exception {
-
         logger.debug("Executing query in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.QueryCommandOptions commandOptions = analysisVariantCommandOptions.queryCommandOptions;
@@ -1349,7 +1321,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runRelatedness() throws Exception {
-
         logger.debug("Executing runRelatedness in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunRelatednessCommandOptions commandOptions = analysisVariantCommandOptions.runRelatednessCommandOptions;
@@ -1391,7 +1362,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runRvtests() throws Exception {
-
         logger.debug("Executing runRvtests in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunRvtestsCommandOptions commandOptions = analysisVariantCommandOptions.runRvtestsCommandOptions;
@@ -1431,7 +1401,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FacetField> aggregationStatsSample() throws Exception {
-
         logger.debug("Executing aggregationStatsSample in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.AggregationStatsSampleCommandOptions commandOptions = analysisVariantCommandOptions.aggregationStatsSampleCommandOptions;
@@ -1467,7 +1436,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runSampleEligibility() throws Exception {
-
         logger.debug("Executing runSampleEligibility in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunSampleEligibilityCommandOptions commandOptions = analysisVariantCommandOptions.runSampleEligibilityCommandOptions;
@@ -1507,7 +1475,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runSampleQc() throws Exception {
-
         logger.debug("Executing runSampleQc in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunSampleQcCommandOptions commandOptions = analysisVariantCommandOptions.runSampleQcCommandOptions;
@@ -1591,7 +1558,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Variant> querySample() throws Exception {
-
         logger.debug("Executing querySample in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.QuerySampleCommandOptions commandOptions = analysisVariantCommandOptions.querySampleCommandOptions;
@@ -1610,7 +1576,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runSample() throws Exception {
-
         logger.debug("Executing runSample in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunSampleCommandOptions commandOptions = analysisVariantCommandOptions.runSampleCommandOptions;
@@ -1677,7 +1642,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<SampleVariantStats> querySampleStats() throws Exception {
-
         logger.debug("Executing querySampleStats in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.QuerySampleStatsCommandOptions commandOptions = analysisVariantCommandOptions.querySampleStatsCommandOptions;
@@ -1706,7 +1670,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runSampleStats() throws Exception {
-
         logger.debug("Executing runSampleStats in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunSampleStatsCommandOptions commandOptions = analysisVariantCommandOptions.runSampleStatsCommandOptions;
@@ -1779,7 +1742,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runStatsExport() throws Exception {
-
         logger.debug("Executing runStatsExport in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunStatsExportCommandOptions commandOptions = analysisVariantCommandOptions.runStatsExportCommandOptions;
@@ -1822,7 +1784,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runStats() throws Exception {
-
         logger.debug("Executing runStats in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunStatsCommandOptions commandOptions = analysisVariantCommandOptions.runStatsCommandOptions;

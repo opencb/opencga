@@ -118,7 +118,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<SampleAclEntryList> updateAcl() throws Exception {
-
         logger.debug("Executing updateAcl in Samples command line");
 
         SamplesCommandOptions.UpdateAclCommandOptions commandOptions = samplesCommandOptions.updateAclCommandOptions;
@@ -157,7 +156,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
-
         logger.debug("Executing aggregationStats in Samples command line");
 
         SamplesCommandOptions.AggregationStatsCommandOptions commandOptions = samplesCommandOptions.aggregationStatsCommandOptions;
@@ -186,7 +184,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> loadAnnotationSets() throws Exception {
-
         logger.debug("Executing loadAnnotationSets in Samples command line");
 
         SamplesCommandOptions.LoadAnnotationSetsCommandOptions commandOptions = samplesCommandOptions.loadAnnotationSetsCommandOptions;
@@ -222,7 +219,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Sample> create() throws Exception {
-
         logger.debug("Executing create in Samples command line");
 
         SamplesCommandOptions.CreateCommandOptions commandOptions = samplesCommandOptions.createCommandOptions;
@@ -284,7 +280,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Object> distinct() throws Exception {
-
         logger.debug("Executing distinct in Samples command line");
 
         SamplesCommandOptions.DistinctCommandOptions commandOptions = samplesCommandOptions.distinctCommandOptions;
@@ -336,7 +331,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Sample> load() throws Exception {
-
         logger.debug("Executing load in Samples command line");
 
         SamplesCommandOptions.LoadCommandOptions commandOptions = samplesCommandOptions.loadCommandOptions;
@@ -352,7 +346,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Sample> search() throws Exception {
-
         logger.debug("Executing search in Samples command line");
 
         SamplesCommandOptions.SearchCommandOptions commandOptions = samplesCommandOptions.searchCommandOptions;
@@ -411,7 +404,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<SampleAclEntryList> acl() throws Exception {
-
         logger.debug("Executing acl in Samples command line");
 
         SamplesCommandOptions.AclCommandOptions commandOptions = samplesCommandOptions.aclCommandOptions;
@@ -428,7 +420,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Sample> delete() throws Exception {
-
         logger.debug("Executing delete in Samples command line");
 
         SamplesCommandOptions.DeleteCommandOptions commandOptions = samplesCommandOptions.deleteCommandOptions;
@@ -446,7 +437,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Sample> info() throws Exception {
-
         logger.debug("Executing info in Samples command line");
 
         SamplesCommandOptions.InfoCommandOptions commandOptions = samplesCommandOptions.infoCommandOptions;
@@ -467,7 +457,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Sample> update() throws Exception {
-
         logger.debug("Executing update in Samples command line");
 
         SamplesCommandOptions.UpdateCommandOptions commandOptions = samplesCommandOptions.updateCommandOptions;
@@ -530,7 +519,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Sample> updateAnnotationSetsAnnotations() throws Exception {
-
         logger.debug("Executing updateAnnotationSetsAnnotations in Samples command line");
 
         SamplesCommandOptions.UpdateAnnotationSetsAnnotationsCommandOptions commandOptions = samplesCommandOptions.updateAnnotationSetsAnnotationsCommandOptions;

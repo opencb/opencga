@@ -200,7 +200,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<ClinicalAnalysisAclEntryList> updateAcl() throws Exception {
-
         logger.debug("Executing updateAcl in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.UpdateAclCommandOptions commandOptions = analysisClinicalCommandOptions.updateAclCommandOptions;
@@ -236,7 +235,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<ObjectMap> updateClinicalConfiguration() throws Exception {
-
         logger.debug("Executing updateClinicalConfiguration in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.UpdateClinicalConfigurationCommandOptions commandOptions = analysisClinicalCommandOptions.updateClinicalConfigurationCommandOptions;
@@ -270,7 +268,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<ClinicalAnalysis> create() throws Exception {
-
         logger.debug("Executing create in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.CreateCommandOptions commandOptions = analysisClinicalCommandOptions.createCommandOptions;
@@ -334,7 +331,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<ObjectMap> distinct() throws Exception {
-
         logger.debug("Executing distinct in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.DistinctCommandOptions commandOptions = analysisClinicalCommandOptions.distinctCommandOptions;
@@ -374,7 +370,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<ObjectMap> distinctInterpretation() throws Exception {
-
         logger.debug("Executing distinctInterpretation in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.DistinctInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.distinctInterpretationCommandOptions;
@@ -402,7 +397,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Interpretation> searchInterpretation() throws Exception {
-
         logger.debug("Executing searchInterpretation in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.SearchInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.searchInterpretationCommandOptions;
@@ -435,7 +429,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Interpretation> infoInterpretation() throws Exception {
-
         logger.debug("Executing infoInterpretation in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.InfoInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.infoInterpretationCommandOptions;
@@ -454,7 +447,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runInterpreterCancerTiering() throws Exception {
-
         logger.debug("Executing runInterpreterCancerTiering in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.RunInterpreterCancerTieringCommandOptions commandOptions = analysisClinicalCommandOptions.runInterpreterCancerTieringCommandOptions;
@@ -494,7 +486,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runInterpreterExomiser() throws Exception {
-
         logger.debug("Executing runInterpreterExomiser in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.RunInterpreterExomiserCommandOptions commandOptions = analysisClinicalCommandOptions.runInterpreterExomiserCommandOptions;
@@ -532,7 +523,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runInterpreterTeam() throws Exception {
-
         logger.debug("Executing runInterpreterTeam in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.RunInterpreterTeamCommandOptions commandOptions = analysisClinicalCommandOptions.runInterpreterTeamCommandOptions;
@@ -573,7 +563,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runInterpreterTiering() throws Exception {
-
         logger.debug("Executing runInterpreterTiering in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.RunInterpreterTieringCommandOptions commandOptions = analysisClinicalCommandOptions.runInterpreterTieringCommandOptions;
@@ -614,7 +603,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runInterpreterZetta() throws Exception {
-
         logger.debug("Executing runInterpreterZetta in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.RunInterpreterZettaCommandOptions commandOptions = analysisClinicalCommandOptions.runInterpreterZettaCommandOptions;
@@ -702,7 +690,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FacetField> aggregationStatsRga() throws Exception {
-
         logger.debug("Executing aggregationStatsRga in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.AggregationStatsRgaCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsRgaCommandOptions;
@@ -739,7 +726,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<RgaKnockoutByGene> queryRgaGene() throws Exception {
-
         logger.debug("Executing queryRgaGene in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.QueryRgaGeneCommandOptions commandOptions = analysisClinicalCommandOptions.queryRgaGeneCommandOptions;
@@ -782,7 +768,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<KnockoutByGeneSummary> summaryRgaGene() throws Exception {
-
         logger.debug("Executing summaryRgaGene in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.SummaryRgaGeneCommandOptions commandOptions = analysisClinicalCommandOptions.summaryRgaGeneCommandOptions;
@@ -820,7 +805,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runRgaIndex() throws Exception {
-
         logger.debug("Executing runRgaIndex in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.RunRgaIndexCommandOptions commandOptions = analysisClinicalCommandOptions.runRgaIndexCommandOptions;
@@ -859,7 +843,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<KnockoutByIndividual> queryRgaIndividual() throws Exception {
-
         logger.debug("Executing queryRgaIndividual in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.QueryRgaIndividualCommandOptions commandOptions = analysisClinicalCommandOptions.queryRgaIndividualCommandOptions;
@@ -899,7 +882,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<KnockoutByIndividualSummary> summaryRgaIndividual() throws Exception {
-
         logger.debug("Executing summaryRgaIndividual in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.SummaryRgaIndividualCommandOptions commandOptions = analysisClinicalCommandOptions.summaryRgaIndividualCommandOptions;
@@ -937,7 +919,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<KnockoutByVariant> queryRgaVariant() throws Exception {
-
         logger.debug("Executing queryRgaVariant in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.QueryRgaVariantCommandOptions commandOptions = analysisClinicalCommandOptions.queryRgaVariantCommandOptions;
@@ -980,7 +961,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<KnockoutByVariantSummary> summaryRgaVariant() throws Exception {
-
         logger.debug("Executing summaryRgaVariant in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.SummaryRgaVariantCommandOptions commandOptions = analysisClinicalCommandOptions.summaryRgaVariantCommandOptions;
@@ -1018,7 +998,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<ClinicalAnalysis> search() throws Exception {
-
         logger.debug("Executing search in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.SearchCommandOptions commandOptions = analysisClinicalCommandOptions.searchCommandOptions;
@@ -1063,7 +1042,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<ClinicalVariant> queryVariant() throws Exception {
-
         logger.debug("Executing queryVariant in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.QueryVariantCommandOptions commandOptions = analysisClinicalCommandOptions.queryVariantCommandOptions;
@@ -1138,7 +1116,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<ClinicalAnalysisAclEntryList> acl() throws Exception {
-
         logger.debug("Executing acl in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.AclCommandOptions commandOptions = analysisClinicalCommandOptions.aclCommandOptions;
@@ -1155,7 +1132,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<ClinicalAnalysis> delete() throws Exception {
-
         logger.debug("Executing delete in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.DeleteCommandOptions commandOptions = analysisClinicalCommandOptions.deleteCommandOptions;
@@ -1171,7 +1147,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<ClinicalAnalysis> update() throws Exception {
-
         logger.debug("Executing update in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.UpdateCommandOptions commandOptions = analysisClinicalCommandOptions.updateCommandOptions;
@@ -1229,7 +1204,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<ClinicalAnalysis> info() throws Exception {
-
         logger.debug("Executing info in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.InfoCommandOptions commandOptions = analysisClinicalCommandOptions.infoCommandOptions;
@@ -1247,7 +1221,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Interpretation> createInterpretation() throws Exception {
-
         logger.debug("Executing createInterpretation in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.CreateInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.createInterpretationCommandOptions;
@@ -1295,7 +1268,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Interpretation> clearInterpretation() throws Exception {
-
         logger.debug("Executing clearInterpretation in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.ClearInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.clearInterpretationCommandOptions;
@@ -1310,7 +1282,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Interpretation> deleteInterpretation() throws Exception {
-
         logger.debug("Executing deleteInterpretation in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.DeleteInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.deleteInterpretationCommandOptions;
@@ -1326,7 +1297,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Interpretation> revertInterpretation() throws Exception {
-
         logger.debug("Executing revertInterpretation in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.RevertInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.revertInterpretationCommandOptions;
@@ -1341,7 +1311,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Interpretation> updateInterpretation() throws Exception {
-
         logger.debug("Executing updateInterpretation in Analysis - Clinical command line");
 
         AnalysisClinicalCommandOptions.UpdateInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.updateInterpretationCommandOptions;

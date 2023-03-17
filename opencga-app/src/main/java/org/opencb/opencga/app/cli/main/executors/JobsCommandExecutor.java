@@ -133,7 +133,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<JobAclEntryList> updateAcl() throws Exception {
-
         logger.debug("Executing updateAcl in Jobs command line");
 
         JobsCommandOptions.UpdateAclCommandOptions commandOptions = jobsCommandOptions.updateAclCommandOptions;
@@ -161,7 +160,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
-
         logger.debug("Executing aggregationStats in Jobs command line");
 
         JobsCommandOptions.AggregationStatsCommandOptions commandOptions = jobsCommandOptions.aggregationStatsCommandOptions;
@@ -193,7 +191,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> create() throws Exception {
-
         logger.debug("Executing create in Jobs command line");
 
         JobsCommandOptions.CreateCommandOptions commandOptions = jobsCommandOptions.createCommandOptions;
@@ -245,7 +242,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Object> distinct() throws Exception {
-
         logger.debug("Executing distinct in Jobs command line");
 
         JobsCommandOptions.DistinctCommandOptions commandOptions = jobsCommandOptions.distinctCommandOptions;
@@ -278,7 +274,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> retry() throws Exception {
-
         logger.debug("Executing retry in Jobs command line");
 
         JobsCommandOptions.RetryCommandOptions commandOptions = jobsCommandOptions.retryCommandOptions;
@@ -318,7 +313,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> search() throws Exception {
-
         logger.debug("Executing search in Jobs command line");
 
         JobsCommandOptions.SearchCommandOptions commandOptions = jobsCommandOptions.searchCommandOptions;
@@ -356,7 +350,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<JobTop> top() throws Exception {
-
         logger.debug("Executing top in Jobs command line");
 
         ParentJobsCommandOptions.TopCommandOptions commandOptions = jobsCommandOptions.topCommandOptions;
@@ -370,13 +363,11 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
-        ParentJobsCommandExecutor customJobsCommandExecutor = new ParentJobsCommandExecutor(queryParams,getLogger(),getOpenCGAClient(),getSessionManager());
+        ParentJobsCommandExecutor customJobsCommandExecutor = new ParentJobsCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
         return customJobsCommandExecutor.top();
-
     }
 
     private RestResponse<JobAclEntryList> acl() throws Exception {
-
         logger.debug("Executing acl in Jobs command line");
 
         JobsCommandOptions.AclCommandOptions commandOptions = jobsCommandOptions.aclCommandOptions;
@@ -389,7 +380,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> delete() throws Exception {
-
         logger.debug("Executing delete in Jobs command line");
 
         JobsCommandOptions.DeleteCommandOptions commandOptions = jobsCommandOptions.deleteCommandOptions;
@@ -404,7 +394,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> info() throws Exception {
-
         logger.debug("Executing info in Jobs command line");
 
         JobsCommandOptions.InfoCommandOptions commandOptions = jobsCommandOptions.infoCommandOptions;
@@ -422,7 +411,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> update() throws Exception {
-
         logger.debug("Executing update in Jobs command line");
 
         JobsCommandOptions.UpdateCommandOptions commandOptions = jobsCommandOptions.updateCommandOptions;
@@ -462,7 +450,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FileContent> headLog() throws Exception {
-
         logger.debug("Executing headLog in Jobs command line");
 
         JobsCommandOptions.HeadLogCommandOptions commandOptions = jobsCommandOptions.headLogCommandOptions;
@@ -480,7 +467,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FileContent> tailLog() throws Exception {
-
         logger.debug("Executing tailLog in Jobs command line");
 
         JobsCommandOptions.TailLogCommandOptions commandOptions = jobsCommandOptions.tailLogCommandOptions;
