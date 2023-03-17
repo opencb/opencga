@@ -20,6 +20,7 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.session.SessionManager;
+import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.QueryType;
@@ -31,31 +32,30 @@ import java.io.IOException;
 import static org.opencb.commons.utils.PrintUtils.getKeyValueAsFormattedString;
 import static org.opencb.commons.utils.PrintUtils.println;
 
-public class ParentUsersCommandExecutor {
+public class ParentUsersCommandExecutor extends CustomExecutor {
 
     public static final String LOGIN_OK = "You have been logged in correctly: ";
     public static final String LOGIN_FAIL = "Incorrect username or password.";
     public static final String LOGIN_ERROR = "Not available login service now. Please contact the system administrator.";
     public static final String LOGOUT = "You've been logged out.";
 
-    private ObjectMap map;
-    private Logger logger;
-    private OpenCGAClient openCGAClient;
-    private SessionManager session;
 
-    public ParentUsersCommandExecutor(ObjectMap map, Logger logger, OpenCGAClient openCGAClient, SessionManager sessionManager) {
-        this.map = map;
-        this.logger = logger;
-        this.openCGAClient = openCGAClient;
-        this.session = sessionManager;
+    public ParentUsersCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
+                                      SessionManager session, Logger logger) {
+        super(options, token, clientConfiguration, session, logger);
+    }
+
+    public ParentUsersCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
+                                      SessionManager session, Logger logger, OpenCGAClient openCGAClient) {
+        super(options, token, clientConfiguration, session, logger, openCGAClient);
     }
 
     public RestResponse<AuthenticationResponse> login() throws Exception {
         logger.debug("Login");
         RestResponse<AuthenticationResponse> res = new RestResponse<>();
         try {
-            String user = String.valueOf(map.get("user"));
-            String password = String.valueOf(map.get("password"));
+            String user = String.valueOf(options.get("user"));
+            String password = String.valueOf(options.get("password"));
 
             if (StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(password)) {
                 AuthenticationResponse response = null;
@@ -73,7 +73,7 @@ public class ParentUsersCommandExecutor {
                 res = session.saveSession(user, response, openCGAClient);
                 println(getKeyValueAsFormattedString(LOGIN_OK, user));
             } else {
-                String sessionId = String.valueOf(map.get("token"));
+                String sessionId = String.valueOf(options.get("token"));
                 String errorMsg = "Missing password. ";
                 if (StringUtils.isNotEmpty(sessionId)) {
                     errorMsg += "Active token detected ";
@@ -96,7 +96,7 @@ public class ParentUsersCommandExecutor {
 
     public RestResponse<AuthenticationResponse> logout() throws IOException {
         logger.debug("Logout");
-        RestResponse<AuthenticationResponse> res = new RestResponse();
+        RestResponse<AuthenticationResponse> res = new RestResponse<>();
         try {
             session.logoutSessionFile();
             openCGAClient.logout();

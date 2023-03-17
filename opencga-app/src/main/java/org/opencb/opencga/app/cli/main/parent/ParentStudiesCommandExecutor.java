@@ -22,6 +22,7 @@ import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
+import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.TemplateParams;
@@ -38,29 +39,26 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.LinkedList;
 import java.util.List;
 
-public class ParentStudiesCommandExecutor {
+public class ParentStudiesCommandExecutor extends CustomExecutor {
 
+    public ParentStudiesCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
+                                        SessionManager session, Logger logger) {
+        super(options, token, clientConfiguration, session, logger);
+    }
 
-    private ObjectMap map;
-    private Logger logger;
-    private OpenCGAClient openCGAClient;
-    private SessionManager session;
-
-    public ParentStudiesCommandExecutor(ObjectMap map, Logger logger, OpenCGAClient openCGAClient, SessionManager session) {
-        this.map = map;
-        this.logger = logger;
-        this.openCGAClient = openCGAClient;
-        this.session = session;
+    public ParentStudiesCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
+                                        SessionManager session, Logger logger, OpenCGAClient openCGAClient) {
+        super(options, token, clientConfiguration, session, logger, openCGAClient);
     }
 
     public RestResponse<Job> runTemplates() throws Exception {
         logger.debug("Run template");
         //   StudiesCommandOptions.RunTemplatesCommandOptions c = studiesCommandOptions.runTemplatesCommandOptions;
 
-        String study = getSingleValidStudy(String.valueOf(map.get("study")));
-        TemplateParams templateParams = new TemplateParams(String.valueOf(map.get("id")),
-                Boolean.parseBoolean(String.valueOf(map.get("overwrite"))),
-                Boolean.parseBoolean(String.valueOf(map.get("resume"))));
+        String study = getSingleValidStudy(String.valueOf(options.get("study")));
+        TemplateParams templateParams = new TemplateParams(String.valueOf(options.get("id")),
+                Boolean.parseBoolean(String.valueOf(options.get("overwrite"))),
+                Boolean.parseBoolean(String.valueOf(options.get("resume"))));
         ObjectMap params = new ObjectMap();
 
         return openCGAClient.getStudyClient().runTemplates(study, templateParams, params);
@@ -72,10 +70,10 @@ public class ParentStudiesCommandExecutor {
 
         ObjectMap params = new ObjectMap();
 
-        String study = getSingleValidStudy(String.valueOf(map.get("study")));
-        Path path = Paths.get(String.valueOf(map.get("inputFile")));
+        String study = getSingleValidStudy(String.valueOf(options.get("study")));
+        Path path = Paths.get(String.valueOf(options.get("inputFile")));
         if (!path.toFile().exists()) {
-            throw new CatalogException("File '" + map.get("inputFile") + "' not found");
+            throw new CatalogException("File '" + options.get("inputFile") + "' not found");
         }
         IOManagerFactory ioManagerFactory = new IOManagerFactory();
         IOManager ioManager = ioManagerFactory.get(path.toUri());
@@ -108,10 +106,10 @@ public class ParentStudiesCommandExecutor {
             logger.debug("Compressing file in '" + manifestPath + "' before uploading");
             ioManager.zip(fileList, manifestPath.toFile());
             params.put("file", manifestPath.toString());
-        } else if (String.valueOf(map.get("inputFile")).endsWith("zip")) {
-            params.put("file", String.valueOf(map.get("inputFile")));
+        } else if (String.valueOf(options.get("inputFile")).endsWith("zip")) {
+            params.put("file", String.valueOf(options.get("inputFile")));
         } else {
-            throw new CatalogException("File '" + map.get("inputFile") + "' is not a zip file");
+            throw new CatalogException("File '" + options.get("inputFile") + "' is not a zip file");
         }
 
         RestResponse<String> uploadResponse = openCGAClient.getStudyClient().uploadTemplates(study, params);
