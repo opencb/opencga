@@ -154,6 +154,7 @@
                                     <arg value="-r"/>
                                     <arg value="${opencga.build.dir}/analysis"/>
                                     <arg value="${opencga.build.dir}/bin"/>
+                                    <arg value="${opencga.build.dir}/cloud"/>
                                     <arg value="${opencga.build.dir}/conf"/>
                                     <arg value="${opencga.build.dir}/libs"/>
                                     <arg value="${opencga.build.dir}/misc"/>
@@ -164,7 +165,7 @@
                                 <exec executable="cp">
                                     <arg value="-r"/>
 <!--                                    <arg value="${app.dir}/analysis"/>-->
-                                    <arg value="${app.dir}/cloud"/>
+<!--                                    <arg value="${app.dir}/cloud"/>-->
 <!--                                    <arg value="${app.dir}/cloud/docker/.dockerignore"/>-->
 <!--                                    <arg value="${app.dir}/conf"/>-->
 <!--                                    <arg value="${app.dir}/misc"/>-->
