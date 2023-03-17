@@ -93,25 +93,25 @@ public class EnterpriseOpenCGAClient {
     }
     
 
-//    public UserClient getUserClient() {
-//        return getClient(UserClient.class, () -> new UserClient(token, clientConfiguration));
-//    }
+    public UserClient getUserClient() {
+        return getClient(UserClient.class, () -> new UserClient(token, clientConfiguration));
+    }
 
     public ProjectClient getProjectClient() {
         return getClient(ProjectClient.class, () -> new ProjectClient(token, clientConfiguration));
     }
 
-//    public StudyClient getStudyClient() {
-//        return getClient(StudyClient.class, () -> new StudyClient(token, clientConfiguration));
-//    }
-//
-//    public FileClient getFileClient() {
-//        return getClient(FileClient.class, () -> new FileClient(token, clientConfiguration));
-//    }
-//
-//    public JobClient getJobClient() {
-//        return getClient(JobClient.class, () -> new JobClient(token, clientConfiguration));
-//    }
+    public StudyClient getStudyClient() {
+        return getClient(StudyClient.class, () -> new StudyClient(token, clientConfiguration));
+    }
+
+    public FileClient getFileClient() {
+        return getClient(FileClient.class, () -> new FileClient(token, clientConfiguration));
+    }
+
+    public JobClient getJobClient() {
+        return getClient(JobClient.class, () -> new JobClient(token, clientConfiguration));
+    }
 
     public IndividualClient getIndividualClient() {
         return getClient(IndividualClient.class, () -> new IndividualClient(token, clientConfiguration));

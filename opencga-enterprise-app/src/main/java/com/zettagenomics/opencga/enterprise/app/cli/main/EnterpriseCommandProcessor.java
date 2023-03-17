@@ -186,21 +186,21 @@ public class EnterpriseCommandProcessor {
     private EnterpriseOpencgaCommandExecutor getOpencgaCommandExecutor(OpencgaCliOptionsParser cliOptionsParser, String parsedCommand) throws CatalogAuthenticationException {
         EnterpriseOpencgaCommandExecutor commandExecutor = null;
         switch (parsedCommand) {
-//            case "users":
-//                commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
-//                break;
+            case "users":
+                commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
+                break;
             case "projects":
                 commandExecutor = new ProjectsCommandExecutor(cliOptionsParser.getProjectsCommandOptions());
                 break;
-//            case "studies":
-//                commandExecutor = new StudiesCommandExecutor(cliOptionsParser.getStudiesCommandOptions());
-//                break;
-//            case "files":
-//                commandExecutor = new FilesCommandExecutor(cliOptionsParser.getFilesCommandOptions());
-//                break;
-//            case "jobs":
-//                commandExecutor = new JobsCommandExecutor(cliOptionsParser.getJobsCommandOptions());
-//                break;
+            case "studies":
+                commandExecutor = new StudiesCommandExecutor(cliOptionsParser.getStudiesCommandOptions());
+                break;
+            case "files":
+                commandExecutor = new FilesCommandExecutor(cliOptionsParser.getFilesCommandOptions());
+                break;
+            case "jobs":
+                commandExecutor = new JobsCommandExecutor(cliOptionsParser.getJobsCommandOptions());
+                break;
             case "individuals":
                 commandExecutor = new IndividualsCommandExecutor(cliOptionsParser.getIndividualsCommandOptions());
                 break;

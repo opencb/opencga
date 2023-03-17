@@ -21,11 +21,11 @@ public class EnterpriseResourceConfig extends ResourceConfig {
 
     static {
         enterpriseClasses = new LinkedHashMap<>(20);
-//        enterpriseClasses.put("USER", UserWSServer.class);
+        enterpriseClasses.put("USER", UserWSServer.class);
         enterpriseClasses.put("PROJECT", ProjectWSServer.class);
-//        enterpriseClasses.put("STUDY", StudyWSServer.class);
-//        enterpriseClasses.put("FILE", FileWSServer.class);
-//        enterpriseClasses.put("JOB", JobWSServer.class);
+        enterpriseClasses.put("STUDY", StudyWSServer.class);
+        enterpriseClasses.put("FILE", FileWSServer.class);
+        enterpriseClasses.put("JOB", JobWSServer.class);
         enterpriseClasses.put("SAMPLE", SampleWSServer.class);
         enterpriseClasses.put("INDIVIDUAL", IndividualWSServer.class);
         enterpriseClasses.put("FAMILY", FamilyWSServer.class);

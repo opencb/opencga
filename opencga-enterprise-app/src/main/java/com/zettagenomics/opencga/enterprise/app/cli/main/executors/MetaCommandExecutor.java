@@ -88,7 +88,6 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     }
 
     private RestResponse<ObjectMap> about() throws Exception {
-
         logger.debug("Executing about in Meta command line");
 
         MetaCommandOptions.AboutCommandOptions commandOptions = metaCommandOptions.aboutCommandOptions;
@@ -96,7 +95,6 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     }
 
     private RestResponse<ObjectMap> about2() throws Exception {
-
         logger.debug("Executing about2 in Meta command line");
 
         MetaCommandOptions.About2CommandOptions commandOptions = metaCommandOptions.about2CommandOptions;
@@ -104,7 +102,6 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     }
 
     private RestResponse<List> api() throws Exception {
-
         logger.debug("Executing api in Meta command line");
 
         MetaCommandOptions.ApiCommandOptions commandOptions = metaCommandOptions.apiCommandOptions;
@@ -116,7 +113,6 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     }
 
     private RestResponse<ObjectMap> fail() throws Exception {
-
         logger.debug("Executing fail in Meta command line");
 
         MetaCommandOptions.FailCommandOptions commandOptions = metaCommandOptions.failCommandOptions;
@@ -124,7 +120,6 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     }
 
     private RestResponse<String> model() throws Exception {
-
         logger.debug("Executing model in Meta command line");
 
         MetaCommandOptions.ModelCommandOptions commandOptions = metaCommandOptions.modelCommandOptions;
@@ -132,7 +127,6 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     }
 
     private RestResponse<String> ping() throws Exception {
-
         logger.debug("Executing ping in Meta command line");
 
         MetaCommandOptions.PingCommandOptions commandOptions = metaCommandOptions.pingCommandOptions;
@@ -140,7 +134,6 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     }
 
     private RestResponse<ObjectMap> sso() throws Exception {
-
         logger.debug("Executing sso in Meta command line");
 
         MetaCommandOptions.SsoCommandOptions commandOptions = metaCommandOptions.ssoCommandOptions;
@@ -152,7 +145,6 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
     }
 
     private RestResponse<ObjectMap> status() throws Exception {
-
         logger.debug("Executing status in Meta command line");
 
         MetaCommandOptions.StatusCommandOptions commandOptions = metaCommandOptions.statusCommandOptions;

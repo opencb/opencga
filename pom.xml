@@ -429,7 +429,7 @@
                 <opencga.war.name>opencga-enterprise-${project.parent.version}</opencga.war.name>
 
                 <ENTERPRISE.SSO.ACTIVE>false</ENTERPRISE.SSO.ACTIVE>
-                <ENTERPRISE.SSO.CAS.SERVER.PREFIX.URL>https://localhost:8443/cas</ENTERPRISE.SSO.CAS.SERVER.PREFIX.URL>
+                <ENTERPRISE.SSO.CAS.SERVER.PREFIX.URL>https://reports.test.zettagenomics.com:8443/cas</ENTERPRISE.SSO.CAS.SERVER.PREFIX.URL>
                 <ENTERPRISE.SSO.SERVER.NAME>https://test.app.zettagenomics.com/TASK-1974</ENTERPRISE.SSO.SERVER.NAME>
 
                 <!-- General -->

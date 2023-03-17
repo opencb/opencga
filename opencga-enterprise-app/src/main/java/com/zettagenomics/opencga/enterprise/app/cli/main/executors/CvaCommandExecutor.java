@@ -66,7 +66,6 @@ public class CvaCommandExecutor extends com.zettagenomics.opencga.enterprise.app
     }
 
     private RestResponse<Sample> info() throws Exception {
-
         logger.debug("Executing info in Cva command line");
 
         CvaCommandOptions.InfoCommandOptions commandOptions = cvaCommandOptions.infoCommandOptions;
