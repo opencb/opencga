@@ -6,10 +6,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.FileAppender;
-import org.apache.logging.log4j.core.config.AppenderRef;
 import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -29,7 +30,9 @@ import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobInternal;
 import org.opencb.opencga.core.models.job.JobReferenceParam;
+import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.Status;
 import org.reflections.Reflections;
@@ -46,7 +49,6 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -599,7 +601,6 @@ public class MigrationManager {
 
         MigrationException exceptionToThrow = null;
         try {
-            logger.info("------------------------------------------------------");
             MigrationRun.MigrationStatus status;
             if (annotation.domain() == Migration.MigrationDomain.STORAGE
                     && migrationTool.readStorageConfiguration().getMode() == StorageConfiguration.Mode.READ_ONLY) {
@@ -619,6 +620,7 @@ public class MigrationManager {
             // Clear exception
             migrationRun.setException(null);
             migrationRun.setStatus(status);
+            logger.info("------------------------------------------------------");
             if (status == MigrationRun.MigrationStatus.DONE) {
                 logger.info("Migration '{}' succeeded : {}", annotation.id(), TimeUtils.durationToString(stopWatch));
             } else if (status == MigrationRun.MigrationStatus.ON_HOLD) {
@@ -631,6 +633,7 @@ public class MigrationManager {
                 // Should not happen
                 logger.info("Migration '{}' finished with status {} : {}", annotation.id(), status, TimeUtils.durationToString(stopWatch));
             }
+            logger.info("------------------------------------------------------");
         } catch (Exception e) {
             migrationRun.setStatus(MigrationRun.MigrationStatus.ERROR);
             String message;
@@ -642,6 +645,7 @@ public class MigrationManager {
             migrationRun.setException(message);
             logger.info("------------------------------------------------------");
             logger.error("Migration '{}' failed with message: {}", annotation.id(), message, e);
+            logger.info("------------------------------------------------------");
         } finally {
             stopMigrationLogger();
             migrationRun.setStart(start);
@@ -664,6 +668,7 @@ public class MigrationManager {
                         .setCreationDate(TimeUtils.getTime(start))
                         .setCommandLine("opencga-admin.sh")
                         .setParams(params)
+                        .setTool(new ToolInfo(annotation.id(), annotation.description(), Tool.Scope.GLOBAL, null, null))
                         .setOutDir(outdir.first())
                         .setStderr(stderr.first())
                         .setInternal(new JobInternal()
@@ -754,28 +759,26 @@ public class MigrationManager {
                 .withFileName(fileNamePath)
                 .build();
         fileAppender.start();
+        addAppender(fileAppender);
 
-                // Add file appender to configuration
-                org.apache.logging.log4j.core.config.Configuration loggerConfiguration
-                = LoggerContext.getContext().getConfiguration();
-        org.apache.logging.log4j.core.Logger rootLogger = LoggerContext.getContext().getRootLogger();
-
-                loggerConfiguration.addLoggerAppender(rootLogger, fileAppender);
-        for (AppenderRef appenderRef : loggerConfiguration.getRootLogger().getAppenderRefs()) {
-            loggerConfiguration.addLoggerAppender(rootLogger, loggerConfiguration.getAppender(appenderRef.getRef()));
-        }
-
-        // Apply configuration
-        Configurator.reconfigure(loggerConfiguration);
         return fileName;
     }
 
     private void stopMigrationLogger() {
-        FileAppender fileAppender = (FileAppender) LoggerContext.getContext().getRootLogger().getAppenders().get("MigrationRunAppender");
-        fileAppender.stop(10, TimeUnit.SECONDS);
-
         //Restore logger configuration
+        Configurator.shutdown(LoggerContext.getContext());
         Configurator.reconfigure();
     }
 
+    void addAppender(final Appender appender) {
+        final LoggerContext context = LoggerContext.getContext(false);
+        final org.apache.logging.log4j.core.config.Configuration config = context.getConfiguration();
+        appender.start();
+        config.addAppender(appender);
+
+        for (final LoggerConfig loggerConfig : config.getLoggers().values()) {
+            loggerConfig.addAppender(appender, null, null);
+        }
+        config.getRootLogger().addAppender(appender, null, null);
+    }
 }
