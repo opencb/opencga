@@ -131,7 +131,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
         UsersCommandOptions.PasswordCommandOptions commandOptions = usersCommandOptions.passwordCommandOptions;
 
-        PasswordChangeParams passwordChangeParams= null;
+        PasswordChangeParams passwordChangeParams = null;
         if (commandOptions.jsonDataModel) {
             passwordChangeParams = new PasswordChangeParams();
             RestResponse<User> res = new RestResponse<>();
@@ -144,10 +144,10 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "user",commandOptions.user, true);
-             putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
-             putNestedIfNotEmpty(beanParams, "newPassword",commandOptions.newPassword, true);
-             putNestedIfNotEmpty(beanParams, "reset",commandOptions.reset, true);
- 
+            putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
+            putNestedIfNotEmpty(beanParams, "newPassword",commandOptions.newPassword, true);
+            putNestedIfNotEmpty(beanParams, "reset",commandOptions.reset, true);
+
             passwordChangeParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PasswordChangeParams.class);
@@ -187,7 +187,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
-        ConfigUpdateParams configUpdateParams= null;
+        ConfigUpdateParams configUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             configUpdateParams = new ConfigUpdateParams();
             RestResponse<ObjectMap> res = new RestResponse<>();
@@ -200,8 +200,8 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotNull(beanParams, "configuration",commandOptions.configuration, true);
- 
+            putNestedIfNotNull(beanParams, "configuration",commandOptions.configuration, true);
+
             configUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ConfigUpdateParams.class);
@@ -252,7 +252,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
 
-        UserUpdateParams userUpdateParams= null;
+        UserUpdateParams userUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             userUpdateParams = new UserUpdateParams();
             RestResponse<User> res = new RestResponse<>();
@@ -265,10 +265,10 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
-             putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
- 
+            putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
+            putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+
             userUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), UserUpdateParams.class);

@@ -22,7 +22,7 @@ import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.slf4j.Logger;
 
-public class CustomExecutor {
+public class CustomCommandExecutor {
 
     protected ObjectMap options;
     protected String token;
@@ -31,13 +31,13 @@ public class CustomExecutor {
     protected Logger logger;
     protected OpenCGAClient openCGAClient;
 
-    public CustomExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
-                          SessionManager session, Logger logger) {
+    public CustomCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
+                                 SessionManager session, Logger logger) {
         this(options, token, clientConfiguration, session, logger, null);
     }
 
-    public CustomExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
-                          SessionManager session, Logger logger, OpenCGAClient openCGAClient) {
+    public CustomCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
+                                 SessionManager session, Logger logger, OpenCGAClient openCGAClient) {
         this.options = options;
         this.token = token;
         this.clientConfiguration = clientConfiguration;
@@ -72,7 +72,7 @@ public class CustomExecutor {
         return options;
     }
 
-    public CustomExecutor setOptions(ObjectMap options) {
+    public CustomCommandExecutor setOptions(ObjectMap options) {
         this.options = options;
         return this;
     }
@@ -81,7 +81,7 @@ public class CustomExecutor {
         return token;
     }
 
-    public CustomExecutor setToken(String token) {
+    public CustomCommandExecutor setToken(String token) {
         this.token = token;
         return this;
     }
@@ -90,7 +90,7 @@ public class CustomExecutor {
         return clientConfiguration;
     }
 
-    public CustomExecutor setClientConfiguration(ClientConfiguration clientConfiguration) {
+    public CustomCommandExecutor setClientConfiguration(ClientConfiguration clientConfiguration) {
         this.clientConfiguration = clientConfiguration;
         return this;
     }
@@ -99,7 +99,7 @@ public class CustomExecutor {
         return session;
     }
 
-    public CustomExecutor setSession(SessionManager session) {
+    public CustomCommandExecutor setSession(SessionManager session) {
         this.session = session;
         return this;
     }
@@ -108,7 +108,7 @@ public class CustomExecutor {
         return logger;
     }
 
-    public CustomExecutor setLogger(Logger logger) {
+    public CustomCommandExecutor setLogger(Logger logger) {
         this.logger = logger;
         return this;
     }
@@ -117,7 +117,7 @@ public class CustomExecutor {
         return openCGAClient;
     }
 
-    public CustomExecutor setOpenCGAClient(OpenCGAClient openCGAClient) {
+    public CustomCommandExecutor setOpenCGAClient(OpenCGAClient openCGAClient) {
         this.openCGAClient = openCGAClient;
         return this;
     }

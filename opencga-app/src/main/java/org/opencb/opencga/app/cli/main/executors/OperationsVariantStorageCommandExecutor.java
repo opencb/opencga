@@ -182,7 +182,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("annotationSaveId", commandOptions.annotationSaveId);
 
 
-        CellBaseConfiguration cellBaseConfiguration= null;
+        CellBaseConfiguration cellBaseConfiguration = null;
         if (commandOptions.jsonDataModel) {
             cellBaseConfiguration = new CellBaseConfiguration();
             RestResponse<Job> res = new RestResponse<>();
@@ -195,9 +195,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "url",commandOptions.url, true);
-             putNestedIfNotEmpty(beanParams, "version",commandOptions.version, true);
-             putNestedIfNotEmpty(beanParams, "dataRelease",commandOptions.dataRelease, true);
- 
+            putNestedIfNotEmpty(beanParams, "version",commandOptions.version, true);
+            putNestedIfNotEmpty(beanParams, "dataRelease",commandOptions.dataRelease, true);
+
             cellBaseConfiguration = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CellBaseConfiguration.class);
@@ -221,7 +221,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantAggregateParams variantAggregateParams= null;
+        VariantAggregateParams variantAggregateParams = null;
         if (commandOptions.jsonDataModel) {
             variantAggregateParams = new VariantAggregateParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -234,8 +234,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
-             putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
- 
+            putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
+
             variantAggregateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantAggregateParams.class);
@@ -276,7 +276,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantAnnotationIndexParams variantAnnotationIndexParams= null;
+        VariantAnnotationIndexParams variantAnnotationIndexParams = null;
         if (commandOptions.jsonDataModel) {
             variantAnnotationIndexParams = new VariantAnnotationIndexParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -289,15 +289,15 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-             putNestedIfNotEmpty(beanParams, "outputFileName",commandOptions.outputFileName, true);
-             putNestedIfNotEmpty(beanParams, "annotator",commandOptions.annotator, true);
-             putNestedIfNotNull(beanParams, "overwriteAnnotations",commandOptions.overwriteAnnotations, true);
-             putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
-             putNestedIfNotNull(beanParams, "create",commandOptions.create, true);
-             putNestedIfNotEmpty(beanParams, "load",commandOptions.load, true);
-             putNestedIfNotEmpty(beanParams, "customName",commandOptions.customName, true);
-             putNestedIfNotNull(beanParams, "sampleIndexAnnotation",commandOptions.sampleIndexAnnotation, true);
- 
+            putNestedIfNotEmpty(beanParams, "outputFileName",commandOptions.outputFileName, true);
+            putNestedIfNotEmpty(beanParams, "annotator",commandOptions.annotator, true);
+            putNestedIfNotNull(beanParams, "overwriteAnnotations",commandOptions.overwriteAnnotations, true);
+            putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
+            putNestedIfNotNull(beanParams, "create",commandOptions.create, true);
+            putNestedIfNotEmpty(beanParams, "load",commandOptions.load, true);
+            putNestedIfNotEmpty(beanParams, "customName",commandOptions.customName, true);
+            putNestedIfNotNull(beanParams, "sampleIndexAnnotation",commandOptions.sampleIndexAnnotation, true);
+
             variantAnnotationIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantAnnotationIndexParams.class);
@@ -318,7 +318,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("project", commandOptions.project);
 
 
-        VariantAnnotationSaveParams variantAnnotationSaveParams= null;
+        VariantAnnotationSaveParams variantAnnotationSaveParams = null;
         if (commandOptions.jsonDataModel) {
             variantAnnotationSaveParams = new VariantAnnotationSaveParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -331,7 +331,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "annotationId",commandOptions.annotationId, true);
- 
+
             variantAnnotationSaveParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantAnnotationSaveParams.class);
@@ -352,7 +352,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantConfigureParams variantConfigureParams= null;
+        VariantConfigureParams variantConfigureParams = null;
         if (commandOptions.jsonDataModel) {
             variantConfigureParams = new VariantConfigureParams();
             RestResponse<ObjectMap> res = new RestResponse<>();
@@ -365,7 +365,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "configuration",commandOptions.configuration, true);
- 
+
             variantConfigureParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantConfigureParams.class);
@@ -389,7 +389,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantFileDeleteParams variantFileDeleteParams= null;
+        VariantFileDeleteParams variantFileDeleteParams = null;
         if (commandOptions.jsonDataModel) {
             variantFileDeleteParams = new VariantFileDeleteParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -402,8 +402,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "file",commandOptions.file, true);
-             putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
- 
+            putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
+
             variantFileDeleteParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantFileDeleteParams.class);
@@ -427,7 +427,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantAggregateFamilyParams variantAggregateFamilyParams= null;
+        VariantAggregateFamilyParams variantAggregateFamilyParams = null;
         if (commandOptions.jsonDataModel) {
             variantAggregateFamilyParams = new VariantAggregateFamilyParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -440,9 +440,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "samples",commandOptions.samples, true);
-             putNestedIfNotEmpty(beanParams, "gapsGenotype",commandOptions.gapsGenotype, true);
-             putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
- 
+            putNestedIfNotEmpty(beanParams, "gapsGenotype",commandOptions.gapsGenotype, true);
+            putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
+
             variantAggregateFamilyParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantAggregateFamilyParams.class);
@@ -466,7 +466,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantFamilyIndexParams variantFamilyIndexParams= null;
+        VariantFamilyIndexParams variantFamilyIndexParams = null;
         if (commandOptions.jsonDataModel) {
             variantFamilyIndexParams = new VariantFamilyIndexParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -479,10 +479,10 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "family",commandOptions.family, true);
-             putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
-             putNestedIfNotNull(beanParams, "updateIndex",commandOptions.updateIndex, true);
-             putNestedIfNotNull(beanParams, "skipIncompleteFamilies",commandOptions.skipIncompleteFamilies, true);
- 
+            putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
+            putNestedIfNotNull(beanParams, "updateIndex",commandOptions.updateIndex, true);
+            putNestedIfNotNull(beanParams, "skipIncompleteFamilies",commandOptions.skipIncompleteFamilies, true);
+
             variantFamilyIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantFamilyIndexParams.class);
@@ -506,7 +506,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantIndexParams variantIndexParams= null;
+        VariantIndexParams variantIndexParams = null;
         if (commandOptions.jsonDataModel) {
             variantIndexParams = new VariantIndexParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -519,35 +519,35 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
-             putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-             putNestedIfNotNull(beanParams, "transform",commandOptions.transform, true);
-             putNestedIfNotNull(beanParams, "gvcf",commandOptions.gvcf, true);
-             putNestedIfNotNull(beanParams, "normalizationSkip",commandOptions.normalizationSkip, true);
-             putNestedIfNotEmpty(beanParams, "referenceGenome",commandOptions.referenceGenome, true);
-             putNestedIfNotEmpty(beanParams, "failOnMalformedLines",commandOptions.failOnMalformedLines, true);
-             putNestedIfNotNull(beanParams, "family",commandOptions.family, true);
-             putNestedIfNotNull(beanParams, "somatic",commandOptions.somatic, true);
-             putNestedIfNotNull(beanParams, "load",commandOptions.load, true);
-             putNestedIfNotEmpty(beanParams, "loadSplitData",commandOptions.loadSplitData, true);
-             putNestedIfNotNull(beanParams, "loadMultiFileData",commandOptions.loadMultiFileData, true);
-             putNestedIfNotEmpty(beanParams, "loadSampleIndex",commandOptions.loadSampleIndex, true);
-             putNestedIfNotEmpty(beanParams, "loadArchive",commandOptions.loadArchive, true);
-             putNestedIfNotEmpty(beanParams, "loadHomRef",commandOptions.loadHomRef, true);
-             putNestedIfNotEmpty(beanParams, "postLoadCheck",commandOptions.postLoadCheck, true);
-             putNestedIfNotEmpty(beanParams, "includeGenotypes",commandOptions.includeGenotypes, true);
-             putNestedIfNotEmpty(beanParams, "includeSampleData",commandOptions.includeSampleData, true);
-             putNestedIfNotEmpty(beanParams, "merge",commandOptions.merge, true);
-             putNestedIfNotEmpty(beanParams, "deduplicationPolicy",commandOptions.deduplicationPolicy, true);
-             putNestedIfNotNull(beanParams, "calculateStats",commandOptions.calculateStats, true);
-             putNestedIfNotNull(beanParams, "aggregated",commandOptions.aggregated, true);
-             putNestedIfNotEmpty(beanParams, "aggregationMappingFile",commandOptions.aggregationMappingFile, true);
-             putNestedIfNotNull(beanParams, "annotate",commandOptions.annotate, true);
-             putNestedIfNotEmpty(beanParams, "annotator",commandOptions.annotator, true);
-             putNestedIfNotNull(beanParams, "overwriteAnnotations",commandOptions.overwriteAnnotations, true);
-             putNestedIfNotNull(beanParams, "indexSearch",commandOptions.indexSearch, true);
-             putNestedIfNotNull(beanParams, "skipIndexedFiles",commandOptions.skipIndexedFiles, true);
- 
+            putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+            putNestedIfNotNull(beanParams, "transform",commandOptions.transform, true);
+            putNestedIfNotNull(beanParams, "gvcf",commandOptions.gvcf, true);
+            putNestedIfNotNull(beanParams, "normalizationSkip",commandOptions.normalizationSkip, true);
+            putNestedIfNotEmpty(beanParams, "referenceGenome",commandOptions.referenceGenome, true);
+            putNestedIfNotEmpty(beanParams, "failOnMalformedLines",commandOptions.failOnMalformedLines, true);
+            putNestedIfNotNull(beanParams, "family",commandOptions.family, true);
+            putNestedIfNotNull(beanParams, "somatic",commandOptions.somatic, true);
+            putNestedIfNotNull(beanParams, "load",commandOptions.load, true);
+            putNestedIfNotEmpty(beanParams, "loadSplitData",commandOptions.loadSplitData, true);
+            putNestedIfNotNull(beanParams, "loadMultiFileData",commandOptions.loadMultiFileData, true);
+            putNestedIfNotEmpty(beanParams, "loadSampleIndex",commandOptions.loadSampleIndex, true);
+            putNestedIfNotEmpty(beanParams, "loadArchive",commandOptions.loadArchive, true);
+            putNestedIfNotEmpty(beanParams, "loadHomRef",commandOptions.loadHomRef, true);
+            putNestedIfNotEmpty(beanParams, "postLoadCheck",commandOptions.postLoadCheck, true);
+            putNestedIfNotEmpty(beanParams, "includeGenotypes",commandOptions.includeGenotypes, true);
+            putNestedIfNotEmpty(beanParams, "includeSampleData",commandOptions.includeSampleData, true);
+            putNestedIfNotEmpty(beanParams, "merge",commandOptions.merge, true);
+            putNestedIfNotEmpty(beanParams, "deduplicationPolicy",commandOptions.deduplicationPolicy, true);
+            putNestedIfNotNull(beanParams, "calculateStats",commandOptions.calculateStats, true);
+            putNestedIfNotNull(beanParams, "aggregated",commandOptions.aggregated, true);
+            putNestedIfNotEmpty(beanParams, "aggregationMappingFile",commandOptions.aggregationMappingFile, true);
+            putNestedIfNotNull(beanParams, "annotate",commandOptions.annotate, true);
+            putNestedIfNotEmpty(beanParams, "annotator",commandOptions.annotator, true);
+            putNestedIfNotNull(beanParams, "overwriteAnnotations",commandOptions.overwriteAnnotations, true);
+            putNestedIfNotNull(beanParams, "indexSearch",commandOptions.indexSearch, true);
+            putNestedIfNotNull(beanParams, "skipIndexedFiles",commandOptions.skipIndexedFiles, true);
+
             variantIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantIndexParams.class);
@@ -571,7 +571,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantFileIndexJobLauncherParams variantFileIndexJobLauncherParams= null;
+        VariantFileIndexJobLauncherParams variantFileIndexJobLauncherParams = null;
         if (commandOptions.jsonDataModel) {
             variantFileIndexJobLauncherParams = new VariantFileIndexJobLauncherParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -584,40 +584,40 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "directory",commandOptions.directory, true);
-             putNestedIfNotNull(beanParams, "resumeFailed",commandOptions.resumeFailed, true);
-             putNestedIfNotNull(beanParams, "ignoreFailed",commandOptions.ignoreFailed, true);
-             putNestedIfNotNull(beanParams, "maxJobs",commandOptions.maxJobs, true);
-             putNestedIfNotEmpty(beanParams, "indexParams.file",commandOptions.indexParamsFile, true);
-             putNestedIfNotNull(beanParams, "indexParams.resume",commandOptions.indexParamsResume, true);
-             putNestedIfNotEmpty(beanParams, "indexParams.outdir",commandOptions.indexParamsOutdir, true);
-             putNestedIfNotNull(beanParams, "indexParams.transform",commandOptions.indexParamsTransform, true);
-             putNestedIfNotNull(beanParams, "indexParams.gvcf",commandOptions.indexParamsGvcf, true);
-             putNestedIfNotNull(beanParams, "indexParams.normalizationSkip",commandOptions.indexParamsNormalizationSkip, true);
-             putNestedIfNotEmpty(beanParams, "indexParams.referenceGenome",commandOptions.indexParamsReferenceGenome, true);
-             putNestedIfNotEmpty(beanParams, "indexParams.failOnMalformedLines",commandOptions.indexParamsFailOnMalformedLines, true);
-             putNestedIfNotNull(beanParams, "indexParams.family",commandOptions.indexParamsFamily, true);
-             putNestedIfNotNull(beanParams, "indexParams.somatic",commandOptions.indexParamsSomatic, true);
-             putNestedIfNotNull(beanParams, "indexParams.load",commandOptions.indexParamsLoad, true);
-             putNestedIfNotEmpty(beanParams, "indexParams.loadSplitData",commandOptions.indexParamsLoadSplitData, true);
-             putNestedIfNotNull(beanParams, "indexParams.loadMultiFileData",commandOptions.indexParamsLoadMultiFileData, true);
-             putNestedIfNotEmpty(beanParams, "indexParams.loadSampleIndex",commandOptions.indexParamsLoadSampleIndex, true);
-             putNestedIfNotEmpty(beanParams, "indexParams.loadArchive",commandOptions.indexParamsLoadArchive, true);
-             putNestedIfNotEmpty(beanParams, "indexParams.loadHomRef",commandOptions.indexParamsLoadHomRef, true);
-             putNestedIfNotEmpty(beanParams, "indexParams.postLoadCheck",commandOptions.indexParamsPostLoadCheck, true);
-             putNestedIfNotEmpty(beanParams, "indexParams.includeGenotypes",commandOptions.indexParamsIncludeGenotypes, true);
-             putNestedIfNotEmpty(beanParams, "indexParams.includeSampleData",commandOptions.indexParamsIncludeSampleData, true);
-             putNestedIfNotEmpty(beanParams, "indexParams.merge",commandOptions.indexParamsMerge, true);
-             putNestedIfNotEmpty(beanParams, "indexParams.deduplicationPolicy",commandOptions.indexParamsDeduplicationPolicy, true);
-             putNestedIfNotNull(beanParams, "indexParams.calculateStats",commandOptions.indexParamsCalculateStats, true);
-             putNestedIfNotNull(beanParams, "indexParams.aggregated",commandOptions.indexParamsAggregated, true);
-             putNestedIfNotEmpty(beanParams, "indexParams.aggregationMappingFile",commandOptions.indexParamsAggregationMappingFile, true);
-             putNestedIfNotNull(beanParams, "indexParams.annotate",commandOptions.indexParamsAnnotate, true);
-             putNestedIfNotEmpty(beanParams, "indexParams.annotator",commandOptions.indexParamsAnnotator, true);
-             putNestedIfNotNull(beanParams, "indexParams.overwriteAnnotations",commandOptions.indexParamsOverwriteAnnotations, true);
-             putNestedIfNotNull(beanParams, "indexParams.indexSearch",commandOptions.indexParamsIndexSearch, true);
-             putNestedIfNotNull(beanParams, "indexParams.skipIndexedFiles",commandOptions.indexParamsSkipIndexedFiles, true);
- 
+            putNestedIfNotEmpty(beanParams, "directory",commandOptions.directory, true);
+            putNestedIfNotNull(beanParams, "resumeFailed",commandOptions.resumeFailed, true);
+            putNestedIfNotNull(beanParams, "ignoreFailed",commandOptions.ignoreFailed, true);
+            putNestedIfNotNull(beanParams, "maxJobs",commandOptions.maxJobs, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.file",commandOptions.indexParamsFile, true);
+            putNestedIfNotNull(beanParams, "indexParams.resume",commandOptions.indexParamsResume, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.outdir",commandOptions.indexParamsOutdir, true);
+            putNestedIfNotNull(beanParams, "indexParams.transform",commandOptions.indexParamsTransform, true);
+            putNestedIfNotNull(beanParams, "indexParams.gvcf",commandOptions.indexParamsGvcf, true);
+            putNestedIfNotNull(beanParams, "indexParams.normalizationSkip",commandOptions.indexParamsNormalizationSkip, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.referenceGenome",commandOptions.indexParamsReferenceGenome, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.failOnMalformedLines",commandOptions.indexParamsFailOnMalformedLines, true);
+            putNestedIfNotNull(beanParams, "indexParams.family",commandOptions.indexParamsFamily, true);
+            putNestedIfNotNull(beanParams, "indexParams.somatic",commandOptions.indexParamsSomatic, true);
+            putNestedIfNotNull(beanParams, "indexParams.load",commandOptions.indexParamsLoad, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.loadSplitData",commandOptions.indexParamsLoadSplitData, true);
+            putNestedIfNotNull(beanParams, "indexParams.loadMultiFileData",commandOptions.indexParamsLoadMultiFileData, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.loadSampleIndex",commandOptions.indexParamsLoadSampleIndex, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.loadArchive",commandOptions.indexParamsLoadArchive, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.loadHomRef",commandOptions.indexParamsLoadHomRef, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.postLoadCheck",commandOptions.indexParamsPostLoadCheck, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.includeGenotypes",commandOptions.indexParamsIncludeGenotypes, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.includeSampleData",commandOptions.indexParamsIncludeSampleData, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.merge",commandOptions.indexParamsMerge, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.deduplicationPolicy",commandOptions.indexParamsDeduplicationPolicy, true);
+            putNestedIfNotNull(beanParams, "indexParams.calculateStats",commandOptions.indexParamsCalculateStats, true);
+            putNestedIfNotNull(beanParams, "indexParams.aggregated",commandOptions.indexParamsAggregated, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.aggregationMappingFile",commandOptions.indexParamsAggregationMappingFile, true);
+            putNestedIfNotNull(beanParams, "indexParams.annotate",commandOptions.indexParamsAnnotate, true);
+            putNestedIfNotEmpty(beanParams, "indexParams.annotator",commandOptions.indexParamsAnnotator, true);
+            putNestedIfNotNull(beanParams, "indexParams.overwriteAnnotations",commandOptions.indexParamsOverwriteAnnotations, true);
+            putNestedIfNotNull(beanParams, "indexParams.indexSearch",commandOptions.indexParamsIndexSearch, true);
+            putNestedIfNotNull(beanParams, "indexParams.skipIndexedFiles",commandOptions.indexParamsSkipIndexedFiles, true);
+
             variantFileIndexJobLauncherParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantFileIndexJobLauncherParams.class);
@@ -638,7 +638,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("project", commandOptions.project);
 
 
-        JulieParams julieParams= null;
+        JulieParams julieParams = null;
         if (commandOptions.jsonDataModel) {
             julieParams = new JulieParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -651,9 +651,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "cohorts",commandOptions.cohorts, true);
-             putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
-             putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
- 
+            putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
+            putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
+
             julieParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JulieParams.class);
@@ -673,7 +673,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
 
 
-        VariantStorageMetadataRepairToolParams variantStorageMetadataRepairToolParams= null;
+        VariantStorageMetadataRepairToolParams variantStorageMetadataRepairToolParams = null;
         if (commandOptions.jsonDataModel) {
             variantStorageMetadataRepairToolParams = new VariantStorageMetadataRepairToolParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -686,8 +686,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "studies",commandOptions.studies, true);
-             putNestedIfNotNull(beanParams, "samplesBatchSize",commandOptions.samplesBatchSize, true);
- 
+            putNestedIfNotNull(beanParams, "samplesBatchSize",commandOptions.samplesBatchSize, true);
+
             variantStorageMetadataRepairToolParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantStorageMetadataRepairToolParams.class);
@@ -711,7 +711,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantStorageMetadataSynchronizeParams variantStorageMetadataSynchronizeParams= null;
+        VariantStorageMetadataSynchronizeParams variantStorageMetadataSynchronizeParams = null;
         if (commandOptions.jsonDataModel) {
             variantStorageMetadataSynchronizeParams = new VariantStorageMetadataSynchronizeParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -724,8 +724,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "study",commandOptions.bodyStudy, true);
-             putNestedIfNotNull(beanParams, "files",commandOptions.files, true);
- 
+            putNestedIfNotNull(beanParams, "files",commandOptions.files, true);
+
             variantStorageMetadataSynchronizeParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantStorageMetadataSynchronizeParams.class);
@@ -745,7 +745,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
 
 
-        VariantPruneParams variantPruneParams= null;
+        VariantPruneParams variantPruneParams = null;
         if (commandOptions.jsonDataModel) {
             variantPruneParams = new VariantPruneParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -758,9 +758,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "project",commandOptions.project, true);
-             putNestedIfNotNull(beanParams, "dryRun",commandOptions.dryRun, true);
-             putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
- 
+            putNestedIfNotNull(beanParams, "dryRun",commandOptions.dryRun, true);
+            putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
+
             variantPruneParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantPruneParams.class);
@@ -784,7 +784,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantSampleDeleteParams variantSampleDeleteParams= null;
+        VariantSampleDeleteParams variantSampleDeleteParams = null;
         if (commandOptions.jsonDataModel) {
             variantSampleDeleteParams = new VariantSampleDeleteParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -797,9 +797,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
-             putNestedIfNotNull(beanParams, "force",commandOptions.force, true);
-             putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
- 
+            putNestedIfNotNull(beanParams, "force",commandOptions.force, true);
+            putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
+
             variantSampleDeleteParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantSampleDeleteParams.class);
@@ -823,7 +823,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantSecondarySampleIndexParams variantSecondarySampleIndexParams= null;
+        VariantSecondarySampleIndexParams variantSecondarySampleIndexParams = null;
         if (commandOptions.jsonDataModel) {
             variantSecondarySampleIndexParams = new VariantSecondarySampleIndexParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -836,11 +836,11 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
-             putNestedIfNotNull(beanParams, "buildIndex",commandOptions.buildIndex, true);
-             putNestedIfNotNull(beanParams, "annotate",commandOptions.annotate, true);
-             putNestedIfNotNull(beanParams, "familyIndex",commandOptions.familyIndex, true);
-             putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
- 
+            putNestedIfNotNull(beanParams, "buildIndex",commandOptions.buildIndex, true);
+            putNestedIfNotNull(beanParams, "annotate",commandOptions.annotate, true);
+            putNestedIfNotNull(beanParams, "familyIndex",commandOptions.familyIndex, true);
+            putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
+
             variantSecondarySampleIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantSecondarySampleIndexParams.class);
@@ -861,7 +861,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        SampleIndexConfiguration sampleIndexConfiguration= null;
+        SampleIndexConfiguration sampleIndexConfiguration = null;
         if (commandOptions.jsonDataModel) {
             sampleIndexConfiguration = new SampleIndexConfiguration();
             RestResponse<Job> res = new RestResponse<>();
@@ -912,7 +912,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantScoreIndexParams variantScoreIndexParams= null;
+        VariantScoreIndexParams variantScoreIndexParams = null;
         if (commandOptions.jsonDataModel) {
             variantScoreIndexParams = new VariantScoreIndexParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -925,12 +925,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "scoreName",commandOptions.scoreName, true);
-             putNestedIfNotEmpty(beanParams, "cohort1",commandOptions.cohort1, true);
-             putNestedIfNotEmpty(beanParams, "cohort2",commandOptions.cohort2, true);
-             putNestedIfNotEmpty(beanParams, "input",commandOptions.input, true);
-             putNestedIfNotEmpty(beanParams, "inputColumns",commandOptions.inputColumns, true);
-             putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
- 
+            putNestedIfNotEmpty(beanParams, "cohort1",commandOptions.cohort1, true);
+            putNestedIfNotEmpty(beanParams, "cohort2",commandOptions.cohort2, true);
+            putNestedIfNotEmpty(beanParams, "input",commandOptions.input, true);
+            putNestedIfNotEmpty(beanParams, "inputColumns",commandOptions.inputColumns, true);
+            putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
+
             variantScoreIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantScoreIndexParams.class);
@@ -955,7 +955,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantSecondaryAnnotationIndexParams variantSecondaryAnnotationIndexParams= null;
+        VariantSecondaryAnnotationIndexParams variantSecondaryAnnotationIndexParams = null;
         if (commandOptions.jsonDataModel) {
             variantSecondaryAnnotationIndexParams = new VariantSecondaryAnnotationIndexParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -968,9 +968,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
-             putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
-             putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
- 
+            putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
+            putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
+
             variantSecondaryAnnotationIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantSecondaryAnnotationIndexParams.class);
@@ -994,7 +994,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantSecondarySampleIndexParams variantSecondarySampleIndexParams= null;
+        VariantSecondarySampleIndexParams variantSecondarySampleIndexParams = null;
         if (commandOptions.jsonDataModel) {
             variantSecondarySampleIndexParams = new VariantSecondarySampleIndexParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -1007,11 +1007,11 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
-             putNestedIfNotNull(beanParams, "buildIndex",commandOptions.buildIndex, true);
-             putNestedIfNotNull(beanParams, "annotate",commandOptions.annotate, true);
-             putNestedIfNotNull(beanParams, "familyIndex",commandOptions.familyIndex, true);
-             putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
- 
+            putNestedIfNotNull(beanParams, "buildIndex",commandOptions.buildIndex, true);
+            putNestedIfNotNull(beanParams, "annotate",commandOptions.annotate, true);
+            putNestedIfNotNull(beanParams, "familyIndex",commandOptions.familyIndex, true);
+            putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
+
             variantSecondarySampleIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantSecondarySampleIndexParams.class);
@@ -1032,7 +1032,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        SampleIndexConfiguration sampleIndexConfiguration= null;
+        SampleIndexConfiguration sampleIndexConfiguration = null;
         if (commandOptions.jsonDataModel) {
             sampleIndexConfiguration = new SampleIndexConfiguration();
             RestResponse<Job> res = new RestResponse<>();
@@ -1063,7 +1063,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantSecondaryAnnotationIndexParams variantSecondaryAnnotationIndexParams= null;
+        VariantSecondaryAnnotationIndexParams variantSecondaryAnnotationIndexParams = null;
         if (commandOptions.jsonDataModel) {
             variantSecondaryAnnotationIndexParams = new VariantSecondaryAnnotationIndexParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -1076,9 +1076,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
-             putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
-             putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
- 
+            putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
+            putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
+
             variantSecondaryAnnotationIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantSecondaryAnnotationIndexParams.class);
@@ -1121,7 +1121,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantStatsDeleteParams variantStatsDeleteParams= null;
+        VariantStatsDeleteParams variantStatsDeleteParams = null;
         if (commandOptions.jsonDataModel) {
             variantStatsDeleteParams = new VariantStatsDeleteParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -1134,8 +1134,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "cohort",commandOptions.cohort, true);
-             putNestedIfNotNull(beanParams, "force",commandOptions.force, true);
- 
+            putNestedIfNotNull(beanParams, "force",commandOptions.force, true);
+
             variantStatsDeleteParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantStatsDeleteParams.class);
@@ -1159,7 +1159,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantStatsIndexParams variantStatsIndexParams= null;
+        VariantStatsIndexParams variantStatsIndexParams = null;
         if (commandOptions.jsonDataModel) {
             variantStatsIndexParams = new VariantStatsIndexParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -1172,12 +1172,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "cohort",commandOptions.cohort, true);
-             putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
-             putNestedIfNotNull(beanParams, "overwriteStats",commandOptions.overwriteStats, true);
-             putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
-             putNestedIfNotNull(beanParams, "aggregated",commandOptions.aggregated, true);
-             putNestedIfNotEmpty(beanParams, "aggregationMappingFile",commandOptions.aggregationMappingFile, true);
- 
+            putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
+            putNestedIfNotNull(beanParams, "overwriteStats",commandOptions.overwriteStats, true);
+            putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
+            putNestedIfNotNull(beanParams, "aggregated",commandOptions.aggregated, true);
+            putNestedIfNotEmpty(beanParams, "aggregationMappingFile",commandOptions.aggregationMappingFile, true);
+
             variantStatsIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantStatsIndexParams.class);
@@ -1201,7 +1201,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantStudyDeleteParams variantStudyDeleteParams= null;
+        VariantStudyDeleteParams variantStudyDeleteParams = null;
         if (commandOptions.jsonDataModel) {
             variantStudyDeleteParams = new VariantStudyDeleteParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -1214,7 +1214,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
- 
+
             variantStudyDeleteParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantStudyDeleteParams.class);

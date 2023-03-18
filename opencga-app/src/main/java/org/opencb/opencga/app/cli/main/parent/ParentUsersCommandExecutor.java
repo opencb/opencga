@@ -32,7 +32,7 @@ import java.io.IOException;
 import static org.opencb.commons.utils.PrintUtils.getKeyValueAsFormattedString;
 import static org.opencb.commons.utils.PrintUtils.println;
 
-public class ParentUsersCommandExecutor extends CustomExecutor {
+public class ParentUsersCommandExecutor extends CustomCommandExecutor {
 
     public static final String LOGIN_OK = "You have been logged in correctly: ";
     public static final String LOGIN_FAIL = "Incorrect username or password.";
@@ -88,7 +88,6 @@ public class ParentUsersCommandExecutor extends CustomExecutor {
             res.setType(QueryType.VOID);
             event.setType(Event.Type.ERROR);
             res.getEvents().add(event);
-
         }
         return res;
     }

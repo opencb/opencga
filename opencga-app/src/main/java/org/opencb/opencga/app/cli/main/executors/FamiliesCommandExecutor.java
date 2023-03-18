@@ -122,7 +122,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        FamilyAclUpdateParams familyAclUpdateParams= null;
+        FamilyAclUpdateParams familyAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             familyAclUpdateParams = new FamilyAclUpdateParams();
             RestResponse<FamilyAclEntryList> res = new RestResponse<>();
@@ -135,10 +135,10 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
-             putNestedIfNotEmpty(beanParams, "family",commandOptions.family, true);
-             putNestedIfNotEmpty(beanParams, "individual",commandOptions.individual, true);
-             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
- 
+            putNestedIfNotEmpty(beanParams, "family",commandOptions.family, true);
+            putNestedIfNotEmpty(beanParams, "individual",commandOptions.individual, true);
+            putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
+
             familyAclUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FamilyAclUpdateParams.class);
@@ -187,7 +187,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        TsvAnnotationParams tsvAnnotationParams= null;
+        TsvAnnotationParams tsvAnnotationParams = null;
         if (commandOptions.jsonDataModel) {
             tsvAnnotationParams = new TsvAnnotationParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -200,7 +200,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "content",commandOptions.content, true);
- 
+
             tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), TsvAnnotationParams.class);
@@ -224,7 +224,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        FamilyCreateParams familyCreateParams= null;
+        FamilyCreateParams familyCreateParams = null;
         if (commandOptions.jsonDataModel) {
             familyCreateParams = new FamilyCreateParams();
             RestResponse<Family> res = new RestResponse<>();
@@ -237,16 +237,16 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotNull(beanParams, "expectedSize",commandOptions.expectedSize, true);
-             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
- 
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotNull(beanParams, "expectedSize",commandOptions.expectedSize, true);
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+
             familyCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FamilyCreateParams.class);
@@ -387,7 +387,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        FamilyUpdateParams familyUpdateParams= null;
+        FamilyUpdateParams familyUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             familyUpdateParams = new FamilyUpdateParams();
             RestResponse<Family> res = new RestResponse<>();
@@ -400,17 +400,17 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotNull(beanParams, "expectedSize",commandOptions.expectedSize, true);
-             putNestedIfNotNull(beanParams, "qualityControl.files",commandOptions.qualityControlFiles, true);
-             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
- 
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotNull(beanParams, "expectedSize",commandOptions.expectedSize, true);
+            putNestedIfNotNull(beanParams, "qualityControl.files",commandOptions.qualityControlFiles, true);
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+
             familyUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FamilyUpdateParams.class);
@@ -431,7 +431,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        ObjectMap objectMap= null;
+        ObjectMap objectMap = null;
         if (commandOptions.jsonDataModel) {
             objectMap = new ObjectMap();
             RestResponse<Family> res = new RestResponse<>();

@@ -28,7 +28,7 @@ import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
 import org.slf4j.Logger;
 
-public class ParentJobsCommandExecutor extends CustomExecutor {
+public class ParentJobsCommandExecutor extends CustomCommandExecutor {
 
     public ParentJobsCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
                                      SessionManager session, Logger logger) {
@@ -41,8 +41,6 @@ public class ParentJobsCommandExecutor extends CustomExecutor {
     }
 
     public RestResponse<JobTop> top() throws Exception {
-        // JobsCommandOptions.TopCommandOptions c = jobsCommandOptions.topCommandOptions;
-
         Query query = new Query();
         query.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), String.valueOf(options.get("study")));
         query.putIfNotEmpty(ParamConstants.JOB_TOOL_ID_PARAM, String.valueOf(options.get("toolId")));

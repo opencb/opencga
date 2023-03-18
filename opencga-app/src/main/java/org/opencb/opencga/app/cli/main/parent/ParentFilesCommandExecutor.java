@@ -24,7 +24,7 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.response.RestResponse;
 import org.slf4j.Logger;
 
-public class ParentFilesCommandExecutor extends CustomExecutor {
+public class ParentFilesCommandExecutor extends CustomCommandExecutor {
 
     public ParentFilesCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
                                       SessionManager session, Logger logger) {
@@ -37,14 +37,11 @@ public class ParentFilesCommandExecutor extends CustomExecutor {
     }
 
     public RestResponse<File> upload() throws Exception {
-
-
 //        ObjectMap params = new ObjectMap()
         options.append("fileFormat", ParamUtils.defaultString(String.valueOf(options.get("fileFormat")), File.Format.UNKNOWN.toString()))
                 .append("bioformat", ParamUtils.defaultString(String.valueOf(options.get("bioformat")), File.Bioformat.UNKNOWN.toString()));
 //        //If the DEPRECATED parameter fileFormat has set we only override it if the new parameter format is also set
 //        params.append("fileFormat", ParamUtils.defaultString(commandOptions.format, params.getString("fileFormat")));
-//
 //        params.putIfNotEmpty("study", commandOptions.study);
 //        params.putIfNotEmpty("relativeFilePath", commandOptions.catalogPath);
 //        params.putIfNotEmpty("relativeFilePath", commandOptions.path);
@@ -53,7 +50,6 @@ public class ParentFilesCommandExecutor extends CustomExecutor {
 //        params.putIfNotEmpty("fileName", commandOptions.name);
 //        params.putIfNotEmpty("file", commandOptions.inputFile);
         options.put("uploadServlet", Boolean.FALSE);
-
         return openCGAClient.getFileClient().upload(options);
     }
 

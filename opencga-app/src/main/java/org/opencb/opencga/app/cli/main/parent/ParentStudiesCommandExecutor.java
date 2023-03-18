@@ -39,7 +39,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.LinkedList;
 import java.util.List;
 
-public class ParentStudiesCommandExecutor extends CustomExecutor {
+public class ParentStudiesCommandExecutor extends CustomCommandExecutor {
 
     public ParentStudiesCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
                                         SessionManager session, Logger logger) {

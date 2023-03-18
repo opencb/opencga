@@ -137,7 +137,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
         JobsCommandOptions.UpdateAclCommandOptions commandOptions = jobsCommandOptions.updateAclCommandOptions;
 
-        JobAclUpdateParams jobAclUpdateParams= null;
+        JobAclUpdateParams jobAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             jobAclUpdateParams = new JobAclUpdateParams();
             RestResponse<JobAclEntryList> res = new RestResponse<>();
@@ -150,8 +150,8 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
-             putNestedIfNotEmpty(beanParams, "job",commandOptions.job, true);
- 
+            putNestedIfNotEmpty(beanParams, "job",commandOptions.job, true);
+
             jobAclUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JobAclUpdateParams.class);
@@ -202,7 +202,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        JobCreateParams jobCreateParams= null;
+        JobCreateParams jobCreateParams = null;
         if (commandOptions.jsonDataModel) {
             jobCreateParams = new JobCreateParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -215,25 +215,25 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "tool.id",commandOptions.toolId, true);
-             putNestedIfNotEmpty(beanParams, "tool.description",commandOptions.toolDescription, true);
-             putNestedIfNotNull(beanParams, "tool.scope",commandOptions.toolScope, true);
-             putNestedIfNotNull(beanParams, "tool.type",commandOptions.toolType, true);
-             putNestedIfNotNull(beanParams, "tool.resource",commandOptions.toolResource, true);
-             putNestedIfNotNull(beanParams, "priority",commandOptions.priority, true);
-             putNestedIfNotEmpty(beanParams, "commandLine",commandOptions.commandLine, true);
-             putNestedIfNotNull(beanParams, "params",commandOptions.params, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotEmpty(beanParams, "outDir.path",commandOptions.outDirPath, true);
-             putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
-             putNestedIfNotEmpty(beanParams, "result.id",commandOptions.resultId, true);
-             putNestedIfNotNull(beanParams, "result.attributes",commandOptions.resultAttributes, true);
-             putNestedIfNotEmpty(beanParams, "stdout.path",commandOptions.stdoutPath, true);
-             putNestedIfNotEmpty(beanParams, "stderr.path",commandOptions.stderrPath, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
- 
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "tool.id",commandOptions.toolId, true);
+            putNestedIfNotEmpty(beanParams, "tool.description",commandOptions.toolDescription, true);
+            putNestedIfNotNull(beanParams, "tool.scope",commandOptions.toolScope, true);
+            putNestedIfNotNull(beanParams, "tool.type",commandOptions.toolType, true);
+            putNestedIfNotNull(beanParams, "tool.resource",commandOptions.toolResource, true);
+            putNestedIfNotNull(beanParams, "priority",commandOptions.priority, true);
+            putNestedIfNotEmpty(beanParams, "commandLine",commandOptions.commandLine, true);
+            putNestedIfNotNull(beanParams, "params",commandOptions.params, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "outDir.path",commandOptions.outDirPath, true);
+            putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
+            putNestedIfNotEmpty(beanParams, "result.id",commandOptions.resultId, true);
+            putNestedIfNotNull(beanParams, "result.attributes",commandOptions.resultAttributes, true);
+            putNestedIfNotEmpty(beanParams, "stdout.path",commandOptions.stdoutPath, true);
+            putNestedIfNotEmpty(beanParams, "stderr.path",commandOptions.stderrPath, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+
             jobCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JobCreateParams.class);
@@ -289,7 +289,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        JobRetryParams jobRetryParams= null;
+        JobRetryParams jobRetryParams = null;
         if (commandOptions.jsonDataModel) {
             jobRetryParams = new JobRetryParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -302,9 +302,9 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "job",commandOptions.job, true);
-             putNestedIfNotNull(beanParams, "force",commandOptions.force, true);
-             putNestedIfNotNull(beanParams, "params",commandOptions.params, true);
- 
+            putNestedIfNotNull(beanParams, "force",commandOptions.force, true);
+            putNestedIfNotNull(beanParams, "params",commandOptions.params, true);
+
             jobRetryParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JobRetryParams.class);
@@ -425,7 +425,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        JobUpdateParams jobUpdateParams= null;
+        JobUpdateParams jobUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             jobUpdateParams = new JobUpdateParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -438,10 +438,10 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
-             putNestedIfNotNull(beanParams, "visited",commandOptions.visited, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
- 
+            putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
+            putNestedIfNotNull(beanParams, "visited",commandOptions.visited, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+
             jobUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JobUpdateParams.class);
