@@ -40,7 +40,7 @@ import java.util.stream.Stream;
 public class EnterpriseRestServer extends AbstractStorageServer {
 
     private static Server server;
-    private EnterpriseConfiguration enterpriseConfiguration;
+    private final EnterpriseConfiguration enterpriseConfiguration;
     private boolean exit;
 
     public EnterpriseRestServer(Path opencgaHome) {
@@ -52,11 +52,10 @@ public class EnterpriseRestServer extends AbstractStorageServer {
 
         // Read enterprise configuration file
         Path configDirPath = opencgaHome.resolve("conf");
-
         InputStream configInputStream;
         try {
             String confPath = configDirPath.toFile().getAbsolutePath()  + "/enterprise-configuration.yml";
-            logger.info("Enterprise configuration file: '{}'", confPath);
+            logger.info("Reading enterprise-configuration.yml file: '{}'", confPath);
             configInputStream = Files.newInputStream(Paths.get(confPath));
             enterpriseConfiguration = EnterpriseConfiguration.load(configInputStream);
         } catch (IOException e) {
@@ -150,7 +149,6 @@ public class EnterpriseRestServer extends AbstractStorageServer {
                 e.printStackTrace();
             }
         }).start();
-
     }
 
     @Override
@@ -171,7 +169,7 @@ public class EnterpriseRestServer extends AbstractStorageServer {
         // By setting exit to true the monitor thread will close the Jetty server
         logger.info("Shutting down Jetty server");
         server.stop();
-        logger.info("REST server shut down");
+        logger.info("Enterprise REST server shutdown");
     }
 
 }

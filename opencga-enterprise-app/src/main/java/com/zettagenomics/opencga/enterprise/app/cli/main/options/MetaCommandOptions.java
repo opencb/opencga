@@ -34,7 +34,6 @@ public class MetaCommandOptions {
         public CommonCommandOptions commonCommandOptions;
 
         public AboutCommandOptions aboutCommandOptions;
-        public About2CommandOptions about2CommandOptions;
         public ApiCommandOptions apiCommandOptions;
         public FailCommandOptions failCommandOptions;
         public ModelCommandOptions modelCommandOptions;
@@ -48,7 +47,6 @@ public class MetaCommandOptions {
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
         this.aboutCommandOptions = new AboutCommandOptions();
-        this.about2CommandOptions = new About2CommandOptions();
         this.apiCommandOptions = new ApiCommandOptions();
         this.failCommandOptions = new FailCommandOptions();
         this.modelCommandOptions = new ModelCommandOptions();
@@ -60,14 +58,6 @@ public class MetaCommandOptions {
     
     @Parameters(commandNames = {"about"}, commandDescription ="Returns info about current OpenCGA code.")
     public class AboutCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-    }
-
-    @Parameters(commandNames = {"about2"}, commandDescription ="Returns info about current OpenCGA code.")
-    public class About2CommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;

@@ -7,15 +7,11 @@
         <groupId>com.zettagenomics.opencga-enterprise</groupId>
         <artifactId>opencga-enterprise</artifactId>
         <version>1.6.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>opencga-enterprise-client</artifactId>
-
-    <properties>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
+    <packaging>jar</packaging>
 
     <dependencies>
         <dependency>
@@ -23,10 +19,6 @@
             <artifactId>opencga-enterprise-core</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-core</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-client</artifactId>

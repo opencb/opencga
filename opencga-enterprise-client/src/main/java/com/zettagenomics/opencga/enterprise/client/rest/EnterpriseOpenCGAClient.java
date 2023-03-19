@@ -54,20 +54,24 @@ public class EnterpriseOpenCGAClient {
     private Map<String, EnterpriseAbstractParentClient> clients;
     private boolean throwExceptionOnError;
 
-    public EnterpriseOpenCGAClient(ClientConfiguration clientConfiguration, EnterpriseConfiguration enterpriseConfiguration) {
+    public EnterpriseOpenCGAClient(ClientConfiguration clientConfiguration,
+                                   EnterpriseConfiguration enterpriseConfiguration) {
         this.init(null, clientConfiguration, enterpriseConfiguration);
     }
 
-    public EnterpriseOpenCGAClient(String user, String password, ClientConfiguration clientConfiguration, EnterpriseConfiguration enterpriseConfiguration) throws ClientException {
+    public EnterpriseOpenCGAClient(String user, String password, ClientConfiguration clientConfiguration,
+                                   EnterpriseConfiguration enterpriseConfiguration) throws ClientException {
         AuthenticationResponse login = login(user, password);
         this.init(login, clientConfiguration, enterpriseConfiguration);
     }
 
-    public EnterpriseOpenCGAClient(AuthenticationResponse authenticationTokens, ClientConfiguration clientConfiguration, EnterpriseConfiguration enterpriseConfiguration) {
+    public EnterpriseOpenCGAClient(AuthenticationResponse authenticationTokens, ClientConfiguration clientConfiguration,
+                                   EnterpriseConfiguration enterpriseConfiguration) {
         this.init(authenticationTokens, clientConfiguration, enterpriseConfiguration);
     }
 
-    private void init(AuthenticationResponse tokens, ClientConfiguration clientConfiguration, EnterpriseConfiguration enterpriseConfiguration) {
+    private void init(AuthenticationResponse tokens, ClientConfiguration clientConfiguration,
+                      EnterpriseConfiguration enterpriseConfiguration) {
         this.clients = new HashMap<>(25);
 
         if (tokens != null) {
@@ -91,7 +95,6 @@ public class EnterpriseOpenCGAClient {
                 .getBody();
         return claims.getSubject();
     }
-    
 
     public UserClient getUserClient() {
         return getClient(UserClient.class, () -> new UserClient(token, clientConfiguration));
@@ -165,6 +168,7 @@ public class EnterpriseOpenCGAClient {
     private <T extends EnterpriseAbstractParentClient> T getClient(Class<T> clazz, Supplier<T> constructor) {
         return (T) clients.computeIfAbsent(clazz.getName(), (k) -> {
             T t = constructor.get();
+            t.setEnterpriseConfiguration(enterpriseConfiguration);
             t.setThrowExceptionOnError(throwExceptionOnError);
             return t;
         });
@@ -194,8 +198,7 @@ public class EnterpriseOpenCGAClient {
      * @throws ClientException when it is not possible logging in.
      */
     public AuthenticationResponse login(String user, String password) throws ClientException {
-        if (this.enterpriseConfiguration.getSso() != null
-                && this.enterpriseConfiguration.getSso().isActive()) {
+        if (this.enterpriseConfiguration.getSso() != null && this.enterpriseConfiguration.getSso().isActive()) {
             return ssoLogin();
         } else {
             return nonSsoLogin(user, password);
@@ -203,7 +206,8 @@ public class EnterpriseOpenCGAClient {
     }
 
     public AuthenticationResponse nonSsoLogin(String user, String password) throws ClientException {
-        RestResponse<AuthenticationResponse> login = new UserClient(token, clientConfiguration).login(new LoginParams(user, password), null);
+        RestResponse<AuthenticationResponse> login = new UserClient(token, clientConfiguration)
+                .login(new LoginParams(user, password), null);
         updateTokenFromClients(login);
         this.userId = user;
         return login.firstResult();
@@ -257,7 +261,7 @@ public class EnterpriseOpenCGAClient {
         clients.values().stream()
                 .filter(Objects::nonNull)
                 .forEach(enterpriseAbstractParentClient -> {
-//                    enterpriseAbstractParentClient.setSsoCookies(cookies);
+                    enterpriseAbstractParentClient.setSsoCookies(cookies);
                 });
     }
 

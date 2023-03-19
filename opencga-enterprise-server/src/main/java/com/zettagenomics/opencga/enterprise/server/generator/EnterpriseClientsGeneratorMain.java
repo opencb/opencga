@@ -93,7 +93,6 @@ public class EnterpriseClientsGeneratorMain {
                 }
             }
         }
-
         return api;
     }
 }

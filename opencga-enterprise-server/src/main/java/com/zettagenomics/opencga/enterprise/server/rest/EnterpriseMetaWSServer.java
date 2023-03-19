@@ -1,5 +1,6 @@
 package com.zettagenomics.opencga.enterprise.server.rest;
 
+import com.zettagenomics.opencga.enterprise.server.EnterpriseResourceConfig;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.catalog.auth.authentication.JwtManager;
@@ -12,12 +13,7 @@ import org.opencb.opencga.core.tools.annotations.ApiOperation;
 import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.opencb.opencga.server.generator.RestApiParser;
 import org.opencb.opencga.server.generator.models.RestApi;
-import org.opencb.opencga.server.rest.*;
-import org.opencb.opencga.server.rest.admin.AdminWSServer;
-import org.opencb.opencga.server.rest.analysis.AlignmentWebService;
-import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
-import org.opencb.opencga.server.rest.analysis.VariantWebService;
-import org.opencb.opencga.server.rest.operations.VariantOperationWebService;
+import org.opencb.opencga.server.rest.MetaWSServer;
 
 import javax.crypto.spec.SecretKeySpec;
 import javax.servlet.http.Cookie;
@@ -52,15 +48,15 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
     @ApiOperation(httpMethod = "GET", value = "Returns info about current OpenCGA code.", response = Map.class)
     public Response getAbout() {
         Map<String, String> info = new HashMap<>(5);
-        info.put("Program", "XetaBase!");
+        info.put("Program", "XetaBase (Zetta Genomics)");
         info.put("Version", GitRepositoryState.get().getBuildVersion());
         info.put("Git branch", GitRepositoryState.get().getBranch());
         info.put("Git commit", GitRepositoryState.get().getCommitId());
         info.put("Description", "Big Data platform for processing and analysing NGS data");
-        OpenCGAResult queryResult = new OpenCGAResult();
+
+        OpenCGAResult<Object> queryResult = new OpenCGAResult<>();
         queryResult.setTime(0);
         queryResult.setResults(Collections.singletonList(info));
-
         return createOkResponse(queryResult);
     }
 
@@ -68,58 +64,20 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
     @GET
     @Path("/api")
     @ApiOperation(value = "API", response = List.class)
-    public Response api(@ApiParam(value = "List of categories to get API from") @QueryParam("category") String categoryStr, @QueryParam("summary") boolean summary) {
-        Map<String, Class<?>> classMap = new LinkedHashMap<>();
-        classMap.put("users", UserWSServer.class);
-        classMap.put("projects", ProjectWSServer.class);
-        classMap.put("studies", StudyWSServer.class);
-        classMap.put("files", FileWSServer.class);
-        classMap.put("jobs", JobWSServer.class);
-        classMap.put("samples", SampleWSServer.class);
-        classMap.put("individuals", IndividualWSServer.class);
-        classMap.put("families", FamilyWSServer.class);
-        classMap.put("cohorts", CohortWSServer.class);
-        classMap.put("panels", PanelWSServer.class);
-        classMap.put("alignment", AlignmentWebService.class);
-        classMap.put("variant", VariantWebService.class);
-        classMap.put("clinical", ClinicalWebService.class);
-        classMap.put("variantOperations", VariantOperationWebService.class);
-        classMap.put("meta", EnterpriseMetaWSServer.class);
-        classMap.put("cva", CvaWSServer.class);
-        classMap.put("admin", AdminWSServer.class);
-//        classMap.put("ga4gh", Ga4ghWSServer.class);
-
+    public Response api(@ApiParam(value = "List of categories to get API from") @QueryParam("category") String categoryStr,
+                        @QueryParam("summary") boolean summary) {
         List<Class<?>> classes = new ArrayList<>();
-        // Check if some categories have been selected
         if (StringUtils.isNotEmpty(categoryStr)) {
+            // Check if some categories have been selected
             for (String category : categoryStr.split(",")) {
-                classes.add(classMap.get(category));
+                classes.add(EnterpriseResourceConfig.enterpriseClasses.get(category));
             }
         } else {
             // Get API for all categories
-            for (String category : classMap.keySet()) {
-                classes.add(classMap.get(category));
-            }
+            classes = new ArrayList<>(EnterpriseResourceConfig.enterpriseClasses.values());
         }
         RestApi restApi = new RestApiParser().parse(classes, summary);
         return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(restApi.getCategories()), 1));
-    }
-
-    @GET
-    @Path("/about2")
-    @ApiOperation(httpMethod = "GET", value = "Returns info about current OpenCGA code.", response = Map.class)
-    public Response getAbout2() {
-        Map<String, String> info = new HashMap<>(5);
-        info.put("Program", "XetaBase2!");
-        info.put("Version", GitRepositoryState.get().getBuildVersion());
-        info.put("Git branch", GitRepositoryState.get().getBranch());
-        info.put("Git commit", GitRepositoryState.get().getCommitId());
-        info.put("Description", "Big Data platform for processing and analysing NGS data");
-        OpenCGAResult queryResult = new OpenCGAResult();
-        queryResult.setTime(0);
-        queryResult.setResults(Collections.singletonList(info));
-
-        return createOkResponse(queryResult);
     }
 
     @GET

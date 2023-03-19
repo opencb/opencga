@@ -1,7 +1,6 @@
 package com.zettagenomics.opencga.enterprise.app.cli.main;
 
 import com.beust.jcommander.ParameterException;
-import com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor;
 import com.zettagenomics.opencga.enterprise.app.cli.main.executors.*;
 import com.zettagenomics.opencga.enterprise.client.rest.EnterpriseOpenCGAClient;
 import org.apache.commons.collections4.CollectionUtils;

@@ -21,23 +21,23 @@ public class EnterpriseResourceConfig extends ResourceConfig {
 
     static {
         enterpriseClasses = new LinkedHashMap<>(20);
-        enterpriseClasses.put("USER", UserWSServer.class);
-        enterpriseClasses.put("PROJECT", ProjectWSServer.class);
-        enterpriseClasses.put("STUDY", StudyWSServer.class);
-        enterpriseClasses.put("FILE", FileWSServer.class);
-        enterpriseClasses.put("JOB", JobWSServer.class);
-        enterpriseClasses.put("SAMPLE", SampleWSServer.class);
-        enterpriseClasses.put("INDIVIDUAL", IndividualWSServer.class);
-        enterpriseClasses.put("FAMILY", FamilyWSServer.class);
-        enterpriseClasses.put("COHORT", CohortWSServer.class);
-        enterpriseClasses.put("PANEL", PanelWSServer.class);
-        enterpriseClasses.put("ALIGNMENT", AlignmentWebService.class);
-        enterpriseClasses.put("VARIANT", VariantWebService.class);
-        enterpriseClasses.put("CLINICAL", ClinicalWebService.class);
-        enterpriseClasses.put("VARIANT_OPERATION", VariantOperationWebService.class);
-        enterpriseClasses.put("META", EnterpriseMetaWSServer.class);
-        enterpriseClasses.put("CVA", CvaWSServer.class);
-        enterpriseClasses.put("ADMIN", AdminWSServer.class);
+        enterpriseClasses.put("users", UserWSServer.class);
+        enterpriseClasses.put("projects", ProjectWSServer.class);
+        enterpriseClasses.put("studies", StudyWSServer.class);
+        enterpriseClasses.put("files", FileWSServer.class);
+        enterpriseClasses.put("jobs", JobWSServer.class);
+        enterpriseClasses.put("samples", SampleWSServer.class);
+        enterpriseClasses.put("individuals", IndividualWSServer.class);
+        enterpriseClasses.put("families", FamilyWSServer.class);
+        enterpriseClasses.put("cohorts", CohortWSServer.class);
+        enterpriseClasses.put("panels", PanelWSServer.class);
+        enterpriseClasses.put("alignment", AlignmentWebService.class);
+        enterpriseClasses.put("variant", VariantWebService.class);
+        enterpriseClasses.put("clinical", ClinicalWebService.class);
+        enterpriseClasses.put("variantOperation", VariantOperationWebService.class);
+        enterpriseClasses.put("meta", EnterpriseMetaWSServer.class);
+        enterpriseClasses.put("cva", CvaWSServer.class);
+        enterpriseClasses.put("admin", AdminWSServer.class);
     }
 
     public EnterpriseResourceConfig() {

@@ -28,13 +28,10 @@ public abstract class EnterpriseAbstractParentClient extends AbstractParentClien
         super(token, clientConfiguration);
     }
 
-    public Map<String, Object> getSsoCookies() {
-        return ssoCookies;
-    }
-
-    public EnterpriseAbstractParentClient setSsoCookies(Map<String, Object> ssoCookies) {
-        this.ssoCookies = ssoCookies;
-        return this;
+    protected EnterpriseAbstractParentClient(String token, ClientConfiguration clientConfiguration,
+                                             EnterpriseConfiguration enterpriseConfiguration) {
+        super(token, clientConfiguration);
+        this.enterpriseConfiguration = enterpriseConfiguration;
     }
 
     /**
@@ -84,6 +81,36 @@ public abstract class EnterpriseAbstractParentClient extends AbstractParentClien
 
         checkErrors(restResponse, response.getStatusInfo(), POST, path);
         return restResponse;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("EnterpriseAbstractParentClient{");
+        sb.append("enterpriseConfiguration=").append(enterpriseConfiguration);
+        sb.append(", ssoCookies=").append(ssoCookies);
+        sb.append(", client=").append(client);
+        sb.append(", jsonObjectMapper=").append(jsonObjectMapper);
+        sb.append(", token='").append(token).append('\'');
+        sb.append('}');
+        return sb.toString();
+    }
+
+    public EnterpriseConfiguration getEnterpriseConfiguration() {
+        return enterpriseConfiguration;
+    }
+
+    public EnterpriseAbstractParentClient setEnterpriseConfiguration(EnterpriseConfiguration enterpriseConfiguration) {
+        this.enterpriseConfiguration = enterpriseConfiguration;
+        return this;
+    }
+
+    public Map<String, Object> getSsoCookies() {
+        return ssoCookies;
+    }
+
+    public EnterpriseAbstractParentClient setSsoCookies(Map<String, Object> ssoCookies) {
+        this.ssoCookies = ssoCookies;
+        return this;
     }
 
 }

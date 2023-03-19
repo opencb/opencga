@@ -57,9 +57,6 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
             case "about":
                 queryResponse = about();
                 break;
-            case "about2":
-                queryResponse = about2();
-                break;
             case "api":
                 queryResponse = api();
                 break;
@@ -92,13 +89,6 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
 
         MetaCommandOptions.AboutCommandOptions commandOptions = metaCommandOptions.aboutCommandOptions;
         return enterpriseOpenCGAClient.getMetaClient().about();
-    }
-
-    private RestResponse<ObjectMap> about2() throws Exception {
-        logger.debug("Executing about2 in Meta command line");
-
-        MetaCommandOptions.About2CommandOptions commandOptions = metaCommandOptions.about2CommandOptions;
-        return enterpriseOpenCGAClient.getMetaClient().about2();
     }
 
     private RestResponse<List> api() throws Exception {
