@@ -32,6 +32,7 @@ jobs:
   build:
     name: Build OpenCGA Enterprise app
     runs-on: ubuntu-22.04
+    needs: build-opencga
     outputs:
       version: ${{ steps.get_project_version.outputs.version }}
     steps:
