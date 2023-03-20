@@ -8,9 +8,12 @@ on:
 
 jobs:
   build:
-    - uses: zetta-genomics/opencga-enterprise/.github/workflows/build-java-enterprise-workflow@TASK-1974
-      with:
-        maven_opts: -Dopencga.war.name=opencga
+    name: Build OpenCGA Enterprise
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: zetta-genomics/opencga-enterprise/.github/workflows/build-java-enterprise-workflow@TASK-1974
+        with:
+          maven_opts: -Dopencga.war.name=opencga
 #    name: Build OpenCGA Enterprise app
 #    runs-on: ubuntu-22.04
 #    outputs:
