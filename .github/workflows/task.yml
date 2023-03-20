@@ -13,7 +13,7 @@ jobs:
       maven_opts: -P storage-hadoop,hdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
 
   test:
-    uses: opencb/opencga/.github/workflows/test-analysis.yml@develop
+    uses: opencb/opencga/.github/workflows/test-analysis.yml@TASK-3980
     needs: build
     secrets: inherit
     with:
