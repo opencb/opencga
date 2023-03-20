@@ -10,7 +10,7 @@ jobs:
   build:
     uses: zetta-genomics/opencga-enterprise/.github/workflows/build-java-enterprise-workflow.yml@TASK-1974
     with:
-      maven_opts: -Dopencga.war.name=opencga
+      maven_opts: -Dopencga.war.name=opencga -P CodeGen
 
   deploy-docker:
     uses: zetta-genomics/opencga-enterprise/.github/workflows/deploy-enterprise-docker-hub-workflow.yml@TASK-1974
