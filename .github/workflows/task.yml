@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    - uses: zettagenomics/opencga-enterprise/.github/workflows/build-java-enterprise-workflow@TASK-1974
+    - uses: zetta-genomics/opencga-enterprise/.github/workflows/build-java-enterprise-workflow@TASK-1974
       with:
         maven_opts: -Dopencga.war.name=opencga
 #    name: Build OpenCGA Enterprise app
