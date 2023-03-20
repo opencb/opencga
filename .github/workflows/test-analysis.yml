@@ -57,7 +57,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         #        run: mvn -T 2 clean install -DskipTests -P storage-hadoop,hdp3.1 -Dcheckstyle.skip -B verify surefire-report:report  org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
-        run: mvn -B verify -P storage-hadoop,hdp3.1 -P ${{ test_profile }} -Dcheckstyle.skip surefire-report:report org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
+        run: mvn -B verify -P storage-hadoop,hdp3.1 -P ${{ inputs.test_profile }} -Dcheckstyle.skip surefire-report:report org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
 #      - name: Upload result dir
 #        uses: actions/upload-artifact@v3
 #        with:
