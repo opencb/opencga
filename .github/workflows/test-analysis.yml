@@ -1,6 +1,16 @@
 name: Build and test the project
 on:
   workflow_call:
+    inputs:
+      test_profile:
+        type: string
+        required: true
+      report_dir:
+        type: string
+        required: true
+      report_context:
+        type: string
+        required: true
     secrets:
       SONAR_TOKEN:
         required: true
@@ -12,13 +22,7 @@ on:
         required: true
       SSH_TESTING_SERVER_PASSWORD:
         required: true
-    inputs:
-      report_dir:
-        type: string
-        required: true
-      report_context:
-        type: string
-        required: true
+
 env:
   xb_version: "1.5.0"
 
@@ -36,6 +40,8 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
           cache: 'maven'
+      - name: Install Samtools
+        run: sudo apt-get install samtools python3-deeptools
       - name: Start MongoDB v5.0
         uses: supercharge/mongodb-github-action@1.8.0
         with:
@@ -51,7 +57,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         #        run: mvn -T 2 clean install -DskipTests -P storage-hadoop,hdp3.1 -Dcheckstyle.skip -B verify surefire-report:report  org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
-        run: mvn -B verify -DskipTests -P storage-hadoop,hdp3.1 -Dcheckstyle.skip surefire-report:report org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
+        run: mvn -B verify -P storage-hadoop,hdp3.1 -P ${{ test_profile }} -Dcheckstyle.skip surefire-report:report org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
 #      - name: Upload result dir
 #        uses: actions/upload-artifact@v3
 #        with:

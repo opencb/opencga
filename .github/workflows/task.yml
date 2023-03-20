@@ -17,6 +17,7 @@ jobs:
     needs: build
     secrets: inherit
     with:
+      test_profile: runShortTests
       report_context: development
       report_dir: ${{ github.ref_name }}/opencga/${{ github.sha }}
 
