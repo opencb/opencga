@@ -23,7 +23,7 @@ jobs:
           java-version: '8'
           cache: 'maven'
       - name: Maven Build (skip tests)
-        run: mvn -T 2 clean install -DskipTests ${{ inputs.maven_opts }}
+        run: mvn -T 2 clean deploy -DskipTests
       - uses: actions/upload-artifact@v3
         with:
           name: opencga-build-folder
@@ -51,7 +51,7 @@ jobs:
           name: opencga-build-folder
           path: opencga-home
       - name: Maven Build (skip tests)
-        run: mvn -T 2 clean install -DskipTests ${{ inputs.maven_opts }}
+        run: mvn -T 2 clean install -DskipTests
       - uses: actions/upload-artifact@v3
         with:
           name: build-folder
