@@ -1,0 +1,51 @@
+name: Reusable workflow to build Java application
+
+on:
+  workflow_call:
+    inputs:
+      maven_opts:
+        type: string
+        required: false
+    outputs:
+      version:
+        description: "Project version"
+        value: ${{ jobs.build-workflow.outputs.version }}
+
+jobs:
+  build:
+    name: Build OpenCGA Enterprise app
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.get_project_version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: '10'
+      - uses: actions/checkout@v3
+        with:
+          repository: opencb/opencga
+          ref: TASK-4086
+          path: opencga-home
+          fetch-depth: '10'
+      - name: Set up JDK 8
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '8'
+          cache: 'maven'
+      - name: OpenCGA Maven Build (skip tests)
+        run: mvn -T 2 clean install -DskipTests -f opencga-home/pom.xml
+      - name: OpenCGA Enterprise Maven Build (skip tests)
+        run: mvn -T 2 clean install -DskipTests ${{ inputs.maven_opts }}
+      - uses: actions/upload-artifact@v3
+        with:
+          name: build-folder
+          path: build
+      - id: get_project_version
+        uses: avides/actions-project-version-check@v1.3.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          file-to-check: pom.xml
+          only-return-version: true
+      - name: test-version-from-check
+        run: echo "Project version is " ${{ steps.get_project_version.outputs.version }}
