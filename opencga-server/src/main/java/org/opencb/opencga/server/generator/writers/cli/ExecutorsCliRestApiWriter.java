@@ -51,7 +51,13 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("package ").append(config.getOptions().getExecutorsPackage()).append(";\n\n");
 
         sb.append("import com.fasterxml.jackson.databind.DeserializationFeature;\n");
-        sb.append("import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;\n");
+
+        if (StringUtils.isEmpty(config.getApiConfig().getExecutorsParentClass())) {
+            sb.append("import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;\n");
+        } else {
+            sb.append("import " + config.getApiConfig().getExecutorsParentClass() + ";\n");
+        }
+
         sb.append("import org.opencb.opencga.app.cli.main.*;\n");
         sb.append("import org.opencb.opencga.core.response.RestResponse;\n");
         sb.append("import org.opencb.opencga.client.exceptions.ClientException;\n");
@@ -64,12 +70,13 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("import org.opencb.opencga.core.response.QueryType;\n");
         sb.append("import org.opencb.commons.utils.PrintUtils;\n\n");
 
-
+        // Add custom parent class
         sb.append("import " + config.getOptions().getOptionsPackage() + "." + getAsClassName(restCategory.getName()) + "CommandOptions;\n\n");
-        if (categoryConfig.isExecutorExtended()) {
+        if (categoryConfig.isExecutorExtended() && StringUtils.isEmpty(categoryConfig.getExecutorExtendedClassName())) {
             sb.append("import org.opencb.opencga.app.cli.main.parent."
                     + getExtendedClass(getAsClassName(restCategory.getName()), categoryConfig) + ";\n\n");
         }
+
         Set<String> imports = new TreeSet<>();
         for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
             if (isValidImport(restEndpoint.getResponseClass())) {
@@ -210,12 +217,18 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         return sb.toString();
     }
 
-    private String getExtendedClass(String name, CategoryConfig config) {
-        String res = "OpencgaCommandExecutor";
-        if (config.isExecutorExtended()) {
-            res = "Parent" + name + "CommandExecutor";
+    private String getExtendedClass(String name, CategoryConfig categoryConfig) {
+        String parentClass = StringUtils.isEmpty(this.config.getApiConfig().getExecutorsParentClass())
+                ? "OpencgaCommandExecutor"
+                : this.config.getApiConfig().getExecutorsParentClass();
+        if (categoryConfig.isExecutorExtended()) {
+            if (StringUtils.isNotEmpty(categoryConfig.getExecutorExtendedClassName())) {
+                parentClass = categoryConfig.getExecutorExtendedClassName();
+            } else {
+                parentClass = "Parent" + name + "CommandExecutor";
+            }
         }
-        return res;
+        return parentClass;
     }
 
     @Override
@@ -254,7 +267,12 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
     }
 
     private String getReturn(RestCategory restCategory, RestEndpoint restEndpoint, CategoryConfig config, String commandName) {
-        String res = "        return openCGAClient.get" + getAsClassName(config.getKey()) + "Client()."
+        String opencgaClientObjectName = StringUtils.isEmpty(this.config.getApiConfig().getOpencgaClientClassName())
+                ? "openCGAClient"
+                : this.config.getApiConfig().getOpencgaClientClassName().toLowerCase().charAt(0)
+                    + this.config.getApiConfig().getOpencgaClientClassName().substring(1);
+
+        String res = "        return " + opencgaClientObjectName + ".get" + getAsClassName(config.getKey()) + "Client()."
                 + getJavaMethodName(config, commandName) + "(";
         res += restEndpoint.getPathParams();
         res += restEndpoint.getMandatoryQueryParams(config, commandName);

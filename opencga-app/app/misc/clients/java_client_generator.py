@@ -29,6 +29,9 @@ class JavaClientGenerator(RestClientGenerator):
         }
 
     def get_imports(self):
+        # Convert the Java output to package path.
+        package = self.output_dir.split('java/')[1].replace('/', '.')
+
         headers = []
         headers.append('/*')
         headers.append('* Copyright 2015-' + str(date.today().year) + ' OpenCB')
@@ -46,13 +49,15 @@ class JavaClientGenerator(RestClientGenerator):
         headers.append('* limitations under the License.')
         headers.append('*/')
         headers.append('')
-        headers.append('package org.opencb.opencga.client.rest.clients;')
+        # We need to calculate the Java package and no use: headers.append('package org.opencb.opencga.client.rest.clients;')
+        headers.append('package ' + package + ';')
         headers.append('')
 
         imports = set()
         imports.add('org.opencb.opencga.client.exceptions.ClientException;')
         imports.add('org.opencb.opencga.client.config.ClientConfiguration;')
-        imports.add('org.opencb.opencga.client.rest.AbstractParentClient;')
+        # imports.add('org.opencb.opencga.client.rest.AbstractParentClient;')
+        imports.add('com.zettagenomics.opencga.enterprise.client.rest.EnterpriseAbstractParentClient;')
         imports.add('org.opencb.opencga.core.response.RestResponse;')
 
         for java_type in self.java_types:
@@ -87,7 +92,7 @@ class JavaClientGenerator(RestClientGenerator):
         text.append(' *{}Client version: {}'.format(' ' * 4, self.version))
         text.append(' *{}PATH: {}'.format(' ' * 4, self.get_category_path(category)))
         text.append(' */')
-        text.append('public class {}Client extends AbstractParentClient {{'.format(self.categories[self.get_category_name(category)]))
+        text.append('public class {}Client extends EnterpriseAbstractParentClient {{'.format(self.categories[self.get_category_name(category)]))
         text.append('')
         text.append('{}public {}Client(String token, ClientConfiguration configuration) {{'.format(' ' * 4, self.categories[self.get_category_name(category)]))
         text.append('{}super(token, configuration);'.format(' ' * 8))
