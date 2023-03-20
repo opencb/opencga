@@ -1,10 +1,10 @@
-name: Push OpenCGA TASK
+name: Release new opencga-enterprise version
 
 on:
   push:
-    branches:
-      - TASK-*
-
+    tags:
+      - '*'
+      -
 jobs:
   build:
     uses: zetta-genomics/opencga-enterprise/.github/workflows/build-java-enterprise-workflow.yml@TASK-1974

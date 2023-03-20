@@ -1,9 +1,10 @@
-name: Push OpenCGA TASK
+name: Push opencga-enterprise develop or release branch
 
 on:
   push:
     branches:
-      - TASK-*
+      - develop
+      - release-*
 
 jobs:
   build:
