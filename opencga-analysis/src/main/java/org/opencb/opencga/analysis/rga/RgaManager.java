@@ -1962,11 +1962,13 @@ public class RgaManager implements AutoCloseable {
     }
 
     private String getMainCollectionName(String study) {
-        return catalogManager.getConfiguration().getDatabasePrefix() + "-rga-" + study.replace("@", "_").replace(":", "_");
+        return catalogManager.getConfiguration().getDatabasePrefix() + "-rga-" + study.replace("@", "_").replace(":", "_")
+                + storageConfiguration.getRga().getSuffix();
     }
 
     private String getAuxCollectionName(String study) {
-        return catalogManager.getConfiguration().getDatabasePrefix() + "-rga-aux-" + study.replace("@", "_").replace(":", "_");
+        return catalogManager.getConfiguration().getDatabasePrefix() + "-rga-aux-" + study.replace("@", "_").replace(":", "_")
+                + storageConfiguration.getRga().getSuffix();
     }
 
     @Override

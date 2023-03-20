@@ -6,15 +6,17 @@ public class RgaSearchConfiguration extends SearchConfiguration {
 
     private boolean cache;
     private int cacheSize;
+    private String suffix;
 
     public RgaSearchConfiguration() {
     }
 
     public RgaSearchConfiguration(List<String> hosts, String configSet, String mode, String user, String password, String manager,
-                                  boolean active, int timeout, int insertBatchSize, boolean cache, int cacheSize) {
+                                  boolean active, int timeout, int insertBatchSize, boolean cache, int cacheSize, String suffix) {
         super(hosts, configSet, mode, user, password, manager, active, timeout, insertBatchSize);
         this.cache = cache;
         this.cacheSize = cacheSize;
+        this.suffix = suffix;
     }
 
     @Override
@@ -22,6 +24,7 @@ public class RgaSearchConfiguration extends SearchConfiguration {
         final StringBuilder sb = new StringBuilder("RgaSearchConfiguration{");
         sb.append("cache=").append(cache);
         sb.append(", cacheSize=").append(cacheSize);
+        sb.append(", suffix='").append(suffix).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -41,6 +44,15 @@ public class RgaSearchConfiguration extends SearchConfiguration {
 
     public RgaSearchConfiguration setCacheSize(int cacheSize) {
         this.cacheSize = cacheSize;
+        return this;
+    }
+
+    public String getSuffix() {
+        return suffix;
+    }
+
+    public RgaSearchConfiguration setSuffix(String suffix) {
+        this.suffix = suffix;
         return this;
     }
 }
