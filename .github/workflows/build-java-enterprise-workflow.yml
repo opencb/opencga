@@ -49,3 +49,4 @@ jobs:
           only-return-version: true
       - name: test-version-from-check
         run: echo "Project version is " ${{ steps.get_project_version.outputs.version }}
+
