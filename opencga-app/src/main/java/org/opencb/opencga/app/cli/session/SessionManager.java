@@ -41,9 +41,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class SessionManager {
 
@@ -157,17 +155,26 @@ public class SessionManager {
 
 
     public void updateSessionToken(String token, String host) throws IOException {
+        updateSessionToken(token, host, Collections.emptyMap());
+    }
+
+    public void updateSessionToken(String token, String host, Map<String, Object> attributes) throws IOException {
         // Get current Session and update token
         Session session = getSession(host);
         session.setToken(token);
+        session.setAttributes(attributes);
 
         // Save updated Session
         saveSession(session);
     }
 
-    public void saveSession(String user, String token, String refreshToken, List<String> studies, String host)
-            throws IOException {
-        Session session = new Session(host, user, token, refreshToken, studies);
+    public void saveSession(String user, String token, String refreshToken, List<String> studies, String host) throws IOException {
+        saveSession(user, token, refreshToken, studies, host, Collections.emptyMap());
+    }
+
+    public void saveSession(String user, String token, String refreshToken, List<String> studies, String host,
+                            Map<String, Object> attributes) throws IOException {
+        Session session = new Session(host, user, token, refreshToken, studies, attributes);
         if (CollectionUtils.isNotEmpty(studies)) {
             session.setCurrentStudy(studies.get(0));
         } else {
