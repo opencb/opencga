@@ -23,7 +23,7 @@ jobs:
           java-version: '8'
           cache: 'maven'
       - name: Maven Build (skip tests)
-        run: mvn -T 2 clean deploy -DskipTests
+        run: mvn -T 2 clean deploy -DskipTests -P deploy
       - uses: actions/upload-artifact@v3
         with:
           name: opencga-build-folder
