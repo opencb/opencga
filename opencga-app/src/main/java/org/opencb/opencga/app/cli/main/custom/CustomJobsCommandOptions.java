@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.cli.main.parent;
+package org.opencb.opencga.app.cli.main.custom;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -21,14 +21,14 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.CommonCommandOptions;
  * This class contains methods for the Files command line. OpenCGA version: 2.2.0-SNAPSHOT PATH: /{apiVersion}/files
  */
 @Parameters(commandNames = {"jobs"}, commandDescription = "Jobs commands")
-public class ParentJobsCommandOptions {
+public class CustomJobsCommandOptions {
 
     public JCommander jCommander;
     public CommonCommandOptions commonCommandOptions;
     public TopCommandOptions topCommandOptions;
     public LogCommandOptions logCommandOptions;
 
-    public ParentJobsCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public CustomJobsCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
         topCommandOptions = new TopCommandOptions();

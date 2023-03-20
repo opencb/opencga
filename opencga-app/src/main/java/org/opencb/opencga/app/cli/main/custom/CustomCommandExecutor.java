@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.main.parent;
+package org.opencb.opencga.app.cli.main.custom;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.session.SessionManager;

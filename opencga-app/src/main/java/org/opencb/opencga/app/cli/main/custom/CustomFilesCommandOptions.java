@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.cli.main.parent;
+package org.opencb.opencga.app.cli.main.custom;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -21,13 +21,13 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.CommonCommandOptions;
  * This class contains methods for the Files command line. OpenCGA version: 2.2.0-SNAPSHOT PATH: /{apiVersion}/files
  */
 @Parameters(commandNames = {"files"}, commandDescription = "Files commands")
-public class ParentFilesCommandOptions {
+public class CustomFilesCommandOptions {
 
     public JCommander jCommander;
     public CommonCommandOptions commonCommandOptions;
     public UploadCommandOptions uploadCommandOptions;
 
-    public ParentFilesCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public CustomFilesCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
 
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;

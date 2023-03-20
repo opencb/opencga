@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencb.opencga.app.cli.main.parent;
+package org.opencb.opencga.app.cli.main.custom;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.session.SessionManager;
@@ -24,14 +24,14 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.response.RestResponse;
 import org.slf4j.Logger;
 
-public class ParentFilesCommandExecutor extends CustomCommandExecutor {
+public class CustomFilesCommandExecutor extends CustomCommandExecutor {
 
-    public ParentFilesCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
+    public CustomFilesCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
                                       SessionManager session, Logger logger) {
         super(options, token, clientConfiguration, session, logger);
     }
 
-    public ParentFilesCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
+    public CustomFilesCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
                                       SessionManager session, Logger logger, OpenCGAClient openCGAClient) {
         super(options, token, clientConfiguration, session, logger, openCGAClient);
     }

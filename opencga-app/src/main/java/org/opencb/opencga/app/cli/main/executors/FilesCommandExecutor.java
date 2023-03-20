@@ -18,34 +18,34 @@ import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.FilesCommandOptions;
 
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandOptions;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandOptions;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
 import java.io.DataInputStream;
 import java.io.InputStream;
 import java.util.Map;
@@ -622,7 +622,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<File> upload() throws Exception {
         logger.debug("Executing upload in Files command line");
 
-        ParentFilesCommandOptions.UploadCommandOptions commandOptions = filesCommandOptions.uploadCommandOptions;
+        CustomFilesCommandOptions.UploadCommandOptions commandOptions = filesCommandOptions.uploadCommandOptions;
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("file", commandOptions.file);
         queryParams.putIfNotEmpty("fileName", commandOptions.fileName);
@@ -636,7 +636,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
-        ParentFilesCommandExecutor customFilesCommandExecutor = new ParentFilesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
+        CustomFilesCommandExecutor customFilesCommandExecutor = new CustomFilesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
         return customFilesCommandExecutor.upload();
     }
 

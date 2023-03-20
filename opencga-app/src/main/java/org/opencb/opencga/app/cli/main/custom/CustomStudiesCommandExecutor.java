@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencb.opencga.app.cli.main.parent;
+package org.opencb.opencga.app.cli.main.custom;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -39,14 +39,14 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.LinkedList;
 import java.util.List;
 
-public class ParentStudiesCommandExecutor extends CustomCommandExecutor {
+public class CustomStudiesCommandExecutor extends CustomCommandExecutor {
 
-    public ParentStudiesCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
+    public CustomStudiesCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
                                         SessionManager session, Logger logger) {
         super(options, token, clientConfiguration, session, logger);
     }
 
-    public ParentStudiesCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
+    public CustomStudiesCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
                                         SessionManager session, Logger logger, OpenCGAClient openCGAClient) {
         super(options, token, clientConfiguration, session, logger, openCGAClient);
     }

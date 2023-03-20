@@ -18,18 +18,18 @@ import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.UsersCommandOptions;
 
-import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandOptions;
-import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandOptions;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
 import java.util.Map;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -117,12 +117,12 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<AuthenticationResponse> login() throws Exception {
         logger.debug("Executing login in Users command line");
 
-        ParentUsersCommandOptions.LoginCommandOptions commandOptions = usersCommandOptions.loginCommandOptions;
+        CustomUsersCommandOptions.LoginCommandOptions commandOptions = usersCommandOptions.loginCommandOptions;
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("user", commandOptions.user);
         queryParams.putIfNotEmpty("password", commandOptions.password);
         queryParams.putIfNotEmpty("refreshToken", commandOptions.refreshToken);
-        ParentUsersCommandExecutor customUsersCommandExecutor = new ParentUsersCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
+        CustomUsersCommandExecutor customUsersCommandExecutor = new CustomUsersCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
         return customUsersCommandExecutor.login();
     }
 

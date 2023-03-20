@@ -77,10 +77,10 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                 if (categoryConfig.getCommand(commandName) != null && StringUtils.isNotEmpty(categoryConfig.getCommand(commandName).getExecutorExtendedClassName())) {
                     sb.append("import " + categoryConfig.getCommand(commandName).getExecutorExtendedClassName() + ";\n");
                 } else {
-                    sb.append("import org.opencb.opencga.app.cli.main.parent.Parent" + getAsClassName(restCategory.getName()) + "CommandExecutor;\n");
+                    sb.append("import org.opencb.opencga.app.cli.main.custom.Custom" + getAsClassName(restCategory.getName()) + "CommandExecutor;\n");
                 }
                 if (categoryConfig.isExtendedOptionCommand(commandName)) {
-                    sb.append("import org.opencb.opencga.app.cli.main.parent.Parent" + getAsClassName(restCategory.getName()) + "CommandOptions;\n");
+                    sb.append("import org.opencb.opencga.app.cli.main.custom.Custom" + getAsClassName(restCategory.getName()) + "CommandOptions;\n");
 
                 }
             }
@@ -246,7 +246,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                 sb.append("        logger.debug(\"Executing " + getAsCamelCase(commandName) + " in "
                         + restCategory.getName() + " command line\");\n\n");
                 if (categoryConfig.isExtendedOptionCommand(commandName)) {
-                    sb.append("        Parent" + getAsClassName(restCategory.getName()) + "CommandOptions." + getAsClassName(getAsCamelCase(commandName))
+                    sb.append("        Custom" + getAsClassName(restCategory.getName()) + "CommandOptions." + getAsClassName(getAsCamelCase(commandName))
                             + "CommandOptions commandOptions = " + getAsVariableName(getAsCamelCase(restCategory.getName())) +
                             "CommandOptions."
                             + getAsCamelCase(commandName) + "CommandOptions;\n");
@@ -309,7 +309,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                     if (StringUtils.isNotEmpty(categoryConfig.getCommand(commandName).getExecutorExtendedClassName())) {
                         sb.append("        " + categoryConfig.getCommand(commandName).getExecutorExtendedClassName() + " custom" + getAsClassName(restCategory.getName()) + "CommandExecutor = new " + categoryConfig.getCommand(commandName).getExecutorExtendedClassName() + "(queryParams, token, clientConfiguration, getSessionManager(), getLogger());\n");
                     } else {
-                        sb.append("        Parent" + getAsClassName(restCategory.getName()) + "CommandExecutor custom" + getAsClassName(restCategory.getName()) + "CommandExecutor = new Parent" + getAsClassName(restCategory.getName()) + "CommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());\n");
+                        sb.append("        Custom" + getAsClassName(restCategory.getName()) + "CommandExecutor custom" + getAsClassName(restCategory.getName()) + "CommandExecutor = new Custom" + getAsClassName(restCategory.getName()) + "CommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());\n");
                     }
 
                     sb.append("        return custom" + getAsClassName(restCategory.getName()) + "CommandExecutor." + getAsCamelCase(commandName) + "();\n");

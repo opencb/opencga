@@ -18,27 +18,27 @@ import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.StudiesCommandOptions;
 
-import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandOptions;
-import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandOptions;
-import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandOptions;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandOptions;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
 import java.io.InputStream;
 import java.lang.Object;
 import java.net.URL;
@@ -450,7 +450,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<Job> runTemplates() throws Exception {
         logger.debug("Executing runTemplates in Studies command line");
 
-        ParentStudiesCommandOptions.RunTemplatesCommandOptions commandOptions = studiesCommandOptions.runTemplatesCommandOptions;
+        CustomStudiesCommandOptions.RunTemplatesCommandOptions commandOptions = studiesCommandOptions.runTemplatesCommandOptions;
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
@@ -463,21 +463,21 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
-        ParentStudiesCommandExecutor customStudiesCommandExecutor = new ParentStudiesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
+        CustomStudiesCommandExecutor customStudiesCommandExecutor = new CustomStudiesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
         return customStudiesCommandExecutor.runTemplates();
     }
 
     private RestResponse<String> uploadTemplates() throws Exception {
         logger.debug("Executing uploadTemplates in Studies command line");
 
-        ParentStudiesCommandOptions.UploadTemplatesCommandOptions commandOptions = studiesCommandOptions.uploadTemplatesCommandOptions;
+        CustomStudiesCommandOptions.UploadTemplatesCommandOptions commandOptions = studiesCommandOptions.uploadTemplatesCommandOptions;
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("file", commandOptions.file);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
-        ParentStudiesCommandExecutor customStudiesCommandExecutor = new ParentStudiesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
+        CustomStudiesCommandExecutor customStudiesCommandExecutor = new CustomStudiesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
         return customStudiesCommandExecutor.uploadTemplates();
     }
 

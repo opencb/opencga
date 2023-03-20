@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencb.opencga.app.cli.main.parent;
+package org.opencb.opencga.app.cli.main.custom;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
@@ -32,7 +32,7 @@ import java.io.IOException;
 import static org.opencb.commons.utils.PrintUtils.getKeyValueAsFormattedString;
 import static org.opencb.commons.utils.PrintUtils.println;
 
-public class ParentUsersCommandExecutor extends CustomCommandExecutor {
+public class CustomUsersCommandExecutor extends CustomCommandExecutor {
 
     public static final String LOGIN_OK = "You have been logged in correctly: ";
     public static final String LOGIN_FAIL = "Incorrect username or password.";
@@ -40,12 +40,12 @@ public class ParentUsersCommandExecutor extends CustomCommandExecutor {
     public static final String LOGOUT = "You've been logged out.";
 
 
-    public ParentUsersCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
+    public CustomUsersCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
                                       SessionManager session, Logger logger) {
         super(options, token, clientConfiguration, session, logger);
     }
 
-    public ParentUsersCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
+    public CustomUsersCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
                                       SessionManager session, Logger logger, OpenCGAClient openCGAClient) {
         super(options, token, clientConfiguration, session, logger, openCGAClient);
     }

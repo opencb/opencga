@@ -18,20 +18,20 @@ import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.JobsCommandOptions;
 
-import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandOptions;
-import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandOptions;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
 import java.util.Date;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -352,7 +352,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<JobTop> top() throws Exception {
         logger.debug("Executing top in Jobs command line");
 
-        ParentJobsCommandOptions.TopCommandOptions commandOptions = jobsCommandOptions.topCommandOptions;
+        CustomJobsCommandOptions.TopCommandOptions commandOptions = jobsCommandOptions.topCommandOptions;
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -363,7 +363,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
-        ParentJobsCommandExecutor customJobsCommandExecutor = new ParentJobsCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
+        CustomJobsCommandExecutor customJobsCommandExecutor = new CustomJobsCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
         return customJobsCommandExecutor.top();
     }
 
