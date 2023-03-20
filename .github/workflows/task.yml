@@ -60,15 +60,18 @@ jobs:
 #    secrets: inherit
 
   deploy-docker:
-    - name: Download build dir
-      uses: actions/download-artifact@v3
-      with:
-        name: build-folder
-        path: build
-    - uses: docker/login-action@v2
-      needs: build
-      with:
-        username: ${{ secrets.DOCKER_HUB_USER }}
-        password: ${{ secrets.DOCKER_HUB_PASSWORD }}
-    - name: Deploy in Docker Hub
-      run: python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images base,init
+    name: Deploy Docker OpenCGA Enterprise app
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download build dir
+        uses: actions/download-artifact@v3
+        with:
+          name: build-folder
+          path: build
+      - uses: docker/login-action@v2
+        needs: build
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+      - name: Deploy in Docker Hub
+        run: python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images base,init
