@@ -62,6 +62,7 @@ jobs:
   deploy-docker:
     name: Deploy Docker OpenCGA Enterprise app
     runs-on: ubuntu-22.04
+    needs: build
     steps:
       - name: Download build dir
         uses: actions/download-artifact@v3
