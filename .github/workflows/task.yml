@@ -67,6 +67,8 @@ jobs:
 #          name: opencga-build-folder
 #          path: opencga-home
       - name: Maven Build (skip tests)
+        run: mvn -T 2 clean install -DskipTests -f opencga-home/pom.xml
+      - name: Maven Build (skip tests)
         run: mvn -T 2 clean install -DskipTests
       - uses: actions/upload-artifact@v3
         with:
