@@ -27,7 +27,7 @@ env:
   xb_version: "1.6.0-SNAPSHOT"
 
 jobs:
-  test:
+  analysis:
     name: Test and push Sonar analysis
     runs-on: ubuntu-22.04
     steps:
@@ -40,6 +40,27 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
           cache: 'maven'
+      - name: Test and Analyze
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: mvn -T 2 clean install -P storage-hadoop,hdp3.1,${{ inputs.test_profile }} -DskipTests -Dcheckstyle.skip org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
+        #  run: mvn -T 2 clean install -DskipTests -P storage-hadoop,hdp3.1 -Dcheckstyle.skip -B verify surefire-report:report  org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
+        #  run: mvn -B verify -P storage-hadoop,hdp3.1 -P ${{ inputs.test_profile }} -Dcheckstyle.skip surefire-report:report org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
+
+  test:
+    name: Test and push Sonar analysis
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: '0'
+      - name: Set up JDK 8
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '8'
+          cache: 'maven'
       - name: Install Samtools
         run: sudo apt-get install samtools python3-deeptools
       - name: Start MongoDB v5.0
@@ -47,13 +68,8 @@ jobs:
         with:
           mongodb-version: 5.0
           mongodb-replica-set: rs-test
-      - name: Test and Analyze
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify surefire-report:report -P storage-hadoop,hdp3.1,${{ inputs.test_profile }} -Dcheckstyle.skip org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
-        #  run: mvn -T 2 clean install -DskipTests -P storage-hadoop,hdp3.1 -Dcheckstyle.skip -B verify surefire-report:report  org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
-        #  run: mvn -B verify -P storage-hadoop,hdp3.1 -P ${{ inputs.test_profile }} -Dcheckstyle.skip surefire-report:report org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
+      - name: Run Junit tests
+        run: mvn -B verify surefire-report:report -P storage-hadoop,hdp3.1,${{ inputs.test_profile }} -Dcheckstyle.skip -Popencga-storage-hadoop-deps -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
       - name: Upload result dir
         uses: actions/upload-artifact@v3
         with:
