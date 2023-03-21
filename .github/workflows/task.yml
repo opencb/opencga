@@ -4,14 +4,15 @@ on:
   push:
     branches:
       - TASK-*
+  workflow_dispatch:
 
 jobs:
   build:
     uses: zetta-genomics/opencga-enterprise/.github/workflows/build-java-enterprise-workflow.yml@TASK-1974
     with:
-      maven_opts: -Dopencga.war.name=opencga -P CodeGen
+      maven_opts: -Dopencga.war.name=opencga
 
   deploy-docker:
-    uses: zetta-genomics/opencga-enterprise/.github/workflows/deploy-enterprise-docker-hub-workflow.yml@TASK-1974
+    uses: zetta-genomics/opencga-enterprise/.github/workflows/deploy-docker-hub-enterprise-workflow.yml@TASK-1974
     needs: build
     secrets: inherit
