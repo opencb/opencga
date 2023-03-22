@@ -21,11 +21,10 @@ RUN apt-get update && apt-get -y upgrade && apt-get install -y lsb-release sshpa
 
 ## Run Docker images as non root
 USER opencga
-
 COPY --chown=opencga:opencga ${BUILD_PATH} /opt/opencga
 
 USER root
-RUN keytool -import -storepass changeit -noprompt -alias cas -file /opt/opencga/cloud/docker/opencga-base/cert1.pem -keystore /usr/local/openjdk-8/lib/security/cacerts && update-ca-certificates
+RUN keytool -import -storepass changeit -noprompt -alias cas -file /opt/opencga/cloud/docker/opencga-base/cert1.pem -keystore /usr/local/openjdk-8/lib/security/cacerts
 
 USER opencga
 ## Declare the volume to be mounted later
