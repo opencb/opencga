@@ -71,7 +71,8 @@
      private static final int DEFAULT_LIMIT = 2000;
      private static final int DEFAULT_SKIP = 0;
      private static final int DEFAULT_CONNECT_TIMEOUT = 1000;
-     private static final int DEFAULT_READ_TIMEOUT = 5400000;
+     private static final int DEFAULT_READ_TIMEOUT = 30000;
+     private static final int DEFAULT_UPLOAD_TIMEOUT = 5400000;
      protected final Client client;
      protected final ObjectMapper jsonObjectMapper;
      private final ClientConfiguration clientConfiguration;
@@ -431,11 +432,10 @@
          params.remove("file");
          params.remove("body");
 
-         path.property(ClientProperties.READ_TIMEOUT, 5400000);
-         client.property(ClientProperties.READ_TIMEOUT, 5400000);
+         path.property(ClientProperties.READ_TIMEOUT, DEFAULT_UPLOAD_TIMEOUT);
+         client.property(ClientProperties.READ_TIMEOUT, DEFAULT_UPLOAD_TIMEOUT);
          path.register(MultiPartFeature.class);
-         path.property(ClientProperties.REQUEST_ENTITY_PROCESSING,
-                 RequestEntityProcessing.CHUNKED);
+         path.property(ClientProperties.REQUEST_ENTITY_PROCESSING, RequestEntityProcessing.CHUNKED);
          final FileDataBodyPart filePart = new FileDataBodyPart("file", new File(filePath));
          FormDataMultiPart formDataMultiPart = new FormDataMultiPart();
          // Add the rest of the parameters to the form

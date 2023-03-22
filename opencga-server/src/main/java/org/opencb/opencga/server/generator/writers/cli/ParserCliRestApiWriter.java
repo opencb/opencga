@@ -66,7 +66,7 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
         } else {
             sb.append("import " + config.getApiConfig().getOptionsParserParentClass() + ";\n");
         }
-        sb.append("import org.opencb.opencga.app.cli.main.parent.ParentCliOptionsParser;\n");
+        sb.append("import org.opencb.opencga.app.cli.main.custom.CustomCliOptionsParser;\n");
         sb.append("\n");
         sb.append("\n");
         sb.append("/*\n");
@@ -87,7 +87,7 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
     protected String getClassHeader(String key) {
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
-        sb.append("public class OpencgaCliOptionsParser extends ParentCliOptionsParser {\n");
+        sb.append("public class OpencgaCliOptionsParser extends CustomCliOptionsParser {\n");
         sb.append("\n");
         for (RestCategory restCategory : availableCategories.values()) {
             sb.append("    private final " + getAsClassName(restCategory.getName()) + "CommandOptions " + getAsVariableName(restCategory.getName()) +

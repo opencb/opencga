@@ -48,6 +48,10 @@ public class ClientsGenerator {
     }
 
     private void generateLibrary(String clientsGeneratorDir, String language, String restFilePath, String outDir) {
+        System.out.println("clientsGeneratorDir " + clientsGeneratorDir);
+        System.out.println("language " + language);
+        System.out.println("restFilePath " + restFilePath);
+        System.out.println("outDir " + outDir);
         String binary = clientsGeneratorDir + "/" + language + "_client_generator.py";
         ProcessBuilder processBuilder = new ProcessBuilder("python3", binary, restFilePath, outDir);
         Process p;
@@ -56,7 +60,8 @@ public class ClientsGenerator {
             BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line;
             while ((line = input.readLine()) != null) {
-                logger.debug("{} library generator: {}", language, line);
+                logger.info("{} library generator: {}", language, line);
+                System.out.println(language + " library generator: " + line);
             }
             p.waitFor();
             input.close();
