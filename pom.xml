@@ -42,8 +42,8 @@
     </modules>
 
     <properties>
-        <pyopencga.version>2.7.1_dev</pyopencga.version>
-        <opencgar.version>2.7.1_dev</opencgar.version>
+        <pyopencga.version>2.8.0_dev</pyopencga.version>
+        <opencgar.version>2.8.0_dev</opencgar.version>
         <cellbase.version>5.3.1-SNAPSHOT</cellbase.version>
         <biodata.version>2.8.0-SNAPSHOT</biodata.version>
         <java-common-libs.version>4.8.0-SNAPSHOT</java-common-libs.version>
