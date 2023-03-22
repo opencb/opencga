@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.cli.main.parent;
+package org.opencb.opencga.app.cli.main.custom;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -21,13 +21,13 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.CommonCommandOptions;
  * This class contains methods for the Files command line. OpenCGA version: 2.2.0-SNAPSHOT PATH: /{apiVersion}/files
  */
 @Parameters(commandNames = {"files"}, commandDescription = "Files commands")
-public class ParentFilesCommandOptions {
+public class CustomFilesCommandOptions {
 
     public JCommander jCommander;
     public CommonCommandOptions commonCommandOptions;
     public UploadCommandOptions uploadCommandOptions;
 
-    public ParentFilesCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public CustomFilesCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
 
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
@@ -41,7 +41,7 @@ public class ParentFilesCommandOptions {
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-i", "--input"}, description = "Input file", required = true, arity = 1)
-        public String inputFile;
+        public String file;
 
         @Parameter(names = {"--file-format"}, description = "[DEPRECATED] Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)",
                 arity = 1)
@@ -57,7 +57,7 @@ public class ParentFilesCommandOptions {
 
         @Parameter(names = {"--catalog-path"}, description = "[DEPRECATED] Path within catalog where the file will be located (Default: root folder)",
                 arity = 1)
-        public String catalogPath;
+        public String relativeFilePath;
 
         @Parameter(names = {"--path"}, description = "Path within catalog where the file will be located (Default: root folder)",
                 arity = 1)
@@ -81,8 +81,11 @@ public class ParentFilesCommandOptions {
                 + "removed", arity = 0)
         public boolean replace;
 
-        @Parameter(names = {"-ch", "--checksum"}, description = "[PENDING] Calculate checksum", arity = 0)
-        public boolean calculateChecksum;
+//        @Parameter(names = {"-ch", "--checksum"}, description = "[PENDING] Calculate checksum", arity = 0)
+//        public boolean checksum;
+
+        @Parameter(names = {"-ch", "--checksum"}, description = "[PENDING] Checksum", arity = 1)
+        public String checksum;
 
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or" +
                 " UUID", required = false, arity = 1)
