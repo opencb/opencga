@@ -66,6 +66,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -335,7 +336,8 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
      * @throws StorageEngineException if there is a problem creating or running the {@link ParallelTaskRunner}
      */
     public void loadVariantAnnotation(URI uri, ObjectMap params) throws IOException, StorageEngineException {
-
+        boolean fileDeleteAfterLoad = params.getBoolean(VariantStorageOptions.ANNOTATION_FILE_DELETE_AFTER_LOAD.key(),
+                VariantStorageOptions.ANNOTATION_FILE_DELETE_AFTER_LOAD.defaultValue());
         final int batchSize = params.getInt(
                 VariantStorageOptions.ANNOTATION_LOAD_BATCH_SIZE.key(),
                 VariantStorageOptions.ANNOTATION_LOAD_BATCH_SIZE.defaultValue());
@@ -355,6 +357,10 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             ProgressLogger progressLogger = new ProgressLogger("Loaded annotations: ", numAnnotationsToLoad.get());
             ParallelTaskRunner<VariantAnnotation, ?> ptr = buildLoadAnnotationParallelTaskRunner(reader, config, progressLogger, params);
             ptr.run();
+            if (fileDeleteAfterLoad) {
+                logger.info("Delete temporary file after loading");
+                Files.delete(Paths.get(uri));
+            }
         } catch (ExecutionException e) {
             throw new StorageEngineException("Error loading variant annotation", e);
         }
