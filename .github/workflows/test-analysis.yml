@@ -83,7 +83,7 @@ jobs:
     needs: test
     strategy:
       matrix:
-        module: [ "opencga-analisis","opencga-app","opencga-catalog","opencga-client","opencga-clinical","opencga-core","opencga-master","opencga-server","opencga-storage","opencga-storage/opencga-storage-app","opencga-storage/opencga-storage-benchmark","opencga-storage/opencga-storage-core","opencga-storage/opencga-storage-hadoop","opencga-storage/opencga-storage-server","opencga-storage/opencga-storage-hadoop/opencga-storage-hadoop-core","opencga-storage/opencga-storage-hadoop/opencga-storage-hadoop-deps" ]
+        module: [ "opencga-app","opencga-catalog","opencga-client","opencga-clinical","opencga-core","opencga-master","opencga-server","opencga-storage","opencga-storage/opencga-storage-app","opencga-storage/opencga-storage-benchmark","opencga-storage/opencga-storage-core","opencga-storage/opencga-storage-hadoop","opencga-storage/opencga-storage-server","opencga-storage/opencga-storage-hadoop/opencga-storage-hadoop-core","opencga-storage/opencga-storage-hadoop/opencga-storage-hadoop-deps" ]
     steps:
       - name: Download result dir
         uses: actions/download-artifact@v3
