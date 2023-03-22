@@ -18,8 +18,18 @@ import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.UsersCommandOptions;
 
-import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
-
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandOptions;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
 import java.util.Map;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -32,7 +42,6 @@ import org.opencb.opencga.core.models.user.FilterUpdateParams;
 import org.opencb.opencga.core.models.user.LoginParams;
 import org.opencb.opencga.core.models.user.PasswordChangeParams;
 import org.opencb.opencga.core.models.user.User;
-import org.opencb.opencga.core.models.user.UserCreateParams;
 import org.opencb.opencga.core.models.user.UserFilter;
 import org.opencb.opencga.core.models.user.UserUpdateParams;
 
@@ -50,12 +59,12 @@ import org.opencb.opencga.core.models.user.UserUpdateParams;
  * This class contains methods for the Users command line.
  *    PATH: /{apiVersion}/users
  */
-public class UsersCommandExecutor extends ParentUsersCommandExecutor {
+public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
-    private UsersCommandOptions usersCommandOptions;
+    public UsersCommandOptions usersCommandOptions;
 
     public UsersCommandExecutor(UsersCommandOptions usersCommandOptions) throws CatalogAuthenticationException {
-        super(usersCommandOptions.commonCommandOptions,usersCommandOptions);
+        super(usersCommandOptions.commonCommandOptions);
         this.usersCommandOptions = usersCommandOptions;
     }
 
@@ -69,9 +78,6 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
         RestResponse queryResponse = null;
 
         switch (subCommandString) {
-            case "create":
-                queryResponse = create();
-                break;
             case "login":
                 queryResponse = login();
                 break;
@@ -99,9 +105,6 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
             case "update":
                 queryResponse = update();
                 break;
-            case "logout":
-                queryResponse = logout();
-                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -111,52 +114,24 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
 
     }
 
-    private RestResponse<User> create() throws Exception {
-
-        logger.debug("Executing create in Users command line");
-
-        UsersCommandOptions.CreateCommandOptions commandOptions = usersCommandOptions.createCommandOptions;
-
-        UserCreateParams userCreateParams= null;
-        if (commandOptions.jsonDataModel) {
-            userCreateParams = new UserCreateParams();
-            RestResponse<User> res = new RestResponse<>();
-            res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(userCreateParams));
-            return res;
-        } else if (commandOptions.jsonFile != null) {
-            userCreateParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), UserCreateParams.class);
-        } else {
-            ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
-             putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
-             putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
- 
-            userCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), UserCreateParams.class);
-        }
-        return openCGAClient.getUserClient().create(userCreateParams);
-    }
-
-    protected RestResponse<AuthenticationResponse> login() throws Exception {
-
+    private RestResponse<AuthenticationResponse> login() throws Exception {
         logger.debug("Executing login in Users command line");
 
-        return super.login();
-
+        CustomUsersCommandOptions.LoginCommandOptions commandOptions = usersCommandOptions.loginCommandOptions;
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("user", commandOptions.user);
+        queryParams.putIfNotEmpty("password", commandOptions.password);
+        queryParams.putIfNotEmpty("refreshToken", commandOptions.refreshToken);
+        CustomUsersCommandExecutor customUsersCommandExecutor = new CustomUsersCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
+        return customUsersCommandExecutor.login();
     }
 
     private RestResponse<User> password() throws Exception {
-
         logger.debug("Executing password in Users command line");
 
         UsersCommandOptions.PasswordCommandOptions commandOptions = usersCommandOptions.passwordCommandOptions;
 
-        PasswordChangeParams passwordChangeParams= null;
+        PasswordChangeParams passwordChangeParams = null;
         if (commandOptions.jsonDataModel) {
             passwordChangeParams = new PasswordChangeParams();
             RestResponse<User> res = new RestResponse<>();
@@ -169,10 +144,10 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "user",commandOptions.user, true);
-             putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
-             putNestedIfNotEmpty(beanParams, "newPassword",commandOptions.newPassword, true);
-             putNestedIfNotEmpty(beanParams, "reset",commandOptions.reset, true);
- 
+            putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
+            putNestedIfNotEmpty(beanParams, "newPassword",commandOptions.newPassword, true);
+            putNestedIfNotEmpty(beanParams, "reset",commandOptions.reset, true);
+
             passwordChangeParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PasswordChangeParams.class);
@@ -181,7 +156,6 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
     }
 
     private RestResponse<User> info() throws Exception {
-
         logger.debug("Executing info in Users command line");
 
         UsersCommandOptions.InfoCommandOptions commandOptions = usersCommandOptions.infoCommandOptions;
@@ -194,7 +168,6 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
     }
 
     private RestResponse<ObjectMap> configs() throws Exception {
-
         logger.debug("Executing configs in Users command line");
 
         UsersCommandOptions.ConfigsCommandOptions commandOptions = usersCommandOptions.configsCommandOptions;
@@ -206,7 +179,6 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
     }
 
     private RestResponse<ObjectMap> updateConfigs() throws Exception {
-
         logger.debug("Executing updateConfigs in Users command line");
 
         UsersCommandOptions.UpdateConfigsCommandOptions commandOptions = usersCommandOptions.updateConfigsCommandOptions;
@@ -215,7 +187,7 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
-        ConfigUpdateParams configUpdateParams= null;
+        ConfigUpdateParams configUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             configUpdateParams = new ConfigUpdateParams();
             RestResponse<ObjectMap> res = new RestResponse<>();
@@ -228,8 +200,8 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotNull(beanParams, "configuration",commandOptions.configuration, true);
- 
+            putNestedIfNotNull(beanParams, "configuration",commandOptions.configuration, true);
+
             configUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ConfigUpdateParams.class);
@@ -238,7 +210,6 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
     }
 
     private RestResponse<UserFilter> filters() throws Exception {
-
         logger.debug("Executing filters in Users command line");
 
         UsersCommandOptions.FiltersCommandOptions commandOptions = usersCommandOptions.filtersCommandOptions;
@@ -250,7 +221,6 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
     }
 
     private RestResponse<User> resetPassword() throws Exception {
-
         logger.debug("Executing resetPassword in Users command line");
 
         UsersCommandOptions.ResetPasswordCommandOptions commandOptions = usersCommandOptions.resetPasswordCommandOptions;
@@ -258,7 +228,6 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
     }
 
     private RestResponse<Project> projects() throws Exception {
-
         logger.debug("Executing projects in Users command line");
 
         UsersCommandOptions.ProjectsCommandOptions commandOptions = usersCommandOptions.projectsCommandOptions;
@@ -273,7 +242,6 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
     }
 
     private RestResponse<User> update() throws Exception {
-
         logger.debug("Executing update in Users command line");
 
         UsersCommandOptions.UpdateCommandOptions commandOptions = usersCommandOptions.updateCommandOptions;
@@ -284,7 +252,7 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
 
-        UserUpdateParams userUpdateParams= null;
+        UserUpdateParams userUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             userUpdateParams = new UserUpdateParams();
             RestResponse<User> res = new RestResponse<>();
@@ -297,10 +265,10 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
-             putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
- 
+            putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
+            putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+
             userUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), UserUpdateParams.class);

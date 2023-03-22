@@ -1,10 +1,16 @@
 package org.opencb.opencga.app.cli.main.options;
 
-import com.beust.jcommander.*;
-
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandOptions;
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.Parameters;
+import com.beust.jcommander.DynamicParameter;
+import com.beust.jcommander.ParametersDelegate;
 
 import java.util.HashMap;
+import java.util.Map;
+import java.util.List;
+
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandOptions;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
@@ -24,7 +30,7 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
  *    PATH: /{apiVersion}/files
  */
 @Parameters(commandNames = {"files"}, commandDescription = "Files commands")
-public class FilesCommandOptions extends ParentFilesCommandOptions {
+public class FilesCommandOptions extends CustomFilesCommandOptions {
 
 
         public UpdateAclCommandOptions updateAclCommandOptions;
@@ -477,7 +483,7 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--modification-date", "--md"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
         public String modificationDate;
     
-        @Parameter(names = {"--virtual-file-name"}, description = "The body web service virtualFile parameter", required = false, arity = 1)
+        @Parameter(names = {"--virtual-file-name"}, description = "The body web service virtualFileName parameter", required = false, arity = 1)
         public String virtualFileName;
     
         @Parameter(names = {"--status-id"}, description = "The body web service id parameter", required = false, arity = 1)
@@ -530,7 +536,7 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String description;
     
-        @Parameter(names = {"--virtual-file-name"}, description = "The body web service virtualFile parameter", required = false, arity = 1)
+        @Parameter(names = {"--virtual-file-name"}, description = "The body web service virtualFileName parameter", required = false, arity = 1)
         public String virtualFileName;
     
         @Parameter(names = {"--parents"}, description = "The body web service parents parameter", required = false, help = true, arity = 0)

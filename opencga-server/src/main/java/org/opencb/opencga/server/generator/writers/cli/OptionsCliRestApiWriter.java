@@ -56,7 +56,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("import java.util.Map;\n");
         sb.append("import java.util.List;\n\n");
         if (categoryConfig.isOptionExtended() && StringUtils.isEmpty(categoryConfig.getOptionExtendedClassName())) {
-            sb.append("import org.opencb.opencga.app.cli.main.parent."
+            sb.append("import org.opencb.opencga.app.cli.main.custom."
                     + getExtendedClass(getAsClassName(restCategory.getName()), categoryConfig) + ";\n\n");
         }
         sb.append("import static org.opencb.opencga.app.cli.GeneralCliOptions.*;\n");
@@ -85,7 +85,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
             if (StringUtils.isNotEmpty(config.getOptionExtendedClassName())) {
                 res = config.getOptionExtendedClassName();
             } else {
-                res = "Parent" + name + "CommandOptions";
+                res = "Custom" + name + "CommandOptions";
             }
         }
         return res;

@@ -188,7 +188,10 @@ else:
         tag = tag + "-" + hadoop_flavour
 
 # 3. Set docker org to default value if not set
-org = args.org
+if args.org is not None:
+    org = args.org
+else:
+    org = "opencb"
 
 # 4. Set docker server
 if args.server != "docker.io":
