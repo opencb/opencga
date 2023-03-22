@@ -10,15 +10,17 @@ jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P storage-hadoop,hdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+#      maven_opts: -P storage-hadoop,hdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      maven_opts: -P storage-hadoop,hdp3.1,RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
 
   test:
     uses: opencb/opencga/.github/workflows/test-analysis.yml@develop
     needs: build
     secrets: inherit
     with:
+      test_profile: runShortTests,runMediumTests
       report_context: development
-      report_dir: ${{ github.ref_name }}/opencga/${{ github.sha }}
+#      report_dir: ${{ github.ref_name }}/opencga/${{ github.sha }}
 
   deploy-maven:
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
@@ -36,7 +38,7 @@ jobs:
 
   deploy-docker-ext-tools:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
-    needs: build
+    needs: [ build, test ]
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images ext-tools --tag ${{ needs.build.outputs.version }}
     secrets: inherit

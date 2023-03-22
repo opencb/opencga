@@ -1,13 +1,14 @@
 name: Build and test the project
+
 on:
   workflow_call:
     inputs:
       test_profile:
         type: string
         required: true
-      report_dir:
-        type: string
-        required: true
+#      report_dir:
+#        type: string
+#        required: true
       report_context:
         type: string
         required: true
@@ -28,7 +29,7 @@ env:
 
 jobs:
   analysis:
-    name: Test and push Sonar analysis
+    name: Execute Sonar Analysis
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
@@ -49,7 +50,7 @@ jobs:
         #  run: mvn -B verify -P storage-hadoop,hdp3.1 -P ${{ inputs.test_profile }} -Dcheckstyle.skip surefire-report:report org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
 
   test:
-    name: Test and push Sonar analysis
+    name: Execute JUnit and Jacoco tests
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
@@ -92,7 +93,7 @@ jobs:
         uses: garygrossgarten/github-action-scp@release
         with:
           local: ${{ matrix.module }}/target/site
-          remote: /var/www/html/reports/${{ inputs.report_context }}/${{ env.xb_version }}/${{ inputs.report_dir }}/unit/${{ matrix.module }}
+          remote: /var/www/html/reports/${{ inputs.report_context }}/${{ env.xb_version }}/${{ github.ref_name }}/opencga/${{ github.sha }}/unit/${{ matrix.module }}
           host: ${{ secrets.SSH_TESTING_SERVER_HOST}}
           port: ${{ secrets.SSH_TESTING_SERVER_PORT}}
           username: ${{ secrets.SSH_TESTING_SERVER_USER }}

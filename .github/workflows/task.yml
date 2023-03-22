@@ -11,7 +11,7 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
 #      maven_opts: -P storage-hadoop,hdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
-      maven_opts: -P storage-hadoop,hdp3.1,RClient,opencga-storage-hadoop-deps -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6' -Dopencga.war.name=opencga -Dcheckstyle.skip
+      maven_opts: -P storage-hadoop,hdp3.1,RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
 
   test:
     uses: opencb/opencga/.github/workflows/test-analysis.yml@TASK-3980
@@ -20,14 +20,7 @@ jobs:
     with:
       test_profile: runShortTests
       report_context: development
-      report_dir: ${{ github.ref_name }}/opencga/${{ github.sha }}
-
-  deploy-docker:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
-    needs: test
-    with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag ${{ github.ref_name }}
-    secrets: inherit
+#      report_dir: ${{ github.ref_name }}/opencga/${{ github.sha }}
 
   deploy-maven:
     name: Deploy in maven only for renamed versions
@@ -36,7 +29,14 @@ jobs:
     if: contains( needs.build.outputs.version ,'TASK')
     secrets: inherit
 
-  #The following jobs are to see that the previous 'if' doesn't fail and that the maven deploy is executed because it is true
+  deploy-docker:
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    needs: test
+    with:
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag ${{ github.ref_name }}
+    secrets: inherit
+
+  # The following jobs are to see that the previous 'if' doesn't fail and that the maven deploy is executed because it is true
   snapshot-version:
     name: Check SNAPSHOT version
     needs: [ build, test ]
