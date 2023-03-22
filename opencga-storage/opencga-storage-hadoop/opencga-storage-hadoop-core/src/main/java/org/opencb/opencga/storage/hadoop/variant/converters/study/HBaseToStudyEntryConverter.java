@@ -212,7 +212,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         } else {
             multiFiles = configuration.getProjection()
                     .getStudy(sampleColumn.getStudyId())
-                    .getMultiFileSamples()
+                    .getMultiFileSampleFiles()
                     .get(sampleColumn.getSampleId());
             if (multiFiles == null) {
                 multiFiles = Collections.emptyList();
