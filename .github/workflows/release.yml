@@ -17,7 +17,7 @@ jobs:
     needs: build
     secrets: inherit
     with:
-      report_context: development
+      report_context: xetabase
       report_dir: ${{ github.ref_name }}/opencga/${{ github.sha }}
 
   deploy-maven:
