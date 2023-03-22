@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2023-03-19 OpenCB
+* Copyright 2015-2023-03-21 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package com.zettagenomics.opencga.enterprise.app.cli.main;
 import com.beust.jcommander.JCommander;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import com.zettagenomics.opencga.enterprise.app.cli.main.options.*;
-import org.opencb.opencga.app.cli.main.parent.ParentCliOptionsParser;
+import org.opencb.opencga.app.cli.main.custom.CustomCliOptionsParser;
 
 
 /*
@@ -32,7 +32,7 @@ import org.opencb.opencga.app.cli.main.parent.ParentCliOptionsParser;
 */
 
 
-public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
+public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
 
     private final AnalysisVariantCommandOptions analysisVariantCommandOptions;
     private final ProjectsCommandOptions projectsCommandOptions;

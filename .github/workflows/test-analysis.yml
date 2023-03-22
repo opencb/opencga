@@ -14,11 +14,7 @@ on:
       SSH_TESTING_SERVER_PASSWORD:
         required: true
 
-env:
-  xb_version: "1.5.0"
-
 jobs:
-
   test:
     name: Test and push Sonar analysis
     runs-on: ubuntu-22.04
@@ -32,13 +28,11 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
           cache: 'maven'
-      - name: Install Samtools
-        run: sudo apt-get install samtools
       - name: Test and Analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify surefire-report:report  org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_biodata
+        run: mvn -B verify surefire-report:report org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_biodata
       - name: Upload result dir
         uses: actions/upload-artifact@v3
         with:
@@ -51,7 +45,7 @@ jobs:
     needs: test
     strategy:
       matrix:
-        module: [ "biodata-tools","biodata-models" ]
+        module: [ "opencga-enterprise-core","opencga-enterprise-cva" ]
     steps:
       - name: Download result dir
         uses: actions/download-artifact@v3
@@ -61,7 +55,7 @@ jobs:
         uses: garygrossgarten/github-action-scp@release
         with:
           local: ${{ matrix.module }}/target/site
-          remote: /var/www/html/reports/development/${{ env.xb_version }}/${{ github.ref_name }}/biodata/${{ github.sha }}/unit/${{ matrix.module }}
+          remote: /var/www/html/reports/development/${{ github.ref_name }}/${{ github.ref_name }}/opencga-enterprise/${{ github.sha }}/unit/${{ matrix.module }}
           host: ${{ secrets.SSH_TESTING_SERVER_HOST}}
           port: ${{ secrets.SSH_TESTING_SERVER_PORT}}
           username: ${{ secrets.SSH_TESTING_SERVER_USER }}
