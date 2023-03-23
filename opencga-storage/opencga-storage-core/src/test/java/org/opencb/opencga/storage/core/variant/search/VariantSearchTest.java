@@ -22,7 +22,7 @@ import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.response.VariantQueryResult;
-import org.opencb.opencga.core.testclassification.duration.ShortTests;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-@Category(ShortTests.class)
+@Category(MediumTests.class)
 public class VariantSearchTest extends VariantStorageBaseTest implements DummyVariantStorageTest {
 
     @Rule
