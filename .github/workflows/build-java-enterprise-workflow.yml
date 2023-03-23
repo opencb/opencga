@@ -8,8 +8,11 @@ on:
         required: false
     outputs:
       version:
-        description: "Project version"
+        description: "XetaBase project version"
         value: ${{ jobs.build-workflow.outputs.version }}
+
+env:
+  opencga_branch: "develop"
 
 jobs:
   build:
