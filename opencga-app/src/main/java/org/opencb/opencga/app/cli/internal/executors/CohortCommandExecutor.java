@@ -42,7 +42,6 @@ public class CohortCommandExecutor extends InternalCommandExecutor {
         CohortCommandOptions.TsvLoad options = cohortCommandOptions.tsvLoad;
 
         Path outDir = Paths.get(options.outDir);
-        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
 
         CohortTsvAnnotationLoader annotationLoader = new CohortTsvAnnotationLoader();
         annotationLoader.setAnnotationSetId(options.annotationSetId);

@@ -13,30 +13,6 @@ jobs:
       maven_opts: -P storage-hadoop,hdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
 
   test:
-    uses: opencb/opencga/.github/workflows/build-test.yml@develop
+    uses: opencb/opencga/.github/workflows/build-test.yml@main
     depends: build
     secrets: inherit
-#      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-#      SSH_TESTING_SERVER_HOST: ${{ secrets.SSH_TESTING_SERVER_HOST}}
-#      SSH_TESTING_SERVER_PORT: ${{ secrets.SSH_TESTING_SERVER_PORT}}
-#      SSH_TESTING_SERVER_USER: ${{ secrets.SSH_TESTING_SERVER_USER }}
-#      SSH_TESTING_SERVER_PASSWORD: ${{ secrets.SSH_TESTING_SERVER_PASSWORD }}
-
-#  echo-version:
-#    name: check version
-#    runs-on: ubuntu-22.04
-#    needs: test
-#    steps:
-#      - name: Check retrieved value
-#        #if: contains( ${{ needs.test.build.outputs.version }} , "TASK")
-#        run: echo "Project version is " ${{ needs.build.outputs.version }}
-
-#  deploy-docker:
-#    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
-#    needs: test
-#    if: contains( ${{ needs.test.outputs.version }} , "TASK")
-#    with:
-#      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag ${{ github.ref_name }}
-#    secrets:
-#      DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
-#      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
