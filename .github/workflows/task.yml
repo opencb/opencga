@@ -1,9 +1,9 @@
 name: Push OpenCGA TASK
 
 on:
-  push:
-    branches:
-      - TASK-*
+#  push:
+#    branches:
+#      - TASK-*
   workflow_dispatch:
     inputs:
       branch:
