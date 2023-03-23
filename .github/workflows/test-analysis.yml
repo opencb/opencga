@@ -59,10 +59,10 @@ jobs:
           cache: 'maven'
       - name: Install Samtools
         run: sudo apt-get install samtools python3-deeptools
-      - name: Start MongoDB v5.0
+      - name: Start MongoDB v6.0
         uses: supercharge/mongodb-github-action@1.8.0
         with:
-          mongodb-version: 5.0
+          mongodb-version: 6.0
           mongodb-replica-set: rs-test
       - name: Run Junit tests
         run: mvn -B verify surefire-report:report -P storage-hadoop,hdp3.1,${{ inputs.test_profile }} -Dcheckstyle.skip -Popencga-storage-hadoop-deps -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
