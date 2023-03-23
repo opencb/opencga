@@ -3,7 +3,7 @@ name: Long test for run only on weekend
 on:
   schedule:
     - cron: '10 1 * * 6'
-    - cron: '35 23 * * 4'
+    - cron: '40 22 * * 4'
 
 jobs:
   test:
