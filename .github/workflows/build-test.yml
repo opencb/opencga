@@ -14,7 +14,7 @@ on:
         required: true
 
 env:
-  xb_version: "1.5.0"
+  xb_version: "1.5.1"
 
 jobs:
   build:
@@ -46,40 +46,40 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: mvn -T 2 clean install -P storage-hadoop,hdp3.1 -DskipTests -Dcheckstyle.skip #-B verify surefire-report:report  org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
-      - name: Upload result dir
-        uses: actions/upload-artifact@v3
-        with:
-          name: workdir
-          path: "**/target/site"
-
-  publish-test:
-    name: Publish test results
-    runs-on: ubuntu-22.04
-    needs: test
-    strategy:
-      matrix:
-        module: [ "opencga-analisis","opencga-app","opencga-catalog","opencga-client","opencga-clinical","opencga-core","opencga-master","opencga-server","opencga-storage","opencga-test","opencga-storage/opencga-storage-app","opencga-storage/opencga-storage-benchmark","opencga-storage/opencga-storage-core","opencga-storage/opencga-storage-hadoop","opencga-storage/opencga-storage-mongodb","opencga-storage/opencga-storage-server","opencga-storage/opencga-storage-hadoop/opencga-storage-hadoop-core","opencga-storage/opencga-storage-hadoop/opencga-storage-hadoop-deps" ]
-    steps:
-      #      - name: Download result dir
-      #        uses: actions/download-artifact@v3
-      #        with:
-      #          name: workdir
-      - name: Check for file
-        id: file_check
-        run: |
-          if [ -d "${{ matrix.module }}" ]; then
-            echo "check_result=true" >> $GITHUB_OUTPUT
-          else
-            echo "check_result=false" >> $GITHUB_OUTPUT
-          fi
-      - name: Deploy unit tests web recursively to remote
-        if: steps.file_check.outputs.check_result == 'true'
-        uses: garygrossgarten/github-action-scp@release
-        with:
-          local: ${{ matrix.module }}/target/site
-          remote: /var/www/html/reports/development/${{ env.xb_version }}/${{ github.ref_name }}/opencga/${{ github.sha }}/unit/${{ matrix.module }}
-          host: ${{ secrets.SSH_TESTING_SERVER_HOST}}
-          port: ${{ secrets.SSH_TESTING_SERVER_PORT}}
-          username: ${{ secrets.SSH_TESTING_SERVER_USER }}
-          password: ${{ secrets.SSH_TESTING_SERVER_PASSWORD }}
-          concurrency: 2
+#      - name: Upload result dir
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: workdir
+#          path: "**/target/site"
+#
+#  publish-test:
+#    name: Publish test results
+#    runs-on: ubuntu-22.04
+#    needs: test
+#    strategy:
+#      matrix:
+#        module: [ "opencga-analisis","opencga-app","opencga-catalog","opencga-client","opencga-clinical","opencga-core","opencga-master","opencga-server","opencga-storage","opencga-test","opencga-storage/opencga-storage-app","opencga-storage/opencga-storage-benchmark","opencga-storage/opencga-storage-core","opencga-storage/opencga-storage-hadoop","opencga-storage/opencga-storage-mongodb","opencga-storage/opencga-storage-server","opencga-storage/opencga-storage-hadoop/opencga-storage-hadoop-core","opencga-storage/opencga-storage-hadoop/opencga-storage-hadoop-deps" ]
+#    steps:
+#      #      - name: Download result dir
+#      #        uses: actions/download-artifact@v3
+#      #        with:
+#      #          name: workdir
+#      - name: Check for file
+#        id: file_check
+#        run: |
+#          if [ -d "${{ matrix.module }}" ]; then
+#            echo "check_result=true" >> $GITHUB_OUTPUT
+#          else
+#            echo "check_result=false" >> $GITHUB_OUTPUT
+#          fi
+#      - name: Deploy unit tests web recursively to remote
+#        if: steps.file_check.outputs.check_result == 'true'
+#        uses: garygrossgarten/github-action-scp@release
+#        with:
+#          local: ${{ matrix.module }}/target/site
+#          remote: /var/www/html/reports/development/${{ env.xb_version }}/${{ github.ref_name }}/opencga/${{ github.sha }}/unit/${{ matrix.module }}
+#          host: ${{ secrets.SSH_TESTING_SERVER_HOST}}
+#          port: ${{ secrets.SSH_TESTING_SERVER_PORT}}
+#          username: ${{ secrets.SSH_TESTING_SERVER_USER }}
+#          password: ${{ secrets.SSH_TESTING_SERVER_PASSWORD }}
+#          concurrency: 2
