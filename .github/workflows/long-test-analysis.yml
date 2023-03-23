@@ -1,8 +1,9 @@
 name: Long test for run only on weekend
-#Every Sunday at 00:10
+#Every Saturday at 01:10
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: '10 1 * * 6'
+    - cron: '35 23 * * 4'
 
 jobs:
   test:
