@@ -71,7 +71,8 @@
      private static final int DEFAULT_LIMIT = 2000;
      private static final int DEFAULT_SKIP = 0;
      private static final int DEFAULT_CONNECT_TIMEOUT = 1000;
-     private static final int DEFAULT_READ_TIMEOUT = 5400000;
+     private static final int DEFAULT_READ_TIMEOUT = 30000;
+     private static final int DEFAULT_UPLOAD_TIMEOUT = 5400000;
      protected final Client client;
      protected final ObjectMapper jsonObjectMapper;
      private final ClientConfiguration clientConfiguration;
@@ -79,7 +80,7 @@
      private final int defaultLimit;
      private final Logger privateLogger;
      protected Logger logger;
-     private String token;
+     protected String token;
      private boolean throwExceptionOnError = false;
 
      protected AbstractParentClient(String token, ClientConfiguration clientConfiguration) {
@@ -331,9 +332,10 @@
       * @param clazz  Expected return class.
       * @param method Method by which the query will be done (GET or POST).
       * @return A queryResponse object containing the results of the query.
+      * @param <T> Any entity
       * @throws ClientException if the path is wrong and cannot be converted to a proper url.
       */
-     private <T> RestResponse<T> callRest(WebTarget path, ObjectMap params, Class<T> clazz, String method) throws ClientException {
+     protected <T> RestResponse<T> callRest(WebTarget path, ObjectMap params, Class<T> clazz, String method) throws ClientException {
          Response response;
          switch (method) {
              case DELETE:
@@ -422,18 +424,18 @@
       * @param params Params to be passed to the WS.
       * @param clazz  Expected return class.
       * @return A queryResponse object containing the results of the query.
+      * @param <T> Any entity
       * @throws ClientException if the path is wrong and cannot be converted to a proper url.
       */
-     private <T> RestResponse<T> callUploadRest(WebTarget path, Map<String, Object> params, Class<T> clazz) throws ClientException {
+     protected <T> RestResponse<T> callUploadRest(WebTarget path, Map<String, Object> params, Class<T> clazz) throws ClientException {
          String filePath = ((String) params.get("file"));
          params.remove("file");
          params.remove("body");
 
-         path.property(ClientProperties.READ_TIMEOUT, 5400000);
-         client.property(ClientProperties.READ_TIMEOUT, 5400000);
+         path.property(ClientProperties.READ_TIMEOUT, DEFAULT_UPLOAD_TIMEOUT);
+         client.property(ClientProperties.READ_TIMEOUT, DEFAULT_UPLOAD_TIMEOUT);
          path.register(MultiPartFeature.class);
-         path.property(ClientProperties.REQUEST_ENTITY_PROCESSING,
-                 RequestEntityProcessing.CHUNKED);
+         path.property(ClientProperties.REQUEST_ENTITY_PROCESSING, RequestEntityProcessing.CHUNKED);
          final FileDataBodyPart filePart = new FileDataBodyPart("file", new File(filePath));
          FormDataMultiPart formDataMultiPart = new FormDataMultiPart();
          // Add the rest of the parameters to the form
@@ -579,7 +581,7 @@
          return result.toString();
      }
 
-     private <T> RestResponse<T> parseResult(Response response, Class<T> clazz) throws ClientException {
+     protected <T> RestResponse<T> parseResult(Response response, Class<T> clazz) throws ClientException {
          String json = response.readEntity(String.class);
          if (StringUtils.isNotEmpty(json) && json.startsWith("<")) {
              return new RestResponse<>("", 0, Collections.singletonList(
@@ -602,7 +604,7 @@
          }
      }
 
-     private <T> void checkErrors(RestResponse<T> restResponse, Response.StatusType status, String method, WebTarget path)
+     protected <T> void checkErrors(RestResponse<T> restResponse, Response.StatusType status, String method, WebTarget path)
              throws ClientException {
          if (restResponse != null && restResponse.getEvents() != null) {
              for (Event event : restResponse.getEvents()) {

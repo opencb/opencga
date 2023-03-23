@@ -8,6 +8,7 @@ public class Command {
     private String name;
     private String rename;
     private boolean executorExtended;
+    private String executorExtendedClassName;
     private boolean optionExtended;
     private List<Subcommand> subcommands;
 
@@ -55,17 +56,17 @@ public class Command {
         return executorExtended;
     }
 
-    public Command setExecutorExtended(boolean extended) {
-        this.executorExtended = extended;
+    public Command setExecutorExtended(boolean executorExtended) {
+        this.executorExtended = executorExtended;
         return this;
     }
 
-    public List<Subcommand> getSubcommands() {
-        return subcommands;
+    public String getExecutorExtendedClassName() {
+        return executorExtendedClassName;
     }
 
-    public Command setSubcommands(List<Subcommand> subcommands) {
-        this.subcommands = subcommands;
+    public Command setExecutorExtendedClassName(String executorExtendedClassName) {
+        this.executorExtendedClassName = executorExtendedClassName;
         return this;
     }
 
@@ -75,6 +76,15 @@ public class Command {
 
     public Command setOptionExtended(boolean optionExtended) {
         this.optionExtended = optionExtended;
+        return this;
+    }
+
+    public List<Subcommand> getSubcommands() {
+        return subcommands;
+    }
+
+    public Command setSubcommands(List<Subcommand> subcommands) {
+        this.subcommands = subcommands;
         return this;
     }
 }

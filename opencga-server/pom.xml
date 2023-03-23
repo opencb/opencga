@@ -263,7 +263,7 @@
         </profile>
 
         <profile>
-            <id>GenerateCLIProfile</id>
+            <id>CodeGen</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>

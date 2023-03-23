@@ -279,5 +279,8 @@ public abstract class CommandExecutor {
         return this;
     }
 
+    public Logger getLogger() {
+        return logger;
+    }
 
 }
