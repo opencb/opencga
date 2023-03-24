@@ -170,7 +170,7 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response upload(
             @ApiParam(value = "File to upload") @FormDataParam("file") InputStream fileInputStream,
             @FormDataParam("file") FormDataContentDisposition fileMetaData,
-            @ApiParam(value = "File name to overwrite the input fileName") @FormDataParam("filename") String filename,
+            @ApiParam(value = "File name to overwrite the input fileName") @FormDataParam("fileName") String fileName,
             @ApiParam(value = "File format") @DefaultValue("") @FormDataParam("fileFormat") File.Format fileFormat,
             @ApiParam(value = "File bioformat") @DefaultValue("") @FormDataParam("bioformat") File.Bioformat bioformat,
             @ApiParam(value = "Expected MD5 file checksum") @DefaultValue("") @FormDataParam("checksum") String expectedChecksum,
@@ -197,14 +197,14 @@ public class FileWSServer extends OpenCGAWSServer {
         }
 
         try {
-            if (filename == null) {
-                filename = fileMetaData.getFileName();
+            if (fileName == null) {
+                fileName = fileMetaData.getFileName();
             }
             long expectedSize = fileMetaData.getSize();
 
             File file = new File()
-                    .setName(filename)
-                    .setPath(relativeFilePath + filename)
+                    .setName(fileName)
+                    .setPath(relativeFilePath + fileName)
                     .setFormat(fileFormat)
                     .setBioformat(bioformat);
             return createOkResponse(fileManager.upload(studyStr, fileInputStream, file, false, parents, true,

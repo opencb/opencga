@@ -481,6 +481,9 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, help = true, arity = 0)
         public boolean panelIntersection = false;
     
+        @Parameter(names = {"--panel-feature-type"}, description = "The body web service panelFeatureType parameter", required = false, arity = 1)
+        public String panelFeatureType;
+    
         @Parameter(names = {"--cohort-stats-ref"}, description = "The body web service cohortStatsRef parameter", required = false, arity = 1)
         public String cohortStatsRef;
     
@@ -639,6 +642,9 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--sift"}, description = "The body web service sift parameter", required = false, arity = 1)
         public String sift;
+    
+        @Parameter(names = {"--gene-role-in-cancer"}, description = "The body web service geneRoleInCancer parameter", required = false, arity = 1)
+        public String geneRoleInCancer;
     
         @Parameter(names = {"--gene-trait-id"}, description = "The body web service geneTraitId parameter", required = false, arity = 1)
         public String geneTraitId;
@@ -2062,6 +2068,9 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--vs-query-panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, help = true, arity = 0)
         public boolean vsQueryPanelIntersection = false;
     
+        @Parameter(names = {"--vs-query-panel-feature-type"}, description = "The body web service panelFeatureType parameter", required = false, arity = 1)
+        public String vsQueryPanelFeatureType;
+    
         @Parameter(names = {"--vs-query-cohort-stats-ref"}, description = "The body web service cohortStatsRef parameter", required = false, arity = 1)
         public String vsQueryCohortStatsRef;
     
@@ -2243,6 +2252,9 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, help = true, arity = 0)
         public boolean panelIntersection = false;
     
+        @Parameter(names = {"--panel-feature-type"}, description = "The body web service panelFeatureType parameter", required = false, arity = 1)
+        public String panelFeatureType;
+    
         @Parameter(names = {"--cohort-stats-ref"}, description = "The body web service cohortStatsRef parameter", required = false, arity = 1)
         public String cohortStatsRef;
     
@@ -2417,6 +2429,9 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--variant-query-panel-intersection"}, description = "The body web service panelIntersection parameter", required = false, help = true, arity = 0)
         public boolean variantQueryPanelIntersection = false;
+    
+        @Parameter(names = {"--variant-query-panel-feature-type"}, description = "The body web service panelFeatureType parameter", required = false, arity = 1)
+        public String variantQueryPanelFeatureType;
     
         @Parameter(names = {"--variant-query-cohort-stats-ref"}, description = "The body web service cohortStatsRef parameter", required = false, arity = 1)
         public String variantQueryCohortStatsRef;

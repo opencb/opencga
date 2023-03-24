@@ -18,8 +18,27 @@ import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.StudiesCommandOptions;
 
-import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
-
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandOptions;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandOptions;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
 import java.io.InputStream;
 import java.lang.Object;
 import java.net.URL;
@@ -69,12 +88,12 @@ import org.opencb.opencga.core.models.study.VariableSetCreateParams;
  * This class contains methods for the Studies command line.
  *    PATH: /{apiVersion}/studies
  */
-public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
+public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
-    private StudiesCommandOptions studiesCommandOptions;
+    public StudiesCommandOptions studiesCommandOptions;
 
     public StudiesCommandExecutor(StudiesCommandOptions studiesCommandOptions) throws CatalogAuthenticationException {
-        super(studiesCommandOptions.commonCommandOptions,studiesCommandOptions);
+        super(studiesCommandOptions.commonCommandOptions);
         this.studiesCommandOptions = studiesCommandOptions;
     }
 
@@ -155,12 +174,11 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
     }
 
     private RestResponse<StudyAclEntryList> updateAcl() throws Exception {
-
         logger.debug("Executing updateAcl in Studies command line");
 
         StudiesCommandOptions.UpdateAclCommandOptions commandOptions = studiesCommandOptions.updateAclCommandOptions;
 
-        StudyAclUpdateParams studyAclUpdateParams= null;
+        StudyAclUpdateParams studyAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             studyAclUpdateParams = new StudyAclUpdateParams();
             RestResponse<StudyAclEntryList> res = new RestResponse<>();
@@ -173,9 +191,9 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "study",commandOptions.study, true);
-             putNestedIfNotEmpty(beanParams, "template",commandOptions.template, true);
-             putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
- 
+            putNestedIfNotEmpty(beanParams, "template",commandOptions.template, true);
+            putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
+
             studyAclUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), StudyAclUpdateParams.class);
@@ -184,7 +202,6 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
     }
 
     private RestResponse<Study> create() throws Exception {
-
         logger.debug("Executing create in Studies command line");
 
         StudiesCommandOptions.CreateCommandOptions commandOptions = studiesCommandOptions.createCommandOptions;
@@ -196,7 +213,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
 
-        StudyCreateParams studyCreateParams= null;
+        StudyCreateParams studyCreateParams = null;
         if (commandOptions.jsonDataModel) {
             studyCreateParams = new StudyCreateParams();
             RestResponse<Study> res = new RestResponse<>();
@@ -209,18 +226,18 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "alias",commandOptions.alias, true);
-             putNestedIfNotEmpty(beanParams, "type.id",commandOptions.typeId, true);
-             putNestedIfNotEmpty(beanParams, "type.description",commandOptions.typeDescription, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
- 
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "alias",commandOptions.alias, true);
+            putNestedIfNotEmpty(beanParams, "type.id",commandOptions.typeId, true);
+            putNestedIfNotEmpty(beanParams, "type.description",commandOptions.typeDescription, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+
             studyCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), StudyCreateParams.class);
@@ -229,7 +246,6 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
     }
 
     private RestResponse<Study> search() throws Exception {
-
         logger.debug("Executing search in Studies command line");
 
         StudiesCommandOptions.SearchCommandOptions commandOptions = studiesCommandOptions.searchCommandOptions;
@@ -255,7 +271,6 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
     }
 
     private RestResponse<AclEntryList> acl() throws Exception {
-
         logger.debug("Executing acl in Studies command line");
 
         StudiesCommandOptions.AclCommandOptions commandOptions = studiesCommandOptions.aclCommandOptions;
@@ -268,7 +283,6 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
-
         logger.debug("Executing aggregationStats in Studies command line");
 
         StudiesCommandOptions.AggregationStatsCommandOptions commandOptions = studiesCommandOptions.aggregationStatsCommandOptions;
@@ -286,7 +300,6 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
     }
 
     private RestResponse<Study> info() throws Exception {
-
         logger.debug("Executing info in Studies command line");
 
         StudiesCommandOptions.InfoCommandOptions commandOptions = studiesCommandOptions.infoCommandOptions;
@@ -299,7 +312,6 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
     }
 
     private RestResponse<AuditRecord> searchAudit() throws Exception {
-
         logger.debug("Executing searchAudit in Studies command line");
 
         StudiesCommandOptions.SearchAuditCommandOptions commandOptions = studiesCommandOptions.searchAuditCommandOptions;
@@ -323,7 +335,6 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
     }
 
     private RestResponse<CustomGroup> groups() throws Exception {
-
         logger.debug("Executing groups in Studies command line");
 
         StudiesCommandOptions.GroupsCommandOptions commandOptions = studiesCommandOptions.groupsCommandOptions;
@@ -336,7 +347,6 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
     }
 
     private RestResponse<Group> updateGroups() throws Exception {
-
         logger.debug("Executing updateGroups in Studies command line");
 
         StudiesCommandOptions.UpdateGroupsCommandOptions commandOptions = studiesCommandOptions.updateGroupsCommandOptions;
@@ -345,7 +355,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
-        GroupCreateParams groupCreateParams= null;
+        GroupCreateParams groupCreateParams = null;
         if (commandOptions.jsonDataModel) {
             groupCreateParams = new GroupCreateParams();
             RestResponse<Group> res = new RestResponse<>();
@@ -358,8 +368,8 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotNull(beanParams, "users",commandOptions.users, true);
- 
+            putNestedIfNotNull(beanParams, "users",commandOptions.users, true);
+
             groupCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), GroupCreateParams.class);
@@ -368,7 +378,6 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
     }
 
     private RestResponse<Group> updateGroupsUsers() throws Exception {
-
         logger.debug("Executing updateGroupsUsers in Studies command line");
 
         StudiesCommandOptions.UpdateGroupsUsersCommandOptions commandOptions = studiesCommandOptions.updateGroupsUsersCommandOptions;
@@ -377,7 +386,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
-        GroupUpdateParams groupUpdateParams= null;
+        GroupUpdateParams groupUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             groupUpdateParams = new GroupUpdateParams();
             RestResponse<Group> res = new RestResponse<>();
@@ -390,7 +399,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "users",commandOptions.users, true);
- 
+
             groupUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), GroupUpdateParams.class);
@@ -399,7 +408,6 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
     }
 
     private RestResponse<PermissionRule> permissionRules() throws Exception {
-
         logger.debug("Executing permissionRules in Studies command line");
 
         StudiesCommandOptions.PermissionRulesCommandOptions commandOptions = studiesCommandOptions.permissionRulesCommandOptions;
@@ -407,7 +415,6 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
     }
 
     private RestResponse<PermissionRule> updatePermissionRules() throws Exception {
-
         logger.debug("Executing updatePermissionRules in Studies command line");
 
         StudiesCommandOptions.UpdatePermissionRulesCommandOptions commandOptions = studiesCommandOptions.updatePermissionRulesCommandOptions;
@@ -416,7 +423,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
-        PermissionRule permissionRule= null;
+        PermissionRule permissionRule = null;
         if (commandOptions.jsonDataModel) {
             permissionRule = new PermissionRule();
             RestResponse<PermissionRule> res = new RestResponse<>();
@@ -429,10 +436,10 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotNull(beanParams, "query",commandOptions.query, true);
-             putNestedIfNotNull(beanParams, "members",commandOptions.members, true);
-             putNestedIfNotNull(beanParams, "permissions",commandOptions.permissions, true);
- 
+            putNestedIfNotNull(beanParams, "query",commandOptions.query, true);
+            putNestedIfNotNull(beanParams, "members",commandOptions.members, true);
+            putNestedIfNotNull(beanParams, "permissions",commandOptions.permissions, true);
+
             permissionRule = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PermissionRule.class);
@@ -440,24 +447,41 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         return openCGAClient.getStudyClient().updatePermissionRules(commandOptions.study, commandOptions.entity, permissionRule, queryParams);
     }
 
-    protected RestResponse<Job> runTemplates() throws Exception {
-
+    private RestResponse<Job> runTemplates() throws Exception {
         logger.debug("Executing runTemplates in Studies command line");
 
-        return super.runTemplates();
-
+        CustomStudiesCommandOptions.RunTemplatesCommandOptions commandOptions = studiesCommandOptions.runTemplatesCommandOptions;
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotNull("overwrite", commandOptions.overwrite);
+        queryParams.putIfNotNull("resume", commandOptions.resume);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+        CustomStudiesCommandExecutor customStudiesCommandExecutor = new CustomStudiesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
+        return customStudiesCommandExecutor.runTemplates();
     }
 
-    protected RestResponse<String> uploadTemplates() throws Exception {
-
+    private RestResponse<String> uploadTemplates() throws Exception {
         logger.debug("Executing uploadTemplates in Studies command line");
 
-        return super.uploadTemplates();
-
+        CustomStudiesCommandOptions.UploadTemplatesCommandOptions commandOptions = studiesCommandOptions.uploadTemplatesCommandOptions;
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotNull("file", commandOptions.file);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+        CustomStudiesCommandExecutor customStudiesCommandExecutor = new CustomStudiesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
+        return customStudiesCommandExecutor.uploadTemplates();
     }
 
     private RestResponse<Boolean> deleteTemplates() throws Exception {
-
         logger.debug("Executing deleteTemplates in Studies command line");
 
         StudiesCommandOptions.DeleteTemplatesCommandOptions commandOptions = studiesCommandOptions.deleteTemplatesCommandOptions;
@@ -472,7 +496,6 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
     }
 
     private RestResponse<Study> update() throws Exception {
-
         logger.debug("Executing update in Studies command line");
 
         StudiesCommandOptions.UpdateCommandOptions commandOptions = studiesCommandOptions.updateCommandOptions;
@@ -483,7 +506,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
 
-        StudyUpdateParams studyUpdateParams= null;
+        StudyUpdateParams studyUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             studyUpdateParams = new StudyUpdateParams();
             RestResponse<Study> res = new RestResponse<>();
@@ -496,17 +519,17 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "alias",commandOptions.alias, true);
-             putNestedIfNotEmpty(beanParams, "type.id",commandOptions.typeId, true);
-             putNestedIfNotEmpty(beanParams, "type.description",commandOptions.typeDescription, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
-             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
- 
+            putNestedIfNotEmpty(beanParams, "alias",commandOptions.alias, true);
+            putNestedIfNotEmpty(beanParams, "type.id",commandOptions.typeId, true);
+            putNestedIfNotEmpty(beanParams, "type.description",commandOptions.typeDescription, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+
             studyUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), StudyUpdateParams.class);
@@ -515,7 +538,6 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
     }
 
     private RestResponse<VariableSet> variableSets() throws Exception {
-
         logger.debug("Executing variableSets in Studies command line");
 
         StudiesCommandOptions.VariableSetsCommandOptions commandOptions = studiesCommandOptions.variableSetsCommandOptions;
@@ -527,7 +549,6 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
     }
 
     private RestResponse<VariableSet> updateVariableSets() throws Exception {
-
         logger.debug("Executing updateVariableSets in Studies command line");
 
         StudiesCommandOptions.UpdateVariableSetsCommandOptions commandOptions = studiesCommandOptions.updateVariableSetsCommandOptions;
@@ -536,7 +557,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
-        VariableSetCreateParams variableSetCreateParams= null;
+        VariableSetCreateParams variableSetCreateParams = null;
         if (commandOptions.jsonDataModel) {
             variableSetCreateParams = new VariableSetCreateParams();
             RestResponse<VariableSet> res = new RestResponse<>();
@@ -549,11 +570,11 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotNull(beanParams, "unique",commandOptions.unique, true);
-             putNestedIfNotNull(beanParams, "confidential",commandOptions.confidential, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
- 
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotNull(beanParams, "unique",commandOptions.unique, true);
+            putNestedIfNotNull(beanParams, "confidential",commandOptions.confidential, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+
             variableSetCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariableSetCreateParams.class);
@@ -562,7 +583,6 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
     }
 
     private RestResponse<VariableSet> updateVariableSetsVariables() throws Exception {
-
         logger.debug("Executing updateVariableSetsVariables in Studies command line");
 
         StudiesCommandOptions.UpdateVariableSetsVariablesCommandOptions commandOptions = studiesCommandOptions.updateVariableSetsVariablesCommandOptions;
@@ -571,7 +591,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
-        Variable variable= null;
+        Variable variable = null;
         if (commandOptions.jsonDataModel) {
             variable = new Variable();
             RestResponse<VariableSet> res = new RestResponse<>();
@@ -584,18 +604,18 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "category",commandOptions.category, true);
-             putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
-             putNestedIfNotNull(beanParams, "required",commandOptions.required, true);
-             putNestedIfNotNull(beanParams, "multiValue",commandOptions.multiValue, true);
-             putNestedIfNotNull(beanParams, "allowedValues",commandOptions.allowedValues, true);
-             putNestedIfNotNull(beanParams, "allowedKeys",commandOptions.allowedKeys, true);
-             putNestedIfNotNull(beanParams, "rank",commandOptions.rank, true);
-             putNestedIfNotEmpty(beanParams, "dependsOn",commandOptions.dependsOn, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
- 
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "category",commandOptions.category, true);
+            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
+            putNestedIfNotNull(beanParams, "required",commandOptions.required, true);
+            putNestedIfNotNull(beanParams, "multiValue",commandOptions.multiValue, true);
+            putNestedIfNotNull(beanParams, "allowedValues",commandOptions.allowedValues, true);
+            putNestedIfNotNull(beanParams, "allowedKeys",commandOptions.allowedKeys, true);
+            putNestedIfNotNull(beanParams, "rank",commandOptions.rank, true);
+            putNestedIfNotEmpty(beanParams, "dependsOn",commandOptions.dependsOn, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+
             variable = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), Variable.class);
