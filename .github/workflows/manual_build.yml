@@ -1,0 +1,16 @@
+
+
+name: Manual build workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      maven_opts:
+        type: string
+        required: false
+        
+jobs:
+  build:
+    uses: zetta-genomics/opencga-enterprise/.github/workflows/build-java-enterprise-workflow.yml@TASK-1974
+    with:
+      maven_opts: ${{ inputs.maven_opts }}
