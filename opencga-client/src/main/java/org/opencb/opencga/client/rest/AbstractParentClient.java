@@ -75,7 +75,7 @@
      private static final int DEFAULT_UPLOAD_TIMEOUT = 5400000;
      protected final Client client;
      protected final ObjectMapper jsonObjectMapper;
-     private final ClientConfiguration clientConfiguration;
+     protected final ClientConfiguration clientConfiguration;
      private final int batchSize;
      private final int defaultLimit;
      private final Logger privateLogger;
