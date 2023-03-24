@@ -45,9 +45,9 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
     public Response getAbout() {
         Map<String, String> info = new HashMap<>(5);
         info.put("Program", "XetaBase!");
-        info.put("Version", GitRepositoryState.get("com/zettagenomics/opencga/enterprise/core/git.properties").getBuildVersion());
-        info.put("Git branch", GitRepositoryState.get("com/zettagenomics/opencga/enterprise/core/git.properties").getBranch());
-        info.put("Git commit", GitRepositoryState.get("com/zettagenomics/opencga/enterprise/core/git.properties").getCommitId());
+//        info.put("Version", GitRepositoryState.get("com/zettagenomics/opencga/enterprise/core/git.properties").getBuildVersion());
+//        info.put("Git branch", GitRepositoryState.get("com/zettagenomics/opencga/enterprise/core/git.properties").getBranch());
+//        info.put("Git commit", GitRepositoryState.get("com/zettagenomics/opencga/enterprise/core/git.properties").getCommitId());
         info.put("Description", "Big Data platform for processing and analysing NGS data");
         OpenCGAResult queryResult = new OpenCGAResult();
         queryResult.setTime(0);
