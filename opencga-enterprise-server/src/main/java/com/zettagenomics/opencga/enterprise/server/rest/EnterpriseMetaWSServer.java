@@ -104,6 +104,7 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
             String jwtToken = jwtManager.createJWTToken(httpServletRequest.getRemoteUser(), -1);
 
             queryParams.append("token").append("=").append(jwtToken);
+            queryParams.append("&").append("user").append("=").append(httpServletRequest.getRemoteUser());
             for (Cookie cookie : cookies) {
                 queryParams.append("&");
                 queryParams.append(cookie.getName()).append("=").append(cookie.getValue());

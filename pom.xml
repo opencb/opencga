@@ -14,7 +14,6 @@
         <module>opencga-enterprise-client</module>
         <module>opencga-enterprise-core</module>
         <module>opencga-enterprise-cva</module>
-        <module>opencga-enterprise-sso</module>
         <module>opencga-enterprise-server</module>
     </modules>
 

@@ -2,8 +2,6 @@ package com.zettagenomics.opencga.enterprise.core.configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,12 +11,8 @@ public class EnterpriseConfiguration {
 
     private SsoConfiguration sso;
 
-    private static Logger logger;
     private static final String DEFAULT_CONFIGURATION_FORMAT = "yaml";
 
-    static {
-        logger = LoggerFactory.getLogger(EnterpriseConfiguration.class);
-    }
 
     public EnterpriseConfiguration() {
         sso = new SsoConfiguration();

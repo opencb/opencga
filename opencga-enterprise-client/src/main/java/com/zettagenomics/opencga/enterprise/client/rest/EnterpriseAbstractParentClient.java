@@ -6,12 +6,14 @@ import org.glassfish.jersey.client.RequestEntityProcessing;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.core.response.RestResponse;
 
 import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
@@ -21,17 +23,68 @@ import java.util.Map;
 
 public abstract class EnterpriseAbstractParentClient extends AbstractParentClient {
 
-    private EnterpriseConfiguration enterpriseConfiguration;
-    private Map<String, Object> ssoCookies;
-
     protected EnterpriseAbstractParentClient(String token, ClientConfiguration clientConfiguration) {
         super(token, clientConfiguration);
     }
 
-    protected EnterpriseAbstractParentClient(String token, ClientConfiguration clientConfiguration,
-                                             EnterpriseConfiguration enterpriseConfiguration) {
-        super(token, clientConfiguration);
-        this.enterpriseConfiguration = enterpriseConfiguration;
+    private void addCookies(Invocation.Builder builder) {
+        if (clientConfiguration.getAttributes() != null) {
+            Object cookies = clientConfiguration.getAttributes().get("cookies");
+            if (cookies instanceof Map) {
+                Map<String, String> cookiesMap = (Map<String, String>) cookies;
+                for (Map.Entry<String, String> entry : cookiesMap.entrySet()) {
+                    builder.cookie(entry.getKey(), entry.getValue());
+                }
+            }
+        }
+    }
+
+    @Override
+    protected <T> RestResponse<T> callRest(WebTarget path, ObjectMap params, Class<T> clazz, String method)
+            throws ClientException {
+        Response response;
+        switch (method) {
+            case DELETE:
+            case GET:
+                // TODO we still have to check the limit of the query, and keep querying while there are more results
+                if (params != null) {
+                    for (String key : params.keySet()) {
+                        path = path.queryParam(key, params.getString(key));
+                    }
+                }
+
+//                privateLogger.debug("{} URL: {}", method, path.getUri());
+                Invocation.Builder header = path.request().header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token);
+                addCookies(header);
+                if (method.equals(GET)) {
+                    response = header.get();
+                } else {
+                    response = header.delete();
+                }
+                break;
+            case POST:
+                // TODO we still have to check the limit of the query, and keep querying while there are more results
+                if (params != null) {
+                    for (String key : params.keySet()) {
+                        if (!key.equals("body")) {
+                            path = path.queryParam(key, params.getString(key));
+                        }
+                    }
+                }
+
+                Object paramBody = (params != null && params.get("body") != null) ? params.get("body") : "";
+//                privateLogger.debug("{} URL: {}, Body {}", method, path.getUri(), paramBody);
+                Invocation.Builder builder = path.request()
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token);
+                addCookies(builder);
+                response = builder.post(Entity.json(paramBody));
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported REST method " + method);
+        }
+        RestResponse<T> restResponse = parseResult(response, clazz);
+        checkErrors(restResponse, response.getStatusInfo(), method, path);
+        return restResponse;
     }
 
     /**
@@ -83,34 +136,9 @@ public abstract class EnterpriseAbstractParentClient extends AbstractParentClien
         return restResponse;
     }
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("EnterpriseAbstractParentClient{");
-        sb.append("enterpriseConfiguration=").append(enterpriseConfiguration);
-        sb.append(", ssoCookies=").append(ssoCookies);
-        sb.append(", client=").append(client);
-        sb.append(", jsonObjectMapper=").append(jsonObjectMapper);
-        sb.append(", token='").append(token).append('\'');
-        sb.append('}');
-        return sb.toString();
-    }
-
-    public EnterpriseConfiguration getEnterpriseConfiguration() {
-        return enterpriseConfiguration;
-    }
-
     public EnterpriseAbstractParentClient setEnterpriseConfiguration(EnterpriseConfiguration enterpriseConfiguration) {
-        this.enterpriseConfiguration = enterpriseConfiguration;
         return this;
     }
 
-    public Map<String, Object> getSsoCookies() {
-        return ssoCookies;
-    }
-
-    public EnterpriseAbstractParentClient setSsoCookies(Map<String, Object> ssoCookies) {
-        this.ssoCookies = ssoCookies;
-        return this;
-    }
 
 }

@@ -1,7 +1,6 @@
 import os
 import signal
 import time
-import webbrowser
 from multiprocessing import Process
 
 from flask import Flask, render_template, request
@@ -18,9 +17,13 @@ def kill_execution(pid):
 @app.route("/secure")
 def secure():
     cookies = {}
+    dict = {'cookies': cookies}
     for key in request.args.keys():
-        cookies[key] = request.args.get(key)
-    print(cookies)
+        if key != 'user' and key != 'token':
+            cookies[key] = request.args.get(key)
+        else:
+            dict[key] = request.args.get(key)
+    print(dict)
 
     p = Process(target=kill_execution, args=(server.pid,))
     p.start()
