@@ -48,7 +48,6 @@ public class IndividualCommandExecutor extends InternalCommandExecutor {
         IndividualCommandOptions.TsvLoad options = individualCommandOptions.tsvLoad;
 
         Path outDir = Paths.get(options.outDir);
-        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
 
         IndividualTsvAnnotationLoader annotationLoader = new IndividualTsvAnnotationLoader();
         annotationLoader.setAnnotationSetId(options.annotationSetId);

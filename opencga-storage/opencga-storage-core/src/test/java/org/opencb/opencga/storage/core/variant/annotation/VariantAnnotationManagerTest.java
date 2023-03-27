@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.variant.annotation;
 
+import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -14,6 +15,12 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
+
+import java.io.File;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Collection;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
@@ -158,12 +165,29 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER);
 
+        URI annotOutdir = outputUri.resolve("annot1");
+        Files.createDirectories(Paths.get(annotOutdir));
         variantStorageEngine.saveAnnotation("v0", new ObjectMap());
-        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        Collection<File> files = FileUtils.listFiles(Paths.get(annotOutdir).toFile(), null, false);
+        assertNotEquals(0, files.size());
+
+        annotOutdir = outputUri.resolve("annot2");
+        Files.createDirectories(Paths.get(annotOutdir));
         variantStorageEngine.saveAnnotation("v1", new ObjectMap());
-        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v2").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v2").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        files = FileUtils.listFiles(Paths.get(annotOutdir).toFile(), null, false);
+        assertNotEquals(0, files.size());
+
+        annotOutdir = outputUri.resolve("annot3");
+        Files.createDirectories(Paths.get(annotOutdir));
         variantStorageEngine.saveAnnotation("v2", new ObjectMap());
-        variantStorageEngine.annotate(outputUri, new Query(VariantQueryParam.REGION.key(), "1"), new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v3").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        variantStorageEngine.annotate(annotOutdir, new Query(VariantQueryParam.REGION.key(), "1"), new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v3")
+                .append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true)
+                .append(VariantStorageOptions.ANNOTATION_FILE_DELETE_AFTER_LOAD.key(), true)
+        );
+        files = FileUtils.listFiles(Paths.get(annotOutdir).toFile(), null, false);
+        assertEquals(0, files.size());
 
         assertEquals(0, variantStorageEngine.getAnnotation("v0", null, null).getResults().size());
         checkAnnotationSnapshot(variantStorageEngine, "v1", "v1");

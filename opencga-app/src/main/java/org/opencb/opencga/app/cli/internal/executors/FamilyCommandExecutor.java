@@ -48,7 +48,6 @@ public class FamilyCommandExecutor extends InternalCommandExecutor {
         FamilyCommandOptions.TsvLoad options = familyCommandOptions.tsvLoad;
 
         Path outDir = Paths.get(options.outDir);
-        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
 
         FamilyTsvAnnotationLoader annotationLoader = new FamilyTsvAnnotationLoader();
         annotationLoader.setAnnotationSetId(options.annotationSetId);
