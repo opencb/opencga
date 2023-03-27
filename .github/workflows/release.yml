@@ -7,14 +7,16 @@ on:
   workflow_dispatch:
 
 jobs:
+  build:
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    with:
+      maven_opts: -P storage-hadoop,hdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+
   test:
     uses: opencb/opencga/.github/workflows/build-test.yml@develop
+    needs: build
     secrets: inherit
-  #      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-  #      SSH_TESTING_SERVER_HOST: ${{ secrets.SSH_TESTING_SERVER_HOST}}
-  #      SSH_TESTING_SERVER_PORT: ${{ secrets.SSH_TESTING_SERVER_PORT}}
-  #      SSH_TESTING_SERVER_USER: ${{ secrets.SSH_TESTING_SERVER_USER }}
-  #      SSH_TESTING_SERVER_PASSWORD: ${{ secrets.SSH_TESTING_SERVER_PASSWORD }}
+
 
   deploy-maven:
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
@@ -22,10 +24,6 @@ jobs:
     with:
       maven_opts: -P storage-hadoop,hdp3.1 -Dopencga.war.name=opencga
     secrets: inherit
-  #      MAVEN_NEXUS_USER: ${{ secrets.MAVEN_NEXUS_USER }}
-  #      MAVEN_NEXUS_PASSWORD: ${{ secrets.MAVEN_NEXUS_PASSWORD }}
-  #      MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-  #      MAVEN_GPG_PRIVATE_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
 
   deploy-docker:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
@@ -33,17 +31,13 @@ jobs:
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init
     secrets: inherit
-  #      DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
-  #      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
   deploy-docker-ext-tools:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
     needs: build
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images ext-tools --tag ${{ needs.build.outputs.version }}
-    secrets:
-      DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
-      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+    secrets: inherit
 
   deploy-python:
     uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
@@ -52,8 +46,6 @@ jobs:
       cli: ./clients/python/python-build.sh push
       artifact: build-folder
     secrets: inherit
-  #      PYPI_TWINE_USER: ${{ secrets.PYPI_TWINE_USER }}
-  #      PYPI_TWINE_PASSWORD: ${{ secrets.PYPI_TWINE_PASSWORD }}
 
   release:
     uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop

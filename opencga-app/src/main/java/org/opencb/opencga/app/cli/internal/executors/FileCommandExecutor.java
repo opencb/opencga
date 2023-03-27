@@ -57,7 +57,6 @@ public class FileCommandExecutor extends InternalCommandExecutor {
         FileCommandOptions.DeleteCommandOptions options = fileCommandOptions.deleteCommandOptions;
 
         Path outDir = Paths.get(options.outDir);
-        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
 
         // Prepare analysis parameters and config
         FileDeleteTask delete = new FileDeleteTask()
@@ -73,7 +72,6 @@ public class FileCommandExecutor extends InternalCommandExecutor {
         FileCommandOptions.UnlinkCommandOptions options = fileCommandOptions.unlinkCommandOptions;
 
         Path outDir = Paths.get(options.outDir);
-        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
 
         // Prepare analysis parameters and config
         FileUnlinkTask unlink = new FileUnlinkTask()
@@ -116,7 +114,6 @@ public class FileCommandExecutor extends InternalCommandExecutor {
         FileCommandOptions.TsvLoad options = fileCommandOptions.tsvLoad;
 
         Path outDir = Paths.get(options.outDir);
-        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
 
         FileTsvAnnotationLoader annotationLoader = new FileTsvAnnotationLoader();
         annotationLoader.setAnnotationSetId(options.annotationSetId);
