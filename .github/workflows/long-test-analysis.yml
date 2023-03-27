@@ -2,7 +2,7 @@ name: Long test for run only on weekend
 #Every Saturday at 00:00
 on:
   schedule:
-    - cron: '* * * * 6'
+    - cron: '10 1 * * 6'
 
 jobs:
   test:
