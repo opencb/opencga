@@ -210,15 +210,15 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
             // Check it has all required members
             if (!includeSamples.contains(proband)) {
                 throw VariantQueryException.malformedParam(VariantQueryParam.INCLUDE_SAMPLE, includeSamples.toString(),
-                        "Can not compute CompoundHeterozygous not including the proband in the query");
+                        "Can not compute CompoundHeterozygous not including the proband '" + proband + "' in the query");
             }
             if (!mother.equals(MISSING_SAMPLE) && !includeSamples.contains(mother)) {
                 throw VariantQueryException.malformedParam(VariantQueryParam.INCLUDE_SAMPLE, includeSamples.toString(),
-                        "Can not compute CompoundHeterozygous not including the mother in the query");
+                        "Can not compute CompoundHeterozygous not including the mother '" + mother + "' in the query");
             }
             if (!father.equals(MISSING_SAMPLE) && !includeSamples.contains(father)) {
                 throw VariantQueryException.malformedParam(VariantQueryParam.INCLUDE_SAMPLE, includeSamples.toString(),
-                        "Can not compute CompoundHeterozygous not including the father in the query");
+                        "Can not compute CompoundHeterozygous not including the father '" + father + "' in the query");
             }
         } else {
             if (father.equals(MISSING_SAMPLE)) {
@@ -265,9 +265,13 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
     }
 
     protected Trio getCompHetTrio(Query query) {
+        Object o = query.get(SAMPLE_COMPOUND_HETEROZYGOUS.key());
+        if (o instanceof Trio) {
+            return ((Trio) o);
+        }
         List<String> samples = query.getAsStringList(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS.key());
         if (samples.size() == 3) {
-            return new Trio(null, samples.get(2), samples.get(0), samples.get(1));
+            return new Trio(samples);
         } else if (samples.size() == 1) {
             int studyId = metadataManager.getStudyId(query.getString(VariantQueryParam.STUDY.key()));
             String sample = samples.get(0);

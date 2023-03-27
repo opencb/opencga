@@ -46,6 +46,7 @@ public abstract class CommandExecutor {
     protected String conf;
 
     protected String appHome;
+    protected Path opencgaHome;
     protected String userId;
     protected String token;
 
@@ -87,6 +88,7 @@ public abstract class CommandExecutor {
         // System property 'app.home' is automatically set up in opencga.sh. If by any reason
         // this is 'null' then OPENCGA_HOME environment variable is used instead.
         this.appHome = System.getProperty("app.home", System.getenv("OPENCGA_HOME"));
+        this.opencgaHome = Paths.get(appHome);
 
         if (StringUtils.isEmpty(conf)) {
             this.conf = appHome + "/conf";
