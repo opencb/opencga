@@ -1,46 +1,22 @@
 package com.zettagenomics.opencga.enterprise.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor;
-import com.zettagenomics.opencga.enterprise.app.cli.main.parent.EnterpriseCustomUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.*;
+import com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor;
 import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.common.JacksonUtils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.List;
-import java.util.HashMap;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.commons.utils.PrintUtils;
 
 import com.zettagenomics.opencga.enterprise.app.cli.main.options.UsersCommandOptions;
 
-import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
 import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandOptions;
-import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
-import java.util.Map;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
-import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.ConfigUpdateParams;
-import org.opencb.opencga.core.models.user.FilterUpdateParams;
-import org.opencb.opencga.core.models.user.LoginParams;
 import org.opencb.opencga.core.models.user.PasswordChangeParams;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.user.UserFilter;

@@ -56,7 +56,7 @@ apiConfig:
         - name: login
           executorExtended: True
           optionExtended: True
-#          executorExtendedClassName: com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor
+          executorExtendedClassName: com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor
         - name: logout
           executorExtended: True
           optionExtended: True

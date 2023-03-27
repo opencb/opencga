@@ -1,4 +1,4 @@
-package com.zettagenomics.opencga.enterprise.app.cli.main.parent;
+package com.zettagenomics.opencga.enterprise.app.cli.main.custom;
 
 import com.zettagenomics.opencga.enterprise.app.cli.session.EnterpriseSessionManager;
 import com.zettagenomics.opencga.enterprise.client.rest.EnterpriseOpenCGAClient;
@@ -6,11 +6,9 @@ import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfigu
 import com.zettagenomics.opencga.enterprise.core.configuration.SsoConfiguration;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.config.HostConfig;
 import org.opencb.opencga.client.config.RestConfig;
-import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.RestResponse;
 import org.slf4j.Logger;

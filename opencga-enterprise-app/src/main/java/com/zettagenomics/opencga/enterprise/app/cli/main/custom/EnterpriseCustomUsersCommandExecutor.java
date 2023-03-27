@@ -1,7 +1,6 @@
-package com.zettagenomics.opencga.enterprise.app.cli.main.parent;
+package com.zettagenomics.opencga.enterprise.app.cli.main.custom;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.zettagenomics.opencga.enterprise.app.cli.session.EnterpriseSessionManager;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
@@ -19,8 +18,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Map;
 
