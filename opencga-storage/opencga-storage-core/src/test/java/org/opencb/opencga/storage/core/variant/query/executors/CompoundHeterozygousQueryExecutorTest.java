@@ -6,11 +6,8 @@ import org.junit.experimental.categories.Category;
 import org.mockito.Mockito;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-<<<<<<< HEAD
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
-=======
 import org.opencb.opencga.storage.core.metadata.models.Trio;
->>>>>>> develop
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
