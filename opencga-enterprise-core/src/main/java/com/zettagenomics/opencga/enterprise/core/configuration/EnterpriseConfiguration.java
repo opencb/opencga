@@ -11,7 +11,7 @@ public class EnterpriseConfiguration {
 
     private SsoConfiguration sso;
 
-    private static final String DEFAULT_CONFIGURATION_FORMAT = "yaml";
+    private static final String DEFAULT_CONFIGURATION_FORMAT = "YAML";
 
 
     public EnterpriseConfiguration() {
@@ -32,26 +32,27 @@ public class EnterpriseConfiguration {
         if (configurationInputStream == null) {
             throw new IOException("EnterpriseConfiguration file not found");
         }
-        EnterpriseConfiguration EnterpriseConfiguration;
+
+        EnterpriseConfiguration enterpriseConfiguration;
         ObjectMapper objectMapper;
         try {
-            switch (format) {
-                case "json":
+            switch (format.toUpperCase()) {
+                case "JSON":
                     objectMapper = new ObjectMapper();
-                    EnterpriseConfiguration = objectMapper.readValue(configurationInputStream, EnterpriseConfiguration.class);
+                    enterpriseConfiguration = objectMapper.readValue(configurationInputStream, EnterpriseConfiguration.class);
                     break;
-                case "yml":
-                case "yaml":
+                case "YML":
+                case "YAML":
                 default:
                     objectMapper = new ObjectMapper(new YAMLFactory());
-                    EnterpriseConfiguration = objectMapper.readValue(configurationInputStream, EnterpriseConfiguration.class);
+                    enterpriseConfiguration = objectMapper.readValue(configurationInputStream, EnterpriseConfiguration.class);
                     break;
             }
         } catch (IOException e) {
             throw new IOException("EnterpriseConfiguration file could not be parsed: " + e.getMessage(), e);
         }
 
-        return EnterpriseConfiguration;
+        return enterpriseConfiguration;
     }
 
     @Override
