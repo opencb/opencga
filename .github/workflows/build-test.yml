@@ -14,18 +14,13 @@ on:
         required: true
 
 env:
-  xb_version: "1.5.0"
+  xb_version: "1.5.1"
 
 jobs:
-  build:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
-    with:
-      maven_opts: -P storage-hadoop,hdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
 
   test:
     name: Test and push Sonar analysis
     runs-on: ubuntu-22.04
-    needs: build
     steps:
       - uses: actions/checkout@v3
         with:

@@ -48,7 +48,6 @@ public class SampleCommandExecutor extends InternalCommandExecutor {
         SampleCommandOptions.TsvLoad options = sampleCommandOptions.tsvLoad;
 
         Path outDir = Paths.get(options.outDir);
-        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
 
         SampleTsvAnnotationLoader annotationLoader = new SampleTsvAnnotationLoader();
         annotationLoader.setAnnotationSetId(options.annotationSetId);
