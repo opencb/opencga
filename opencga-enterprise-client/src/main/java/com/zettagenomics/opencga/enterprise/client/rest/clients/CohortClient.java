@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortAclEntryList;
 import org.opencb.opencga.core.models.cohort.CohortAclUpdateParams;
@@ -49,7 +50,7 @@ import org.opencb.opencga.core.response.RestResponse;
  *    Client version: 1.6.0-SNAPSHOT
  *    PATH: cohorts
  */
-public class CohortClient extends EnterpriseAbstractParentClient {
+public class CohortClient extends AbstractParentClient {
 
     public CohortClient(String token, ClientConfiguration configuration) {
         super(token, configuration);

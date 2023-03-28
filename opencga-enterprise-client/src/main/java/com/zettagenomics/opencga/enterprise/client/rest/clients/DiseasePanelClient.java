@@ -21,6 +21,7 @@ import java.lang.Object;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelAclEntryList;
@@ -47,7 +48,7 @@ import org.opencb.opencga.core.response.RestResponse;
  *    Client version: 1.6.0-SNAPSHOT
  *    PATH: panels
  */
-public class DiseasePanelClient extends EnterpriseAbstractParentClient {
+public class DiseasePanelClient extends AbstractParentClient {
 
     public DiseasePanelClient(String token, ClientConfiguration configuration) {
         super(token, configuration);

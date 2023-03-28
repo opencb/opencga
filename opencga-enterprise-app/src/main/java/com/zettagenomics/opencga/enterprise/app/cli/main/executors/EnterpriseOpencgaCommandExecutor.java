@@ -148,7 +148,7 @@ public abstract class EnterpriseOpencgaCommandExecutor extends CommandExecutor {
 
                 // Update SessionManager and OpencgaClient with the new token
                 sessionManager.updateSessionToken(token, host);
-                enterpriseOpenCGAClient = new EnterpriseOpenCGAClient(new AuthenticationResponse(options.token), clientConfiguration, enterpriseConfiguration);
+                enterpriseOpenCGAClient = new EnterpriseOpenCGAClient(new AuthenticationResponse(options.token), clientConfiguration);
             } else {
                 privateLogger.debug("No token has been provided, reading session file");
                 if (!StringUtils.isEmpty(sessionManager.getSession().getToken())
@@ -169,7 +169,7 @@ public abstract class EnterpriseOpencgaCommandExecutor extends CommandExecutor {
                             privateLogger.debug("Session expiration time is ok, valid until: {}", expirationDate);
                             enterpriseOpenCGAClient = new EnterpriseOpenCGAClient(
                                     new AuthenticationResponse(sessionManager.getSession().getToken(), sessionManager.getSession().getRefreshToken()),
-                                    clientConfiguration, enterpriseConfiguration);
+                                    clientConfiguration);
                             enterpriseOpenCGAClient.setUserId(sessionManager.getSession().getUser());
 
                             // FIXME This looks weird, commenting it
@@ -178,13 +178,13 @@ public abstract class EnterpriseOpencgaCommandExecutor extends CommandExecutor {
 //                            }
                         } else {
                             privateLogger.debug("Session has expired '{}'.", expirationDate);
-                            enterpriseOpenCGAClient = new EnterpriseOpenCGAClient(clientConfiguration, enterpriseConfiguration);
+                            enterpriseOpenCGAClient = new EnterpriseOpenCGAClient(clientConfiguration);
                             //sessionManager.logoutSessionFile();
                         }
                     }
                 } else {
                     privateLogger.debug("No valid session found");
-                    enterpriseOpenCGAClient = new EnterpriseOpenCGAClient(clientConfiguration, enterpriseConfiguration);
+                    enterpriseOpenCGAClient = new EnterpriseOpenCGAClient(clientConfiguration);
                 }
             }
 

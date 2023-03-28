@@ -90,7 +90,7 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
         URI targetURIForRedirection;
         try {
             Cookie[] cookies = httpServletRequest.getCookies();
-            System.out.println("SSO cookies");
+            logger.debug("SSO cookies: ");
             for (Cookie cookie : cookies) {
                 logger.debug("{}: {}", cookie.getName(), cookie.getValue());
             }

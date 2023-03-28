@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntryList;
@@ -55,7 +56,7 @@ import org.opencb.opencga.core.response.RestResponse;
  *    Client version: 1.6.0-SNAPSHOT
  *    PATH: files
  */
-public class FileClient extends EnterpriseAbstractParentClient {
+public class FileClient extends AbstractParentClient {
 
     public FileClient(String token, ClientConfiguration configuration) {
         super(token, configuration);

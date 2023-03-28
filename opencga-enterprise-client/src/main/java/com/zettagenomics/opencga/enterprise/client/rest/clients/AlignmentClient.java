@@ -16,22 +16,14 @@
 
 package com.zettagenomics.opencga.enterprise.client.rest.clients;
 
-import com.zettagenomics.opencga.enterprise.client.rest.*;
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.opencga.core.models.alignment.AlignmentGeneCoverageStatsParams;
-import org.opencb.opencga.core.models.alignment.AlignmentIndexParams;
-import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
-import org.opencb.opencga.core.models.alignment.BwaWrapperParams;
-import org.opencb.opencga.core.models.alignment.CoverageIndexParams;
-import org.opencb.opencga.core.models.alignment.DeeptoolsWrapperParams;
-import org.opencb.opencga.core.models.alignment.FastqcWrapperParams;
-import org.opencb.opencga.core.models.alignment.PicardWrapperParams;
-import org.opencb.opencga.core.models.alignment.SamtoolsWrapperParams;
+import org.opencb.opencga.client.rest.AbstractParentClient;
+import org.opencb.opencga.core.models.alignment.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -52,7 +44,7 @@ import org.opencb.opencga.core.response.RestResponse;
  *    Client version: 1.6.0-SNAPSHOT
  *    PATH: analysis/alignment
  */
-public class AlignmentClient extends EnterpriseAbstractParentClient {
+public class AlignmentClient extends AbstractParentClient {
 
     public AlignmentClient(String token, ClientConfiguration configuration) {
         super(token, configuration);

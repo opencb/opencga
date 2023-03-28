@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGeneSummary;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividualSummary;
@@ -63,7 +64,7 @@ import org.opencb.opencga.core.response.RestResponse;
  *    Client version: 1.6.0-SNAPSHOT
  *    PATH: analysis/clinical
  */
-public class ClinicalAnalysisClient extends EnterpriseAbstractParentClient {
+public class ClinicalAnalysisClient extends AbstractParentClient {
 
     public ClinicalAnalysisClient(String token, ClientConfiguration configuration) {
         super(token, configuration);

@@ -1,11 +1,9 @@
 package com.zettagenomics.opencga.enterprise.app.cli.main.custom;
 
-import com.zettagenomics.opencga.enterprise.app.cli.session.EnterpriseSessionManager;
 import com.zettagenomics.opencga.enterprise.client.rest.EnterpriseOpenCGAClient;
-import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
-import com.zettagenomics.opencga.enterprise.core.configuration.SsoConfiguration;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.config.HostConfig;
 import org.opencb.opencga.client.config.RestConfig;
@@ -22,14 +20,22 @@ public class EnterpriseCustomUsersCommandExecutorTest {
     public void loginTest() throws Exception {
         Logger logger = LoggerFactory.getLogger(EnterpriseCustomUsersCommandExecutorTest.class);
         ClientConfiguration clientConfiguration = new ClientConfiguration()
-                .setRest(new RestConfig(Collections.singletonList(new HostConfig("OpenCGA", "http://localhost:9090")), false, null));
-        EnterpriseSessionManager sessionManager = new EnterpriseSessionManager(clientConfiguration, "OpenCGA");
-        EnterpriseConfiguration enterpriseConfiguration = new EnterpriseConfiguration()
-                .setSso(new SsoConfiguration(true, "https://reports.test.zettagenomics.com:8443/cas", "http://localhost:9090"));
-        EnterpriseOpenCGAClient openCGAClient = new EnterpriseOpenCGAClient(clientConfiguration, enterpriseConfiguration);
+                .setRest(new RestConfig(Collections.singletonList(new HostConfig("OpenCGA", "http://localhost:9090/opencga")), false, null));
+        SessionManager sessionManager = new SessionManager(clientConfiguration, "OpenCGA");
+        EnterpriseOpenCGAClient openCGAClient = new EnterpriseOpenCGAClient(clientConfiguration);
+        String appHome = getClass().getResource("/").getPath();
         EnterpriseCustomUsersCommandExecutor executor = new EnterpriseCustomUsersCommandExecutor(new ObjectMap(), "",
-                clientConfiguration, sessionManager, "", logger, openCGAClient);
+                clientConfiguration, sessionManager, appHome, logger, openCGAClient);
+        RestResponse<ObjectMap> about = openCGAClient.getEnterpriseMetaClient().about();
+        if (about.first().getNumResults() > 0) {
+            System.out.println(about.firstResult().safeToString());
+        } else {
+            System.out.println("About error");
+        }
         RestResponse<AuthenticationResponse> login = executor.login();
         System.out.println(login.firstResult());
+
+        about = openCGAClient.getEnterpriseMetaClient().about();
+        System.out.println(about.firstResult().safeToString());
     }
 }

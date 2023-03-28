@@ -7,6 +7,7 @@ import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
 import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -29,21 +30,25 @@ import static org.opencb.commons.utils.PrintUtils.println;
 
 public class EnterpriseCustomUsersCommandExecutor extends CustomUsersCommandExecutor {
 
+    private static final String COOKIES = AbstractParentClient.COOKIES;
+
     private EnterpriseConfiguration enterpriseConfiguration;
 
     public EnterpriseCustomUsersCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
                                                 SessionManager session, String appHome, Logger logger) {
         super(options, token, clientConfiguration, session, appHome, logger);
+        this.init();
     }
 
     public EnterpriseCustomUsersCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
                                                 SessionManager session, String appHome, Logger logger, OpenCGAClient openCGAClient) {
         super(options, token, clientConfiguration, session, appHome, logger, openCGAClient);
+        this.init();
     }
 
     private void init() {
         if (enterpriseConfiguration == null) {
-            logger.debug("Initialising enterpriseConfiguration");
+            logger.debug("Initialising EnterpriseConfiguration");
             try {
                 // We load configuration file either from app home folder or from the JAR
                 Path path = Paths.get(appHome).resolve("conf").resolve("enterprise-configuration.yml");
@@ -65,8 +70,10 @@ public class EnterpriseCustomUsersCommandExecutor extends CustomUsersCommandExec
     @Override
     public RestResponse<AuthenticationResponse> login() throws Exception {
         if (this.enterpriseConfiguration.getSso() == null || !this.enterpriseConfiguration.getSso().isActive()) {
+            System.out.println("NO SSO");
             return super.login();
         } else {
+            System.out.println("SSO ACTIVE");
             // 1. Start server to get a valid SSO session for the user
             String pythonScript = Paths.get("app")
                     .resolve("cloud")
@@ -83,10 +90,10 @@ public class EnterpriseCustomUsersCommandExecutor extends CustomUsersCommandExec
                 URI uri;
                 if (getClientConfiguration().getCurrentHost().getUrl().endsWith("/")) {
                     uri = new URI(getClientConfiguration().getCurrentHost().getUrl()
-                            + "opencga/webservices/rest/v2/meta/sso?url=http://localhost:5000/secure");
+                            + "webservices/rest/v2/meta/sso?url=http://localhost:5000/secure");
                 } else {
                     uri = new URI(getClientConfiguration().getCurrentHost().getUrl()
-                            + "/opencga/webservices/rest/v2/meta/sso?url=http://localhost:5000/secure");
+                            + "/webservices/rest/v2/meta/sso?url=http://localhost:5000/secure");
                 }
                 if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
                     Desktop.getDesktop().browse(uri);
@@ -119,7 +126,7 @@ public class EnterpriseCustomUsersCommandExecutor extends CustomUsersCommandExec
             // 3. Store user, token and cookies in current session file
             String user = ssoResponse.getString("user");
             String token = ssoResponse.getString("token");
-            Map<String, Object> cookies = new ObjectMap("cookies", ssoResponse.getMap("cookies"));
+            Map<String, Object> cookies = new ObjectMap(COOKIES, ssoResponse.getMap(COOKIES));
             logger.debug("Login user ::: {}", user);
             logger.debug("Login token ::: {}", token);
             logger.debug("Login cookies ::: {}", cookies);
@@ -132,7 +139,7 @@ public class EnterpriseCustomUsersCommandExecutor extends CustomUsersCommandExec
 
             AuthenticationResponse response = new AuthenticationResponse(ssoResponse.getString("token"));
             RestResponse<AuthenticationResponse> res = session.saveSession(user, response, openCGAClient,
-                    new ObjectMap("cookies", ssoResponse.getMap("cookies")));
+                    new ObjectMap(COOKIES, ssoResponse.getMap(COOKIES)));
             println(getKeyValueAsFormattedString(LOGIN_OK, user));
 
             return res;

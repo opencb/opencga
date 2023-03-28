@@ -20,6 +20,7 @@ import com.zettagenomics.opencga.enterprise.client.rest.*;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.ConfigUpdateParams;
@@ -48,7 +49,7 @@ import org.opencb.opencga.core.response.RestResponse;
  *    Client version: 1.6.0-SNAPSHOT
  *    PATH: users
  */
-public class UserClient extends EnterpriseAbstractParentClient {
+public class UserClient extends AbstractParentClient {
 
     public UserClient(String token, ClientConfiguration configuration) {
         super(token, configuration);
