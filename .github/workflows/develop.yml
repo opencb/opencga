@@ -21,7 +21,6 @@ jobs:
       test_profile: runShortTests,runMediumTests
       report_context: development
 
-
   deploy-maven:
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
     needs: test
