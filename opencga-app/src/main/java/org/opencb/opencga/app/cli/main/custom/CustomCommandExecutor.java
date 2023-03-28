@@ -28,20 +28,22 @@ public class CustomCommandExecutor {
     protected String token;
     protected ClientConfiguration clientConfiguration;
     protected SessionManager session;
+    protected String appHome;
     protected Logger logger;
     protected OpenCGAClient openCGAClient;
 
     public CustomCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
-                                 SessionManager session, Logger logger) {
-        this(options, token, clientConfiguration, session, logger, null);
+                                 SessionManager session, String appHome, Logger logger) {
+        this(options, token, clientConfiguration, session, appHome, logger, null);
     }
 
     public CustomCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
-                                 SessionManager session, Logger logger, OpenCGAClient openCGAClient) {
+                                 SessionManager session, String appHome, Logger logger, OpenCGAClient openCGAClient) {
         this.options = options;
         this.token = token;
         this.clientConfiguration = clientConfiguration;
         this.session = session;
+        this.appHome = appHome;
         this.logger = logger;
         this.openCGAClient = openCGAClient;
 
@@ -58,11 +60,12 @@ public class CustomCommandExecutor {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("CustomExecutor{");
+        final StringBuilder sb = new StringBuilder("CustomCommandExecutor{");
         sb.append("options=").append(options);
         sb.append(", token='").append(token).append('\'');
         sb.append(", clientConfiguration=").append(clientConfiguration);
         sb.append(", session=").append(session);
+        sb.append(", appHome='").append(appHome).append('\'');
         sb.append(", openCGAClient=").append(openCGAClient);
         sb.append('}');
         return sb.toString();
@@ -101,6 +104,15 @@ public class CustomCommandExecutor {
 
     public CustomCommandExecutor setSession(SessionManager session) {
         this.session = session;
+        return this;
+    }
+
+    public String getAppHome() {
+        return appHome;
+    }
+
+    public CustomCommandExecutor setAppHome(String appHome) {
+        this.appHome = appHome;
         return this;
     }
 

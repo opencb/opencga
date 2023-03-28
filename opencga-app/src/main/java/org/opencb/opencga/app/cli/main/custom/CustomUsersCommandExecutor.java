@@ -41,13 +41,13 @@ public class CustomUsersCommandExecutor extends CustomCommandExecutor {
 
 
     public CustomUsersCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
-                                      SessionManager session, Logger logger) {
-        super(options, token, clientConfiguration, session, logger);
+                                      SessionManager session, String appHome, Logger logger) {
+        super(options, token, clientConfiguration, session, appHome, logger);
     }
 
     public CustomUsersCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
-                                      SessionManager session, Logger logger, OpenCGAClient openCGAClient) {
-        super(options, token, clientConfiguration, session, logger, openCGAClient);
+                                      SessionManager session, String appHome, Logger logger, OpenCGAClient openCGAClient) {
+        super(options, token, clientConfiguration, session, appHome, logger, openCGAClient);
     }
 
     public RestResponse<AuthenticationResponse> login() throws Exception {
