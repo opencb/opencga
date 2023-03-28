@@ -809,7 +809,7 @@ public class FileManagerTest extends AbstractManagerTest {
             });
 
         }
-        executorService.awaitTermination(1, TimeUnit.SECONDS);
+        executorService.awaitTermination(5, TimeUnit.SECONDS);
         executorService.shutdown();
 
         int unexecuted = executorService.shutdownNow().size();
