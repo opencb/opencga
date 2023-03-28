@@ -636,7 +636,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
-        CustomFilesCommandExecutor customFilesCommandExecutor = new CustomFilesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
+        CustomFilesCommandExecutor customFilesCommandExecutor = new CustomFilesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
         return customFilesCommandExecutor.upload();
     }
 
