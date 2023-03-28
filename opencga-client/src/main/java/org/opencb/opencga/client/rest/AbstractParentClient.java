@@ -65,8 +65,6 @@
   */
  public abstract class AbstractParentClient {
 
-     public static final String COOKIES = "cookies";
-
      protected static final String GET = "GET";
      protected static final String POST = "POST";
      protected static final String DELETE = "DELETE";
@@ -76,6 +74,8 @@
      protected static final int DEFAULT_CONNECT_TIMEOUT = 1000;
      protected static final int DEFAULT_READ_TIMEOUT = 30000;
      protected static final int DEFAULT_UPLOAD_TIMEOUT = 5400000;
+     protected static final String COOKIES = "cookies";
+
      protected final Client client;
      protected final ObjectMapper jsonObjectMapper;
      protected final ClientConfiguration clientConfiguration;
@@ -356,6 +356,7 @@
       */
      protected <T> RestResponse<T> callRest(WebTarget path, ObjectMap params, Class<T> clazz, String method) throws ClientException {
          Response response;
+         Invocation.Builder builder;
          switch (method) {
              case DELETE:
              case GET:
@@ -367,16 +368,15 @@
                  }
 
                  privateLogger.debug("{} URL: {}", method, path.getUri());
-                 Invocation.Builder header = path.request().header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token);
-                 addCookies(header);
+                 builder = path.request().header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token);
+                 addCookies(builder);
                  if (method.equals(GET)) {
-                     response = header.get();
+                     response = builder.get();
                  } else {
-                     response = header.delete();
+                     response = builder.delete();
                  }
                  break;
              case POST:
-                 // TODO we still have to check the limit of the query, and keep querying while there are more results
                  if (params != null) {
                      for (String key : params.keySet()) {
                          if (!key.equals("body")) {
@@ -387,7 +387,7 @@
 
                  Object paramBody = (params != null && params.get("body") != null) ? params.get("body") : "";
                  privateLogger.debug("{} URL: {}, Body {}", method, path.getUri(), paramBody);
-                 Invocation.Builder builder = path.request().header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token);
+                 builder = path.request().header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token);
                  addCookies(builder);
                  response = builder.post(Entity.json(paramBody));
                  break;
