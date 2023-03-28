@@ -18,7 +18,6 @@ jobs:
     needs: build
     secrets: inherit
 
-
   deploy-maven:
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
     needs: test
