@@ -143,7 +143,7 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CohortAclUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getCohortClient().updateAcl(commandOptions.members, commandOptions.action, cohortAclUpdateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().updateAcl(commandOptions.members, commandOptions.action, cohortAclUpdateParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
@@ -168,7 +168,7 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getCohortClient().aggregationStats(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().aggregationStats(queryParams);
     }
 
     private RestResponse<Job> loadAnnotationSets() throws Exception {
@@ -203,7 +203,7 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), TsvAnnotationParams.class);
         }
-        return enterpriseOpenCGAClient.getCohortClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
     }
 
     private RestResponse<Cohort> create() throws Exception {
@@ -250,7 +250,7 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CohortCreateParams.class);
         }
-        return enterpriseOpenCGAClient.getCohortClient().create(cohortCreateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().create(cohortCreateParams, queryParams);
     }
 
     private RestResponse<Object> distinct() throws Exception {
@@ -278,7 +278,7 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getCohortClient().distinct(commandOptions.field, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().distinct(commandOptions.field, queryParams);
     }
 
     private RestResponse<Cohort> generate() throws Exception {
@@ -336,7 +336,7 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CohortGenerateParams.class);
         }
-        return enterpriseOpenCGAClient.getCohortClient().generate(cohortGenerateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().generate(cohortGenerateParams, queryParams);
     }
 
     private RestResponse<Cohort> search() throws Exception {
@@ -370,7 +370,7 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getCohortClient().search(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().search(queryParams);
     }
 
     private RestResponse<CohortAclEntryList> acl() throws Exception {
@@ -386,7 +386,7 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getCohortClient().acl(commandOptions.cohorts, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().acl(commandOptions.cohorts, queryParams);
     }
 
     private RestResponse<Cohort> delete() throws Exception {
@@ -400,7 +400,7 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getCohortClient().delete(commandOptions.cohorts, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().delete(commandOptions.cohorts, queryParams);
     }
 
     private RestResponse<Cohort> info() throws Exception {
@@ -418,7 +418,7 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getCohortClient().info(commandOptions.cohorts, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().info(commandOptions.cohorts, queryParams);
     }
 
     private RestResponse<Cohort> update() throws Exception {
@@ -463,7 +463,7 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CohortUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getCohortClient().update(commandOptions.cohorts, cohortUpdateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().update(commandOptions.cohorts, cohortUpdateParams, queryParams);
     }
 
     private RestResponse<Cohort> updateAnnotationSetsAnnotations() throws Exception {
@@ -490,6 +490,6 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
             objectMap = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), ObjectMap.class);
         }
-        return enterpriseOpenCGAClient.getCohortClient().updateAnnotationSetsAnnotations(commandOptions.cohort, commandOptions.annotationSet, objectMap, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().updateAnnotationSetsAnnotations(commandOptions.cohort, commandOptions.annotationSet, objectMap, queryParams);
     }
 }

@@ -202,7 +202,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CellBaseConfiguration.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().configureCellbase(cellBaseConfiguration, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().configureCellbase(cellBaseConfiguration, queryParams);
     }
 
     private RestResponse<Job> aggregateVariant() throws Exception {
@@ -240,7 +240,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantAggregateParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().aggregateVariant(variantAggregateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().aggregateVariant(variantAggregateParams, queryParams);
     }
 
     private RestResponse<Job> deleteVariantAnnotation() throws Exception {
@@ -256,7 +256,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("annotationId", commandOptions.annotationId);
 
-        return enterpriseOpenCGAClient.getVariantOperationClient().deleteVariantAnnotation(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().deleteVariantAnnotation(queryParams);
     }
 
     private RestResponse<Job> indexVariantAnnotation() throws Exception {
@@ -302,7 +302,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantAnnotationIndexParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().indexVariantAnnotation(variantAnnotationIndexParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().indexVariantAnnotation(variantAnnotationIndexParams, queryParams);
     }
 
     private RestResponse<Job> saveVariantAnnotation() throws Exception {
@@ -336,7 +336,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantAnnotationSaveParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().saveVariantAnnotation(variantAnnotationSaveParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().saveVariantAnnotation(variantAnnotationSaveParams, queryParams);
     }
 
     private RestResponse<ObjectMap> configureVariant() throws Exception {
@@ -370,7 +370,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantConfigureParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().configureVariant(variantConfigureParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().configureVariant(variantConfigureParams, queryParams);
     }
 
     private RestResponse<Job> deleteVariant() throws Exception {
@@ -408,7 +408,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantFileDeleteParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().deleteVariant(variantFileDeleteParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().deleteVariant(variantFileDeleteParams, queryParams);
     }
 
     private RestResponse<Job> aggregateVariantFamily() throws Exception {
@@ -447,7 +447,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantAggregateFamilyParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().aggregateVariantFamily(variantAggregateFamilyParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().aggregateVariantFamily(variantAggregateFamilyParams, queryParams);
     }
 
     private RestResponse<Job> indexVariantFamily() throws Exception {
@@ -487,7 +487,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantFamilyIndexParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().indexVariantFamily(variantFamilyIndexParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().indexVariantFamily(variantFamilyIndexParams, queryParams);
     }
 
     private RestResponse<Job> indexVariant() throws Exception {
@@ -552,7 +552,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantIndexParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().indexVariant(variantIndexParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().indexVariant(variantIndexParams, queryParams);
     }
 
     private RestResponse<Job> launcherVariantIndex() throws Exception {
@@ -622,7 +622,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantFileIndexJobLauncherParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().launcherVariantIndex(variantFileIndexJobLauncherParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().launcherVariantIndex(variantFileIndexJobLauncherParams, queryParams);
     }
 
     private RestResponse<Job> runVariantJulie() throws Exception {
@@ -658,7 +658,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JulieParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().runVariantJulie(julieParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().runVariantJulie(julieParams, queryParams);
     }
 
     private RestResponse<Job> repairVariantMetadata() throws Exception {
@@ -692,7 +692,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantStorageMetadataRepairToolParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().repairVariantMetadata(variantStorageMetadataRepairToolParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().repairVariantMetadata(variantStorageMetadataRepairToolParams, queryParams);
     }
 
     private RestResponse<Job> synchronizeVariantMetadata() throws Exception {
@@ -730,7 +730,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantStorageMetadataSynchronizeParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().synchronizeVariantMetadata(variantStorageMetadataSynchronizeParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().synchronizeVariantMetadata(variantStorageMetadataSynchronizeParams, queryParams);
     }
 
     private RestResponse<Job> pruneVariant() throws Exception {
@@ -765,7 +765,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantPruneParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().pruneVariant(variantPruneParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().pruneVariant(variantPruneParams, queryParams);
     }
 
     private RestResponse<Job> deleteVariantSample() throws Exception {
@@ -804,7 +804,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantSampleDeleteParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().deleteVariantSample(variantSampleDeleteParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().deleteVariantSample(variantSampleDeleteParams, queryParams);
     }
 
     private RestResponse<Job> indexVariantSample() throws Exception {
@@ -845,7 +845,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantSecondarySampleIndexParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().indexVariantSample(variantSecondarySampleIndexParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().indexVariantSample(variantSecondarySampleIndexParams, queryParams);
     }
 
     private RestResponse<Job> variantSampleIndexConfigure() throws Exception {
@@ -872,7 +872,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
             sampleIndexConfiguration = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), SampleIndexConfiguration.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().variantSampleIndexConfigure(sampleIndexConfiguration, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().variantSampleIndexConfigure(sampleIndexConfiguration, queryParams);
     }
 
     private RestResponse<Job> deleteVariantScore() throws Exception {
@@ -893,7 +893,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getVariantOperationClient().deleteVariantScore(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().deleteVariantScore(queryParams);
     }
 
     private RestResponse<Job> indexVariantScore() throws Exception {
@@ -935,7 +935,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantScoreIndexParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().indexVariantScore(variantScoreIndexParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().indexVariantScore(variantScoreIndexParams, queryParams);
     }
 
     private RestResponse<Job> variantSecondaryAnnotationIndex() throws Exception {
@@ -975,7 +975,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantSecondaryAnnotationIndexParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().variantSecondaryAnnotationIndex(variantSecondaryAnnotationIndexParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().variantSecondaryAnnotationIndex(variantSecondaryAnnotationIndexParams, queryParams);
     }
 
     private RestResponse<Job> variantSecondarySampleIndex() throws Exception {
@@ -1016,7 +1016,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantSecondarySampleIndexParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().variantSecondarySampleIndex(variantSecondarySampleIndexParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().variantSecondarySampleIndex(variantSecondarySampleIndexParams, queryParams);
     }
 
     private RestResponse<Job> configureVariantSecondarySampleIndex() throws Exception {
@@ -1043,7 +1043,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
             sampleIndexConfiguration = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), SampleIndexConfiguration.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().configureVariantSecondarySampleIndex(sampleIndexConfiguration, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().configureVariantSecondarySampleIndex(sampleIndexConfiguration, queryParams);
     }
 
     private RestResponse<Job> secondaryIndexVariant() throws Exception {
@@ -1083,7 +1083,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantSecondaryAnnotationIndexParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().secondaryIndexVariant(variantSecondaryAnnotationIndexParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().secondaryIndexVariant(variantSecondaryAnnotationIndexParams, queryParams);
     }
 
     private RestResponse<Job> deleteVariantSecondaryIndex() throws Exception {
@@ -1102,7 +1102,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getVariantOperationClient().deleteVariantSecondaryIndex(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().deleteVariantSecondaryIndex(queryParams);
     }
 
     private RestResponse<Job> deleteVariantStats() throws Exception {
@@ -1140,7 +1140,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantStatsDeleteParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().deleteVariantStats(variantStatsDeleteParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().deleteVariantStats(variantStatsDeleteParams, queryParams);
     }
 
     private RestResponse<Job> indexVariantStats() throws Exception {
@@ -1182,7 +1182,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantStatsIndexParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().indexVariantStats(variantStatsIndexParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().indexVariantStats(variantStatsIndexParams, queryParams);
     }
 
     private RestResponse<Job> deleteVariantStudy() throws Exception {
@@ -1219,6 +1219,6 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantStudyDeleteParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantOperationClient().deleteVariantStudy(variantStudyDeleteParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantOperationClient().deleteVariantStudy(variantStudyDeleteParams, queryParams);
     }
 }

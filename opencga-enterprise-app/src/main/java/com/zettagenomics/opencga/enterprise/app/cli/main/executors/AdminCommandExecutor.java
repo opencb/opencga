@@ -109,7 +109,7 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
         queryParams.putIfNotEmpty("after", commandOptions.after);
         queryParams.putIfNotEmpty("date", commandOptions.date);
 
-        return enterpriseOpenCGAClient.getAdminClient().groupByAudit(commandOptions.fields, commandOptions.entity, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseAdminClient().groupByAudit(commandOptions.fields, commandOptions.entity, queryParams);
     }
 
     private RestResponse<Boolean> indexStatsCatalog() throws Exception {
@@ -120,7 +120,7 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("collection", commandOptions.collection);
 
-        return enterpriseOpenCGAClient.getAdminClient().indexStatsCatalog(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseAdminClient().indexStatsCatalog(queryParams);
     }
 
     private RestResponse<ObjectMap> installCatalog() throws Exception {
@@ -149,7 +149,7 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), InstallationParams.class);
         }
-        return enterpriseOpenCGAClient.getAdminClient().installCatalog(installationParams);
+        return enterpriseOpenCGAClient.getEnterpriseAdminClient().installCatalog(installationParams);
     }
 
     private RestResponse<ObjectMap> jwtCatalog() throws Exception {
@@ -175,7 +175,7 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JWTParams.class);
         }
-        return enterpriseOpenCGAClient.getAdminClient().jwtCatalog(jWTParams);
+        return enterpriseOpenCGAClient.getEnterpriseAdminClient().jwtCatalog(jWTParams);
     }
 
     private RestResponse<User> createUsers() throws Exception {
@@ -206,7 +206,7 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), UserCreateParams.class);
         }
-        return enterpriseOpenCGAClient.getAdminClient().createUsers(userCreateParams);
+        return enterpriseOpenCGAClient.getEnterpriseAdminClient().createUsers(userCreateParams);
     }
 
     private RestResponse<User> importUsers() throws Exception {
@@ -236,7 +236,7 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), UserImportParams.class);
         }
-        return enterpriseOpenCGAClient.getAdminClient().importUsers(userImportParams);
+        return enterpriseOpenCGAClient.getEnterpriseAdminClient().importUsers(userImportParams);
     }
 
     private RestResponse<Sample> searchUsers() throws Exception {
@@ -254,7 +254,7 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
         queryParams.putIfNotEmpty("account", commandOptions.account);
         queryParams.putIfNotEmpty("authenticationId", commandOptions.authenticationId);
 
-        return enterpriseOpenCGAClient.getAdminClient().searchUsers(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseAdminClient().searchUsers(queryParams);
     }
 
     private RestResponse<Group> syncUsers() throws Exception {
@@ -286,6 +286,6 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), GroupSyncParams.class);
         }
-        return enterpriseOpenCGAClient.getAdminClient().syncUsers(groupSyncParams);
+        return enterpriseOpenCGAClient.getEnterpriseAdminClient().syncUsers(groupSyncParams);
     }
 }

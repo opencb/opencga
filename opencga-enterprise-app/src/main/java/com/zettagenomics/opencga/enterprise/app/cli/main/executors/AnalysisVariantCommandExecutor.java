@@ -266,7 +266,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getVariantClient().aggregationStats(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().aggregationStats(queryParams);
     }
 
     private RestResponse<ObjectMap> metadataAnnotation() throws Exception {
@@ -278,7 +278,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
         queryParams.putIfNotEmpty("annotationId", commandOptions.annotationId);
         queryParams.putIfNotEmpty("project", commandOptions.project);
 
-        return enterpriseOpenCGAClient.getVariantClient().metadataAnnotation(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().metadataAnnotation(queryParams);
     }
 
     private RestResponse<VariantAnnotation> queryAnnotation() throws Exception {
@@ -295,7 +295,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
         queryParams.putIfNotNull("skip", commandOptions.skip);
         queryParams.putIfNotEmpty("annotationId", commandOptions.annotationId);
 
-        return enterpriseOpenCGAClient.getVariantClient().queryAnnotation(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().queryAnnotation(queryParams);
     }
 
     private RestResponse<String> runCircos() throws Exception {
@@ -331,7 +331,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CircosAnalysisParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runCircos(circosAnalysisParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runCircos(circosAnalysisParams, queryParams);
     }
 
     private RestResponse<SampleVariantStats> deleteCohortStats() throws Exception {
@@ -346,7 +346,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getVariantClient().deleteCohortStats(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().deleteCohortStats(queryParams);
     }
 
     private RestResponse<VariantSetStats> infoCohortStats() throws Exception {
@@ -360,7 +360,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getVariantClient().infoCohortStats(commandOptions.cohort, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().infoCohortStats(commandOptions.cohort, queryParams);
     }
 
     private RestResponse<Job> runCohortStats() throws Exception {
@@ -401,7 +401,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CohortVariantStatsAnalysisParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runCohortStats(cohortVariantStatsAnalysisParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runCohortStats(cohortVariantStatsAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runExomiser() throws Exception {
@@ -439,7 +439,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ExomiserWrapperParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runExomiser(exomiserWrapperParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runExomiser(exomiserWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runExport() throws Exception {
@@ -565,7 +565,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantExportParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runExport(variantExportParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runExport(variantExportParams, queryParams);
     }
 
     private RestResponse<ObjectMap> genotypesFamily() throws Exception {
@@ -583,7 +583,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getVariantClient().genotypesFamily(commandOptions.modeOfInheritance, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().genotypesFamily(commandOptions.modeOfInheritance, queryParams);
     }
 
     private RestResponse<Job> runFamilyQc() throws Exception {
@@ -623,7 +623,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FamilyQcAnalysisParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runFamilyQc(familyQcAnalysisParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runFamilyQc(familyQcAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> deleteFile() throws Exception {
@@ -643,7 +643,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getVariantClient().deleteFile(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().deleteFile(queryParams);
     }
 
     private RestResponse<Job> runGatk() throws Exception {
@@ -682,7 +682,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), GatkWrapperParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runGatk(gatkWrapperParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runGatk(gatkWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runGenomePlot() throws Exception {
@@ -723,7 +723,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), GenomePlotAnalysisParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runGenomePlot(genomePlotAnalysisParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runGenomePlot(genomePlotAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runGwas() throws Exception {
@@ -771,7 +771,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), GwasAnalysisParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runGwas(gwasAnalysisParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runGwas(gwasAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runHrDetect() throws Exception {
@@ -820,7 +820,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), HRDetectAnalysisParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runHrDetect(hRDetectAnalysisParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runHrDetect(hRDetectAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runIndex() throws Exception {
@@ -885,7 +885,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantIndexParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runIndex(variantIndexParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runIndex(variantIndexParams, queryParams);
     }
 
     private RestResponse<Job> runIndividualQc() throws Exception {
@@ -925,7 +925,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), IndividualQcAnalysisParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runIndividualQc(individualQcAnalysisParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runIndividualQc(individualQcAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runInferredSex() throws Exception {
@@ -964,7 +964,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), InferredSexAnalysisParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runInferredSex(inferredSexAnalysisParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runInferredSex(inferredSexAnalysisParams, queryParams);
     }
 
     private RestResponse<KnockoutByGene> queryKnockoutGene() throws Exception {
@@ -981,7 +981,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getVariantClient().queryKnockoutGene(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().queryKnockoutGene(queryParams);
     }
 
     private RestResponse<KnockoutByIndividual> queryKnockoutIndividual() throws Exception {
@@ -998,7 +998,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getVariantClient().queryKnockoutIndividual(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().queryKnockoutIndividual(queryParams);
     }
 
     private RestResponse<Job> runKnockout() throws Exception {
@@ -1044,7 +1044,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), KnockoutAnalysisParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runKnockout(knockoutAnalysisParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runKnockout(knockoutAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runMendelianError() throws Exception {
@@ -1084,7 +1084,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), MendelianErrorAnalysisParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runMendelianError(mendelianErrorAnalysisParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runMendelianError(mendelianErrorAnalysisParams, queryParams);
     }
 
     private RestResponse<VariantMetadata> metadata() throws Exception {
@@ -1106,7 +1106,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getVariantClient().metadata(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().metadata(queryParams);
     }
 
     private RestResponse<Signature> queryMutationalSignature() throws Exception {
@@ -1137,7 +1137,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getVariantClient().queryMutationalSignature(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().queryMutationalSignature(queryParams);
     }
 
     private RestResponse<Job> runMutationalSignature() throws Exception {
@@ -1189,7 +1189,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), MutationalSignatureAnalysisParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runMutationalSignature(mutationalSignatureAnalysisParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runMutationalSignature(mutationalSignatureAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runPlink() throws Exception {
@@ -1227,7 +1227,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PlinkWrapperParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runPlink(plinkWrapperParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runPlink(plinkWrapperParams, queryParams);
     }
 
     private RestResponse<Variant> query() throws Exception {
@@ -1317,7 +1317,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getVariantClient().query(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().query(queryParams);
     }
 
     private RestResponse<Job> runRelatedness() throws Exception {
@@ -1358,7 +1358,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), RelatednessAnalysisParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runRelatedness(relatednessAnalysisParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runRelatedness(relatednessAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runRvtests() throws Exception {
@@ -1397,7 +1397,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), RvtestsWrapperParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runRvtests(rvtestsWrapperParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runRvtests(rvtestsWrapperParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStatsSample() throws Exception {
@@ -1432,7 +1432,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getVariantClient().aggregationStatsSample(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().aggregationStatsSample(queryParams);
     }
 
     private RestResponse<Job> runSampleEligibility() throws Exception {
@@ -1471,7 +1471,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SampleEligibilityAnalysisParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runSampleEligibility(sampleEligibilityAnalysisParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runSampleEligibility(sampleEligibilityAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runSampleQc() throws Exception {
@@ -1554,7 +1554,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SampleQcAnalysisParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runSampleQc(sampleQcAnalysisParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runSampleQc(sampleQcAnalysisParams, queryParams);
     }
 
     private RestResponse<Variant> querySample() throws Exception {
@@ -1572,7 +1572,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getVariantClient().querySample(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().querySample(queryParams);
     }
 
     private RestResponse<Job> runSample() throws Exception {
@@ -1638,7 +1638,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SampleVariantFilterParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runSample(sampleVariantFilterParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runSample(sampleVariantFilterParams, queryParams);
     }
 
     private RestResponse<SampleVariantStats> querySampleStats() throws Exception {
@@ -1666,7 +1666,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getVariantClient().querySampleStats(commandOptions.sample, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().querySampleStats(commandOptions.sample, queryParams);
     }
 
     private RestResponse<Job> runSampleStats() throws Exception {
@@ -1738,7 +1738,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SampleVariantStatsAnalysisParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runSampleStats(sampleVariantStatsAnalysisParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runSampleStats(sampleVariantStatsAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runStatsExport() throws Exception {
@@ -1780,7 +1780,7 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantStatsExportParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runStatsExport(variantStatsExportParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runStatsExport(variantStatsExportParams, queryParams);
     }
 
     private RestResponse<Job> runStats() throws Exception {
@@ -1824,6 +1824,6 @@ public class AnalysisVariantCommandExecutor extends com.zettagenomics.opencga.en
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantStatsAnalysisParams.class);
         }
-        return enterpriseOpenCGAClient.getVariantClient().runStats(variantStatsAnalysisParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseVariantClient().runStats(variantStatsAnalysisParams, queryParams);
     }
 }

@@ -81,6 +81,11 @@
                 <artifactId>opencga-enterprise-cva</artifactId>
                 <version>${project.parent.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.zettagenomics.opencga-enterprise</groupId>
+                <artifactId>opencga-enterprise-server</artifactId>
+                <version>${project.parent.version}</version>
+            </dependency>
 
             <!-- OpenCB dependencies -->
             <dependency>

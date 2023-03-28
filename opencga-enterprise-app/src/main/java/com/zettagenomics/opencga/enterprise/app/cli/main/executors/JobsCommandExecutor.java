@@ -156,7 +156,7 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JobAclUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getJobClient().updateAcl(commandOptions.members, commandOptions.action, jobAclUpdateParams);
+        return enterpriseOpenCGAClient.getEnterpriseJobClient().updateAcl(commandOptions.members, commandOptions.action, jobAclUpdateParams);
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
@@ -187,7 +187,7 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getJobClient().aggregationStats(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseJobClient().aggregationStats(queryParams);
     }
 
     private RestResponse<Job> create() throws Exception {
@@ -238,7 +238,7 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JobCreateParams.class);
         }
-        return enterpriseOpenCGAClient.getJobClient().create(jobCreateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseJobClient().create(jobCreateParams, queryParams);
     }
 
     private RestResponse<Object> distinct() throws Exception {
@@ -270,7 +270,7 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getJobClient().distinct(commandOptions.field, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseJobClient().distinct(commandOptions.field, queryParams);
     }
 
     private RestResponse<Job> retry() throws Exception {
@@ -309,7 +309,7 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JobRetryParams.class);
         }
-        return enterpriseOpenCGAClient.getJobClient().retry(jobRetryParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseJobClient().retry(jobRetryParams, queryParams);
     }
 
     private RestResponse<Job> search() throws Exception {
@@ -346,7 +346,7 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getJobClient().search(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseJobClient().search(queryParams);
     }
 
     private RestResponse<JobTop> top() throws Exception {
@@ -376,7 +376,7 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("member", commandOptions.member);
         queryParams.putIfNotNull("silent", commandOptions.silent);
 
-        return enterpriseOpenCGAClient.getJobClient().acl(commandOptions.jobs, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseJobClient().acl(commandOptions.jobs, queryParams);
     }
 
     private RestResponse<Job> delete() throws Exception {
@@ -390,7 +390,7 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getJobClient().delete(commandOptions.jobs, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseJobClient().delete(commandOptions.jobs, queryParams);
     }
 
     private RestResponse<Job> info() throws Exception {
@@ -407,7 +407,7 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getJobClient().info(commandOptions.jobs, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseJobClient().info(commandOptions.jobs, queryParams);
     }
 
     private RestResponse<Job> update() throws Exception {
@@ -446,7 +446,7 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JobUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getJobClient().update(commandOptions.jobs, jobUpdateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseJobClient().update(commandOptions.jobs, jobUpdateParams, queryParams);
     }
 
     private RestResponse<FileContent> headLog() throws Exception {
@@ -463,7 +463,7 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getJobClient().headLog(commandOptions.job, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseJobClient().headLog(commandOptions.job, queryParams);
     }
 
     private RestResponse<FileContent> tailLog() throws Exception {
@@ -479,6 +479,6 @@ public class JobsCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getJobClient().tailLog(commandOptions.job, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseJobClient().tailLog(commandOptions.job, queryParams);
     }
 }

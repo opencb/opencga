@@ -18,7 +18,7 @@ import org.opencb.commons.utils.PrintUtils;
 
 import com.zettagenomics.opencga.enterprise.app.cli.main.options.UsersCommandOptions;
 
-import com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
 import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandOptions;
 import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
 import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
@@ -122,7 +122,7 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
         queryParams.putIfNotEmpty("user", commandOptions.user);
         queryParams.putIfNotEmpty("password", commandOptions.password);
         queryParams.putIfNotEmpty("refreshToken", commandOptions.refreshToken);
-        com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor customUsersCommandExecutor = new com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
+        CustomUsersCommandExecutor customUsersCommandExecutor = new CustomUsersCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
         return customUsersCommandExecutor.login();
     }
 
@@ -152,7 +152,7 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PasswordChangeParams.class);
         }
-        return enterpriseOpenCGAClient.getUserClient().password(passwordChangeParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserClient().password(passwordChangeParams);
     }
 
     private RestResponse<User> info() throws Exception {
@@ -164,7 +164,7 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
 
-        return enterpriseOpenCGAClient.getUserClient().info(commandOptions.users, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserClient().info(commandOptions.users, queryParams);
     }
 
     private RestResponse<ObjectMap> configs() throws Exception {
@@ -175,7 +175,7 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("name", commandOptions.name);
 
-        return enterpriseOpenCGAClient.getUserClient().configs(commandOptions.user, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserClient().configs(commandOptions.user, queryParams);
     }
 
     private RestResponse<ObjectMap> updateConfigs() throws Exception {
@@ -206,7 +206,7 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ConfigUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getUserClient().updateConfigs(commandOptions.user, configUpdateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserClient().updateConfigs(commandOptions.user, configUpdateParams, queryParams);
     }
 
     private RestResponse<UserFilter> filters() throws Exception {
@@ -217,14 +217,14 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("id", commandOptions.id);
 
-        return enterpriseOpenCGAClient.getUserClient().filters(commandOptions.user, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserClient().filters(commandOptions.user, queryParams);
     }
 
     private RestResponse<User> resetPassword() throws Exception {
         logger.debug("Executing resetPassword in Users command line");
 
         UsersCommandOptions.ResetPasswordCommandOptions commandOptions = usersCommandOptions.resetPasswordCommandOptions;
-        return enterpriseOpenCGAClient.getUserClient().resetPassword(commandOptions.user);
+        return enterpriseOpenCGAClient.getEnterpriseUserClient().resetPassword(commandOptions.user);
     }
 
     private RestResponse<Project> projects() throws Exception {
@@ -238,7 +238,7 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotNull("skip", commandOptions.skip);
 
-        return enterpriseOpenCGAClient.getUserClient().projects(commandOptions.user, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserClient().projects(commandOptions.user, queryParams);
     }
 
     private RestResponse<User> update() throws Exception {
@@ -273,6 +273,6 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), UserUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getUserClient().update(commandOptions.user, userUpdateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserClient().update(commandOptions.user, userUpdateParams, queryParams);
     }
 }
