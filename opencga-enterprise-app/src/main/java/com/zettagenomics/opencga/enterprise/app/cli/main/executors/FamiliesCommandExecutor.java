@@ -143,7 +143,7 @@ public class FamiliesCommandExecutor extends com.zettagenomics.opencga.enterpris
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FamilyAclUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseFamilyClient().updateAcl(commandOptions.members, commandOptions.action, familyAclUpdateParams, queryParams);
+        return enterpriseOpenCGAClient.getFamilyClient().updateAcl(commandOptions.members, commandOptions.action, familyAclUpdateParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
@@ -170,7 +170,7 @@ public class FamiliesCommandExecutor extends com.zettagenomics.opencga.enterpris
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseFamilyClient().aggregationStats(queryParams);
+        return enterpriseOpenCGAClient.getFamilyClient().aggregationStats(queryParams);
     }
 
     private RestResponse<Job> loadAnnotationSets() throws Exception {
@@ -205,7 +205,7 @@ public class FamiliesCommandExecutor extends com.zettagenomics.opencga.enterpris
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), TsvAnnotationParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseFamilyClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
+        return enterpriseOpenCGAClient.getFamilyClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
     }
 
     private RestResponse<Family> create() throws Exception {
@@ -251,7 +251,7 @@ public class FamiliesCommandExecutor extends com.zettagenomics.opencga.enterpris
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FamilyCreateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseFamilyClient().create(familyCreateParams, queryParams);
+        return enterpriseOpenCGAClient.getFamilyClient().create(familyCreateParams, queryParams);
     }
 
     private RestResponse<Object> distinct() throws Exception {
@@ -282,7 +282,7 @@ public class FamiliesCommandExecutor extends com.zettagenomics.opencga.enterpris
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseFamilyClient().distinct(commandOptions.field, queryParams);
+        return enterpriseOpenCGAClient.getFamilyClient().distinct(commandOptions.field, queryParams);
     }
 
     private RestResponse<Family> search() throws Exception {
@@ -319,7 +319,7 @@ public class FamiliesCommandExecutor extends com.zettagenomics.opencga.enterpris
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseFamilyClient().search(queryParams);
+        return enterpriseOpenCGAClient.getFamilyClient().search(queryParams);
     }
 
     private RestResponse<FamilyAclEntryList> acl() throws Exception {
@@ -335,7 +335,7 @@ public class FamiliesCommandExecutor extends com.zettagenomics.opencga.enterpris
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseFamilyClient().acl(commandOptions.families, queryParams);
+        return enterpriseOpenCGAClient.getFamilyClient().acl(commandOptions.families, queryParams);
     }
 
     private RestResponse<Family> delete() throws Exception {
@@ -349,7 +349,7 @@ public class FamiliesCommandExecutor extends com.zettagenomics.opencga.enterpris
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseFamilyClient().delete(commandOptions.families, queryParams);
+        return enterpriseOpenCGAClient.getFamilyClient().delete(commandOptions.families, queryParams);
     }
 
     private RestResponse<Family> info() throws Exception {
@@ -368,7 +368,7 @@ public class FamiliesCommandExecutor extends com.zettagenomics.opencga.enterpris
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseFamilyClient().info(commandOptions.families, queryParams);
+        return enterpriseOpenCGAClient.getFamilyClient().info(commandOptions.families, queryParams);
     }
 
     private RestResponse<Family> update() throws Exception {
@@ -415,7 +415,7 @@ public class FamiliesCommandExecutor extends com.zettagenomics.opencga.enterpris
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FamilyUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseFamilyClient().update(commandOptions.families, familyUpdateParams, queryParams);
+        return enterpriseOpenCGAClient.getFamilyClient().update(commandOptions.families, familyUpdateParams, queryParams);
     }
 
     private RestResponse<Family> updateAnnotationSetsAnnotations() throws Exception {
@@ -442,6 +442,6 @@ public class FamiliesCommandExecutor extends com.zettagenomics.opencga.enterpris
             objectMap = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), ObjectMap.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseFamilyClient().updateAnnotationSetsAnnotations(commandOptions.family, commandOptions.annotationSet, objectMap, queryParams);
+        return enterpriseOpenCGAClient.getFamilyClient().updateAnnotationSetsAnnotations(commandOptions.family, commandOptions.annotationSet, objectMap, queryParams);
     }
 }

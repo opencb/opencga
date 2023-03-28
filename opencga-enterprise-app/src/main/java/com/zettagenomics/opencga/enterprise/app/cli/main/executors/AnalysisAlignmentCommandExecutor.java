@@ -152,7 +152,7 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), BwaWrapperParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().runBwa(bwaWrapperParams, queryParams);
+        return enterpriseOpenCGAClient.getAlignmentClient().runBwa(bwaWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runCoverageIndex() throws Exception {
@@ -191,7 +191,7 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CoverageIndexParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().runCoverageIndex(coverageIndexParams, queryParams);
+        return enterpriseOpenCGAClient.getAlignmentClient().runCoverageIndex(coverageIndexParams, queryParams);
     }
 
     private RestResponse<Job> coverageQcGeneCoverageStatsRun() throws Exception {
@@ -230,7 +230,7 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), AlignmentGeneCoverageStatsParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().coverageQcGeneCoverageStatsRun(alignmentGeneCoverageStatsParams, queryParams);
+        return enterpriseOpenCGAClient.getAlignmentClient().coverageQcGeneCoverageStatsRun(alignmentGeneCoverageStatsParams, queryParams);
     }
 
     private RestResponse<RegionCoverage> queryCoverage() throws Exception {
@@ -251,7 +251,7 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().queryCoverage(commandOptions.file, queryParams);
+        return enterpriseOpenCGAClient.getAlignmentClient().queryCoverage(commandOptions.file, queryParams);
     }
 
     private RestResponse<RegionCoverage> ratioCoverage() throws Exception {
@@ -272,7 +272,7 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().ratioCoverage(commandOptions.file1, commandOptions.file2, queryParams);
+        return enterpriseOpenCGAClient.getAlignmentClient().ratioCoverage(commandOptions.file1, commandOptions.file2, queryParams);
     }
 
     private RestResponse<GeneCoverageStats> statsCoverage() throws Exception {
@@ -287,7 +287,7 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().statsCoverage(commandOptions.file, commandOptions.gene, queryParams);
+        return enterpriseOpenCGAClient.getAlignmentClient().statsCoverage(commandOptions.file, commandOptions.gene, queryParams);
     }
 
     private RestResponse<Job> runDeeptools() throws Exception {
@@ -326,7 +326,7 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), DeeptoolsWrapperParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().runDeeptools(deeptoolsWrapperParams, queryParams);
+        return enterpriseOpenCGAClient.getAlignmentClient().runDeeptools(deeptoolsWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runFastqc() throws Exception {
@@ -365,7 +365,7 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FastqcWrapperParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().runFastqc(fastqcWrapperParams, queryParams);
+        return enterpriseOpenCGAClient.getAlignmentClient().runFastqc(fastqcWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runIndex() throws Exception {
@@ -403,7 +403,7 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), AlignmentIndexParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().runIndex(alignmentIndexParams, queryParams);
+        return enterpriseOpenCGAClient.getAlignmentClient().runIndex(alignmentIndexParams, queryParams);
     }
 
     private RestResponse<Job> runPicard() throws Exception {
@@ -442,7 +442,7 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PicardWrapperParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().runPicard(picardWrapperParams, queryParams);
+        return enterpriseOpenCGAClient.getAlignmentClient().runPicard(picardWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runQc() throws Exception {
@@ -482,7 +482,7 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), AlignmentQcParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().runQc(alignmentQcParams, queryParams);
+        return enterpriseOpenCGAClient.getAlignmentClient().runQc(alignmentQcParams, queryParams);
     }
 
     private RestResponse<ReadAlignment> query() throws Exception {
@@ -514,7 +514,7 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().query(commandOptions.file, queryParams);
+        return enterpriseOpenCGAClient.getAlignmentClient().query(commandOptions.file, queryParams);
     }
 
     private RestResponse<Job> runSamtools() throws Exception {
@@ -554,6 +554,6 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SamtoolsWrapperParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().runSamtools(samtoolsWrapperParams, queryParams);
+        return enterpriseOpenCGAClient.getAlignmentClient().runSamtools(samtoolsWrapperParams, queryParams);
     }
 }

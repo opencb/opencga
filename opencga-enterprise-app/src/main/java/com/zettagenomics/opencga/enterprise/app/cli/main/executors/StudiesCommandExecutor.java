@@ -198,7 +198,7 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), StudyAclUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseStudyClient().updateAcl(commandOptions.members, commandOptions.action, studyAclUpdateParams);
+        return enterpriseOpenCGAClient.getStudyClient().updateAcl(commandOptions.members, commandOptions.action, studyAclUpdateParams);
     }
 
     private RestResponse<Study> create() throws Exception {
@@ -242,7 +242,7 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), StudyCreateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseStudyClient().create(studyCreateParams, queryParams);
+        return enterpriseOpenCGAClient.getStudyClient().create(studyCreateParams, queryParams);
     }
 
     private RestResponse<Study> search() throws Exception {
@@ -267,7 +267,7 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
         queryParams.putIfNotEmpty("attributes", commandOptions.attributes);
         queryParams.putIfNotEmpty("release", commandOptions.release);
 
-        return enterpriseOpenCGAClient.getEnterpriseStudyClient().search(commandOptions.project, queryParams);
+        return enterpriseOpenCGAClient.getStudyClient().search(commandOptions.project, queryParams);
     }
 
     private RestResponse<AclEntryList> acl() throws Exception {
@@ -279,7 +279,7 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
         queryParams.putIfNotEmpty("member", commandOptions.member);
         queryParams.putIfNotNull("silent", commandOptions.silent);
 
-        return enterpriseOpenCGAClient.getEnterpriseStudyClient().acl(commandOptions.studies, queryParams);
+        return enterpriseOpenCGAClient.getStudyClient().acl(commandOptions.studies, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
@@ -296,7 +296,7 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
         queryParams.putIfNotEmpty("cohortFields", commandOptions.cohortFields);
         queryParams.putIfNotEmpty("jobFields", commandOptions.jobFields);
 
-        return enterpriseOpenCGAClient.getEnterpriseStudyClient().aggregationStats(commandOptions.studies, queryParams);
+        return enterpriseOpenCGAClient.getStudyClient().aggregationStats(commandOptions.studies, queryParams);
     }
 
     private RestResponse<Study> info() throws Exception {
@@ -308,7 +308,7 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
 
-        return enterpriseOpenCGAClient.getEnterpriseStudyClient().info(commandOptions.studies, queryParams);
+        return enterpriseOpenCGAClient.getStudyClient().info(commandOptions.studies, queryParams);
     }
 
     private RestResponse<AuditRecord> searchAudit() throws Exception {
@@ -331,7 +331,7 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
         queryParams.putIfNotNull("status", commandOptions.status);
         queryParams.putIfNotEmpty("date", commandOptions.date);
 
-        return enterpriseOpenCGAClient.getEnterpriseStudyClient().searchAudit(commandOptions.study, queryParams);
+        return enterpriseOpenCGAClient.getStudyClient().searchAudit(commandOptions.study, queryParams);
     }
 
     private RestResponse<CustomGroup> groups() throws Exception {
@@ -343,7 +343,7 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
         queryParams.putIfNotEmpty("id", commandOptions.id);
         queryParams.putIfNotNull("silent", commandOptions.silent);
 
-        return enterpriseOpenCGAClient.getEnterpriseStudyClient().groups(commandOptions.study, queryParams);
+        return enterpriseOpenCGAClient.getStudyClient().groups(commandOptions.study, queryParams);
     }
 
     private RestResponse<Group> updateGroups() throws Exception {
@@ -374,7 +374,7 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), GroupCreateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseStudyClient().updateGroups(commandOptions.study, groupCreateParams, queryParams);
+        return enterpriseOpenCGAClient.getStudyClient().updateGroups(commandOptions.study, groupCreateParams, queryParams);
     }
 
     private RestResponse<Group> updateGroupsUsers() throws Exception {
@@ -404,14 +404,14 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), GroupUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseStudyClient().updateGroupsUsers(commandOptions.study, commandOptions.group, groupUpdateParams, queryParams);
+        return enterpriseOpenCGAClient.getStudyClient().updateGroupsUsers(commandOptions.study, commandOptions.group, groupUpdateParams, queryParams);
     }
 
     private RestResponse<PermissionRule> permissionRules() throws Exception {
         logger.debug("Executing permissionRules in Studies command line");
 
         StudiesCommandOptions.PermissionRulesCommandOptions commandOptions = studiesCommandOptions.permissionRulesCommandOptions;
-        return enterpriseOpenCGAClient.getEnterpriseStudyClient().permissionRules(commandOptions.study, commandOptions.entity);
+        return enterpriseOpenCGAClient.getStudyClient().permissionRules(commandOptions.study, commandOptions.entity);
     }
 
     private RestResponse<PermissionRule> updatePermissionRules() throws Exception {
@@ -444,7 +444,7 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PermissionRule.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseStudyClient().updatePermissionRules(commandOptions.study, commandOptions.entity, permissionRule, queryParams);
+        return enterpriseOpenCGAClient.getStudyClient().updatePermissionRules(commandOptions.study, commandOptions.entity, permissionRule, queryParams);
     }
 
     private RestResponse<Job> runTemplates() throws Exception {
@@ -463,7 +463,7 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
-        CustomStudiesCommandExecutor customStudiesCommandExecutor = new CustomStudiesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
+        CustomStudiesCommandExecutor customStudiesCommandExecutor = new CustomStudiesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
         return customStudiesCommandExecutor.runTemplates();
     }
 
@@ -477,7 +477,7 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
-        CustomStudiesCommandExecutor customStudiesCommandExecutor = new CustomStudiesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
+        CustomStudiesCommandExecutor customStudiesCommandExecutor = new CustomStudiesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
         return customStudiesCommandExecutor.uploadTemplates();
     }
 
@@ -492,7 +492,7 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseStudyClient().deleteTemplates(commandOptions.study, commandOptions.templateId, queryParams);
+        return enterpriseOpenCGAClient.getStudyClient().deleteTemplates(commandOptions.study, commandOptions.templateId, queryParams);
     }
 
     private RestResponse<Study> update() throws Exception {
@@ -534,7 +534,7 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), StudyUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseStudyClient().update(commandOptions.study, studyUpdateParams, queryParams);
+        return enterpriseOpenCGAClient.getStudyClient().update(commandOptions.study, studyUpdateParams, queryParams);
     }
 
     private RestResponse<VariableSet> variableSets() throws Exception {
@@ -545,7 +545,7 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("id", commandOptions.id);
 
-        return enterpriseOpenCGAClient.getEnterpriseStudyClient().variableSets(commandOptions.study, queryParams);
+        return enterpriseOpenCGAClient.getStudyClient().variableSets(commandOptions.study, queryParams);
     }
 
     private RestResponse<VariableSet> updateVariableSets() throws Exception {
@@ -579,7 +579,7 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariableSetCreateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseStudyClient().updateVariableSets(commandOptions.study, variableSetCreateParams, queryParams);
+        return enterpriseOpenCGAClient.getStudyClient().updateVariableSets(commandOptions.study, variableSetCreateParams, queryParams);
     }
 
     private RestResponse<VariableSet> updateVariableSetsVariables() throws Exception {
@@ -620,6 +620,6 @@ public class StudiesCommandExecutor extends com.zettagenomics.opencga.enterprise
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), Variable.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseStudyClient().updateVariableSetsVariables(commandOptions.study, commandOptions.variableSet, variable, queryParams);
+        return enterpriseOpenCGAClient.getStudyClient().updateVariableSetsVariables(commandOptions.study, commandOptions.variableSet, variable, queryParams);
     }
 }

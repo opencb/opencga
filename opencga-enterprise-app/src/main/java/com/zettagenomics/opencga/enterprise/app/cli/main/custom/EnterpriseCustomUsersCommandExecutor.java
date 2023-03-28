@@ -9,6 +9,7 @@ import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.RestResponse;
 import org.slf4j.Logger;
@@ -18,6 +19,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 
@@ -26,21 +29,37 @@ import static org.opencb.commons.utils.PrintUtils.println;
 
 public class EnterpriseCustomUsersCommandExecutor extends CustomUsersCommandExecutor {
 
-    private final EnterpriseConfiguration enterpriseConfiguration;
+    private EnterpriseConfiguration enterpriseConfiguration;
 
-    public EnterpriseCustomUsersCommandExecutor(ObjectMap options, String token,
-                                                ClientConfiguration clientConfiguration,
-                                                SessionManager session,
-                                                Logger logger, EnterpriseConfiguration enterpriseConfiguration) {
-        super(options, token, clientConfiguration, session, logger);
-        this.enterpriseConfiguration = enterpriseConfiguration;
+    public EnterpriseCustomUsersCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
+                                                SessionManager session, String appHome, Logger logger) {
+        super(options, token, clientConfiguration, session, appHome, logger);
     }
 
     public EnterpriseCustomUsersCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
-                                                SessionManager session, Logger logger, OpenCGAClient openCGAClient,
-                                                EnterpriseConfiguration enterpriseConfiguration) {
-        super(options, token, clientConfiguration, session, logger, openCGAClient);
-        this.enterpriseConfiguration = enterpriseConfiguration;
+                                                SessionManager session, String appHome, Logger logger, OpenCGAClient openCGAClient) {
+        super(options, token, clientConfiguration, session, appHome, logger, openCGAClient);
+    }
+
+    private void init() {
+        if (enterpriseConfiguration == null) {
+            logger.debug("Initialising enterpriseConfiguration");
+            try {
+                // We load configuration file either from app home folder or from the JAR
+                Path path = Paths.get(appHome).resolve("conf").resolve("enterprise-configuration.yml");
+                if (Files.exists(path)) {
+                    logger.debug("Loading configuration from '{}'", path.toAbsolutePath());
+                    this.enterpriseConfiguration = EnterpriseConfiguration
+                            .load(Files.newInputStream(path.toFile().toPath()));
+                } else {
+                    logger.debug("Loading configuration from JAR file");
+                    this.enterpriseConfiguration = EnterpriseConfiguration
+                            .load(Configuration.class.getClassLoader().getResourceAsStream("enterprise-configuration.yml"));
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     @Override

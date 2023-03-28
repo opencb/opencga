@@ -235,7 +235,7 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FileAclUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().updateAcl(commandOptions.members, commandOptions.action, fileAclUpdateParams, queryParams);
+        return enterpriseOpenCGAClient.getFileClient().updateAcl(commandOptions.members, commandOptions.action, fileAclUpdateParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
@@ -268,7 +268,7 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().aggregationStats(queryParams);
+        return enterpriseOpenCGAClient.getFileClient().aggregationStats(queryParams);
     }
 
     private RestResponse<Job> loadAnnotationSets() throws Exception {
@@ -303,14 +303,14 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), TsvAnnotationParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
+        return enterpriseOpenCGAClient.getFileClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
     }
 
     private RestResponse<File.Bioformat> bioformats() throws Exception {
         logger.debug("Executing bioformats in Files command line");
 
         FilesCommandOptions.BioformatsCommandOptions commandOptions = filesCommandOptions.bioformatsCommandOptions;
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().bioformats();
+        return enterpriseOpenCGAClient.getFileClient().bioformats();
     }
 
     private RestResponse<File> create() throws Exception {
@@ -364,7 +364,7 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FileCreateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().create(fileCreateParams, queryParams);
+        return enterpriseOpenCGAClient.getFileClient().create(fileCreateParams, queryParams);
     }
 
     private RestResponse<Object> distinct() throws Exception {
@@ -403,7 +403,7 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().distinct(commandOptions.field, queryParams);
+        return enterpriseOpenCGAClient.getFileClient().distinct(commandOptions.field, queryParams);
     }
 
     private RestResponse<Job> fetch() throws Exception {
@@ -441,14 +441,14 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FileFetch.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().fetch(fileFetch, queryParams);
+        return enterpriseOpenCGAClient.getFileClient().fetch(fileFetch, queryParams);
     }
 
     private RestResponse<File.Format> formats() throws Exception {
         logger.debug("Executing formats in Files command line");
 
         FilesCommandOptions.FormatsCommandOptions commandOptions = filesCommandOptions.formatsCommandOptions;
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().formats();
+        return enterpriseOpenCGAClient.getFileClient().formats();
     }
 
     private RestResponse<File> link() throws Exception {
@@ -491,7 +491,7 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FileLinkParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().link(fileLinkParams, queryParams);
+        return enterpriseOpenCGAClient.getFileClient().link(fileLinkParams, queryParams);
     }
 
     private RestResponse<Job> runLink() throws Exception {
@@ -533,7 +533,7 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FileLinkToolParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().runLink(fileLinkToolParams, queryParams);
+        return enterpriseOpenCGAClient.getFileClient().runLink(fileLinkToolParams, queryParams);
     }
 
     private RestResponse<Job> runPostlink() throws Exception {
@@ -571,7 +571,7 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PostLinkToolParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().runPostlink(postLinkToolParams, queryParams);
+        return enterpriseOpenCGAClient.getFileClient().runPostlink(postLinkToolParams, queryParams);
     }
 
     private RestResponse<File> search() throws Exception {
@@ -616,7 +616,7 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().search(queryParams);
+        return enterpriseOpenCGAClient.getFileClient().search(queryParams);
     }
 
     private RestResponse<File> upload() throws Exception {
@@ -636,7 +636,7 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
-        CustomFilesCommandExecutor customFilesCommandExecutor = new CustomFilesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
+        CustomFilesCommandExecutor customFilesCommandExecutor = new CustomFilesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
         return customFilesCommandExecutor.upload();
     }
 
@@ -653,7 +653,7 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().acl(commandOptions.files, queryParams);
+        return enterpriseOpenCGAClient.getFileClient().acl(commandOptions.files, queryParams);
     }
 
     private RestResponse<Job> delete() throws Exception {
@@ -668,7 +668,7 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().delete(commandOptions.files, queryParams);
+        return enterpriseOpenCGAClient.getFileClient().delete(commandOptions.files, queryParams);
     }
 
     private RestResponse<File> info() throws Exception {
@@ -686,7 +686,7 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().info(commandOptions.files, queryParams);
+        return enterpriseOpenCGAClient.getFileClient().info(commandOptions.files, queryParams);
     }
 
     private RestResponse<Job> unlink() throws Exception {
@@ -700,7 +700,7 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().unlink(commandOptions.files, queryParams);
+        return enterpriseOpenCGAClient.getFileClient().unlink(commandOptions.files, queryParams);
     }
 
     private RestResponse<File> update() throws Exception {
@@ -769,7 +769,7 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FileUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().update(commandOptions.files, fileUpdateParams, queryParams);
+        return enterpriseOpenCGAClient.getFileClient().update(commandOptions.files, fileUpdateParams, queryParams);
     }
 
     private RestResponse<File> updateAnnotationSetsAnnotations() throws Exception {
@@ -796,7 +796,7 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             objectMap = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), ObjectMap.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().updateAnnotationSetsAnnotations(commandOptions.file, commandOptions.annotationSet, objectMap, queryParams);
+        return enterpriseOpenCGAClient.getFileClient().updateAnnotationSetsAnnotations(commandOptions.file, commandOptions.annotationSet, objectMap, queryParams);
     }
 
     private RestResponse<DataInputStream> download() throws Exception {
@@ -810,7 +810,7 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().download(commandOptions.file, queryParams);
+        return enterpriseOpenCGAClient.getFileClient().download(commandOptions.file, queryParams);
     }
 
     private RestResponse<FileContent> grep() throws Exception {
@@ -827,7 +827,7 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().grep(commandOptions.file, queryParams);
+        return enterpriseOpenCGAClient.getFileClient().grep(commandOptions.file, queryParams);
     }
 
     private RestResponse<FileContent> head() throws Exception {
@@ -843,7 +843,7 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().head(commandOptions.file, queryParams);
+        return enterpriseOpenCGAClient.getFileClient().head(commandOptions.file, queryParams);
     }
 
     private RestResponse<FileContent> image() throws Exception {
@@ -857,7 +857,7 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().image(commandOptions.file, queryParams);
+        return enterpriseOpenCGAClient.getFileClient().image(commandOptions.file, queryParams);
     }
 
     private RestResponse<File> refresh() throws Exception {
@@ -871,7 +871,7 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().refresh(commandOptions.file, queryParams);
+        return enterpriseOpenCGAClient.getFileClient().refresh(commandOptions.file, queryParams);
     }
 
     private RestResponse<FileContent> tail() throws Exception {
@@ -886,7 +886,7 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().tail(commandOptions.file, queryParams);
+        return enterpriseOpenCGAClient.getFileClient().tail(commandOptions.file, queryParams);
     }
 
     private RestResponse<File> list() throws Exception {
@@ -905,7 +905,7 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().list(commandOptions.folder, queryParams);
+        return enterpriseOpenCGAClient.getFileClient().list(commandOptions.folder, queryParams);
     }
 
     private RestResponse<FileTree> tree() throws Exception {
@@ -922,6 +922,6 @@ public class FilesCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseFileClient().tree(commandOptions.folder, queryParams);
+        return enterpriseOpenCGAClient.getFileClient().tree(commandOptions.folder, queryParams);
     }
 }

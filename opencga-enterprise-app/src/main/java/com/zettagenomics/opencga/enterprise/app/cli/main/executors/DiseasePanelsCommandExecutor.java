@@ -128,7 +128,7 @@ public class DiseasePanelsCommandExecutor extends com.zettagenomics.opencga.ente
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PanelAclUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseDiseasePanelClient().updateAcl(commandOptions.members, commandOptions.action, panelAclUpdateParams, queryParams);
+        return enterpriseOpenCGAClient.getDiseasePanelClient().updateAcl(commandOptions.members, commandOptions.action, panelAclUpdateParams, queryParams);
     }
 
     private RestResponse<Panel> create() throws Exception {
@@ -174,7 +174,7 @@ public class DiseasePanelsCommandExecutor extends com.zettagenomics.opencga.ente
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PanelCreateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseDiseasePanelClient().create(panelCreateParams, queryParams);
+        return enterpriseOpenCGAClient.getDiseasePanelClient().create(panelCreateParams, queryParams);
     }
 
     private RestResponse<Object> distinct() throws Exception {
@@ -206,7 +206,7 @@ public class DiseasePanelsCommandExecutor extends com.zettagenomics.opencga.ente
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseDiseasePanelClient().distinct(commandOptions.field, queryParams);
+        return enterpriseOpenCGAClient.getDiseasePanelClient().distinct(commandOptions.field, queryParams);
     }
 
     private RestResponse<Job> importPanels() throws Exception {
@@ -244,7 +244,7 @@ public class DiseasePanelsCommandExecutor extends com.zettagenomics.opencga.ente
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PanelImportParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseDiseasePanelClient().importPanels(panelImportParams, queryParams);
+        return enterpriseOpenCGAClient.getDiseasePanelClient().importPanels(panelImportParams, queryParams);
     }
 
     private RestResponse<Panel> search() throws Exception {
@@ -281,7 +281,7 @@ public class DiseasePanelsCommandExecutor extends com.zettagenomics.opencga.ente
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseDiseasePanelClient().search(queryParams);
+        return enterpriseOpenCGAClient.getDiseasePanelClient().search(queryParams);
     }
 
     private RestResponse<PanelAclEntryList> acl() throws Exception {
@@ -297,7 +297,7 @@ public class DiseasePanelsCommandExecutor extends com.zettagenomics.opencga.ente
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseDiseasePanelClient().acl(commandOptions.panels, queryParams);
+        return enterpriseOpenCGAClient.getDiseasePanelClient().acl(commandOptions.panels, queryParams);
     }
 
     private RestResponse<Panel> delete() throws Exception {
@@ -311,7 +311,7 @@ public class DiseasePanelsCommandExecutor extends com.zettagenomics.opencga.ente
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseDiseasePanelClient().delete(commandOptions.panels, queryParams);
+        return enterpriseOpenCGAClient.getDiseasePanelClient().delete(commandOptions.panels, queryParams);
     }
 
     private RestResponse<Panel> info() throws Exception {
@@ -329,7 +329,7 @@ public class DiseasePanelsCommandExecutor extends com.zettagenomics.opencga.ente
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseDiseasePanelClient().info(commandOptions.panels, queryParams);
+        return enterpriseOpenCGAClient.getDiseasePanelClient().info(commandOptions.panels, queryParams);
     }
 
     private RestResponse<Panel> update() throws Exception {
@@ -375,6 +375,6 @@ public class DiseasePanelsCommandExecutor extends com.zettagenomics.opencga.ente
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PanelUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseDiseasePanelClient().update(commandOptions.panels, panelUpdateParams, queryParams);
+        return enterpriseOpenCGAClient.getDiseasePanelClient().update(commandOptions.panels, panelUpdateParams, queryParams);
     }
 }

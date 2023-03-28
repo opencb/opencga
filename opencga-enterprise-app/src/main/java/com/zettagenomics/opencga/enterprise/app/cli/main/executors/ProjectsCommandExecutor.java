@@ -129,7 +129,7 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ProjectCreateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseProjectClient().create(projectCreateParams, queryParams);
+        return enterpriseOpenCGAClient.getProjectClient().create(projectCreateParams, queryParams);
     }
 
     private RestResponse<Project> search() throws Exception {
@@ -157,7 +157,7 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseProjectClient().search(queryParams);
+        return enterpriseOpenCGAClient.getProjectClient().search(queryParams);
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
@@ -174,7 +174,7 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
         queryParams.putIfNotEmpty("cohortFields", commandOptions.cohortFields);
         queryParams.putIfNotEmpty("jobFields", commandOptions.jobFields);
 
-        return enterpriseOpenCGAClient.getEnterpriseProjectClient().aggregationStats(commandOptions.projects, queryParams);
+        return enterpriseOpenCGAClient.getProjectClient().aggregationStats(commandOptions.projects, queryParams);
     }
 
     private RestResponse<Project> info() throws Exception {
@@ -186,14 +186,14 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
 
-        return enterpriseOpenCGAClient.getEnterpriseProjectClient().info(commandOptions.projects, queryParams);
+        return enterpriseOpenCGAClient.getProjectClient().info(commandOptions.projects, queryParams);
     }
 
     private RestResponse<Integer> incRelease() throws Exception {
         logger.debug("Executing incRelease in Projects command line");
 
         ProjectsCommandOptions.IncReleaseCommandOptions commandOptions = projectsCommandOptions.incReleaseCommandOptions;
-        return enterpriseOpenCGAClient.getEnterpriseProjectClient().incRelease(commandOptions.project);
+        return enterpriseOpenCGAClient.getProjectClient().incRelease(commandOptions.project);
     }
 
     private RestResponse<Study> studies() throws Exception {
@@ -207,7 +207,7 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotNull("skip", commandOptions.skip);
 
-        return enterpriseOpenCGAClient.getEnterpriseProjectClient().studies(commandOptions.project, queryParams);
+        return enterpriseOpenCGAClient.getProjectClient().studies(commandOptions.project, queryParams);
     }
 
     private RestResponse<Project> update() throws Exception {
@@ -246,6 +246,6 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ProjectUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseProjectClient().update(commandOptions.project, projectUpdateParams, queryParams);
+        return enterpriseOpenCGAClient.getProjectClient().update(commandOptions.project, projectUpdateParams, queryParams);
     }
 }

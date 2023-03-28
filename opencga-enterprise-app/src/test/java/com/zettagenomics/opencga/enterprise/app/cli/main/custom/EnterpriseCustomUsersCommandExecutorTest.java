@@ -28,7 +28,7 @@ public class EnterpriseCustomUsersCommandExecutorTest {
                 .setSso(new SsoConfiguration(true, "https://reports.test.zettagenomics.com:8443/cas", "http://localhost:9090"));
         EnterpriseOpenCGAClient openCGAClient = new EnterpriseOpenCGAClient(clientConfiguration, enterpriseConfiguration);
         EnterpriseCustomUsersCommandExecutor executor = new EnterpriseCustomUsersCommandExecutor(new ObjectMap(), "",
-                clientConfiguration, sessionManager, logger, openCGAClient, enterpriseConfiguration);
+                clientConfiguration, sessionManager, "", logger, openCGAClient);
         RestResponse<AuthenticationResponse> login = executor.login();
         System.out.println(login.firstResult());
     }
