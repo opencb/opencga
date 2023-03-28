@@ -198,7 +198,8 @@ public class SessionManager {
         saveSession(session, host);
     }
 
-    public RestResponse<AuthenticationResponse> saveSession(String user, AuthenticationResponse response, OpenCGAClient openCGAClient) throws ClientException, IOException {
+    public RestResponse<AuthenticationResponse> saveSession(String user, AuthenticationResponse response, OpenCGAClient openCGAClient,
+                                                            Map<String, Object> attributes) throws ClientException, IOException {
         RestResponse<AuthenticationResponse> res = new RestResponse<>();
         if (response != null) {
             List<String> studies = new ArrayList<>();
@@ -216,10 +217,15 @@ public class SessionManager {
                     studies.add(study.getFqn());
                 }
             }
-            this.saveSession(user, response.getToken(), response.getRefreshToken(), studies, this.host);
+            this.saveSession(user, response.getToken(), response.getRefreshToken(), studies, this.host, attributes);
             res.setType(QueryType.VOID);
         }
         return res;
+    }
+
+    public RestResponse<AuthenticationResponse> saveSession(String user, AuthenticationResponse response, OpenCGAClient openCGAClient)
+            throws ClientException, IOException {
+        return saveSession(user, response, openCGAClient, Collections.emptyMap());
     }
 
     public void saveSession(Session session, String host) throws IOException {
