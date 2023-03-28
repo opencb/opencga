@@ -325,12 +325,19 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
     }
 
     private String getReturn(RestCategory restCategory, RestEndpoint restEndpoint, CategoryConfig config, String commandName) {
-        String opencgaClientObjectName = StringUtils.isEmpty(this.config.getApiConfig().getExecutorsOpencgaClientClassName())
-                ? "openCGAClient"
-                : this.config.getApiConfig().getExecutorsOpencgaClientClassName().toLowerCase().charAt(0)
-                + this.config.getApiConfig().getExecutorsOpencgaClientClassName().substring(1);
+//        String opencgaClientObjectName = StringUtils.isEmpty(this.config.getApiConfig().getExecutorsOpencgaClientPrefix())
+//                ? "openCGAClient"
+//                : this.config.getApiConfig().getExecutorsOpencgaClientClassName().toLowerCase().charAt(0)
+//                + this.config.getApiConfig().getExecutorsOpencgaClientClassName().substring(1);
 
-        String res = "        return " + opencgaClientObjectName + ".get" + getAsClassName(config.getKey()) + "Client()."
+        String opencgaClientObjectName = "openCGAClient";
+        String className = getAsClassName(config.getKey());
+        if (StringUtils.isNotEmpty(this.config.getApiConfig().getExecutorsOpencgaClientPrefix())) {
+            opencgaClientObjectName = this.config.getApiConfig().getExecutorsOpencgaClientPrefix() + "OpenCGAClient";
+            className = StringUtils.capitalize(this.config.getApiConfig().getExecutorsOpencgaClientPrefix()) + getAsClassName(config.getKey());
+        }
+
+        String res = "        return " + opencgaClientObjectName + ".get" + className + "Client()."
                 + getJavaMethodName(config, commandName) + "(";
         res += restEndpoint.getPathParams();
         res += restEndpoint.getMandatoryQueryParams(config, commandName);

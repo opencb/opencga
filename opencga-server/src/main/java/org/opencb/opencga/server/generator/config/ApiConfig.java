@@ -10,6 +10,7 @@ public class ApiConfig {
     private String executorsParentClass;
     private String optionsParserParentClass;
     private String executorsOpencgaClientClassName;
+    private String executorsOpencgaClientPrefix;
 
     public ApiConfig() {
     }
@@ -81,6 +82,15 @@ public class ApiConfig {
 
     public ApiConfig setExecutorsOpencgaClientClassName(String executorsOpencgaClientClassName) {
         this.executorsOpencgaClientClassName = executorsOpencgaClientClassName;
+        return this;
+    }
+
+    public String getExecutorsOpencgaClientPrefix() {
+        return executorsOpencgaClientPrefix;
+    }
+
+    public ApiConfig setExecutorsOpencgaClientPrefix(String executorsOpencgaClientPrefix) {
+        this.executorsOpencgaClientPrefix = executorsOpencgaClientPrefix;
         return this;
     }
 }
