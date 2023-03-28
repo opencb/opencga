@@ -19,8 +19,10 @@ package org.opencb.opencga.server.rest;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.MultiPart;
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
@@ -29,6 +31,7 @@ import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 
+@Category(MediumTests.class)
 public class OpenCGAWSServerTest {
 
     public static final String TEST_SERVER_USER = "test_server_user";

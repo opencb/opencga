@@ -1,13 +1,16 @@
 package org.opencb.opencga.analysis.clinical;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.GenomicFeature;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.io.IOException;
 
 import static org.junit.Assert.*;
 
+@Category(ShortTests.class)
 public class ClinicalUtilsTest {
 
     @Test

@@ -19,8 +19,10 @@ package org.opencb.opencga.storage.mongodb.variant.converters;
 import org.bson.Document;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,6 +32,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
+@Category(ShortTests.class)
 public class DocumentToVariantStatsConverterTest {
 
     private Document mongoStats;

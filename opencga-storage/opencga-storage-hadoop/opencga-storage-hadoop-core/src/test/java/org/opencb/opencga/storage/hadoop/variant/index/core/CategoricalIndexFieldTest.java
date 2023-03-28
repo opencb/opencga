@@ -1,8 +1,10 @@
 package org.opencb.opencga.storage.hadoop.variant.index.core;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.io.bit.BitOutputStream;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
@@ -15,6 +17,7 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 import static org.opencb.opencga.core.config.storage.IndexFieldConfiguration.Source.SAMPLE;
 
+@Category(ShortTests.class)
 public class CategoricalIndexFieldTest {
 
     @Test

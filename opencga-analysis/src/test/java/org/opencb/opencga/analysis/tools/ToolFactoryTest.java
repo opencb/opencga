@@ -17,6 +17,8 @@
 package org.opencb.opencga.analysis.tools;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -27,6 +29,7 @@ import java.util.HashSet;
 
 import static org.junit.Assert.*;
 
+@Category(ShortTests.class)
 public class ToolFactoryTest {
     public static final String ID = "test-tool-factory";
     public static final String ID_DUP = "test-tool-factory-duplicated";

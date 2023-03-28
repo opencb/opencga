@@ -17,9 +17,11 @@
 package org.opencb.opencga.analysis.variant;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.analysis.variant.manager.CatalogUtils;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -27,6 +29,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by pfurio on 02/12/16.
  */
+@Category(ShortTests.class)
 public class CatalogUtilsTest {
 
     @Test

@@ -20,6 +20,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -34,6 +35,7 @@ import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.*;
 import java.net.URI;
@@ -50,6 +52,7 @@ import java.util.Map;
 import static org.junit.Assert.*;
 import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_FILE_METADATA;
 
+@Category(MediumTests.class)
 public class FileMetadataReaderTest {
 
     @Rule

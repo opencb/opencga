@@ -3,9 +3,11 @@ package org.opencb.opencga.storage.hadoop.variant.stats;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
+import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManagerMultiFilesTest;
@@ -20,6 +22,7 @@ import java.util.Map;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(LongTests.class)
 public class HadoopVariantStatisticsManagerMultiFilesTest extends VariantStatisticsManagerMultiFilesTest implements HadoopVariantStorageTest {
 
     @Override

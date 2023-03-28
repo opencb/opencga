@@ -363,7 +363,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
-        CustomJobsCommandExecutor customJobsCommandExecutor = new CustomJobsCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
+        CustomJobsCommandExecutor customJobsCommandExecutor = new CustomJobsCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
         return customJobsCommandExecutor.top();
     }
 

@@ -19,9 +19,11 @@ package org.opencb.opencga.catalog.io;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.net.URI;
 import java.nio.file.Files;
@@ -30,6 +32,7 @@ import java.nio.file.Paths;
 
 import static org.junit.Assert.*;
 
+@Category(ShortTests.class)
 public class CatalogIOManagerTest {
 
     private static CatalogIOManager ioManager;

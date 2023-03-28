@@ -21,6 +21,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -43,6 +44,7 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -66,6 +68,7 @@ import static org.junit.Assert.*;
 /**
  * Created by pfurio on 24/08/16.
  */
+@Category(MediumTests.class)
 public class FileManagerTest extends AbstractManagerTest {
 
     private FileManager fileManager;
@@ -806,7 +809,7 @@ public class FileManagerTest extends AbstractManagerTest {
             });
 
         }
-        executorService.awaitTermination(1, TimeUnit.SECONDS);
+        executorService.awaitTermination(5, TimeUnit.SECONDS);
         executorService.shutdown();
 
         int unexecuted = executorService.shutdownNow().size();

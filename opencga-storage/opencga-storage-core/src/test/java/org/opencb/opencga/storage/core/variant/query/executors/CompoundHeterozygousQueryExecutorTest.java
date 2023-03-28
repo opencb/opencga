@@ -2,9 +2,11 @@ package org.opencb.opencga.storage.core.variant.query.executors;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.mockito.Mockito;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
@@ -27,6 +29,7 @@ import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.SA
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(ShortTests.class)
 public class CompoundHeterozygousQueryExecutorTest {
 
     private VariantIterable iterable;

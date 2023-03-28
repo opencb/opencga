@@ -17,13 +17,16 @@
 package org.opencb.opencga.catalog.utils;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.net.URI;
 
 import static org.junit.Assert.assertEquals;
 
+@Category(ShortTests.class)
 public class BioformatDetectorTest {
 
     @Test

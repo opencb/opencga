@@ -19,6 +19,7 @@ package org.opencb.opencga.analysis.clinical;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
@@ -47,6 +48,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.clinical.InterpretationUpdateParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
@@ -62,6 +64,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.*;
 import static org.opencb.opencga.core.api.ParamConstants.INCLUDE_INTERPRETATION;
 
+@Category(MediumTests.class)
 public class ClinicalInterpretationAnalysisTest {
 
     private static AbstractClinicalManagerTest clinicalTest;

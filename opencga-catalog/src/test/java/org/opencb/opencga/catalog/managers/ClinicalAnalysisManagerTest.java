@@ -22,6 +22,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
@@ -72,6 +73,7 @@ import org.opencb.opencga.core.models.study.configuration.ClinicalConsent;
 import org.opencb.opencga.core.models.study.configuration.*;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
 import java.util.*;
@@ -79,6 +81,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
+@Category(MediumTests.class)
 public class ClinicalAnalysisManagerTest extends GenericTest {
 
     public final static String STUDY = "user@1000G:phase1";

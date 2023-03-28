@@ -18,6 +18,7 @@ package org.opencb.opencga.analysis.variant.manager.operations;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.Query;
@@ -27,6 +28,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -50,6 +52,7 @@ import static org.mockito.Mockito.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(MediumTests.class)
 public class AnnotationVariantStorageTest extends AbstractVariantOperationManagerTest {
 
     protected Logger logger = LoggerFactory.getLogger(StatsVariantStorageTest.class);

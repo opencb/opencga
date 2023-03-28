@@ -18,7 +18,9 @@ package org.opencb.opencga.storage.mongodb.variant.adaptors;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorLargeTest;
@@ -27,6 +29,7 @@ import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(ShortTests.class)
 public class VariantMongoDBAdaptorLargeTest extends VariantDBAdaptorLargeTest implements MongoDBVariantStorageTest {
 
     @Before

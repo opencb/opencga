@@ -1,12 +1,15 @@
 package org.opencb.opencga.storage.hadoop.utils;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
+@Category(ShortTests.class)
 public class AbstractHBaseDriverTest {
 
 

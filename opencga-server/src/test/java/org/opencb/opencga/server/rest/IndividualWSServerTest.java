@@ -19,6 +19,7 @@ package org.opencb.opencga.server.rest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.variant.Genotype;
@@ -36,6 +37,7 @@ import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.common.mixins.GenotypeJsonMixin;
 import org.opencb.opencga.core.models.common.mixins.VariantStatsJsonMixin;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
@@ -53,6 +55,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getExternalOpencgaObje
  * Created by jacobo on 22/06/15.
  */
 @Ignore
+@Category(MediumTests.class)
 public class IndividualWSServerTest {
 
     private static WSServerTestUtils serverTestUtils;

@@ -19,7 +19,9 @@ package org.opencb.opencga.storage.hadoop.utils;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExternalResource;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
@@ -35,6 +37,7 @@ import static org.junit.Assert.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(MediumTests.class)
 public class HBaseLockManagerTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     @ClassRule

@@ -2,9 +2,12 @@ package org.opencb.opencga.storage.core.metadata;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.util.*;
 
+@Category(ShortTests.class)
 public class MetadataCacheTest {
 
     @Test

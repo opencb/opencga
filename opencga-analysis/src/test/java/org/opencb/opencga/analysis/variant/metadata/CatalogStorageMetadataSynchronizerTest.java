@@ -17,6 +17,7 @@
 package org.opencb.opencga.analysis.variant.metadata;
 
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
@@ -38,6 +39,7 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
@@ -62,6 +64,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.get
 /**
  * Created by hpccoll1 on 16/07/15.
  */
+@Category(MediumTests.class)
 public class CatalogStorageMetadataSynchronizerTest {
     @ClassRule
     public static CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();

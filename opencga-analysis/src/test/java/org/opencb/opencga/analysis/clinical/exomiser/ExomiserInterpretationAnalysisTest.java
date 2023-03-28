@@ -2,6 +2,7 @@ package org.opencb.opencga.analysis.clinical.exomiser;
 
 import org.junit.*;
 import org.eclipse.jetty.util.Scanner;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.ClinicalAnalysisUtilsTest;
@@ -11,6 +12,7 @@ import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 
 import java.io.IOException;
@@ -20,6 +22,7 @@ import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
 
+@Category(MediumTests.class)
 public class ExomiserInterpretationAnalysisTest  {
 
     private static AbstractClinicalManagerTest clinicalTest;
