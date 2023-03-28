@@ -183,6 +183,13 @@
                                     <arg value="${build.dir}/cloud/docker/opencga-base/"/>
                                 </exec>
 
+                                <echo>Copying SSO to ${build.dir}</echo>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${app.dir}/cloud/sso"/>
+                                    <arg value="${build.dir}/cloud/"/>
+                                </exec>
+
 <!--                                <echo>Copying docker-compose files</echo>-->
 <!--                                <exec executable="cp">-->
 <!--                                    <arg value="${project.basedir}/target/docker-compose/docker-compose.yml"/>-->

@@ -70,18 +70,22 @@ public class EnterpriseCustomUsersCommandExecutor extends CustomUsersCommandExec
     @Override
     public RestResponse<AuthenticationResponse> login() throws Exception {
         if (this.enterpriseConfiguration.getSso() == null || !this.enterpriseConfiguration.getSso().isActive()) {
-            System.out.println("NO SSO");
             return super.login();
         } else {
-            System.out.println("SSO ACTIVE");
+            Path pythonScriptPath = Paths.get(appHome)
+                        .resolve("cloud")
+                        .resolve("sso")
+                        .resolve("python")
+                        .resolve("sso_login.py");
+            if (!Files.exists(pythonScriptPath)) {
+                throw new RuntimeException("Could not find Python script to load temporal SSO server");
+            }
             // 1. Start server to get a valid SSO session for the user
-            String pythonScript = Paths.get("app")
-                    .resolve("cloud")
-                    .resolve("sso")
-                    .resolve("python")
-                    .resolve("sso_login.py")
+            String pythonScript = pythonScriptPath
                     .toAbsolutePath()
                     .toString();
+
+            logger.debug("Running SSO server temporarily: 'python {}'", pythonScript);
             ProcessBuilder processBuilder = new ProcessBuilder("/home/pfurio/venv/cas/bin/python3", pythonScript);
             String processResponse;
             Process p;
@@ -96,6 +100,7 @@ public class EnterpriseCustomUsersCommandExecutor extends CustomUsersCommandExec
                             + "/webservices/rest/v2/meta/sso?url=http://localhost:5000/secure");
                 }
                 if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                    logger.debug("Loading URL {}", uri);
                     Desktop.getDesktop().browse(uri);
                 } else {
                     System.out.println("Browser not detected. Please, open your browser and navigate to " + uri);
@@ -116,6 +121,7 @@ public class EnterpriseCustomUsersCommandExecutor extends CustomUsersCommandExec
             // 2. Parse response into a map
             ObjectMap ssoResponse;
             try {
+                logger.debug("Server response: {}", processResponse);
                 // Change single quotes for double quotes
                 processResponse = processResponse.replaceAll("'", "\"");
                 ssoResponse = JacksonUtils.getDefaultObjectMapper().readValue(processResponse, ObjectMap.class);

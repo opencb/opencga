@@ -28,6 +28,7 @@ import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.io.*;
 import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
+import org.opencb.opencga.app.cli.session.Session;
 import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
@@ -47,10 +48,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created on 27/05/16.
@@ -109,10 +107,10 @@ public abstract class EnterpriseOpencgaCommandExecutor extends CommandExecutor {
 
     private void init(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) {
         try {
-            this.loadEnterpriseConfiguration();
-
             privateLogger = LoggerFactory.getLogger(EnterpriseOpencgaCommandExecutor.class);
             privateLogger.debug("Executing OpencgaEnterpriseCommandExecutor 'init' method ...");
+
+            this.loadEnterpriseConfiguration();
 
             // Configure CLI output writer
             WriterConfiguration writerConfiguration = new WriterConfiguration();
@@ -187,6 +185,7 @@ public abstract class EnterpriseOpencgaCommandExecutor extends CommandExecutor {
                     enterpriseOpenCGAClient = new EnterpriseOpenCGAClient(clientConfiguration);
                 }
             }
+            updateClientConfigurationAttributes();
 
             if (enterpriseOpenCGAClient != null) {
                 enterpriseOpenCGAClient.setThrowExceptionOnError(true);
@@ -194,6 +193,18 @@ public abstract class EnterpriseOpencgaCommandExecutor extends CommandExecutor {
         } catch (IOException e) {
             logger.error("OpencgaEnterpriseCommandExecutorError", e);
             CommandLineUtils.error("OpencgaEnterpriseCommandExecutorError", e);
+        }
+    }
+
+    private void updateClientConfigurationAttributes() {
+        // Update attributes from ClientConfiguration
+        Session session = sessionManager.getSession();
+        if (session != null && session.getAttributes() != null && !session.getAttributes().isEmpty()) {
+            if (clientConfiguration.getAttributes() != null) {
+                clientConfiguration.getAttributes().putAll(session.getAttributes());
+            } else {
+                clientConfiguration.setAttributes(session.getAttributes());
+            }
         }
     }
 
@@ -294,11 +305,22 @@ public abstract class EnterpriseOpencgaCommandExecutor extends CommandExecutor {
         ObjectMap claimsMap;
         try {
             claimsMap = parseTokenClaims(sessionManager.getSession().getToken());
+            logger.debug("ClaimsMap: {}", claimsMap.toJson());
         } catch (Exception e) {
             return ArrayUtils.contains(args, "login") || ArrayUtils.contains(args, "logout") || "anonymous".equals(sessionManager.getSession().getUser());
         }
-        Date expirationDate = new Date(claimsMap.getLong("exp") * 1000L);
+        Date expirationDate;
         Date currentDate = new Date();
+        if (claimsMap.containsKey("exp")) {
+            expirationDate = new Date(claimsMap.getLong("exp") * 1000L);
+        } else {
+            logger.debug("Token has no expiration time");
+            // No expiration so adding 1 year to result
+            Calendar instance = Calendar.getInstance();
+            instance.setTime(currentDate);
+            instance.add(Calendar.YEAR, 1);
+            expirationDate = instance.getTime();
+        }
         return currentDate.before(expirationDate) || ArrayUtils.contains(args, "login") || ArrayUtils.contains(args, "logout") || "anonymous".equals(sessionManager.getSession().getUser());
     }
 }

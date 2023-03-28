@@ -101,7 +101,7 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
 
             Key key = new SecretKeySpec(catalogManager.getConfiguration().getAdmin().getSecretKey().getBytes(), SignatureAlgorithm.HS256.getJcaName());
             JwtManager jwtManager = new JwtManager(catalogManager.getConfiguration().getAdmin().getAlgorithm(), key);
-            String jwtToken = jwtManager.createJWTToken(httpServletRequest.getRemoteUser(), -1);
+            String jwtToken = jwtManager.createJWTToken(httpServletRequest.getRemoteUser(), configuration.getAuthentication().getExpiration());
 
             queryParams.append("token").append("=").append(jwtToken);
             queryParams.append("&").append("user").append("=").append(httpServletRequest.getRemoteUser());
