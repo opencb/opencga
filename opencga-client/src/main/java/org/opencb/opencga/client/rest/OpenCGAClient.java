@@ -38,13 +38,13 @@ import java.util.function.Supplier;
  */
 public class OpenCGAClient {
 
-    private String userId;
-    private String token;
-    private String refreshToken;
-    private ClientConfiguration clientConfiguration;
+    protected String userId;
+    protected String token;
+    protected String refreshToken;
+    protected ClientConfiguration clientConfiguration;
 
-    private Map<String, AbstractParentClient> clients;
-    private boolean throwExceptionOnError;
+    protected Map<String, AbstractParentClient> clients;
+    protected boolean throwExceptionOnError;
 
     public OpenCGAClient(ClientConfiguration clientConfiguration) {
         this.init(null, clientConfiguration);
@@ -150,7 +150,7 @@ public class OpenCGAClient {
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends AbstractParentClient> T getClient(Class<T> clazz, Supplier<T> constructor) {
+    protected  <T extends AbstractParentClient> T getClient(Class<T> clazz, Supplier<T> constructor) {
         return (T) clients.computeIfAbsent(clazz.getName(), (k) -> {
             T t = constructor.get();
             t.setThrowExceptionOnError(throwExceptionOnError);
