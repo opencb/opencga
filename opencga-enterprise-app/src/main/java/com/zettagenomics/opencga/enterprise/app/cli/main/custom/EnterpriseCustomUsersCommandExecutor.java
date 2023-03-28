@@ -30,19 +30,19 @@ import static org.opencb.commons.utils.PrintUtils.println;
 
 public class EnterpriseCustomUsersCommandExecutor extends CustomUsersCommandExecutor {
 
-    private static final String COOKIES = AbstractParentClient.COOKIES;
+    private static final String COOKIES = "cookies";
 
     private EnterpriseConfiguration enterpriseConfiguration;
 
     public EnterpriseCustomUsersCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
                                                 SessionManager session, String appHome, Logger logger) {
-        super(options, token, clientConfiguration, session, appHome, logger);
-        this.init();
+        this(options, token, clientConfiguration, session, appHome, logger, null);
     }
 
     public EnterpriseCustomUsersCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
                                                 SessionManager session, String appHome, Logger logger, OpenCGAClient openCGAClient) {
         super(options, token, clientConfiguration, session, appHome, logger, openCGAClient);
+
         this.init();
     }
 
