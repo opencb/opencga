@@ -65,7 +65,16 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+if [ -z "$REPO_DIR" ]; then
+  printUsage
+  exit 1
+fi
+
+if [ -z "$TAG_VERSION" ]; then
+  printUsage
+  exit 1
+fi
+
 CURRENT_DIR=$PWD
 cd "$REPO_DIR" || exit 2
 
