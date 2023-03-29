@@ -163,7 +163,7 @@
                                     <arg value="-r"/>
 <!--                                    <arg value="${app.dir}/analysis"/>-->
 <!--                                    <arg value="${app.dir}/cloud"/>-->
-<!--                                    <arg value="${app.dir}/cloud/docker/.dockerignore"/>-->
+                                    <arg value="${app.dir}/cloud/docker/.dockerignore"/>
 <!--                                    <arg value="${app.dir}/conf"/>-->
 <!--                                    <arg value="${app.dir}/misc"/>-->
 <!--                                    <arg value="${app.dir}/monitor"/>-->
@@ -174,10 +174,9 @@
                                     <arg value="${build.dir}"/>
                                 </exec>
 
-                                <echo>Copying to ${build.dir}</echo>
+                                <echo>Copying to ${build.dir}/cloud/docker/opencga-base</echo>
                                 <exec executable="cp">
                                     <arg value="-r"/>
-                                    <arg value="${app.dir}/cloud/docker/opencga-base/cert1.pem"/>
                                     <arg value="${app.dir}/cloud/docker/opencga-base/Dockerfile"/>
                                     <arg value="${build.dir}/cloud/docker/opencga-base/"/>
                                 </exec>
