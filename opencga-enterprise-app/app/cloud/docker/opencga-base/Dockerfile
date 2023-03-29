@@ -6,9 +6,7 @@ ARG BUILD_PATH="."
 ENV OPENCGA_HOME=/opt/opencga
 ENV OPENCGA_CONFIG_DIR=${OPENCGA_HOME}/conf
 
-RUN apt-get update && apt-get -y upgrade && apt-get install -y lsb-release sshpass ca-certificates curl gnupg jq ncurses-bin python3-pip && \
-    # Install Flask
-    pip install Flask && \
+RUN apt-get update && apt-get -y upgrade && apt-get install -y lsb-release sshpass ca-certificates curl gnupg jq ncurses-bin && \
     # Install Docker repository
     curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
