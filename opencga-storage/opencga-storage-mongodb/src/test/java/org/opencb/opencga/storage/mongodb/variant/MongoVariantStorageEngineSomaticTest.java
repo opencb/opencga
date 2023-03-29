@@ -2,10 +2,12 @@ package org.opencb.opencga.storage.mongodb.variant;
 
 import org.bson.Document;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngineSomaticTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
@@ -21,6 +23,7 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSt
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(ShortTests.class)
 public class MongoVariantStorageEngineSomaticTest extends VariantStorageEngineSomaticTest implements MongoDBVariantStorageTest {
 
     @Test

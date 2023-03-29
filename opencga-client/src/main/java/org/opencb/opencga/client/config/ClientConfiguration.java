@@ -43,6 +43,7 @@ public final class ClientConfiguration {
     private String logLevel;
     private RestConfig rest;
     private GrpcConfig grpc;
+    private Map<String, Object> attributes;
 
     public ClientConfiguration() {
         logger = LoggerFactory.getLogger(ClientConfiguration.class);
@@ -215,6 +216,15 @@ public final class ClientConfiguration {
 
     public ClientConfiguration setGrpc(GrpcConfig grpc) {
         this.grpc = grpc;
+        return this;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public ClientConfiguration setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
         return this;
     }
 }

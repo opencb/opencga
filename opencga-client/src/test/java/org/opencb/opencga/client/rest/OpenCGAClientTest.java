@@ -3,12 +3,15 @@ package org.opencb.opencga.client.rest;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.time.Instant;
 import java.util.Date;
 
 import static org.junit.Assert.assertEquals;
 
+@Category(ShortTests.class)
 public class OpenCGAClientTest {
 
     @Test

@@ -18,7 +18,10 @@ package org.opencb.opencga.analysis.variant.samples;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
+@Category(ShortTests.class)
 public class VariantQueryOptimizerTest {
 
     @Test

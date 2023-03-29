@@ -3,9 +3,11 @@ package org.opencb.opencga.storage.core.metadata.models;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -13,6 +15,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
+@Category(ShortTests.class)
 public class SampleVariantStatsMixinTest {
 
     private ObjectMapper mapper;

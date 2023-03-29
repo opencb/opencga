@@ -17,6 +17,7 @@
 package org.opencb.opencga.analysis.individual.qc;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
 import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.biodata.models.clinical.qc.RelatednessScore;
@@ -26,6 +27,7 @@ import org.opencb.biodata.models.variant.avro.IssueType;
 import org.opencb.opencga.analysis.family.qc.IBDComputation;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,6 +37,7 @@ import java.util.*;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
+@Category(MediumTests.class)
 public class IndividualQcUtilsTest {
 
     @Test

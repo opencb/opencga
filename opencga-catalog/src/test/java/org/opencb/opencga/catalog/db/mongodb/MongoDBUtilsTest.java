@@ -19,12 +19,15 @@ package org.opencb.opencga.catalog.db.mongodb;
 import org.bson.Document;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.util.Arrays;
 
 /**
  * Created by pfurio on 3/3/16.
  */
+@Category(MediumTests.class)
 public class MongoDBUtilsTest extends MongoDBAdaptorTest {
     /////////// Other tests
     @Test

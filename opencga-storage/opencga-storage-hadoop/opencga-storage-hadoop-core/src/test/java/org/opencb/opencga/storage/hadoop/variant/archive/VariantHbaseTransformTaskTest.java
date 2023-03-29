@@ -20,11 +20,13 @@ import com.google.common.base.Throwables;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.io.VcfVariantReader;
 import org.opencb.opencga.storage.core.io.VcfVariantReaderTest;
 
@@ -37,6 +39,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by mh719 on 04/05/16.
  */
+@Category(ShortTests.class)
 public class VariantHbaseTransformTaskTest {
 
     @Before

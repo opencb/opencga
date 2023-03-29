@@ -1,12 +1,15 @@
 package org.opencb.opencga.storage.core.variant.query.executors.accumulators;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
+@Category(ShortTests.class)
 public class RangeTest {
 
     @Test

@@ -21,9 +21,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.file.FileContent;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
@@ -39,6 +41,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@Category(ShortTests.class)
 public class PosixIOManagerTest {
 
     private static PosixIOManager posixIOManager;

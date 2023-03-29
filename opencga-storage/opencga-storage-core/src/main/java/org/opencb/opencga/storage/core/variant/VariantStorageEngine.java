@@ -1176,7 +1176,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         father = StringUtils.isEmpty(father) ? CompoundHeterozygousQueryExecutor.MISSING_SAMPLE : father;
         mother = StringUtils.isEmpty(mother) ? CompoundHeterozygousQueryExecutor.MISSING_SAMPLE : mother;
         query = new Query(query)
-                .append(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS.key(), Arrays.asList(child, father, mother))
+                .append(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS.key(), new Trio(father, mother, child))
                 .append(VariantQueryParam.STUDY.key(), study);
 
         return get(query, options);

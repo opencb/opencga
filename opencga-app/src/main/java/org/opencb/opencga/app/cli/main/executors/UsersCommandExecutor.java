@@ -122,7 +122,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("user", commandOptions.user);
         queryParams.putIfNotEmpty("password", commandOptions.password);
         queryParams.putIfNotEmpty("refreshToken", commandOptions.refreshToken);
-        CustomUsersCommandExecutor customUsersCommandExecutor = new CustomUsersCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
+        CustomUsersCommandExecutor customUsersCommandExecutor = new CustomUsersCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
         return customUsersCommandExecutor.login();
     }
 

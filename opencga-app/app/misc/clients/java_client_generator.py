@@ -31,8 +31,8 @@ class JavaClientGenerator(RestClientGenerator):
 
     def get_imports(self):
         # Convert the Java output to package paths
-        package = self.output_dir.split('java/')[1].replace('/', '.')
-        parentPackage = package.rsplit('.', 1)[0]
+        package = self.output_dir.split('java/')[1].replace('/', '.').rstrip('.')
+        # parentPackage = package.rsplit('.', 1)[0]
 
         headers = []
         headers.append('/*')
@@ -58,7 +58,8 @@ class JavaClientGenerator(RestClientGenerator):
         imports = set()
         imports.add('org.opencb.opencga.client.exceptions.ClientException;')
         imports.add('org.opencb.opencga.client.config.ClientConfiguration;')
-        imports.add(parentPackage + '.*;')
+        # imports.add(parentPackage + '.*;')
+        imports.add('org.opencb.opencga.client.rest.*;')
         imports.add('org.opencb.opencga.core.response.RestResponse;')
 
         for java_type in self.java_types:
@@ -83,9 +84,14 @@ class JavaClientGenerator(RestClientGenerator):
 
     def get_class_definition(self, category):
         self.java_types = set()
-        ## Find the name of the parent class to extend
-        parentClientClass = glob.glob(self.output_dir + '/../*ParentClient.java')[0]
-        parentClientClass = parentClientClass.rsplit('/', 1)[1].split('.')[0]
+
+        ## Check if there is a parent class to extend, otherwise we use default 'AbstractParentClient'
+        parentClientClass = glob.glob(self.output_dir + '/../*ParentClient.java')
+        if len(parentClientClass) > 0:
+            parentClientClass = parentClientClass[0]
+            parentClientClass = parentClientClass.rsplit('/', 1)[1].split('.')[0]
+        else:
+            parentClientClass = "AbstractParentClient"
 
         text = []
         text.append('')

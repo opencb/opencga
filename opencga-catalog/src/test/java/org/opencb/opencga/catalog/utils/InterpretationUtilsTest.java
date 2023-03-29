@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.utils;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationStats;
@@ -10,6 +11,7 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.core.models.clinical.Interpretation;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,6 +20,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
+@Category(ShortTests.class)
 public class InterpretationUtilsTest {
 
     private static final List<String> GENE_NAMES = Arrays.asList("gene1", "gene2", "gene3");

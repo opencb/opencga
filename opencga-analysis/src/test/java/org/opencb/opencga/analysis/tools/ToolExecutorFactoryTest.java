@@ -17,6 +17,8 @@
 package org.opencb.opencga.analysis.tools;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
@@ -26,6 +28,7 @@ import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 
+@Category(ShortTests.class)
 public class ToolExecutorFactoryTest {
     @ToolExecutor(id="test-executor", tool = "test-analysis", framework = ToolExecutor.Framework.LOCAL, source= ToolExecutor.Source.FILE)
     public static final class MyExecutor1 extends OpenCgaToolExecutor { @Override public void run() { } }

@@ -17,6 +17,8 @@
 package org.opencb.opencga.core.config;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.io.*;
 import java.net.URL;
@@ -26,6 +28,7 @@ import java.util.*;
 /**
  * Created by imedina on 16/03/16.
  */
+@Category(ShortTests.class)
 public class ConfigurationTest {
 
     @Test

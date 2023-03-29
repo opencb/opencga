@@ -463,7 +463,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
-        CustomStudiesCommandExecutor customStudiesCommandExecutor = new CustomStudiesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
+        CustomStudiesCommandExecutor customStudiesCommandExecutor = new CustomStudiesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
         return customStudiesCommandExecutor.runTemplates();
     }
 
@@ -477,7 +477,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
-        CustomStudiesCommandExecutor customStudiesCommandExecutor = new CustomStudiesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), getLogger());
+        CustomStudiesCommandExecutor customStudiesCommandExecutor = new CustomStudiesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
         return customStudiesCommandExecutor.uploadTemplates();
     }
 

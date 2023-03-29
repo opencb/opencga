@@ -19,17 +19,20 @@ package org.opencb.opencga.catalog.utils;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.study.Variable;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.util.*;
 
 /**
  * Created by jacobo on 23/06/15.
  */
+@Category(ShortTests.class)
 public class CatalogAnnotationsValidatorTest {
 
     public static final Variable string = new Variable(
