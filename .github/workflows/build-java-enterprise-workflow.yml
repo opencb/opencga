@@ -11,8 +11,8 @@ on:
         description: "XetaBase project version"
         value: ${{ jobs.build-workflow.outputs.version }}
 
-env:
-  opencga_branch: "develop"
+#env:
+#  opencga_branch: "develop"
 
 jobs:
   build:
@@ -24,10 +24,12 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: '10'
+      - id: xxx
+        run: echo "opencga_branch=develop" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v3
         with:
           repository: opencb/opencga
-          ref: develop
+          ref: ${{ steps.xxx.outputs.opencga_branch }}
           path: opencga-home
           fetch-depth: '10'
       - name: Set up JDK 8
