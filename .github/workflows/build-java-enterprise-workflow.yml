@@ -25,7 +25,9 @@ jobs:
         with:
           fetch-depth: '10'
       - id: xxx
-        run: echo "opencga_branch=$(./.github/workflows/scripts/opencga_branch.sh)" >> $GITHUB_OUTPUT
+        run: |
+          chmod +x ./customer/.github/workflows/scripts/opencga_branch.sh
+          echo "opencga_branch=$(./.github/workflows/scripts/opencga_branch.sh)" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v3
         with:
           repository: opencb/opencga
