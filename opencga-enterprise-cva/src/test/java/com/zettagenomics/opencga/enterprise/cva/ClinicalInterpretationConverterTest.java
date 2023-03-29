@@ -2,11 +2,11 @@ package com.zettagenomics.opencga.enterprise.cva;
 
 import com.zettagenomics.opencga.enterprise.cva.converters.ClinicalVariantConverter;
 import com.zettagenomics.opencga.enterprise.cva.converters.ClinicalVariantEvidenceConverter;
-import com.zettagenomics.opencga.enterprise.cva.converters.InterpretationConverter;
+import com.zettagenomics.opencga.enterprise.cva.converters.ClinicalInterpretationConverter;
 import com.zettagenomics.opencga.enterprise.cva.exceptions.CvaException;
 import com.zettagenomics.opencga.enterprise.cva.models.ClinicalVariantEvidenceSearch;
 import com.zettagenomics.opencga.enterprise.cva.models.ClinicalVariantSearch;
-import com.zettagenomics.opencga.enterprise.cva.models.InterpretationSearch;
+import com.zettagenomics.opencga.enterprise.cva.models.ClinicalInterpretationSearch;
 import org.junit.Test;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
@@ -19,26 +19,27 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-public class InterpretationConverterTest {
+public class ClinicalInterpretationConverterTest {
 
     @Test
     public void test0() throws IOException, CvaException {
-        InputStream is = InterpretationConverterTest.class.getClassLoader().getResourceAsStream("interpretation1.json");
+        String clinicalAnalysisId = null;
+        InputStream is = ClinicalInterpretationConverterTest.class.getClassLoader().getResourceAsStream("interpretation1.json");
         org.opencb.opencga.core.models.clinical.Interpretation interpretation = JacksonUtils.getDefaultObjectMapper().readerFor(org.opencb.opencga.core.models.clinical.Interpretation.class).readValue(is);
         System.out.println(interpretation.getClinicalAnalysisId());
 
         // Interpretation
-        InterpretationConverter ciConverter = new InterpretationConverter();
-        InterpretationSearch interpretationSearch = ciConverter.toInterpretationSearch((org.opencb.opencga.core.models.clinical.Interpretation) interpretation);
-        assertEquals(interpretation.getMethod().getName(), interpretationSearch.getMethodName());
+        ClinicalInterpretationConverter ciConverter = new ClinicalInterpretationConverter();
+        ClinicalInterpretationSearch clinicalInterpretationSearch = ciConverter.toInterpretationSearch(interpretation, true);
+        assertEquals(interpretation.getMethod().getName(), clinicalInterpretationSearch.getMethodName());
 
-        Interpretation interpretation1 = ciConverter.toCInterpretation(interpretationSearch);
+        Interpretation interpretation1 = ciConverter.toCInterpretation(clinicalInterpretationSearch);
         assertEquals(interpretation.getMethod().getName(), interpretation1.getMethod().getName());
 
         // Clinical variant
         ClinicalVariantConverter cvConverter = new ClinicalVariantConverter();
         List<ClinicalVariantSearch> cvsList = cvConverter.toClinicalVariantSearch(interpretation.getPrimaryFindings(), true,
-                interpretation.getId());
+                interpretation.getId(), clinicalAnalysisId);
         assertEquals(interpretation.getPrimaryFindings().size(), cvsList.size());
 
         List<ClinicalVariant> cvList = cvConverter.toClinicalVariant(cvsList);
@@ -48,7 +49,8 @@ public class InterpretationConverterTest {
         // Clinical variant evidence
         ClinicalVariantEvidenceConverter cveConverter = new ClinicalVariantEvidenceConverter();
         List<ClinicalVariantEvidenceSearch> cvesList = cveConverter.toClinicalVariantEvidenceSearch(interpretation.getPrimaryFindings()
-                .get(0).getEvidences(), interpretation.getPrimaryFindings().get(0).toStringSimple(), interpretation.getId());
+                .get(0).getEvidences(), interpretation.getPrimaryFindings().get(0).toStringSimple(), interpretation.getId(),
+                clinicalAnalysisId);
         assertEquals(interpretation.getPrimaryFindings().get(0).getEvidences().size(), cvesList.size());
 
         List<ClinicalVariantEvidence> cveList = cveConverter.toClinicalVariantEvidence(cvesList);

@@ -19,19 +19,19 @@ package com.zettagenomics.opencga.enterprise.cva.converters;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.zettagenomics.opencga.enterprise.cva.exceptions.CvaException;
-import com.zettagenomics.opencga.enterprise.cva.models.InterpretationSearch;
+import com.zettagenomics.opencga.enterprise.cva.models.ClinicalInterpretationSearch;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.common.Status;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.Interpretation;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class InterpretationConverter extends SearchConverter {
+public class ClinicalInterpretationConverter extends SearchConverter {
 
     //    private VariantSearchToVariantConverter variantSearchToVariantConverter;
     private ObjectReader interpretationReader;
@@ -39,36 +39,40 @@ public class InterpretationConverter extends SearchConverter {
 
 //    protected static Logger logger = LoggerFactory.getLogger(InterpretationConverter.class);
 
-    public InterpretationConverter() {
+    public ClinicalInterpretationConverter() {
 //        this.variantSearchToVariantConverter = new VariantSearchToVariantConverter();
-        this.interpretationReader = mapper.readerFor(org.opencb.opencga.core.models.clinical.Interpretation.class);
+        this.interpretationReader = mapper.readerFor(Interpretation.class);
 //        this.clinicalAnalysisReader = mapper.readerFor(ClinicalAnalysis.class);
     }
 
-    public InterpretationSearch toInterpretationSearch(org.opencb.opencga.core.models.clinical.Interpretation interpretation) throws CvaException {
-        return toInterpretationSearch(Collections.singletonList(interpretation)).get(0);
+    public ClinicalInterpretationSearch toInterpretationSearch(Interpretation interpretation, boolean primary)
+            throws CvaException {
+        return toInterpretationSearch(Collections.singletonList(interpretation), primary).get(0);
     }
 
-    public List<InterpretationSearch> toInterpretationSearch(List<org.opencb.opencga.core.models.clinical.Interpretation> interpretations) throws CvaException {
-        List<InterpretationSearch> interpretationSearchList = new ArrayList<>();
+    public List<ClinicalInterpretationSearch> toInterpretationSearch(List<Interpretation> interpretations, boolean primary)
+            throws CvaException {
+        List<ClinicalInterpretationSearch> clinicalInterpretationSearchList = new ArrayList<>();
         for (org.opencb.opencga.core.models.clinical.Interpretation interpretation : interpretations) {
-            InterpretationSearch interpretationSearch = new InterpretationSearch()
+            ClinicalInterpretationSearch clinicalInterpretationSearch = new ClinicalInterpretationSearch()
                     .setId(interpretation.getId())
+                    .setCaId(interpretation.getClinicalAnalysisId())
                     .setDescription(interpretation.getDescription())
-                    .setClinicalAnalysisId(interpretation.getClinicalAnalysisId());
+                    .setPrimary(primary);
 
             // Panels
             if (CollectionUtils.isNotEmpty(interpretation.getPanels())) {
                 // Add panel IDs and names
-                interpretationSearch.setPanelIds(interpretation.getPanels().stream().map(p -> p.getId()).collect(Collectors.toList()));
-                interpretationSearch.getPanelIds().addAll(interpretation.getPanels().stream().map(p -> p.getName())
+                clinicalInterpretationSearch.setPanelIds(interpretation.getPanels().stream().map(p -> p.getId())
+                        .collect(Collectors.toList()));
+                clinicalInterpretationSearch.getPanelIds().addAll(interpretation.getPanels().stream().map(p -> p.getName())
                         .collect(Collectors.toList()));
             }
 
             // Analyst
             if (interpretation.getAnalyst() != null) {
                 ClinicalAnalyst analyst = interpretation.getAnalyst();
-                interpretationSearch.setAnalystId(analyst.getId())
+                clinicalInterpretationSearch.setAnalystId(analyst.getId())
                         .setAnalystName(analyst.getName())
                         .setAnalystEmail(analyst.getEmail())
                         .setAnalystAssignedBy(analyst.getAssignedBy())
@@ -78,11 +82,11 @@ public class InterpretationConverter extends SearchConverter {
             // Method
             if (interpretation.getMethod() != null) {
                 InterpretationMethod method = interpretation.getMethod();
-                interpretationSearch.setMethodName(method.getName())
+                clinicalInterpretationSearch.setMethodName(method.getName())
                         .setMethodCommit(method.getCommit())
                         .setMethodVersion(method.getVersion());
                 if (CollectionUtils.isNotEmpty(method.getDependencies())) {
-                    interpretationSearch.setMethodDependencies(method.getDependencies().stream()
+                    clinicalInterpretationSearch.setMethodDependencies(method.getDependencies().stream()
                             .map(dp -> dp.getName() + ConverterUtils.FIELD_SEPARATOR + dp.getVersion())
                             .collect(Collectors.toList()));
                 }
@@ -90,25 +94,25 @@ public class InterpretationConverter extends SearchConverter {
 
             // Comments are stores: author -- message -- tag1:tag2:.. -- date -- -->
             if (CollectionUtils.isNotEmpty(interpretation.getComments())) {
-                interpretationSearch.setComments(interpretation.getComments().stream().map(c -> ConverterUtils.encodeComent(c))
+                clinicalInterpretationSearch.setComments(interpretation.getComments().stream().map(c -> ConverterUtils.encodeComent(c))
                         .collect(Collectors.toList()));
             }
 
-            interpretationSearch.setLocked(interpretation.isLocked());
+            clinicalInterpretationSearch.setLocked(interpretation.isLocked());
 
             // Status
             if (interpretation.getStatus() != null) {
                 Status status = interpretation.getStatus();
-                interpretationSearch.setStatusId(status.getId())
+                clinicalInterpretationSearch.setStatusId(status.getId())
                         .setStatusName(status.getName())
                         .setStatusDescription(status.getDescription())
                         .setStatusDate(status.getDate());
             }
 
-            interpretationSearch.setCreationDate(interpretation.getCreationDate());
-            interpretationSearch.setModificationDate(interpretation.getModificationDate());
+            clinicalInterpretationSearch.setCreationDate(interpretation.getCreationDate());
+            clinicalInterpretationSearch.setModificationDate(interpretation.getModificationDate());
 
-            interpretationSearch.setVersion(interpretation.getVersion());
+            clinicalInterpretationSearch.setVersion(interpretation.getVersion());
 
             // Interpretation stored in a JSON string
             // First, we have to clone and remove the clinical variants to do not store them!
@@ -119,7 +123,7 @@ public class InterpretationConverter extends SearchConverter {
             interpretation.setPrimaryFindings(null);
             interpretation.setSecondaryFindings(null);
             try {
-                interpretationSearch.setJson(mapper.writeValueAsString(interpretation));
+                clinicalInterpretationSearch.setJson(mapper.writeValueAsString(interpretation));
             } catch (JsonProcessingException e) {
                 throw new CvaException("Error when storing interpretation JSON field", e);
             }
@@ -127,15 +131,15 @@ public class InterpretationConverter extends SearchConverter {
             interpretation.setSecondaryFindings(clone.getSecondaryFindings());
 
             // Add the new interpretation search model to the list
-            interpretationSearchList.add(interpretationSearch);
+            clinicalInterpretationSearchList.add(clinicalInterpretationSearch);
         }
-        return interpretationSearchList;
+        return clinicalInterpretationSearchList;
     }
 
-    public org.opencb.opencga.core.models.clinical.Interpretation toCInterpretation(InterpretationSearch interpretationSearch)
-            throws CvaException {
+    public org.opencb.opencga.core.models.clinical.Interpretation toCInterpretation(
+            ClinicalInterpretationSearch clinicalInterpretationSearch) throws CvaException {
         try {
-            return interpretationReader.readValue(interpretationSearch.getJson());
+            return interpretationReader.readValue(clinicalInterpretationSearch.getJson());
         } catch (JsonProcessingException e) {
             throw new CvaException("Error when converting to interpretation", e);
         }

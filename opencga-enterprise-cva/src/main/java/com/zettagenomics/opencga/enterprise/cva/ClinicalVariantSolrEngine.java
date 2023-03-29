@@ -16,24 +16,19 @@
 
 package com.zettagenomics.opencga.enterprise.cva;
 
-import com.zettagenomics.opencga.enterprise.cva.converters.ClinicalVariantConverter;
-import com.zettagenomics.opencga.enterprise.cva.converters.ClinicalVariantEvidenceConverter;
-import com.zettagenomics.opencga.enterprise.cva.converters.ConverterUtils;
-import com.zettagenomics.opencga.enterprise.cva.converters.InterpretationConverter;
+import com.zettagenomics.opencga.enterprise.cva.converters.*;
 import com.zettagenomics.opencga.enterprise.cva.exceptions.CvaException;
 import com.zettagenomics.opencga.enterprise.cva.iterators.ClinicalVariantNativeSolrIterator;
 import com.zettagenomics.opencga.enterprise.cva.iterators.ClinicalVariantSolrIterator;
+import com.zettagenomics.opencga.enterprise.cva.models.ClinicalAnalysisSearch;
 import com.zettagenomics.opencga.enterprise.cva.models.ClinicalVariantEvidenceSearch;
 import com.zettagenomics.opencga.enterprise.cva.models.ClinicalVariantSearch;
-import com.zettagenomics.opencga.enterprise.cva.models.InterpretationSearch;
+import com.zettagenomics.opencga.enterprise.cva.models.ClinicalInterpretationSearch;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
-import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
@@ -59,6 +54,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -70,7 +66,8 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
 
     private SolrManager solrManager;
 
-    private InterpretationConverter ciConverter;
+    private ClinicalAnalysisConverter caConverter;
+    private ClinicalInterpretationConverter ciConverter;
     private ClinicalVariantConverter cvConverter;
     private ClinicalVariantEvidenceConverter cveConverter;
 
@@ -78,10 +75,12 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
 
     private Logger logger;
 
+    public static final String ANALYSIS_COLLECTION = "analysis";
     public static final String INTERPRETATIONS_COLLECTION = "interpretations";
     public static final String CLINICAL_VARIANTS_COLLECTION = "clinical_variants";
     public static final String CLINICAL_VARIANT_EVIDENCES_COLLECTION = "clinical_variant_evidences";
 
+    public static final String ANALYSIS_CONFIGSET = "opencga-ca-configset-" + GitRepositoryState.get().getBuildVersion();
     public static final String INTERPRETATION_CONFIGSET = "opencga-ci-configset-" + GitRepositoryState.get().getBuildVersion();
     public static final String CLINICAL_VARIANT_CONFIGSET = "opencga-cv-configset-" + GitRepositoryState.get().getBuildVersion();
     public static final String CLINICAL_VARIANT_EVIDENCE_CONFIGSET = "opencga-cve-configset-" + GitRepositoryState.get().getBuildVersion();
@@ -103,7 +102,8 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
     }
 
     private void init() {
-        this.ciConverter = new InterpretationConverter();
+        this.caConverter = new ClinicalAnalysisConverter();
+        this.ciConverter = new ClinicalInterpretationConverter();
         this.cvConverter = new ClinicalVariantConverter();
         this.cveConverter = new ClinicalVariantEvidenceConverter();
 
@@ -133,47 +133,185 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
         }
     }
 
-    public void insert(Interpretation interpretation) throws CvaException {
-        insert(interpretation, false);
+    public void insert(ClinicalAnalysis clinicalAnalysis) throws CvaException {
+        SolrClient solrClient = solrManager.getSolrClient();
+
+        try {
+            UpdateResponse updateResponse;
+
+            // Clinical analysis
+            ClinicalAnalysisSearch clinicalAnalysisSearch = caConverter.toClinicalAnalysisSearch(clinicalAnalysis);
+            updateResponse = solrClient.addBean(ANALYSIS_COLLECTION, clinicalAnalysisSearch);
+            if (updateResponse.getStatus() != 0) {
+                rollback(solrClient, updateResponse.getStatus());
+            }
+
+            // Interpretations
+            if (clinicalAnalysis.getInterpretation() != null) {
+                insert(clinicalAnalysis.getInterpretation(), true, solrClient);
+            }
+            if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
+                for (Interpretation secondaryInterpretation : clinicalAnalysis.getSecondaryInterpretations()) {
+                    insert(secondaryInterpretation, false, solrClient);
+                }
+            }
+
+            // Commit
+            solrClient.commit(ANALYSIS_COLLECTION);
+            solrClient.commit(INTERPRETATIONS_COLLECTION);
+            solrClient.commit(CLINICAL_VARIANTS_COLLECTION);
+            solrClient.commit(CLINICAL_VARIANT_EVIDENCES_COLLECTION);
+        } catch (SolrServerException | IOException e) {
+            rollback(solrClient, e);
+        }
     }
 
-    public void insert(Interpretation interpretation, boolean loadAll) throws CvaException {
+    public void insert(Interpretation interpretation, boolean primary) throws CvaException {
         SolrClient solrClient = solrManager.getSolrClient();
 
         try {
             UpdateResponse updateResponse;
 
             // Interpretation
-            InterpretationSearch interpretationSearch = ciConverter.toInterpretationSearch(interpretation);
-            updateResponse = solrClient.addBean(INTERPRETATIONS_COLLECTION, interpretationSearch);
+            ClinicalInterpretationSearch clinicalInterpretationSearch = ciConverter.toInterpretationSearch(interpretation, primary);
+            updateResponse = solrClient.addBean(INTERPRETATIONS_COLLECTION, clinicalInterpretationSearch);
             if (updateResponse.getStatus() != 0) {
                 rollback(solrClient, updateResponse.getStatus());
             }
 
-            if (loadAll) {
-                // Clinical variants
-                List<ClinicalVariantSearch> cvsList = cvConverter.toClinicalVariantSearch(interpretation.getPrimaryFindings(), true,
-                        interpretation.getId());
-                updateResponse = solrClient.addBeans(CLINICAL_VARIANTS_COLLECTION, cvsList);
-                if (updateResponse.getStatus() != 0) {
-                    solrClient.rollback();
-                }
-
-                // Clinical variant evidences
-                for (ClinicalVariant primaryFinding : interpretation.getPrimaryFindings()) {
-                    List<ClinicalVariantEvidenceSearch> cvesList = cveConverter.toClinicalVariantEvidenceSearch(
-                            primaryFinding.getEvidences(), primaryFinding.toStringSimple(), interpretation.getId());
-                    updateResponse = solrClient.addBeans(CLINICAL_VARIANT_EVIDENCES_COLLECTION, cvesList);
-                    if (updateResponse.getStatus() != 0) {
-                        solrClient.rollback();
-                    }
-                }
+            if (CollectionUtils.isNotEmpty(interpretation.getPrimaryFindings())) {
+                insert(interpretation.getPrimaryFindings(), true, interpretation.getId(), interpretation.getClinicalAnalysisId(),
+                        solrClient);
             }
 
             // Commit
             solrClient.commit(INTERPRETATIONS_COLLECTION);
             solrClient.commit(CLINICAL_VARIANTS_COLLECTION);
             solrClient.commit(CLINICAL_VARIANT_EVIDENCES_COLLECTION);
+        } catch (SolrServerException | IOException e) {
+            rollback(solrClient, e);
+        }
+    }
+
+    public void insert(ClinicalVariant clinicalVariant, boolean primary, String interpretationId, String clinicalAnalysisId)
+            throws CvaException {
+        insert(Collections.singletonList(clinicalVariant), primary, interpretationId, clinicalAnalysisId);
+    }
+
+    public void insert(List<ClinicalVariant> clinicalVariants, boolean primary, String interpretationId, String clinicalAnalysisId)
+            throws CvaException {
+        SolrClient solrClient = solrManager.getSolrClient();
+
+        try {
+            UpdateResponse updateResponse;
+
+            // Clinical variants
+            List<ClinicalVariantSearch> cvsList = cvConverter.toClinicalVariantSearch(clinicalVariants, primary, interpretationId,
+                    clinicalAnalysisId);
+            updateResponse = solrClient.addBeans(CLINICAL_VARIANTS_COLLECTION, cvsList);
+            if (updateResponse.getStatus() != 0) {
+                rollback(solrClient, updateResponse.getStatus());
+            }
+
+            // Clinical variant evidences
+            for (ClinicalVariant clinicalVariant : clinicalVariants) {
+                if (CollectionUtils.isNotEmpty(clinicalVariant.getEvidences())) {
+                    insert(clinicalVariant.getEvidences(), clinicalVariant.getId(), interpretationId, clinicalAnalysisId, solrClient);
+                }
+            }
+
+            // Commit
+            solrClient.commit(CLINICAL_VARIANTS_COLLECTION);
+            solrClient.commit(CLINICAL_VARIANT_EVIDENCES_COLLECTION);
+        } catch (SolrServerException | IOException e) {
+            rollback(solrClient, e);
+        }
+    }
+
+    public void insert(ClinicalVariantEvidence clinicalVariantEvidence, String variantId, String interpretationId,
+                       String clinicalAnalysisId) throws CvaException {
+        insert(Collections.singletonList(clinicalVariantEvidence), variantId, interpretationId, clinicalAnalysisId);
+    }
+
+    public void insert(List<ClinicalVariantEvidence> cveList, String variantId, String interpretationId, String clinicalAnalysisId)
+            throws CvaException {
+        SolrClient solrClient = solrManager.getSolrClient();
+
+        try {
+            UpdateResponse updateResponse;
+
+            // Clinical variant evidences
+            List<ClinicalVariantEvidenceSearch> cvesList = cveConverter.toClinicalVariantEvidenceSearch(cveList, variantId,
+                    interpretationId, clinicalAnalysisId);
+            updateResponse = solrClient.addBeans(CLINICAL_VARIANT_EVIDENCES_COLLECTION, cvesList);
+            if (updateResponse.getStatus() != 0) {
+                rollback(solrClient, updateResponse.getStatus());
+            }
+
+            // Commit
+            solrClient.commit(CLINICAL_VARIANT_EVIDENCES_COLLECTION);
+        } catch (SolrServerException | IOException e) {
+            rollback(solrClient, e);
+        }
+    }
+
+    private void insert(Interpretation interpretation, boolean isPrimary, SolrClient solrClient)
+            throws CvaException {
+        try {
+            UpdateResponse updateResponse;
+
+            // Interpretation
+            ClinicalInterpretationSearch clinicalInterpretationSearch = ciConverter.toInterpretationSearch(interpretation, isPrimary);
+            updateResponse = solrClient.addBean(INTERPRETATIONS_COLLECTION, clinicalInterpretationSearch);
+            if (updateResponse.getStatus() != 0) {
+                rollback(solrClient, updateResponse.getStatus());
+            }
+
+            // Clinical variants
+            if (CollectionUtils.isNotEmpty(interpretation.getPrimaryFindings())) {
+                insert(interpretation.getPrimaryFindings(), true, interpretation.getId(), interpretation.getClinicalAnalysisId(),
+                        solrClient);
+            }
+        } catch (SolrServerException | IOException e) {
+            rollback(solrClient, e);
+        }
+    }
+
+    private void insert(List<ClinicalVariant> clinicalVariants, boolean primary, String interpretationId, String clinicalAnalysisId,
+                        SolrClient solrClient) throws CvaException {
+        try {
+            UpdateResponse updateResponse;
+
+            // Clinical variants
+            List<ClinicalVariantSearch> cvsList = cvConverter.toClinicalVariantSearch(clinicalVariants, primary, interpretationId,
+                    clinicalAnalysisId);
+            updateResponse = solrClient.addBeans(CLINICAL_VARIANTS_COLLECTION, cvsList);
+            if (updateResponse.getStatus() != 0) {
+                solrClient.rollback();
+            }
+
+            for (ClinicalVariant clinicalVariant : clinicalVariants) {
+                if (CollectionUtils.isNotEmpty(clinicalVariant.getEvidences())) {
+                    insert(clinicalVariant.getEvidences(), clinicalVariant.getId(), interpretationId, clinicalAnalysisId, solrClient);
+                }
+            }
+        } catch (SolrServerException | IOException e) {
+            rollback(solrClient, e);
+        }
+    }
+
+    private void insert(List<ClinicalVariantEvidence> clinicalVariantEvidences, String variantId, String interpretationId,
+                        String clinicalAnalysisId, SolrClient solrClient) throws CvaException {
+        try {
+            UpdateResponse updateResponse;
+
+            // Clinical variants
+            List<ClinicalVariantEvidenceSearch> cveList = cveConverter.toClinicalVariantEvidenceSearch(clinicalVariantEvidences,
+                    variantId, interpretationId, clinicalAnalysisId);
+            updateResponse = solrClient.addBeans(CLINICAL_VARIANT_EVIDENCES_COLLECTION, cveList);
+            if (updateResponse.getStatus() != 0) {
+                solrClient.rollback();
+            }
         } catch (SolrServerException | IOException e) {
             rollback(solrClient, e);
         }

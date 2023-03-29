@@ -25,102 +25,142 @@ import java.util.Map;
 
 public class ClinicalVariantEvidenceSearch {
 
+    // Catalog fields
+
+    @Field("studyId")
+    private String studyId;
+
+    @Field("studyJson")
+    private String studyJson;
+
+    // "Primary" and "foreign" keys
+
     @Field("id")
     private String id;
 
-    @Field("cveVariantId")
-    private String cveVariantId;
+    @Field("caId")
+    private String caId;
 
-    @Field("cveInterpretationId")
-    private String cveInterpretationId;
+    @Field("ciId")
+    private String ciId;
 
-    @Field("cvePhenotypeNames")
-    private List<String> cvePhenotypeNames;
+    @Field("cvId")
+    private String cvId;
 
-    @Field("cveGeneName")
-    private String cveGeneName;
+    @Field("variantId")
+    private String variantId;
 
-    @Field("cveConsequenceTypeIds")
-    private List<String> cveConsequenceTypeIds;
+    // Clinical variant evidence fields
 
-    @Field("cveXrefIds")
-    private List<String> cveXrefIds;
+    @Field("phenotypeNames")
+    private List<String> phenotypeNames;
 
-    @Field("cvePanelId")
-    private String cvePanelId;
+    @Field("geneName")
+    private String geneName;
 
-    @Field("cveAcmgs")
-    private List<String> cveAcmgs;
+    @Field("consequenceTypeIds")
+    private List<String> consequenceTypeIds;
 
-    @Field("cveTier")
-    private String cveTier;
+    @Field("xrefIds")
+    private List<String> xrefIds;
 
-    @Field("cveClinicalSignificance")
-    private String cveClinicalSignificance;
+    @Field("panelId")
+    private String panelId;
 
-    @Field("cveDrugResponse")
-    private String cveDrugResponse;
+    @Field("acmgs")
+    private List<String> acmgs;
 
-    @Field("cveTraitAssociation")
-    private String cveTraitAssociation;
+    @Field("tier")
+    private String tier;
 
-    @Field("cveFunctionalEffect")
-    private String cveFunctionalEffect;
+    @Field("clinicalSignificance")
+    private String clinicalSignificance;
 
-    @Field("cveTumorigenesis")
-    private String cveTumorigenesis;
+    @Field("drugResponse")
+    private String drugResponse;
 
-    @Field("cveOtherClassifications")
-    private List<String> cveOtherClassifications;
+    @Field("traitAssociation")
+    private String traitAssociation;
 
-    @Field("cveRolesInCancer")
-    private List<String> cveRolesInCancer;
+    @Field("functionalEffect")
+    private String functionalEffect;
 
-    @Field("cveScore_*")
-    private Map<String, Double> cveScores;
+    @Field("tumorigenesis")
+    private String tumorigenesis;
+
+    @Field("otherClassifications")
+    private List<String> otherClassifications;
+
+    @Field("rolesInCancer")
+    private List<String> rolesInCancer;
+
+    @Field("score_*")
+    private Map<String, Double> scores;
 
     // Clinical variant evidence stored in a JSON string
-    @Field("cveJson")
-    private String cveJson;
+    @Field("json")
+    private String json;
 
     public ClinicalVariantEvidenceSearch() {
         init();
     }
 
     private void init() {
-        cvePhenotypeNames = new ArrayList<>();
-        cveConsequenceTypeIds = new ArrayList<>();
-        cveXrefIds = new ArrayList<>();
-        cveAcmgs = new ArrayList<>();
-        cveOtherClassifications = new ArrayList<>();
-        cveRolesInCancer = new ArrayList<>();
-        cveScores = new HashMap<>();
+        phenotypeNames = new ArrayList<>();
+        consequenceTypeIds = new ArrayList<>();
+        xrefIds = new ArrayList<>();
+        acmgs = new ArrayList<>();
+        otherClassifications = new ArrayList<>();
+        rolesInCancer = new ArrayList<>();
+        scores = new HashMap<>();
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalVariantEvidenceSearch{");
-        sb.append("id='").append(id).append('\'');
-        sb.append(", cveVariantId='").append(cveVariantId).append('\'');
-        sb.append(", cveInterpretationId='").append(cveInterpretationId).append('\'');
-        sb.append(", cvePhenotypeNames=").append(cvePhenotypeNames);
-        sb.append(", cveGeneName='").append(cveGeneName).append('\'');
-        sb.append(", cveConsequenceTypeIds=").append(cveConsequenceTypeIds);
-        sb.append(", cveXrefIds=").append(cveXrefIds);
-        sb.append(", cvePanelId='").append(cvePanelId).append('\'');
-        sb.append(", cveAcmgs=").append(cveAcmgs);
-        sb.append(", cveTier='").append(cveTier).append('\'');
-        sb.append(", cveClinicalSignificance='").append(cveClinicalSignificance).append('\'');
-        sb.append(", cveDrugResponse='").append(cveDrugResponse).append('\'');
-        sb.append(", cveTraitAssociation='").append(cveTraitAssociation).append('\'');
-        sb.append(", cveFunctionalEffect='").append(cveFunctionalEffect).append('\'');
-        sb.append(", cveTumorigenesis='").append(cveTumorigenesis).append('\'');
-        sb.append(", cveOtherClassifications=").append(cveOtherClassifications);
-        sb.append(", cveRolesInCancer=").append(cveRolesInCancer);
-        sb.append(", cveScores=").append(cveScores);
-        sb.append(", cveJson='").append(cveJson).append('\'');
+        sb.append("studyId='").append(studyId).append('\'');
+        sb.append(", studyJson='").append(studyJson).append('\'');
+        sb.append(", id='").append(id).append('\'');
+        sb.append(", caId='").append(caId).append('\'');
+        sb.append(", ciId='").append(ciId).append('\'');
+        sb.append(", cvId='").append(cvId).append('\'');
+        sb.append(", variantId='").append(variantId).append('\'');
+        sb.append(", phenotypeNames=").append(phenotypeNames);
+        sb.append(", geneName='").append(geneName).append('\'');
+        sb.append(", consequenceTypeIds=").append(consequenceTypeIds);
+        sb.append(", xrefIds=").append(xrefIds);
+        sb.append(", panelId='").append(panelId).append('\'');
+        sb.append(", acmgs=").append(acmgs);
+        sb.append(", tier='").append(tier).append('\'');
+        sb.append(", clinicalSignificance='").append(clinicalSignificance).append('\'');
+        sb.append(", drugResponse='").append(drugResponse).append('\'');
+        sb.append(", traitAssociation='").append(traitAssociation).append('\'');
+        sb.append(", functionalEffect='").append(functionalEffect).append('\'');
+        sb.append(", tumorigenesis='").append(tumorigenesis).append('\'');
+        sb.append(", otherClassifications=").append(otherClassifications);
+        sb.append(", rolesInCancer=").append(rolesInCancer);
+        sb.append(", scores=").append(scores);
+        sb.append(", json='").append(json).append('\'');
         sb.append('}');
         return sb.toString();
+    }
+
+    public String getStudyId() {
+        return studyId;
+    }
+
+    public ClinicalVariantEvidenceSearch setStudyId(String studyId) {
+        this.studyId = studyId;
+        return this;
+    }
+
+    public String getStudyJson() {
+        return studyJson;
+    }
+
+    public ClinicalVariantEvidenceSearch setStudyJson(String studyJson) {
+        this.studyJson = studyJson;
+        return this;
     }
 
     public String getId() {
@@ -132,165 +172,183 @@ public class ClinicalVariantEvidenceSearch {
         return this;
     }
 
-    public String getCveVariantId() {
-        return cveVariantId;
+    public String getCaId() {
+        return caId;
     }
 
-    public ClinicalVariantEvidenceSearch setCveVariantId(String cveVariantId) {
-        this.cveVariantId = cveVariantId;
+    public ClinicalVariantEvidenceSearch setCaId(String caId) {
+        this.caId = caId;
         return this;
     }
 
-    public String getCveInterpretationId() {
-        return cveInterpretationId;
+    public String getCiId() {
+        return ciId;
     }
 
-    public ClinicalVariantEvidenceSearch setCveInterpretationId(String cveInterpretationId) {
-        this.cveInterpretationId = cveInterpretationId;
+    public ClinicalVariantEvidenceSearch setCiId(String ciId) {
+        this.ciId = ciId;
         return this;
     }
 
-    public List<String> getCvePhenotypeNames() {
-        return cvePhenotypeNames;
+    public String getCvId() {
+        return cvId;
     }
 
-    public ClinicalVariantEvidenceSearch setCvePhenotypeNames(List<String> cvePhenotypeNames) {
-        this.cvePhenotypeNames = cvePhenotypeNames;
+    public ClinicalVariantEvidenceSearch setCvId(String cvId) {
+        this.cvId = cvId;
         return this;
     }
 
-    public String getCveGeneName() {
-        return cveGeneName;
+    public String getVariantId() {
+        return variantId;
     }
 
-    public ClinicalVariantEvidenceSearch setCveGeneName(String cveGeneName) {
-        this.cveGeneName = cveGeneName;
+    public ClinicalVariantEvidenceSearch setVariantId(String variantId) {
+        this.variantId = variantId;
         return this;
     }
 
-    public List<String> getCveConsequenceTypeIds() {
-        return cveConsequenceTypeIds;
+    public List<String> getPhenotypeNames() {
+        return phenotypeNames;
     }
 
-    public ClinicalVariantEvidenceSearch setCveConsequenceTypeIds(List<String> cveConsequenceTypeIds) {
-        this.cveConsequenceTypeIds = cveConsequenceTypeIds;
+    public ClinicalVariantEvidenceSearch setPhenotypeNames(List<String> phenotypeNames) {
+        this.phenotypeNames = phenotypeNames;
         return this;
     }
 
-    public List<String> getCveXrefIds() {
-        return cveXrefIds;
+    public String getGeneName() {
+        return geneName;
     }
 
-    public ClinicalVariantEvidenceSearch setCveXrefIds(List<String> cveXrefIds) {
-        this.cveXrefIds = cveXrefIds;
+    public ClinicalVariantEvidenceSearch setGeneName(String geneName) {
+        this.geneName = geneName;
         return this;
     }
 
-    public String getCvePanelId() {
-        return cvePanelId;
+    public List<String> getConsequenceTypeIds() {
+        return consequenceTypeIds;
     }
 
-    public ClinicalVariantEvidenceSearch setCvePanelId(String cvePanelId) {
-        this.cvePanelId = cvePanelId;
+    public ClinicalVariantEvidenceSearch setConsequenceTypeIds(List<String> consequenceTypeIds) {
+        this.consequenceTypeIds = consequenceTypeIds;
         return this;
     }
 
-    public List<String> getCveAcmgs() {
-        return cveAcmgs;
+    public List<String> getXrefIds() {
+        return xrefIds;
     }
 
-    public ClinicalVariantEvidenceSearch setCveAcmgs(List<String> cveAcmgs) {
-        this.cveAcmgs = cveAcmgs;
+    public ClinicalVariantEvidenceSearch setXrefIds(List<String> xrefIds) {
+        this.xrefIds = xrefIds;
         return this;
     }
 
-    public String getCveTier() {
-        return cveTier;
+    public String getPanelId() {
+        return panelId;
     }
 
-    public ClinicalVariantEvidenceSearch setCveTier(String cveTier) {
-        this.cveTier = cveTier;
+    public ClinicalVariantEvidenceSearch setPanelId(String panelId) {
+        this.panelId = panelId;
         return this;
     }
 
-    public String getCveClinicalSignificance() {
-        return cveClinicalSignificance;
+    public List<String> getAcmgs() {
+        return acmgs;
     }
 
-    public ClinicalVariantEvidenceSearch setCveClinicalSignificance(String cveClinicalSignificance) {
-        this.cveClinicalSignificance = cveClinicalSignificance;
+    public ClinicalVariantEvidenceSearch setAcmgs(List<String> acmgs) {
+        this.acmgs = acmgs;
         return this;
     }
 
-    public String getCveDrugResponse() {
-        return cveDrugResponse;
+    public String getTier() {
+        return tier;
     }
 
-    public ClinicalVariantEvidenceSearch setCveDrugResponse(String cveDrugResponse) {
-        this.cveDrugResponse = cveDrugResponse;
+    public ClinicalVariantEvidenceSearch setTier(String tier) {
+        this.tier = tier;
         return this;
     }
 
-    public String getCveTraitAssociation() {
-        return cveTraitAssociation;
+    public String getClinicalSignificance() {
+        return clinicalSignificance;
     }
 
-    public ClinicalVariantEvidenceSearch setCveTraitAssociation(String cveTraitAssociation) {
-        this.cveTraitAssociation = cveTraitAssociation;
+    public ClinicalVariantEvidenceSearch setClinicalSignificance(String clinicalSignificance) {
+        this.clinicalSignificance = clinicalSignificance;
         return this;
     }
 
-    public String getCveFunctionalEffect() {
-        return cveFunctionalEffect;
+    public String getDrugResponse() {
+        return drugResponse;
     }
 
-    public ClinicalVariantEvidenceSearch setCveFunctionalEffect(String cveFunctionalEffect) {
-        this.cveFunctionalEffect = cveFunctionalEffect;
+    public ClinicalVariantEvidenceSearch setDrugResponse(String drugResponse) {
+        this.drugResponse = drugResponse;
         return this;
     }
 
-    public String getCveTumorigenesis() {
-        return cveTumorigenesis;
+    public String getTraitAssociation() {
+        return traitAssociation;
     }
 
-    public ClinicalVariantEvidenceSearch setCveTumorigenesis(String cveTumorigenesis) {
-        this.cveTumorigenesis = cveTumorigenesis;
+    public ClinicalVariantEvidenceSearch setTraitAssociation(String traitAssociation) {
+        this.traitAssociation = traitAssociation;
         return this;
     }
 
-    public List<String> getCveOtherClassifications() {
-        return cveOtherClassifications;
+    public String getFunctionalEffect() {
+        return functionalEffect;
     }
 
-    public ClinicalVariantEvidenceSearch setCveOtherClassifications(List<String> cveOtherClassifications) {
-        this.cveOtherClassifications = cveOtherClassifications;
+    public ClinicalVariantEvidenceSearch setFunctionalEffect(String functionalEffect) {
+        this.functionalEffect = functionalEffect;
         return this;
     }
 
-    public List<String> getCveRolesInCancer() {
-        return cveRolesInCancer;
+    public String getTumorigenesis() {
+        return tumorigenesis;
     }
 
-    public ClinicalVariantEvidenceSearch setCveRolesInCancer(List<String> cveRolesInCancer) {
-        this.cveRolesInCancer = cveRolesInCancer;
+    public ClinicalVariantEvidenceSearch setTumorigenesis(String tumorigenesis) {
+        this.tumorigenesis = tumorigenesis;
         return this;
     }
 
-    public Map<String, Double> getCveScores() {
-        return cveScores;
+    public List<String> getOtherClassifications() {
+        return otherClassifications;
     }
 
-    public ClinicalVariantEvidenceSearch setCveScores(Map<String, Double> cveScores) {
-        this.cveScores = cveScores;
+    public ClinicalVariantEvidenceSearch setOtherClassifications(List<String> otherClassifications) {
+        this.otherClassifications = otherClassifications;
         return this;
     }
 
-    public String getCveJson() {
-        return cveJson;
+    public List<String> getRolesInCancer() {
+        return rolesInCancer;
     }
 
-    public ClinicalVariantEvidenceSearch setCveJson(String cveJson) {
-        this.cveJson = cveJson;
+    public ClinicalVariantEvidenceSearch setRolesInCancer(List<String> rolesInCancer) {
+        this.rolesInCancer = rolesInCancer;
+        return this;
+    }
+
+    public Map<String, Double> getScores() {
+        return scores;
+    }
+
+    public ClinicalVariantEvidenceSearch setScores(Map<String, Double> scores) {
+        this.scores = scores;
+        return this;
+    }
+
+    public String getJson() {
+        return json;
+    }
+
+    public ClinicalVariantEvidenceSearch setJson(String json) {
+        this.json = json;
         return this;
     }
 }

@@ -17,7 +17,6 @@
 package com.zettagenomics.opencga.enterprise.cva.iterators;
 
 import com.zettagenomics.opencga.enterprise.cva.converters.ClinicalVariantConverter;
-import com.zettagenomics.opencga.enterprise.cva.converters.InterpretationConverter;
 import com.zettagenomics.opencga.enterprise.cva.exceptions.CvaException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;

@@ -26,50 +26,68 @@ import java.util.Map;
 
 public class ClinicalVariantSearch extends VariantSearchModel {
 
-    @Field("cvInterpretationId")
-    private String cvInterpretationId;
+    // Catalog fields
 
-    @Field("cvPrimary")
-    private boolean cvPrimary;
+    @Field("studyId")
+    private String studyId;
+
+    @Field("studyJson")
+    private String studyJson;
+
+    // "Primary" and "foreign" keys
+
+//    @Field("id")
+//    private String id;
+
+    @Field("caId")
+    private String caId;
+
+    @Field("ciId")
+    private String ciId;
+
+    // Clinical variant fields
+
+    @Field("primary")
+    private boolean primary;
 
 	// Comments are stores: author -- message -- tag1:tag2:.. -- date
-    @Field("cvComments")
-    private List<String> cvComments;
+    @Field("comments")
+    private List<String> comments;
 
 	// Filters are stored in two dynamic fields: one for string values, the other one for numeric ones
-    @Field("cvAnnotations")
-    private Map<String, String> cvAnnotations;
+    @Field("annotations")
+    private Map<String, String> annotations;
 
-    @Field("cvAnnotationScores")
-    private Map<String, Float> cvAnnotationScores;
+    @Field("annotationScores")
+    private Map<String, Float> annotationScores;
 
-    @Field("cvDiscussionAuthor")
-    private String cvDiscussionAuthor;
+    @Field("discussionAuthor")
+    private String discussionAuthor;
 
-    @Field("cvDiscussionDate")
-    private String cvDiscussionDate;
+    @Field("discussionDate")
+    private String discussionDate;
 
-    @Field("cvDiscussionText")
-    private String cvDiscussionText;
+    @Field("discussionText")
+    private String discussionText;
 
-    @Field("cvConfidenceValue")
-    private String cvConfidenceValue;
+    @Field("confidenceValue")
+    private String confidenceValue;
 
-    @Field("cvConfidenceAuthor")
-    private String cvConfidenceAuthor;
+    @Field("confidenceAuthor")
+    private String confidenceAuthor;
 
-    @Field("cvConfidenceDate")
-    private String cvConfidenceDate;
+    @Field("confidenceDate")
+    private String confidenceDate;
 
-    @Field("cvTags")
-    private List<String> cvTags;
+    @Field("tags")
+    private List<String> tags;
 
-    @Field("cvStatus")
-    private String cvStatus;
+    @Field("status")
+    private String status;
 
     // Clinical variant stored in a JSON string
-    @Field("cvJson")
-    private String cvJson;
+    @Field("json")
+    private String json;
 
     public ClinicalVariantSearch() {
         init();
@@ -81,156 +99,186 @@ public class ClinicalVariantSearch extends VariantSearchModel {
     }
 
     private void init() {
-        cvComments = new ArrayList<>();
-        cvAnnotations = new HashMap<>();
-        cvAnnotationScores = new HashMap<>();
-        cvTags = new ArrayList<>();
+        comments = new ArrayList<>();
+        annotations = new HashMap<>();
+        annotationScores = new HashMap<>();
+        tags = new ArrayList<>();
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalVariantSearch{");
-        sb.append("cvInterpretationId='").append(cvInterpretationId).append('\'');
-        sb.append(", cvPrimary=").append(cvPrimary);
-        sb.append(", cvComments=").append(cvComments);
-        sb.append(", cvAnnotations=").append(cvAnnotations);
-        sb.append(", cvAnnotationScores=").append(cvAnnotationScores);
-        sb.append(", cvDiscussionAuthor='").append(cvDiscussionAuthor).append('\'');
-        sb.append(", cvDiscussionDate='").append(cvDiscussionDate).append('\'');
-        sb.append(", cvDiscussionText='").append(cvDiscussionText).append('\'');
-        sb.append(", cvConfidenceValue='").append(cvConfidenceValue).append('\'');
-        sb.append(", cvConfidenceAuthor='").append(cvConfidenceAuthor).append('\'');
-        sb.append(", cvConfidenceDate='").append(cvConfidenceDate).append('\'');
-        sb.append(", cvTags=").append(cvTags);
-        sb.append(", cvStatus='").append(cvStatus).append('\'');
-        sb.append(", cvJson='").append(cvJson).append('\'');
+        sb.append("studyId='").append(studyId).append('\'');
+        sb.append(", studyJson='").append(studyJson).append('\'');
+        sb.append(", caId='").append(caId).append('\'');
+        sb.append(", ciId='").append(ciId).append('\'');
+        sb.append(", primary=").append(primary);
+        sb.append(", comments=").append(comments);
+        sb.append(", annotations=").append(annotations);
+        sb.append(", annotationScores=").append(annotationScores);
+        sb.append(", discussionAuthor='").append(discussionAuthor).append('\'');
+        sb.append(", discussionDate='").append(discussionDate).append('\'');
+        sb.append(", discussionText='").append(discussionText).append('\'');
+        sb.append(", confidenceValue='").append(confidenceValue).append('\'');
+        sb.append(", confidenceAuthor='").append(confidenceAuthor).append('\'');
+        sb.append(", confidenceDate='").append(confidenceDate).append('\'');
+        sb.append(", tags=").append(tags);
+        sb.append(", status='").append(status).append('\'');
+        sb.append(", json='").append(json).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public String getCvInterpretationId() {
-        return cvInterpretationId;
+    public String getStudyId() {
+        return studyId;
     }
 
-    public ClinicalVariantSearch setCvInterpretationId(String cvInterpretationId) {
-        this.cvInterpretationId = cvInterpretationId;
+    public ClinicalVariantSearch setStudyId(String studyId) {
+        this.studyId = studyId;
         return this;
     }
 
-    public boolean isCvPrimary() {
-        return cvPrimary;
+    public String getStudyJson() {
+        return studyJson;
     }
 
-    public ClinicalVariantSearch setCvPrimary(boolean cvPrimary) {
-        this.cvPrimary = cvPrimary;
+    public ClinicalVariantSearch setStudyJson(String studyJson) {
+        this.studyJson = studyJson;
         return this;
     }
 
-    public List<String> getCvComments() {
-        return cvComments;
+    public String getCaId() {
+        return caId;
     }
 
-    public ClinicalVariantSearch setCvComments(List<String> cvComments) {
-        this.cvComments = cvComments;
+    public ClinicalVariantSearch setCaId(String caId) {
+        this.caId = caId;
         return this;
     }
 
-    public Map<String, String> getCvAnnotations() {
-        return cvAnnotations;
+    public String getCiId() {
+        return ciId;
     }
 
-    public ClinicalVariantSearch setCvAnnotations(Map<String, String> cvAnnotations) {
-        this.cvAnnotations = cvAnnotations;
+    public ClinicalVariantSearch setCiId(String ciId) {
+        this.ciId = ciId;
         return this;
     }
 
-    public Map<String, Float> getCvAnnotationScores() {
-        return cvAnnotationScores;
+    public boolean isPrimary() {
+        return primary;
     }
 
-    public ClinicalVariantSearch setCvAnnotationScores(Map<String, Float> cvAnnotationScores) {
-        this.cvAnnotationScores = cvAnnotationScores;
+    public ClinicalVariantSearch setPrimary(boolean primary) {
+        this.primary = primary;
         return this;
     }
 
-    public String getCvDiscussionAuthor() {
-        return cvDiscussionAuthor;
+    public List<String> getComments() {
+        return comments;
     }
 
-    public ClinicalVariantSearch setCvDiscussionAuthor(String cvDiscussionAuthor) {
-        this.cvDiscussionAuthor = cvDiscussionAuthor;
+    public ClinicalVariantSearch setComments(List<String> comments) {
+        this.comments = comments;
         return this;
     }
 
-    public String getCvDiscussionDate() {
-        return cvDiscussionDate;
+    public Map<String, String> getAnnotations() {
+        return annotations;
     }
 
-    public ClinicalVariantSearch setCvDiscussionDate(String cvDiscussionDate) {
-        this.cvDiscussionDate = cvDiscussionDate;
+    public ClinicalVariantSearch setAnnotations(Map<String, String> annotations) {
+        this.annotations = annotations;
         return this;
     }
 
-    public String getCvDiscussionText() {
-        return cvDiscussionText;
+    public Map<String, Float> getAnnotationScores() {
+        return annotationScores;
     }
 
-    public ClinicalVariantSearch setCvDiscussionText(String cvDiscussionText) {
-        this.cvDiscussionText = cvDiscussionText;
+    public ClinicalVariantSearch setAnnotationScores(Map<String, Float> annotationScores) {
+        this.annotationScores = annotationScores;
         return this;
     }
 
-    public String getCvConfidenceValue() {
-        return cvConfidenceValue;
+    public String getDiscussionAuthor() {
+        return discussionAuthor;
     }
 
-    public ClinicalVariantSearch setCvConfidenceValue(String cvConfidenceValue) {
-        this.cvConfidenceValue = cvConfidenceValue;
+    public ClinicalVariantSearch setDiscussionAuthor(String discussionAuthor) {
+        this.discussionAuthor = discussionAuthor;
         return this;
     }
 
-    public String getCvConfidenceAuthor() {
-        return cvConfidenceAuthor;
+    public String getDiscussionDate() {
+        return discussionDate;
     }
 
-    public ClinicalVariantSearch setCvConfidenceAuthor(String cvConfidenceAuthor) {
-        this.cvConfidenceAuthor = cvConfidenceAuthor;
+    public ClinicalVariantSearch setDiscussionDate(String discussionDate) {
+        this.discussionDate = discussionDate;
         return this;
     }
 
-    public String getCvConfidenceDate() {
-        return cvConfidenceDate;
+    public String getDiscussionText() {
+        return discussionText;
     }
 
-    public ClinicalVariantSearch setCvConfidenceDate(String cvConfidenceDate) {
-        this.cvConfidenceDate = cvConfidenceDate;
+    public ClinicalVariantSearch setDiscussionText(String discussionText) {
+        this.discussionText = discussionText;
         return this;
     }
 
-    public List<String> getCvTags() {
-        return cvTags;
+    public String getConfidenceValue() {
+        return confidenceValue;
     }
 
-    public ClinicalVariantSearch setCvTags(List<String> cvTags) {
-        this.cvTags = cvTags;
+    public ClinicalVariantSearch setConfidenceValue(String confidenceValue) {
+        this.confidenceValue = confidenceValue;
         return this;
     }
 
-    public String getCvStatus() {
-        return cvStatus;
+    public String getConfidenceAuthor() {
+        return confidenceAuthor;
     }
 
-    public ClinicalVariantSearch setCvStatus(String cvStatus) {
-        this.cvStatus = cvStatus;
+    public ClinicalVariantSearch setConfidenceAuthor(String confidenceAuthor) {
+        this.confidenceAuthor = confidenceAuthor;
         return this;
     }
 
-    public String getCvJson() {
-        return cvJson;
+    public String getConfidenceDate() {
+        return confidenceDate;
     }
 
-    public ClinicalVariantSearch setCvJson(String cvJson) {
-        this.cvJson = cvJson;
+    public ClinicalVariantSearch setConfidenceDate(String confidenceDate) {
+        this.confidenceDate = confidenceDate;
+        return this;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public ClinicalVariantSearch setTags(List<String> tags) {
+        this.tags = tags;
+        return this;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public ClinicalVariantSearch setStatus(String status) {
+        this.status = status;
+        return this;
+    }
+
+    public String getJson() {
+        return json;
+    }
+
+    public ClinicalVariantSearch setJson(String json) {
+        this.json = json;
         return this;
     }
 }

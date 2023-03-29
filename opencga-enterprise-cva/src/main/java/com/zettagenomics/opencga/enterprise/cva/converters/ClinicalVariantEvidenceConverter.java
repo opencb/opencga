@@ -28,12 +28,13 @@ public class ClinicalVariantEvidenceConverter extends SearchConverter {
     }
 
     public ClinicalVariantEvidenceSearch toClinicalVariantEvidenceSearch(ClinicalVariantEvidence cve, String variantId,
-                                                                         String interpretationId) throws CvaException {
-        return toClinicalVariantEvidenceSearch(Collections.singletonList(cve), variantId, interpretationId).get(0);
+                                                                         String interpretationId, String clinicalAnalysisId)
+            throws CvaException {
+        return toClinicalVariantEvidenceSearch(Collections.singletonList(cve), variantId, interpretationId, clinicalAnalysisId).get(0);
     }
 
     public List<ClinicalVariantEvidenceSearch> toClinicalVariantEvidenceSearch(List<ClinicalVariantEvidence> cveList, String variantId,
-                                                                               String interpreationId)
+                                                                               String interpretationId, String clinicalAnalysisId)
             throws CvaException {
         List<ClinicalVariantEvidenceSearch> cvesList = new ArrayList<>();
 
@@ -41,70 +42,71 @@ public class ClinicalVariantEvidenceConverter extends SearchConverter {
         for (ClinicalVariantEvidence cve : cveList) {
             ClinicalVariantEvidenceSearch cves = new ClinicalVariantEvidenceSearch();
 
-            cves.setId((i++) + "-" + variantId + "-" + interpreationId);
-            cves.setCveVariantId(variantId);
-            cves.setCveInterpretationId(interpreationId);
+            cves.setId((i++) + "-" + variantId + "-" + interpretationId);
+            cves.setVariantId(variantId);
+            cves.setCiId(interpretationId);
+            cves.setCaId(clinicalAnalysisId);
 
             // Phenotypes (including IDs and names)
             if (CollectionUtils.isNotEmpty(cve.getPhenotypes())) {
-                cves.setCvePhenotypeNames(cve.getPhenotypes().stream().map(p -> p.getName()).collect(Collectors.toList()));
-                cves.getCvePhenotypeNames().addAll(cve.getPhenotypes().stream().map(p -> p.getId()).collect(Collectors.toList()));
+                cves.setPhenotypeNames(cve.getPhenotypes().stream().map(p -> p.getName()).collect(Collectors.toList()));
+                cves.getPhenotypeNames().addAll(cve.getPhenotypes().stream().map(p -> p.getId()).collect(Collectors.toList()));
             }
 
             // Genomic feature
             if (cve.getGenomicFeature() != null) {
                 GenomicFeature genomicFeature = cve.getGenomicFeature();
 
-                cves.setCveGeneName(genomicFeature.getGeneName());
+                cves.setGeneName(genomicFeature.getGeneName());
 
                 if (CollectionUtils.isNotEmpty(genomicFeature.getConsequenceTypes())) {
-                    cves.setCveConsequenceTypeIds(genomicFeature.getConsequenceTypes().stream().map(so -> so.getAccession())
+                    cves.setConsequenceTypeIds(genomicFeature.getConsequenceTypes().stream().map(so -> so.getAccession())
                             .collect(Collectors.toList()));
-                    cves.getCveConsequenceTypeIds().addAll(genomicFeature.getConsequenceTypes().stream().map(so -> so.getName())
+                    cves.getConsequenceTypeIds().addAll(genomicFeature.getConsequenceTypes().stream().map(so -> so.getName())
                             .collect(Collectors.toList()));
                 }
 
                 if (CollectionUtils.isNotEmpty(genomicFeature.getXrefs())) {
-                    cves.setCveXrefIds(genomicFeature.getXrefs().stream().map(x -> x.getId()).collect(Collectors.toList()));
+                    cves.setXrefIds(genomicFeature.getXrefs().stream().map(x -> x.getId()).collect(Collectors.toList()));
                 }
             }
 
             // Panel ID
-            cves.setCvePanelId(cve.getPanelId());
+            cves.setPanelId(cve.getPanelId());
 
             if (cve.getClassification() != null) {
                 VariantClassification classification = cve.getClassification();
-                cves.setCveTier(classification.getTier());
+                cves.setTier(classification.getTier());
                 if (CollectionUtils.isNotEmpty(classification.getAcmg())) {
-                    cves.setCveAcmgs(classification.getAcmg().stream().map(a -> a.getClassification()).collect(Collectors.toList()));
+                    cves.setAcmgs(classification.getAcmg().stream().map(a -> a.getClassification()).collect(Collectors.toList()));
                 }
                 if (classification.getClinicalSignificance() != null) {
-                    cves.setCveClinicalSignificance(classification.getClinicalSignificance().name());
+                    cves.setClinicalSignificance(classification.getClinicalSignificance().name());
                 }
                 if (classification.getDrugResponse() != null) {
-                    cves.setCveDrugResponse(classification.getDrugResponse().name());
+                    cves.setDrugResponse(classification.getDrugResponse().name());
                 }
                 if (classification.getTraitAssociation() != null) {
-                    cves.setCveTraitAssociation(classification.getTraitAssociation().name());
+                    cves.setTraitAssociation(classification.getTraitAssociation().name());
                 }
                 if (classification.getFunctionalEffect() != null) {
-                    cves.setCveFunctionalEffect(classification.getFunctionalEffect().name());
+                    cves.setFunctionalEffect(classification.getFunctionalEffect().name());
                 }
                 if (classification.getTumorigenesis() != null) {
-                    cves.setCveTumorigenesis(classification.getTumorigenesis().name());
+                    cves.setTumorigenesis(classification.getTumorigenesis().name());
                 }
-                cves.setCveOtherClassifications(classification.getOther());
+                cves.setOtherClassifications(classification.getOther());
             }
 
             if (CollectionUtils.isNotEmpty(cve.getRolesInCancer())) {
-                cves.setCveRolesInCancer(cve.getRolesInCancer().stream().map(r -> r.name()).collect(Collectors.toList()));
+                cves.setRolesInCancer(cve.getRolesInCancer().stream().map(r -> r.name()).collect(Collectors.toList()));
             }
 
 //            private Map<String, Double> cveScores;
 
             // Clinical variant evidence stored in a JSON string
             try {
-                cves.setCveJson(mapper.writeValueAsString(cve));
+                cves.setJson(mapper.writeValueAsString(cve));
             } catch (JsonProcessingException e) {
                 throw new CvaException("Error when storing clinical varaint evidence JSON field", e);
             }
@@ -115,15 +117,15 @@ public class ClinicalVariantEvidenceConverter extends SearchConverter {
         return cvesList;
     }
 
-    public ClinicalVariantEvidence toClinicalVariantEvidence(ClinicalVariantEvidenceSearch cves) {
-        return toClinicalVariantEvidence(Collections.singletonList(cves).get(0));
+    public ClinicalVariantEvidence toClinicalVariantEvidence(ClinicalVariantEvidenceSearch cves) throws CvaException {
+        return toClinicalVariantEvidence(Collections.singletonList(cves)).get(0);
     }
 
     public List<ClinicalVariantEvidence> toClinicalVariantEvidence(List<ClinicalVariantEvidenceSearch> cvesList) throws CvaException {
         List<ClinicalVariantEvidence> cveList = new ArrayList<>();
         for (ClinicalVariantEvidenceSearch cves : cvesList) {
             try {
-                cveList.add(clinicalVariantEvidenceReader.readValue(cves.getCveJson()));
+                cveList.add(clinicalVariantEvidenceReader.readValue(cves.getJson()));
             } catch (JsonProcessingException e) {
                 throw new CvaException("Error when converting to clinical variant evidence", e);
             }

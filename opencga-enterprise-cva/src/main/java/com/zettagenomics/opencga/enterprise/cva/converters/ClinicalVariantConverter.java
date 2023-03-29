@@ -35,13 +35,13 @@ public class ClinicalVariantConverter extends SearchConverter {
         this.clinicalVariantReader = mapper.readerFor(ClinicalVariant.class);
     }
 
-    public ClinicalVariantSearch toClinicalVariantSearch(ClinicalVariant cv, boolean isPrimary, String interpretationId)
-            throws CvaException {
-        return toClinicalVariantSearch(Collections.singletonList(cv), isPrimary, interpretationId).get(0);
+    public ClinicalVariantSearch toClinicalVariantSearch(ClinicalVariant cv, boolean primary, String interpretationId,
+                                                         String clinicalAnalysisId) throws CvaException {
+        return toClinicalVariantSearch(Collections.singletonList(cv), primary, interpretationId, clinicalAnalysisId).get(0);
     }
 
-    public List<ClinicalVariantSearch> toClinicalVariantSearch(List<ClinicalVariant> cvList, boolean isPrimary, String interpretationId)
-            throws CvaException {
+    public List<ClinicalVariantSearch> toClinicalVariantSearch(List<ClinicalVariant> cvList, boolean primary, String interpretationId,
+                                                               String clinicalAnalysisId) throws CvaException {
         List<ClinicalVariantSearch> cvsList = new ArrayList<>();
 
         for (ClinicalVariant cv : cvList) {
@@ -49,13 +49,14 @@ public class ClinicalVariantConverter extends SearchConverter {
             ClinicalVariantSearch cvs = new ClinicalVariantSearch(variantSearchModel);
 
             cvs.setId(cv.toStringSimple() + "-" + interpretationId);
-            cvs.setCvInterpretationId(interpretationId);
+            cvs.setCiId(interpretationId);
+            cvs.setCaId(clinicalAnalysisId);
 
-            cvs.setCvPrimary(isPrimary);
+            cvs.setPrimary(primary);
 
             // Comments are stores: author -- message -- tag1:tag2:.. -- date
             if (CollectionUtils.isNotEmpty(cv.getComments())) {
-                cvs.setCvComments(cv.getComments().stream().map(c -> ConverterUtils.encodeComent(c)).collect(Collectors.toList()));
+                cvs.setComments(cv.getComments().stream().map(c -> ConverterUtils.encodeComent(c)).collect(Collectors.toList()));
             }
 
             // Filters are stored in two dynamic fields: one for string values, the other one for numeric ones
@@ -65,27 +66,27 @@ public class ClinicalVariantConverter extends SearchConverter {
             // Discussion
             if (cv.getDiscussion() != null) {
                 ClinicalDiscussion discussion = cv.getDiscussion();
-                cvs.setCvDiscussionAuthor(discussion.getAuthor())
-                        .setCvDiscussionDate(discussion.getDate())
-                        .setCvDiscussionText(discussion.getText());
+                cvs.setDiscussionAuthor(discussion.getAuthor())
+                        .setDiscussionDate(discussion.getDate())
+                        .setDiscussionText(discussion.getText());
             }
 
             // Confidence
             if (cv.getConfidence() != null) {
                 ClinicalVariantConfidence confidence = cv.getConfidence();
-                cvs.setCvConfidenceAuthor(confidence.getAuthor())
-                        .setCvConfidenceDate(confidence.getDate());
+                cvs.setConfidenceAuthor(confidence.getAuthor())
+                        .setConfidenceDate(confidence.getDate());
                 if (confidence.getValue() != null) {
-                    cvs.setCvConfidenceValue(confidence.getValue().name());
+                    cvs.setConfidenceValue(confidence.getValue().name());
                 }
             }
 
             // Tags
-            cvs.setCvTags(cv.getTags());
+            cvs.setTags(cv.getTags());
 
             // Status
             if (cv.getStatus() != null) {
-                cvs.setCvStatus(cv.getStatus().name());
+                cvs.setStatus(cv.getStatus().name());
             }
 
             // Clinical variant stored in a JSON string
@@ -95,7 +96,7 @@ public class ClinicalVariantConverter extends SearchConverter {
 
             cv.setEvidences(null);
             try {
-                cvs.setCvJson(mapper.writeValueAsString(cv));
+                cvs.setJson(mapper.writeValueAsString(cv));
             } catch (JsonProcessingException e) {
                 throw new CvaException("Error when storing clinical variant JSON field", e);
             }
@@ -116,7 +117,7 @@ public class ClinicalVariantConverter extends SearchConverter {
         List<ClinicalVariant> cvList = new ArrayList<>();
         for (ClinicalVariantSearch cvs : cvsList) {
             try {
-                cvList.add(clinicalVariantReader.readValue(cvs.getCvJson()));
+                cvList.add(clinicalVariantReader.readValue(cvs.getJson()));
             } catch (JsonProcessingException e) {
                 throw new CvaException("Error when converting to clinical variant " + cvs.getVariantId(), e);
             }

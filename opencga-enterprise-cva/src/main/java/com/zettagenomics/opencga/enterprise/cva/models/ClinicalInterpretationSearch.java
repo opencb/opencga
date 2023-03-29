@@ -21,16 +21,31 @@ import org.apache.solr.client.solrj.beans.Field;
 import java.util.ArrayList;
 import java.util.List;
 
-public class InterpretationSearch {
+public class ClinicalInterpretationSearch {
+
+    // Catalog fields
+
+    @Field("studyId")
+    private String studyId;
+
+    @Field("studyJson")
+    private String studyJson;
+
+    // "Primary" and "foreign" keys
 
     @Field("id")
     private String id;
 
+    @Field("caId")
+    private String caId;
+
+    // Clinical interpretation fields
+
+    @Field("primary")
+    private boolean primary;
+
     @Field("description")
     private String description;
-
-    @Field("clinicalAnalysisId")
-    private String clinicalAnalysisId;
 
     // Panel IDs contain both IDs and names
     @Field("panelIds")
@@ -96,7 +111,7 @@ public class InterpretationSearch {
     @Field("json")
     private String json;
 
-    public InterpretationSearch() {
+    public ClinicalInterpretationSearch() {
         init();
     }
 
@@ -108,10 +123,13 @@ public class InterpretationSearch {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("InterpretationSearch{");
-        sb.append("id='").append(id).append('\'');
+        final StringBuilder sb = new StringBuilder("ClinicalInterpretationSearch{");
+        sb.append("studyId='").append(studyId).append('\'');
+        sb.append(", studyJson='").append(studyJson).append('\'');
+        sb.append(", id='").append(id).append('\'');
+        sb.append(", caId='").append(caId).append('\'');
+        sb.append(", primary=").append(primary);
         sb.append(", description='").append(description).append('\'');
-        sb.append(", clinicalAnalysisId='").append(clinicalAnalysisId).append('\'');
         sb.append(", panelIds=").append(panelIds);
         sb.append(", analystId='").append(analystId).append('\'');
         sb.append(", analystName='").append(analystName).append('\'');
@@ -136,12 +154,48 @@ public class InterpretationSearch {
         return sb.toString();
     }
 
+    public String getStudyId() {
+        return studyId;
+    }
+
+    public ClinicalInterpretationSearch setStudyId(String studyId) {
+        this.studyId = studyId;
+        return this;
+    }
+
+    public String getStudyJson() {
+        return studyJson;
+    }
+
+    public ClinicalInterpretationSearch setStudyJson(String studyJson) {
+        this.studyJson = studyJson;
+        return this;
+    }
+
     public String getId() {
         return id;
     }
 
-    public InterpretationSearch setId(String id) {
+    public ClinicalInterpretationSearch setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    public String getCaId() {
+        return caId;
+    }
+
+    public ClinicalInterpretationSearch setCaId(String caId) {
+        this.caId = caId;
+        return this;
+    }
+
+    public boolean isPrimary() {
+        return primary;
+    }
+
+    public ClinicalInterpretationSearch setPrimary(boolean primary) {
+        this.primary = primary;
         return this;
     }
 
@@ -149,17 +203,8 @@ public class InterpretationSearch {
         return description;
     }
 
-    public InterpretationSearch setDescription(String description) {
+    public ClinicalInterpretationSearch setDescription(String description) {
         this.description = description;
-        return this;
-    }
-
-    public String getClinicalAnalysisId() {
-        return clinicalAnalysisId;
-    }
-
-    public InterpretationSearch setClinicalAnalysisId(String clinicalAnalysisId) {
-        this.clinicalAnalysisId = clinicalAnalysisId;
         return this;
     }
 
@@ -167,7 +212,7 @@ public class InterpretationSearch {
         return panelIds;
     }
 
-    public InterpretationSearch setPanelIds(List<String> panelIds) {
+    public ClinicalInterpretationSearch setPanelIds(List<String> panelIds) {
         this.panelIds = panelIds;
         return this;
     }
@@ -176,7 +221,7 @@ public class InterpretationSearch {
         return analystId;
     }
 
-    public InterpretationSearch setAnalystId(String analystId) {
+    public ClinicalInterpretationSearch setAnalystId(String analystId) {
         this.analystId = analystId;
         return this;
     }
@@ -185,7 +230,7 @@ public class InterpretationSearch {
         return analystName;
     }
 
-    public InterpretationSearch setAnalystName(String analystName) {
+    public ClinicalInterpretationSearch setAnalystName(String analystName) {
         this.analystName = analystName;
         return this;
     }
@@ -194,7 +239,7 @@ public class InterpretationSearch {
         return analystEmail;
     }
 
-    public InterpretationSearch setAnalystEmail(String analystEmail) {
+    public ClinicalInterpretationSearch setAnalystEmail(String analystEmail) {
         this.analystEmail = analystEmail;
         return this;
     }
@@ -203,7 +248,7 @@ public class InterpretationSearch {
         return analystAssignedBy;
     }
 
-    public InterpretationSearch setAnalystAssignedBy(String analystAssignedBy) {
+    public ClinicalInterpretationSearch setAnalystAssignedBy(String analystAssignedBy) {
         this.analystAssignedBy = analystAssignedBy;
         return this;
     }
@@ -212,7 +257,7 @@ public class InterpretationSearch {
         return analystDate;
     }
 
-    public InterpretationSearch setAnalystDate(String analystDate) {
+    public ClinicalInterpretationSearch setAnalystDate(String analystDate) {
         this.analystDate = analystDate;
         return this;
     }
@@ -221,7 +266,7 @@ public class InterpretationSearch {
         return methodName;
     }
 
-    public InterpretationSearch setMethodName(String methodName) {
+    public ClinicalInterpretationSearch setMethodName(String methodName) {
         this.methodName = methodName;
         return this;
     }
@@ -230,7 +275,7 @@ public class InterpretationSearch {
         return methodVersion;
     }
 
-    public InterpretationSearch setMethodVersion(String methodVersion) {
+    public ClinicalInterpretationSearch setMethodVersion(String methodVersion) {
         this.methodVersion = methodVersion;
         return this;
     }
@@ -239,7 +284,7 @@ public class InterpretationSearch {
         return methodCommit;
     }
 
-    public InterpretationSearch setMethodCommit(String methodCommit) {
+    public ClinicalInterpretationSearch setMethodCommit(String methodCommit) {
         this.methodCommit = methodCommit;
         return this;
     }
@@ -248,7 +293,7 @@ public class InterpretationSearch {
         return methodDependencies;
     }
 
-    public InterpretationSearch setMethodDependencies(List<String> methodDependencies) {
+    public ClinicalInterpretationSearch setMethodDependencies(List<String> methodDependencies) {
         this.methodDependencies = methodDependencies;
         return this;
     }
@@ -257,7 +302,7 @@ public class InterpretationSearch {
         return comments;
     }
 
-    public InterpretationSearch setComments(List<String> comments) {
+    public ClinicalInterpretationSearch setComments(List<String> comments) {
         this.comments = comments;
         return this;
     }
@@ -266,7 +311,7 @@ public class InterpretationSearch {
         return locked;
     }
 
-    public InterpretationSearch setLocked(boolean locked) {
+    public ClinicalInterpretationSearch setLocked(boolean locked) {
         this.locked = locked;
         return this;
     }
@@ -275,7 +320,7 @@ public class InterpretationSearch {
         return statusId;
     }
 
-    public InterpretationSearch setStatusId(String statusId) {
+    public ClinicalInterpretationSearch setStatusId(String statusId) {
         this.statusId = statusId;
         return this;
     }
@@ -284,7 +329,7 @@ public class InterpretationSearch {
         return statusName;
     }
 
-    public InterpretationSearch setStatusName(String statusName) {
+    public ClinicalInterpretationSearch setStatusName(String statusName) {
         this.statusName = statusName;
         return this;
     }
@@ -293,7 +338,7 @@ public class InterpretationSearch {
         return statusDescription;
     }
 
-    public InterpretationSearch setStatusDescription(String statusDescription) {
+    public ClinicalInterpretationSearch setStatusDescription(String statusDescription) {
         this.statusDescription = statusDescription;
         return this;
     }
@@ -302,7 +347,7 @@ public class InterpretationSearch {
         return statusDate;
     }
 
-    public InterpretationSearch setStatusDate(String statusDate) {
+    public ClinicalInterpretationSearch setStatusDate(String statusDate) {
         this.statusDate = statusDate;
         return this;
     }
@@ -311,7 +356,7 @@ public class InterpretationSearch {
         return creationDate;
     }
 
-    public InterpretationSearch setCreationDate(String creationDate) {
+    public ClinicalInterpretationSearch setCreationDate(String creationDate) {
         this.creationDate = creationDate;
         return this;
     }
@@ -320,7 +365,7 @@ public class InterpretationSearch {
         return modificationDate;
     }
 
-    public InterpretationSearch setModificationDate(String modificationDate) {
+    public ClinicalInterpretationSearch setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
         return this;
     }
@@ -329,7 +374,7 @@ public class InterpretationSearch {
         return version;
     }
 
-    public InterpretationSearch setVersion(int version) {
+    public ClinicalInterpretationSearch setVersion(int version) {
         this.version = version;
         return this;
     }
@@ -338,7 +383,7 @@ public class InterpretationSearch {
         return json;
     }
 
-    public InterpretationSearch setJson(String json) {
+    public ClinicalInterpretationSearch setJson(String json) {
         this.json = json;
         return this;
     }

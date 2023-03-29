@@ -63,30 +63,39 @@
     <field name="_text_" type="text_general" multiValued="true" indexed="true" stored="false"/>
     <field name="_version_" type="long" indexed="false" stored="false"/>
 
+	<!-- Catalog -->
+
+    <field name="studyId" type="text_en" indexed="true" stored="true" multiValued="false"/>
+    <field name="studyJson" type="text_en" indexed="false" stored="true" multiValued="false"/>
+
+	<!-- Foreign keys -->
+
+    <field name="caId" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="ciId" type="string" indexed="true" stored="true" multiValued="false"/>
+
 	<!-- ClinicalVariant -->
 
-    <field name="cvInterpretationId" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="cvPrimary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+    <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
 
 	<!-- Comments are stores: author == message == tag1:tag2:.. == date -->
-    <field name="cvComments" type="text_en" indexed="true" stored="true" multiValued="true"/>
+    <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
 
 	<!-- Filters are stored in two dynamic fields: one for string values, the other one for numeric ones -->
-	<dynamicField name="cvAnnotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
-    <dynamicField name="cvAnnotationScores_*" type="float" indexed="false" stored="true" multiValued="false"/>
+	<dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
+    <dynamicField name="annotationScores_*" type="float" indexed="false" stored="true" multiValued="false"/>
 
-    <field name="cvDiscussionAuthor" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="cvDiscussionName" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="cvDiscussionText" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="discussionAuthor" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="discussionName" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="discussionText" type="string" indexed="true" stored="true" multiValued="false"/>
 
-    <field name="cvConfidenceValue" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="cvConfidenceAuthor" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="cvConfidenceDate" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="confidenceValue" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="confidenceAuthor" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="confidenceDate" type="string" indexed="true" stored="true" multiValued="false"/>
 
-    <field name="cvTags" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="cvStatus" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="tags" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
 
-    <field name="cvJson" type="text_en" indexed="false" stored="true" multiValued="false"/>
+    <field name="json" type="text_en" indexed="false" stored="true" multiValued="false"/>
 
     <!-- Variant fields copied from OpenCGA -->
 

@@ -36,21 +36,25 @@ public class ClinicalVariantSolrEngineTest {
 
         cvaEngine = cvaSolrExternalResource.configure();
 
-        cvaEngine.getSolrManager().remove(INTERPRETATIONS_COLLECTION);
-        cvaEngine.getSolrManager().remove(CLINICAL_VARIANTS_COLLECTION);
-        cvaEngine.getSolrManager().remove(CLINICAL_VARIANT_EVIDENCES_COLLECTION);
+        try {
+            cvaEngine.getSolrManager().remove(INTERPRETATIONS_COLLECTION);
+            cvaEngine.getSolrManager().remove(CLINICAL_VARIANTS_COLLECTION);
+            cvaEngine.getSolrManager().remove(CLINICAL_VARIANT_EVIDENCES_COLLECTION);
+        } catch (Exception e) {
+            // Nothing to do
+        }
 
         cvaEngine.getSolrManager().createCore(INTERPRETATIONS_COLLECTION, INTERPRETATION_CONFIGSET);
         cvaEngine.getSolrManager().createCore(CLINICAL_VARIANTS_COLLECTION, CLINICAL_VARIANT_CONFIGSET);
         cvaEngine.getSolrManager().createCore(CLINICAL_VARIANT_EVIDENCES_COLLECTION, CLINICAL_VARIANT_EVIDENCE_CONFIGSET);
 
-        InputStream is = InterpretationConverterTest.class.getClassLoader().getResourceAsStream("interpretation1.json");
+        InputStream is = ClinicalInterpretationConverterTest.class.getClassLoader().getResourceAsStream("interpretation1.json");
         org.opencb.opencga.core.models.clinical.Interpretation interpretation = JacksonUtils.getDefaultObjectMapper().readerFor(org.opencb.opencga.core.models.clinical.Interpretation.class).readValue(is);
         cvaEngine.insert(interpretation, true);
         System.out.println("Interpretation " + interpretation.getClinicalAnalysisId() + " loaded !");
 
 
-        is = InterpretationConverterTest.class.getClassLoader().getResourceAsStream("interpretation2.json");
+        is = ClinicalInterpretationConverterTest.class.getClassLoader().getResourceAsStream("interpretation2.json");
         interpretation = JacksonUtils.getDefaultObjectMapper().readerFor(org.opencb.opencga.core.models.clinical.Interpretation.class).readValue(is);
         cvaEngine.insert(interpretation, true);
         System.out.println("Interpretation " + interpretation.getClinicalAnalysisId() + " loaded !");
@@ -104,7 +108,7 @@ public class ClinicalVariantSolrEngineTest {
         SolrQuery solrQuery = new SolrQuery("*:*");
         solrQuery.setFields("id", "methodName");
 
-        String joinFilterQuery = "{!join from=cveInterpretationId to=id fromIndex=" + CLINICAL_VARIANT_EVIDENCES_COLLECTION + "}*:*";
+        String joinFilterQuery = "{!join from=ciId to=id fromIndex=" + CLINICAL_VARIANT_EVIDENCES_COLLECTION + "}*:*";
         solrQuery.addFilterQuery(joinFilterQuery);
         System.out.println("solr query = " + solrQuery.toQueryString());
 
