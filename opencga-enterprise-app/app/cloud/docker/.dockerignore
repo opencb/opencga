@@ -1,0 +1,5 @@
+
+# Ignore the files matching the following patterns when building docker images.
+# This files must be automatically copied into 'build' folder.
+
+*.tar.gz
