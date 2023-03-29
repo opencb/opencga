@@ -2,10 +2,13 @@ package com.zettagenomics.opencga.enterprise.core.configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Map;
 
 public class EnterpriseConfiguration {
 
@@ -13,6 +16,11 @@ public class EnterpriseConfiguration {
 
     private static final String DEFAULT_CONFIGURATION_FORMAT = "YAML";
 
+    private static Logger logger;
+
+    static {
+        logger = LoggerFactory.getLogger(EnterpriseConfiguration.class);
+    }
 
     public EnterpriseConfiguration() {
         sso = new SsoConfiguration();
@@ -52,7 +60,34 @@ public class EnterpriseConfiguration {
             throw new IOException("EnterpriseConfiguration file could not be parsed: " + e.getMessage(), e);
         }
 
+        overwriteWithEnvironmentVariables(enterpriseConfiguration);
         return enterpriseConfiguration;
+    }
+
+    private static void overwriteWithEnvironmentVariables(EnterpriseConfiguration configuration) {
+        Map<String, String> envVariables = System.getenv();
+        for (String variable : envVariables.keySet()) {
+            if (variable.startsWith("ENTERPRISE_")) {
+                logger.debug("Overwriting environment parameter '{}'", variable);
+                String value = envVariables.get(variable);
+                switch (variable) {
+                    case "ENTERPRISE_SSO_ACTIVE":
+                        configuration.getSso().setActive(Boolean.parseBoolean(value));
+                        break;
+                    case "ENTERPRISE_SSO_CAS_SERVER_PREFIX_URL":
+                        configuration.getSso().setCasServerPrefixUrl(value);
+                        break;
+                    case "ENTERPRISE_SSO_SERVER_NAME":
+                        configuration.getSso().setServerName(value);
+                        break;
+                    case "ENTERPRISE_SSO_PYTHON_BIN":
+                        configuration.getSso().setPythonBin(value);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
     }
 
     @Override
