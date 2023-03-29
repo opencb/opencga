@@ -1,1 +1,23 @@
-# TASK workflow
+name: Push OpenCGA TASK
+
+on:
+  push:
+    branches:
+      - TASK-*
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Execute workflow'
+        default: 'develop'
+        required: true
+
+jobs:
+  build:
+    uses: zetta-genomics/opencga-enterprise/.github/workflows/build-java-enterprise-workflow.yml@TASK-1974
+    with:
+      maven_opts: -Dopencga.war.name=opencga
+
+  deploy-docker:
+    uses: zetta-genomics/opencga-enterprise/.github/workflows/deploy-docker-hub-enterprise-workflow.yml@TASK-1974
+    needs: build
+    secrets: inherit

@@ -36,7 +36,7 @@ import org.opencb.opencga.core.models.sample.Sample;
  */
 public class CvaCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
 
-    private CvaCommandOptions cvaCommandOptions;
+    public CvaCommandOptions cvaCommandOptions;
 
     public CvaCommandExecutor(CvaCommandOptions cvaCommandOptions) throws CatalogAuthenticationException {
         super(cvaCommandOptions.commonCommandOptions);
@@ -66,7 +66,6 @@ public class CvaCommandExecutor extends com.zettagenomics.opencga.enterprise.app
     }
 
     private RestResponse<Sample> info() throws Exception {
-
         logger.debug("Executing info in Cva command line");
 
         CvaCommandOptions.InfoCommandOptions commandOptions = cvaCommandOptions.infoCommandOptions;
@@ -83,6 +82,6 @@ public class CvaCommandExecutor extends com.zettagenomics.opencga.enterprise.app
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getCvaClient().info(commandOptions.caseId, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCvaClient().info(commandOptions.caseId, queryParams);
     }
 }

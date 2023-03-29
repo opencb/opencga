@@ -55,7 +55,7 @@ import org.opencb.opencga.core.models.sample.SampleVariantQualityControlMetrics;
  */
 public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
 
-    private SamplesCommandOptions samplesCommandOptions;
+    public SamplesCommandOptions samplesCommandOptions;
 
     public SamplesCommandExecutor(SamplesCommandOptions samplesCommandOptions) throws CatalogAuthenticationException {
         super(samplesCommandOptions.commonCommandOptions);
@@ -118,7 +118,6 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
     }
 
     private RestResponse<SampleAclEntryList> updateAcl() throws Exception {
-
         logger.debug("Executing updateAcl in Samples command line");
 
         SamplesCommandOptions.UpdateAclCommandOptions commandOptions = samplesCommandOptions.updateAclCommandOptions;
@@ -130,7 +129,7 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
         }
 
 
-        SampleAclUpdateParams sampleAclUpdateParams= null;
+        SampleAclUpdateParams sampleAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             sampleAclUpdateParams = new SampleAclUpdateParams();
             RestResponse<SampleAclEntryList> res = new RestResponse<>();
@@ -143,21 +142,20 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
-             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
-             putNestedIfNotEmpty(beanParams, "individual",commandOptions.individual, true);
-             putNestedIfNotEmpty(beanParams, "family",commandOptions.family, true);
-             putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
-             putNestedIfNotEmpty(beanParams, "cohort",commandOptions.cohort, true);
- 
+            putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
+            putNestedIfNotEmpty(beanParams, "individual",commandOptions.individual, true);
+            putNestedIfNotEmpty(beanParams, "family",commandOptions.family, true);
+            putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
+            putNestedIfNotEmpty(beanParams, "cohort",commandOptions.cohort, true);
+
             sampleAclUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SampleAclUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getSampleClient().updateAcl(commandOptions.members, commandOptions.action, sampleAclUpdateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseSampleClient().updateAcl(commandOptions.members, commandOptions.action, sampleAclUpdateParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
-
         logger.debug("Executing aggregationStats in Samples command line");
 
         SamplesCommandOptions.AggregationStatsCommandOptions commandOptions = samplesCommandOptions.aggregationStatsCommandOptions;
@@ -182,11 +180,10 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getSampleClient().aggregationStats(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseSampleClient().aggregationStats(queryParams);
     }
 
     private RestResponse<Job> loadAnnotationSets() throws Exception {
-
         logger.debug("Executing loadAnnotationSets in Samples command line");
 
         SamplesCommandOptions.LoadAnnotationSetsCommandOptions commandOptions = samplesCommandOptions.loadAnnotationSetsCommandOptions;
@@ -200,7 +197,7 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
         }
 
 
-        TsvAnnotationParams tsvAnnotationParams= null;
+        TsvAnnotationParams tsvAnnotationParams = null;
         if (commandOptions.jsonDataModel) {
             tsvAnnotationParams = new TsvAnnotationParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -213,16 +210,15 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "content",commandOptions.content, true);
- 
+
             tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), TsvAnnotationParams.class);
         }
-        return enterpriseOpenCGAClient.getSampleClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseSampleClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
     }
 
     private RestResponse<Sample> create() throws Exception {
-
         logger.debug("Executing create in Samples command line");
 
         SamplesCommandOptions.CreateCommandOptions commandOptions = samplesCommandOptions.createCommandOptions;
@@ -237,7 +233,7 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
         }
 
 
-        SampleCreateParams sampleCreateParams= null;
+        SampleCreateParams sampleCreateParams = null;
         if (commandOptions.jsonDataModel) {
             sampleCreateParams = new SampleCreateParams();
             RestResponse<Sample> res = new RestResponse<>();
@@ -250,41 +246,40 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotEmpty(beanParams, "individualId",commandOptions.individualId, true);
-             putNestedIfNotEmpty(beanParams, "source.id",commandOptions.sourceId, true);
-             putNestedIfNotEmpty(beanParams, "source.name",commandOptions.sourceName, true);
-             putNestedIfNotEmpty(beanParams, "source.description",commandOptions.sourceDescription, true);
-             putNestedIfNotEmpty(beanParams, "source.source",commandOptions.sourceSource, true);
-             putNestedIfNotEmpty(beanParams, "source.url",commandOptions.sourceUrl, true);
-             putNestedIfNotEmpty(beanParams, "processing.preparationMethod",commandOptions.processingPreparationMethod, true);
-             putNestedIfNotEmpty(beanParams, "processing.extractionMethod",commandOptions.processingExtractionMethod, true);
-             putNestedIfNotEmpty(beanParams, "processing.labSampleId",commandOptions.processingLabSampleId, true);
-             putNestedIfNotEmpty(beanParams, "processing.quantity",commandOptions.processingQuantity, true);
-             putNestedIfNotEmpty(beanParams, "processing.date",commandOptions.processingDate, true);
-             putNestedIfNotNull(beanParams, "processing.attributes",commandOptions.processingAttributes, true);
-             putNestedIfNotEmpty(beanParams, "collection.type",commandOptions.collectionType, true);
-             putNestedIfNotEmpty(beanParams, "collection.quantity",commandOptions.collectionQuantity, true);
-             putNestedIfNotEmpty(beanParams, "collection.method",commandOptions.collectionMethod, true);
-             putNestedIfNotEmpty(beanParams, "collection.date",commandOptions.collectionDate, true);
-             putNestedIfNotNull(beanParams, "collection.attributes",commandOptions.collectionAttributes, true);
-             putNestedIfNotNull(beanParams, "somatic",commandOptions.somatic, true);
-             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
- 
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "individualId",commandOptions.individualId, true);
+            putNestedIfNotEmpty(beanParams, "source.id",commandOptions.sourceId, true);
+            putNestedIfNotEmpty(beanParams, "source.name",commandOptions.sourceName, true);
+            putNestedIfNotEmpty(beanParams, "source.description",commandOptions.sourceDescription, true);
+            putNestedIfNotEmpty(beanParams, "source.source",commandOptions.sourceSource, true);
+            putNestedIfNotEmpty(beanParams, "source.url",commandOptions.sourceUrl, true);
+            putNestedIfNotEmpty(beanParams, "processing.preparationMethod",commandOptions.processingPreparationMethod, true);
+            putNestedIfNotEmpty(beanParams, "processing.extractionMethod",commandOptions.processingExtractionMethod, true);
+            putNestedIfNotEmpty(beanParams, "processing.labSampleId",commandOptions.processingLabSampleId, true);
+            putNestedIfNotEmpty(beanParams, "processing.quantity",commandOptions.processingQuantity, true);
+            putNestedIfNotEmpty(beanParams, "processing.date",commandOptions.processingDate, true);
+            putNestedIfNotNull(beanParams, "processing.attributes",commandOptions.processingAttributes, true);
+            putNestedIfNotEmpty(beanParams, "collection.type",commandOptions.collectionType, true);
+            putNestedIfNotEmpty(beanParams, "collection.quantity",commandOptions.collectionQuantity, true);
+            putNestedIfNotEmpty(beanParams, "collection.method",commandOptions.collectionMethod, true);
+            putNestedIfNotEmpty(beanParams, "collection.date",commandOptions.collectionDate, true);
+            putNestedIfNotNull(beanParams, "collection.attributes",commandOptions.collectionAttributes, true);
+            putNestedIfNotNull(beanParams, "somatic",commandOptions.somatic, true);
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+
             sampleCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SampleCreateParams.class);
         }
-        return enterpriseOpenCGAClient.getSampleClient().create(sampleCreateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseSampleClient().create(sampleCreateParams, queryParams);
     }
 
     private RestResponse<Object> distinct() throws Exception {
-
         logger.debug("Executing distinct in Samples command line");
 
         SamplesCommandOptions.DistinctCommandOptions commandOptions = samplesCommandOptions.distinctCommandOptions;
@@ -332,11 +327,10 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getSampleClient().distinct(commandOptions.field, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseSampleClient().distinct(commandOptions.field, queryParams);
     }
 
     private RestResponse<Sample> load() throws Exception {
-
         logger.debug("Executing load in Samples command line");
 
         SamplesCommandOptions.LoadCommandOptions commandOptions = samplesCommandOptions.loadCommandOptions;
@@ -348,11 +342,10 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getSampleClient().load(commandOptions.file, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseSampleClient().load(commandOptions.file, queryParams);
     }
 
     private RestResponse<Sample> search() throws Exception {
-
         logger.debug("Executing search in Samples command line");
 
         SamplesCommandOptions.SearchCommandOptions commandOptions = samplesCommandOptions.searchCommandOptions;
@@ -407,11 +400,10 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getSampleClient().search(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseSampleClient().search(queryParams);
     }
 
     private RestResponse<SampleAclEntryList> acl() throws Exception {
-
         logger.debug("Executing acl in Samples command line");
 
         SamplesCommandOptions.AclCommandOptions commandOptions = samplesCommandOptions.aclCommandOptions;
@@ -424,11 +416,10 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getSampleClient().acl(commandOptions.samples, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseSampleClient().acl(commandOptions.samples, queryParams);
     }
 
     private RestResponse<Sample> delete() throws Exception {
-
         logger.debug("Executing delete in Samples command line");
 
         SamplesCommandOptions.DeleteCommandOptions commandOptions = samplesCommandOptions.deleteCommandOptions;
@@ -442,11 +433,10 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getSampleClient().delete(commandOptions.samples, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseSampleClient().delete(commandOptions.samples, queryParams);
     }
 
     private RestResponse<Sample> info() throws Exception {
-
         logger.debug("Executing info in Samples command line");
 
         SamplesCommandOptions.InfoCommandOptions commandOptions = samplesCommandOptions.infoCommandOptions;
@@ -463,11 +453,10 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getSampleClient().info(commandOptions.samples, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseSampleClient().info(commandOptions.samples, queryParams);
     }
 
     private RestResponse<Sample> update() throws Exception {
-
         logger.debug("Executing update in Samples command line");
 
         SamplesCommandOptions.UpdateCommandOptions commandOptions = samplesCommandOptions.updateCommandOptions;
@@ -482,7 +471,7 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
         }
 
 
-        SampleUpdateParams sampleUpdateParams= null;
+        SampleUpdateParams sampleUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             sampleUpdateParams = new SampleUpdateParams();
             RestResponse<Sample> res = new RestResponse<>();
@@ -495,42 +484,41 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotEmpty(beanParams, "individualId",commandOptions.individualId, true);
-             putNestedIfNotEmpty(beanParams, "source.id",commandOptions.sourceId, true);
-             putNestedIfNotEmpty(beanParams, "source.name",commandOptions.sourceName, true);
-             putNestedIfNotEmpty(beanParams, "source.description",commandOptions.sourceDescription, true);
-             putNestedIfNotEmpty(beanParams, "source.source",commandOptions.sourceSource, true);
-             putNestedIfNotEmpty(beanParams, "source.url",commandOptions.sourceUrl, true);
-             putNestedIfNotEmpty(beanParams, "processing.preparationMethod",commandOptions.processingPreparationMethod, true);
-             putNestedIfNotEmpty(beanParams, "processing.extractionMethod",commandOptions.processingExtractionMethod, true);
-             putNestedIfNotEmpty(beanParams, "processing.labSampleId",commandOptions.processingLabSampleId, true);
-             putNestedIfNotEmpty(beanParams, "processing.quantity",commandOptions.processingQuantity, true);
-             putNestedIfNotEmpty(beanParams, "processing.date",commandOptions.processingDate, true);
-             putNestedIfNotNull(beanParams, "processing.attributes",commandOptions.processingAttributes, true);
-             putNestedIfNotEmpty(beanParams, "collection.type",commandOptions.collectionType, true);
-             putNestedIfNotEmpty(beanParams, "collection.quantity",commandOptions.collectionQuantity, true);
-             putNestedIfNotEmpty(beanParams, "collection.method",commandOptions.collectionMethod, true);
-             putNestedIfNotEmpty(beanParams, "collection.date",commandOptions.collectionDate, true);
-             putNestedIfNotNull(beanParams, "collection.attributes",commandOptions.collectionAttributes, true);
-             putNestedIfNotNull(beanParams, "qualityControl.files",commandOptions.qualityControlFiles, true);
-             putNestedIfNotNull(beanParams, "somatic",commandOptions.somatic, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
-             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
- 
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "individualId",commandOptions.individualId, true);
+            putNestedIfNotEmpty(beanParams, "source.id",commandOptions.sourceId, true);
+            putNestedIfNotEmpty(beanParams, "source.name",commandOptions.sourceName, true);
+            putNestedIfNotEmpty(beanParams, "source.description",commandOptions.sourceDescription, true);
+            putNestedIfNotEmpty(beanParams, "source.source",commandOptions.sourceSource, true);
+            putNestedIfNotEmpty(beanParams, "source.url",commandOptions.sourceUrl, true);
+            putNestedIfNotEmpty(beanParams, "processing.preparationMethod",commandOptions.processingPreparationMethod, true);
+            putNestedIfNotEmpty(beanParams, "processing.extractionMethod",commandOptions.processingExtractionMethod, true);
+            putNestedIfNotEmpty(beanParams, "processing.labSampleId",commandOptions.processingLabSampleId, true);
+            putNestedIfNotEmpty(beanParams, "processing.quantity",commandOptions.processingQuantity, true);
+            putNestedIfNotEmpty(beanParams, "processing.date",commandOptions.processingDate, true);
+            putNestedIfNotNull(beanParams, "processing.attributes",commandOptions.processingAttributes, true);
+            putNestedIfNotEmpty(beanParams, "collection.type",commandOptions.collectionType, true);
+            putNestedIfNotEmpty(beanParams, "collection.quantity",commandOptions.collectionQuantity, true);
+            putNestedIfNotEmpty(beanParams, "collection.method",commandOptions.collectionMethod, true);
+            putNestedIfNotEmpty(beanParams, "collection.date",commandOptions.collectionDate, true);
+            putNestedIfNotNull(beanParams, "collection.attributes",commandOptions.collectionAttributes, true);
+            putNestedIfNotNull(beanParams, "qualityControl.files",commandOptions.qualityControlFiles, true);
+            putNestedIfNotNull(beanParams, "somatic",commandOptions.somatic, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+
             sampleUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SampleUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getSampleClient().update(commandOptions.samples, sampleUpdateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseSampleClient().update(commandOptions.samples, sampleUpdateParams, queryParams);
     }
 
     private RestResponse<Sample> updateAnnotationSetsAnnotations() throws Exception {
-
         logger.debug("Executing updateAnnotationSetsAnnotations in Samples command line");
 
         SamplesCommandOptions.UpdateAnnotationSetsAnnotationsCommandOptions commandOptions = samplesCommandOptions.updateAnnotationSetsAnnotationsCommandOptions;
@@ -543,7 +531,7 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
         }
 
 
-        ObjectMap objectMap= null;
+        ObjectMap objectMap = null;
         if (commandOptions.jsonDataModel) {
             objectMap = new ObjectMap();
             RestResponse<Sample> res = new RestResponse<>();
@@ -554,6 +542,6 @@ public class SamplesCommandExecutor extends com.zettagenomics.opencga.enterprise
             objectMap = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), ObjectMap.class);
         }
-        return enterpriseOpenCGAClient.getSampleClient().updateAnnotationSetsAnnotations(commandOptions.sample, commandOptions.annotationSet, objectMap, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseSampleClient().updateAnnotationSetsAnnotations(commandOptions.sample, commandOptions.annotationSet, objectMap, queryParams);
     }
 }

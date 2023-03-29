@@ -1,6 +1,10 @@
 package com.zettagenomics.opencga.enterprise.server.rest;
 
+import com.zettagenomics.opencga.enterprise.server.EnterpriseResourceConfig;
+import io.jsonwebtoken.SignatureAlgorithm;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.catalog.auth.authentication.JwtManager;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -9,13 +13,10 @@ import org.opencb.opencga.core.tools.annotations.ApiOperation;
 import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.opencb.opencga.server.generator.RestApiParser;
 import org.opencb.opencga.server.generator.models.RestApi;
-import org.opencb.opencga.server.rest.*;
-import org.opencb.opencga.server.rest.admin.AdminWSServer;
-import org.opencb.opencga.server.rest.analysis.AlignmentWebService;
-import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
-import org.opencb.opencga.server.rest.analysis.VariantWebService;
-import org.opencb.opencga.server.rest.operations.VariantOperationWebService;
+import org.opencb.opencga.server.rest.MetaWSServer;
 
+import javax.crypto.spec.SecretKeySpec;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -26,6 +27,9 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.security.Key;
 import java.util.*;
 
 @Path("/{apiVersion}/meta")
@@ -44,15 +48,15 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
     @ApiOperation(httpMethod = "GET", value = "Returns info about current OpenCGA code.", response = Map.class)
     public Response getAbout() {
         Map<String, String> info = new HashMap<>(5);
-        info.put("Program", "XetaBase!");
-//        info.put("Version", GitRepositoryState.get("com/zettagenomics/opencga/enterprise/core/git.properties").getBuildVersion());
-//        info.put("Git branch", GitRepositoryState.get("com/zettagenomics/opencga/enterprise/core/git.properties").getBranch());
-//        info.put("Git commit", GitRepositoryState.get("com/zettagenomics/opencga/enterprise/core/git.properties").getCommitId());
+        info.put("Program", "XetaBase (Zetta Genomics)");
+        info.put("Version", GitRepositoryState.get().getBuildVersion());
+        info.put("Git branch", GitRepositoryState.get().getBranch());
+        info.put("Git commit", GitRepositoryState.get().getCommitId());
         info.put("Description", "Big Data platform for processing and analysing NGS data");
-        OpenCGAResult queryResult = new OpenCGAResult();
+
+        OpenCGAResult<Object> queryResult = new OpenCGAResult<>();
         queryResult.setTime(0);
         queryResult.setResults(Collections.singletonList(info));
-
         return createOkResponse(queryResult);
     }
 
@@ -60,57 +64,57 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
     @GET
     @Path("/api")
     @ApiOperation(value = "API", response = List.class)
-    public Response api(@ApiParam(value = "List of categories to get API from") @QueryParam("category") String categoryStr, @QueryParam("summary") boolean summary) {
-        Map<String, Class<?>> classMap = new LinkedHashMap<>();
-        classMap.put("users", UserWSServer.class);
-        classMap.put("projects", ProjectWSServer.class);
-        classMap.put("studies", StudyWSServer.class);
-        classMap.put("files", FileWSServer.class);
-        classMap.put("jobs", JobWSServer.class);
-        classMap.put("samples", SampleWSServer.class);
-        classMap.put("individuals", IndividualWSServer.class);
-        classMap.put("families", FamilyWSServer.class);
-        classMap.put("cohorts", CohortWSServer.class);
-        classMap.put("panels", PanelWSServer.class);
-        classMap.put("alignment", AlignmentWebService.class);
-        classMap.put("variant", VariantWebService.class);
-        classMap.put("clinical", ClinicalWebService.class);
-        classMap.put("variantOperations", VariantOperationWebService.class);
-        classMap.put("meta", EnterpriseMetaWSServer.class);
-        classMap.put("cva", CvaWSServer.class);
-        classMap.put("admin", AdminWSServer.class);
-//        classMap.put("ga4gh", Ga4ghWSServer.class);
-
+    public Response api(@ApiParam(value = "List of categories to get API from") @QueryParam("category") String categoryStr,
+                        @QueryParam("summary") boolean summary) {
         List<Class<?>> classes = new ArrayList<>();
-        // Check if some categories have been selected
         if (StringUtils.isNotEmpty(categoryStr)) {
+            // Check if some categories have been selected
             for (String category : categoryStr.split(",")) {
-                classes.add(classMap.get(category));
+                classes.add(EnterpriseResourceConfig.enterpriseClasses.get(category));
             }
         } else {
             // Get API for all categories
-            for (String category : classMap.keySet()) {
-                classes.add(classMap.get(category));
-            }
+            classes = new ArrayList<>(EnterpriseResourceConfig.enterpriseClasses.values());
         }
         RestApi restApi = new RestApiParser().parse(classes, summary);
         return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(restApi.getCategories()), 1));
     }
+
     @GET
-    @Path("/about2")
-    @ApiOperation(httpMethod = "GET", value = "Returns info about current OpenCGA code.", response = Map.class)
-    public Response getAbout2() {
-        Map<String, String> info = new HashMap<>(5);
-        info.put("Program", "XetaBase2!");
-        info.put("Version", GitRepositoryState.get().getBuildVersion());
-        info.put("Git branch", GitRepositoryState.get().getBranch());
-        info.put("Git commit", GitRepositoryState.get().getCommitId());
-        info.put("Description", "Big Data platform for processing and analysing NGS data");
-        OpenCGAResult queryResult = new OpenCGAResult();
-        queryResult.setTime(0);
-        queryResult.setResults(Collections.singletonList(info));
+    @Path("/sso")
+    @ApiOperation(httpMethod = "GET", value = "Single Sign On.", response = Map.class)
+    public Response singleSignOn(@ApiParam(value = "Callback URL") @QueryParam("url") String service) {
+        if (StringUtils.isEmpty(service)) {
+            return createErrorResponse(new CatalogParameterException("Missing mandatory field 'service'"));
+        }
+        URI targetURIForRedirection;
+        try {
+            Cookie[] cookies = httpServletRequest.getCookies();
+            logger.debug("SSO cookies: ");
+            for (Cookie cookie : cookies) {
+                logger.debug("{}: {}", cookie.getName(), cookie.getValue());
+            }
+            StringBuilder queryParams = new StringBuilder();
+            if (!service.endsWith("?")) {
+                queryParams.append("?");
+            }
 
-        return createOkResponse(queryResult);
+            Key key = new SecretKeySpec(catalogManager.getConfiguration().getAdmin().getSecretKey().getBytes(), SignatureAlgorithm.HS256.getJcaName());
+            JwtManager jwtManager = new JwtManager(catalogManager.getConfiguration().getAdmin().getAlgorithm(), key);
+            String jwtToken = jwtManager.createJWTToken(httpServletRequest.getRemoteUser(), configuration.getAuthentication().getExpiration());
+
+            queryParams.append("token").append("=").append(jwtToken);
+            queryParams.append("&").append("user").append("=").append(httpServletRequest.getRemoteUser());
+            for (Cookie cookie : cookies) {
+                queryParams.append("&");
+                queryParams.append(cookie.getName()).append("=").append(cookie.getValue());
+            }
+
+            targetURIForRedirection = new URI(service + queryParams);
+            logger.debug("Redirecting /sso call to {}", targetURIForRedirection);
+        } catch (URISyntaxException e) {
+            return createErrorResponse(e);
+        }
+        return Response.temporaryRedirect(targetURIForRedirection).build();
     }
-
 }

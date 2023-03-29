@@ -1,0 +1,5 @@
+---
+sso:
+  active: ${ENTERPRISE.SSO.ACTIVE}
+  casServerPrefixUrl: ${ENTERPRISE.SSO.CAS.SERVER.PREFIX.URL}
+  serverName: ${ENTERPRISE.SSO.SERVER.NAME}

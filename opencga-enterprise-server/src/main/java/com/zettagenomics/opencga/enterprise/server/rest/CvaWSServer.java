@@ -1,6 +1,5 @@
 package com.zettagenomics.opencga.enterprise.server.rest;
 
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
@@ -12,7 +11,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.List;
 
 @Path("/{apiVersion}/cva")
 @Produces(MediaType.APPLICATION_JSON)

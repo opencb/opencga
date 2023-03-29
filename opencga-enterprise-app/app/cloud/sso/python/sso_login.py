@@ -1,7 +1,6 @@
 import os
 import signal
 import time
-import webbrowser
 from multiprocessing import Process
 
 from flask import Flask, render_template, request
@@ -17,15 +16,14 @@ def kill_execution(pid):
 
 @app.route("/secure")
 def secure():
-    # cookies = {}
+    cookies = {}
+    dict = {'cookies': cookies}
     for key in request.args.keys():
-        print(key + " - " + request.args.get(key))
-        # cookies[key] = request.args.get(key)
-
-    # headers = {'User-Agent': 'Mozilla/5.0'}
-    # response = requests.get('http://localhost:9090/opencga/webservices/rest/v2/meta/about', cookies=cookies, headers=headers)
-    # webpage = response.text
-    # print(webpage)
+        if key != 'user' and key != 'token':
+            cookies[key] = request.args.get(key)
+        else:
+            dict[key] = request.args.get(key)
+    print(dict)
 
     p = Process(target=kill_execution, args=(server.pid,))
     p.start()
@@ -35,5 +33,3 @@ def secure():
 
 server = Process(target=app.run)
 server.start()
-
-webbrowser.open('http://localhost:9090/opencga/webservices/rest/v2/meta/sso?url=http://localhost:5000/secure')

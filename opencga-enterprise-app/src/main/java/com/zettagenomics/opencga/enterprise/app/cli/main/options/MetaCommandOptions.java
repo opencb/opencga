@@ -34,11 +34,11 @@ public class MetaCommandOptions {
         public CommonCommandOptions commonCommandOptions;
 
         public AboutCommandOptions aboutCommandOptions;
-        public About2CommandOptions about2CommandOptions;
         public ApiCommandOptions apiCommandOptions;
         public FailCommandOptions failCommandOptions;
         public ModelCommandOptions modelCommandOptions;
         public PingCommandOptions pingCommandOptions;
+        public SsoCommandOptions ssoCommandOptions;
         public StatusCommandOptions statusCommandOptions;
 
 
@@ -47,25 +47,17 @@ public class MetaCommandOptions {
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
         this.aboutCommandOptions = new AboutCommandOptions();
-        this.about2CommandOptions = new About2CommandOptions();
         this.apiCommandOptions = new ApiCommandOptions();
         this.failCommandOptions = new FailCommandOptions();
         this.modelCommandOptions = new ModelCommandOptions();
         this.pingCommandOptions = new PingCommandOptions();
+        this.ssoCommandOptions = new SsoCommandOptions();
         this.statusCommandOptions = new StatusCommandOptions();
     
     }
     
     @Parameters(commandNames = {"about"}, commandDescription ="Returns info about current OpenCGA code.")
     public class AboutCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-    }
-
-    @Parameters(commandNames = {"about2"}, commandDescription ="Returns info about current OpenCGA code.")
-    public class About2CommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
@@ -104,6 +96,17 @@ public class MetaCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+    }
+
+    @Parameters(commandNames = {"sso"}, commandDescription ="Single Sign On.")
+    public class SsoCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--url"}, description = "Callback URL", required = false, arity = 1)
+        public String url; 
     
     }
 

@@ -42,7 +42,7 @@ import org.opencb.opencga.core.models.study.Study;
  */
 public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
 
-    private ProjectsCommandOptions projectsCommandOptions;
+    public ProjectsCommandOptions projectsCommandOptions;
 
     public ProjectsCommandExecutor(ProjectsCommandOptions projectsCommandOptions) throws CatalogAuthenticationException {
         super(projectsCommandOptions.commonCommandOptions);
@@ -90,7 +90,6 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
     }
 
     private RestResponse<Project> create() throws Exception {
-
         logger.debug("Executing create in Projects command line");
 
         ProjectsCommandOptions.CreateCommandOptions commandOptions = projectsCommandOptions.createCommandOptions;
@@ -101,7 +100,7 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
 
-        ProjectCreateParams projectCreateParams= null;
+        ProjectCreateParams projectCreateParams = null;
         if (commandOptions.jsonDataModel) {
             projectCreateParams = new ProjectCreateParams();
             RestResponse<Project> res = new RestResponse<>();
@@ -114,27 +113,26 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotEmpty(beanParams, "organism.scientificName",commandOptions.organismScientificName, true);
-             putNestedIfNotEmpty(beanParams, "organism.commonName",commandOptions.organismCommonName, true);
-             putNestedIfNotEmpty(beanParams, "organism.assembly",commandOptions.organismAssembly, true);
-             putNestedIfNotEmpty(beanParams, "cellbase.url",commandOptions.cellbaseUrl, true);
-             putNestedIfNotEmpty(beanParams, "cellbase.version",commandOptions.cellbaseVersion, true);
-             putNestedIfNotEmpty(beanParams, "cellbase.dataRelease",commandOptions.cellbaseDataRelease, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
- 
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "organism.scientificName",commandOptions.organismScientificName, true);
+            putNestedIfNotEmpty(beanParams, "organism.commonName",commandOptions.organismCommonName, true);
+            putNestedIfNotEmpty(beanParams, "organism.assembly",commandOptions.organismAssembly, true);
+            putNestedIfNotEmpty(beanParams, "cellbase.url",commandOptions.cellbaseUrl, true);
+            putNestedIfNotEmpty(beanParams, "cellbase.version",commandOptions.cellbaseVersion, true);
+            putNestedIfNotEmpty(beanParams, "cellbase.dataRelease",commandOptions.cellbaseDataRelease, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+
             projectCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ProjectCreateParams.class);
         }
-        return enterpriseOpenCGAClient.getProjectClient().create(projectCreateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseProjectClient().create(projectCreateParams, queryParams);
     }
 
     private RestResponse<Project> search() throws Exception {
-
         logger.debug("Executing search in Projects command line");
 
         ProjectsCommandOptions.SearchCommandOptions commandOptions = projectsCommandOptions.searchCommandOptions;
@@ -159,11 +157,10 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getProjectClient().search(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseProjectClient().search(queryParams);
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
-
         logger.debug("Executing aggregationStats in Projects command line");
 
         ProjectsCommandOptions.AggregationStatsCommandOptions commandOptions = projectsCommandOptions.aggregationStatsCommandOptions;
@@ -177,11 +174,10 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
         queryParams.putIfNotEmpty("cohortFields", commandOptions.cohortFields);
         queryParams.putIfNotEmpty("jobFields", commandOptions.jobFields);
 
-        return enterpriseOpenCGAClient.getProjectClient().aggregationStats(commandOptions.projects, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseProjectClient().aggregationStats(commandOptions.projects, queryParams);
     }
 
     private RestResponse<Project> info() throws Exception {
-
         logger.debug("Executing info in Projects command line");
 
         ProjectsCommandOptions.InfoCommandOptions commandOptions = projectsCommandOptions.infoCommandOptions;
@@ -190,19 +186,17 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
 
-        return enterpriseOpenCGAClient.getProjectClient().info(commandOptions.projects, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseProjectClient().info(commandOptions.projects, queryParams);
     }
 
     private RestResponse<Integer> incRelease() throws Exception {
-
         logger.debug("Executing incRelease in Projects command line");
 
         ProjectsCommandOptions.IncReleaseCommandOptions commandOptions = projectsCommandOptions.incReleaseCommandOptions;
-        return enterpriseOpenCGAClient.getProjectClient().incRelease(commandOptions.project);
+        return enterpriseOpenCGAClient.getEnterpriseProjectClient().incRelease(commandOptions.project);
     }
 
     private RestResponse<Study> studies() throws Exception {
-
         logger.debug("Executing studies in Projects command line");
 
         ProjectsCommandOptions.StudiesCommandOptions commandOptions = projectsCommandOptions.studiesCommandOptions;
@@ -213,11 +207,10 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotNull("skip", commandOptions.skip);
 
-        return enterpriseOpenCGAClient.getProjectClient().studies(commandOptions.project, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseProjectClient().studies(commandOptions.project, queryParams);
     }
 
     private RestResponse<Project> update() throws Exception {
-
         logger.debug("Executing update in Projects command line");
 
         ProjectsCommandOptions.UpdateCommandOptions commandOptions = projectsCommandOptions.updateCommandOptions;
@@ -228,7 +221,7 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
 
-        ProjectUpdateParams projectUpdateParams= null;
+        ProjectUpdateParams projectUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             projectUpdateParams = new ProjectUpdateParams();
             RestResponse<Project> res = new RestResponse<>();
@@ -241,18 +234,18 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotEmpty(beanParams, "organism.scientificName",commandOptions.organismScientificName, true);
-             putNestedIfNotEmpty(beanParams, "organism.commonName",commandOptions.organismCommonName, true);
-             putNestedIfNotEmpty(beanParams, "organism.assembly",commandOptions.organismAssembly, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
- 
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "organism.scientificName",commandOptions.organismScientificName, true);
+            putNestedIfNotEmpty(beanParams, "organism.commonName",commandOptions.organismCommonName, true);
+            putNestedIfNotEmpty(beanParams, "organism.assembly",commandOptions.organismAssembly, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+
             projectUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ProjectUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getProjectClient().update(commandOptions.project, projectUpdateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseProjectClient().update(commandOptions.project, projectUpdateParams, queryParams);
     }
 }

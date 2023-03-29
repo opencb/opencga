@@ -1,0 +1,26 @@
+name: Release new opencga-enterprise version
+
+on:
+  push:
+    tags:
+      - '*'
+    workflow_dispatch:
+
+jobs:
+  build:
+    uses: zetta-genomics/opencga-enterprise/.github/workflows/build-java-enterprise-workflow.yml@TASK-1974
+    with:
+      maven_opts: -Dopencga.war.name=opencga
+
+  deploy-docker:
+    uses: zetta-genomics/opencga-enterprise/.github/workflows/deploy-docker-hub-enterprise-workflow.yml@TASK-1974
+    needs: build
+    secrets: inherit
+
+  release:
+    uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@TASK-1974
+    needs: build
+    with:
+      artifact: build-folder
+      file: |
+        opencga-enterprise-client-${{ needs.build.outputs.version }}.tar.gz

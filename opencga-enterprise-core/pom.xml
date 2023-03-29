@@ -2,22 +2,16 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
     <parent>
-        <artifactId>opencga-enterprise</artifactId>
         <groupId>com.zettagenomics.opencga-enterprise</groupId>
+        <artifactId>opencga-enterprise</artifactId>
         <version>1.6.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-    <modelVersion>4.0.0</modelVersion>
 
     <artifactId>opencga-enterprise-core</artifactId>
     <packaging>jar</packaging>
-
-    <properties>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
 
     <dependencies>
         <dependency>
@@ -37,6 +31,14 @@
             <artifactId>log4j-slf4j-impl</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
         </dependency>
@@ -48,20 +50,13 @@
 
         <resources>
             <resource>
-                <!-- Only need to filter the configuration.yml file-->
+                <!-- Only need to filter the enterprise-configuration.yml file-->
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
                 <includes>
-                    <include>configuration.yml</include>
+                    <include>enterprise-configuration.yml</include>
                 </includes>
             </resource>
-<!--            <resource>-->
-<!--                <directory>src/main/resources</directory>-->
-<!--                <filtering>false</filtering>-->
-<!--                <excludes>-->
-<!--                    <exclude>configuration.yml</exclude>-->
-<!--                </excludes>-->
-<!--            </resource>-->
             <resource>
                 <directory>target/generated-resources</directory>
             </resource>
@@ -76,8 +71,7 @@
             <plugin>
                 <groupId>pl.project13.maven</groupId>
                 <artifactId>git-commit-id-plugin</artifactId>
-                <version>2.2.0</version>
-
+                <version>3.0.1</version>
                 <executions>
                     <execution>
                         <goals>
@@ -85,14 +79,12 @@
                         </goals>
                     </execution>
                 </executions>
-
                 <configuration>
                     <!-- this is false by default, forces the plugin to generate the git.properties file -->
                     <generateGitPropertiesFile>true</generateGitPropertiesFile>
 
                     <!-- The path for the to be generated properties file, it's relative to ${project.basedir} -->
-                    <generateGitPropertiesFilename>target/generated-resources/com/zettagenomics/opencga/enterprise/core/git.properties
-                    </generateGitPropertiesFilename>
+                    <generateGitPropertiesFilename>target/generated-resources/git.properties</generateGitPropertiesFilename>
                     <gitDescribe>
                         <!-- don't generate the describe property -->
                         <skip>false</skip>
@@ -102,6 +94,7 @@
                             helpful when you always expect this field to be not-empty
                         -->
                         <always>false</always>
+
                         <!--
                              how many chars should be displayed as the commit object id?
                              7 is git's default,

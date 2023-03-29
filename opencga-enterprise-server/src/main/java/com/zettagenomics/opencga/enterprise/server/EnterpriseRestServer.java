@@ -17,7 +17,6 @@
 package com.zettagenomics.opencga.enterprise.server;
 
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
-import com.zettagenomics.opencga.enterprise.core.configuration.SsoConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -25,8 +24,10 @@ import org.opencb.opencga.server.AbstractStorageServer;
 
 import javax.servlet.DispatcherType;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +40,7 @@ import java.util.stream.Stream;
 public class EnterpriseRestServer extends AbstractStorageServer {
 
     private static Server server;
-//    private Path opencgaHome;
+    private final EnterpriseConfiguration enterpriseConfiguration;
     private boolean exit;
 
     public EnterpriseRestServer(Path opencgaHome) {
@@ -48,6 +49,19 @@ public class EnterpriseRestServer extends AbstractStorageServer {
 
     public EnterpriseRestServer(Path opencgaHome, int port) {
         super(opencgaHome, port);
+
+        // Read enterprise configuration file
+        Path configDirPath = opencgaHome.resolve("conf");
+        InputStream configInputStream;
+        try {
+            String confPath = configDirPath.toFile().getAbsolutePath()  + "/enterprise-configuration.yml";
+            logger.info("Reading enterprise-configuration.yml file: '{}'", confPath);
+            configInputStream = Files.newInputStream(Paths.get(confPath));
+            enterpriseConfiguration = EnterpriseConfiguration.load(configInputStream);
+        } catch (IOException e) {
+            logger.error("Could not load enterprise-configuration.yml file");
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -64,7 +78,7 @@ public class EnterpriseRestServer extends AbstractStorageServer {
             throw new Exception("Error accessing OpenCGA Home: " + opencgaHome.toString(), e);
         }
         // Check is a war file has been found in opencgaHome
-        if (warPath == null || !warPath.isPresent()) {
+        if (!warPath.isPresent()) {
             throw new Exception("No war file found at " + opencgaHome.toString());
         }
 
@@ -77,16 +91,14 @@ public class EnterpriseRestServer extends AbstractStorageServer {
 //        webapp.setInitParameter("log4jConfiguration", opencgaHome.resolve("conf/log4j2.server.xml").toString());
         server.setHandler(webapp);
 
-        EnterpriseConfiguration configuration = new EnterpriseConfiguration();
-        configuration.setSsoConfiguration(new SsoConfiguration(true, "https://localhost:8443/cas", "http://localhost:9090"));
-        if (configuration.getSsoConfiguration() != null && configuration.getSsoConfiguration().isActive()) {
+        if (enterpriseConfiguration.getSso() != null && enterpriseConfiguration.getSso().isActive()) {
             // Start CAS configuration
             FilterHolder validationFilterHolder = new FilterHolder();
             validationFilterHolder.setName("CAS Validation Filter");
             validationFilterHolder.setClassName("org.jasig.cas.client.validation.Cas20ProxyReceivingTicketValidationFilter");
             Map<String, String> initParameters = new HashMap<>();
-            initParameters.put("casServerUrlPrefix", configuration.getSsoConfiguration().getCasServerPrefixUrl());
-            initParameters.put("serverName", configuration.getSsoConfiguration().getServerName());
+            initParameters.put("casServerUrlPrefix", enterpriseConfiguration.getSso().getCasServerPrefixUrl());
+            initParameters.put("serverName", enterpriseConfiguration.getSso().getServerName());
             validationFilterHolder.setInitParameters(initParameters);
             webapp.addFilter(validationFilterHolder, "/webservices/rest/v2/*", EnumSet.of(DispatcherType.REQUEST));
 
@@ -94,8 +106,8 @@ public class EnterpriseRestServer extends AbstractStorageServer {
             authenticationFilterHolder.setName("CAS Authentication Filter");
             authenticationFilterHolder.setClassName("org.jasig.cas.client.authentication.AuthenticationFilter");
             initParameters = new HashMap<>();
-            initParameters.put("casServerUrlPrefix", configuration.getSsoConfiguration().getCasServerPrefixUrl());
-            initParameters.put("serverName", configuration.getSsoConfiguration().getServerName());
+            initParameters.put("casServerUrlPrefix", enterpriseConfiguration.getSso().getCasServerPrefixUrl());
+            initParameters.put("serverName", enterpriseConfiguration.getSso().getServerName());
             authenticationFilterHolder.setInitParameters(initParameters);
             webapp.addFilter(authenticationFilterHolder, "/webservices/rest/v2/*", EnumSet.of(DispatcherType.REQUEST));
 
@@ -103,14 +115,14 @@ public class EnterpriseRestServer extends AbstractStorageServer {
             requestWrapperFilterHolder.setName("CAS HttpServletRequest Wrapper Filter");
             requestWrapperFilterHolder.setClassName("org.jasig.cas.client.util.HttpServletRequestWrapperFilter");
             initParameters = new HashMap<>();
-            initParameters.put("casServerUrlPrefix", configuration.getSsoConfiguration().getCasServerPrefixUrl());
-            initParameters.put("serverName", configuration.getSsoConfiguration().getServerName());
+            initParameters.put("casServerUrlPrefix", enterpriseConfiguration.getSso().getCasServerPrefixUrl());
+            initParameters.put("serverName", enterpriseConfiguration.getSso().getServerName());
             webapp.addFilter(requestWrapperFilterHolder, "/webservices/rest/v2/*", EnumSet.of(DispatcherType.REQUEST));
             // End of CAS configuration
         }
 
         server.start();
-        logger.info("REST server started, listening on {}", port);
+        logger.info("REST server started, listening on {}", server.getURI());
 
         // A hook is added in case the JVM is shutting down
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -137,7 +149,6 @@ public class EnterpriseRestServer extends AbstractStorageServer {
                 e.printStackTrace();
             }
         }).start();
-
     }
 
     @Override
@@ -158,7 +169,7 @@ public class EnterpriseRestServer extends AbstractStorageServer {
         // By setting exit to true the monitor thread will close the Jetty server
         logger.info("Shutting down Jetty server");
         server.stop();
-        logger.info("REST server shut down");
+        logger.info("Enterprise REST server shutdown");
     }
 
 }

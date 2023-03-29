@@ -19,8 +19,8 @@ options:
     - java.lang.
 apiConfig:
   executorsParentClass: com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor
+  executorsOpencgaClientPrefix: enterprise
   optionsParserParentClass: com.zettagenomics.opencga.enterprise.app.cli.main.options.*
-  opencgaClientClassName: EnterpriseOpenCGAClient
   shortcuts:
     - name: user
       shortcut: u
@@ -48,6 +48,7 @@ apiConfig:
       key: User
       executorExtended: True
       optionExtended: True
+#      executorExtendedClassName: com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor
       optionExtendedClassName: org.opencb.opencga.app.cli.main.options.UsersCommandOptions
       commands:
         - name: update-filters
@@ -55,6 +56,7 @@ apiConfig:
         - name: login
           executorExtended: True
           optionExtended: True
+#          executorExtendedClassName: com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor
         - name: logout
           executorExtended: True
           optionExtended: True

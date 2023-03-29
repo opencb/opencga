@@ -50,7 +50,7 @@ import org.opencb.opencga.core.models.job.Job;
  */
 public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
 
-    private CohortsCommandOptions cohortsCommandOptions;
+    public CohortsCommandOptions cohortsCommandOptions;
 
     public CohortsCommandExecutor(CohortsCommandOptions cohortsCommandOptions) throws CatalogAuthenticationException {
         super(cohortsCommandOptions.commonCommandOptions);
@@ -113,7 +113,6 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
     }
 
     private RestResponse<CohortAclEntryList> updateAcl() throws Exception {
-
         logger.debug("Executing updateAcl in Cohorts command line");
 
         CohortsCommandOptions.UpdateAclCommandOptions commandOptions = cohortsCommandOptions.updateAclCommandOptions;
@@ -125,7 +124,7 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
         }
 
 
-        CohortAclUpdateParams cohortAclUpdateParams= null;
+        CohortAclUpdateParams cohortAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             cohortAclUpdateParams = new CohortAclUpdateParams();
             RestResponse<CohortAclEntryList> res = new RestResponse<>();
@@ -138,17 +137,16 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
-             putNestedIfNotEmpty(beanParams, "cohort",commandOptions.cohort, true);
- 
+            putNestedIfNotEmpty(beanParams, "cohort",commandOptions.cohort, true);
+
             cohortAclUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CohortAclUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getCohortClient().updateAcl(commandOptions.members, commandOptions.action, cohortAclUpdateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().updateAcl(commandOptions.members, commandOptions.action, cohortAclUpdateParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
-
         logger.debug("Executing aggregationStats in Cohorts command line");
 
         CohortsCommandOptions.AggregationStatsCommandOptions commandOptions = cohortsCommandOptions.aggregationStatsCommandOptions;
@@ -170,11 +168,10 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getCohortClient().aggregationStats(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().aggregationStats(queryParams);
     }
 
     private RestResponse<Job> loadAnnotationSets() throws Exception {
-
         logger.debug("Executing loadAnnotationSets in Cohorts command line");
 
         CohortsCommandOptions.LoadAnnotationSetsCommandOptions commandOptions = cohortsCommandOptions.loadAnnotationSetsCommandOptions;
@@ -188,7 +185,7 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
         }
 
 
-        TsvAnnotationParams tsvAnnotationParams= null;
+        TsvAnnotationParams tsvAnnotationParams = null;
         if (commandOptions.jsonDataModel) {
             tsvAnnotationParams = new TsvAnnotationParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -201,16 +198,15 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "content",commandOptions.content, true);
- 
+
             tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), TsvAnnotationParams.class);
         }
-        return enterpriseOpenCGAClient.getCohortClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
     }
 
     private RestResponse<Cohort> create() throws Exception {
-
         logger.debug("Executing create in Cohorts command line");
 
         CohortsCommandOptions.CreateCommandOptions commandOptions = cohortsCommandOptions.createCommandOptions;
@@ -227,7 +223,7 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
         }
 
 
-        CohortCreateParams cohortCreateParams= null;
+        CohortCreateParams cohortCreateParams = null;
         if (commandOptions.jsonDataModel) {
             cohortCreateParams = new CohortCreateParams();
             RestResponse<Cohort> res = new RestResponse<>();
@@ -240,25 +236,24 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
-             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
- 
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+
             cohortCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CohortCreateParams.class);
         }
-        return enterpriseOpenCGAClient.getCohortClient().create(cohortCreateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().create(cohortCreateParams, queryParams);
     }
 
     private RestResponse<Object> distinct() throws Exception {
-
         logger.debug("Executing distinct in Cohorts command line");
 
         CohortsCommandOptions.DistinctCommandOptions commandOptions = cohortsCommandOptions.distinctCommandOptions;
@@ -283,11 +278,10 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getCohortClient().distinct(commandOptions.field, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().distinct(commandOptions.field, queryParams);
     }
 
     private RestResponse<Cohort> generate() throws Exception {
-
         logger.debug("Executing generate in Cohorts command line");
 
         CohortsCommandOptions.GenerateCommandOptions commandOptions = cohortsCommandOptions.generateCommandOptions;
@@ -315,7 +309,7 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
         }
 
 
-        CohortGenerateParams cohortGenerateParams= null;
+        CohortGenerateParams cohortGenerateParams = null;
         if (commandOptions.jsonDataModel) {
             cohortGenerateParams = new CohortGenerateParams();
             RestResponse<Cohort> res = new RestResponse<>();
@@ -328,25 +322,24 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.bodyId, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.bodyCreationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.bodyModificationDate, true);
-             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
- 
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.bodyCreationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.bodyModificationDate, true);
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+
             cohortGenerateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CohortGenerateParams.class);
         }
-        return enterpriseOpenCGAClient.getCohortClient().generate(cohortGenerateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().generate(cohortGenerateParams, queryParams);
     }
 
     private RestResponse<Cohort> search() throws Exception {
-
         logger.debug("Executing search in Cohorts command line");
 
         CohortsCommandOptions.SearchCommandOptions commandOptions = cohortsCommandOptions.searchCommandOptions;
@@ -377,11 +370,10 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getCohortClient().search(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().search(queryParams);
     }
 
     private RestResponse<CohortAclEntryList> acl() throws Exception {
-
         logger.debug("Executing acl in Cohorts command line");
 
         CohortsCommandOptions.AclCommandOptions commandOptions = cohortsCommandOptions.aclCommandOptions;
@@ -394,11 +386,10 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getCohortClient().acl(commandOptions.cohorts, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().acl(commandOptions.cohorts, queryParams);
     }
 
     private RestResponse<Cohort> delete() throws Exception {
-
         logger.debug("Executing delete in Cohorts command line");
 
         CohortsCommandOptions.DeleteCommandOptions commandOptions = cohortsCommandOptions.deleteCommandOptions;
@@ -409,11 +400,10 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getCohortClient().delete(commandOptions.cohorts, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().delete(commandOptions.cohorts, queryParams);
     }
 
     private RestResponse<Cohort> info() throws Exception {
-
         logger.debug("Executing info in Cohorts command line");
 
         CohortsCommandOptions.InfoCommandOptions commandOptions = cohortsCommandOptions.infoCommandOptions;
@@ -428,11 +418,10 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getCohortClient().info(commandOptions.cohorts, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().info(commandOptions.cohorts, queryParams);
     }
 
     private RestResponse<Cohort> update() throws Exception {
-
         logger.debug("Executing update in Cohorts command line");
 
         CohortsCommandOptions.UpdateCommandOptions commandOptions = cohortsCommandOptions.updateCommandOptions;
@@ -447,7 +436,7 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
         }
 
 
-        CohortUpdateParams cohortUpdateParams= null;
+        CohortUpdateParams cohortUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             cohortUpdateParams = new CohortUpdateParams();
             RestResponse<Cohort> res = new RestResponse<>();
@@ -460,25 +449,24 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
-             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
- 
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+
             cohortUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CohortUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getCohortClient().update(commandOptions.cohorts, cohortUpdateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().update(commandOptions.cohorts, cohortUpdateParams, queryParams);
     }
 
     private RestResponse<Cohort> updateAnnotationSetsAnnotations() throws Exception {
-
         logger.debug("Executing updateAnnotationSetsAnnotations in Cohorts command line");
 
         CohortsCommandOptions.UpdateAnnotationSetsAnnotationsCommandOptions commandOptions = cohortsCommandOptions.updateAnnotationSetsAnnotationsCommandOptions;
@@ -491,7 +479,7 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
         }
 
 
-        ObjectMap objectMap= null;
+        ObjectMap objectMap = null;
         if (commandOptions.jsonDataModel) {
             objectMap = new ObjectMap();
             RestResponse<Cohort> res = new RestResponse<>();
@@ -502,6 +490,6 @@ public class CohortsCommandExecutor extends com.zettagenomics.opencga.enterprise
             objectMap = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), ObjectMap.class);
         }
-        return enterpriseOpenCGAClient.getCohortClient().updateAnnotationSetsAnnotations(commandOptions.cohort, commandOptions.annotationSet, objectMap, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCohortClient().updateAnnotationSetsAnnotations(commandOptions.cohort, commandOptions.annotationSet, objectMap, queryParams);
     }
 }

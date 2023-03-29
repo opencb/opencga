@@ -48,7 +48,7 @@ import org.opencb.opencga.core.models.job.Job;
  */
 public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
 
-    private AnalysisAlignmentCommandOptions analysisAlignmentCommandOptions;
+    public AnalysisAlignmentCommandOptions analysisAlignmentCommandOptions;
 
     public AnalysisAlignmentCommandExecutor(AnalysisAlignmentCommandOptions analysisAlignmentCommandOptions) throws CatalogAuthenticationException {
         super(analysisAlignmentCommandOptions.commonCommandOptions);
@@ -114,7 +114,6 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
     }
 
     private RestResponse<Job> runBwa() throws Exception {
-
         logger.debug("Executing runBwa in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.RunBwaCommandOptions commandOptions = analysisAlignmentCommandOptions.runBwaCommandOptions;
@@ -130,7 +129,7 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
         }
 
 
-        BwaWrapperParams bwaWrapperParams= null;
+        BwaWrapperParams bwaWrapperParams = null;
         if (commandOptions.jsonDataModel) {
             bwaWrapperParams = new BwaWrapperParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -143,21 +142,20 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "command",commandOptions.command, true);
-             putNestedIfNotEmpty(beanParams, "fastaFile",commandOptions.fastaFile, true);
-             putNestedIfNotEmpty(beanParams, "fastq1File",commandOptions.fastq1File, true);
-             putNestedIfNotEmpty(beanParams, "fastq2File",commandOptions.fastq2File, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-             putNestedIfNotNull(beanParams, "bwaParams",commandOptions.bwaParams, true);
- 
+            putNestedIfNotEmpty(beanParams, "fastaFile",commandOptions.fastaFile, true);
+            putNestedIfNotEmpty(beanParams, "fastq1File",commandOptions.fastq1File, true);
+            putNestedIfNotEmpty(beanParams, "fastq2File",commandOptions.fastq2File, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+            putNestedIfNotNull(beanParams, "bwaParams",commandOptions.bwaParams, true);
+
             bwaWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), BwaWrapperParams.class);
         }
-        return enterpriseOpenCGAClient.getAlignmentClient().runBwa(bwaWrapperParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().runBwa(bwaWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runCoverageIndex() throws Exception {
-
         logger.debug("Executing runCoverageIndex in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.RunCoverageIndexCommandOptions commandOptions = analysisAlignmentCommandOptions.runCoverageIndexCommandOptions;
@@ -173,7 +171,7 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
         }
 
 
-        CoverageIndexParams coverageIndexParams= null;
+        CoverageIndexParams coverageIndexParams = null;
         if (commandOptions.jsonDataModel) {
             coverageIndexParams = new CoverageIndexParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -186,18 +184,17 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
-             putNestedIfNotNull(beanParams, "windowSize",commandOptions.windowSize, true);
-             putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
- 
+            putNestedIfNotNull(beanParams, "windowSize",commandOptions.windowSize, true);
+            putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
+
             coverageIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CoverageIndexParams.class);
         }
-        return enterpriseOpenCGAClient.getAlignmentClient().runCoverageIndex(coverageIndexParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().runCoverageIndex(coverageIndexParams, queryParams);
     }
 
     private RestResponse<Job> coverageQcGeneCoverageStatsRun() throws Exception {
-
         logger.debug("Executing coverageQcGeneCoverageStatsRun in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.CoverageQcGeneCoverageStatsRunCommandOptions commandOptions = analysisAlignmentCommandOptions.coverageQcGeneCoverageStatsRunCommandOptions;
@@ -213,7 +210,7 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
         }
 
 
-        AlignmentGeneCoverageStatsParams alignmentGeneCoverageStatsParams= null;
+        AlignmentGeneCoverageStatsParams alignmentGeneCoverageStatsParams = null;
         if (commandOptions.jsonDataModel) {
             alignmentGeneCoverageStatsParams = new AlignmentGeneCoverageStatsParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -226,18 +223,17 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "bamFile",commandOptions.bamFile, true);
-             putNestedIfNotNull(beanParams, "genes",commandOptions.genes, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
- 
+            putNestedIfNotNull(beanParams, "genes",commandOptions.genes, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+
             alignmentGeneCoverageStatsParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), AlignmentGeneCoverageStatsParams.class);
         }
-        return enterpriseOpenCGAClient.getAlignmentClient().coverageQcGeneCoverageStatsRun(alignmentGeneCoverageStatsParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().coverageQcGeneCoverageStatsRun(alignmentGeneCoverageStatsParams, queryParams);
     }
 
     private RestResponse<RegionCoverage> queryCoverage() throws Exception {
-
         logger.debug("Executing queryCoverage in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.QueryCoverageCommandOptions commandOptions = analysisAlignmentCommandOptions.queryCoverageCommandOptions;
@@ -255,11 +251,10 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getAlignmentClient().queryCoverage(commandOptions.file, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().queryCoverage(commandOptions.file, queryParams);
     }
 
     private RestResponse<RegionCoverage> ratioCoverage() throws Exception {
-
         logger.debug("Executing ratioCoverage in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.RatioCoverageCommandOptions commandOptions = analysisAlignmentCommandOptions.ratioCoverageCommandOptions;
@@ -277,11 +272,10 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getAlignmentClient().ratioCoverage(commandOptions.file1, commandOptions.file2, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().ratioCoverage(commandOptions.file1, commandOptions.file2, queryParams);
     }
 
     private RestResponse<GeneCoverageStats> statsCoverage() throws Exception {
-
         logger.debug("Executing statsCoverage in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.StatsCoverageCommandOptions commandOptions = analysisAlignmentCommandOptions.statsCoverageCommandOptions;
@@ -293,11 +287,10 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getAlignmentClient().statsCoverage(commandOptions.file, commandOptions.gene, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().statsCoverage(commandOptions.file, commandOptions.gene, queryParams);
     }
 
     private RestResponse<Job> runDeeptools() throws Exception {
-
         logger.debug("Executing runDeeptools in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.RunDeeptoolsCommandOptions commandOptions = analysisAlignmentCommandOptions.runDeeptoolsCommandOptions;
@@ -313,7 +306,7 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
         }
 
 
-        DeeptoolsWrapperParams deeptoolsWrapperParams= null;
+        DeeptoolsWrapperParams deeptoolsWrapperParams = null;
         if (commandOptions.jsonDataModel) {
             deeptoolsWrapperParams = new DeeptoolsWrapperParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -326,18 +319,17 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "command",commandOptions.command, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-             putNestedIfNotNull(beanParams, "deeptoolsParams",commandOptions.deeptoolsParams, true);
- 
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+            putNestedIfNotNull(beanParams, "deeptoolsParams",commandOptions.deeptoolsParams, true);
+
             deeptoolsWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), DeeptoolsWrapperParams.class);
         }
-        return enterpriseOpenCGAClient.getAlignmentClient().runDeeptools(deeptoolsWrapperParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().runDeeptools(deeptoolsWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runFastqc() throws Exception {
-
         logger.debug("Executing runFastqc in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.RunFastqcCommandOptions commandOptions = analysisAlignmentCommandOptions.runFastqcCommandOptions;
@@ -353,7 +345,7 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
         }
 
 
-        FastqcWrapperParams fastqcWrapperParams= null;
+        FastqcWrapperParams fastqcWrapperParams = null;
         if (commandOptions.jsonDataModel) {
             fastqcWrapperParams = new FastqcWrapperParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -366,18 +358,17 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "inputFile",commandOptions.inputFile, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-             putNestedIfNotNull(beanParams, "fastqcParams",commandOptions.fastqcParams, true);
- 
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+            putNestedIfNotNull(beanParams, "fastqcParams",commandOptions.fastqcParams, true);
+
             fastqcWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FastqcWrapperParams.class);
         }
-        return enterpriseOpenCGAClient.getAlignmentClient().runFastqc(fastqcWrapperParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().runFastqc(fastqcWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runIndex() throws Exception {
-
         logger.debug("Executing runIndex in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.RunIndexCommandOptions commandOptions = analysisAlignmentCommandOptions.runIndexCommandOptions;
@@ -393,7 +384,7 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
         }
 
 
-        AlignmentIndexParams alignmentIndexParams= null;
+        AlignmentIndexParams alignmentIndexParams = null;
         if (commandOptions.jsonDataModel) {
             alignmentIndexParams = new AlignmentIndexParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -406,17 +397,16 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
-             putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
- 
+            putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
+
             alignmentIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), AlignmentIndexParams.class);
         }
-        return enterpriseOpenCGAClient.getAlignmentClient().runIndex(alignmentIndexParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().runIndex(alignmentIndexParams, queryParams);
     }
 
     private RestResponse<Job> runPicard() throws Exception {
-
         logger.debug("Executing runPicard in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.RunPicardCommandOptions commandOptions = analysisAlignmentCommandOptions.runPicardCommandOptions;
@@ -432,7 +422,7 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
         }
 
 
-        PicardWrapperParams picardWrapperParams= null;
+        PicardWrapperParams picardWrapperParams = null;
         if (commandOptions.jsonDataModel) {
             picardWrapperParams = new PicardWrapperParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -445,18 +435,17 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "command",commandOptions.command, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-             putNestedIfNotNull(beanParams, "picardParams",commandOptions.picardParams, true);
- 
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+            putNestedIfNotNull(beanParams, "picardParams",commandOptions.picardParams, true);
+
             picardWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PicardWrapperParams.class);
         }
-        return enterpriseOpenCGAClient.getAlignmentClient().runPicard(picardWrapperParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().runPicard(picardWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runQc() throws Exception {
-
         logger.debug("Executing runQc in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.RunQcCommandOptions commandOptions = analysisAlignmentCommandOptions.runQcCommandOptions;
@@ -472,7 +461,7 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
         }
 
 
-        AlignmentQcParams alignmentQcParams= null;
+        AlignmentQcParams alignmentQcParams = null;
         if (commandOptions.jsonDataModel) {
             alignmentQcParams = new AlignmentQcParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -485,19 +474,18 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "bamFile",commandOptions.bamFile, true);
-             putNestedIfNotEmpty(beanParams, "skip",commandOptions.skip, true);
-             putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
- 
+            putNestedIfNotEmpty(beanParams, "skip",commandOptions.skip, true);
+            putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+
             alignmentQcParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), AlignmentQcParams.class);
         }
-        return enterpriseOpenCGAClient.getAlignmentClient().runQc(alignmentQcParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().runQc(alignmentQcParams, queryParams);
     }
 
     private RestResponse<ReadAlignment> query() throws Exception {
-
         logger.debug("Executing query in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.QueryCommandOptions commandOptions = analysisAlignmentCommandOptions.queryCommandOptions;
@@ -526,11 +514,10 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getAlignmentClient().query(commandOptions.file, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().query(commandOptions.file, queryParams);
     }
 
     private RestResponse<Job> runSamtools() throws Exception {
-
         logger.debug("Executing runSamtools in Analysis - Alignment command line");
 
         AnalysisAlignmentCommandOptions.RunSamtoolsCommandOptions commandOptions = analysisAlignmentCommandOptions.runSamtoolsCommandOptions;
@@ -546,7 +533,7 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
         }
 
 
-        SamtoolsWrapperParams samtoolsWrapperParams= null;
+        SamtoolsWrapperParams samtoolsWrapperParams = null;
         if (commandOptions.jsonDataModel) {
             samtoolsWrapperParams = new SamtoolsWrapperParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -559,14 +546,14 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "command",commandOptions.command, true);
-             putNestedIfNotEmpty(beanParams, "inputFile",commandOptions.inputFile, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-             putNestedIfNotNull(beanParams, "samtoolsParams",commandOptions.samtoolsParams, true);
- 
+            putNestedIfNotEmpty(beanParams, "inputFile",commandOptions.inputFile, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+            putNestedIfNotNull(beanParams, "samtoolsParams",commandOptions.samtoolsParams, true);
+
             samtoolsWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SamtoolsWrapperParams.class);
         }
-        return enterpriseOpenCGAClient.getAlignmentClient().runSamtools(samtoolsWrapperParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseAlignmentClient().runSamtools(samtoolsWrapperParams, queryParams);
     }
 }

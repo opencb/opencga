@@ -1,0 +1,19 @@
+name: Push opencga-enterprise develop or release branch
+
+on:
+  push:
+    branches:
+      - develop
+      - release-*
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: zetta-genomics/opencga-enterprise/.github/workflows/build-java-enterprise-workflow.yml@TASK-1974
+    with:
+      maven_opts: -Dopencga.war.name=opencga
+
+  deploy-docker:
+    uses: zetta-genomics/opencga-enterprise/.github/workflows/deploy-docker-hub-enterprise-workflow.yml@TASK-1974
+    needs: build
+    secrets: inherit

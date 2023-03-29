@@ -30,10 +30,7 @@ import java.io.IOException;
 
 public class AdminMain {
 
-    public static final String VERSION = GitRepositoryState.get().getBuildVersion();
-
     public static void main(String[] args) {
-
         AdminCliOptionsParser cliOptionsParser = new AdminCliOptionsParser();
 
         // Add password parameter

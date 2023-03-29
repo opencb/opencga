@@ -1,0 +1,27 @@
+name: Reusable workflow to push in DockerHub
+
+on:
+  workflow_call:
+    secrets:
+      DOCKER_HUB_USER:
+        required: true
+      DOCKER_HUB_PASSWORD:
+        required: true
+
+jobs:
+  deploy-docker-hub:
+    name: Push Docker image
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download build dir
+        uses: actions/download-artifact@v3
+        with:
+          name: build-folder
+          path: build
+      - name: Docker Login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+      - name: Push in Docker Hub
+        run: python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images base,init
