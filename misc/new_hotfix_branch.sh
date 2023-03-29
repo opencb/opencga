@@ -75,7 +75,6 @@ if [ -z "$TAG_VERSION" ]; then
   exit 1
 fi
 
-CURRENT_DIR=$PWD
 cd "$REPO_DIR" || exit 2
 
 if [[ "$TAG_VERSION" == "v"* ]]; then
@@ -92,4 +91,4 @@ else
 fi
 
 yellow "The new dependency version is $NEW_VERSION"
-cd "$CURRENT_DIR" || exit 2
+
