@@ -30,7 +30,7 @@ public class PedigreeGraphUtils {
     public static PedigreeGraph getPedigreeGraph(Family family, Path openCgaHome, Path scratchDir) throws IOException {
         PedigreeGraph pedigreeGraph = new PedigreeGraph();
 
-        if (hasTrios(family)) {
+        if (hasMinTwoGenerations(family)) {
             // Prepare R script and out paths
             Path rScriptPath = openCgaHome.resolve("analysis/pedigree-graph");
 
@@ -217,7 +217,20 @@ public class PedigreeGraphUtils {
             Set<String> memberIds = new HashSet<>(family.getMembers().stream().map(m -> m.getId()).collect(Collectors.toList()));
             for (Individual member : family.getMembers()) {
                 if (member.getFather() != null && memberIds.contains(member.getFather().getId())
-                    && member.getMother() != null && memberIds.contains(member.getMother().getId())) {
+                        && member.getMother() != null && memberIds.contains(member.getMother().getId())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public static boolean hasMinTwoGenerations(Family family) {
+        if (CollectionUtils.isNotEmpty(family.getMembers())) {
+            Set<String> memberIds = new HashSet<>(family.getMembers().stream().map(m -> m.getId()).collect(Collectors.toList()));
+            for (Individual member : family.getMembers()) {
+                if ((member.getFather() != null && memberIds.contains(member.getFather().getId()))
+                        || (member.getMother() != null && memberIds.contains(member.getMother().getId()))) {
                     return true;
                 }
             }
