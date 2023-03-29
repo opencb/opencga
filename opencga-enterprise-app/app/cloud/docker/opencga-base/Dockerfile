@@ -6,7 +6,9 @@ ARG BUILD_PATH="."
 ENV OPENCGA_HOME=/opt/opencga
 ENV OPENCGA_CONFIG_DIR=${OPENCGA_HOME}/conf
 
-RUN apt-get update && apt-get -y upgrade && apt-get install -y lsb-release sshpass ca-certificates curl gnupg jq ncurses-bin && \
+RUN apt-get update && apt-get -y upgrade && apt-get install -y lsb-release sshpass ca-certificates curl gnupg jq ncurses-bin python3-pip && \
+    # Install Flask
+    pip install Flask && \
     # Install Docker repository
     curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
@@ -23,10 +25,6 @@ RUN apt-get update && apt-get -y upgrade && apt-get install -y lsb-release sshpa
 USER opencga
 COPY --chown=opencga:opencga ${BUILD_PATH} /opt/opencga
 
-USER root
-RUN keytool -import -storepass changeit -noprompt -alias cas -file /opt/opencga/cloud/docker/opencga-base/cert1.pem -keystore /usr/local/openjdk-8/lib/security/cacerts
-
-USER opencga
 ## Declare the volume to be mounted later
 VOLUME /opt/opencga/conf
 
