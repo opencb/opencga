@@ -3,3 +3,4 @@ sso:
   active: true
   casServerPrefixUrl: "https://reports.test.zettagenomics.com:8443/cas"
   serverName: "http://localhost:9090"
+  pythonBin: "/home/pfurio/venv/cas/bin/python3"

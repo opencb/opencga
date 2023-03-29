@@ -4,15 +4,17 @@ public class SsoConfiguration extends AbstractModuleConfiguration {
 
     private String casServerPrefixUrl;
     private String serverName;
+    private String pythonBin;
 
     public SsoConfiguration() {
         super();
     }
 
-    public SsoConfiguration(boolean active, String casServerPrefixUrl, String serverName) {
+    public SsoConfiguration(boolean active, String casServerPrefixUrl, String serverName, String pythonBin) {
         super(active);
         this.casServerPrefixUrl = casServerPrefixUrl;
         this.serverName = serverName;
+        this.pythonBin = pythonBin;
     }
 
     public String getCasServerPrefixUrl() {
@@ -30,6 +32,15 @@ public class SsoConfiguration extends AbstractModuleConfiguration {
 
     public SsoConfiguration setServerName(String serverName) {
         this.serverName = serverName;
+        return this;
+    }
+
+    public String getPythonBin() {
+        return pythonBin;
+    }
+
+    public SsoConfiguration setPythonBin(String pythonBin) {
+        this.pythonBin = pythonBin;
         return this;
     }
 }
