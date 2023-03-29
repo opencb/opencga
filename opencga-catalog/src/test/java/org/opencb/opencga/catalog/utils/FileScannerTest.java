@@ -20,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -37,6 +38,7 @@ import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -55,6 +57,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
+@Category(MediumTests.class)
 public class FileScannerTest {
     @Rule
     public CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();

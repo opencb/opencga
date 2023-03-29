@@ -22,6 +22,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
@@ -55,6 +56,7 @@ import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
 import java.util.*;
@@ -65,6 +67,7 @@ import static org.junit.Assert.*;
 /**
  * Created by pfurio on 11/05/17.
  */
+@Category(MediumTests.class)
 public class FamilyManagerTest extends GenericTest {
 
     public final static String STUDY = "user@1000G:phase1";

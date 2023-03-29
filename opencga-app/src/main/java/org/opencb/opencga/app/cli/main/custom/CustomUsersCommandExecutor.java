@@ -13,44 +13,49 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencb.opencga.app.cli.main.parent;
+package org.opencb.opencga.app.cli.main.custom;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.options.UsersCommandOptions;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.app.cli.session.SessionManager;
+import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 
 import static org.opencb.commons.utils.PrintUtils.getKeyValueAsFormattedString;
 import static org.opencb.commons.utils.PrintUtils.println;
 
-public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor {
+public class CustomUsersCommandExecutor extends CustomCommandExecutor {
 
     public static final String LOGIN_OK = "You have been logged in correctly: ";
     public static final String LOGIN_FAIL = "Incorrect username or password.";
     public static final String LOGIN_ERROR = "Not available login service now. Please contact the system administrator.";
     public static final String LOGOUT = "You've been logged out.";
-    private final UsersCommandOptions usersCommandOptions;
 
-    public ParentUsersCommandExecutor(GeneralCliOptions.CommonCommandOptions options,
-                                      UsersCommandOptions usersCommandOptions) throws CatalogAuthenticationException {
-        super(options);
-        this.usersCommandOptions = usersCommandOptions;
+
+    public CustomUsersCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
+                                      SessionManager session, String appHome, Logger logger) {
+        super(options, token, clientConfiguration, session, appHome, logger);
     }
 
-    protected RestResponse<AuthenticationResponse> login() throws Exception {
+    public CustomUsersCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
+                                      SessionManager session, String appHome, Logger logger, OpenCGAClient openCGAClient) {
+        super(options, token, clientConfiguration, session, appHome, logger, openCGAClient);
+    }
+
+    public RestResponse<AuthenticationResponse> login() throws Exception {
         logger.debug("Login");
         RestResponse<AuthenticationResponse> res = new RestResponse<>();
         try {
-            String user = usersCommandOptions.loginCommandOptions.user;
-            String password = usersCommandOptions.loginCommandOptions.password;
+            String user = String.valueOf(options.get("user"));
+            String password = String.valueOf(options.get("password"));
 
             if (StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(password)) {
                 AuthenticationResponse response = null;
@@ -64,11 +69,11 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
                     res.getEvents().add(event);
                     return res;
                 }
-                logger.debug("Login token ::: " + getSessionManager().getSession().getToken());
-                res = saveSession(user, response);
+                logger.debug("Login token ::: " + session.getSession().getToken());
+                res = session.saveSession(user, response, openCGAClient);
                 println(getKeyValueAsFormattedString(LOGIN_OK, user));
             } else {
-                String sessionId = usersCommandOptions.commonCommandOptions.token;
+                String sessionId = String.valueOf(options.get("token"));
                 String errorMsg = "Missing password. ";
                 if (StringUtils.isNotEmpty(sessionId)) {
                     errorMsg += "Active token detected ";
@@ -83,18 +88,17 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
             res.setType(QueryType.VOID);
             event.setType(Event.Type.ERROR);
             res.getEvents().add(event);
-
         }
         return res;
     }
 
 
-    protected RestResponse<AuthenticationResponse> logout() throws IOException {
+    public RestResponse<AuthenticationResponse> logout() throws IOException {
         logger.debug("Logout");
-        RestResponse<AuthenticationResponse> res = new RestResponse();
+        RestResponse<AuthenticationResponse> res = new RestResponse<>();
         try {
-            sessionManager.logoutSessionFile();
-            getOpenCGAClient().logout();
+            session.logoutSessionFile();
+            openCGAClient.logout();
             Event event = new Event();
             event.setMessage(LOGOUT);
             event.setType(Event.Type.INFO);

@@ -39,12 +39,13 @@ public class Session {
     public Session() {
     }
 
-    public Session(String host, String user, String token, String refreshToken, List<String> studies) {
+    public Session(String host, String user, String token, String refreshToken, List<String> studies, Map<String, Object> attributes) {
         this.host = host;
         this.user = user;
         this.token = token;
         this.refreshToken = refreshToken;
         this.studies = studies;
+        this.attributes = attributes;
     }
 
     public Session(String host, String user, String token, String refreshToken, String version,

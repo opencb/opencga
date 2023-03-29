@@ -1,8 +1,11 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import org.junit.Rule;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngineDuplicatedTest;
 
+@Category(MediumTests.class)
 public class HadoopVariantStorageEngineDuplicatedTest extends VariantStorageEngineDuplicatedTest implements HadoopVariantStorageTest {
 
     @Rule

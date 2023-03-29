@@ -18,9 +18,12 @@ package org.opencb.opencga.core.common;
 
 import junit.framework.TestCase;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.util.Date;
 
+@Category(ShortTests.class)
 public class TimeUtilsTest extends TestCase {
 
     @Test

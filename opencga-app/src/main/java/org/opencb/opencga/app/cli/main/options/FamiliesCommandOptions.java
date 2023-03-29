@@ -38,7 +38,6 @@ public class FamiliesCommandOptions {
         public LoadAnnotationSetsCommandOptions loadAnnotationSetsCommandOptions;
         public CreateCommandOptions createCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
-        public PedigreeGraphCommandOptions pedigreeGraphCommandOptions;
         public SearchCommandOptions searchCommandOptions;
         public AclCommandOptions aclCommandOptions;
         public DeleteCommandOptions deleteCommandOptions;
@@ -56,7 +55,6 @@ public class FamiliesCommandOptions {
         this.loadAnnotationSetsCommandOptions = new LoadAnnotationSetsCommandOptions();
         this.createCommandOptions = new CreateCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
-        this.pedigreeGraphCommandOptions = new PedigreeGraphCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
         this.aclCommandOptions = new AclCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
@@ -310,20 +308,6 @@ public class FamiliesCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"pedigreegraph"}, commandDescription ="Compute pedigree graph image")
-    public class PedigreeGraphCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
-        public String study; 
-    
-        @Parameter(names = {"--family-id"}, description = "Family ID", required = false, arity = 1)
-        public String familyId; 
-    
-    }
-
     @Parameters(commandNames = {"search"}, commandDescription ="Search families")
     public class SearchCommandOptions {
     
@@ -493,6 +477,9 @@ public class FamiliesCommandOptions {
     
         @Parameter(names = {"--update-roles"}, description = "Update the member roles within the family", required = false, help = true, arity = 0)
         public boolean updateRoles = false; 
+    
+        @Parameter(names = {"--update-pedigree-graph"}, description = "Update the family pedigree graph", required = false, help = true, arity = 0)
+        public boolean updatePedigreeGraph = false; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
         public boolean includeResult = false; 

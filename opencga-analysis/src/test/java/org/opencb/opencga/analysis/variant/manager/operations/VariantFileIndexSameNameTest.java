@@ -19,11 +19,13 @@ package org.opencb.opencga.analysis.variant.manager.operations;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.VariantIndexStatus;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStoragePipeline;
 
@@ -42,6 +44,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.get
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(MediumTests.class)
 public class VariantFileIndexSameNameTest extends AbstractVariantOperationManagerTest {
 
     private File inputFile1;

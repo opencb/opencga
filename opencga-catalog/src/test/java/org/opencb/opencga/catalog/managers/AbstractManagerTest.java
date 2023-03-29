@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.managers;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -36,6 +37,7 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
@@ -46,6 +48,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+@Category(MediumTests.class)
 public class AbstractManagerTest extends GenericTest {
 
     @Rule

@@ -18,12 +18,15 @@ package org.opencb.opencga.storage.hadoop.auth;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 /**
  * Created on 05/10/16
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(ShortTests.class)
 public class HBaseCredentialsTest {
 
 

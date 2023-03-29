@@ -17,6 +17,8 @@
 package org.opencb.opencga.core.common;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -28,6 +30,7 @@ import static org.junit.Assert.assertEquals;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(ShortTests.class)
 public class UriUtilsTest {
 
 

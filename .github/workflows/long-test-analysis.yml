@@ -1,0 +1,15 @@
+name: Long test for run only on weekend
+
+#Every Saturday at 01:10
+on:
+  schedule:
+    - cron: '10 1 * * 6'
+
+jobs:
+  test:
+    uses: opencb/opencga/.github/workflows/test-analysis.yml@develop
+    secrets: inherit
+    with:
+      test_profile: runLongTests,runMediumTests,runShortTests
+      report_context: development
+

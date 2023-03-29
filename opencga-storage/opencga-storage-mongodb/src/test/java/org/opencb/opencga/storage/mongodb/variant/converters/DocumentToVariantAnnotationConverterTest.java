@@ -24,7 +24,9 @@ import com.mongodb.util.JSON;
 import org.bson.Document;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.util.Arrays;
 import java.util.List;
@@ -38,6 +40,7 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVa
 /**
  * Created by fjlopez on 23/09/15.
  */
+@Category(ShortTests.class)
 public class DocumentToVariantAnnotationConverterTest {
 
     private VariantAnnotation variantAnnotation;

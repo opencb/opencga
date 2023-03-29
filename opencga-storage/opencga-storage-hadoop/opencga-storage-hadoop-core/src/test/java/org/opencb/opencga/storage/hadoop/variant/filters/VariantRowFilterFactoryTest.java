@@ -3,6 +3,8 @@ package org.opencb.opencga.storage.hadoop.variant.filters;
 import org.apache.phoenix.schema.types.PhoenixArray;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 
 import java.util.ArrayList;
@@ -14,6 +16,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 import static org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter.*;
 
+@Category(ShortTests.class)
 public class VariantRowFilterFactoryTest {
 
     private VariantRowFilterFactory factory;

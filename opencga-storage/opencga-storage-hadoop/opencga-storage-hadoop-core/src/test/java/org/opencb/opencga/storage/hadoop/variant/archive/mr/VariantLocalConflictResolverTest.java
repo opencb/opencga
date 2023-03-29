@@ -20,6 +20,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.OriginalCall;
@@ -27,6 +28,7 @@ import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -43,6 +45,7 @@ import static org.opencb.biodata.models.variant.avro.VariantType.NO_VARIATION;
 /**
  * Created by mh719 on 15/06/2016.
  */
+@Category(ShortTests.class)
 public class VariantLocalConflictResolverTest {
     private VariantNormalizer normalizer;
 

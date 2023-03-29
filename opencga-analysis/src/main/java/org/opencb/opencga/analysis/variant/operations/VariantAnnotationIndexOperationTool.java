@@ -54,6 +54,8 @@ public class VariantAnnotationIndexOperationTool extends OperationTool {
         params.put(DefaultVariantAnnotationManager.FILE_NAME, annotationParams.getOutputFileName());
         params.put(VariantQueryParam.REGION.key(), annotationParams.getRegion());
         params.put(VariantStorageOptions.ANNOTATION_SAMPLE_INDEX.key(), annotationParams.getSampleIndexAnnotation());
+        boolean deleteIntermediateFiles = !keepIntermediateFiles;
+        params.put(VariantStorageOptions.ANNOTATION_FILE_DELETE_AFTER_LOAD.key(), deleteIntermediateFiles);
     }
 
     @Override

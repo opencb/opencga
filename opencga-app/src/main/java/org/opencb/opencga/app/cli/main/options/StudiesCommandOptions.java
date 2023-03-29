@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 
-import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandOptions;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandOptions;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
@@ -30,7 +30,7 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
  *    PATH: /{apiVersion}/studies
  */
 @Parameters(commandNames = {"studies"}, commandDescription = "Studies commands")
-public class StudiesCommandOptions extends ParentStudiesCommandOptions {
+public class StudiesCommandOptions extends CustomStudiesCommandOptions {
 
 
         public UpdateAclCommandOptions updateAclCommandOptions;

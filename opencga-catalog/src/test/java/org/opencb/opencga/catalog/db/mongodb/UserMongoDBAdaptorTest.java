@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -30,6 +31,7 @@ import org.opencb.opencga.core.models.user.UserFilter;
 import org.opencb.opencga.core.models.user.UserInternal;
 import org.opencb.opencga.core.models.user.UserStatus;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -41,6 +43,7 @@ import static org.junit.Assert.*;
 /**
  * Created by pfurio on 19/01/16.
  */
+@Category(MediumTests.class)
 public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test

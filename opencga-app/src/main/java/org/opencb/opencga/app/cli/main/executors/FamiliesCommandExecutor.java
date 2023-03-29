@@ -50,7 +50,7 @@ import org.opencb.opencga.core.models.job.Job;
  */
 public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
 
-    private FamiliesCommandOptions familiesCommandOptions;
+    public FamiliesCommandOptions familiesCommandOptions;
 
     public FamiliesCommandExecutor(FamiliesCommandOptions familiesCommandOptions) throws CatalogAuthenticationException {
         super(familiesCommandOptions.commonCommandOptions);
@@ -82,9 +82,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             case "distinct":
                 queryResponse = distinct();
                 break;
-            case "pedigreegraph":
-                queryResponse = pedigreeGraph();
-                break;
             case "search":
                 queryResponse = search();
                 break;
@@ -113,7 +110,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FamilyAclEntryList> updateAcl() throws Exception {
-
         logger.debug("Executing updateAcl in Families command line");
 
         FamiliesCommandOptions.UpdateAclCommandOptions commandOptions = familiesCommandOptions.updateAclCommandOptions;
@@ -126,7 +122,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        FamilyAclUpdateParams familyAclUpdateParams= null;
+        FamilyAclUpdateParams familyAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             familyAclUpdateParams = new FamilyAclUpdateParams();
             RestResponse<FamilyAclEntryList> res = new RestResponse<>();
@@ -139,10 +135,10 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
-             putNestedIfNotEmpty(beanParams, "family",commandOptions.family, true);
-             putNestedIfNotEmpty(beanParams, "individual",commandOptions.individual, true);
-             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
- 
+            putNestedIfNotEmpty(beanParams, "family",commandOptions.family, true);
+            putNestedIfNotEmpty(beanParams, "individual",commandOptions.individual, true);
+            putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
+
             familyAclUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FamilyAclUpdateParams.class);
@@ -151,7 +147,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
-
         logger.debug("Executing aggregationStats in Families command line");
 
         FamiliesCommandOptions.AggregationStatsCommandOptions commandOptions = familiesCommandOptions.aggregationStatsCommandOptions;
@@ -179,7 +174,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> loadAnnotationSets() throws Exception {
-
         logger.debug("Executing loadAnnotationSets in Families command line");
 
         FamiliesCommandOptions.LoadAnnotationSetsCommandOptions commandOptions = familiesCommandOptions.loadAnnotationSetsCommandOptions;
@@ -193,7 +187,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        TsvAnnotationParams tsvAnnotationParams= null;
+        TsvAnnotationParams tsvAnnotationParams = null;
         if (commandOptions.jsonDataModel) {
             tsvAnnotationParams = new TsvAnnotationParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -206,7 +200,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "content",commandOptions.content, true);
- 
+
             tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), TsvAnnotationParams.class);
@@ -215,7 +209,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Family> create() throws Exception {
-
         logger.debug("Executing create in Families command line");
 
         FamiliesCommandOptions.CreateCommandOptions commandOptions = familiesCommandOptions.createCommandOptions;
@@ -231,7 +224,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        FamilyCreateParams familyCreateParams= null;
+        FamilyCreateParams familyCreateParams = null;
         if (commandOptions.jsonDataModel) {
             familyCreateParams = new FamilyCreateParams();
             RestResponse<Family> res = new RestResponse<>();
@@ -244,16 +237,16 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotNull(beanParams, "expectedSize",commandOptions.expectedSize, true);
-             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
- 
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotNull(beanParams, "expectedSize",commandOptions.expectedSize, true);
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+
             familyCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FamilyCreateParams.class);
@@ -262,7 +255,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Object> distinct() throws Exception {
-
         logger.debug("Executing distinct in Families command line");
 
         FamiliesCommandOptions.DistinctCommandOptions commandOptions = familiesCommandOptions.distinctCommandOptions;
@@ -293,24 +285,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getFamilyClient().distinct(commandOptions.field, queryParams);
     }
 
-    private RestResponse<String> pedigreeGraph() throws Exception {
-
-        logger.debug("Executing pedigreeGraph in Families command line");
-
-        FamiliesCommandOptions.PedigreeGraphCommandOptions commandOptions = familiesCommandOptions.pedigreeGraphCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("familyId", commandOptions.familyId);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-        return openCGAClient.getFamilyClient().pedigreeGraph(queryParams);
-    }
-
     private RestResponse<Family> search() throws Exception {
-
         logger.debug("Executing search in Families command line");
 
         FamiliesCommandOptions.SearchCommandOptions commandOptions = familiesCommandOptions.searchCommandOptions;
@@ -348,7 +323,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FamilyAclEntryList> acl() throws Exception {
-
         logger.debug("Executing acl in Families command line");
 
         FamiliesCommandOptions.AclCommandOptions commandOptions = familiesCommandOptions.aclCommandOptions;
@@ -365,7 +339,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Family> delete() throws Exception {
-
         logger.debug("Executing delete in Families command line");
 
         FamiliesCommandOptions.DeleteCommandOptions commandOptions = familiesCommandOptions.deleteCommandOptions;
@@ -380,7 +353,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Family> info() throws Exception {
-
         logger.debug("Executing info in Families command line");
 
         FamiliesCommandOptions.InfoCommandOptions commandOptions = familiesCommandOptions.infoCommandOptions;
@@ -400,7 +372,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Family> update() throws Exception {
-
         logger.debug("Executing update in Families command line");
 
         FamiliesCommandOptions.UpdateCommandOptions commandOptions = familiesCommandOptions.updateCommandOptions;
@@ -410,13 +381,14 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("updateRoles", commandOptions.updateRoles);
+        queryParams.putIfNotNull("updatePedigreeGraph", commandOptions.updatePedigreeGraph);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
 
-        FamilyUpdateParams familyUpdateParams= null;
+        FamilyUpdateParams familyUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             familyUpdateParams = new FamilyUpdateParams();
             RestResponse<Family> res = new RestResponse<>();
@@ -429,17 +401,17 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotNull(beanParams, "expectedSize",commandOptions.expectedSize, true);
-             putNestedIfNotNull(beanParams, "qualityControl.files",commandOptions.qualityControlFiles, true);
-             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
- 
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotNull(beanParams, "expectedSize",commandOptions.expectedSize, true);
+            putNestedIfNotNull(beanParams, "qualityControl.files",commandOptions.qualityControlFiles, true);
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+
             familyUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FamilyUpdateParams.class);
@@ -448,7 +420,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Family> updateAnnotationSetsAnnotations() throws Exception {
-
         logger.debug("Executing updateAnnotationSetsAnnotations in Families command line");
 
         FamiliesCommandOptions.UpdateAnnotationSetsAnnotationsCommandOptions commandOptions = familiesCommandOptions.updateAnnotationSetsAnnotationsCommandOptions;
@@ -461,7 +432,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        ObjectMap objectMap= null;
+        ObjectMap objectMap = null;
         if (commandOptions.jsonDataModel) {
             objectMap = new ObjectMap();
             RestResponse<Family> res = new RestResponse<>();

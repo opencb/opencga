@@ -3,12 +3,15 @@ package org.opencb.opencga.analysis.rga;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.analysis.rga.exceptions.RgaException;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import static org.junit.Assert.*;
 
+@Category(ShortTests.class)
 public class RgaQueryParserTest {
 
     private RgaQueryParser parser;

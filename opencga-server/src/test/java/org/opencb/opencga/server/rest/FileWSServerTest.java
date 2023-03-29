@@ -20,6 +20,7 @@ import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.MultiPart;
 import org.glassfish.jersey.media.multipart.file.StreamDataBodyPart;
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -33,6 +34,7 @@ import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 
 import javax.ws.rs.client.Entity;
@@ -54,6 +56,7 @@ import static org.junit.Assert.assertEquals;
  * Created by jacobo on 13/06/15.
  */
 @Ignore
+@Category(MediumTests.class)
 public class FileWSServerTest {
 
     private WebTarget webTarget;

@@ -2,13 +2,16 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.lang.reflect.Method;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+@Category(ShortTests.class)
 public class VariantQueryTest {
 
     @Test

@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -37,6 +38,7 @@ import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -46,6 +48,7 @@ import static org.junit.Assert.*;
 /**
  * Created by pfurio on 28/11/16.
  */
+@Category(MediumTests.class)
 public class ProjectManagerTest extends GenericTest {
 
     @Rule

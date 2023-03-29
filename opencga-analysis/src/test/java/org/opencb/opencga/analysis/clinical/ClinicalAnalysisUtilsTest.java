@@ -18,6 +18,7 @@ package org.opencb.opencga.analysis.clinical;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
@@ -27,6 +28,7 @@ import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 
@@ -39,6 +41,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Category(MediumTests.class)
 public class ClinicalAnalysisUtilsTest {
 
     public static AbstractClinicalManagerTest getClinicalTest(OpenCGATestExternalResource opencga) throws IOException, CatalogException, URISyntaxException, StorageEngineException, ToolException {

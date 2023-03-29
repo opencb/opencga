@@ -3,11 +3,13 @@ package org.opencb.opencga.storage.core.variant.annotation.annotators;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.core.result.CellBaseDataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
@@ -24,6 +26,7 @@ import static org.junit.Assert.assertThat;
 /**
  * Created by jacobo on 27/11/17.
  */
+@Category(ShortTests.class)
 public class VariantAnnotatorTest {
 
     private StorageConfiguration storageConfiguration;

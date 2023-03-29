@@ -1,6 +1,8 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec.*;
@@ -10,6 +12,7 @@ import static org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCod
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(ShortTests.class)
 public class GenotypeCodecTest {
 
     @Test
