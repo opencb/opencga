@@ -23,17 +23,6 @@ public class ClinicalVariantSolrEngineTest {
 
     @Before
     public void before() throws IOException, CatalogException, RgaException, SolrServerException, CvaException {
-//        try (InputStream is = RgaEngineTest.class.getClassLoader().getResourceAsStream("storage-configuration.yml")) {
-//            storageConfiguration = StorageConfiguration.load(is);
-//        }
-//        Configuration configuration;
-//        try (InputStream is = RgaEngineTest.class.getClassLoader().getResourceAsStream("configuration-test.yml")) {
-//            configuration = Configuration.load(is);
-//        }
-//        this.catalogManager = new CatalogManager(configuration);
-//
-//        this.variantStorageManager = new VariantStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
-
         cvaEngine = cvaSolrExternalResource.configure();
 
         try {

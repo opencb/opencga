@@ -44,6 +44,7 @@ public class ClinicalVariantEvidenceConverter extends SearchConverter {
 
             cves.setId((i++) + "-" + variantId + "-" + interpretationId);
             cves.setVariantId(variantId);
+            cves.setCvId(interpretationId + "-" + variantId);
             cves.setCiId(interpretationId);
             cves.setCaId(clinicalAnalysisId);
 

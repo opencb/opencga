@@ -48,7 +48,7 @@ public class ClinicalVariantConverter extends SearchConverter {
             VariantSearchModel variantSearchModel = variantSearchToVariantConverter.convertToStorageType(cv);
             ClinicalVariantSearch cvs = new ClinicalVariantSearch(variantSearchModel);
 
-            cvs.setId(cv.toStringSimple() + "-" + interpretationId);
+            cvs.setId(interpretationId + "-" + variantSearchModel.getVariantId());
             cvs.setCiId(interpretationId);
             cvs.setCaId(clinicalAnalysisId);
 

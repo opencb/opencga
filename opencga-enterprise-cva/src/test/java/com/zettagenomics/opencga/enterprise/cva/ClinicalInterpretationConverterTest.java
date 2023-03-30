@@ -22,7 +22,7 @@ import static org.junit.Assert.assertEquals;
 public class ClinicalInterpretationConverterTest {
 
     @Test
-    public void test0() throws IOException, CvaException {
+    public void testClinicalConverters() throws IOException, CvaException {
         String clinicalAnalysisId = null;
         InputStream is = ClinicalInterpretationConverterTest.class.getClassLoader().getResourceAsStream("interpretation1.json");
         org.opencb.opencga.core.models.clinical.Interpretation interpretation = JacksonUtils.getDefaultObjectMapper().readerFor(org.opencb.opencga.core.models.clinical.Interpretation.class).readValue(is);
