@@ -1,6 +1,6 @@
 #!/bin/bash
 #Navigate to the root folder where the pom.xml is
-cd ../../../
+cd /home/runner/work/opencg-enterprise/opencg-enterprise || exit 2
 
 #Read the opencga version from the pom.xml
 BUILD_VERSION=$(mvn help:evaluate -Dexpression=opencga.version -q -DforceStdout)
