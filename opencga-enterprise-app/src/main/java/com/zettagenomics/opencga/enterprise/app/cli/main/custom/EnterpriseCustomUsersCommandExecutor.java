@@ -2,12 +2,12 @@ package com.zettagenomics.opencga.enterprise.app.cli.main.custom;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
 import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -86,7 +86,11 @@ public class EnterpriseCustomUsersCommandExecutor extends CustomUsersCommandExec
                     .toString();
 
             logger.debug("Running SSO server temporarily: 'python {}'", pythonScript);
-            ProcessBuilder processBuilder = new ProcessBuilder("/home/pfurio/venv/cas/bin/python3", pythonScript);
+            String pythonBin = enterpriseConfiguration.getSso().getPythonBin();
+            if (StringUtils.isEmpty(pythonBin)) {
+                pythonBin = "python3";
+            }
+            ProcessBuilder processBuilder = new ProcessBuilder(pythonBin, pythonScript);
             String processResponse;
             Process p;
             try {
