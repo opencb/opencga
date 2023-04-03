@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@Tool(id = SampleIndexTask.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION, description = "Index Sample entries in Solr.")
+@Tool(id = SampleIndexTask.ID, resource = Enums.Resource.SAMPLE, type = Tool.Type.OPERATION, description = "Index Sample entries in Solr.")
 public class SampleIndexTask extends OpenCgaTool {
 
     public final static String ID = "sample-secondary-index";

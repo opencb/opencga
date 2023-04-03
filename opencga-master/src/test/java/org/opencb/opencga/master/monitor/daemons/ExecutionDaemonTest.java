@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.FileContent;
@@ -77,14 +78,15 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
     @Override
     @Before
-    public void setUp() throws IOException, CatalogException {
+    public void setUp() throws Exception {
         super.setUp();
 
         String expiringToken = this.catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
         String nonExpiringToken = this.catalogManager.getUserManager().getNonExpiringToken("opencga", expiringToken);
         catalogManager.getConfiguration().getAnalysis().getExecution().getMaxConcurrentJobs().put(VariantIndexOperationTool.ID, 1);
 
-        daemon = new ExecutionDaemon(1000, nonExpiringToken, catalogManager, "/tmp");
+        daemon = new ExecutionDaemon(1000, nonExpiringToken, catalogManager,
+                new StorageConfiguration().setMode(StorageConfiguration.Mode.READ_WRITE), "/tmp");
         executor = new DummyBatchExecutor();
         daemon.batchExecutor = executor;
     }

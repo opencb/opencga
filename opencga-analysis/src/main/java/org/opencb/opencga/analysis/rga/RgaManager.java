@@ -117,6 +117,13 @@ public class RgaManager implements AutoCloseable {
                 : DEFAULT_CACHE_SIZE;
     }
 
+    private void checkStorageReadMode() throws RgaException {
+        if (storageConfiguration.getMode() == StorageConfiguration.Mode.READ_ONLY) {
+            throw new RgaException("Unable to execute rga index. "
+                    + "The storage engine is in mode=" + storageConfiguration.getMode());
+        }
+    }
+
     // Data load
     public void index(String studyStr, String fileStr, String token) throws CatalogException, RgaException, IOException {
         File file = catalogManager.getFileManager().get(studyStr, fileStr, FileManager.INCLUDE_FILE_URI_PATH, token).first();
@@ -134,6 +141,7 @@ public class RgaManager implements AutoCloseable {
      * @throws RgaException on loading issue
      */
     public void index(String study, Path file, String token) throws CatalogException, IOException, RgaException {
+        checkStorageReadMode();
         String userId = catalogManager.getUserManager().getUserId(token);
         Study studyObject = catalogManager.getStudyManager().get(study, QueryOptions.empty(), token).first();
         try {
@@ -216,6 +224,7 @@ public class RgaManager implements AutoCloseable {
     }
 
     public void generateAuxiliarCollection(String studyStr, String token) throws CatalogException, RgaException, IOException {
+        checkStorageReadMode();
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
         try {
@@ -421,7 +430,7 @@ public class RgaManager implements AutoCloseable {
                 new ArrayList<>(geneIds), new ArrayList<>(geneNames), new ArrayList<>(transcripts), new ArrayList<>(compoundFilters));
     }
 
-    public OpenCGAResult<Long> updateRgaInternalIndexStatus(String studyStr, List<String> sampleIds, RgaIndex.Status status,
+    private OpenCGAResult<Long> updateRgaInternalIndexStatus(String studyStr, List<String> sampleIds, RgaIndex.Status status,
                                                             String token) throws CatalogException, RgaException {
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
         String userId = catalogManager.getUserManager().getUserId(token);
@@ -464,7 +473,7 @@ public class RgaManager implements AutoCloseable {
         return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), null, sampleIds.size(), 0, updatedSamples, 0);
     }
 
-    public OpenCGAResult<Long> updateRgaInternalIndexStatus(String studyStr, String token)
+    private OpenCGAResult<Long> updateRgaInternalIndexStatus(String studyStr, String token)
             throws CatalogException, IOException, RgaException {
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
         String userId = catalogManager.getUserManager().getUserId(token);

@@ -1,5 +1,10 @@
 ---
 
+## Storage mode. Either READ_WRITE or READ_ONLY
+## When configured in READ_ONLY mode, it won't allow to make any modifications to the storage.
+## If undefined, the value is "READ_WRITE"
+mode: READ_WRITE
+
 ## CellBase client configuration, this is used mainly when annotating variants
 ## This can be set up using maven profiles in your .m2/settings.xml
 cellbase:
