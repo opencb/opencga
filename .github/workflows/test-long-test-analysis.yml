@@ -7,7 +7,7 @@ on:
 
 jobs:
   test:
-    uses: opencb/opencga/.github/workflows/test-analysis.yml@TASK-3980
+    uses: ./.github/workflows/test-analysis.yml
     secrets: inherit
     with:
       test_profile: runLongTests,runMediumTests,runShortTests
