@@ -296,6 +296,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             }
             // Overwrite study and types related to SV
             query.put(VariantQueryParam.STUDY.key(), getStudy());
+//            query.put(VariantQueryParam.TYPE.key(), VariantType.BREAKEND + "," + VariantType.DELETION);
             query.put(VariantQueryParam.TYPE.key(), VariantType.DELETION + "," + VariantType.BREAKEND + "," + VariantType.DUPLICATION  + ","
                     + VariantType.TANDEM_DUPLICATION + "," + VariantType.INVERSION + "," + VariantType.TRANSLOCATION);
 
@@ -384,19 +385,45 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         File inputFile = getOutDir().resolve("in.clustered.bedpe").toFile();
         File outputFile = getOutDir().resolve("out.clustered.bedpe").toFile();
         try {
+            String mateChrom;
+            int matePosition;
+            String lengthKey;
+
+            Map<String, List<Integer>> breakendMap = new HashMap<>();
             PrintWriter pw = new PrintWriter(inputFile);
             pw.println("chrom1\tstart1\tend1\tchrom2\tstart2\tend2\tlength\ttype\tsample");
             while (iterator.hasNext()) {
                 Variant variant = iterator.next();
-                if (variant.getSv() == null || variant.getSv().getBreakend() == null || variant.getSv().getBreakend().getMate() == null) {
-                    continue;
+                if (breakendMap.containsKey(variant.getChromosome())) {
+                    for (Integer position : breakendMap.get(variant.getChromosome())) {
+                        if (Math.abs(variant.getStart() - position) <= 20) {
+                            // Skipping since it is a mate
+                            continue;
+                        }
+                    }
+                }
+                BreakendMate mate = null;
+                if (variant.getSv() != null && variant.getSv().getBreakend() != null && variant.getSv().getBreakend().getMate() != null) {
+                    mate = variant.getSv().getBreakend().getMate();
+                    if (!breakendMap.containsKey(mate.getChromosome())) {
+                        breakendMap.put(mate.getChromosome(), new ArrayList<>());
+                    }
+                    breakendMap.get(mate.getChromosome()).add(mate.getPosition());
                 }
                 String typeKey = getTypeKey(variant);
-                String lengthKey = getLengthKey(variant);
+                if (mate == null) {
+                    mateChrom = "0";
+                    matePosition = 0;
+                    lengthKey = LENGTH_NA;
+                } else {
+                    mateChrom = mate.getChromosome();
+                    matePosition = mate.getPosition() == null ? 0 : mate.getPosition();
+                    lengthKey = getLengthKey(variant, typeKey);
+                }
+
                 if (typeKey != null && lengthKey != null) {
-                    BreakendMate mate = variant.getSv().getBreakend().getMate();
                     pw.println(variant.getChromosome() + "\t" + variant.getStart() + "\t" + variant.getEnd() + "\t"
-                            + mate.getChromosome() + "\t" + mate.getPosition() + "\t" + mate.getPosition() + "\t"
+                            + mateChrom + "\t" + matePosition + "\t" + matePosition + "\t"
                             + lengthKey + "\t" + typeKey + "\t" + getSample());
                 }
             }
@@ -458,6 +485,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             case "TDS":
             case "DUPLICATION":
             case "TANDEM_DUPLICATION":
+            case "TANDEM-DUPLICATION":
                 return TYPE_TDS;
             case "INV":
             case "INVERSION":
@@ -490,6 +518,31 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         } else {
             if (variant.getType() == VariantType.TRANSLOCATION) {
                 return LENGTH_NA;
+            }
+        }
+        return null;
+    }
+
+    private String getLengthKey(Variant variant, String type) {
+        if (type == null) {
+            return null;
+        }
+        if (type.equals(TYPE_TRANS)) {
+            return LENGTH_NA;
+        } else {
+            BreakendMate mate = variant.getSv().getBreakend().getMate();
+            if (variant.getChromosome().equals(mate.getChromosome())) {
+                int length = Math.abs(mate.getPosition() - variant.getStart());
+                if (length <= 10000) {
+                    return LENGTH_1_10Kb;
+                } else if (length <= 100000) {
+                    return LENGTH_10Kb_100Kb;
+                } else if (length <= 1000000) {
+                    return LENGTH_100Kb_1Mb;
+                } else if (length <= 10000000) {
+                    return LENGTH_1Mb_10Mb;
+                }
+                return LENGTH_10Mb;
             }
         }
         return null;
