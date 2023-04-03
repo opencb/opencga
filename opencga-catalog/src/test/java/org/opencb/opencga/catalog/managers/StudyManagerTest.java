@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import org.apache.solr.common.StringUtils;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -33,6 +34,7 @@ import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyC
 import org.opencb.opencga.core.models.study.configuration.ClinicalPriorityValue;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 
@@ -44,6 +46,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
+@Category(MediumTests.class)
 public class StudyManagerTest extends AbstractManagerTest {
 
     @Test

@@ -21,6 +21,7 @@ import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderVersion;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.mockito.Mockito;
 import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
 import org.opencb.biodata.models.variant.Variant;
@@ -28,6 +29,7 @@ import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
 import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
 import org.opencb.commons.io.DataReader;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.io.VcfVariantReader;
 
 import java.io.ByteArrayInputStream;
@@ -42,6 +44,7 @@ import static org.junit.Assert.*;
 /**
  * Created by mh719 on 04/05/16.
  */
+@Category(ShortTests.class)
 public class VcfVariantReaderTest {
 
     public VcfVariantReader reader;

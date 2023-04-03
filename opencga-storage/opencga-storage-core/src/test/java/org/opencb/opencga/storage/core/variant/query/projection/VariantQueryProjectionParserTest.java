@@ -1,7 +1,9 @@
 package org.opencb.opencga.storage.core.variant.query.projection;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 
 import java.util.Arrays;
@@ -13,6 +15,7 @@ import static org.opencb.opencga.core.api.ParamConstants.NONE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser.*;
 
+@Category(ShortTests.class)
 public class VariantQueryProjectionParserTest {
 
     @Test

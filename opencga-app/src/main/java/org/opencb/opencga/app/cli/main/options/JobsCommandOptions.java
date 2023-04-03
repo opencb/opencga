@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 
-import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandOptions;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandOptions;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
@@ -30,7 +30,7 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
  *    PATH: /{apiVersion}/jobs
  */
 @Parameters(commandNames = {"jobs"}, commandDescription = "Jobs commands")
-public class JobsCommandOptions extends ParentJobsCommandOptions {
+public class JobsCommandOptions extends CustomJobsCommandOptions {
 
 
         public UpdateAclCommandOptions updateAclCommandOptions;

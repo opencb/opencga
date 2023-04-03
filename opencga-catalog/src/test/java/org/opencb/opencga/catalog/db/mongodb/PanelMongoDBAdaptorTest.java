@@ -17,13 +17,16 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import static org.junit.Assert.assertEquals;
 
 /**
  * Created by pfurio on 01/06/16.
  */
+@Category(MediumTests.class)
 public class PanelMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test

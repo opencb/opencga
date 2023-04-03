@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.core.variant.query.Values;
@@ -92,6 +93,9 @@ public class VariantQuery extends Query {
         put(VariantQueryParam.INCLUDE_STUDY.key(), value);
         return this;
     }
+    public VariantQuery includeStudyAll() {
+        return includeStudy(ParamConstants.ALL);
+    }
     public String includeStudy() {
         return getString(VariantQueryParam.INCLUDE_STUDY.key());
     }
@@ -145,8 +149,11 @@ public class VariantQuery extends Query {
     }
 
     public VariantQuery includeSampleAll() {
-        put(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
-        return this;
+        return includeSample(ParamConstants.ALL);
+    }
+
+    public VariantQuery includeSampleNone() {
+        return includeSample(ParamConstants.NONE);
     }
 
     public VariantQuery includeSample(String... value) {
@@ -174,12 +181,12 @@ public class VariantQuery extends Query {
         return getString(VariantQueryParam.INCLUDE_SAMPLE_ID.key());
     }
 
-    public VariantQuery sampleMetadata(String value) {
+    public VariantQuery sampleMetadata(boolean value) {
         put(VariantQueryParam.SAMPLE_METADATA.key(), value);
         return this;
     }
-    public String sampleMetadata() {
-        return getString(VariantQueryParam.SAMPLE_METADATA.key());
+    public boolean sampleMetadata() {
+        return getBoolean(VariantQueryParam.SAMPLE_METADATA.key());
     }
 
     public VariantQuery includeSampleData(String value) {
@@ -190,7 +197,7 @@ public class VariantQuery extends Query {
         return getString(VariantQueryParam.INCLUDE_SAMPLE_DATA.key());
     }
 
-    public VariantQuery includeGenotype(Boolean value) {
+    public VariantQuery includeGenotype(boolean value) {
         put(VariantQueryParam.INCLUDE_GENOTYPE.key(), value);
         return this;
     }
@@ -250,6 +257,10 @@ public class VariantQuery extends Query {
         put(VariantQueryParam.INCLUDE_FILE.key(), value);
         return this;
     }
+    public VariantQuery includeFileAll() {
+        return includeFile(ParamConstants.ALL);
+    }
+
     public String includeFile() {
         return getString(VariantQueryParam.INCLUDE_FILE.key());
     }
@@ -326,7 +337,7 @@ public class VariantQuery extends Query {
         return getString(VariantQueryParam.SCORE.key());
     }
 
-    public VariantQuery annotationExists(Boolean value) {
+    public VariantQuery annotationExists(boolean value) {
         put(VariantQueryParam.ANNOTATION_EXISTS.key(), value);
         return this;
     }
@@ -353,6 +364,14 @@ public class VariantQuery extends Query {
     }
     public String gene() {
         return getString(VariantQueryParam.GENE.key());
+    }
+
+    public VariantQuery geneRoleInCancer(String value) {
+        put(VariantQueryParam.ANNOT_GENE_ROLE_IN_CANCER.key(), value);
+        return this;
+    }
+    public String geneRoleInCancer() {
+        return getString(VariantQueryParam.ANNOT_GENE_ROLE_IN_CANCER.key());
     }
 
     public VariantQuery biotype(String value) {
@@ -477,8 +496,16 @@ public class VariantQuery extends Query {
         put(VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE.key(), value);
         return this;
     }
+    public VariantQuery clinicalSignificance(ClinicalSignificance value) {
+        put(VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE.key(), value);
+        return this;
+    }
     public String clinicalSignificance() {
         return getString(VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE.key());
+    }
+
+    public VariantQuery clinicalConfirmedStatus(boolean value) {
+        return clinicalConfirmedStatus(Boolean.valueOf(value));
     }
 
     public VariantQuery clinicalConfirmedStatus(Boolean value) {
@@ -580,6 +607,10 @@ public class VariantQuery extends Query {
     }
 
     public VariantQuery release(String value) {
+        put(VariantQueryParam.RELEASE.key(), value);
+        return this;
+    }
+    public VariantQuery release(int value) {
         put(VariantQueryParam.RELEASE.key(), value);
         return this;
     }

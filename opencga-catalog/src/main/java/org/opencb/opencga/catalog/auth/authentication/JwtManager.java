@@ -44,11 +44,11 @@ public class JwtManager {
         this(algorithm, null, null);
     }
 
-    JwtManager(String algorithm, Key secretKey) {
+    public JwtManager(String algorithm, Key secretKey) {
         this(algorithm, secretKey, secretKey);
     }
 
-    JwtManager(String algorithm, @Nullable Key privateKey, @Nullable Key publicKey) {
+    public JwtManager(String algorithm, @Nullable Key privateKey, @Nullable Key publicKey) {
         this.algorithm = SignatureAlgorithm.forName(algorithm);
         this.privateKey = privateKey;
         this.publicKey = publicKey;
@@ -83,11 +83,11 @@ public class JwtManager {
         return this;
     }
 
-    String createJWTToken(String userId, long expiration) {
+    public String createJWTToken(String userId, long expiration) {
         return createJWTToken(userId, Collections.emptyMap(), expiration);
     }
 
-    String createJWTToken(String userId, Map<String, Object> claims, long expiration) {
+    public String createJWTToken(String userId, Map<String, Object> claims, long expiration) {
         long currentTime = System.currentTimeMillis();
 
         JwtBuilder jwtBuilder = Jwts.builder();
@@ -107,39 +107,39 @@ public class JwtManager {
         return jwtBuilder.compact();
     }
 
-    void validateToken(String token) throws CatalogAuthenticationException {
+    public void validateToken(String token) throws CatalogAuthenticationException {
         validateToken(token, this.publicKey);
     }
 
-    void validateToken(String token, Key publicKey) throws CatalogAuthenticationException {
+    public void validateToken(String token, Key publicKey) throws CatalogAuthenticationException {
         parseClaims(token, publicKey);
     }
 
-    String getAudience(String token) throws CatalogAuthenticationException {
+    public String getAudience(String token) throws CatalogAuthenticationException {
         return getAudience(token, this.publicKey);
     }
 
-    String getAudience(String token, Key publicKey) throws CatalogAuthenticationException {
+    public String getAudience(String token, Key publicKey) throws CatalogAuthenticationException {
         return parseClaims(token, publicKey).getBody().getAudience();
     }
 
-    String getUser(String token) throws CatalogAuthenticationException {
+    public String getUser(String token) throws CatalogAuthenticationException {
         return getUser(token, this.publicKey);
     }
 
-    String getUser(String token, Key publicKey) throws CatalogAuthenticationException {
+    public String getUser(String token, Key publicKey) throws CatalogAuthenticationException {
         return parseClaims(token, publicKey).getBody().getSubject();
     }
 
-    String getUser(String token, String fieldKey) throws CatalogAuthenticationException {
+    public String getUser(String token, String fieldKey) throws CatalogAuthenticationException {
         return String.valueOf(parseClaims(token, publicKey).getBody().get(fieldKey));
     }
 
-    List<String> getGroups(String token, String fieldKey) throws CatalogAuthenticationException {
+    public List<String> getGroups(String token, String fieldKey) throws CatalogAuthenticationException {
         return getGroups(token, fieldKey, this.publicKey);
     }
 
-    List<String> getGroups(String token, String fieldKey, Key publicKey) throws CatalogAuthenticationException {
+    public List<String> getGroups(String token, String fieldKey, Key publicKey) throws CatalogAuthenticationException {
         Object o = parseClaims(token, publicKey).getBody().get(fieldKey);
 
         if (o instanceof List) {
@@ -149,19 +149,19 @@ public class JwtManager {
         }
     }
 
-    Date getExpiration(String token) throws CatalogAuthenticationException {
+    public Date getExpiration(String token) throws CatalogAuthenticationException {
         return getExpiration(token, this.publicKey);
     }
 
-    Date getExpiration(String token, Key publicKey) throws CatalogAuthenticationException {
+    public Date getExpiration(String token, Key publicKey) throws CatalogAuthenticationException {
         return parseClaims(token, publicKey).getBody().getExpiration();
     }
 
-    Object getClaim(String token, String claimId) throws CatalogAuthenticationException {
+    public Object getClaim(String token, String claimId) throws CatalogAuthenticationException {
         return getClaim(token, claimId, this.publicKey);
     }
 
-    Object getClaim(String token, String claimId, Key publicKey) throws CatalogAuthenticationException {
+    public Object getClaim(String token, String claimId, Key publicKey) throws CatalogAuthenticationException {
         return parseClaims(token, publicKey).getBody().get(claimId);
     }
 

@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import javax.crypto.spec.SecretKeySpec;
 import java.util.Base64;
+import java.util.Calendar;
 import java.util.Date;
 
 public class JwtUtils {
@@ -31,8 +32,16 @@ public class JwtUtils {
         System.out.println(StringUtils.join(chunks, ","));*/
             try {
                 JSONObject json = (JSONObject) parser.parse(payload);
-                Long exp = Long.parseLong(String.valueOf(json.get("exp")));
-                res = new Date(exp * 1000);
+                if (json.containsKey("exp")) {
+                    Long exp = Long.parseLong(String.valueOf(json.get("exp")));
+                    res = new Date(exp * 1000);
+                } else {
+                    // No expiration so adding 1 year to result
+                    Calendar instance = Calendar.getInstance();
+                    instance.setTime(res);
+                    instance.add(Calendar.YEAR, 1);
+                    res = instance.getTime();
+                }
             } catch (ParseException e) {
                 return new Date();
             }

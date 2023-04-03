@@ -19,6 +19,7 @@ package org.opencb.opencga.analysis.alignment;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.opencb.biodata.models.clinical.Phenotype;
@@ -38,6 +39,7 @@ import org.opencb.opencga.core.models.alignment.AlignmentGeneCoverageStatsParams
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -52,6 +54,7 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
+@Category(MediumTests.class)
 public class AlignmentAnalysisTest {
 
     public static final String USER = "user";
@@ -216,7 +219,7 @@ public class AlignmentAnalysisTest {
     }
 
     public void setUpCatalogManager() throws IOException, CatalogException {
-        catalogManager.getUserManager().create(USER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create(USER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, opencga.getAdminToken());
         token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
 
         String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "Homo sapiens",
@@ -253,7 +256,8 @@ public class AlignmentAnalysisTest {
         Path outdir = Paths.get(opencga.createTmpOutdir("_genecoveragestats"));
 
         // setup BAM files
-        String bamFilename = getClass().getResource("/biofiles/HG00096.chrom20.small.bam").getFile();
+        String bamFilename = opencga.getResourceUri("biofiles/HG00096.chrom20.small.bam").toString();
+        String baiFilename = opencga.getResourceUri("biofiles/HG00096.chrom20.small.bam.bai").toString();
         //String bamFilename = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
         File bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFilename, "", "", "", null, null, null,
                 null, null), false, token).first();

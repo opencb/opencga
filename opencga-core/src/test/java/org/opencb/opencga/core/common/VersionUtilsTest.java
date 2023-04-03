@@ -2,7 +2,10 @@ package org.opencb.opencga.core.common;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
+@Category(ShortTests.class)
 public class VersionUtilsTest {
     public static String getComparation(String minVersion, String version) {
         int c = new VersionUtils.Version(minVersion).compareTo(new VersionUtils.Version(version));

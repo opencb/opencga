@@ -17,6 +17,7 @@
 package org.opencb.opencga.analysis.variant.metadata;
 
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
@@ -38,6 +39,7 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
@@ -62,6 +64,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.get
 /**
  * Created by hpccoll1 on 16/07/15.
  */
+@Category(MediumTests.class)
 public class CatalogStorageMetadataSynchronizerTest {
     @ClassRule
     public static CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
@@ -87,7 +90,7 @@ public class CatalogStorageMetadataSynchronizerTest {
 
         catalogManager = catalogManagerExternalResource.getCatalogManager();
 
-        catalogManager.getUserManager().create(userId, "User", "user@email.org", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, null).first();
+        catalogManager.getUserManager().create(userId, "User", "user@email.org", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, catalogManagerExternalResource.getAdminToken()).first();
 
         sessionId = catalogManager.getUserManager().login(userId, TestParamConstants.PASSWORD).getToken();
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "Homo sapiens",
@@ -265,8 +268,9 @@ public class CatalogStorageMetadataSynchronizerTest {
         sample = catalogManager.getSampleManager().get(studyId, sampleName, null, sessionId).first();
         assertEquals(IndexStatus.READY, secureGet(sample, s -> s.getInternal().getVariant().getIndex().getStatus().getId(), null));
         assertEquals(IndexStatus.READY, secureGet(sample, s -> s.getInternal().getVariant().getAnnotationIndex().getStatus().getId(), null));
-        assertEquals(IndexStatus.NONE, secureGet(sample, s -> s.getInternal().getVariant().getSecondarySampleIndex().getStatus().getId(), null));
-        assertEquals(IndexStatus.NONE, secureGet(sample, s->s.getInternal().getVariant().getSecondarySampleIndex().getFamilyStatus().getId(), null));
+        assertEquals((Integer) 1, secureGet(sample, s -> s.getInternal().getVariant().getSecondarySampleIndex().getVersion(), null));
+        assertEquals(IndexStatus.READY, secureGet(sample, s -> s.getInternal().getVariant().getSecondarySampleIndex().getStatus().getId(), null));
+        assertEquals(IndexStatus.READY, secureGet(sample, s -> s.getInternal().getVariant().getSecondarySampleIndex().getFamilyStatus().getId(), null));
         assertEquals(1, secureGet(sample, s -> s.getInternal().getVariant().getSecondarySampleIndex().getVersion(), null).intValue());
     }
 

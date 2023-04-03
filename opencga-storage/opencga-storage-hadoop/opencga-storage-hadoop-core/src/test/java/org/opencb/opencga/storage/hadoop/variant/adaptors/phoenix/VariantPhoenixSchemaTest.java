@@ -1,9 +1,12 @@
 package org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import static org.junit.Assert.*;
 
+@Category(ShortTests.class)
 public class VariantPhoenixSchemaTest {
 
     @Test

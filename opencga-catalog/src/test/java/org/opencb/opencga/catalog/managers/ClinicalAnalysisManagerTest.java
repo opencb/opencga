@@ -22,6 +22,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
@@ -72,6 +73,7 @@ import org.opencb.opencga.core.models.study.configuration.ClinicalConsent;
 import org.opencb.opencga.core.models.study.configuration.*;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
 import java.util.*;
@@ -79,6 +81,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
+@Category(MediumTests.class)
 public class ClinicalAnalysisManagerTest extends GenericTest {
 
     public final static String STUDY = "user@1000G:phase1";
@@ -558,6 +561,35 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         thrown.expectMessage("date");
         catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                 .setComments(commentParamList), options, sessionIdUser);
+    }
+
+    @Test
+    public void updateClinicalAnalysis() throws CatalogException {
+        Individual individual = new Individual()
+                .setId("proband")
+                .setSamples(Collections.singletonList(new Sample().setId("sample")));
+        catalogManager.getIndividualManager().create(STUDY, individual, QueryOptions.empty(), sessionIdUser);
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("Clinical")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setComments(Collections.singletonList(new ClinicalComment("", "My first comment", Arrays.asList("tag1", "tag2"), "")))
+                .setProband(individual);
+
+        ClinicalAnalysis clinical = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, INCLUDE_RESULT, sessionIdUser).first();
+        assertTrue(clinical.getAttributes().isEmpty());
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put("a", "a_value");
+        attributes.put("b", "b_value");
+
+        ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
+                .setAttributes(attributes);
+        clinical = catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), updateParams, INCLUDE_RESULT, sessionIdUser).first();
+        assertFalse(clinical.getAttributes().isEmpty());
+        assertEquals(2, clinical.getAttributes().size());
+        assertEquals(attributes.get("a"), clinical.getAttributes().get("a"));
+        assertEquals(attributes.get("b"), clinical.getAttributes().get("b"));
     }
 
     @Test

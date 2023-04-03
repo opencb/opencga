@@ -5,6 +5,8 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManagerTest;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
@@ -16,6 +18,7 @@ import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMet
 
 import java.nio.file.Paths;
 
+@Category(MediumTests.class)
 public class HadoopVariantStorageMetadataManagerTest extends VariantStorageMetadataManagerTest implements HadoopVariantStorageTest {
 
     @ClassRule

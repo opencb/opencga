@@ -19,7 +19,7 @@ public class OpenCgaApplicationEventListener implements ApplicationEventListener
         switch (event.getType()) {
             case INITIALIZATION_APP_FINISHED:
                 Object opencgaHome = event.getResourceConfig().getProperty("OPENCGA_HOME");
-                OpenCGAWSServer.init(String.valueOf(opencgaHome));
+                OpenCGAWSServer.init(opencgaHome == null ? null : String.valueOf(opencgaHome));
                 break;
             case INITIALIZATION_START:
             case INITIALIZATION_FINISHED:

@@ -2,7 +2,9 @@ package org.opencb.opencga.storage.hadoop.variant.executors;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 
@@ -18,6 +20,7 @@ import static org.junit.Assert.assertThat;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(ShortTests.class)
 public class SshMRExecutorTest {
 
     private ObjectMap options;

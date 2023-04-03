@@ -2,11 +2,14 @@ package org.opencb.opencga.storage.core.variant.search;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantScore;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import static org.junit.Assert.*;
 
+@Category(ShortTests.class)
 public class VariantSearchToVariantConverterTest {
 
     private VariantSearchToVariantConverter converter;

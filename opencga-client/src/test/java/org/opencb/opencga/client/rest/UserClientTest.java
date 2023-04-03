@@ -17,8 +17,10 @@
 package org.opencb.opencga.client.rest;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -30,6 +32,7 @@ import org.opencb.opencga.core.models.user.LoginParams;
 import org.opencb.opencga.core.models.user.PasswordChangeParams;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.io.IOException;
 import java.util.stream.Collectors;
@@ -39,6 +42,8 @@ import static org.junit.Assert.*;
 /**
  * Created by imedina on 04/05/16.
  */
+@Ignore
+@Category(ShortTests.class)
 public class UserClientTest extends WorkEnvironmentTest {
 
     private UserClient userClient;

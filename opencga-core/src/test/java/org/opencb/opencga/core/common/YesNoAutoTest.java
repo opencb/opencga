@@ -1,9 +1,12 @@
 package org.opencb.opencga.core.common;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import static org.junit.Assert.assertEquals;
 
+@Category(ShortTests.class)
 public class YesNoAutoTest {
 
     @Test

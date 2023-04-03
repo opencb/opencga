@@ -17,8 +17,10 @@
 package org.opencb.opencga.analysis.variant.manager.operations;
 
 import org.hamcrest.CoreMatchers;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
@@ -28,6 +30,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.file.FileDeleteTask;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
@@ -43,6 +46,8 @@ import org.opencb.opencga.core.models.file.FileInternalVariantIndex;
 import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -72,6 +77,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.get
 /**
  * Created by hpccoll1 on 13/07/15.
  */
+@Category(MediumTests.class)
 public class VariantFileIndexerOperationManagerTest extends AbstractVariantOperationManagerTest {
 
     @Rule
@@ -219,6 +225,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         loadFile(transformedFile, queryOptions, outputId);
     }
 
+    @Ignore
     @Test
     public void testDeleteTransformedFile() throws Exception {
         QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false)

@@ -20,17 +20,21 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 
@@ -44,6 +48,7 @@ import static org.junit.Assert.*;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  *
  */
+@Category(MediumTests.class)
 public class VariantTableRemoveTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     @ClassRule
@@ -236,7 +241,7 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
         Map<String, Variant> variants = new HashMap<>();
         System.out.println("Build Variant map");
-        for (Variant variant : dbAdaptor) {
+        for (Variant variant : dbAdaptor.iterable(new VariantQuery().includeSampleAll().study(STUDY_NAME), new QueryOptions())) {
             if (variant.getStudies().isEmpty()) {
                 continue;
             }

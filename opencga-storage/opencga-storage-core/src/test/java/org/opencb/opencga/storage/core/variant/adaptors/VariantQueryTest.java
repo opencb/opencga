@@ -2,13 +2,16 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
+@Category(ShortTests.class)
 public class VariantQueryTest {
 
     @Test
@@ -19,22 +22,22 @@ public class VariantQueryTest {
 //            System.out.println("param.key() = " + param.key());
 //            System.out.println("param.type() = " + param.type());
             Method methodGet = getMethodSafe(param.key());
-            assertNotNull(methodGet);
+            assertNotNull(param.key(), methodGet);
             Object expectedValue;
             Method methodSet;
             if (param.type() == QueryParam.Type.BOOLEAN || param.type() == QueryParam.Type.BOOLEAN_ARRAY) {
-                methodSet = getMethodSafe(param.key(), Boolean.class);
+                methodSet = getMethodSafe(param.key(), boolean.class);
                 expectedValue = true;
             } else {
                 expectedValue = RandomStringUtils.random(10);
                 methodSet = getMethodSafe(param.key(), String.class);
             }
-            assertNotNull(methodSet);
+            assertNotNull(param.key(), methodSet);
             methodSet.invoke(variantQuery, expectedValue);
-            assertEquals(expectedValue, variantQuery.get(param.key()));
+            assertEquals(param.key(), expectedValue, variantQuery.get(param.key()));
 
             Object got = methodGet.invoke(variantQuery);
-            assertEquals(expectedValue, got);
+            assertEquals(param.key(), expectedValue, got);
         }
 
     }

@@ -36,7 +36,6 @@ import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConver
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.filters.VariantRowFilterFactory;
-import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantRowMapper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.slf4j.Logger;
@@ -403,8 +402,7 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
             calculator = new DistributedSampleVariantStatsCalculator(pedigree, samples);
             calculator.pre();
 
-            fileDataFilter = filterFactory.buildFileDataFilter(fileDataQuery)
-                    .and(fileCell -> VariantOverlappingStatus.NONE == fileCell.getOverlappingStatus());
+            fileDataFilter = filterFactory.buildFileDataFilter(fileDataQuery);
             sampleDataFilter = filterFactory.buildSampleDataFilter(sampleDataQuery);
 
             vsm = this.getMetadataManager();

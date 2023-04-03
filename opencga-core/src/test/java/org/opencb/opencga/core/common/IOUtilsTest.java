@@ -17,12 +17,15 @@
 package org.opencb.opencga.core.common;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Paths;
 
+@Category(ShortTests.class)
 public class IOUtilsTest {
 
     private static String inputFile = IOUtilsTest.class.getResource("/file.txt").getFile();

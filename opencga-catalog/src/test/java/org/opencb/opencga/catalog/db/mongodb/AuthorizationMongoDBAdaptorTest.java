@@ -20,6 +20,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.Query;
@@ -42,6 +43,7 @@ import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.PermissionRule;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -55,6 +57,7 @@ import static org.junit.Assert.*;
 /**
  * Created by pfurio on 21/04/17.
  */
+@Category(MediumTests.class)
 public class AuthorizationMongoDBAdaptorTest {
 
     @Rule

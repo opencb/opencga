@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.cli.main.parent;
+package org.opencb.opencga.app.cli.main.custom;
 
 import com.beust.jcommander.JCommander;
 import org.apache.commons.lang3.StringUtils;
@@ -13,12 +13,12 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public class ParentCliOptionsParser extends CliOptionsParser {
+public class CustomCliOptionsParser extends CliOptionsParser {
 
-    private static final Logger logger = LoggerFactory.getLogger(ParentCliOptionsParser.class);
+    private static final Logger logger = LoggerFactory.getLogger(CustomCliOptionsParser.class);
     protected final GeneralCliOptions.CommonCommandOptions commonCommandOptions;
 
-    public ParentCliOptionsParser() {
+    public CustomCliOptionsParser() {
         commonCommandOptions = new GeneralCliOptions.CommonCommandOptions();
     }
 

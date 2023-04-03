@@ -5,6 +5,7 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
@@ -12,6 +13,7 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converters.proto.VariantToVcfSliceConverter;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -31,6 +33,7 @@ import static org.junit.Assert.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(ShortTests.class)
 public class FillGapsTaskTest {
 
     private VariantStorageMetadataManager metadataManager;
@@ -236,10 +239,10 @@ public class FillGapsTaskTest {
         assertEquals("2/2", studyEntry.getSampleData("S2", "GT"));
         assertEquals(".", studyEntry.getSampleData("S1", "DP"));
         assertEquals(".", studyEntry.getSampleData("S2", "DP"));
-        assertEquals(null, studyEntry.getFiles().get(0).getData().get("FILTER"));
+        assertEquals("SiteConflict", studyEntry.getFiles().get(0).getData().get("FILTER"));
         assertEquals(null, studyEntry.getFiles().get(0).getData().get("QUAL"));
         assertEquals(null, studyEntry.getFiles().get(0).getData().get("OTHER"));
-        assertEquals(null, studyEntry.getFiles().get(0).getCall());
+        assertEquals("1:100:A:<*>", studyEntry.getFiles().get(0).getCall().getVariantId());
     }
 
     @Test
@@ -260,7 +263,6 @@ public class FillGapsTaskTest {
         assertEquals("PASS", studyEntry.getFiles().get(0).getData().get("FILTER"));
         assertEquals("50", studyEntry.getFiles().get(0).getData().get("QUAL"));
         assertEquals("VALUE", studyEntry.getFiles().get(0).getData().get("OTHER"));
-        assertEquals("1:100:A:C", studyEntry.getFiles().get(0).getCall().getVariantId());
     }
 
     @Test

@@ -6,10 +6,12 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration.Population;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -33,6 +35,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverterTest.*;
 
+@Category(ShortTests.class)
 public class SampleIndexEntryFilterTest {
 
     private SampleIndexSchema schema;

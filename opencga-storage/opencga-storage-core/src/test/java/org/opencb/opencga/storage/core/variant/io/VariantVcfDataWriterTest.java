@@ -18,9 +18,11 @@ package org.opencb.opencga.storage.core.variant.io;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 
 import java.util.Collections;
@@ -31,6 +33,7 @@ import static org.junit.Assert.*;
 /**
  * Created by mh719 on 06/01/2017.
  */
+@Category(ShortTests.class)
 public class VariantVcfDataWriterTest {
 
     private Variant createVariantSecAlt(String varString, String secAlt) {

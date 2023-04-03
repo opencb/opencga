@@ -30,7 +30,7 @@ import java.util.Properties;
  */
 public class GitRepositoryState {
 
-    public static final String RESOURCE_NAME = "org/opencb/opencga/core/git.properties";
+    public static final String DEFAULT_RESOURCE_NAME = "git.properties";
     private static GitRepositoryState gitRepositoryState;
     private static final Logger logger = LoggerFactory.getLogger(GitRepositoryState.class);
 
@@ -62,18 +62,18 @@ public class GitRepositoryState {
             Properties properties = new Properties();
             InputStream stream = null;
             try {
-                stream = GitRepositoryState.class.getClassLoader().getResourceAsStream(RESOURCE_NAME);
+                stream = GitRepositoryState.class.getClassLoader().getResourceAsStream(DEFAULT_RESOURCE_NAME);
                 if (stream != null) {
                     properties.load(stream);
                 }
             } catch (IOException e) {
-                logger.warn("Error reading " + RESOURCE_NAME, e);
+                logger.warn("Error reading " + DEFAULT_RESOURCE_NAME, e);
             } finally {
                 if (stream != null) {
                     try {
                         stream.close();
                     } catch (IOException e) {
-                        logger.warn("Error closing stream from " + RESOURCE_NAME, e);
+                        logger.warn("Error closing stream from " + DEFAULT_RESOURCE_NAME, e);
                     }
                 }
             }
@@ -87,53 +87,53 @@ public class GitRepositoryState {
     }
 
     private GitRepositoryState(Properties properties) {
-        this.tags = properties.get("git.tags").toString();
-        this.branch = properties.get("git.branch").toString();
-        this.dirty = properties.get("git.dirty").toString();
-        this.remoteOriginUrl = properties.get("git.remote.origin.url").toString();
+        this.tags = properties.getProperty("git.tags");
+        this.branch = properties.getProperty("git.branch");
+        this.dirty = properties.getProperty("git.dirty");
+        this.remoteOriginUrl = properties.getProperty("git.remote.origin.url");
 
-        this.commitId = properties.get("git.commit.id").toString(); // OR properties.get("git.commit.id") depending on your configuration
-        this.commitIdAbbrev = properties.get("git.commit.id.abbrev").toString();
-        this.describe = properties.get("git.commit.id.describe").toString();
-        this.describeShort = properties.get("git.commit.id.describe-short").toString();
-        this.commitUserName = properties.get("git.commit.user.name").toString();
-        this.commitUserEmail = properties.get("git.commit.user.email").toString();
-        this.commitMessageFull = properties.get("git.commit.message.full").toString();
-        this.commitMessageShort = properties.get("git.commit.message.short").toString();
-        this.commitTime = properties.get("git.commit.time").toString();
-        this.closestTagName = properties.get("git.closest.tag.name").toString();
-        this.closestTagCommitCount = properties.get("git.closest.tag.commit.count").toString();
+        this.commitId = properties.getProperty("git.commit.id"); // OR properties.get("git.commit.id") depending on your configuration
+        this.commitIdAbbrev = properties.getProperty("git.commit.id.abbrev");
+        this.describe = properties.getProperty("git.commit.id.describe");
+        this.describeShort = properties.getProperty("git.commit.id.describe-short");
+        this.commitUserName = properties.getProperty("git.commit.user.name");
+        this.commitUserEmail = properties.getProperty("git.commit.user.email");
+        this.commitMessageFull = properties.getProperty("git.commit.message.full");
+        this.commitMessageShort = properties.getProperty("git.commit.message.short");
+        this.commitTime = properties.getProperty("git.commit.time");
+        this.closestTagName = properties.getProperty("git.closest.tag.name");
+        this.closestTagCommitCount = properties.getProperty("git.closest.tag.commit.count");
 
-        this.buildUserName = properties.get("git.build.user.name").toString();
-        this.buildUserEmail = properties.get("git.build.user.email").toString();
-        this.buildTime = properties.get("git.build.time").toString();
-        this.buildHost = properties.get("git.build.host").toString();
-        this.buildVersion = properties.get("git.build.version").toString();
+        this.buildUserName = properties.getProperty("git.build.user.name");
+        this.buildUserEmail = properties.getProperty("git.build.user.email");
+        this.buildTime = properties.getProperty("git.build.time");
+        this.buildHost = properties.getProperty("git.build.host");
+        this.buildVersion = properties.getProperty("git.build.version");
     }
 
     @Override
     public String toString() {
         return "{\n" +
-                    "\ttags : '" + tags + '\'' + ",\n" +
-                    "\tbranch : '" + branch + '\'' + ",\n" +
-                    "\tdirty : '" + dirty + '\'' + ",\n" +
-                    "\tremoteOriginUrl : '" + remoteOriginUrl + '\'' + ",\n" +
-                    "\tcommitId : '" + commitId + '\'' + ",\n" +
-                    "\tcommitIdAbbrev : '" + commitIdAbbrev + '\'' + ",\n" +
-                    "\tdescribe : '" + describe + '\'' + ",\n" +
-                    "\tdescribeShort : '" + describeShort + '\'' + ",\n" +
-                    "\tcommitUserName : '" + commitUserName + '\'' + ",\n" +
-                    "\tcommitUserEmail : '" + commitUserEmail + '\'' + ",\n" +
-                    "\tcommitMessageFull : '" + commitMessageFull + '\'' + ",\n" +
-                    "\tcommitMessageShort : '" + commitMessageShort + '\'' + ",\n" +
-                    "\tcommitTime : '" + commitTime + '\'' + ",\n" +
-                    "\tclosestTagName : '" + closestTagName + '\'' + ",\n" +
-                    "\tclosestTagCommitCount : '" + closestTagCommitCount + '\'' + ",\n" +
-                    "\tbuildUserName : '" + buildUserName + '\'' + ",\n" +
-                    "\tbuildUserEmail : '" + buildUserEmail + '\'' + ",\n" +
-                    "\tbuildTime : '" + buildTime + '\'' + ",\n" +
-                    "\tbuildHost : '" + buildHost + '\'' + ",\n" +
-                    "\tbuildVersion : '" + buildVersion + '\'' + ",\n" +
+                "\ttags : '" + tags + '\'' + ",\n" +
+                "\tbranch : '" + branch + '\'' + ",\n" +
+                "\tdirty : '" + dirty + '\'' + ",\n" +
+                "\tremoteOriginUrl : '" + remoteOriginUrl + '\'' + ",\n" +
+                "\tcommitId : '" + commitId + '\'' + ",\n" +
+                "\tcommitIdAbbrev : '" + commitIdAbbrev + '\'' + ",\n" +
+                "\tdescribe : '" + describe + '\'' + ",\n" +
+                "\tdescribeShort : '" + describeShort + '\'' + ",\n" +
+                "\tcommitUserName : '" + commitUserName + '\'' + ",\n" +
+                "\tcommitUserEmail : '" + commitUserEmail + '\'' + ",\n" +
+                "\tcommitMessageFull : '" + commitMessageFull + '\'' + ",\n" +
+                "\tcommitMessageShort : '" + commitMessageShort + '\'' + ",\n" +
+                "\tcommitTime : '" + commitTime + '\'' + ",\n" +
+                "\tclosestTagName : '" + closestTagName + '\'' + ",\n" +
+                "\tclosestTagCommitCount : '" + closestTagCommitCount + '\'' + ",\n" +
+                "\tbuildUserName : '" + buildUserName + '\'' + ",\n" +
+                "\tbuildUserEmail : '" + buildUserEmail + '\'' + ",\n" +
+                "\tbuildTime : '" + buildTime + '\'' + ",\n" +
+                "\tbuildHost : '" + buildHost + '\'' + ",\n" +
+                "\tbuildVersion : '" + buildVersion + '\'' + ",\n" +
                 '}';
     }
 

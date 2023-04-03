@@ -3,6 +3,7 @@ package org.opencb.opencga.catalog.migration;
 import org.bson.Document;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -16,6 +17,7 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobReferenceParam;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -25,6 +27,7 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
+@Category(MediumTests.class)
 public class MigrationManagerTest extends AbstractManagerTest {
 
     @Migration(id = "test-1", version = "0.0.1", description = "", domain = Migration.MigrationDomain.CATALOG,

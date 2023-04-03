@@ -58,6 +58,7 @@ import org.opencb.opencga.core.models.user.UserFilter;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -557,7 +558,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                                 "Require at least one parent to get compound heterozygous");
                     }
 
-                    query.append(SAMPLE_COMPOUND_HETEROZYGOUS.key(), Arrays.asList(childId, fatherId, motherId));
+                    query.append(SAMPLE_COMPOUND_HETEROZYGOUS.key(), new Trio(fatherId, motherId, childId));
                 } else {
                     if (family.getDisorders().isEmpty()) {
                         throw VariantQueryException.malformedParam(FAMILY, familyId, "Family doesn't have disorders");
@@ -922,8 +923,18 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     continue;
                 }
             }
+            // Do not filter out if undefined
+            if (!panelModeOfInheritance.isEmpty()) {
+                if (CollectionUtils.isEmpty(genePanel.getModesOfInheritance())
+                        || genePanel.getModesOfInheritance().stream().noneMatch(panelModeOfInheritance::contains)) {
+                    // Discard this gene
+                    continue;
+                }
+            }
+            // Do not filter out if undefined
             if (!panelRoleInCancer.isEmpty()) {
-                if (genePanel.getCancer() == null || !panelRoleInCancer.contains(genePanel.getCancer().getRole())) {
+                if (genePanel.getCancer() == null || CollectionUtils.isEmpty(genePanel.getCancer().getRoles())
+                        || genePanel.getCancer().getRoles().stream().noneMatch(panelRoleInCancer::contains)) {
                     // Discard this gene
                     continue;
                 }
@@ -1052,7 +1063,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     String fatherId = member.getFather() != null ? member.getFather().getId() : MISSING_SAMPLE;
                     String motherId = member.getMother() != null ? member.getMother().getId() : MISSING_SAMPLE;
 
-                    query.put(SAMPLE_COMPOUND_HETEROZYGOUS.key(), Arrays.asList(member.getId(), fatherId, motherId));
+                    query.put(SAMPLE_COMPOUND_HETEROZYGOUS.key(), new Trio(fatherId, motherId, member.getId()));
                     query.remove(SAMPLE.key());
                 } else if (moi == SegregationMode.DE_NOVO) {
                     query.put(SAMPLE_DE_NOVO.key(), member.getId());

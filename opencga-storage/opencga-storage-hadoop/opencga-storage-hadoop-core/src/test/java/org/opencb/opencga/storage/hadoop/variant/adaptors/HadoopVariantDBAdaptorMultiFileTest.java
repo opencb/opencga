@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.adaptors;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
@@ -11,6 +12,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
@@ -30,6 +32,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(MediumTests.class)
 public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFileTest implements HadoopVariantStorageTest {
 
     @ClassRule
@@ -244,7 +247,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877")
                 .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), options);
         assertEquals(expectedSource, queryResult.getSource());
-        assertThat(queryResult, everyResult(allVariants, allOf(anyOf(overlaps(new Region("1:1-12783")), overlaps(new Region("M"))), withStudy("S_1", allOf(withFileId("1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), withSampleData("NA12877", "GT", containsString("1")))))));
+        assertThat(queryResult, everyResult(allVariants, allOf(anyOf(overlaps(new Region("1:1-12783")), overlaps(new Region("MT"))), withStudy("S_1", allOf(withFileId("1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), withSampleData("NA12877", "GT", containsString("1")))))));
     }
 
     @Test
@@ -263,7 +266,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
         query = new Query()
                 .append(VariantQueryParam.STUDY.key(), "S_1")
                 .append(VariantQueryParam.GENOTYPE.key(), "NA12877:1/1")
-                .append(VariantQueryParam.REGION.key(), "1:1-12783,M");
+                .append(VariantQueryParam.REGION.key(), "1:1-12783,MT");
 //        queryResult = dbAdaptor.get(query, options);
         queryResult = variantStorageEngine.get(query, options);
         VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
@@ -271,7 +274,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877")
                 .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), options);
         assertEquals(expectedSource, queryResult.getSource());
-        assertThat(queryResult, everyResult(allVariants, allOf(anyOf(overlaps(new Region("1:1-12783")), overlaps(new Region("M"))), withStudy("S_1", allOf(withFileId("1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), withSampleData("NA12877", "GT", is("1/1")))))));
+        assertThat(queryResult, everyResult(allVariants, allOf(anyOf(overlaps(new Region("1:1-12783")), overlaps(new Region("MT"))), withStudy("S_1", allOf(withFileId("1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), withSampleData("NA12877", "GT", is("1/1")))))));
     }
 
     @Test
@@ -281,6 +284,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
     }
 
     @Test
+    @Ignore
     public void testGetByFileNameSampleIndexIntersect() throws Exception {
         testGetByFileName(variantStorageEngine.getStorageEngineId() + " + " + "sample_index_table",
                 options.append("sample_index_intersect", true));

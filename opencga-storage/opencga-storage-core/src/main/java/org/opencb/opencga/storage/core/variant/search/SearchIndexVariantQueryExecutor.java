@@ -235,7 +235,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
      * @return          true if should resolve only with SearchManager
      */
     public boolean doQuerySearchManager(Query query, QueryOptions options) {
-        if (VariantStorageEngine.UseSearchIndex.from(options).equals(VariantStorageEngine.UseSearchIndex.NO)) {
+        if (VariantStorageEngine.UseSearchIndex.from(options) == VariantStorageEngine.UseSearchIndex.NO) {
             return false;
         } // else, YES or AUTO
         if (isQueryCovered(query) && isIncludeCovered(options)) {

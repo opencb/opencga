@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.cli.main.parent;
+package org.opencb.opencga.app.cli.main.custom;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -20,14 +20,14 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.CommonCommandOptions;
  * This class contains methods for the Users command line. OpenCGA version: 2.2.0-SNAPSHOT PATH: /{apiVersion}/users
  */
 @Parameters(commandNames = {"users"}, commandDescription = "Users commands")
-public class ParentUsersCommandOptions {
+public class CustomUsersCommandOptions {
 
     public JCommander jCommander;
     public CommonCommandOptions commonCommandOptions;
     public LogoutCommandOptions logoutCommandOptions;
     public LoginCommandOptions loginCommandOptions;
 
-    public ParentUsersCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public CustomUsersCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
 
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;

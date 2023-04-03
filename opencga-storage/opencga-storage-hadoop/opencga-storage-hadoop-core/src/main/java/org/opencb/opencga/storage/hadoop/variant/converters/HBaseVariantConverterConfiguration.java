@@ -14,6 +14,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.UNK
 public class HBaseVariantConverterConfiguration {
 
     public static final String MUTABLE_SAMPLES_POSITION = "mutableSamplesPosition";
+    @Deprecated
     public static final String STUDY_NAME_AS_STUDY_ID = "studyNameAsStudyId";
     public static final String SIMPLE_GENOTYPES = "simpleGenotypes";
 

@@ -3,9 +3,9 @@ package org.opencb.opencga.storage.benchmark.queryGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.benchmark.variant.queries.FixedQueries;
-import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -16,7 +16,8 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by wasim on 31/10/18.
  */
-public class FixedQueryGeneratorTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
+@Category(ShortTests.class)
+public class FixedQueryGeneratorTest {
 
 
     @Test

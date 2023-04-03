@@ -18,6 +18,8 @@ package org.opencb.opencga.catalog.utils;
 
 import io.jsonwebtoken.impl.Base64UrlCodec;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.nio.ByteBuffer;
 import java.text.ParseException;
@@ -29,6 +31,7 @@ import java.util.UUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@Category(ShortTests.class)
 public class UuidUtilsTest {
 	
 	@Test

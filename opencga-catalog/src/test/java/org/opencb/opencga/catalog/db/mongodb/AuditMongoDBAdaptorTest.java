@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
@@ -30,12 +31,14 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 /**
  * Created on 18/08/15
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(MediumTests.class)
 public class AuditMongoDBAdaptorTest {
 
     private AuditDBAdaptor auditDbAdaptor;

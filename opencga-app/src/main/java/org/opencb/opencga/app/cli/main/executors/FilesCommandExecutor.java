@@ -1,36 +1,84 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.common.JacksonUtils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.HashMap;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.FilesCommandOptions;
 
-import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
-
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandOptions;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandExecutor;
 import java.io.DataInputStream;
-
+import java.io.InputStream;
+import java.util.Map;
+import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.FacetField;
+import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
+import org.opencb.opencga.core.models.alignment.AlignmentFileQualityControl;
+import org.opencb.opencga.core.models.alignment.CoverageFileQualityControl;
+import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
+import org.opencb.opencga.core.models.file.File.Bioformat;
+import org.opencb.opencga.core.models.file.File.Format;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntryList;
 import org.opencb.opencga.core.models.file.FileAclUpdateParams;
 import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.core.models.file.FileCreateParams;
+import org.opencb.opencga.core.models.file.FileExperiment;
 import org.opencb.opencga.core.models.file.FileFetch;
+import org.opencb.opencga.core.models.file.FileLinkInternalParams;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.file.FileLinkToolParams;
+import org.opencb.opencga.core.models.file.FileQualityControl;
+import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.file.FileTree;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
+import org.opencb.opencga.core.models.file.MissingSamples;
 import org.opencb.opencga.core.models.file.PostLinkToolParams;
+import org.opencb.opencga.core.models.file.SmallFileInternal;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.variant.VariantFileQualityControl;
 
 
 /*
@@ -46,12 +94,12 @@ import org.opencb.opencga.core.models.job.Job;
  * This class contains methods for the Files command line.
  *    PATH: /{apiVersion}/files
  */
-public class FilesCommandExecutor extends ParentFilesCommandExecutor {
+public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
-    private FilesCommandOptions filesCommandOptions;
+    public FilesCommandOptions filesCommandOptions;
 
     public FilesCommandExecutor(FilesCommandOptions filesCommandOptions) throws CatalogAuthenticationException {
-        super(filesCommandOptions.commonCommandOptions,filesCommandOptions);
+        super(filesCommandOptions.commonCommandOptions);
         this.filesCommandOptions = filesCommandOptions;
     }
 
@@ -156,7 +204,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<FileAclEntryList> updateAcl() throws Exception {
-
         logger.debug("Executing updateAcl in Files command line");
 
         FilesCommandOptions.UpdateAclCommandOptions commandOptions = filesCommandOptions.updateAclCommandOptions;
@@ -168,7 +215,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         }
 
 
-        FileAclUpdateParams fileAclUpdateParams= null;
+        FileAclUpdateParams fileAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             fileAclUpdateParams = new FileAclUpdateParams();
             RestResponse<FileAclEntryList> res = new RestResponse<>();
@@ -181,9 +228,9 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
-             putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
-             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
- 
+            putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
+            putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
+
             fileAclUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FileAclUpdateParams.class);
@@ -192,7 +239,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
-
         logger.debug("Executing aggregationStats in Files command line");
 
         FilesCommandOptions.AggregationStatsCommandOptions commandOptions = filesCommandOptions.aggregationStatsCommandOptions;
@@ -226,7 +272,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<Job> loadAnnotationSets() throws Exception {
-
         logger.debug("Executing loadAnnotationSets in Files command line");
 
         FilesCommandOptions.LoadAnnotationSetsCommandOptions commandOptions = filesCommandOptions.loadAnnotationSetsCommandOptions;
@@ -240,7 +285,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         }
 
 
-        TsvAnnotationParams tsvAnnotationParams= null;
+        TsvAnnotationParams tsvAnnotationParams = null;
         if (commandOptions.jsonDataModel) {
             tsvAnnotationParams = new TsvAnnotationParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -253,7 +298,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "content",commandOptions.content, true);
- 
+
             tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), TsvAnnotationParams.class);
@@ -262,7 +307,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<File.Bioformat> bioformats() throws Exception {
-
         logger.debug("Executing bioformats in Files command line");
 
         FilesCommandOptions.BioformatsCommandOptions commandOptions = filesCommandOptions.bioformatsCommandOptions;
@@ -270,7 +314,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<File> create() throws Exception {
-
         logger.debug("Executing create in Files command line");
 
         FilesCommandOptions.CreateCommandOptions commandOptions = filesCommandOptions.createCommandOptions;
@@ -283,7 +326,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         }
 
 
-        FileCreateParams fileCreateParams= null;
+        FileCreateParams fileCreateParams = null;
         if (commandOptions.jsonDataModel) {
             fileCreateParams = new FileCreateParams();
             RestResponse<File> res = new RestResponse<>();
@@ -296,27 +339,27 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "content",commandOptions.content, true);
-             putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
-             putNestedIfNotNull(beanParams, "format",commandOptions.format, true);
-             putNestedIfNotNull(beanParams, "bioformat",commandOptions.bioformat, true);
-             putNestedIfNotNull(beanParams, "sampleIds",commandOptions.sampleIds, true);
-             putNestedIfNotEmpty(beanParams, "software.name",commandOptions.softwareName, true);
-             putNestedIfNotEmpty(beanParams, "software.version",commandOptions.softwareVersion, true);
-             putNestedIfNotEmpty(beanParams, "software.repository",commandOptions.softwareRepository, true);
-             putNestedIfNotEmpty(beanParams, "software.commit",commandOptions.softwareCommit, true);
-             putNestedIfNotEmpty(beanParams, "software.website",commandOptions.softwareWebsite, true);
-             putNestedIfNotNull(beanParams, "software.params",commandOptions.softwareParams, true);
-             putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
-             putNestedIfNotEmpty(beanParams, "jobId",commandOptions.jobId, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
- 
+            putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
+            putNestedIfNotNull(beanParams, "format",commandOptions.format, true);
+            putNestedIfNotNull(beanParams, "bioformat",commandOptions.bioformat, true);
+            putNestedIfNotNull(beanParams, "sampleIds",commandOptions.sampleIds, true);
+            putNestedIfNotEmpty(beanParams, "software.name",commandOptions.softwareName, true);
+            putNestedIfNotEmpty(beanParams, "software.version",commandOptions.softwareVersion, true);
+            putNestedIfNotEmpty(beanParams, "software.repository",commandOptions.softwareRepository, true);
+            putNestedIfNotEmpty(beanParams, "software.commit",commandOptions.softwareCommit, true);
+            putNestedIfNotEmpty(beanParams, "software.website",commandOptions.softwareWebsite, true);
+            putNestedIfNotNull(beanParams, "software.params",commandOptions.softwareParams, true);
+            putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
+            putNestedIfNotEmpty(beanParams, "jobId",commandOptions.jobId, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+
             fileCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FileCreateParams.class);
@@ -325,7 +368,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<Object> distinct() throws Exception {
-
         logger.debug("Executing distinct in Files command line");
 
         FilesCommandOptions.DistinctCommandOptions commandOptions = filesCommandOptions.distinctCommandOptions;
@@ -365,7 +407,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<Job> fetch() throws Exception {
-
         logger.debug("Executing fetch in Files command line");
 
         FilesCommandOptions.FetchCommandOptions commandOptions = filesCommandOptions.fetchCommandOptions;
@@ -381,7 +422,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         }
 
 
-        FileFetch fileFetch= null;
+        FileFetch fileFetch = null;
         if (commandOptions.jsonDataModel) {
             fileFetch = new FileFetch();
             RestResponse<Job> res = new RestResponse<>();
@@ -394,8 +435,8 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "url",commandOptions.url, true);
-             putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
- 
+            putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
+
             fileFetch = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FileFetch.class);
@@ -404,7 +445,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<File.Format> formats() throws Exception {
-
         logger.debug("Executing formats in Files command line");
 
         FilesCommandOptions.FormatsCommandOptions commandOptions = filesCommandOptions.formatsCommandOptions;
@@ -412,7 +452,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<File> link() throws Exception {
-
         logger.debug("Executing link in Files command line");
 
         FilesCommandOptions.LinkCommandOptions commandOptions = filesCommandOptions.linkCommandOptions;
@@ -425,7 +464,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         }
 
 
-        FileLinkParams fileLinkParams= null;
+        FileLinkParams fileLinkParams = null;
         if (commandOptions.jsonDataModel) {
             fileLinkParams = new FileLinkParams();
             RestResponse<File> res = new RestResponse<>();
@@ -438,16 +477,16 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "uri",commandOptions.uri, true);
-             putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotEmpty(beanParams, "virtualFileName",commandOptions.virtualFileName, true);
-             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
-             putNestedIfNotNull(beanParams, "internal.sampleMap",commandOptions.internalSampleMap, true);
- 
+            putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "virtualFileName",commandOptions.virtualFileName, true);
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+            putNestedIfNotNull(beanParams, "internal.sampleMap",commandOptions.internalSampleMap, true);
+
             fileLinkParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FileLinkParams.class);
@@ -456,7 +495,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<Job> runLink() throws Exception {
-
         logger.debug("Executing runLink in Files command line");
 
         FilesCommandOptions.RunLinkCommandOptions commandOptions = filesCommandOptions.runLinkCommandOptions;
@@ -472,7 +510,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         }
 
 
-        FileLinkToolParams fileLinkToolParams= null;
+        FileLinkToolParams fileLinkToolParams = null;
         if (commandOptions.jsonDataModel) {
             fileLinkToolParams = new FileLinkToolParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -485,12 +523,12 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "uri",commandOptions.uri, true);
-             putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "virtualFileName",commandOptions.virtualFileName, true);
-             putNestedIfNotNull(beanParams, "parents",commandOptions.parents, true);
-             putNestedIfNotNull(beanParams, "skipPostLink",commandOptions.skipPostLink, true);
- 
+            putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "virtualFileName",commandOptions.virtualFileName, true);
+            putNestedIfNotNull(beanParams, "parents",commandOptions.parents, true);
+            putNestedIfNotNull(beanParams, "skipPostLink",commandOptions.skipPostLink, true);
+
             fileLinkToolParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FileLinkToolParams.class);
@@ -499,7 +537,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<Job> runPostlink() throws Exception {
-
         logger.debug("Executing runPostlink in Files command line");
 
         FilesCommandOptions.RunPostlinkCommandOptions commandOptions = filesCommandOptions.runPostlinkCommandOptions;
@@ -515,7 +552,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         }
 
 
-        PostLinkToolParams postLinkToolParams= null;
+        PostLinkToolParams postLinkToolParams = null;
         if (commandOptions.jsonDataModel) {
             postLinkToolParams = new PostLinkToolParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -528,8 +565,8 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "files",commandOptions.files, true);
-             putNestedIfNotNull(beanParams, "batchSize",commandOptions.batchSize, true);
- 
+            putNestedIfNotNull(beanParams, "batchSize",commandOptions.batchSize, true);
+
             postLinkToolParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PostLinkToolParams.class);
@@ -538,7 +575,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<File> search() throws Exception {
-
         logger.debug("Executing search in Files command line");
 
         FilesCommandOptions.SearchCommandOptions commandOptions = filesCommandOptions.searchCommandOptions;
@@ -583,16 +619,28 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         return openCGAClient.getFileClient().search(queryParams);
     }
 
-    protected RestResponse<File> upload() throws Exception {
-
+    private RestResponse<File> upload() throws Exception {
         logger.debug("Executing upload in Files command line");
 
-        return super.upload();
-
+        CustomFilesCommandOptions.UploadCommandOptions commandOptions = filesCommandOptions.uploadCommandOptions;
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotNull("file", commandOptions.file);
+        queryParams.putIfNotEmpty("fileName", commandOptions.fileName);
+        queryParams.putIfNotNull("fileFormat", commandOptions.fileFormat);
+        queryParams.putIfNotNull("bioformat", commandOptions.bioformat);
+        queryParams.putIfNotEmpty("checksum", commandOptions.checksum);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("relativeFilePath", commandOptions.relativeFilePath);
+        queryParams.putIfNotEmpty("description", commandOptions.description);
+        queryParams.putIfNotNull("parents", commandOptions.parents);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+        CustomFilesCommandExecutor customFilesCommandExecutor = new CustomFilesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
+        return customFilesCommandExecutor.upload();
     }
 
     private RestResponse<FileAclEntryList> acl() throws Exception {
-
         logger.debug("Executing acl in Files command line");
 
         FilesCommandOptions.AclCommandOptions commandOptions = filesCommandOptions.aclCommandOptions;
@@ -609,7 +657,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<Job> delete() throws Exception {
-
         logger.debug("Executing delete in Files command line");
 
         FilesCommandOptions.DeleteCommandOptions commandOptions = filesCommandOptions.deleteCommandOptions;
@@ -625,7 +672,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<File> info() throws Exception {
-
         logger.debug("Executing info in Files command line");
 
         FilesCommandOptions.InfoCommandOptions commandOptions = filesCommandOptions.infoCommandOptions;
@@ -644,7 +690,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<Job> unlink() throws Exception {
-
         logger.debug("Executing unlink in Files command line");
 
         FilesCommandOptions.UnlinkCommandOptions commandOptions = filesCommandOptions.unlinkCommandOptions;
@@ -659,7 +704,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<File> update() throws Exception {
-
         logger.debug("Executing update in Files command line");
 
         FilesCommandOptions.UpdateCommandOptions commandOptions = filesCommandOptions.updateCommandOptions;
@@ -674,7 +718,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         }
 
 
-        FileUpdateParams fileUpdateParams= null;
+        FileUpdateParams fileUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             fileUpdateParams = new FileUpdateParams();
             RestResponse<File> res = new RestResponse<>();
@@ -687,40 +731,40 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotNull(beanParams, "sampleIds",commandOptions.sampleIds, true);
-             putNestedIfNotEmpty(beanParams, "checksum",commandOptions.checksum, true);
-             putNestedIfNotNull(beanParams, "format",commandOptions.format, true);
-             putNestedIfNotNull(beanParams, "bioformat",commandOptions.bioformat, true);
-             putNestedIfNotEmpty(beanParams, "software.name",commandOptions.softwareName, true);
-             putNestedIfNotEmpty(beanParams, "software.version",commandOptions.softwareVersion, true);
-             putNestedIfNotEmpty(beanParams, "software.repository",commandOptions.softwareRepository, true);
-             putNestedIfNotEmpty(beanParams, "software.commit",commandOptions.softwareCommit, true);
-             putNestedIfNotEmpty(beanParams, "software.website",commandOptions.softwareWebsite, true);
-             putNestedIfNotNull(beanParams, "software.params",commandOptions.softwareParams, true);
-             putNestedIfNotNull(beanParams, "experiment.technology",commandOptions.experimentTechnology, true);
-             putNestedIfNotNull(beanParams, "experiment.method",commandOptions.experimentMethod, true);
-             putNestedIfNotNull(beanParams, "experiment.nucleicAcidType",commandOptions.experimentNucleicAcidType, true);
-             putNestedIfNotEmpty(beanParams, "experiment.manufacturer",commandOptions.experimentManufacturer, true);
-             putNestedIfNotEmpty(beanParams, "experiment.platform",commandOptions.experimentPlatform, true);
-             putNestedIfNotEmpty(beanParams, "experiment.library",commandOptions.experimentLibrary, true);
-             putNestedIfNotEmpty(beanParams, "experiment.date",commandOptions.experimentDate, true);
-             putNestedIfNotEmpty(beanParams, "experiment.center",commandOptions.experimentCenter, true);
-             putNestedIfNotEmpty(beanParams, "experiment.lab",commandOptions.experimentLab, true);
-             putNestedIfNotEmpty(beanParams, "experiment.responsible",commandOptions.experimentResponsible, true);
-             putNestedIfNotEmpty(beanParams, "experiment.description",commandOptions.experimentDescription, true);
-             putNestedIfNotNull(beanParams, "experiment.attributes",commandOptions.experimentAttributes, true);
-             putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
-             putNestedIfNotNull(beanParams, "size",commandOptions.size, true);
-             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
-             putNestedIfNotNull(beanParams, "qualityControl.files",commandOptions.qualityControlFiles, true);
-             putNestedIfNotNull(beanParams, "stats",commandOptions.stats, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
- 
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotNull(beanParams, "sampleIds",commandOptions.sampleIds, true);
+            putNestedIfNotEmpty(beanParams, "checksum",commandOptions.checksum, true);
+            putNestedIfNotNull(beanParams, "format",commandOptions.format, true);
+            putNestedIfNotNull(beanParams, "bioformat",commandOptions.bioformat, true);
+            putNestedIfNotEmpty(beanParams, "software.name",commandOptions.softwareName, true);
+            putNestedIfNotEmpty(beanParams, "software.version",commandOptions.softwareVersion, true);
+            putNestedIfNotEmpty(beanParams, "software.repository",commandOptions.softwareRepository, true);
+            putNestedIfNotEmpty(beanParams, "software.commit",commandOptions.softwareCommit, true);
+            putNestedIfNotEmpty(beanParams, "software.website",commandOptions.softwareWebsite, true);
+            putNestedIfNotNull(beanParams, "software.params",commandOptions.softwareParams, true);
+            putNestedIfNotNull(beanParams, "experiment.technology",commandOptions.experimentTechnology, true);
+            putNestedIfNotNull(beanParams, "experiment.method",commandOptions.experimentMethod, true);
+            putNestedIfNotNull(beanParams, "experiment.nucleicAcidType",commandOptions.experimentNucleicAcidType, true);
+            putNestedIfNotEmpty(beanParams, "experiment.manufacturer",commandOptions.experimentManufacturer, true);
+            putNestedIfNotEmpty(beanParams, "experiment.platform",commandOptions.experimentPlatform, true);
+            putNestedIfNotEmpty(beanParams, "experiment.library",commandOptions.experimentLibrary, true);
+            putNestedIfNotEmpty(beanParams, "experiment.date",commandOptions.experimentDate, true);
+            putNestedIfNotEmpty(beanParams, "experiment.center",commandOptions.experimentCenter, true);
+            putNestedIfNotEmpty(beanParams, "experiment.lab",commandOptions.experimentLab, true);
+            putNestedIfNotEmpty(beanParams, "experiment.responsible",commandOptions.experimentResponsible, true);
+            putNestedIfNotEmpty(beanParams, "experiment.description",commandOptions.experimentDescription, true);
+            putNestedIfNotNull(beanParams, "experiment.attributes",commandOptions.experimentAttributes, true);
+            putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
+            putNestedIfNotNull(beanParams, "size",commandOptions.size, true);
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+            putNestedIfNotNull(beanParams, "qualityControl.files",commandOptions.qualityControlFiles, true);
+            putNestedIfNotNull(beanParams, "stats",commandOptions.stats, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+
             fileUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FileUpdateParams.class);
@@ -729,7 +773,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<File> updateAnnotationSetsAnnotations() throws Exception {
-
         logger.debug("Executing updateAnnotationSetsAnnotations in Files command line");
 
         FilesCommandOptions.UpdateAnnotationSetsAnnotationsCommandOptions commandOptions = filesCommandOptions.updateAnnotationSetsAnnotationsCommandOptions;
@@ -742,7 +785,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         }
 
 
-        ObjectMap objectMap= null;
+        ObjectMap objectMap = null;
         if (commandOptions.jsonDataModel) {
             objectMap = new ObjectMap();
             RestResponse<File> res = new RestResponse<>();
@@ -757,7 +800,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<DataInputStream> download() throws Exception {
-
         logger.debug("Executing download in Files command line");
 
         FilesCommandOptions.DownloadCommandOptions commandOptions = filesCommandOptions.downloadCommandOptions;
@@ -772,7 +814,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<FileContent> grep() throws Exception {
-
         logger.debug("Executing grep in Files command line");
 
         FilesCommandOptions.GrepCommandOptions commandOptions = filesCommandOptions.grepCommandOptions;
@@ -790,7 +831,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<FileContent> head() throws Exception {
-
         logger.debug("Executing head in Files command line");
 
         FilesCommandOptions.HeadCommandOptions commandOptions = filesCommandOptions.headCommandOptions;
@@ -807,7 +847,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<FileContent> image() throws Exception {
-
         logger.debug("Executing image in Files command line");
 
         FilesCommandOptions.ImageCommandOptions commandOptions = filesCommandOptions.imageCommandOptions;
@@ -822,7 +861,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<File> refresh() throws Exception {
-
         logger.debug("Executing refresh in Files command line");
 
         FilesCommandOptions.RefreshCommandOptions commandOptions = filesCommandOptions.refreshCommandOptions;
@@ -837,7 +875,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<FileContent> tail() throws Exception {
-
         logger.debug("Executing tail in Files command line");
 
         FilesCommandOptions.TailCommandOptions commandOptions = filesCommandOptions.tailCommandOptions;
@@ -853,7 +890,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<File> list() throws Exception {
-
         logger.debug("Executing list in Files command line");
 
         FilesCommandOptions.ListCommandOptions commandOptions = filesCommandOptions.listCommandOptions;
@@ -873,7 +909,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
     }
 
     private RestResponse<FileTree> tree() throws Exception {
-
         logger.debug("Executing tree in Files command line");
 
         FilesCommandOptions.TreeCommandOptions commandOptions = filesCommandOptions.treeCommandOptions;

@@ -18,8 +18,20 @@ import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.JobsCommandOptions;
 
-import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
-
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandOptions;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
 import java.util.Date;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -53,12 +65,12 @@ import org.opencb.opencga.core.tools.result.Status;
  * This class contains methods for the Jobs command line.
  *    PATH: /{apiVersion}/jobs
  */
-public class JobsCommandExecutor extends ParentJobsCommandExecutor {
+public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
-    private JobsCommandOptions jobsCommandOptions;
+    public JobsCommandOptions jobsCommandOptions;
 
     public JobsCommandExecutor(JobsCommandOptions jobsCommandOptions) throws CatalogAuthenticationException {
-        super(jobsCommandOptions.commonCommandOptions,jobsCommandOptions);
+        super(jobsCommandOptions.commonCommandOptions);
         this.jobsCommandOptions = jobsCommandOptions;
     }
 
@@ -111,9 +123,6 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
             case "log-tail":
                 queryResponse = tailLog();
                 break;
-            case "log":
-                queryResponse = log();
-                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -124,12 +133,11 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
     }
 
     private RestResponse<JobAclEntryList> updateAcl() throws Exception {
-
         logger.debug("Executing updateAcl in Jobs command line");
 
         JobsCommandOptions.UpdateAclCommandOptions commandOptions = jobsCommandOptions.updateAclCommandOptions;
 
-        JobAclUpdateParams jobAclUpdateParams= null;
+        JobAclUpdateParams jobAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             jobAclUpdateParams = new JobAclUpdateParams();
             RestResponse<JobAclEntryList> res = new RestResponse<>();
@@ -142,8 +150,8 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
-             putNestedIfNotEmpty(beanParams, "job",commandOptions.job, true);
- 
+            putNestedIfNotEmpty(beanParams, "job",commandOptions.job, true);
+
             jobAclUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JobAclUpdateParams.class);
@@ -152,7 +160,6 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
-
         logger.debug("Executing aggregationStats in Jobs command line");
 
         JobsCommandOptions.AggregationStatsCommandOptions commandOptions = jobsCommandOptions.aggregationStatsCommandOptions;
@@ -184,7 +191,6 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
     }
 
     private RestResponse<Job> create() throws Exception {
-
         logger.debug("Executing create in Jobs command line");
 
         JobsCommandOptions.CreateCommandOptions commandOptions = jobsCommandOptions.createCommandOptions;
@@ -196,7 +202,7 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
         }
 
 
-        JobCreateParams jobCreateParams= null;
+        JobCreateParams jobCreateParams = null;
         if (commandOptions.jsonDataModel) {
             jobCreateParams = new JobCreateParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -209,25 +215,25 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "tool.id",commandOptions.toolId, true);
-             putNestedIfNotEmpty(beanParams, "tool.description",commandOptions.toolDescription, true);
-             putNestedIfNotNull(beanParams, "tool.scope",commandOptions.toolScope, true);
-             putNestedIfNotNull(beanParams, "tool.type",commandOptions.toolType, true);
-             putNestedIfNotNull(beanParams, "tool.resource",commandOptions.toolResource, true);
-             putNestedIfNotNull(beanParams, "priority",commandOptions.priority, true);
-             putNestedIfNotEmpty(beanParams, "commandLine",commandOptions.commandLine, true);
-             putNestedIfNotNull(beanParams, "params",commandOptions.params, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotEmpty(beanParams, "outDir.path",commandOptions.outDirPath, true);
-             putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
-             putNestedIfNotEmpty(beanParams, "result.id",commandOptions.resultId, true);
-             putNestedIfNotNull(beanParams, "result.attributes",commandOptions.resultAttributes, true);
-             putNestedIfNotEmpty(beanParams, "stdout.path",commandOptions.stdoutPath, true);
-             putNestedIfNotEmpty(beanParams, "stderr.path",commandOptions.stderrPath, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
- 
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "tool.id",commandOptions.toolId, true);
+            putNestedIfNotEmpty(beanParams, "tool.description",commandOptions.toolDescription, true);
+            putNestedIfNotNull(beanParams, "tool.scope",commandOptions.toolScope, true);
+            putNestedIfNotNull(beanParams, "tool.type",commandOptions.toolType, true);
+            putNestedIfNotNull(beanParams, "tool.resource",commandOptions.toolResource, true);
+            putNestedIfNotNull(beanParams, "priority",commandOptions.priority, true);
+            putNestedIfNotEmpty(beanParams, "commandLine",commandOptions.commandLine, true);
+            putNestedIfNotNull(beanParams, "params",commandOptions.params, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "outDir.path",commandOptions.outDirPath, true);
+            putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
+            putNestedIfNotEmpty(beanParams, "result.id",commandOptions.resultId, true);
+            putNestedIfNotNull(beanParams, "result.attributes",commandOptions.resultAttributes, true);
+            putNestedIfNotEmpty(beanParams, "stdout.path",commandOptions.stdoutPath, true);
+            putNestedIfNotEmpty(beanParams, "stderr.path",commandOptions.stderrPath, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+
             jobCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JobCreateParams.class);
@@ -236,7 +242,6 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
     }
 
     private RestResponse<Object> distinct() throws Exception {
-
         logger.debug("Executing distinct in Jobs command line");
 
         JobsCommandOptions.DistinctCommandOptions commandOptions = jobsCommandOptions.distinctCommandOptions;
@@ -269,7 +274,6 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
     }
 
     private RestResponse<Job> retry() throws Exception {
-
         logger.debug("Executing retry in Jobs command line");
 
         JobsCommandOptions.RetryCommandOptions commandOptions = jobsCommandOptions.retryCommandOptions;
@@ -285,7 +289,7 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
         }
 
 
-        JobRetryParams jobRetryParams= null;
+        JobRetryParams jobRetryParams = null;
         if (commandOptions.jsonDataModel) {
             jobRetryParams = new JobRetryParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -298,9 +302,9 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "job",commandOptions.job, true);
-             putNestedIfNotNull(beanParams, "force",commandOptions.force, true);
-             putNestedIfNotNull(beanParams, "params",commandOptions.params, true);
- 
+            putNestedIfNotNull(beanParams, "force",commandOptions.force, true);
+            putNestedIfNotNull(beanParams, "params",commandOptions.params, true);
+
             jobRetryParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JobRetryParams.class);
@@ -309,7 +313,6 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
     }
 
     private RestResponse<Job> search() throws Exception {
-
         logger.debug("Executing search in Jobs command line");
 
         JobsCommandOptions.SearchCommandOptions commandOptions = jobsCommandOptions.searchCommandOptions;
@@ -346,16 +349,25 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
         return openCGAClient.getJobClient().search(queryParams);
     }
 
-    protected RestResponse<JobTop> top() throws Exception {
-
+    private RestResponse<JobTop> top() throws Exception {
         logger.debug("Executing top in Jobs command line");
 
-        return super.top();
-
+        CustomJobsCommandOptions.TopCommandOptions commandOptions = jobsCommandOptions.topCommandOptions;
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotNull("limit", commandOptions.limit);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
+        queryParams.putIfNotEmpty("priority", commandOptions.priority);
+        queryParams.putIfNotEmpty("userId", commandOptions.userId);
+        queryParams.putIfNotEmpty("toolId", commandOptions.toolId);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+        CustomJobsCommandExecutor customJobsCommandExecutor = new CustomJobsCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
+        return customJobsCommandExecutor.top();
     }
 
     private RestResponse<JobAclEntryList> acl() throws Exception {
-
         logger.debug("Executing acl in Jobs command line");
 
         JobsCommandOptions.AclCommandOptions commandOptions = jobsCommandOptions.aclCommandOptions;
@@ -368,7 +380,6 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
     }
 
     private RestResponse<Job> delete() throws Exception {
-
         logger.debug("Executing delete in Jobs command line");
 
         JobsCommandOptions.DeleteCommandOptions commandOptions = jobsCommandOptions.deleteCommandOptions;
@@ -383,7 +394,6 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
     }
 
     private RestResponse<Job> info() throws Exception {
-
         logger.debug("Executing info in Jobs command line");
 
         JobsCommandOptions.InfoCommandOptions commandOptions = jobsCommandOptions.infoCommandOptions;
@@ -401,7 +411,6 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
     }
 
     private RestResponse<Job> update() throws Exception {
-
         logger.debug("Executing update in Jobs command line");
 
         JobsCommandOptions.UpdateCommandOptions commandOptions = jobsCommandOptions.updateCommandOptions;
@@ -416,7 +425,7 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
         }
 
 
-        JobUpdateParams jobUpdateParams= null;
+        JobUpdateParams jobUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             jobUpdateParams = new JobUpdateParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -429,10 +438,10 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
-             putNestedIfNotNull(beanParams, "visited",commandOptions.visited, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
- 
+            putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
+            putNestedIfNotNull(beanParams, "visited",commandOptions.visited, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+
             jobUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JobUpdateParams.class);
@@ -441,7 +450,6 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
     }
 
     private RestResponse<FileContent> headLog() throws Exception {
-
         logger.debug("Executing headLog in Jobs command line");
 
         JobsCommandOptions.HeadLogCommandOptions commandOptions = jobsCommandOptions.headLogCommandOptions;
@@ -459,7 +467,6 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
     }
 
     private RestResponse<FileContent> tailLog() throws Exception {
-
         logger.debug("Executing tailLog in Jobs command line");
 
         JobsCommandOptions.TailLogCommandOptions commandOptions = jobsCommandOptions.tailLogCommandOptions;

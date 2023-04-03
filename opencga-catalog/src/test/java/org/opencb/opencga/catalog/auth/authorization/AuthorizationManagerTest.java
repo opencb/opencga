@@ -2,10 +2,13 @@ package org.opencb.opencga.catalog.auth.authorization;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.models.study.StudyPermissions;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import static org.junit.Assert.*;
 
+@Category(ShortTests.class)
 public class AuthorizationManagerTest {
 
     @Test
