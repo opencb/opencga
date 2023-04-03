@@ -3,7 +3,7 @@ name: LONG TEST ANALYSIS
 on:
   push:
     branches:
-      - TASK-*
+      - TASK-4149
 
 jobs:
   test:
