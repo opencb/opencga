@@ -861,9 +861,9 @@ public class VariantAnalysisTest {
         VariantQuery query = new VariantQuery()
                 .sample(cancer_sample)
                 .type(VariantType.SV.name())
-                .file("AR2.10039966-01T_vs_AR2.10039966-01G.annot.brass.vcf.gz");
-                //.fileData("AR2.10039966-01T_vs_AR2.10039966-01G.annot.brass.vcf.gz:BAS>=0;BKDIST>=-1")
-                //.region("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y")
+                //.file("AR2.10039966-01T_vs_AR2.10039966-01G.annot.brass.vcf.gz");
+                .fileData("AR2.10039966-01T_vs_AR2.10039966-01G.annot.brass.vcf.gz:BAS>=0;BKDIST>=-1")
+                .region("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y");
 
         //https://ws.opencb.org/opencga-test/webservices/rest/v2/analysis/variant/mutationalSignature/query
         // ?study=serena@cancer38:test38

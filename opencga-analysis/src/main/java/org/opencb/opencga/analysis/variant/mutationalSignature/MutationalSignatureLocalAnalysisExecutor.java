@@ -203,7 +203,6 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                     }
                 }
             }
-
         } catch (IOException | CatalogException | ToolException | StorageEngineException e) {
             throw new ToolExecutorException(e);
         }
@@ -311,11 +310,11 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             throw new ToolExecutorException(e);
         }
 
+        Map<String, Integer> countMap = new HashMap<>();
         try (BufferedReader br = FileUtils.newBufferedReader(clusteredFile.toPath())) {
             // Skip header line
             // chrom1	start1	end1	chrom2	start2	end2	length   type   sample	id	is.clustered
             //   0        1      2        3       4       5        6       7       8     9      10
-            Map<String, Integer> countMap = new HashMap<>();
             // Skip first line
             String line = br.readLine();
             while ((line = br.readLine()) != null) {
@@ -338,30 +337,36 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                     countMap.put(key, 1);
                 }
             }
+        } catch (IOException e) {
+            throw new ToolExecutorException(e);
+        }
 
-            // Build teh genome context counts object for SV
-            List<Signature.GenomeContextCount> genomeContextCounts = new LinkedList<>();
-            for (String clustered: new LinkedList<>(Arrays.asList(CLUSTERED, NON_CLUSTERED))) {
-                for (String type: new LinkedList<>(Arrays.asList(TYPE_DEL, TYPE_TDS, TYPE_INV))) {
-                    for (String length : new LinkedList<>(Arrays.asList(LENGTH_1_10Kb, LENGTH_10Kb_100Kb, LENGTH_100Kb_1Mb, LENGTH_1Mb_10Mb,
-                            LENGTH_10Mb))) {
-                        String key = clustered + "_" + type + "_" + length;
-                        genomeContextCounts.add(new Signature.GenomeContextCount(key, countMap.containsKey(key) ? countMap.get(key) : 0));
-                    }
+        // Build teh genome context counts object for SV
+        List<Signature.GenomeContextCount> genomeContextCounts = new LinkedList<>();
+        for (String clustered: new LinkedList<>(Arrays.asList(CLUSTERED, NON_CLUSTERED))) {
+            for (String type: new LinkedList<>(Arrays.asList(TYPE_DEL, TYPE_TDS, TYPE_INV))) {
+                for (String length : new LinkedList<>(Arrays.asList(LENGTH_1_10Kb, LENGTH_10Kb_100Kb, LENGTH_100Kb_1Mb, LENGTH_1Mb_10Mb,
+                        LENGTH_10Mb))) {
+                    String key = clustered + "_" + type + "_" + length;
+                    genomeContextCounts.add(new Signature.GenomeContextCount(key, countMap.containsKey(key) ? countMap.get(key) : 0));
                 }
-                String key = clustered + "_" + TYPE_TRANS;
-                genomeContextCounts.add(new Signature.GenomeContextCount(key, countMap.containsKey(key) ? countMap.get(key) : 0));
             }
+            String key = clustered + "_" + TYPE_TRANS;
+            genomeContextCounts.add(new Signature.GenomeContextCount(key, countMap.containsKey(key) ? countMap.get(key) : 0));
+        }
 
-            // Write catalogue file from the genome context counts
-            PrintWriter pw = new PrintWriter(getOutDir().resolve(CATALOGUES_FILENAME_DEFAULT).toFile());
+        // Write catalogue file from the genome context counts
+        try (PrintWriter pw = new PrintWriter(getOutDir().resolve(CATALOGUES_FILENAME_DEFAULT).toFile())) {
             pw.write(query.getString(VariantQueryParam.SAMPLE.key()));
             pw.write("\n");
             for (Signature.GenomeContextCount counts : genomeContextCounts) {
                 pw.write(counts.getContext() + "\t" + counts.getTotal() + "\n");
             }
-            pw.close();
+        } catch (IOException e) {
+            throw new ToolExecutorException(e);
+        }
 
+        try {
             Signature signature = new Signature()
                     .setId(getQueryId())
                     .setDescription(getQueryDescription())
@@ -431,7 +436,11 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                     }
                 }
             }
+        } catch (Exception e) {
+            throw new ToolException(e);
+        }
 
+        try {
             // Build command line to run R script via docker image
             // Input binding
             List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
