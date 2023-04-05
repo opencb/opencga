@@ -93,6 +93,7 @@ import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Execution;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
@@ -146,6 +147,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     public static final String OUTDIR_PARAM = "outdir";
     public static final int EXECUTION_RESULT_FILE_EXPIRATION_MINUTES = 10;
     public static final String REDACTED_TOKEN = "xxxxxxxxxxxxxxxxxxxxx";
+    private final StorageConfiguration storageConfiguration;
     private String internalCli;
     private JobManager jobManager;
     private FileManager fileManager;
@@ -253,11 +255,14 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }};
     }
 
-    public ExecutionDaemon(int interval, String token, CatalogManager catalogManager, String appHome) throws CatalogDBException {
+    public ExecutionDaemon(int interval, String token,
+                           CatalogManager catalogManager, StorageConfiguration storageConfiguration, String appHome)
+            throws CatalogDBException {
         super(interval, token, catalogManager);
 
         this.jobManager = catalogManager.getJobManager();
         this.fileManager = catalogManager.getFileManager();
+        this.storageConfiguration = storageConfiguration;
         this.internalCli = appHome + "/bin/opencga-internal.sh";
 
         this.defaultJobDir = Paths.get(catalogManager.getConfiguration().getJobDir());
@@ -610,7 +615,17 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
             // Validate user is owner or belongs to the right group
             String requiredGroup;
-            if (tool.type().equals(Tool.Type.OPERATION)) {
+            if (tool.type() == Tool.Type.OPERATION) {
+                if (storageConfiguration.getMode() == StorageConfiguration.Mode.READ_ONLY) {
+                    if (tool.resource() == Enums.Resource.VARIANT
+                            || tool.resource() == Enums.Resource.RGA
+                            || tool.resource() == Enums.Resource.ALIGNMENT) {
+                        // Forbid storage operations!
+                        abortJob(job, "Unable to execute tool '" + tool.id() + "', "
+                                + "which is an " + Tool.Type.OPERATION + " on resource " + tool.resource() + ". "
+                                + "The storage engine is in mode=" + storageConfiguration.getMode());
+                    }
+                }
                 requiredGroup = ParamConstants.ADMINS_GROUP;
             } else {
                 requiredGroup = ParamConstants.MEMBERS_GROUP;

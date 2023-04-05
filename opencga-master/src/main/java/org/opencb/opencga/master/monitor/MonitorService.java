@@ -27,6 +27,7 @@ import org.glassfish.jersey.servlet.ServletContainer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.master.monitor.daemons.ExecutionDaemon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +41,7 @@ public class MonitorService {
 
     private Configuration configuration;
     private CatalogManager catalogManager;
+    private final StorageConfiguration storageConfiguration;
     private String appHome;
 
     private static Server server;
@@ -59,9 +61,10 @@ public class MonitorService {
     protected static Logger logger;
 
 
-    public MonitorService(Configuration configuration, String appHome, String token)
+    public MonitorService(Configuration configuration, StorageConfiguration storageConfiguration, String appHome, String token)
             throws CatalogException {
         this.configuration = configuration;
+        this.storageConfiguration = storageConfiguration;
         this.appHome = appHome;
 
         init(token);
@@ -91,8 +94,12 @@ public class MonitorService {
         this.catalogManager = new CatalogManager(this.configuration);
         String nonExpiringToken = this.catalogManager.getUserManager().getAdminNonExpiringToken(token);
 
-        executionDaemon = new ExecutionDaemon(configuration.getMonitor().getExecutionDaemonInterval(), nonExpiringToken,
-                catalogManager, appHome);
+        executionDaemon = new ExecutionDaemon(
+                configuration.getMonitor().getExecutionDaemonInterval(),
+                nonExpiringToken,
+                catalogManager,
+                storageConfiguration,
+                appHome);
 //            fileDaemon = new FileDaemon(configuration.getMonitor().getFileDaemonInterval(),
 //                    configuration.getMonitor().getDaysToRemove(), nonExpiringToken, catalogManager);
 

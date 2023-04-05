@@ -489,7 +489,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         getOrCreateStudyMetadata();
         int studyId = getStudyId();
 
-        int currentRelease = getMetadataManager().getProjectMetadata(options).getRelease();
+        int currentRelease = getMetadataManager().getAndUpdateProjectMetadata(options).getRelease();
         if (options.containsKey(VariantStorageOptions.RELEASE.key())) {
             int release = options.getInt(VariantStorageOptions.RELEASE.key(), VariantStorageOptions.RELEASE.defaultValue());
             // Update current release

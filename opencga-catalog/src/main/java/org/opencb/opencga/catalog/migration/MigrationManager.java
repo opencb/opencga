@@ -1,10 +1,17 @@
 package org.opencb.opencga.catalog.migration;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.appender.FileAppender;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
@@ -16,10 +23,18 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobInternal;
 import org.opencb.opencga.core.models.job.JobReferenceParam;
+import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.core.tools.result.Status;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
@@ -41,6 +56,7 @@ public class MigrationManager {
 
     private final CatalogManager catalogManager;
     private final Configuration configuration;
+//    private final StorageConfiguration storageConfiguration;
     private final MigrationDBAdaptor migrationDBAdaptor;
 
     private final Logger logger;
@@ -561,39 +577,63 @@ public class MigrationManager {
             migrationRun.setId(annotation.id());
             migrationRun.setDescription(annotation.description());
             migrationRun.setVersion(annotation.version());
+            // Reset events
+            migrationRun.setEvents(new LinkedList<>());
         } catch (CatalogDBException e) {
             throw new MigrationException("Error reading migration run from catalog", e);
         }
         migrationTool.setup(configuration, catalogManager, dbAdaptorFactory, migrationRun, appHome, params, token);
 
         StopWatch stopWatch = StopWatch.createStarted();
+        String path = Paths.get("JOBS")
+                .resolve("opencga")
+                .resolve(TimeUtils.getDay())
+                .resolve(annotation.id()).toString();
+        String jobId = "migration"
+                + "-" + migrationRun.getId()
+                + "-" + TimeUtils.getTime(start)
+                + "-" + RandomStringUtils.randomAlphanumeric(5);
+        String logFile = startMigrationLogger(jobId, Paths.get(configuration.getJobDir()).resolve(path));
         logger.info("------------------------------------------------------");
         logger.info("Executing migration '{}' for version '{}'", annotation.id(), annotation.version());
         logger.info("    {}", annotation.description());
         logger.info("------------------------------------------------------");
 
+        MigrationException exceptionToThrow = null;
         try {
-            migrationTool.execute();
-            logger.info("------------------------------------------------------");
             MigrationRun.MigrationStatus status;
-            if (migrationRun.getJobs().isEmpty()) {
-                status = MigrationRun.MigrationStatus.DONE;
+            if (annotation.domain() == Migration.MigrationDomain.STORAGE
+                    && migrationTool.readStorageConfiguration().getMode() == StorageConfiguration.Mode.READ_ONLY) {
+                status = MigrationRun.MigrationStatus.PENDING;
+                String message = "Unable to run migration over STORAGE with mode " + StorageConfiguration.Mode.READ_ONLY;
+                logger.info(message);
+                migrationRun.addEvent(Event.Type.INFO,
+                        message);
             } else {
-                status = getOnHoldMigrationRunStatus(migrationTool.getAnnotation(), migrationRun, token);
+                migrationTool.execute();
+                if (migrationRun.getJobs().isEmpty()) {
+                    status = MigrationRun.MigrationStatus.DONE;
+                } else {
+                    status = getOnHoldMigrationRunStatus(migrationTool.getAnnotation(), migrationRun, token);
+                }
             }
             // Clear exception
             migrationRun.setException(null);
             migrationRun.setStatus(status);
+            logger.info("------------------------------------------------------");
             if (status == MigrationRun.MigrationStatus.DONE) {
                 logger.info("Migration '{}' succeeded : {}", annotation.id(), TimeUtils.durationToString(stopWatch));
             } else if (status == MigrationRun.MigrationStatus.ON_HOLD) {
                 logger.info("Migration '{}' on hold of pending jobs : {}", annotation.id(), TimeUtils.durationToString(stopWatch));
             } else if (status == MigrationRun.MigrationStatus.ERROR) {
                 logger.info("Migration '{}' on ERROR as some jobs failed : {}", annotation.id(), TimeUtils.durationToString(stopWatch));
+            } else if (status == MigrationRun.MigrationStatus.PENDING) {
+                logger.info("Migration '{}' on PENDING as it could not be executed yet", annotation.id());
             } else {
                 // Should not happen
                 logger.info("Migration '{}' finished with status {} : {}", annotation.id(), status, TimeUtils.durationToString(stopWatch));
             }
+            logger.info("------------------------------------------------------");
         } catch (Exception e) {
             migrationRun.setStatus(MigrationRun.MigrationStatus.ERROR);
             String message;
@@ -605,15 +645,68 @@ public class MigrationManager {
             migrationRun.setException(message);
             logger.info("------------------------------------------------------");
             logger.error("Migration '{}' failed with message: {}", annotation.id(), message, e);
+            logger.info("------------------------------------------------------");
         } finally {
+            stopMigrationLogger();
             migrationRun.setStart(start);
             migrationRun.setEnd(TimeUtils.getDate());
             migrationRun.setPatch(annotation.patch());
             try {
+                String adminStudy = "opencga@admin:admin";
                 migrationDBAdaptor.upsert(migrationRun);
-            } catch (CatalogDBException e) {
-                throw new MigrationException("Could not register migration in OpenCGA", e);
+                OpenCGAResult<File> outdir = catalogManager.getFileManager()
+                        .createFolder(adminStudy, path, true, "Migration job " + migrationRun.getId(), null, QueryOptions.empty(), token);
+                OpenCGAResult<File> stderr = catalogManager.getFileManager()
+                        .link(adminStudy, new FileLinkParams()
+                                .setPath(Paths.get(path, logFile).toString())
+                                .setUri(Paths.get(catalogManager.getConfiguration().getJobDir(), path, logFile).toUri().toString()),
+                                false, token);
+
+                Job job = new Job()
+                        .setId(jobId)
+                        .setDescription("Execution of migration '" + migrationRun.getId() + "'")
+                        .setCreationDate(TimeUtils.getTime(start))
+                        .setCommandLine("opencga-admin.sh")
+                        .setParams(params)
+                        .setTool(new ToolInfo(annotation.id(), annotation.description(), Tool.Scope.GLOBAL, null, null))
+                        .setOutDir(outdir.first())
+                        .setStderr(stderr.first())
+                        .setInternal(new JobInternal()
+                                .setEvents(migrationRun.getEvents()))
+                        .setAttributes(new HashMap<>())
+                        .setTags(Arrays.asList("migration", String.valueOf(annotation.domain()), annotation.version()));
+                job.getAttributes().put("migrationRun", migrationRun);
+
+                switch (migrationRun.getStatus()) {
+                    case DONE:
+                    case ON_HOLD:
+                        job.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE));
+                        job.setExecution(new ExecutionResult()
+                                .setStart(migrationRun.getStart())
+                                .setEnd(migrationRun.getEnd())
+                                .setStatus(new Status(Status.Type.DONE, null, migrationRun.getEnd()))
+                                .setEvents(migrationRun.getEvents()));
+                        break;
+                    case PENDING:
+                        job.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED, "Could not be executed"));
+                        break;
+                    case ERROR:
+                    default:
+                        job.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, migrationRun.getException()));
+                        job.setExecution(new ExecutionResult()
+                                .setStart(migrationRun.getStart())
+                                .setEnd(migrationRun.getEnd())
+                                .setStatus(new Status(Status.Type.ERROR, null, migrationRun.getEnd()))
+                                .setEvents(migrationRun.getEvents()));
+                        break;
+                }
+                catalogManager.getJobManager().create(adminStudy, job, new QueryOptions(), token);
+            } catch (CatalogException e) {
+                exceptionToThrow = new MigrationException("Could not register migration in OpenCGA", e);
             }
+        }
+        if (exceptionToThrow != null) {
+            throw exceptionToThrow;
         }
         return migrationRun;
     }
@@ -651,4 +744,41 @@ public class MigrationManager {
         return migration.getAnnotation(Migration.class);
     }
 
+    private String startMigrationLogger(String jobId, Path path) {
+        // Create file appender
+        String fileName = jobId + ".err";
+        String fileNamePath = path.resolve(fileName).toAbsolutePath().toString();
+
+        FileAppender fileAppender = FileAppender.newBuilder()
+                .setName("MigrationRunAppender")
+                .withAppend(true)
+                .withCreateOnDemand(false)
+                .setLayout(org.apache.logging.log4j.core.layout.PatternLayout.newBuilder()
+                        .withPattern("%d{yyyy-MM-dd HH:mm:ss} [%t] %-5p %c{1}:%L - %m%n")
+                        .build())
+                .withFileName(fileNamePath)
+                .build();
+        fileAppender.start();
+        addAppender(fileAppender);
+
+        return fileName;
+    }
+
+    private void stopMigrationLogger() {
+        //Restore logger configuration
+        Configurator.shutdown(LoggerContext.getContext());
+        Configurator.reconfigure();
+    }
+
+    void addAppender(final Appender appender) {
+        final LoggerContext context = LoggerContext.getContext(false);
+        final org.apache.logging.log4j.core.config.Configuration config = context.getConfiguration();
+        appender.start();
+        config.addAppender(appender);
+
+        for (final LoggerConfig loggerConfig : config.getLoggers().values()) {
+            loggerConfig.addAppender(appender, null, null);
+        }
+        config.getRootLogger().addAppender(appender, null, null);
+    }
 }

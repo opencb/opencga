@@ -43,6 +43,7 @@ public abstract class MigrationTool {
     private final Logger privateLogger;
     private GenericDocumentComplexConverter<Object> converter;
     private int batchSize;
+    private StorageConfiguration storageConfiguration;
 
     public MigrationTool() {
         this(500);
@@ -92,11 +93,14 @@ public abstract class MigrationTool {
     }
 
     protected final StorageConfiguration readStorageConfiguration() throws MigrationException {
-        try (FileInputStream is = new FileInputStream(appHome.resolve("conf").resolve("storage-configuration.yml").toFile())) {
-            return StorageConfiguration.load(is);
-        } catch (IOException e) {
-            throw new MigrationException("Error reading \"storage-configuration.yml\"", e);
+        if (storageConfiguration == null) {
+            try (FileInputStream is = new FileInputStream(appHome.resolve("conf").resolve("storage-configuration.yml").toFile())) {
+                storageConfiguration = StorageConfiguration.load(is);
+            } catch (IOException e) {
+                throw new MigrationException("Error reading \"storage-configuration.yml\"", e);
+            }
         }
+        return storageConfiguration;
     }
 
     protected final void runJavascript(Path file) throws MigrationException {

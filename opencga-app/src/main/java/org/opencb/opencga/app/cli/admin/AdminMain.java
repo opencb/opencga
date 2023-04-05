@@ -114,6 +114,9 @@ public class AdminMain {
                         case "migration":
                             commandExecutor = new MigrationCommandExecutor(cliOptionsParser.getMigrationCommandOptions());
                             break;
+                        case "storage":
+                            commandExecutor = new StorageCommandExecutor(cliOptionsParser.getStorageCommandOptions());
+                            break;
                         default:
                             System.out.printf("ERROR: not valid command passed: '%s'", parsedCommand);
                             break;
