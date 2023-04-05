@@ -84,7 +84,7 @@ public class CellBaseUtilsTest {
 
     @Test
     public void testValidateCellBaseConnection() throws IOException {
-        cellBaseUtils.validateCellBaseConnection();
+        cellBaseUtils.validate();
     }
 
     @Test
