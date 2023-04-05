@@ -199,7 +199,7 @@ public class RgaManager implements AutoCloseable {
                 writer,
                 ParallelTaskRunner.Config.builder()
                         .setBatchSize(1)
-                        .setNumTasks(2) // Write is definitely slower than process. More threads won't help much.
+                        .setNumTasks(1) // Write is definitely slower than process. More threads won't help much.
                         .build()
         );
 
