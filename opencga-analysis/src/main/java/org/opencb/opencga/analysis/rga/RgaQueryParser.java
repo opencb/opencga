@@ -308,6 +308,18 @@ public class RgaQueryParser {
             // To generate pairs to query for complete COMP_HET variants
             chFilterValues = generateSortedCombinations(filterValues);
             chCtValues = generateSortedCombinations(ctValues);
+            if (popFreqQueryList.size() == 1) {
+                // Add the missing pair so queries are done properly
+                if (popFreqQueryList.keySet().contains(RgaUtils.GNOMAD_GENOMES_STUDY)) {
+                    List<String> missingPopFreq = Collections.singletonList(RgaUtils.THOUSAND_GENOMES_STUDY + ":ALL>=0");
+                    Map<String, List<String>> tmpMap = RgaUtils.parsePopulationFrequencyQuery(missingPopFreq);
+                    popFreqQueryList.putAll(tmpMap);
+                } else if (popFreqQueryList.keySet().contains(RgaUtils.THOUSAND_GENOMES_STUDY)) {
+                    List<String> missingPopFreq = Collections.singletonList(RgaUtils.GNOMAD_GENOMES_STUDY + ":ALL>=0");
+                    Map<String, List<String>> tmpMap = RgaUtils.parsePopulationFrequencyQuery(missingPopFreq);
+                    popFreqQueryList.putAll(tmpMap);
+                }
+            }
         }
 
         if (ctValues.isEmpty() && popFreqQueryList.isEmpty()) {
