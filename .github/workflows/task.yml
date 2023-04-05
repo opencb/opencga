@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@TASK-4163
     with:
       maven_opts: -P storage-hadoop,hdp3.1,RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
 
