@@ -19,7 +19,7 @@ public class GeneRgaConverter extends AbstractRgaConverter {
     static {
         CONVERTER_MAP = new HashMap<>();
         // We always include individual id in the response because we always want to return the numIndividuals populated
-        CONVERTER_MAP.put("id", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID));
+        CONVERTER_MAP.put("id", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.CH_PAIRS));
         CONVERTER_MAP.put("name", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.GENE_NAME, RgaDataModel.INDIVIDUAL_ID));
         CONVERTER_MAP.put("chromosome", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.CHROMOSOME, RgaDataModel.INDIVIDUAL_ID));
         CONVERTER_MAP.put("start", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.START, RgaDataModel.INDIVIDUAL_ID));

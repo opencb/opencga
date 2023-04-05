@@ -68,6 +68,9 @@ public abstract class SolrNativeIterator<E> implements Iterator<E>, AutoCloseabl
 
     @Override
     public boolean hasNext() {
+        if (listBuffer.isEmpty()) {
+            fetchNextBatch();
+        }
         return !listBuffer.isEmpty();
     }
 

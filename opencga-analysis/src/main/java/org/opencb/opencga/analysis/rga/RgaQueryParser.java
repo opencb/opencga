@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.analysis.rga.RgaQueryParams.*;
 import static org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant.KnockoutType.*;
@@ -27,6 +28,26 @@ public class RgaQueryParser {
     public static final String SEPARATOR = "__";
 
     protected static Logger logger = LoggerFactory.getLogger(RgaQueryParser.class);
+
+    private static final List<String> ALL_CONSEQUENCE_TYPES;
+    private static final List<String> ALL_PAIRED_CONSEQUENCE_TYPES;
+    private static final List<String> INCLUDED_DEL_OVERLAP_CONSEQUENCE_TYPES;
+    private static final List<String> INCLUDED_DEL_OVERLAP_PAIR_CTS;
+
+    static {
+        List<String> excludedDelOverlapCts = getEncodedConsequenceTypes(Arrays.asList("missense_variant", "frameshift_variant",
+                "incomplete_terminal_codon_variant", "start_lost", "stop_gained", "stop_lost", "splice_acceptor_variant",
+                "splice_donor_variant", "splice_region_variant"));
+
+        // Exclude DELETION_OVERLAP variants with consequence types: missense_variant
+        ALL_CONSEQUENCE_TYPES = getEncodedConsequenceTypes(RgaUtils.CONSEQUENCE_TYPE_LIST);
+        ALL_PAIRED_CONSEQUENCE_TYPES = generateSortedCombinations(ALL_CONSEQUENCE_TYPES);
+        INCLUDED_DEL_OVERLAP_CONSEQUENCE_TYPES = ALL_CONSEQUENCE_TYPES
+                .stream()
+                .filter(ct -> !excludedDelOverlapCts.contains(ct))
+                .collect(Collectors.toList());
+        INCLUDED_DEL_OVERLAP_PAIR_CTS = generateSortedCombinations(INCLUDED_DEL_OVERLAP_CONSEQUENCE_TYPES);
+    }
 
     public RgaQueryParser() {
         this(CompHetQueryMode.SINGLE);
@@ -151,7 +172,9 @@ public class RgaQueryParser {
         count += ctValues.isEmpty() ? 0 : 1;
         count += popFreqValues.isEmpty() ? 0 : 1;
 
-        if (count == 1) {
+        boolean simpleFilter = !knockoutValues.contains(COMP_HET.name()) && !knockoutValues.contains(DELETION_OVERLAP.name()) && count == 1;
+
+        if (simpleFilter) {
             // Simple filter
             parseStringValue(query, KNOCKOUT, RgaDataModel.KNOCKOUT_TYPES, filterList);
             parseStringValue(query, FILTER, RgaDataModel.FILTERS, filterList);
@@ -164,7 +187,7 @@ public class RgaQueryParser {
                     parseStringValue(entry.getValue(), RgaDataModel.POPULATION_FREQUENCIES.replace("*", entry.getKey()), filterList, "||");
                 }
             }
-        } else if (count > 1) {
+        } else {
             buildComplexQueryFilter(filterList, knockoutValues, filterValue, ctValues, popFreqValues);
         }
     }
@@ -181,9 +204,7 @@ public class RgaQueryParser {
         count += ctValues.isEmpty() ? 0 : 1;
         count += popFreqValues.isEmpty() ? 0 : 1;
 
-        // In this case, we may need to use both filters if users are filtering by COMP_HET and another ko type + (ct | pf)
-        boolean simpleFilter = !knockoutValues.contains(COMP_HET.name()) || count == 1;
-        boolean complexFilter = knockoutValues.contains(COMP_HET.name()) && count > 1;
+        boolean simpleFilter = !knockoutValues.contains(COMP_HET.name()) && !knockoutValues.contains(DELETION_OVERLAP.name()) && count == 1;
 
         if (simpleFilter) {
             // Simple filters
@@ -201,8 +222,7 @@ public class RgaQueryParser {
                             AuxiliarRgaDataModel.POPULATION_FREQUENCIES.replace("*", entry.getKey()), filterList, "||");
                 }
             }
-        }
-        if (complexFilter) {
+        } else {
             buildComplexQueryFilter(filterList, knockoutValues, "", ctValues, popFreqValues);
         }
     }
@@ -265,7 +285,7 @@ public class RgaQueryParser {
         buildComplexQuery(koValues, filterValues, ctValues, popFreqQueryList, filterList);
     }
 
-    private List<String> getEncodedConsequenceTypes(List<String> originalCtList) {
+    private static List<String> getEncodedConsequenceTypes(List<String> originalCtList) {
         if (CollectionUtils.isEmpty(originalCtList)) {
             return Collections.emptyList();
         }
@@ -280,6 +300,7 @@ public class RgaQueryParser {
     private void buildComplexQuery(List<String> koValues, List<String> filterValues, List<String> ctValues,
                                    Map<String, List<String>> popFreqQueryList, List<String> filterList) throws RgaException {
         String encodedChString = RgaUtils.encode(COMP_HET.name());
+        String delOverlap = RgaUtils.encode(DELETION_OVERLAP.name());
 
         List<String> chFilterValues = filterValues;
         List<String> chCtValues = ctValues;
@@ -287,52 +308,124 @@ public class RgaQueryParser {
             // To generate pairs to query for complete COMP_HET variants
             chFilterValues = generateSortedCombinations(filterValues);
             chCtValues = generateSortedCombinations(ctValues);
+            if (popFreqQueryList.size() == 1) {
+                // Add the missing pair so queries are done properly
+                if (popFreqQueryList.keySet().contains(RgaUtils.GNOMAD_GENOMES_STUDY)) {
+                    List<String> missingPopFreq = Collections.singletonList(RgaUtils.THOUSAND_GENOMES_STUDY + ":ALL>=0");
+                    Map<String, List<String>> tmpMap = RgaUtils.parsePopulationFrequencyQuery(missingPopFreq);
+                    popFreqQueryList.putAll(tmpMap);
+                } else if (popFreqQueryList.keySet().contains(RgaUtils.THOUSAND_GENOMES_STUDY)) {
+                    List<String> missingPopFreq = Collections.singletonList(RgaUtils.GNOMAD_GENOMES_STUDY + ":ALL>=0");
+                    Map<String, List<String>> tmpMap = RgaUtils.parsePopulationFrequencyQuery(missingPopFreq);
+                    popFreqQueryList.putAll(tmpMap);
+                }
+            }
         }
 
         if (ctValues.isEmpty() && popFreqQueryList.isEmpty()) {
             // KT + FILTER
             List<String> orFilterList = new LinkedList<>();
             for (String koValue : koValues) {
-                List<String> finalFilterValues = koValue.equals(encodedChString) ? chFilterValues : filterValues;
-                for (String filterVal : finalFilterValues) {
-                    orFilterList.add(koValue + SEPARATOR + filterVal);
+                if (compHetQueryMode.equals(CompHetQueryMode.PAIR) && koValue.equals(encodedChString)) {
+                    for (String filterVal : chFilterValues) {
+                        orFilterList.add(koValue + SEPARATOR + filterVal);
+                    }
+                } else {
+                    for (String filterVal : filterValues) {
+                        if (koValue.equals(delOverlap)) {
+                            for (String ctValue : INCLUDED_DEL_OVERLAP_CONSEQUENCE_TYPES) {
+                                orFilterList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue);
+                            }
+                        } else {
+                            orFilterList.add(koValue + SEPARATOR + filterVal);
+                        }
+                    }
                 }
             }
             parseStringValue(orFilterList, RgaDataModel.COMPOUND_FILTERS, filterList, "||");
         } else if (!ctValues.isEmpty() && !popFreqQueryList.isEmpty()) {
             // KT + FILTER + CT + POP_FREQ
-            List<String> andQueryList = new ArrayList<>(popFreqQueryList.size());
+            List<String> andQueryList = new LinkedList<>();
             if (popFreqQueryList.size() == 2) {
-                ArrayList<String> popFreqKeys = new ArrayList<>(popFreqQueryList.keySet());
-                List<List<String>> sortedPopFreqs = RgaUtils.generateSortedCombinations(popFreqQueryList.get(popFreqKeys.get(0)),
-                        popFreqQueryList.get(popFreqKeys.get(1)));
-                for (List<String> sortedPopFreq : sortedPopFreqs) {
+                List<String> koQueryList = new LinkedList<>();
+                for (String koValue : koValues) {
+                    if (compHetQueryMode.equals(CompHetQueryMode.PAIR) && koValue.equals(encodedChString)) {
+                        ArrayList<String> popFreqKeys = new ArrayList<>(popFreqQueryList.keySet());
+                        List<List<String>> sortedPopFreqs = RgaUtils.generateSortedCombinations(popFreqQueryList.get(popFreqKeys.get(0)),
+                                popFreqQueryList.get(popFreqKeys.get(1)));
+                        List<String> popFreqAndQueryList = new LinkedList<>();
+                        List<String> tmpOrQueryList = new LinkedList<>();
+                        for (List<String> sortedPopFreq : sortedPopFreqs) {
+                            for (String filterVal : chFilterValues) {
+                                for (String ctValue : chCtValues) {
+                                    // CH__P__P__1583__1583__P1-1__P2-2
+                                    tmpOrQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR
+                                            + sortedPopFreq.get(0) + SEPARATOR + sortedPopFreq.get(1));
+                                }
+                            }
+                        }
+                        parseStringValue(tmpOrQueryList, "", popFreqAndQueryList, "||");
+
+                        List<String> filterValuesOrList = new LinkedList<>();
+                        for (String filterVal : chFilterValues) {
+                            List<String> tmpAndList = new LinkedList<>();
+                            for (List<String> popFreqList : popFreqQueryList.values()) {
+                                List<String> popFreqOrQueryList = new LinkedList<>();
+                                for (String popFreq : popFreqList) {
+                                    popFreqOrQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + popFreq);
+                                }
+                                parseStringValue(popFreqOrQueryList, "", tmpAndList, "||");
+                            }
+                            parseStringValue(tmpAndList, "", filterValuesOrList, "&&");
+                        }
+                        parseStringValue(filterValuesOrList, "", popFreqAndQueryList, "||");
+                        parseStringValue(popFreqAndQueryList, "", koQueryList, "&&");
+                    } else {
+                        List<String> orQueryList = new LinkedList<>();
+                        for (String ctValue : ctValues) {
+                            if (koValue.equals(delOverlap) && !INCLUDED_DEL_OVERLAP_CONSEQUENCE_TYPES.contains(ctValue)) {
+                                // Don't process this filter
+                                continue;
+                            }
+                            for (String filterValue : filterValues) {
+                                List<String> tmpAndQueryList = new ArrayList<>(popFreqQueryList.size());
+                                for (List<String> popFreqs : popFreqQueryList.values()) {
+                                    List<String> tmpOrQueryList = new ArrayList<>(popFreqs.size());
+                                    for (String popFreq : popFreqs) {
+                                        tmpOrQueryList.add(koValue + SEPARATOR + filterValue + SEPARATOR + ctValue + SEPARATOR + popFreq);
+                                    }
+                                    parseStringValue(tmpOrQueryList, "", tmpAndQueryList, "||");
+                                }
+                                parseStringValue(tmpAndQueryList, "", orQueryList, "&&");
+                            }
+                        }
+                        parseStringValue(orQueryList, "", koQueryList, "||");
+                    }
+                }
+                parseStringValue(koQueryList, "", andQueryList, "||");
+            } else {
+                for (List<String> tmpPopFreqList : popFreqQueryList.values()) {
                     List<String> orQueryList = new LinkedList<>();
                     for (String koValue : koValues) {
                         List<String> finalFilterValues = koValue.equals(encodedChString) ? chFilterValues : filterValues;
                         List<String> finalCtValues = koValue.equals(encodedChString) ? chCtValues : ctValues;
                         for (String filterVal : finalFilterValues) {
                             for (String ctValue : finalCtValues) {
-                                orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR + sortedPopFreq.get(0)
-                                        + SEPARATOR + sortedPopFreq.get(1));
-                            }
-                        }
-                    }
-                    parseStringValue(orQueryList, "", andQueryList, "||");
-                }
-            } else {
-                for (List<String> tmpPopFreqList : popFreqQueryList.values()) {
-                    List<String> orQueryList = new LinkedList<>();
-                    for (String popFreq : tmpPopFreqList) {
-                        for (String koValue : koValues) {
-                            List<String> finalFilterValues = koValue.equals(encodedChString) ? chFilterValues : filterValues;
-                            List<String> finalCtValues = koValue.equals(encodedChString) ? chCtValues : ctValues;
-                            for (String filterVal : finalFilterValues) {
-                                for (String ctValue : finalCtValues) {
-                                    if (compHetQueryMode.equals(CompHetQueryMode.PAIR) && koValue.equals(encodedChString)) {
-                                        orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR + popFreq
-                                                + SEPARATOR + popFreq);
-                                    } else {
+                                if (compHetQueryMode.equals(CompHetQueryMode.PAIR) && koValue.equals(encodedChString)) {
+                                    if (tmpPopFreqList.size() == 1) {
+                                        // Replicate the same value so it filters as a pair
+                                        tmpPopFreqList.add(tmpPopFreqList.get(0));
+                                    }
+                                    List<String> sortedCombinations = generateSortedCombinations(tmpPopFreqList);
+                                    for (String popFreqPair : sortedCombinations) {
+                                        orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR + popFreqPair);
+                                    }
+                                } else {
+                                    if (koValue.equals(delOverlap) && !INCLUDED_DEL_OVERLAP_CONSEQUENCE_TYPES.contains(ctValue)) {
+                                        // Don't process this filter
+                                        continue;
+                                    }
+                                    for (String popFreq : tmpPopFreqList) {
                                         orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR + popFreq);
                                     }
                                 }
@@ -351,6 +444,10 @@ public class RgaQueryParser {
                 List<String> finalCtValues = koValue.equals(encodedChString) ? chCtValues : ctValues;
                 for (String filterVal : finalFilterValues) {
                     for (String ctValue : finalCtValues) {
+                        if (koValue.equals(delOverlap) && !INCLUDED_DEL_OVERLAP_CONSEQUENCE_TYPES.contains(ctValue)) {
+                            // Don't process this filter
+                            continue;
+                        }
                         orFilterList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue);
                     }
                 }
@@ -359,7 +456,7 @@ public class RgaQueryParser {
         } else { // POP_FREQ not empty
             // KT + FILTER + POP_FREQ
             List<String> andQueryList = new ArrayList<>(popFreqQueryList.size());
-            if (popFreqQueryList.size() == 2) {
+            if (popFreqQueryList.size() == 2) { // + 2x POP FREQ
                 ArrayList<String> popFreqKeys = new ArrayList<>(popFreqQueryList.keySet());
                 List<List<String>> sortedPopFreqs = RgaUtils.generateSortedCombinations(popFreqQueryList.get(popFreqKeys.get(0)),
                         popFreqQueryList.get(popFreqKeys.get(1)));
@@ -367,22 +464,58 @@ public class RgaQueryParser {
                 for (List<String> sortedPopFreq : sortedPopFreqs) {
                     for (String koValue : koValues) {
                         List<String> finalFilterValues = koValue.equals(encodedChString) ? chFilterValues : filterValues;
+                        List<String> ctList = koValue.equals(delOverlap) ? INCLUDED_DEL_OVERLAP_PAIR_CTS : ALL_PAIRED_CONSEQUENCE_TYPES;
                         for (String filterVal : finalFilterValues) {
-                            orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + sortedPopFreq.get(0) + SEPARATOR
-                                    + sortedPopFreq.get(1));
+                            // This is how it should be filtered
+//                            orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + sortedPopFreq.get(0) + SEPARATOR
+//                                    + sortedPopFreq.get(1));
+                            if (koValue.equals(delOverlap)) {
+                                for (String ctValue : ctList) {
+                                    List<String> tmpAndQueryList = new ArrayList<>(2);
+                                    tmpAndQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR
+                                            + sortedPopFreq.get(0));
+                                    tmpAndQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR
+                                            + sortedPopFreq.get(1));
+                                    parseStringValue(tmpAndQueryList, "", orQueryList, "&&");
+                                }
+//                            } else if (koValue.equals(encodedChString)) {
+//                                orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + sortedPopFreq.get(0) + SEPARATOR
+//                                        + sortedPopFreq.get(1));
+//                            } else {
+//                                List<String> tmpAndQueryList = new ArrayList<>(2);
+//                                tmpAndQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + sortedPopFreq.get(0));
+//                                tmpAndQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + sortedPopFreq.get(1));
+//                                parseStringValue(tmpAndQueryList, "", orQueryList, "&&");
+//                            }
+                            } else {
+                                List<String> tmpAndQueryList = new ArrayList<>(2);
+                                tmpAndQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + sortedPopFreq.get(0));
+                                tmpAndQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + sortedPopFreq.get(1));
+                                parseStringValue(tmpAndQueryList, "", orQueryList, "&&");
 
+                                if (koValue.equals(encodedChString)) {
+                                    orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + sortedPopFreq.get(0) + SEPARATOR
+                                            + sortedPopFreq.get(1));
+                                }
+                            }
                         }
                     }
                 }
                 parseStringValue(orQueryList, "", andQueryList, "||");
-            } else {
+            } else { // + 1x POP FREQ
                 for (List<String> tmpPopFreqList : popFreqQueryList.values()) {
                     List<String> orQueryList = new LinkedList<>();
                     for (String popFreq : tmpPopFreqList) {
                         for (String koValue : koValues) {
+                            List<String> ctList = koValue.equals(delOverlap) ? INCLUDED_DEL_OVERLAP_CONSEQUENCE_TYPES
+                                    : ALL_CONSEQUENCE_TYPES;
                             List<String> finalFilterValues = koValue.equals(encodedChString) ? chFilterValues : filterValues;
                             for (String filterVal : finalFilterValues) {
-                                orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + popFreq);
+                                // This is how it should be filtered
+//                                orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + popFreq);
+                                for (String ctValue : ctList) {
+                                    orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR + popFreq);
+                                }
                             }
                         }
                     }
@@ -391,6 +524,7 @@ public class RgaQueryParser {
             }
             parseStringValue(andQueryList, RgaDataModel.COMPOUND_FILTERS, filterList, "&&");
         }
+
     }
 
     public static List<String> generateSortedCombinations(List<String> list) {

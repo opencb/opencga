@@ -192,7 +192,7 @@ public class RgaEngine implements Closeable {
     public RgaIterator geneQuery(String collection, Query query, QueryOptions queryOptions) throws RgaException {
         SolrQuery solrQuery = parser.parseQuery(query);
         fixGeneOptions(queryOptions, query, solrQuery);
-        solrQuery.setRows(Integer.MAX_VALUE);
+        solrQuery.setRows(queryOptions.getInt(QueryOptions.LIMIT, Integer.MAX_VALUE));
         try {
             return new RgaIterator(solrManager.getSolrClient(), collection, solrQuery);
         } catch (SolrServerException e) {
@@ -283,13 +283,15 @@ public class RgaEngine implements Closeable {
     public DataResult<FacetField> joinFacetQuery(String collection, String externalCollection, Query query, Query externalQuery,
                                             QueryOptions queryOptions) throws RgaException, IOException {
         SolrQuery mainSolrQuery = parser.parseAuxQuery(query);
-        SolrQuery externalSolrQuery = parser.parseQuery(externalQuery);
+        if (!externalQuery.isEmpty()) {
+            SolrQuery externalSolrQuery = parser.parseQuery(externalQuery);
 
-        if (externalSolrQuery.getFilterQueries() != null && externalSolrQuery.getFilterQueries().length > 0) {
-            String externalQueryStr = StringUtils.join(externalSolrQuery.getFilterQueries(), " AND ");
-            mainSolrQuery.set("v1", externalQueryStr);
-            mainSolrQuery.addFilterQuery("{!join from=" + RgaDataModel.VARIANTS + " to=" + AuxiliarRgaDataModel.ID
-                    + " fromIndex=" + externalCollection + " v=$v1}");
+            if (externalSolrQuery.getFilterQueries() != null && externalSolrQuery.getFilterQueries().length > 0) {
+                String externalQueryStr = StringUtils.join(externalSolrQuery.getFilterQueries(), " AND ");
+                mainSolrQuery.set("v1", externalQueryStr);
+                mainSolrQuery.addFilterQuery("{!join from=" + RgaDataModel.VARIANTS + " to=" + AuxiliarRgaDataModel.ID
+                        + " fromIndex=" + externalCollection + " v=$v1}");
+            }
         }
 
         return facetedQuery(collection, mainSolrQuery, queryOptions);
