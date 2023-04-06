@@ -14,9 +14,10 @@ fi
 
 function install(){
   local REPO=$1
-  cd /home/runner/work/
+  #cd /home/runner/work/
+  cd ~ || exit 2
   git clone git@github.com:opencb/"$REPO".git
-  cd "$REPO"
+  cd "$REPO" || exit 2
   git checkout "$BRANCH_NAME"
   local BRANCHES=$(git branch --list $BRANCH_NAME)
   if [[ -n $BRANCHES  ]]; then
