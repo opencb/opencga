@@ -18,9 +18,9 @@ function install(){
   #git clone git@github.com:opencb/"$REPO".git
   git clone https://github.com/opencb/"$REPO".git
   cd "$REPO" || exit 2
-  git checkout -b "$BRANCH_NAME"
+  git checkout -b origin/"$BRANCH_NAME"
   local BRANCHES=""
-  BRANCHES=$(git branch -r --list $BRANCH_NAME)
+  BRANCHES=$(git branch -r --list origin/$BRANCH_NAME)
   if [[ -n $BRANCHES  ]]; then
     echo "Branch name $BRANCH_NAME already exists."
     mvn clean install -DskipTests
