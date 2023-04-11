@@ -18,7 +18,7 @@ function install(){
   #git clone git@github.com:opencb/"$REPO".git
   git clone https://github.com/opencb/"$REPO".git
   cd "$REPO" || exit 2
-  git checkout -b origin/"$BRANCH_NAME"
+  git checkout origin/"$BRANCH_NAME"
   local BRANCHES=""
   BRANCHES=$(git branch -r --list origin/$BRANCH_NAME)
   CURRENT=$(git branch --show-current)
