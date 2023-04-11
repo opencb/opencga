@@ -46,6 +46,10 @@ jobs:
           else
              echo "./.github/workflows/scripts/get_same_branch.sh does not exist."         
           fi
+      - name: Save Maven cache
+        uses: skjolber/maven-cache-github-action@v1
+        with:
+          step: save
       - name: Test and Analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
@@ -73,6 +77,10 @@ jobs:
           else
              echo "./.github/workflows/scripts/get_same_branch.sh does not exist."         
           fi
+      - name: Save Maven cache
+        uses: skjolber/maven-cache-github-action@v1
+        with:
+          step: save
       - name: Install Samtools
         run: sudo apt-get install samtools python3-deeptools
       - name: Start MongoDB v6.0
