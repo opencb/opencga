@@ -21,6 +21,13 @@ function install(){
   git checkout -b origin/"$BRANCH_NAME"
   local BRANCHES=""
   BRANCHES=$(git branch -r --list origin/$BRANCH_NAME)
+  CURRENT=$(git branch --show-current)
+  echo "Current branch name $CURRENT"
+   if [[ "$CURRENT" == "$BRANCH_NAME"  ]]; then
+    echo "$CURRENT Branch is equals $BRANCH_NAME "
+  else
+    echo "$CURRENT Branch is NOT EQUALS $BRANCH_NAME "
+  fi
   if [[ -n $BRANCHES  ]]; then
     echo "Branch name $BRANCH_NAME already exists."
     mvn clean install -DskipTests
