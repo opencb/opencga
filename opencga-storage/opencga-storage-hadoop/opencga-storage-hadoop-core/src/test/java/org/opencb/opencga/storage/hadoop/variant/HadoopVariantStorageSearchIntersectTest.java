@@ -19,7 +19,9 @@ package org.opencb.opencga.storage.hadoop.variant;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.ClassRule;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExternalResource;
+import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageSearchIntersectTest;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 
@@ -28,6 +30,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(LongTests.class)
 public class HadoopVariantStorageSearchIntersectTest extends VariantStorageSearchIntersectTest implements HadoopVariantStorageTest {
 
     @ClassRule

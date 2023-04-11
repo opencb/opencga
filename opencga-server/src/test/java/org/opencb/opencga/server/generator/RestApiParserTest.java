@@ -18,6 +18,8 @@ package org.opencb.opencga.server.generator;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.server.generator.models.RestApi;
 import org.opencb.opencga.server.generator.models.RestEndpoint;
 import org.opencb.opencga.server.rest.*;
@@ -36,6 +38,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Category(ShortTests.class)
 public class RestApiParserTest {
 
     private static RestApiParser restApiParser;

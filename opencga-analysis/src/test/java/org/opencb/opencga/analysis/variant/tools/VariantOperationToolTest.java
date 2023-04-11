@@ -17,12 +17,15 @@
 package org.opencb.opencga.analysis.variant.tools;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.opencga.analysis.variant.operations.OperationTool;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.reflections.Reflections;
 
 import static org.junit.Assert.*;
 
+@Category(ShortTests.class)
 public class VariantOperationToolTest {
 
     @Test

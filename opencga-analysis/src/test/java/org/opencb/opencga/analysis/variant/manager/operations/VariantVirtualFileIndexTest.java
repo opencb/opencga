@@ -17,6 +17,7 @@
 package org.opencb.opencga.analysis.variant.manager.operations;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.tools.ToolRunner;
@@ -26,6 +27,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +41,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.get
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(MediumTests.class)
 public class VariantVirtualFileIndexTest extends AbstractVariantOperationManagerTest {
 
     private Logger logger = LoggerFactory.getLogger(AbstractVariantOperationManagerTest.class);

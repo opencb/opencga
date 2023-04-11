@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import org.bson.Document;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.DataResult;
@@ -36,6 +37,7 @@ import org.opencb.opencga.core.models.individual.IndividualPopulation;
 import org.opencb.opencga.core.models.individual.Location;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleInternal;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -48,6 +50,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by hpccoll1 on 19/06/15.
  */
+@Category(MediumTests.class)
 public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test

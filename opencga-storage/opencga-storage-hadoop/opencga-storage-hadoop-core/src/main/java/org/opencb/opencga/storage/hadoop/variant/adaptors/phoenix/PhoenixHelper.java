@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.NamespaceDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
@@ -165,7 +166,11 @@ public class PhoenixHelper {
         if (isNamespaceMappingEnabled(tableType, conf)) {
             return SchemaUtil.getEscapedTableName(schemaName, tableName);
         } else {
-            return StringUtils.isNotEmpty(schemaName) ? "\"" + schemaName + ":" + tableName + "\"" : "\"" + tableName + "\"";
+            if (StringUtils.isEmpty(schemaName) || schemaName.equals(NamespaceDescriptor.DEFAULT_NAMESPACE_NAME_STR)) {
+                return "\"" + tableName + "\"";
+            } else {
+                return "\"" + schemaName + ":" + tableName + "\"";
+            }
         }
     }
 

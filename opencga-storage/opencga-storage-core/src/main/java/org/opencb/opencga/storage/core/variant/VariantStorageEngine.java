@@ -459,7 +459,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     protected final VariantAnnotationManager newVariantAnnotationManager(ObjectMap params)
             throws StorageEngineException, VariantAnnotatorException {
-        ProjectMetadata projectMetadata = getMetadataManager().getProjectMetadata(params);
+        ProjectMetadata projectMetadata = getMetadataManager().getAndUpdateProjectMetadata(params);
         VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(
                 configuration, projectMetadata, getMergedOptions(params));
         return newVariantAnnotationManager(annotator);
@@ -1104,7 +1104,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public CellBaseUtils getCellBaseUtils() throws StorageEngineException {
         if (cellBaseUtils == null) {
-            final ProjectMetadata metadata = getMetadataManager().getProjectMetadata(getOptions());
+            final ProjectMetadata metadata = getMetadataManager().getAndUpdateProjectMetadata(getOptions());
 
             String species = metadata.getSpecies();
             String assembly = metadata.getAssembly();
@@ -1176,7 +1176,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         father = StringUtils.isEmpty(father) ? CompoundHeterozygousQueryExecutor.MISSING_SAMPLE : father;
         mother = StringUtils.isEmpty(mother) ? CompoundHeterozygousQueryExecutor.MISSING_SAMPLE : mother;
         query = new Query(query)
-                .append(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS.key(), Arrays.asList(child, father, mother))
+                .append(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS.key(), new Trio(father, mother, child))
                 .append(VariantQueryParam.STUDY.key(), study);
 
         return get(query, options);

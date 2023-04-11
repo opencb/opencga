@@ -18,14 +18,17 @@ package org.opencb.opencga.server.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import javax.ws.rs.client.WebTarget;
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 
+@Category(MediumTests.class)
 public class ProjectWSServerTest {
 
     public static final String PROJECT_ALIAS = "def_pr";

@@ -2,9 +2,12 @@ package org.opencb.opencga.storage.core.io.bit;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import static org.junit.Assert.assertEquals;
 
+@Category(ShortTests.class)
 public class BitBufferTest {
 
 

@@ -17,6 +17,7 @@
 package org.opencb.opencga.server.generator.writers.cli;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.solr.common.StringUtils;
 import org.opencb.opencga.server.generator.config.CategoryConfig;
 import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
 import org.opencb.opencga.server.generator.models.RestApi;
@@ -60,8 +61,12 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
 
         sb.append("import com.beust.jcommander.JCommander;\n");
         sb.append("import org.opencb.opencga.app.cli.GeneralCliOptions;\n");
-        sb.append("import org.opencb.opencga.app.cli.main.options.*;\n");
-        sb.append("import org.opencb.opencga.app.cli.main.parent.ParentCliOptionsParser;\n");
+        if (StringUtils.isEmpty(config.getApiConfig().getOptionsParserParentClass())) {
+            sb.append("import org.opencb.opencga.app.cli.main.options.*;\n");
+        } else {
+            sb.append("import " + config.getApiConfig().getOptionsParserParentClass() + ";\n");
+        }
+        sb.append("import org.opencb.opencga.app.cli.main.custom.CustomCliOptionsParser;\n");
         sb.append("\n");
         sb.append("\n");
         sb.append("/*\n");
@@ -82,7 +87,7 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
     protected String getClassHeader(String key) {
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
-        sb.append("public class OpencgaCliOptionsParser extends ParentCliOptionsParser {\n");
+        sb.append("public class OpencgaCliOptionsParser extends CustomCliOptionsParser {\n");
         sb.append("\n");
         for (RestCategory restCategory : availableCategories.values()) {
             sb.append("    private final " + getAsClassName(restCategory.getName()) + "CommandOptions " + getAsVariableName(restCategory.getName()) +

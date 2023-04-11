@@ -3,6 +3,8 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
@@ -10,6 +12,7 @@ import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadata
 
 import java.util.Arrays;
 
+@Category(ShortTests.class)
 public class SampleIndexSchemaFactoryTest {
 
     private SampleIndexSchemaFactory schemaFactory;

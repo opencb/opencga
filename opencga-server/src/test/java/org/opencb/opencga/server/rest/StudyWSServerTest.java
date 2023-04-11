@@ -17,6 +17,7 @@
 package org.opencb.opencga.server.rest;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -24,6 +25,7 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import javax.ws.rs.client.WebTarget;
 import java.io.IOException;
@@ -32,6 +34,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
+@Category(MediumTests.class)
 public class StudyWSServerTest {
 
     private WebTarget webTarget;

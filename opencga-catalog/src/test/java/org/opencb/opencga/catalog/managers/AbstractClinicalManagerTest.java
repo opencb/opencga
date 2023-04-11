@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
@@ -33,6 +34,7 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,6 +45,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+@Category(MediumTests.class)
 public class AbstractClinicalManagerTest extends GenericTest {
 
     public final static String PASSWORD = "Password1234;";

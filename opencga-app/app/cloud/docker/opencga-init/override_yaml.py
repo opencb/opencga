@@ -44,6 +44,7 @@ parser.add_argument("--hadoop-ssh-user", required=False)
 parser.add_argument("--hadoop-ssh-pass", required=False)
 parser.add_argument("--hadoop-ssh-key", required=False)
 parser.add_argument("--hadoop-ssh-remote-opencga-home", required=False)
+parser.add_argument("--storage-mode", required=False)
 parser.add_argument("--health-check-interval", required=False)
 parser.add_argument("--save", help="save update to source configuration files (default: false)", default=False, action='store_true')
 args = parser.parse_args()
@@ -67,6 +68,8 @@ def hostOverride(conf,hosts_var):
 with open(args.storage_config_path) as f:
     storage_config = yaml.safe_load(f)
 
+if args.storage_mode is not None:
+    storage_config["mode"] = args.storage_mode
 
 #  Inject search hosts
 hostOverride(storage_config["search"],args.search_hosts)

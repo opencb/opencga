@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.core.OntologyTermAnnotation;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
@@ -29,6 +30,7 @@ import org.opencb.opencga.core.models.individual.IndividualPopulation;
 import org.opencb.opencga.core.models.individual.Location;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -43,6 +45,7 @@ import static org.junit.Assert.assertNull;
 /**
  * Created by wasim on 13/08/18.
  */
+@Category(ShortTests.class)
 public class CatalogIndividualToSolrIndividualConverterTest {
 
     @Test

@@ -19,22 +19,24 @@ package org.opencb.opencga.storage.hadoop.variant;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created on 02/08/16
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(ShortTests.class)
 public class HBaseVariantTableNameGeneratorTest {
 
     private static final String DB_NAME = "dbName";
-    @Deprecated
-    private static final String ARCHIVE_TABLE_PREFIX = "";
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -128,6 +130,18 @@ public class HBaseVariantTableNameGeneratorTest {
     @Test
     public void getDBNameFromVariantsTable() throws Exception {
         assertEquals("dbName", HBaseVariantTableNameGenerator.getDBNameFromVariantsTableName("dbName_variants"));
+    }
+
+    @Test
+    public void checkArchiveTable() throws Exception {
+        assertEquals("dbName_3_archive_4", HBaseVariantTableNameGenerator.getDBNameFromArchiveTableName("dbName_3_archive_4_archive_3"));
+        assertTrue(HBaseVariantTableNameGenerator.isValidArchiveTableName("dbName_3_archive_4", "dbName_3_archive_4_archive_3"));
+    }
+
+    @Test
+    public void getDBNameFromSampleIndexTable() throws Exception {
+        assertEquals("dbname", HBaseVariantTableNameGenerator.getDBNameFromSampleIndexTableName("dbname_variant_sample_index_33_v45"));
+        assertEquals("dbname_variant_sample_index", HBaseVariantTableNameGenerator.getDBNameFromSampleIndexTableName("dbname_variant_sample_index_variant_sample_index_33_v45"));
     }
 
     @Test

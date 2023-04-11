@@ -4,8 +4,10 @@ import org.bson.Document;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -33,6 +35,7 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVa
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(ShortTests.class)
 public class VariantMongoDBQueryParserTest {
 
     private VariantMongoDBQueryParser parser;

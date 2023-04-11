@@ -50,6 +50,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
@@ -1189,6 +1190,10 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         StopWatch totalStopWatch = StopWatch.createStarted();
 
         try {
+            if (storageConfiguration.getMode() == StorageConfiguration.Mode.READ_ONLY) {
+                throw new StorageEngineException("Unable to execute operation '" + operationName + "'. "
+                        + "The storage engine is in mode=" + storageConfiguration.getMode());
+            }
             result = operation.apply(variantStorageEngine);
             return result;
         } catch (CatalogException | StorageEngineException e) {
@@ -1650,20 +1655,29 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         }
 
         if (dataStore == null) { //get default datastore
-            //Must use the UserByStudyId instead of the file owner.
-            String userId = catalogManager.getProjectManager().getOwner(project.getUid());
-            // Replace possible dots at the userId. Usually a special character in almost all databases. See #532
-            userId = userId.replace('.', '_');
-
-            String databasePrefix = catalogManager.getConfiguration().getDatabasePrefix();
-
-            String dbName = buildDatabaseName(databasePrefix, userId, project.getId());
-            dataStore = new DataStore(StorageEngineFactory.get().getDefaultStorageEngineId(), dbName);
+            dataStore = defaultDataStore(catalogManager, project, token);
         }
         if (dataStore.getOptions() == null) {
             dataStore.setOptions(new ObjectMap());
         }
 
+        return dataStore;
+    }
+
+    public static DataStore defaultDataStore(CatalogManager catalogManager, Project project, String token) throws CatalogException {
+        return defaultDataStore(catalogManager, project, catalogManager.getConfiguration().getDatabasePrefix(), token);
+    }
+
+    public static DataStore defaultDataStore(CatalogManager catalogManager, Project project, String databasePrefix, String token)
+            throws CatalogException {
+        DataStore dataStore;
+        //Must use the UserByStudyId instead of the file owner.
+        String userId = catalogManager.getProjectManager().getOwner(project.getUid());
+        // Replace possible dots at the userId. Usually a special character in almost all databases. See #532
+        userId = userId.replace('.', '_');
+
+        String dbName = buildDatabaseName(databasePrefix, userId, project.getId());
+        dataStore = new DataStore(StorageEngineFactory.get().getDefaultStorageEngineId(), dbName);
         return dataStore;
     }
 

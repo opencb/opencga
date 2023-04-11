@@ -19,7 +19,7 @@ package org.opencb.opencga.app.cli.main.io;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.commons.utils.PrintUtils;
-import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
 import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -88,7 +88,7 @@ public abstract class AbstractOutputWriter {
         boolean res = false;
         if (ListUtils.isNotEmpty(dataResponse.getEvents())) {
             for (Event event : dataResponse.getEvents()) {
-                if (event.getType() == Event.Type.INFO && event.getMessage().equals(ParentUsersCommandExecutor.LOGIN_OK)) {
+                if (event.getType() == Event.Type.INFO && event.getMessage().equals(CustomUsersCommandExecutor.LOGIN_OK)) {
                     PrintUtils.printInfo(event.getMessage());
                     res = true;
                 }

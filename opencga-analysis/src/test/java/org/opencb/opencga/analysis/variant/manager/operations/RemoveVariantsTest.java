@@ -18,6 +18,7 @@ package org.opencb.opencga.analysis.variant.manager.operations;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.Query;
@@ -30,6 +31,7 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -48,6 +50,7 @@ import static org.junit.Assert.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(MediumTests.class)
 public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
 
     @Override

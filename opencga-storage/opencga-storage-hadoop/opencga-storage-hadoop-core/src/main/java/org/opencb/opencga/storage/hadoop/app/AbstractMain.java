@@ -89,10 +89,32 @@ public abstract class AbstractMain {
         }
     }
 
+    protected static String requireArgument(String key, ObjectMap args) {
+        String value = args.getString(key);
+        return requireArgument("--" + key, value);
+    }
+
+    protected static String requireArgument(String key, String value) {
+        if (StringUtils.isEmpty(value)) {
+            throw missingArgument(key);
+        }
+        return value;
+    }
+
+    protected static IllegalArgumentException missingArgument(String key) {
+        String msg = "Missing argument '" + key + "'";
+        printError(msg);
+        return new IllegalArgumentException(msg);
+    }
+
     protected static <T extends ToolParams> T getArgsMap(String[] args, int firstIdx, T params) {
         ObjectMap argsMap = getArgsMap(args, firstIdx, params.fields().keySet().toArray(new String[]{}));
         params.updateParams(argsMap);
         return params;
+    }
+
+    protected static ObjectMap getArgsMap(String[] args, String... keys) {
+        return getArgsMap(args, 0, keys);
     }
 
     protected static ObjectMap getArgsMap(String[] args, int firstIdx, String... keys) {

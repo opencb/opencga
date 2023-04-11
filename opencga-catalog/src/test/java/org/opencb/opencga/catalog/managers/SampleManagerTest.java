@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.bson.Document;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
@@ -64,6 +65,7 @@ import org.opencb.opencga.core.models.summaries.FeatureCount;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -77,6 +79,7 @@ import static org.opencb.opencga.catalog.utils.ParamUtils.AclAction.ADD;
 import static org.opencb.opencga.catalog.utils.ParamUtils.AclAction.SET;
 import static org.opencb.opencga.core.api.ParamConstants.SAMPLE_INCLUDE_INDIVIDUAL_PARAM;
 
+@Category(MediumTests.class)
 public class SampleManagerTest extends AbstractManagerTest {
 
     @Test

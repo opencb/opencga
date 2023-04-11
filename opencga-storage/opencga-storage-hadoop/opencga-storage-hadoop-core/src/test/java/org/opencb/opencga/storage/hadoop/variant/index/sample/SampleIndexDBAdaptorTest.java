@@ -4,7 +4,9 @@ import org.apache.hadoop.conf.Configuration;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -19,6 +21,7 @@ import java.util.List;
 /**
  * Created by jacobo on 21/03/19.
  */
+@Category(ShortTests.class)
 public class SampleIndexDBAdaptorTest {
 
     private VariantStorageMetadataManager metadataManager;

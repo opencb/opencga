@@ -18,7 +18,9 @@ package org.opencb.opencga.storage.core.alignment.adaptors;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageOptions;
 import org.opencb.opencga.storage.core.alignment.local.LocalAlignmentStorageEngine;
@@ -39,6 +41,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by pfurio on 26/10/16.
  */
+@Category(ShortTests.class)
 public class DefaultAlignmentDBAdaptorTest {
 
     private static Path rootDir = null;

@@ -8,8 +8,10 @@ import org.apache.phoenix.coprocessor.generated.PTableProtos;
 import org.apache.phoenix.schema.*;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.sql.SQLException;
 import java.util.*;
@@ -22,6 +24,7 @@ import static org.junit.Assert.assertEquals;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(ShortTests.class)
 public class VariantPhoenixKeyFactoryTest {
 
     @Rule

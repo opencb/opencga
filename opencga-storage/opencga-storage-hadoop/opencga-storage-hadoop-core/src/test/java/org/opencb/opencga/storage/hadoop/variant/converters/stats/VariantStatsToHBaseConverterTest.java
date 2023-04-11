@@ -23,8 +23,10 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -44,6 +46,7 @@ import static org.junit.Assert.assertNotNull;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(ShortTests.class)
 public class VariantStatsToHBaseConverterTest {
 
     private VariantStatsToHBaseConverter toHbase;

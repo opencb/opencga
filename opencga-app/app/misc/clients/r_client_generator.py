@@ -26,6 +26,7 @@ class RClientGenerator(RestClientGenerator):
             'Analysis - Clinical': 'Clinical',
             'Operations - Variant Storage': 'Operation',
             'Meta': 'Meta',
+            'Cva': 'Cva',
             'GA4GH': 'GA4GH',
             'Admin': 'Admin'
         }
