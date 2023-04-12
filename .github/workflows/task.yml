@@ -20,36 +20,10 @@ jobs:
       test_profile: runShortTests
       report_context: development
 
-  deploy-maven:
-    name: Deploy in maven only for renamed versions
-    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
-    needs: [ build, test ]
-    if: contains( needs.build.outputs.version ,'TASK')
-    secrets: inherit
-
   deploy-docker:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
     needs: test
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag ${{ github.ref_name }}
     secrets: inherit
-
-  # The following jobs are to see that the previous 'if' doesn't fail and that the maven deploy is executed because it is true
-  snapshot-version:
-    name: Check SNAPSHOT version
-    needs: [ build, test ]
-    if: contains(needs.build.outputs.version ,'SNAPSHOT')
-    runs-on: ubuntu-22.04
-    steps:
-      - name: test-version-from-check
-        run: echo "Project version is " ${{ needs.build.outputs.version }}
-
-  task-version:
-    name: Check TASK version
-    needs: [ build, test ]
-    if: contains(needs.build.outputs.version ,'TASK')
-    runs-on: ubuntu-22.04
-    steps:
-      - name: test-version-from-check
-        run: echo "Project version is " ${{ needs.build.outputs.version }}
 
