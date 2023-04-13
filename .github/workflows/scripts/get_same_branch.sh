@@ -15,7 +15,7 @@ fi
 function install(){
   local REPO=$1
   cd /home/runner/work/ || exit 2
-  git clone https://github.com/opencb/"$REPO".git -d "$BRANCH_NAME"
+  git clone https://github.com/opencb/"$REPO".git -b "$BRANCH_NAME"
   if [ -d "./$REPO" ]; then
     cd "$REPO" || exit 2
     echo "Branch name $BRANCH_NAME already exists."
