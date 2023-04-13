@@ -29,7 +29,7 @@
 #' | acl | /{apiVersion}/families/{families}/acl | families[*], study, member, silent |
 #' | delete | /{apiVersion}/families/{families}/delete | study, families[*] |
 #' | info | /{apiVersion}/families/{families}/info | include, exclude, flattenAnnotations, families[*], study, version, deleted |
-#' | update | /{apiVersion}/families/{families}/update | include, exclude, families[*], study, updateRoles, annotationSetsAction, includeResult, body |
+#' | update | /{apiVersion}/families/{families}/update | include, exclude, families[*], study, updateRoles, updatePedigreeGraph, annotationSetsAction, includeResult, body |
 #' | updateAnnotationSetsAnnotations | /{apiVersion}/families/{family}/annotationSets/{annotationSet}/annotations/update | family[*], study, annotationSet[*], action, body |
 #'
 #' @md
@@ -38,7 +38,7 @@
 #' [*]: Required parameter
 #' @export
 
-setMethod("familyClient", "OpencgaR", function(OpencgaR, annotationSet, members, family, families, endpointName, params=NULL, ...) {
+setMethod("familyClient", "OpencgaR", function(OpencgaR, annotationSet, families, family, members, endpointName, params=NULL, ...) {
     switch(endpointName,
 
         #' @section Endpoint /{apiVersion}/families/acl/{members}/update:
@@ -183,6 +183,7 @@ setMethod("familyClient", "OpencgaR", function(OpencgaR, annotationSet, members,
         #' @param families Comma separated list of family ids.
         #' @param study Study [[user@]project:]study where study and project can be either the ID or UUID.
         #' @param updateRoles Update the member roles within the family.
+        #' @param updatePedigreeGraph Update the family pedigree graph.
         #' @param annotationSetsAction Action to be performed if the array of annotationSets is being updated. Allowed values: ['ADD SET REMOVE']
         #' @param includeResult Flag indicating to include the created or updated document result in the response.
         #' @param data body.

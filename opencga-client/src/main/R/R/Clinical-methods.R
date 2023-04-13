@@ -58,7 +58,7 @@
 #' [*]: Required parameter
 #' @export
 
-setMethod("clinicalClient", "OpencgaR", function(OpencgaR, members, clinicalAnalyses, interpretations, clinicalAnalysis, interpretation, endpointName, params=NULL, ...) {
+setMethod("clinicalClient", "OpencgaR", function(OpencgaR, interpretations, clinicalAnalysis, members, clinicalAnalyses, interpretation, endpointName, params=NULL, ...) {
     switch(endpointName,
 
         #' @section Endpoint /{apiVersion}/analysis/clinical/acl/{members}/update:

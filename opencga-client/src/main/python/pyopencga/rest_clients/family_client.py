@@ -271,6 +271,7 @@ class Family(_ParentRestClient):
         :param str study: Study [[user@]project:]study where study and project
             can be either the ID or UUID.
         :param bool update_roles: Update the member roles within the family.
+        :param bool update_pedigree_graph: Update the family pedigree graph.
         :param str annotation_sets_action: Action to be performed if the array
             of annotationSets is being updated. Allowed values: ['ADD SET
             REMOVE']

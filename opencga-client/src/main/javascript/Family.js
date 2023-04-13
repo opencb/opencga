@@ -213,6 +213,7 @@ export default class Family extends OpenCGAParentClass {
     * @param {String} [params.exclude] - Fields excluded in the response, whole JSON path must be provided.
     * @param {String} [params.study] - Study [[user@]project:]study where study and project can be either the ID or UUID.
     * @param {Boolean} [params.updateRoles = "false"] - Update the member roles within the family. The default value is false.
+    * @param {Boolean} [params.updatePedigreeGraph = "false"] - Update the family pedigree graph. The default value is false.
     * @param {"ADD SET REMOVE"} [params.annotationSetsAction = "ADD"] - Action to be performed if the array of annotationSets is being
     *     updated. The default value is ADD.
     * @param {Boolean} [params.includeResult = "false"] - Flag indicating to include the created or updated document result in the response.

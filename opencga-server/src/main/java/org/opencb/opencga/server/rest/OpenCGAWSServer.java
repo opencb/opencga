@@ -584,6 +584,9 @@ public class OpenCGAWSServer {
                 case ParamConstants.FAMILY_UPDATE_ROLES_PARAM:
                     queryOptions.put(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, Boolean.parseBoolean(value));
                     break;
+                case ParamConstants.FAMILY_UPDATE_PEDIGREEE_GRAPH_PARAM:
+                    queryOptions.put(ParamConstants.FAMILY_UPDATE_PEDIGREEE_GRAPH_PARAM, Boolean.parseBoolean(value));
+                    break;
                 case ParamConstants.OTHER_STUDIES_FLAG:
                     queryOptions.put(ParamConstants.OTHER_STUDIES_FLAG, Boolean.parseBoolean(value));
                     break;
