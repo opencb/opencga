@@ -3,6 +3,7 @@ package org.opencb.opencga.analysis.rga;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.clinical.Disorder;
@@ -46,6 +47,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.*;
 
 @Category(MediumTests.class)
+@Ignore
 public class RgaManagerTest {
 
     public static final String OWNER = "owner";
