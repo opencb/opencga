@@ -93,7 +93,7 @@ public class RgaManagerTest {
             setUpCatalogManager();
 
             file = opencga.createFile(STUDY, "variant-test-file.vcf.gz", ownerToken);
-            variantStorageManager.setCellbaseConfiguration(PROJECT, new CellBaseConfiguration("https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "1"), false, null, ownerToken);
+            variantStorageManager.setCellbaseConfiguration(PROJECT, new CellBaseConfiguration("https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "1", ""), false, null, ownerToken);
             variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), ownerToken);
 
             for (int i = 0; i < file.getSampleIds().size(); i++) {
