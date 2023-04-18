@@ -6,9 +6,11 @@ import org.apache.log4j.Logger;
 
 import java.io.File;
 
+@Deprecated
 public class ConfigurationManager {
     private static final Logger LOG = Logger.getLogger(ConfigurationManager.class);
 
+    @Deprecated
     public static CommandLineConfiguration setUp() throws Exception {
         // Loading the YAML file from the /resources folder
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();

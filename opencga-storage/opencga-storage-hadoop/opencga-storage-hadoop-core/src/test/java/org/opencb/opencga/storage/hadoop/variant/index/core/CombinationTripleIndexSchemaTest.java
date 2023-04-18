@@ -3,7 +3,9 @@ package org.opencb.opencga.storage.hadoop.variant.index.core;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.tuple.Triple;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.io.bit.BitInputStream;
 
@@ -11,6 +13,7 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
+@Category(ShortTests.class)
 public class CombinationTripleIndexSchemaTest {
 
     @Test

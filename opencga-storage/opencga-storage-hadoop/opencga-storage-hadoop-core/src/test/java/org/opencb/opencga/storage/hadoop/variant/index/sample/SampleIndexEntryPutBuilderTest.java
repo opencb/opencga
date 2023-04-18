@@ -3,7 +3,9 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 
 import java.util.Collections;
@@ -13,6 +15,7 @@ import static org.junit.Assert.assertTrue;
 import static org.opencb.biodata.models.variant.avro.VariantType.INDEL;
 import static org.opencb.biodata.models.variant.avro.VariantType.SNV;
 
+@Category(ShortTests.class)
 public class SampleIndexEntryPutBuilderTest {
 
     @Test

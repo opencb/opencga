@@ -1,5 +1,6 @@
 package org.opencb.opencga.analysis.rga;
 
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
@@ -9,11 +10,13 @@ import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutTranscript;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+@Category(ShortTests.class)
 public class RgaUtilsTest {
 
     public static KnockoutByIndividual createKnockoutByIndividual(int count) {

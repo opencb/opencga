@@ -2,11 +2,14 @@ package org.opencb.opencga.app.migrations.v2_2_0.storage;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 
 import static org.junit.Assert.*;
 
+@Category(ShortTests.class)
 public class UpdateSampleIndexStatusTest {
 
     private UpdateSampleIndexStatus migrationTool;

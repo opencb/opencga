@@ -20,9 +20,11 @@ import com.google.common.collect.Lists;
 import org.bson.Document;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -37,6 +39,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
+@Category(ShortTests.class)
 public class DocumentToStudyVariantEntryConverterTest {
 
     private final Variant variant = new Variant();

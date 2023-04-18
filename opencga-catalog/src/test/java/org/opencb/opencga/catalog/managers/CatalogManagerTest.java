@@ -21,6 +21,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.*;
@@ -50,6 +51,7 @@ import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import javax.naming.NamingException;
 import java.io.IOException;
@@ -60,6 +62,7 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
 
+@Category(MediumTests.class)
 public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test

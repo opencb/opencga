@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
@@ -33,6 +34,7 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,6 +45,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+@Category(MediumTests.class)
 public class AbstractClinicalManagerTest extends GenericTest {
 
     public final static String PASSWORD = "Password1234;";
@@ -145,8 +148,15 @@ public class AbstractClinicalManagerTest extends GenericTest {
                 .setSex(SexOntologyTermAnnotation.initMale())
                 .setSamples(Collections.singletonList(new Sample().setId("HG005")));
 
+        Individual hg004Individual =  new Individual().setId("HG004_individual")
+                .setFather(hg006Individual)
+                .setMother(hg007Individual)
+                .setSex(SexOntologyTermAnnotation.initFemale())
+                .setSamples(Collections.singletonList(new Sample().setId("HG004")));
+
         Family chineseFamily = new Family("chinese_family", "chinese_family", null, null,
-                Arrays.asList(hg005Individual, hg006Individual, hg007Individual), "", 3, Collections.emptyList(), Collections.emptyMap());
+                Arrays.asList(hg005Individual, hg006Individual, hg007Individual, hg004Individual), "", 4, Collections.emptyList(),
+                Collections.emptyMap());
         catalogManager.getFamilyManager().create(studyFqn, chineseFamily, QueryOptions.empty(), token).first();
 
         auxClinicalAnalysis = new ClinicalAnalysis()
@@ -161,7 +171,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
         catalogManager.getClinicalAnalysisManager().create(studyFqn, auxClinicalAnalysis, QueryOptions.empty(), token)
                 .first();
 
-
+        catalogUploadFile("/biofiles/HG004.1k.vcf.gz");
         catalogUploadFile("/biofiles/HG005.1k.vcf.gz");
         catalogUploadFile("/biofiles/HG006.1k.vcf.gz");
         catalogUploadFile("/biofiles/HG007.1k.vcf.gz");

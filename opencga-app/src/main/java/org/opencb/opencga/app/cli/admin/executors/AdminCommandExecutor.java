@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.app.cli.admin.executors;
 
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.internal.Console;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
@@ -40,6 +42,16 @@ public abstract class AdminCommandExecutor extends CommandExecutor {
     }
 
     public String getAdminPassword() {
+        return adminPassword;
+    }
+
+    public String getAdminPassword(boolean readFromStdinIfMissing) {
+        if (StringUtils.isEmpty(adminPassword) && readFromStdinIfMissing) {
+            // Ensure this message is not shown through STDOUT. It might break pipes
+            System.err.println("Administrator password: ");
+            Console console = JCommander.getConsole();
+            adminPassword = String.valueOf(console.readPassword(false));
+        }
         return adminPassword;
     }
 

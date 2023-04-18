@@ -19,9 +19,12 @@ package org.opencb.opencga.analysis.variant.samples;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import static org.junit.Assert.assertEquals;
 
+@Category(ShortTests.class)
 public class TreeQueryTest {
 
     @Test(expected = IllegalArgumentException.class)

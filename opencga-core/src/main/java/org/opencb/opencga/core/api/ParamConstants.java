@@ -328,7 +328,9 @@ public class ParamConstants {
     public static final String INDIVIDUAL_RELEASE_DESCRIPTION = RELEASE_DESCRIPTION;
     public static final String INDIVIDUAL_SNAPSHOT_DESCRIPTION = SNAPSHOT_DESCRIPTION;
     public static final String FAMILY_UPDATE_ROLES_PARAM = "updateRoles";
+    public static final String FAMILY_UPDATE_PEDIGREEE_GRAPH_PARAM = "updatePedigreeGraph";
     public static final String FAMILY_UPDATE_ROLES_DESCRIPTION = "Update the member roles within the family";
+    public static final String FAMILY_UPDATE_PEDIGREE_GRAPH_DESCRIPTION = "Update the family pedigree graph";
     public static final String FAMILY_VERSION_PARAM = "version";
     public static final String FAMILY_VERSION_DESCRIPTION = "Comma separated list of family versions. 'all' to get all the "
             + "family versions. Not supported if multiple family ids are provided";

@@ -23,22 +23,26 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
 import java.util.Map;
+import java.util.regex.Pattern;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created on 19/07/16
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(LongTests.class)
 public class VariantHadoopNamespaceTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     @Rule
@@ -63,28 +67,45 @@ public class VariantHadoopNamespaceTest extends VariantStorageBaseTest implement
         assertEquals("opencga:opencga_variants_test_variants", variantStorageManager.getVariantTableName());
 
         VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor();
-        Admin admin = dbAdaptor.getConnection().getAdmin();
-        admin.createNamespace(NamespaceDescriptor.create("opencga").build());
+
+        try (Admin admin = dbAdaptor.getHBaseManager().getConnection().getAdmin()) {
+            admin.createNamespace(NamespaceDescriptor.create("opencga").build());
 
 
-        runDefaultETL(getResourceUri("s1.genome.vcf"), variantStorageManager, newStudyMetadata(),
-                new ObjectMap().append(VariantStorageOptions.ANNOTATE.key(), true)
-                        .append(VariantStorageOptions.STATS_CALCULATE.key(), true));
+            runDefaultETL(getResourceUri("s1.genome.vcf"), variantStorageManager, newStudyMetadata(),
+                    new ObjectMap().append(VariantStorageOptions.ANNOTATE.key(), true)
+                            .append(VariantStorageOptions.STATS_CALCULATE.key(), true));
 
-        NamespaceDescriptor[] namespaceDescriptors = admin.listNamespaceDescriptors();
-        for (NamespaceDescriptor namespaceDescriptor : namespaceDescriptors) {
-            System.out.println("namespaceDescriptor = " + namespaceDescriptor);
-            for (TableName tableName : admin.listTableNamesByNamespace(namespaceDescriptor.getName())) {
-                System.out.println("\ttableName = " + tableName);
+            NamespaceDescriptor[] namespaceDescriptors = admin.listNamespaceDescriptors();
+            int expectedNumTables = 5;
+            for (NamespaceDescriptor namespaceDescriptor : namespaceDescriptors) {
+//                System.out.println("namespaceDescriptor = " + namespaceDescriptor);
+//                for (TableName tableName : admin.listTableNamesByNamespace(namespaceDescriptor.getName())) {
+//                    System.out.println("\ttableName = " + tableName);
+//                }
+                if (namespaceDescriptor.getName().equals("opencga")) {
+                    Assert.assertEquals(expectedNumTables, admin.listTableNamesByNamespace(namespaceDescriptor.getName()).length);
+                }
+                if (namespaceDescriptor.getName().equals("default")) {
+                    Assert.assertEquals(0, admin.listTableNamesByNamespace(namespaceDescriptor.getName()).length);
+                }
             }
-            if (namespaceDescriptor.getName().equals("opencga")) {
-                Assert.assertEquals(5, admin.listTableNamesByNamespace(namespaceDescriptor.getName()).length);
+
+            int numTables = 0;
+            for (TableName tableName : admin.listTableNames(Pattern.compile("opencga:opencga.*"))) {
+                numTables++;
+                String tableWithNS = tableName.getNameWithNamespaceInclAsString();
+                String tableNoNs = tableName.getNameAsString().split(":")[1];
+
+                assertTrue(tableWithNS, HBaseVariantTableNameGenerator.isValidTable("opencga", DB_NAME, tableWithNS));
+                assertTrue(tableNoNs, HBaseVariantTableNameGenerator.isValidTable("", DB_NAME, tableNoNs));
+
+                assertFalse(tableWithNS, HBaseVariantTableNameGenerator.isValidTable("", DB_NAME, tableWithNS));
+                assertFalse(tableWithNS, HBaseVariantTableNameGenerator.isValidTable("default", DB_NAME, tableWithNS));
+                assertFalse(tableNoNs, HBaseVariantTableNameGenerator.isValidTable("opencga", DB_NAME, tableNoNs));
             }
-            if (namespaceDescriptor.getName().equals("default")) {
-                Assert.assertEquals(0, admin.listTableNamesByNamespace(namespaceDescriptor.getName()).length);
-            }
+            assertEquals(expectedNumTables, numTables);
         }
-
         assertTrue(variantStorageManager.getDBAdaptor().count().first() > 0);
     }
 

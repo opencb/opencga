@@ -76,7 +76,7 @@ import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
  */
 public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
-    private AnalysisVariantCommandOptions analysisVariantCommandOptions;
+    public AnalysisVariantCommandOptions analysisVariantCommandOptions;
 
     public AnalysisVariantCommandExecutor(AnalysisVariantCommandOptions analysisVariantCommandOptions) throws CatalogAuthenticationException {
         super(analysisVariantCommandOptions.commonCommandOptions);
@@ -220,7 +220,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<QueryResponse> aggregationStats() throws Exception {
-
         logger.debug("Executing aggregationStats in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.AggregationStatsCommandOptions commandOptions = analysisVariantCommandOptions.aggregationStatsCommandOptions;
@@ -271,7 +270,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<ObjectMap> metadataAnnotation() throws Exception {
-
         logger.debug("Executing metadataAnnotation in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.MetadataAnnotationCommandOptions commandOptions = analysisVariantCommandOptions.metadataAnnotationCommandOptions;
@@ -284,7 +282,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<VariantAnnotation> queryAnnotation() throws Exception {
-
         logger.debug("Executing queryAnnotation in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.QueryAnnotationCommandOptions commandOptions = analysisVariantCommandOptions.queryAnnotationCommandOptions;
@@ -302,7 +299,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<String> runCircos() throws Exception {
-
         logger.debug("Executing runCircos in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunCircosCommandOptions commandOptions = analysisVariantCommandOptions.runCircosCommandOptions;
@@ -314,7 +310,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        CircosAnalysisParams circosAnalysisParams= null;
+        CircosAnalysisParams circosAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
             circosAnalysisParams = new CircosAnalysisParams();
             RestResponse<String> res = new RestResponse<>();
@@ -327,10 +323,10 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "title",commandOptions.title, true);
-             putNestedIfNotEmpty(beanParams, "density",commandOptions.density, true);
-             putNestedIfNotNull(beanParams, "query",commandOptions.query, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
- 
+            putNestedIfNotEmpty(beanParams, "density",commandOptions.density, true);
+            putNestedIfNotNull(beanParams, "query",commandOptions.query, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+
             circosAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CircosAnalysisParams.class);
@@ -339,7 +335,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<SampleVariantStats> deleteCohortStats() throws Exception {
-
         logger.debug("Executing deleteCohortStats in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.DeleteCohortStatsCommandOptions commandOptions = analysisVariantCommandOptions.deleteCohortStatsCommandOptions;
@@ -355,7 +350,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<VariantSetStats> infoCohortStats() throws Exception {
-
         logger.debug("Executing infoCohortStats in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.InfoCohortStatsCommandOptions commandOptions = analysisVariantCommandOptions.infoCohortStatsCommandOptions;
@@ -370,7 +364,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runCohortStats() throws Exception {
-
         logger.debug("Executing runCohortStats in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunCohortStatsCommandOptions commandOptions = analysisVariantCommandOptions.runCohortStatsCommandOptions;
@@ -386,7 +379,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        CohortVariantStatsAnalysisParams cohortVariantStatsAnalysisParams= null;
+        CohortVariantStatsAnalysisParams cohortVariantStatsAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
             cohortVariantStatsAnalysisParams = new CohortVariantStatsAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -399,11 +392,11 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "cohort",commandOptions.cohort, true);
-             putNestedIfNotNull(beanParams, "samples",commandOptions.samples, true);
-             putNestedIfNotNull(beanParams, "index",commandOptions.index, true);
-             putNestedIfNotEmpty(beanParams, "sampleAnnotation",commandOptions.sampleAnnotation, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
- 
+            putNestedIfNotNull(beanParams, "samples",commandOptions.samples, true);
+            putNestedIfNotNull(beanParams, "index",commandOptions.index, true);
+            putNestedIfNotEmpty(beanParams, "sampleAnnotation",commandOptions.sampleAnnotation, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+
             cohortVariantStatsAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CohortVariantStatsAnalysisParams.class);
@@ -412,7 +405,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runExomiser() throws Exception {
-
         logger.debug("Executing runExomiser in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunExomiserCommandOptions commandOptions = analysisVariantCommandOptions.runExomiserCommandOptions;
@@ -428,7 +420,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        ExomiserWrapperParams exomiserWrapperParams= null;
+        ExomiserWrapperParams exomiserWrapperParams = null;
         if (commandOptions.jsonDataModel) {
             exomiserWrapperParams = new ExomiserWrapperParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -441,8 +433,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
- 
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+
             exomiserWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ExomiserWrapperParams.class);
@@ -451,7 +443,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runExport() throws Exception {
-
         logger.debug("Executing runExport in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunExportCommandOptions commandOptions = analysisVariantCommandOptions.runExportCommandOptions;
@@ -470,7 +461,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        VariantExportParams variantExportParams= null;
+        VariantExportParams variantExportParams = null;
         if (commandOptions.jsonDataModel) {
             variantExportParams = new VariantExportParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -483,6 +474,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+<<<<<<< HEAD
              putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
              putNestedIfNotEmpty(beanParams, "gene",commandOptions.gene, true);
              putNestedIfNotEmpty(beanParams, "type",commandOptions.type, true);
@@ -570,6 +562,95 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotNull(beanParams, "skip",commandOptions.skip, true);
              putNestedIfNotNull(beanParams, "summary",commandOptions.summary, true);
  
+=======
+            putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
+            putNestedIfNotEmpty(beanParams, "gene",commandOptions.gene, true);
+            putNestedIfNotEmpty(beanParams, "type",commandOptions.type, true);
+            putNestedIfNotEmpty(beanParams, "panel",commandOptions.panel, true);
+            putNestedIfNotEmpty(beanParams, "panelModeOfInheritance",commandOptions.panelModeOfInheritance, true);
+            putNestedIfNotEmpty(beanParams, "panelConfidence",commandOptions.panelConfidence, true);
+            putNestedIfNotEmpty(beanParams, "panelRoleInCancer",commandOptions.panelRoleInCancer, true);
+            putNestedIfNotNull(beanParams, "panelIntersection",commandOptions.panelIntersection, true);
+            putNestedIfNotEmpty(beanParams, "panelFeatureType",commandOptions.panelFeatureType, true);
+            putNestedIfNotEmpty(beanParams, "cohortStatsRef",commandOptions.cohortStatsRef, true);
+            putNestedIfNotEmpty(beanParams, "cohortStatsAlt",commandOptions.cohortStatsAlt, true);
+            putNestedIfNotEmpty(beanParams, "cohortStatsMaf",commandOptions.cohortStatsMaf, true);
+            putNestedIfNotEmpty(beanParams, "ct",commandOptions.ct, true);
+            putNestedIfNotEmpty(beanParams, "xref",commandOptions.xref, true);
+            putNestedIfNotEmpty(beanParams, "biotype",commandOptions.biotype, true);
+            putNestedIfNotEmpty(beanParams, "proteinSubstitution",commandOptions.proteinSubstitution, true);
+            putNestedIfNotEmpty(beanParams, "conservation",commandOptions.conservation, true);
+            putNestedIfNotEmpty(beanParams, "populationFrequencyMaf",commandOptions.populationFrequencyMaf, true);
+            putNestedIfNotEmpty(beanParams, "populationFrequencyAlt",commandOptions.populationFrequencyAlt, true);
+            putNestedIfNotEmpty(beanParams, "populationFrequencyRef",commandOptions.populationFrequencyRef, true);
+            putNestedIfNotEmpty(beanParams, "transcriptFlag",commandOptions.transcriptFlag, true);
+            putNestedIfNotEmpty(beanParams, "functionalScore",commandOptions.functionalScore, true);
+            putNestedIfNotEmpty(beanParams, "clinical",commandOptions.clinical, true);
+            putNestedIfNotEmpty(beanParams, "clinicalSignificance",commandOptions.clinicalSignificance, true);
+            putNestedIfNotNull(beanParams, "clinicalConfirmedStatus",commandOptions.clinicalConfirmedStatus, true);
+            putNestedIfNotEmpty(beanParams, "project",commandOptions.bodyProject, true);
+            putNestedIfNotEmpty(beanParams, "study",commandOptions.bodyStudy, true);
+            putNestedIfNotEmpty(beanParams, "savedFilter",commandOptions.savedFilter, true);
+            putNestedIfNotEmpty(beanParams, "chromosome",commandOptions.chromosome, true);
+            putNestedIfNotEmpty(beanParams, "reference",commandOptions.reference, true);
+            putNestedIfNotEmpty(beanParams, "alternate",commandOptions.alternate, true);
+            putNestedIfNotEmpty(beanParams, "release",commandOptions.release, true);
+            putNestedIfNotEmpty(beanParams, "includeStudy",commandOptions.includeStudy, true);
+            putNestedIfNotEmpty(beanParams, "includeSample",commandOptions.includeSample, true);
+            putNestedIfNotEmpty(beanParams, "includeFile",commandOptions.includeFile, true);
+            putNestedIfNotEmpty(beanParams, "includeSampleData",commandOptions.includeSampleData, true);
+            putNestedIfNotNull(beanParams, "includeSampleId",commandOptions.includeSampleId, true);
+            putNestedIfNotNull(beanParams, "includeGenotype",commandOptions.includeGenotype, true);
+            putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
+            putNestedIfNotEmpty(beanParams, "qual",commandOptions.qual, true);
+            putNestedIfNotEmpty(beanParams, "filter",commandOptions.filter, true);
+            putNestedIfNotEmpty(beanParams, "fileData",commandOptions.fileData, true);
+            putNestedIfNotEmpty(beanParams, "genotype",commandOptions.genotype, true);
+            putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
+            putNestedIfNotNull(beanParams, "sampleLimit",commandOptions.sampleLimit, true);
+            putNestedIfNotNull(beanParams, "sampleSkip",commandOptions.sampleSkip, true);
+            putNestedIfNotEmpty(beanParams, "sampleData",commandOptions.sampleData, true);
+            putNestedIfNotEmpty(beanParams, "sampleAnnotation",commandOptions.sampleAnnotation, true);
+            putNestedIfNotEmpty(beanParams, "family",commandOptions.family, true);
+            putNestedIfNotEmpty(beanParams, "familyMembers",commandOptions.familyMembers, true);
+            putNestedIfNotEmpty(beanParams, "familyDisorder",commandOptions.familyDisorder, true);
+            putNestedIfNotEmpty(beanParams, "familyProband",commandOptions.familyProband, true);
+            putNestedIfNotEmpty(beanParams, "familySegregation",commandOptions.familySegregation, true);
+            putNestedIfNotEmpty(beanParams, "cohort",commandOptions.cohort, true);
+            putNestedIfNotEmpty(beanParams, "cohortStatsPass",commandOptions.cohortStatsPass, true);
+            putNestedIfNotEmpty(beanParams, "cohortStatsMgf",commandOptions.cohortStatsMgf, true);
+            putNestedIfNotEmpty(beanParams, "missingAlleles",commandOptions.missingAlleles, true);
+            putNestedIfNotEmpty(beanParams, "missingGenotypes",commandOptions.missingGenotypes, true);
+            putNestedIfNotNull(beanParams, "annotationExists",commandOptions.annotationExists, true);
+            putNestedIfNotEmpty(beanParams, "score",commandOptions.score, true);
+            putNestedIfNotEmpty(beanParams, "polyphen",commandOptions.polyphen, true);
+            putNestedIfNotEmpty(beanParams, "sift",commandOptions.sift, true);
+            putNestedIfNotEmpty(beanParams, "geneRoleInCancer",commandOptions.geneRoleInCancer, true);
+            putNestedIfNotEmpty(beanParams, "geneTraitId",commandOptions.geneTraitId, true);
+            putNestedIfNotEmpty(beanParams, "geneTraitName",commandOptions.geneTraitName, true);
+            putNestedIfNotEmpty(beanParams, "trait",commandOptions.trait, true);
+            putNestedIfNotEmpty(beanParams, "cosmic",commandOptions.cosmic, true);
+            putNestedIfNotEmpty(beanParams, "clinvar",commandOptions.clinvar, true);
+            putNestedIfNotEmpty(beanParams, "hpo",commandOptions.hpo, true);
+            putNestedIfNotEmpty(beanParams, "go",commandOptions.go, true);
+            putNestedIfNotEmpty(beanParams, "expression",commandOptions.expression, true);
+            putNestedIfNotEmpty(beanParams, "proteinKeyword",commandOptions.proteinKeyword, true);
+            putNestedIfNotEmpty(beanParams, "drug",commandOptions.drug, true);
+            putNestedIfNotEmpty(beanParams, "customAnnotation",commandOptions.customAnnotation, true);
+            putNestedIfNotEmpty(beanParams, "unknownGenotype",commandOptions.unknownGenotype, true);
+            putNestedIfNotNull(beanParams, "sampleMetadata",commandOptions.sampleMetadata, true);
+            putNestedIfNotNull(beanParams, "sort",commandOptions.sort, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+            putNestedIfNotEmpty(beanParams, "outputFileName",commandOptions.outputFileName, true);
+            putNestedIfNotEmpty(beanParams, "outputFileFormat",commandOptions.outputFileFormat, true);
+            putNestedIfNotEmpty(beanParams, "variantsFile",commandOptions.variantsFile, true);
+            putNestedIfNotEmpty(beanParams, "include",commandOptions.bodyInclude, true);
+            putNestedIfNotEmpty(beanParams, "exclude",commandOptions.bodyExclude, true);
+            putNestedIfNotNull(beanParams, "limit",commandOptions.limit, true);
+            putNestedIfNotNull(beanParams, "skip",commandOptions.skip, true);
+            putNestedIfNotNull(beanParams, "summary",commandOptions.summary, true);
+
+>>>>>>> develop
             variantExportParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantExportParams.class);
@@ -578,7 +659,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<ObjectMap> genotypesFamily() throws Exception {
-
         logger.debug("Executing genotypesFamily in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.GenotypesFamilyCommandOptions commandOptions = analysisVariantCommandOptions.genotypesFamilyCommandOptions;
@@ -597,7 +677,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runFamilyQc() throws Exception {
-
         logger.debug("Executing runFamilyQc in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunFamilyQcCommandOptions commandOptions = analysisVariantCommandOptions.runFamilyQcCommandOptions;
@@ -613,7 +692,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        FamilyQcAnalysisParams familyQcAnalysisParams= null;
+        FamilyQcAnalysisParams familyQcAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
             familyQcAnalysisParams = new FamilyQcAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -626,10 +705,10 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "family",commandOptions.family, true);
-             putNestedIfNotEmpty(beanParams, "relatednessMethod",commandOptions.relatednessMethod, true);
-             putNestedIfNotEmpty(beanParams, "relatednessMaf",commandOptions.relatednessMaf, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
- 
+            putNestedIfNotEmpty(beanParams, "relatednessMethod",commandOptions.relatednessMethod, true);
+            putNestedIfNotEmpty(beanParams, "relatednessMaf",commandOptions.relatednessMaf, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+
             familyQcAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FamilyQcAnalysisParams.class);
@@ -638,7 +717,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> deleteFile() throws Exception {
-
         logger.debug("Executing deleteFile in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.DeleteFileCommandOptions commandOptions = analysisVariantCommandOptions.deleteFileCommandOptions;
@@ -659,7 +737,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runGatk() throws Exception {
-
         logger.debug("Executing runGatk in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunGatkCommandOptions commandOptions = analysisVariantCommandOptions.runGatkCommandOptions;
@@ -675,7 +752,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        GatkWrapperParams gatkWrapperParams= null;
+        GatkWrapperParams gatkWrapperParams = null;
         if (commandOptions.jsonDataModel) {
             gatkWrapperParams = new GatkWrapperParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -688,9 +765,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "command",commandOptions.command, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-             putNestedIfNotNull(beanParams, "gatkParams",commandOptions.gatkParams, true);
- 
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+            putNestedIfNotNull(beanParams, "gatkParams",commandOptions.gatkParams, true);
+
             gatkWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), GatkWrapperParams.class);
@@ -699,7 +776,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runGenomePlot() throws Exception {
-
         logger.debug("Executing runGenomePlot in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunGenomePlotCommandOptions commandOptions = analysisVariantCommandOptions.runGenomePlotCommandOptions;
@@ -715,7 +791,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        GenomePlotAnalysisParams genomePlotAnalysisParams= null;
+        GenomePlotAnalysisParams genomePlotAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
             genomePlotAnalysisParams = new GenomePlotAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -728,11 +804,11 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
-             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "configFile",commandOptions.configFile, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
- 
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "configFile",commandOptions.configFile, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+
             genomePlotAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), GenomePlotAnalysisParams.class);
@@ -741,7 +817,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runGwas() throws Exception {
-
         logger.debug("Executing runGwas in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunGwasCommandOptions commandOptions = analysisVariantCommandOptions.runGwasCommandOptions;
@@ -757,7 +832,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        GwasAnalysisParams gwasAnalysisParams= null;
+        GwasAnalysisParams gwasAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
             gwasAnalysisParams = new GwasAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -770,18 +845,18 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "phenotype",commandOptions.phenotype, true);
-             putNestedIfNotNull(beanParams, "index",commandOptions.index, true);
-             putNestedIfNotEmpty(beanParams, "indexScoreId",commandOptions.indexScoreId, true);
-             putNestedIfNotNull(beanParams, "method",commandOptions.method, true);
-             putNestedIfNotNull(beanParams, "fisherMode",commandOptions.fisherMode, true);
-             putNestedIfNotEmpty(beanParams, "caseCohort",commandOptions.caseCohort, true);
-             putNestedIfNotEmpty(beanParams, "caseCohortSamplesAnnotation",commandOptions.caseCohortSamplesAnnotation, true);
-             putNestedIfNotNull(beanParams, "caseCohortSamples",commandOptions.caseCohortSamples, true);
-             putNestedIfNotEmpty(beanParams, "controlCohort",commandOptions.controlCohort, true);
-             putNestedIfNotEmpty(beanParams, "controlCohortSamplesAnnotation",commandOptions.controlCohortSamplesAnnotation, true);
-             putNestedIfNotNull(beanParams, "controlCohortSamples",commandOptions.controlCohortSamples, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
- 
+            putNestedIfNotNull(beanParams, "index",commandOptions.index, true);
+            putNestedIfNotEmpty(beanParams, "indexScoreId",commandOptions.indexScoreId, true);
+            putNestedIfNotNull(beanParams, "method",commandOptions.method, true);
+            putNestedIfNotNull(beanParams, "fisherMode",commandOptions.fisherMode, true);
+            putNestedIfNotEmpty(beanParams, "caseCohort",commandOptions.caseCohort, true);
+            putNestedIfNotEmpty(beanParams, "caseCohortSamplesAnnotation",commandOptions.caseCohortSamplesAnnotation, true);
+            putNestedIfNotNull(beanParams, "caseCohortSamples",commandOptions.caseCohortSamples, true);
+            putNestedIfNotEmpty(beanParams, "controlCohort",commandOptions.controlCohort, true);
+            putNestedIfNotEmpty(beanParams, "controlCohortSamplesAnnotation",commandOptions.controlCohortSamplesAnnotation, true);
+            putNestedIfNotNull(beanParams, "controlCohortSamples",commandOptions.controlCohortSamples, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+
             gwasAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), GwasAnalysisParams.class);
@@ -790,7 +865,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runHrDetect() throws Exception {
-
         logger.debug("Executing runHrDetect in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunHrDetectCommandOptions commandOptions = analysisVariantCommandOptions.runHrDetectCommandOptions;
@@ -806,7 +880,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        HRDetectAnalysisParams hRDetectAnalysisParams= null;
+        HRDetectAnalysisParams hRDetectAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
             hRDetectAnalysisParams = new HRDetectAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -819,19 +893,19 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "sampleId",commandOptions.sampleId, true);
-             putNestedIfNotEmpty(beanParams, "snvFittingId",commandOptions.snvFittingId, true);
-             putNestedIfNotEmpty(beanParams, "svFittingId",commandOptions.svFittingId, true);
-             putNestedIfNotEmpty(beanParams, "cnvQuery",commandOptions.cnvQuery, true);
-             putNestedIfNotEmpty(beanParams, "indelQuery",commandOptions.indelQuery, true);
-             putNestedIfNotEmpty(beanParams, "snv3CustomName",commandOptions.snv3CustomName, true);
-             putNestedIfNotEmpty(beanParams, "snv8CustomName",commandOptions.snv8CustomName, true);
-             putNestedIfNotEmpty(beanParams, "sv3CustomName",commandOptions.sv3CustomName, true);
-             putNestedIfNotEmpty(beanParams, "sv8CustomName",commandOptions.sv8CustomName, true);
-             putNestedIfNotNull(beanParams, "bootstrap",commandOptions.bootstrap, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
- 
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "sampleId",commandOptions.sampleId, true);
+            putNestedIfNotEmpty(beanParams, "snvFittingId",commandOptions.snvFittingId, true);
+            putNestedIfNotEmpty(beanParams, "svFittingId",commandOptions.svFittingId, true);
+            putNestedIfNotEmpty(beanParams, "cnvQuery",commandOptions.cnvQuery, true);
+            putNestedIfNotEmpty(beanParams, "indelQuery",commandOptions.indelQuery, true);
+            putNestedIfNotEmpty(beanParams, "snv3CustomName",commandOptions.snv3CustomName, true);
+            putNestedIfNotEmpty(beanParams, "snv8CustomName",commandOptions.snv8CustomName, true);
+            putNestedIfNotEmpty(beanParams, "sv3CustomName",commandOptions.sv3CustomName, true);
+            putNestedIfNotEmpty(beanParams, "sv8CustomName",commandOptions.sv8CustomName, true);
+            putNestedIfNotNull(beanParams, "bootstrap",commandOptions.bootstrap, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+
             hRDetectAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), HRDetectAnalysisParams.class);
@@ -840,7 +914,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runIndex() throws Exception {
-
         logger.debug("Executing runIndex in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunIndexCommandOptions commandOptions = analysisVariantCommandOptions.runIndexCommandOptions;
@@ -856,7 +929,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        VariantIndexParams variantIndexParams= null;
+        VariantIndexParams variantIndexParams = null;
         if (commandOptions.jsonDataModel) {
             variantIndexParams = new VariantIndexParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -869,35 +942,35 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
-             putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-             putNestedIfNotNull(beanParams, "transform",commandOptions.transform, true);
-             putNestedIfNotNull(beanParams, "gvcf",commandOptions.gvcf, true);
-             putNestedIfNotNull(beanParams, "normalizationSkip",commandOptions.normalizationSkip, true);
-             putNestedIfNotEmpty(beanParams, "referenceGenome",commandOptions.referenceGenome, true);
-             putNestedIfNotEmpty(beanParams, "failOnMalformedLines",commandOptions.failOnMalformedLines, true);
-             putNestedIfNotNull(beanParams, "family",commandOptions.family, true);
-             putNestedIfNotNull(beanParams, "somatic",commandOptions.somatic, true);
-             putNestedIfNotNull(beanParams, "load",commandOptions.load, true);
-             putNestedIfNotEmpty(beanParams, "loadSplitData",commandOptions.loadSplitData, true);
-             putNestedIfNotNull(beanParams, "loadMultiFileData",commandOptions.loadMultiFileData, true);
-             putNestedIfNotEmpty(beanParams, "loadSampleIndex",commandOptions.loadSampleIndex, true);
-             putNestedIfNotEmpty(beanParams, "loadArchive",commandOptions.loadArchive, true);
-             putNestedIfNotEmpty(beanParams, "loadHomRef",commandOptions.loadHomRef, true);
-             putNestedIfNotEmpty(beanParams, "postLoadCheck",commandOptions.postLoadCheck, true);
-             putNestedIfNotEmpty(beanParams, "includeGenotypes",commandOptions.includeGenotypes, true);
-             putNestedIfNotEmpty(beanParams, "includeSampleData",commandOptions.includeSampleData, true);
-             putNestedIfNotEmpty(beanParams, "merge",commandOptions.merge, true);
-             putNestedIfNotEmpty(beanParams, "deduplicationPolicy",commandOptions.deduplicationPolicy, true);
-             putNestedIfNotNull(beanParams, "calculateStats",commandOptions.calculateStats, true);
-             putNestedIfNotNull(beanParams, "aggregated",commandOptions.aggregated, true);
-             putNestedIfNotEmpty(beanParams, "aggregationMappingFile",commandOptions.aggregationMappingFile, true);
-             putNestedIfNotNull(beanParams, "annotate",commandOptions.annotate, true);
-             putNestedIfNotEmpty(beanParams, "annotator",commandOptions.annotator, true);
-             putNestedIfNotNull(beanParams, "overwriteAnnotations",commandOptions.overwriteAnnotations, true);
-             putNestedIfNotNull(beanParams, "indexSearch",commandOptions.indexSearch, true);
-             putNestedIfNotNull(beanParams, "skipIndexedFiles",commandOptions.skipIndexedFiles, true);
- 
+            putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+            putNestedIfNotNull(beanParams, "transform",commandOptions.transform, true);
+            putNestedIfNotNull(beanParams, "gvcf",commandOptions.gvcf, true);
+            putNestedIfNotNull(beanParams, "normalizationSkip",commandOptions.normalizationSkip, true);
+            putNestedIfNotEmpty(beanParams, "referenceGenome",commandOptions.referenceGenome, true);
+            putNestedIfNotEmpty(beanParams, "failOnMalformedLines",commandOptions.failOnMalformedLines, true);
+            putNestedIfNotNull(beanParams, "family",commandOptions.family, true);
+            putNestedIfNotNull(beanParams, "somatic",commandOptions.somatic, true);
+            putNestedIfNotNull(beanParams, "load",commandOptions.load, true);
+            putNestedIfNotEmpty(beanParams, "loadSplitData",commandOptions.loadSplitData, true);
+            putNestedIfNotNull(beanParams, "loadMultiFileData",commandOptions.loadMultiFileData, true);
+            putNestedIfNotEmpty(beanParams, "loadSampleIndex",commandOptions.loadSampleIndex, true);
+            putNestedIfNotEmpty(beanParams, "loadArchive",commandOptions.loadArchive, true);
+            putNestedIfNotEmpty(beanParams, "loadHomRef",commandOptions.loadHomRef, true);
+            putNestedIfNotEmpty(beanParams, "postLoadCheck",commandOptions.postLoadCheck, true);
+            putNestedIfNotEmpty(beanParams, "includeGenotypes",commandOptions.includeGenotypes, true);
+            putNestedIfNotEmpty(beanParams, "includeSampleData",commandOptions.includeSampleData, true);
+            putNestedIfNotEmpty(beanParams, "merge",commandOptions.merge, true);
+            putNestedIfNotEmpty(beanParams, "deduplicationPolicy",commandOptions.deduplicationPolicy, true);
+            putNestedIfNotNull(beanParams, "calculateStats",commandOptions.calculateStats, true);
+            putNestedIfNotNull(beanParams, "aggregated",commandOptions.aggregated, true);
+            putNestedIfNotEmpty(beanParams, "aggregationMappingFile",commandOptions.aggregationMappingFile, true);
+            putNestedIfNotNull(beanParams, "annotate",commandOptions.annotate, true);
+            putNestedIfNotEmpty(beanParams, "annotator",commandOptions.annotator, true);
+            putNestedIfNotNull(beanParams, "overwriteAnnotations",commandOptions.overwriteAnnotations, true);
+            putNestedIfNotNull(beanParams, "indexSearch",commandOptions.indexSearch, true);
+            putNestedIfNotNull(beanParams, "skipIndexedFiles",commandOptions.skipIndexedFiles, true);
+
             variantIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantIndexParams.class);
@@ -906,7 +979,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runIndividualQc() throws Exception {
-
         logger.debug("Executing runIndividualQc in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunIndividualQcCommandOptions commandOptions = analysisVariantCommandOptions.runIndividualQcCommandOptions;
@@ -922,7 +994,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        IndividualQcAnalysisParams individualQcAnalysisParams= null;
+        IndividualQcAnalysisParams individualQcAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
             individualQcAnalysisParams = new IndividualQcAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -935,10 +1007,10 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "individual",commandOptions.individual, true);
-             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
-             putNestedIfNotEmpty(beanParams, "inferredSexMethod",commandOptions.inferredSexMethod, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
- 
+            putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
+            putNestedIfNotEmpty(beanParams, "inferredSexMethod",commandOptions.inferredSexMethod, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+
             individualQcAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), IndividualQcAnalysisParams.class);
@@ -947,7 +1019,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runInferredSex() throws Exception {
-
         logger.debug("Executing runInferredSex in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunInferredSexCommandOptions commandOptions = analysisVariantCommandOptions.runInferredSexCommandOptions;
@@ -963,7 +1034,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        InferredSexAnalysisParams inferredSexAnalysisParams= null;
+        InferredSexAnalysisParams inferredSexAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
             inferredSexAnalysisParams = new InferredSexAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -976,9 +1047,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "individual",commandOptions.individual, true);
-             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
- 
+            putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+
             inferredSexAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), InferredSexAnalysisParams.class);
@@ -987,7 +1058,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<KnockoutByGene> queryKnockoutGene() throws Exception {
-
         logger.debug("Executing queryKnockoutGene in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.QueryKnockoutGeneCommandOptions commandOptions = analysisVariantCommandOptions.queryKnockoutGeneCommandOptions;
@@ -1005,7 +1075,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<KnockoutByIndividual> queryKnockoutIndividual() throws Exception {
-
         logger.debug("Executing queryKnockoutIndividual in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.QueryKnockoutIndividualCommandOptions commandOptions = analysisVariantCommandOptions.queryKnockoutIndividualCommandOptions;
@@ -1023,7 +1092,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runKnockout() throws Exception {
-
         logger.debug("Executing runKnockout in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunKnockoutCommandOptions commandOptions = analysisVariantCommandOptions.runKnockoutCommandOptions;
@@ -1039,7 +1107,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        KnockoutAnalysisParams knockoutAnalysisParams= null;
+        KnockoutAnalysisParams knockoutAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
             knockoutAnalysisParams = new KnockoutAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -1052,16 +1120,16 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
-             putNestedIfNotNull(beanParams, "gene",commandOptions.gene, true);
-             putNestedIfNotNull(beanParams, "panel",commandOptions.panel, true);
-             putNestedIfNotEmpty(beanParams, "biotype",commandOptions.biotype, true);
-             putNestedIfNotEmpty(beanParams, "consequenceType",commandOptions.consequenceType, true);
-             putNestedIfNotEmpty(beanParams, "filter",commandOptions.filter, true);
-             putNestedIfNotEmpty(beanParams, "qual",commandOptions.qual, true);
-             putNestedIfNotNull(beanParams, "skipGenesFile",commandOptions.skipGenesFile, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-             putNestedIfNotNull(beanParams, "index",commandOptions.index, true);
- 
+            putNestedIfNotNull(beanParams, "gene",commandOptions.gene, true);
+            putNestedIfNotNull(beanParams, "panel",commandOptions.panel, true);
+            putNestedIfNotEmpty(beanParams, "biotype",commandOptions.biotype, true);
+            putNestedIfNotEmpty(beanParams, "consequenceType",commandOptions.consequenceType, true);
+            putNestedIfNotEmpty(beanParams, "filter",commandOptions.filter, true);
+            putNestedIfNotEmpty(beanParams, "qual",commandOptions.qual, true);
+            putNestedIfNotNull(beanParams, "skipGenesFile",commandOptions.skipGenesFile, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+            putNestedIfNotNull(beanParams, "index",commandOptions.index, true);
+
             knockoutAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), KnockoutAnalysisParams.class);
@@ -1070,7 +1138,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runMendelianError() throws Exception {
-
         logger.debug("Executing runMendelianError in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunMendelianErrorCommandOptions commandOptions = analysisVariantCommandOptions.runMendelianErrorCommandOptions;
@@ -1086,7 +1153,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        MendelianErrorAnalysisParams mendelianErrorAnalysisParams= null;
+        MendelianErrorAnalysisParams mendelianErrorAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
             mendelianErrorAnalysisParams = new MendelianErrorAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -1099,10 +1166,10 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "family",commandOptions.family, true);
-             putNestedIfNotEmpty(beanParams, "individual",commandOptions.individual, true);
-             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
- 
+            putNestedIfNotEmpty(beanParams, "individual",commandOptions.individual, true);
+            putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+
             mendelianErrorAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), MendelianErrorAnalysisParams.class);
@@ -1111,7 +1178,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<VariantMetadata> metadata() throws Exception {
-
         logger.debug("Executing metadata in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.MetadataCommandOptions commandOptions = analysisVariantCommandOptions.metadataCommandOptions;
@@ -1134,7 +1200,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Signature> queryMutationalSignature() throws Exception {
-
         logger.debug("Executing queryMutationalSignature in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.QueryMutationalSignatureCommandOptions commandOptions = analysisVariantCommandOptions.queryMutationalSignatureCommandOptions;
@@ -1166,7 +1231,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runMutationalSignature() throws Exception {
-
         logger.debug("Executing runMutationalSignature in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunMutationalSignatureCommandOptions commandOptions = analysisVariantCommandOptions.runMutationalSignatureCommandOptions;
@@ -1182,7 +1246,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        MutationalSignatureAnalysisParams mutationalSignatureAnalysisParams= null;
+        MutationalSignatureAnalysisParams mutationalSignatureAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
             mutationalSignatureAnalysisParams = new MutationalSignatureAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -1195,22 +1259,22 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
-             putNestedIfNotEmpty(beanParams, "query",commandOptions.query, true);
-             putNestedIfNotEmpty(beanParams, "fitId",commandOptions.fitId, true);
-             putNestedIfNotEmpty(beanParams, "fitMethod",commandOptions.fitMethod, true);
-             putNestedIfNotNull(beanParams, "fitNBoot",commandOptions.fitNBoot, true);
-             putNestedIfNotEmpty(beanParams, "fitSigVersion",commandOptions.fitSigVersion, true);
-             putNestedIfNotEmpty(beanParams, "fitOrgan",commandOptions.fitOrgan, true);
-             putNestedIfNotNull(beanParams, "fitThresholdPerc",commandOptions.fitThresholdPerc, true);
-             putNestedIfNotNull(beanParams, "fitThresholdPval",commandOptions.fitThresholdPval, true);
-             putNestedIfNotNull(beanParams, "fitMaxRareSigs",commandOptions.fitMaxRareSigs, true);
-             putNestedIfNotEmpty(beanParams, "fitSignaturesFile",commandOptions.fitSignaturesFile, true);
-             putNestedIfNotEmpty(beanParams, "fitRareSignaturesFile",commandOptions.fitRareSignaturesFile, true);
-             putNestedIfNotEmpty(beanParams, "skip",commandOptions.skip, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
- 
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
+            putNestedIfNotEmpty(beanParams, "query",commandOptions.query, true);
+            putNestedIfNotEmpty(beanParams, "fitId",commandOptions.fitId, true);
+            putNestedIfNotEmpty(beanParams, "fitMethod",commandOptions.fitMethod, true);
+            putNestedIfNotNull(beanParams, "fitNBoot",commandOptions.fitNBoot, true);
+            putNestedIfNotEmpty(beanParams, "fitSigVersion",commandOptions.fitSigVersion, true);
+            putNestedIfNotEmpty(beanParams, "fitOrgan",commandOptions.fitOrgan, true);
+            putNestedIfNotNull(beanParams, "fitThresholdPerc",commandOptions.fitThresholdPerc, true);
+            putNestedIfNotNull(beanParams, "fitThresholdPval",commandOptions.fitThresholdPval, true);
+            putNestedIfNotNull(beanParams, "fitMaxRareSigs",commandOptions.fitMaxRareSigs, true);
+            putNestedIfNotEmpty(beanParams, "fitSignaturesFile",commandOptions.fitSignaturesFile, true);
+            putNestedIfNotEmpty(beanParams, "fitRareSignaturesFile",commandOptions.fitRareSignaturesFile, true);
+            putNestedIfNotEmpty(beanParams, "skip",commandOptions.skip, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+
             mutationalSignatureAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), MutationalSignatureAnalysisParams.class);
@@ -1219,7 +1283,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runPlink() throws Exception {
-
         logger.debug("Executing runPlink in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunPlinkCommandOptions commandOptions = analysisVariantCommandOptions.runPlinkCommandOptions;
@@ -1235,7 +1298,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        PlinkWrapperParams plinkWrapperParams= null;
+        PlinkWrapperParams plinkWrapperParams = null;
         if (commandOptions.jsonDataModel) {
             plinkWrapperParams = new PlinkWrapperParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -1248,8 +1311,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-             putNestedIfNotNull(beanParams, "plinkParams",commandOptions.plinkParams, true);
- 
+            putNestedIfNotNull(beanParams, "plinkParams",commandOptions.plinkParams, true);
+
             plinkWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), PlinkWrapperParams.class);
@@ -1258,7 +1321,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Variant> query() throws Exception {
-
         logger.debug("Executing query in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.QueryCommandOptions commandOptions = analysisVariantCommandOptions.queryCommandOptions;
@@ -1349,7 +1411,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runRelatedness() throws Exception {
-
         logger.debug("Executing runRelatedness in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunRelatednessCommandOptions commandOptions = analysisVariantCommandOptions.runRelatednessCommandOptions;
@@ -1365,7 +1426,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        RelatednessAnalysisParams relatednessAnalysisParams= null;
+        RelatednessAnalysisParams relatednessAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
             relatednessAnalysisParams = new RelatednessAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -1378,11 +1439,11 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "individuals",commandOptions.individuals, true);
-             putNestedIfNotNull(beanParams, "samples",commandOptions.samples, true);
-             putNestedIfNotEmpty(beanParams, "minorAlleleFreq",commandOptions.minorAlleleFreq, true);
-             putNestedIfNotEmpty(beanParams, "method",commandOptions.method, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
- 
+            putNestedIfNotNull(beanParams, "samples",commandOptions.samples, true);
+            putNestedIfNotEmpty(beanParams, "minorAlleleFreq",commandOptions.minorAlleleFreq, true);
+            putNestedIfNotEmpty(beanParams, "method",commandOptions.method, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+
             relatednessAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), RelatednessAnalysisParams.class);
@@ -1391,7 +1452,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runRvtests() throws Exception {
-
         logger.debug("Executing runRvtests in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunRvtestsCommandOptions commandOptions = analysisVariantCommandOptions.runRvtestsCommandOptions;
@@ -1407,7 +1467,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        RvtestsWrapperParams rvtestsWrapperParams= null;
+        RvtestsWrapperParams rvtestsWrapperParams = null;
         if (commandOptions.jsonDataModel) {
             rvtestsWrapperParams = new RvtestsWrapperParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -1420,9 +1480,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "command",commandOptions.command, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-             putNestedIfNotNull(beanParams, "rvtestsParams",commandOptions.rvtestsParams, true);
- 
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+            putNestedIfNotNull(beanParams, "rvtestsParams",commandOptions.rvtestsParams, true);
+
             rvtestsWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), RvtestsWrapperParams.class);
@@ -1431,7 +1491,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FacetField> aggregationStatsSample() throws Exception {
-
         logger.debug("Executing aggregationStatsSample in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.AggregationStatsSampleCommandOptions commandOptions = analysisVariantCommandOptions.aggregationStatsSampleCommandOptions;
@@ -1467,7 +1526,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runSampleEligibility() throws Exception {
-
         logger.debug("Executing runSampleEligibility in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunSampleEligibilityCommandOptions commandOptions = analysisVariantCommandOptions.runSampleEligibilityCommandOptions;
@@ -1483,7 +1541,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        SampleEligibilityAnalysisParams sampleEligibilityAnalysisParams= null;
+        SampleEligibilityAnalysisParams sampleEligibilityAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
             sampleEligibilityAnalysisParams = new SampleEligibilityAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -1496,9 +1554,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "query",commandOptions.query, true);
-             putNestedIfNotNull(beanParams, "index",commandOptions.index, true);
-             putNestedIfNotEmpty(beanParams, "cohortId",commandOptions.cohortId, true);
- 
+            putNestedIfNotNull(beanParams, "index",commandOptions.index, true);
+            putNestedIfNotEmpty(beanParams, "cohortId",commandOptions.cohortId, true);
+
             sampleEligibilityAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SampleEligibilityAnalysisParams.class);
@@ -1507,7 +1565,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runSampleQc() throws Exception {
-
         logger.debug("Executing runSampleQc in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunSampleQcCommandOptions commandOptions = analysisVariantCommandOptions.runSampleQcCommandOptions;
@@ -1523,7 +1580,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        SampleQcAnalysisParams sampleQcAnalysisParams= null;
+        SampleQcAnalysisParams sampleQcAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
             sampleQcAnalysisParams = new SampleQcAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -1536,6 +1593,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
+<<<<<<< HEAD
              putNestedIfNotEmpty(beanParams, "vsId",commandOptions.vsId, true);
              putNestedIfNotEmpty(beanParams, "vsDescription",commandOptions.vsDescription, true);
              putNestedIfNotEmpty(beanParams, "vsQuery.id",commandOptions.vsQueryId, true);
@@ -1583,6 +1641,55 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotEmpty(beanParams, "skip",commandOptions.skip, true);
              putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
  
+=======
+            putNestedIfNotEmpty(beanParams, "vsId",commandOptions.vsId, true);
+            putNestedIfNotEmpty(beanParams, "vsDescription",commandOptions.vsDescription, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.id",commandOptions.vsQueryId, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.region",commandOptions.vsQueryRegion, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.gene",commandOptions.vsQueryGene, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.type",commandOptions.vsQueryType, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.panel",commandOptions.vsQueryPanel, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.panelModeOfInheritance",commandOptions.vsQueryPanelModeOfInheritance, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.panelConfidence",commandOptions.vsQueryPanelConfidence, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.panelRoleInCancer",commandOptions.vsQueryPanelRoleInCancer, true);
+            putNestedIfNotNull(beanParams, "vsQuery.panelIntersection",commandOptions.vsQueryPanelIntersection, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.panelFeatureType",commandOptions.vsQueryPanelFeatureType, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.cohortStatsRef",commandOptions.vsQueryCohortStatsRef, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.cohortStatsAlt",commandOptions.vsQueryCohortStatsAlt, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.cohortStatsMaf",commandOptions.vsQueryCohortStatsMaf, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.ct",commandOptions.vsQueryCt, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.xref",commandOptions.vsQueryXref, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.biotype",commandOptions.vsQueryBiotype, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.proteinSubstitution",commandOptions.vsQueryProteinSubstitution, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.conservation",commandOptions.vsQueryConservation, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.populationFrequencyMaf",commandOptions.vsQueryPopulationFrequencyMaf, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.populationFrequencyAlt",commandOptions.vsQueryPopulationFrequencyAlt, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.populationFrequencyRef",commandOptions.vsQueryPopulationFrequencyRef, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.transcriptFlag",commandOptions.vsQueryTranscriptFlag, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.functionalScore",commandOptions.vsQueryFunctionalScore, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.clinical",commandOptions.vsQueryClinical, true);
+            putNestedIfNotEmpty(beanParams, "vsQuery.clinicalSignificance",commandOptions.vsQueryClinicalSignificance, true);
+            putNestedIfNotNull(beanParams, "vsQuery.clinicalConfirmedStatus",commandOptions.vsQueryClinicalConfirmedStatus, true);
+            putNestedIfNotEmpty(beanParams, "msId",commandOptions.msId, true);
+            putNestedIfNotEmpty(beanParams, "msDescription",commandOptions.msDescription, true);
+            putNestedIfNotEmpty(beanParams, "msQuery",commandOptions.msQuery, true);
+            putNestedIfNotEmpty(beanParams, "msFitId",commandOptions.msFitId, true);
+            putNestedIfNotEmpty(beanParams, "msFitMethod",commandOptions.msFitMethod, true);
+            putNestedIfNotNull(beanParams, "msFitNBoot",commandOptions.msFitNBoot, true);
+            putNestedIfNotEmpty(beanParams, "msFitSigVersion",commandOptions.msFitSigVersion, true);
+            putNestedIfNotEmpty(beanParams, "msFitOrgan",commandOptions.msFitOrgan, true);
+            putNestedIfNotNull(beanParams, "msFitThresholdPerc",commandOptions.msFitThresholdPerc, true);
+            putNestedIfNotNull(beanParams, "msFitThresholdPval",commandOptions.msFitThresholdPval, true);
+            putNestedIfNotNull(beanParams, "msFitMaxRareSigs",commandOptions.msFitMaxRareSigs, true);
+            putNestedIfNotEmpty(beanParams, "msFitSignaturesFile",commandOptions.msFitSignaturesFile, true);
+            putNestedIfNotEmpty(beanParams, "msFitRareSignaturesFile",commandOptions.msFitRareSignaturesFile, true);
+            putNestedIfNotEmpty(beanParams, "gpId",commandOptions.gpId, true);
+            putNestedIfNotEmpty(beanParams, "gpDescription",commandOptions.gpDescription, true);
+            putNestedIfNotEmpty(beanParams, "gpConfigFile",commandOptions.gpConfigFile, true);
+            putNestedIfNotEmpty(beanParams, "skip",commandOptions.skip, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+
+>>>>>>> develop
             sampleQcAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SampleQcAnalysisParams.class);
@@ -1591,7 +1698,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Variant> querySample() throws Exception {
-
         logger.debug("Executing querySample in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.QuerySampleCommandOptions commandOptions = analysisVariantCommandOptions.querySampleCommandOptions;
@@ -1610,7 +1716,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runSample() throws Exception {
-
         logger.debug("Executing runSample in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunSampleCommandOptions commandOptions = analysisVariantCommandOptions.runSampleCommandOptions;
@@ -1626,7 +1731,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        SampleVariantFilterParams sampleVariantFilterParams= null;
+        SampleVariantFilterParams sampleVariantFilterParams = null;
         if (commandOptions.jsonDataModel) {
             sampleVariantFilterParams = new SampleVariantFilterParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -1639,6 +1744,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+<<<<<<< HEAD
              putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
              putNestedIfNotEmpty(beanParams, "gene",commandOptions.gene, true);
              putNestedIfNotEmpty(beanParams, "type",commandOptions.type, true);
@@ -1669,6 +1775,38 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotNull(beanParams, "samplesInAllVariants",commandOptions.samplesInAllVariants, true);
              putNestedIfNotNull(beanParams, "maxVariants",commandOptions.maxVariants, true);
  
+=======
+            putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
+            putNestedIfNotEmpty(beanParams, "gene",commandOptions.gene, true);
+            putNestedIfNotEmpty(beanParams, "type",commandOptions.type, true);
+            putNestedIfNotEmpty(beanParams, "panel",commandOptions.panel, true);
+            putNestedIfNotEmpty(beanParams, "panelModeOfInheritance",commandOptions.panelModeOfInheritance, true);
+            putNestedIfNotEmpty(beanParams, "panelConfidence",commandOptions.panelConfidence, true);
+            putNestedIfNotEmpty(beanParams, "panelRoleInCancer",commandOptions.panelRoleInCancer, true);
+            putNestedIfNotNull(beanParams, "panelIntersection",commandOptions.panelIntersection, true);
+            putNestedIfNotEmpty(beanParams, "panelFeatureType",commandOptions.panelFeatureType, true);
+            putNestedIfNotEmpty(beanParams, "cohortStatsRef",commandOptions.cohortStatsRef, true);
+            putNestedIfNotEmpty(beanParams, "cohortStatsAlt",commandOptions.cohortStatsAlt, true);
+            putNestedIfNotEmpty(beanParams, "cohortStatsMaf",commandOptions.cohortStatsMaf, true);
+            putNestedIfNotEmpty(beanParams, "ct",commandOptions.ct, true);
+            putNestedIfNotEmpty(beanParams, "xref",commandOptions.xref, true);
+            putNestedIfNotEmpty(beanParams, "biotype",commandOptions.biotype, true);
+            putNestedIfNotEmpty(beanParams, "proteinSubstitution",commandOptions.proteinSubstitution, true);
+            putNestedIfNotEmpty(beanParams, "conservation",commandOptions.conservation, true);
+            putNestedIfNotEmpty(beanParams, "populationFrequencyMaf",commandOptions.populationFrequencyMaf, true);
+            putNestedIfNotEmpty(beanParams, "populationFrequencyAlt",commandOptions.populationFrequencyAlt, true);
+            putNestedIfNotEmpty(beanParams, "populationFrequencyRef",commandOptions.populationFrequencyRef, true);
+            putNestedIfNotEmpty(beanParams, "transcriptFlag",commandOptions.transcriptFlag, true);
+            putNestedIfNotEmpty(beanParams, "functionalScore",commandOptions.functionalScore, true);
+            putNestedIfNotEmpty(beanParams, "clinical",commandOptions.clinical, true);
+            putNestedIfNotEmpty(beanParams, "clinicalSignificance",commandOptions.clinicalSignificance, true);
+            putNestedIfNotNull(beanParams, "clinicalConfirmedStatus",commandOptions.clinicalConfirmedStatus, true);
+            putNestedIfNotNull(beanParams, "genotypes",commandOptions.genotypes, true);
+            putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
+            putNestedIfNotNull(beanParams, "samplesInAllVariants",commandOptions.samplesInAllVariants, true);
+            putNestedIfNotNull(beanParams, "maxVariants",commandOptions.maxVariants, true);
+
+>>>>>>> develop
             sampleVariantFilterParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SampleVariantFilterParams.class);
@@ -1677,7 +1815,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<SampleVariantStats> querySampleStats() throws Exception {
-
         logger.debug("Executing querySampleStats in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.QuerySampleStatsCommandOptions commandOptions = analysisVariantCommandOptions.querySampleStatsCommandOptions;
@@ -1706,7 +1843,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runSampleStats() throws Exception {
-
         logger.debug("Executing runSampleStats in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunSampleStatsCommandOptions commandOptions = analysisVariantCommandOptions.runSampleStatsCommandOptions;
@@ -1722,7 +1858,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        SampleVariantStatsAnalysisParams sampleVariantStatsAnalysisParams= null;
+        SampleVariantStatsAnalysisParams sampleVariantStatsAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
             sampleVariantStatsAnalysisParams = new SampleVariantStatsAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -1735,6 +1871,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
+<<<<<<< HEAD
              putNestedIfNotNull(beanParams, "individual",commandOptions.individual, true);
              putNestedIfNotEmpty(beanParams, "variantQuery.id",commandOptions.variantQueryId, true);
              putNestedIfNotEmpty(beanParams, "variantQuery.region",commandOptions.variantQueryRegion, true);
@@ -1771,6 +1908,44 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotEmpty(beanParams, "indexDescription",commandOptions.indexDescription, true);
              putNestedIfNotNull(beanParams, "batchSize",commandOptions.batchSize, true);
  
+=======
+            putNestedIfNotNull(beanParams, "individual",commandOptions.individual, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.id",commandOptions.variantQueryId, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.region",commandOptions.variantQueryRegion, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.gene",commandOptions.variantQueryGene, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.type",commandOptions.variantQueryType, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.panel",commandOptions.variantQueryPanel, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.panelModeOfInheritance",commandOptions.variantQueryPanelModeOfInheritance, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.panelConfidence",commandOptions.variantQueryPanelConfidence, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.panelRoleInCancer",commandOptions.variantQueryPanelRoleInCancer, true);
+            putNestedIfNotNull(beanParams, "variantQuery.panelIntersection",commandOptions.variantQueryPanelIntersection, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.panelFeatureType",commandOptions.variantQueryPanelFeatureType, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.cohortStatsRef",commandOptions.variantQueryCohortStatsRef, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.cohortStatsAlt",commandOptions.variantQueryCohortStatsAlt, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.cohortStatsMaf",commandOptions.variantQueryCohortStatsMaf, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.ct",commandOptions.variantQueryCt, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.xref",commandOptions.variantQueryXref, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.biotype",commandOptions.variantQueryBiotype, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.proteinSubstitution",commandOptions.variantQueryProteinSubstitution, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.conservation",commandOptions.variantQueryConservation, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.populationFrequencyMaf",commandOptions.variantQueryPopulationFrequencyMaf, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.populationFrequencyAlt",commandOptions.variantQueryPopulationFrequencyAlt, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.populationFrequencyRef",commandOptions.variantQueryPopulationFrequencyRef, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.transcriptFlag",commandOptions.variantQueryTranscriptFlag, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.functionalScore",commandOptions.variantQueryFunctionalScore, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.clinical",commandOptions.variantQueryClinical, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.clinicalSignificance",commandOptions.variantQueryClinicalSignificance, true);
+            putNestedIfNotNull(beanParams, "variantQuery.clinicalConfirmedStatus",commandOptions.variantQueryClinicalConfirmedStatus, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.sampleData",commandOptions.variantQuerySampleData, true);
+            putNestedIfNotEmpty(beanParams, "variantQuery.fileData",commandOptions.variantQueryFileData, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+            putNestedIfNotNull(beanParams, "index",commandOptions.index, true);
+            putNestedIfNotNull(beanParams, "indexOverwrite",commandOptions.indexOverwrite, true);
+            putNestedIfNotEmpty(beanParams, "indexId",commandOptions.indexId, true);
+            putNestedIfNotEmpty(beanParams, "indexDescription",commandOptions.indexDescription, true);
+            putNestedIfNotNull(beanParams, "batchSize",commandOptions.batchSize, true);
+
+>>>>>>> develop
             sampleVariantStatsAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SampleVariantStatsAnalysisParams.class);
@@ -1779,7 +1954,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runStatsExport() throws Exception {
-
         logger.debug("Executing runStatsExport in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunStatsExportCommandOptions commandOptions = analysisVariantCommandOptions.runStatsExportCommandOptions;
@@ -1796,7 +1970,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        VariantStatsExportParams variantStatsExportParams= null;
+        VariantStatsExportParams variantStatsExportParams = null;
         if (commandOptions.jsonDataModel) {
             variantStatsExportParams = new VariantStatsExportParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -1809,11 +1983,11 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "cohorts",commandOptions.cohorts, true);
-             putNestedIfNotEmpty(beanParams, "output",commandOptions.output, true);
-             putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
-             putNestedIfNotEmpty(beanParams, "gene",commandOptions.gene, true);
-             putNestedIfNotEmpty(beanParams, "outputFileFormat",commandOptions.outputFileFormat, true);
- 
+            putNestedIfNotEmpty(beanParams, "output",commandOptions.output, true);
+            putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
+            putNestedIfNotEmpty(beanParams, "gene",commandOptions.gene, true);
+            putNestedIfNotEmpty(beanParams, "outputFileFormat",commandOptions.outputFileFormat, true);
+
             variantStatsExportParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantStatsExportParams.class);
@@ -1822,7 +1996,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> runStats() throws Exception {
-
         logger.debug("Executing runStats in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunStatsCommandOptions commandOptions = analysisVariantCommandOptions.runStatsCommandOptions;
@@ -1838,7 +2011,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        VariantStatsAnalysisParams variantStatsAnalysisParams= null;
+        VariantStatsAnalysisParams variantStatsAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
             variantStatsAnalysisParams = new VariantStatsAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -1851,14 +2024,14 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "cohort",commandOptions.cohort, true);
-             putNestedIfNotNull(beanParams, "samples",commandOptions.samples, true);
-             putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
-             putNestedIfNotEmpty(beanParams, "gene",commandOptions.gene, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-             putNestedIfNotEmpty(beanParams, "outputFileName",commandOptions.outputFileName, true);
-             putNestedIfNotNull(beanParams, "aggregated",commandOptions.aggregated, true);
-             putNestedIfNotEmpty(beanParams, "aggregationMappingFile",commandOptions.aggregationMappingFile, true);
- 
+            putNestedIfNotNull(beanParams, "samples",commandOptions.samples, true);
+            putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
+            putNestedIfNotEmpty(beanParams, "gene",commandOptions.gene, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+            putNestedIfNotEmpty(beanParams, "outputFileName",commandOptions.outputFileName, true);
+            putNestedIfNotNull(beanParams, "aggregated",commandOptions.aggregated, true);
+            putNestedIfNotEmpty(beanParams, "aggregationMappingFile",commandOptions.aggregationMappingFile, true);
+
             variantStatsAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantStatsAnalysisParams.class);

@@ -20,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
@@ -55,6 +56,7 @@ import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.user.UserInternal;
 import org.opencb.opencga.core.models.user.UserQuota;
 import org.opencb.opencga.core.models.user.UserStatus;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -64,6 +66,7 @@ import java.util.LinkedList;
 
 import static org.junit.Assert.assertTrue;
 
+@Category(MediumTests.class)
 public class MongoDBAdaptorTest extends GenericTest {
 
     public MongoDBAdaptorFactory catalogDBAdaptor;

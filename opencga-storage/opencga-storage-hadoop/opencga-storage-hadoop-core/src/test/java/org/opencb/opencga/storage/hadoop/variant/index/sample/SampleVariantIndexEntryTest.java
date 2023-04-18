@@ -4,7 +4,9 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 
 import java.util.ArrayList;
@@ -12,6 +14,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+@Category(ShortTests.class)
 public class SampleVariantIndexEntryTest {
 
     private FileIndexSchema fileIndex;

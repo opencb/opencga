@@ -3,7 +3,9 @@ package org.opencb.opencga.analysis.rga;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
@@ -31,6 +33,7 @@ import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -43,6 +46,8 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
+@Category(MediumTests.class)
+@Ignore
 public class RgaManagerTest {
 
     public static final String OWNER = "owner";

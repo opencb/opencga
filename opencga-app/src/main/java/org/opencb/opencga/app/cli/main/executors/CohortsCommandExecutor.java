@@ -50,7 +50,7 @@ import org.opencb.opencga.core.models.job.Job;
  */
 public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
-    private CohortsCommandOptions cohortsCommandOptions;
+    public CohortsCommandOptions cohortsCommandOptions;
 
     public CohortsCommandExecutor(CohortsCommandOptions cohortsCommandOptions) throws CatalogAuthenticationException {
         super(cohortsCommandOptions.commonCommandOptions);
@@ -113,7 +113,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<CohortAclEntryList> updateAcl() throws Exception {
-
         logger.debug("Executing updateAcl in Cohorts command line");
 
         CohortsCommandOptions.UpdateAclCommandOptions commandOptions = cohortsCommandOptions.updateAclCommandOptions;
@@ -125,7 +124,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        CohortAclUpdateParams cohortAclUpdateParams= null;
+        CohortAclUpdateParams cohortAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             cohortAclUpdateParams = new CohortAclUpdateParams();
             RestResponse<CohortAclEntryList> res = new RestResponse<>();
@@ -138,8 +137,8 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "permissions",commandOptions.permissions, true);
-             putNestedIfNotEmpty(beanParams, "cohort",commandOptions.cohort, true);
- 
+            putNestedIfNotEmpty(beanParams, "cohort",commandOptions.cohort, true);
+
             cohortAclUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CohortAclUpdateParams.class);
@@ -148,7 +147,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
-
         logger.debug("Executing aggregationStats in Cohorts command line");
 
         CohortsCommandOptions.AggregationStatsCommandOptions commandOptions = cohortsCommandOptions.aggregationStatsCommandOptions;
@@ -174,7 +172,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> loadAnnotationSets() throws Exception {
-
         logger.debug("Executing loadAnnotationSets in Cohorts command line");
 
         CohortsCommandOptions.LoadAnnotationSetsCommandOptions commandOptions = cohortsCommandOptions.loadAnnotationSetsCommandOptions;
@@ -188,7 +185,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        TsvAnnotationParams tsvAnnotationParams= null;
+        TsvAnnotationParams tsvAnnotationParams = null;
         if (commandOptions.jsonDataModel) {
             tsvAnnotationParams = new TsvAnnotationParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -201,7 +198,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "content",commandOptions.content, true);
- 
+
             tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), TsvAnnotationParams.class);
@@ -210,7 +207,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Cohort> create() throws Exception {
-
         logger.debug("Executing create in Cohorts command line");
 
         CohortsCommandOptions.CreateCommandOptions commandOptions = cohortsCommandOptions.createCommandOptions;
@@ -227,7 +223,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        CohortCreateParams cohortCreateParams= null;
+        CohortCreateParams cohortCreateParams = null;
         if (commandOptions.jsonDataModel) {
             cohortCreateParams = new CohortCreateParams();
             RestResponse<Cohort> res = new RestResponse<>();
@@ -240,16 +236,16 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
-             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
- 
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+
             cohortCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CohortCreateParams.class);
@@ -258,7 +254,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Object> distinct() throws Exception {
-
         logger.debug("Executing distinct in Cohorts command line");
 
         CohortsCommandOptions.DistinctCommandOptions commandOptions = cohortsCommandOptions.distinctCommandOptions;
@@ -287,7 +282,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Cohort> generate() throws Exception {
-
         logger.debug("Executing generate in Cohorts command line");
 
         CohortsCommandOptions.GenerateCommandOptions commandOptions = cohortsCommandOptions.generateCommandOptions;
@@ -315,7 +309,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        CohortGenerateParams cohortGenerateParams= null;
+        CohortGenerateParams cohortGenerateParams = null;
         if (commandOptions.jsonDataModel) {
             cohortGenerateParams = new CohortGenerateParams();
             RestResponse<Cohort> res = new RestResponse<>();
@@ -328,16 +322,16 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.bodyId, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.bodyCreationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.bodyModificationDate, true);
-             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
- 
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.bodyCreationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.bodyModificationDate, true);
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+
             cohortGenerateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CohortGenerateParams.class);
@@ -346,7 +340,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Cohort> search() throws Exception {
-
         logger.debug("Executing search in Cohorts command line");
 
         CohortsCommandOptions.SearchCommandOptions commandOptions = cohortsCommandOptions.searchCommandOptions;
@@ -381,7 +374,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<CohortAclEntryList> acl() throws Exception {
-
         logger.debug("Executing acl in Cohorts command line");
 
         CohortsCommandOptions.AclCommandOptions commandOptions = cohortsCommandOptions.aclCommandOptions;
@@ -398,7 +390,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Cohort> delete() throws Exception {
-
         logger.debug("Executing delete in Cohorts command line");
 
         CohortsCommandOptions.DeleteCommandOptions commandOptions = cohortsCommandOptions.deleteCommandOptions;
@@ -413,7 +404,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Cohort> info() throws Exception {
-
         logger.debug("Executing info in Cohorts command line");
 
         CohortsCommandOptions.InfoCommandOptions commandOptions = cohortsCommandOptions.infoCommandOptions;
@@ -432,7 +422,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Cohort> update() throws Exception {
-
         logger.debug("Executing update in Cohorts command line");
 
         CohortsCommandOptions.UpdateCommandOptions commandOptions = cohortsCommandOptions.updateCommandOptions;
@@ -447,7 +436,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        CohortUpdateParams cohortUpdateParams= null;
+        CohortUpdateParams cohortUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             cohortUpdateParams = new CohortUpdateParams();
             RestResponse<Cohort> res = new RestResponse<>();
@@ -460,16 +449,16 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
-             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
-             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
-             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
- 
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
+            putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
+            putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
+
             cohortUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CohortUpdateParams.class);
@@ -478,7 +467,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Cohort> updateAnnotationSetsAnnotations() throws Exception {
-
         logger.debug("Executing updateAnnotationSetsAnnotations in Cohorts command line");
 
         CohortsCommandOptions.UpdateAnnotationSetsAnnotationsCommandOptions commandOptions = cohortsCommandOptions.updateAnnotationSetsAnnotationsCommandOptions;
@@ -491,7 +479,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        ObjectMap objectMap= null;
+        ObjectMap objectMap = null;
         if (commandOptions.jsonDataModel) {
             objectMap = new ObjectMap();
             RestResponse<Cohort> res = new RestResponse<>();

@@ -8,7 +8,9 @@ public class CategoryConfig {
     private boolean ignore;
     private String key;
     private boolean executorExtended;
+    private String executorExtendedClassName;
     private boolean optionExtended;
+    private String optionExtendedClassName;
     private List<String> addedMethods;
     private List<Shortcut> shortcuts;
     private List<Command> commands;
@@ -20,6 +22,7 @@ public class CategoryConfig {
 
     }
 
+    @Deprecated
     public CategoryConfig(String name, boolean ignore, String key, boolean executorExtended, boolean optionExtended,
                           List<String> addedMethods, List<Shortcut> shortcuts, List<Command> commands, String commandName,
                           boolean analysis, boolean operations) {
@@ -28,6 +31,25 @@ public class CategoryConfig {
         this.key = key;
         this.executorExtended = executorExtended;
         this.optionExtended = optionExtended;
+        this.addedMethods = addedMethods;
+        this.shortcuts = shortcuts;
+        this.commands = commands;
+        this.commandName = commandName;
+        this.analysis = analysis;
+        this.operations = operations;
+    }
+
+    public CategoryConfig(String name, boolean ignore, String key, boolean executorExtended,
+                          String executorExtendedClassName, boolean optionExtended, String optionExtendedClassName,
+                          List<String> addedMethods, List<Shortcut> shortcuts, List<Command> commands,
+                          String commandName, boolean analysis, boolean operations) {
+        this.name = name;
+        this.ignore = ignore;
+        this.key = key;
+        this.executorExtended = executorExtended;
+        this.executorExtendedClassName = executorExtendedClassName;
+        this.optionExtended = optionExtended;
+        this.optionExtendedClassName = optionExtendedClassName;
         this.addedMethods = addedMethods;
         this.shortcuts = shortcuts;
         this.commands = commands;
@@ -213,5 +235,23 @@ public class CategoryConfig {
         }
 
         return res;
+    }
+
+    public String getExecutorExtendedClassName() {
+        return executorExtendedClassName;
+    }
+
+    public CategoryConfig setExecutorExtendedClassName(String executorExtendedClassName) {
+        this.executorExtendedClassName = executorExtendedClassName;
+        return this;
+    }
+
+    public String getOptionExtendedClassName() {
+        return optionExtendedClassName;
+    }
+
+    public CategoryConfig setOptionExtendedClassName(String optionExtendedClassName) {
+        this.optionExtendedClassName = optionExtendedClassName;
+        return this;
     }
 }

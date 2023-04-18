@@ -31,6 +31,7 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.opencb.biodata.formats.variant.io.VariantReader;
@@ -46,6 +47,7 @@ import org.opencb.biodata.tools.variant.converters.proto.VariantToVcfSliceConver
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
@@ -80,6 +82,7 @@ import static org.junit.Assert.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(MediumTests.class)
 public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
 

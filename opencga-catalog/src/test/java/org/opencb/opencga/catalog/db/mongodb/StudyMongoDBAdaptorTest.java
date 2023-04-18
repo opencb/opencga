@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -26,6 +27,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.study.*;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -39,6 +41,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by pfurio on 19/01/16.
  */
+@Category(MediumTests.class)
 public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     Study getStudy(long projectUid, String studyId) throws CatalogDBException {

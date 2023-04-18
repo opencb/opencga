@@ -18,6 +18,7 @@ package org.opencb.opencga.master.monitor.models;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -27,6 +28,7 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobStudyParam;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -34,6 +36,7 @@ import java.util.HashMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
+@Category(MediumTests.class)
 public class PrivateJobUpdateParamsTest extends AbstractManagerTest {
 
     @Test

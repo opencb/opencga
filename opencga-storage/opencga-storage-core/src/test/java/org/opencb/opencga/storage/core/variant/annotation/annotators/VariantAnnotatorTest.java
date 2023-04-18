@@ -4,6 +4,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.EvidenceEntry;
@@ -13,6 +14,7 @@ import org.opencb.cellbase.client.config.RestConfig;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.core.result.CellBaseDataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
@@ -31,6 +33,7 @@ import static org.junit.Assume.assumeTrue;
 /**
  * Created by jacobo on 27/11/17.
  */
+@Category(ShortTests.class)
 public class VariantAnnotatorTest {
 
     private StorageConfiguration storageConfiguration;

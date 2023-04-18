@@ -18,9 +18,12 @@ package org.opencb.opencga.analysis.variant.samples;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
+@Category(ShortTests.class)
 public class SampleEligibilityAnalysisTest {
 
     @Rule

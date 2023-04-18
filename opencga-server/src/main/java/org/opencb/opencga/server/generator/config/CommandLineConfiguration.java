@@ -8,21 +8,30 @@ public class CommandLineConfiguration {
     private Options options;
     private ApiConfig apiConfig;
 
-    public CommandLineConfiguration() {
-    }
+    public CommandLineConfiguration() {}
 
     public CommandLineConfiguration(Options options, ApiConfig apiConfig) {
         this.options = options;
         this.apiConfig = apiConfig;
     }
 
-    public ApiConfig getApiConfig() {
-        return apiConfig;
+    public void initialize() {
+        List<String> aux = new ArrayList<>();
+        for (String type : getOptions().getIgnoreTypes()) {
+            if (!type.endsWith(";")) {
+                aux.add(type + ";");
+            }
+        }
+        getOptions().getIgnoreTypes().addAll(aux);
     }
 
-    public CommandLineConfiguration setApiConfig(ApiConfig apiConfig) {
-        this.apiConfig = apiConfig;
-        return this;
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("CommandLineConfiguration{");
+        sb.append("options=").append(options);
+        sb.append(", apiConfig=").append(apiConfig);
+        sb.append('}');
+        return sb.toString();
     }
 
     public Options getOptions() {
@@ -34,13 +43,12 @@ public class CommandLineConfiguration {
         return this;
     }
 
-    public void initialize() {
-        List<String> aux = new ArrayList<>();
-        for (String type : getOptions().getIgnoreTypes()) {
-            if (!type.endsWith(";")) {
-                aux.add(type + ";");
-            }
-        }
-        getOptions().getIgnoreTypes().addAll(aux);
+    public ApiConfig getApiConfig() {
+        return apiConfig;
+    }
+
+    public CommandLineConfiguration setApiConfig(ApiConfig apiConfig) {
+        this.apiConfig = apiConfig;
+        return this;
     }
 }

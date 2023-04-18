@@ -1,6 +1,8 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import org.junit.ClassRule;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngineBNDTest;
 
 /**
@@ -8,6 +10,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngineBNDTest;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(MediumTests.class)
 public class HadoopVariantStorageEngineBNDTest extends VariantStorageEngineBNDTest implements HadoopVariantStorageTest {
 
     @ClassRule

@@ -19,6 +19,7 @@ package org.opencb.opencga.analysis.alignment;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.opencb.biodata.models.clinical.Phenotype;
@@ -38,6 +39,7 @@ import org.opencb.opencga.core.models.alignment.AlignmentGeneCoverageStatsParams
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -52,6 +54,7 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
+@Category(MediumTests.class)
 public class AlignmentAnalysisTest {
 
     public static final String USER = "user";

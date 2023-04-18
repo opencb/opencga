@@ -19,6 +19,7 @@ package org.opencb.opencga.analysis.variant.manager.operations;
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -31,6 +32,7 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.variant.VariantFileIndexJobLauncherParams;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -53,6 +55,7 @@ import static org.junit.Assert.assertTrue;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(MediumTests.class)
 public class PlatinumFileIndexerTest extends AbstractVariantOperationManagerTest {
 
     private Logger logger = LoggerFactory.getLogger(AbstractVariantOperationManagerTest.class);

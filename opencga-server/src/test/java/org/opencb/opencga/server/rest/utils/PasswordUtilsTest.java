@@ -2,8 +2,11 @@ package org.opencb.opencga.server.rest.utils;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.common.PasswordUtils;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
+@Category(ShortTests.class)
 public class PasswordUtilsTest {
 
     @Test

@@ -3,8 +3,11 @@ package org.opencb.opencga.catalog.utils;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
+@Category(ShortTests.class)
 public class ParamUtilsTest {
 
     @Rule

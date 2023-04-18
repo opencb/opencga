@@ -11,7 +11,9 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.mockito.Mockito;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest.HadoopExternalResource;
 
 import java.util.Iterator;
@@ -24,6 +26,7 @@ import static org.junit.Assert.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(MediumTests.class)
 public class PersistentResultScannerTest {
 
     @Rule

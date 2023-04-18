@@ -10,7 +10,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 
+<<<<<<< HEAD
 import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandOptions;
+=======
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandOptions;
+>>>>>>> develop
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
@@ -30,7 +34,7 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
  *    PATH: /{apiVersion}/files
  */
 @Parameters(commandNames = {"files"}, commandDescription = "Files commands")
-public class FilesCommandOptions extends ParentFilesCommandOptions {
+public class FilesCommandOptions extends CustomFilesCommandOptions {
 
 
         public UpdateAclCommandOptions updateAclCommandOptions;

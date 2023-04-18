@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.config.storage;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
@@ -32,6 +33,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.Locale;
 
 /**
  * Created by imedina on 30/04/15.
@@ -51,8 +54,36 @@ public class StorageConfiguration {
 
     private BenchmarkConfiguration benchmark;
 
+    private Mode mode;
 
     protected static Logger logger = LoggerFactory.getLogger(StorageConfiguration.class);
+
+
+    public enum Mode {
+        READ_WRITE,
+        READ_ONLY;
+
+        @JsonCreator
+        public static Mode parseMode(String mode) {
+            String inputMode = mode;
+            if (mode == null || mode.isEmpty()) {
+                return null;
+            }
+            for (Mode value : values()) {
+                String modeStr = value.toString();
+                mode = mode.toUpperCase(Locale.ROOT);
+                mode = StringUtils.remove(mode, '_');
+                mode = StringUtils.remove(mode, '-');
+                modeStr = StringUtils.remove(modeStr, '_');
+                modeStr = StringUtils.remove(modeStr, '-');
+                if (modeStr.equals(mode)) {
+                    return value;
+                }
+            }
+            throw new IllegalArgumentException("Unknown mode '" + inputMode + "'.  not one of the values accepted for Enum class: "
+                    + Arrays.toString(values()));
+        }
+    }
 
     public StorageConfiguration() {
         this.alignment = new ObjectMap();
@@ -220,4 +251,12 @@ public class StorageConfiguration {
         return this;
     }
 
+    public Mode getMode() {
+        return mode;
+    }
+
+    public StorageConfiguration setMode(Mode mode) {
+        this.mode = mode;
+        return this;
+    }
 }

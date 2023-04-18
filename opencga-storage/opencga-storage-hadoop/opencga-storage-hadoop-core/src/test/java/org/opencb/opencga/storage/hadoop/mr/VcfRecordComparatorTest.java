@@ -21,7 +21,9 @@ package org.opencb.opencga.storage.hadoop.mr;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.hadoop.variant.archive.VcfRecordComparator;
 
 import static org.junit.Assert.assertEquals;
@@ -29,6 +31,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
  */
+@Category(ShortTests.class)
 public class VcfRecordComparatorTest {
 
 

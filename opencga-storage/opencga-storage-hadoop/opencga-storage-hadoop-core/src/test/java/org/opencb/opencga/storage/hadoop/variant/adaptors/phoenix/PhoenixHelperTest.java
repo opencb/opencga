@@ -6,7 +6,10 @@ import org.apache.phoenix.schema.types.PVarcharArray;
 import org.apache.phoenix.schema.types.PhoenixArray;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
+@Category(ShortTests.class)
 public class PhoenixHelperTest {
 
     @Test

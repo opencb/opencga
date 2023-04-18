@@ -2,17 +2,20 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
 
+@Category(ShortTests.class)
 public class VariantFileIndexEntryConverterTest {
 
     private VariantFileIndexConverter fileIndexConverter;

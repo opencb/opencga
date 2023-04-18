@@ -173,6 +173,45 @@ public class VariantSearchModel {
         this.fileInfo = new HashMap<>();
     }
 
+    public VariantSearchModel(VariantSearchModel init) {
+        this.id = init.getId();
+        this.variantId = init.getVariantId();
+        this.chromosome = init.getChromosome();
+        this.start = init.getStart();
+        this.end = init.getEnd();
+        this.xrefs = init.getXrefs();
+        this.type = init.getType();
+        this.release = init.getRelease();
+        this.studies = init.getStudies();
+        this.phastCons = init.getPhastCons();
+        this.phylop = init.getPhylop();
+        this.gerp = init.getGerp();
+        this.caddRaw = init.getCaddRaw();
+        this.caddScaled = init.getCaddScaled();
+        this.sift = init.getSift();
+        this.siftDesc = init.getSiftDesc();
+        this.polyphen = init.getPolyphen();
+        this.polyphenDesc = init.getPolyphenDesc();
+        this.genes = init.getGenes();
+        this.biotypes = init.getBiotypes();
+        this.soAcc = init.getSoAcc();
+        this.geneToSoAcc = init.geneToSoAcc;
+        this.clinicalSig = init.getClinicalSig();
+        this.traits = init.getTraits();
+        this.other = init.getOther();
+        this.passStats = init.getPassStats();
+        this.altStats = init.getAltStats();
+        this.score = init.getScore();
+        this.scorePValue = init.getScorePValue();
+        this.popFreq = init.getPopFreq();
+        this.gt = init.getGt();
+        this.dp = init.getDp();
+        this.sampleFormat = init.getSampleFormat();
+        this.qual = init.getQual();
+        this.filter = init.getFilter();
+        this.fileInfo = init.getFileInfo();
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("VariantSearchModel{");

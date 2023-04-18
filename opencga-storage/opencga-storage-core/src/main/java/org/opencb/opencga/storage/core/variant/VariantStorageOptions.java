@@ -63,6 +63,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     ANNOTATION_CHECKPOINT_SIZE("annotation.checkpointSize", 1000000),
     ANNOTATION_BATCH_SIZE("annotation.batchSize", 100),
     ANNOTATION_FILE_FORMAT("annotation.file.format", "json"),
+    ANNOTATION_FILE_DELETE_AFTER_LOAD("annotation.file.deleteAfterLoad", false),
     ANNOTATION_THREADS("annotation.numThreads", 8),
     ANNOTATION_TIMEOUT("annotation.timeout", 600000), // millis,
     ANNOTATION_LOAD_BATCH_SIZE("annotation.load.batchSize", 100),
