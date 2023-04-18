@@ -114,12 +114,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-<<<<<<< HEAD
-    protected RestResponse<AuthenticationResponse> login() throws Exception {
-
-=======
     private RestResponse<AuthenticationResponse> login() throws Exception {
->>>>>>> develop
         logger.debug("Executing login in Users command line");
 
         CustomUsersCommandOptions.LoginCommandOptions commandOptions = usersCommandOptions.loginCommandOptions;

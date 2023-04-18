@@ -474,95 +474,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-<<<<<<< HEAD
-             putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
-             putNestedIfNotEmpty(beanParams, "gene",commandOptions.gene, true);
-             putNestedIfNotEmpty(beanParams, "type",commandOptions.type, true);
-             putNestedIfNotEmpty(beanParams, "panel",commandOptions.panel, true);
-             putNestedIfNotEmpty(beanParams, "panelModeOfInheritance",commandOptions.panelModeOfInheritance, true);
-             putNestedIfNotEmpty(beanParams, "panelConfidence",commandOptions.panelConfidence, true);
-             putNestedIfNotEmpty(beanParams, "panelRoleInCancer",commandOptions.panelRoleInCancer, true);
-             putNestedIfNotNull(beanParams, "panelIntersection",commandOptions.panelIntersection, true);
-             putNestedIfNotEmpty(beanParams, "panelFeatureType",commandOptions.panelFeatureType, true);
-             putNestedIfNotEmpty(beanParams, "cohortStatsRef",commandOptions.cohortStatsRef, true);
-             putNestedIfNotEmpty(beanParams, "cohortStatsAlt",commandOptions.cohortStatsAlt, true);
-             putNestedIfNotEmpty(beanParams, "cohortStatsMaf",commandOptions.cohortStatsMaf, true);
-             putNestedIfNotEmpty(beanParams, "ct",commandOptions.ct, true);
-             putNestedIfNotEmpty(beanParams, "xref",commandOptions.xref, true);
-             putNestedIfNotEmpty(beanParams, "biotype",commandOptions.biotype, true);
-             putNestedIfNotEmpty(beanParams, "proteinSubstitution",commandOptions.proteinSubstitution, true);
-             putNestedIfNotEmpty(beanParams, "conservation",commandOptions.conservation, true);
-             putNestedIfNotEmpty(beanParams, "populationFrequencyMaf",commandOptions.populationFrequencyMaf, true);
-             putNestedIfNotEmpty(beanParams, "populationFrequencyAlt",commandOptions.populationFrequencyAlt, true);
-             putNestedIfNotEmpty(beanParams, "populationFrequencyRef",commandOptions.populationFrequencyRef, true);
-             putNestedIfNotEmpty(beanParams, "transcriptFlag",commandOptions.transcriptFlag, true);
-             putNestedIfNotEmpty(beanParams, "functionalScore",commandOptions.functionalScore, true);
-             putNestedIfNotEmpty(beanParams, "clinical",commandOptions.clinical, true);
-             putNestedIfNotEmpty(beanParams, "clinicalSignificance",commandOptions.clinicalSignificance, true);
-             putNestedIfNotNull(beanParams, "clinicalConfirmedStatus",commandOptions.clinicalConfirmedStatus, true);
-             putNestedIfNotEmpty(beanParams, "project",commandOptions.bodyProject, true);
-             putNestedIfNotEmpty(beanParams, "study",commandOptions.bodyStudy, true);
-             putNestedIfNotEmpty(beanParams, "savedFilter",commandOptions.savedFilter, true);
-             putNestedIfNotEmpty(beanParams, "chromosome",commandOptions.chromosome, true);
-             putNestedIfNotEmpty(beanParams, "reference",commandOptions.reference, true);
-             putNestedIfNotEmpty(beanParams, "alternate",commandOptions.alternate, true);
-             putNestedIfNotEmpty(beanParams, "release",commandOptions.release, true);
-             putNestedIfNotEmpty(beanParams, "includeStudy",commandOptions.includeStudy, true);
-             putNestedIfNotEmpty(beanParams, "includeSample",commandOptions.includeSample, true);
-             putNestedIfNotEmpty(beanParams, "includeFile",commandOptions.includeFile, true);
-             putNestedIfNotEmpty(beanParams, "includeSampleData",commandOptions.includeSampleData, true);
-             putNestedIfNotNull(beanParams, "includeSampleId",commandOptions.includeSampleId, true);
-             putNestedIfNotNull(beanParams, "includeGenotype",commandOptions.includeGenotype, true);
-             putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
-             putNestedIfNotEmpty(beanParams, "qual",commandOptions.qual, true);
-             putNestedIfNotEmpty(beanParams, "filter",commandOptions.filter, true);
-             putNestedIfNotEmpty(beanParams, "fileData",commandOptions.fileData, true);
-             putNestedIfNotEmpty(beanParams, "genotype",commandOptions.genotype, true);
-             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
-             putNestedIfNotNull(beanParams, "sampleLimit",commandOptions.sampleLimit, true);
-             putNestedIfNotNull(beanParams, "sampleSkip",commandOptions.sampleSkip, true);
-             putNestedIfNotEmpty(beanParams, "sampleData",commandOptions.sampleData, true);
-             putNestedIfNotEmpty(beanParams, "sampleAnnotation",commandOptions.sampleAnnotation, true);
-             putNestedIfNotEmpty(beanParams, "family",commandOptions.family, true);
-             putNestedIfNotEmpty(beanParams, "familyMembers",commandOptions.familyMembers, true);
-             putNestedIfNotEmpty(beanParams, "familyDisorder",commandOptions.familyDisorder, true);
-             putNestedIfNotEmpty(beanParams, "familyProband",commandOptions.familyProband, true);
-             putNestedIfNotEmpty(beanParams, "familySegregation",commandOptions.familySegregation, true);
-             putNestedIfNotEmpty(beanParams, "cohort",commandOptions.cohort, true);
-             putNestedIfNotEmpty(beanParams, "cohortStatsPass",commandOptions.cohortStatsPass, true);
-             putNestedIfNotEmpty(beanParams, "cohortStatsMgf",commandOptions.cohortStatsMgf, true);
-             putNestedIfNotEmpty(beanParams, "missingAlleles",commandOptions.missingAlleles, true);
-             putNestedIfNotEmpty(beanParams, "missingGenotypes",commandOptions.missingGenotypes, true);
-             putNestedIfNotNull(beanParams, "annotationExists",commandOptions.annotationExists, true);
-             putNestedIfNotEmpty(beanParams, "score",commandOptions.score, true);
-             putNestedIfNotEmpty(beanParams, "polyphen",commandOptions.polyphen, true);
-             putNestedIfNotEmpty(beanParams, "sift",commandOptions.sift, true);
-             putNestedIfNotEmpty(beanParams, "geneRoleInCancer",commandOptions.geneRoleInCancer, true);
-             putNestedIfNotEmpty(beanParams, "geneTraitId",commandOptions.geneTraitId, true);
-             putNestedIfNotEmpty(beanParams, "geneTraitName",commandOptions.geneTraitName, true);
-             putNestedIfNotEmpty(beanParams, "trait",commandOptions.trait, true);
-             putNestedIfNotEmpty(beanParams, "cosmic",commandOptions.cosmic, true);
-             putNestedIfNotEmpty(beanParams, "clinvar",commandOptions.clinvar, true);
-             putNestedIfNotEmpty(beanParams, "hpo",commandOptions.hpo, true);
-             putNestedIfNotEmpty(beanParams, "go",commandOptions.go, true);
-             putNestedIfNotEmpty(beanParams, "expression",commandOptions.expression, true);
-             putNestedIfNotEmpty(beanParams, "proteinKeyword",commandOptions.proteinKeyword, true);
-             putNestedIfNotEmpty(beanParams, "drug",commandOptions.drug, true);
-             putNestedIfNotEmpty(beanParams, "customAnnotation",commandOptions.customAnnotation, true);
-             putNestedIfNotEmpty(beanParams, "unknownGenotype",commandOptions.unknownGenotype, true);
-             putNestedIfNotNull(beanParams, "sampleMetadata",commandOptions.sampleMetadata, true);
-             putNestedIfNotNull(beanParams, "sort",commandOptions.sort, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-             putNestedIfNotEmpty(beanParams, "outputFileName",commandOptions.outputFileName, true);
-             putNestedIfNotEmpty(beanParams, "outputFileFormat",commandOptions.outputFileFormat, true);
-             putNestedIfNotEmpty(beanParams, "variantsFile",commandOptions.variantsFile, true);
-             putNestedIfNotEmpty(beanParams, "include",commandOptions.bodyInclude, true);
-             putNestedIfNotEmpty(beanParams, "exclude",commandOptions.bodyExclude, true);
-             putNestedIfNotNull(beanParams, "limit",commandOptions.limit, true);
-             putNestedIfNotNull(beanParams, "skip",commandOptions.skip, true);
-             putNestedIfNotNull(beanParams, "summary",commandOptions.summary, true);
- 
-=======
             putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
             putNestedIfNotEmpty(beanParams, "gene",commandOptions.gene, true);
             putNestedIfNotEmpty(beanParams, "type",commandOptions.type, true);
@@ -650,7 +561,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotNull(beanParams, "skip",commandOptions.skip, true);
             putNestedIfNotNull(beanParams, "summary",commandOptions.summary, true);
 
->>>>>>> develop
             variantExportParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantExportParams.class);
@@ -1593,55 +1503,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "sample",commandOptions.sample, true);
-<<<<<<< HEAD
-             putNestedIfNotEmpty(beanParams, "vsId",commandOptions.vsId, true);
-             putNestedIfNotEmpty(beanParams, "vsDescription",commandOptions.vsDescription, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.id",commandOptions.vsQueryId, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.region",commandOptions.vsQueryRegion, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.gene",commandOptions.vsQueryGene, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.type",commandOptions.vsQueryType, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.panel",commandOptions.vsQueryPanel, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.panelModeOfInheritance",commandOptions.vsQueryPanelModeOfInheritance, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.panelConfidence",commandOptions.vsQueryPanelConfidence, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.panelRoleInCancer",commandOptions.vsQueryPanelRoleInCancer, true);
-             putNestedIfNotNull(beanParams, "vsQuery.panelIntersection",commandOptions.vsQueryPanelIntersection, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.panelFeatureType",commandOptions.vsQueryPanelFeatureType, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.cohortStatsRef",commandOptions.vsQueryCohortStatsRef, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.cohortStatsAlt",commandOptions.vsQueryCohortStatsAlt, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.cohortStatsMaf",commandOptions.vsQueryCohortStatsMaf, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.ct",commandOptions.vsQueryCt, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.xref",commandOptions.vsQueryXref, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.biotype",commandOptions.vsQueryBiotype, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.proteinSubstitution",commandOptions.vsQueryProteinSubstitution, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.conservation",commandOptions.vsQueryConservation, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.populationFrequencyMaf",commandOptions.vsQueryPopulationFrequencyMaf, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.populationFrequencyAlt",commandOptions.vsQueryPopulationFrequencyAlt, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.populationFrequencyRef",commandOptions.vsQueryPopulationFrequencyRef, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.transcriptFlag",commandOptions.vsQueryTranscriptFlag, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.functionalScore",commandOptions.vsQueryFunctionalScore, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.clinical",commandOptions.vsQueryClinical, true);
-             putNestedIfNotEmpty(beanParams, "vsQuery.clinicalSignificance",commandOptions.vsQueryClinicalSignificance, true);
-             putNestedIfNotNull(beanParams, "vsQuery.clinicalConfirmedStatus",commandOptions.vsQueryClinicalConfirmedStatus, true);
-             putNestedIfNotEmpty(beanParams, "msId",commandOptions.msId, true);
-             putNestedIfNotEmpty(beanParams, "msDescription",commandOptions.msDescription, true);
-             putNestedIfNotEmpty(beanParams, "msQuery",commandOptions.msQuery, true);
-             putNestedIfNotEmpty(beanParams, "msFitId",commandOptions.msFitId, true);
-             putNestedIfNotEmpty(beanParams, "msFitMethod",commandOptions.msFitMethod, true);
-             putNestedIfNotNull(beanParams, "msFitNBoot",commandOptions.msFitNBoot, true);
-             putNestedIfNotEmpty(beanParams, "msFitSigVersion",commandOptions.msFitSigVersion, true);
-             putNestedIfNotEmpty(beanParams, "msFitOrgan",commandOptions.msFitOrgan, true);
-             putNestedIfNotNull(beanParams, "msFitThresholdPerc",commandOptions.msFitThresholdPerc, true);
-             putNestedIfNotNull(beanParams, "msFitThresholdPval",commandOptions.msFitThresholdPval, true);
-             putNestedIfNotNull(beanParams, "msFitMaxRareSigs",commandOptions.msFitMaxRareSigs, true);
-             putNestedIfNotEmpty(beanParams, "msFitSignaturesFile",commandOptions.msFitSignaturesFile, true);
-             putNestedIfNotEmpty(beanParams, "msFitRareSignaturesFile",commandOptions.msFitRareSignaturesFile, true);
-             putNestedIfNotEmpty(beanParams, "gpId",commandOptions.gpId, true);
-             putNestedIfNotEmpty(beanParams, "gpDescription",commandOptions.gpDescription, true);
-             putNestedIfNotEmpty(beanParams, "gpConfigFile",commandOptions.gpConfigFile, true);
-             putNestedIfNotEmpty(beanParams, "skip",commandOptions.skip, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
- 
-=======
             putNestedIfNotEmpty(beanParams, "vsId",commandOptions.vsId, true);
             putNestedIfNotEmpty(beanParams, "vsDescription",commandOptions.vsDescription, true);
             putNestedIfNotEmpty(beanParams, "vsQuery.id",commandOptions.vsQueryId, true);
@@ -1689,7 +1550,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "skip",commandOptions.skip, true);
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
 
->>>>>>> develop
             sampleQcAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SampleQcAnalysisParams.class);
@@ -1744,38 +1604,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-<<<<<<< HEAD
-             putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
-             putNestedIfNotEmpty(beanParams, "gene",commandOptions.gene, true);
-             putNestedIfNotEmpty(beanParams, "type",commandOptions.type, true);
-             putNestedIfNotEmpty(beanParams, "panel",commandOptions.panel, true);
-             putNestedIfNotEmpty(beanParams, "panelModeOfInheritance",commandOptions.panelModeOfInheritance, true);
-             putNestedIfNotEmpty(beanParams, "panelConfidence",commandOptions.panelConfidence, true);
-             putNestedIfNotEmpty(beanParams, "panelRoleInCancer",commandOptions.panelRoleInCancer, true);
-             putNestedIfNotNull(beanParams, "panelIntersection",commandOptions.panelIntersection, true);
-             putNestedIfNotEmpty(beanParams, "panelFeatureType",commandOptions.panelFeatureType, true);
-             putNestedIfNotEmpty(beanParams, "cohortStatsRef",commandOptions.cohortStatsRef, true);
-             putNestedIfNotEmpty(beanParams, "cohortStatsAlt",commandOptions.cohortStatsAlt, true);
-             putNestedIfNotEmpty(beanParams, "cohortStatsMaf",commandOptions.cohortStatsMaf, true);
-             putNestedIfNotEmpty(beanParams, "ct",commandOptions.ct, true);
-             putNestedIfNotEmpty(beanParams, "xref",commandOptions.xref, true);
-             putNestedIfNotEmpty(beanParams, "biotype",commandOptions.biotype, true);
-             putNestedIfNotEmpty(beanParams, "proteinSubstitution",commandOptions.proteinSubstitution, true);
-             putNestedIfNotEmpty(beanParams, "conservation",commandOptions.conservation, true);
-             putNestedIfNotEmpty(beanParams, "populationFrequencyMaf",commandOptions.populationFrequencyMaf, true);
-             putNestedIfNotEmpty(beanParams, "populationFrequencyAlt",commandOptions.populationFrequencyAlt, true);
-             putNestedIfNotEmpty(beanParams, "populationFrequencyRef",commandOptions.populationFrequencyRef, true);
-             putNestedIfNotEmpty(beanParams, "transcriptFlag",commandOptions.transcriptFlag, true);
-             putNestedIfNotEmpty(beanParams, "functionalScore",commandOptions.functionalScore, true);
-             putNestedIfNotEmpty(beanParams, "clinical",commandOptions.clinical, true);
-             putNestedIfNotEmpty(beanParams, "clinicalSignificance",commandOptions.clinicalSignificance, true);
-             putNestedIfNotNull(beanParams, "clinicalConfirmedStatus",commandOptions.clinicalConfirmedStatus, true);
-             putNestedIfNotNull(beanParams, "genotypes",commandOptions.genotypes, true);
-             putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
-             putNestedIfNotNull(beanParams, "samplesInAllVariants",commandOptions.samplesInAllVariants, true);
-             putNestedIfNotNull(beanParams, "maxVariants",commandOptions.maxVariants, true);
- 
-=======
             putNestedIfNotEmpty(beanParams, "region",commandOptions.region, true);
             putNestedIfNotEmpty(beanParams, "gene",commandOptions.gene, true);
             putNestedIfNotEmpty(beanParams, "type",commandOptions.type, true);
@@ -1806,7 +1634,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotNull(beanParams, "samplesInAllVariants",commandOptions.samplesInAllVariants, true);
             putNestedIfNotNull(beanParams, "maxVariants",commandOptions.maxVariants, true);
 
->>>>>>> develop
             sampleVariantFilterParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SampleVariantFilterParams.class);
@@ -1871,44 +1698,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
-<<<<<<< HEAD
-             putNestedIfNotNull(beanParams, "individual",commandOptions.individual, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.id",commandOptions.variantQueryId, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.region",commandOptions.variantQueryRegion, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.gene",commandOptions.variantQueryGene, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.type",commandOptions.variantQueryType, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.panel",commandOptions.variantQueryPanel, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.panelModeOfInheritance",commandOptions.variantQueryPanelModeOfInheritance, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.panelConfidence",commandOptions.variantQueryPanelConfidence, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.panelRoleInCancer",commandOptions.variantQueryPanelRoleInCancer, true);
-             putNestedIfNotNull(beanParams, "variantQuery.panelIntersection",commandOptions.variantQueryPanelIntersection, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.panelFeatureType",commandOptions.variantQueryPanelFeatureType, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.cohortStatsRef",commandOptions.variantQueryCohortStatsRef, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.cohortStatsAlt",commandOptions.variantQueryCohortStatsAlt, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.cohortStatsMaf",commandOptions.variantQueryCohortStatsMaf, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.ct",commandOptions.variantQueryCt, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.xref",commandOptions.variantQueryXref, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.biotype",commandOptions.variantQueryBiotype, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.proteinSubstitution",commandOptions.variantQueryProteinSubstitution, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.conservation",commandOptions.variantQueryConservation, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.populationFrequencyMaf",commandOptions.variantQueryPopulationFrequencyMaf, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.populationFrequencyAlt",commandOptions.variantQueryPopulationFrequencyAlt, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.populationFrequencyRef",commandOptions.variantQueryPopulationFrequencyRef, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.transcriptFlag",commandOptions.variantQueryTranscriptFlag, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.functionalScore",commandOptions.variantQueryFunctionalScore, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.clinical",commandOptions.variantQueryClinical, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.clinicalSignificance",commandOptions.variantQueryClinicalSignificance, true);
-             putNestedIfNotNull(beanParams, "variantQuery.clinicalConfirmedStatus",commandOptions.variantQueryClinicalConfirmedStatus, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.sampleData",commandOptions.variantQuerySampleData, true);
-             putNestedIfNotEmpty(beanParams, "variantQuery.fileData",commandOptions.variantQueryFileData, true);
-             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
-             putNestedIfNotNull(beanParams, "index",commandOptions.index, true);
-             putNestedIfNotNull(beanParams, "indexOverwrite",commandOptions.indexOverwrite, true);
-             putNestedIfNotEmpty(beanParams, "indexId",commandOptions.indexId, true);
-             putNestedIfNotEmpty(beanParams, "indexDescription",commandOptions.indexDescription, true);
-             putNestedIfNotNull(beanParams, "batchSize",commandOptions.batchSize, true);
- 
-=======
             putNestedIfNotNull(beanParams, "individual",commandOptions.individual, true);
             putNestedIfNotEmpty(beanParams, "variantQuery.id",commandOptions.variantQueryId, true);
             putNestedIfNotEmpty(beanParams, "variantQuery.region",commandOptions.variantQueryRegion, true);
@@ -1945,7 +1734,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "indexDescription",commandOptions.indexDescription, true);
             putNestedIfNotNull(beanParams, "batchSize",commandOptions.batchSize, true);
 
->>>>>>> develop
             sampleVariantStatsAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), SampleVariantStatsAnalysisParams.class);

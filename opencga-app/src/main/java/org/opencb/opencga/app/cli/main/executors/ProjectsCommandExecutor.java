@@ -113,21 +113,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-<<<<<<< HEAD
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotEmpty(beanParams, "organism.scientificName",commandOptions.organismScientificName, true);
-             putNestedIfNotEmpty(beanParams, "organism.commonName",commandOptions.organismCommonName, true);
-             putNestedIfNotEmpty(beanParams, "organism.assembly",commandOptions.organismAssembly, true);
-             putNestedIfNotEmpty(beanParams, "cellbase.url",commandOptions.cellbaseUrl, true);
-             putNestedIfNotEmpty(beanParams, "cellbase.version",commandOptions.cellbaseVersion, true);
-             putNestedIfNotEmpty(beanParams, "cellbase.dataRelease",commandOptions.cellbaseDataRelease, true);
-             putNestedIfNotEmpty(beanParams, "cellbase.token",commandOptions.cellbaseToken, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
- 
-=======
             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
@@ -138,9 +123,9 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "cellbase.url",commandOptions.cellbaseUrl, true);
             putNestedIfNotEmpty(beanParams, "cellbase.version",commandOptions.cellbaseVersion, true);
             putNestedIfNotEmpty(beanParams, "cellbase.dataRelease",commandOptions.cellbaseDataRelease, true);
+            putNestedIfNotEmpty(beanParams, "cellbase.token",commandOptions.cellbaseToken, true);
             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
 
->>>>>>> develop
             projectCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ProjectCreateParams.class);

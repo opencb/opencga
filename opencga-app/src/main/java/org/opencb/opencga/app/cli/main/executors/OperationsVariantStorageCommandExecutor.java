@@ -195,16 +195,10 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "url",commandOptions.url, true);
-<<<<<<< HEAD
-             putNestedIfNotEmpty(beanParams, "version",commandOptions.version, true);
-             putNestedIfNotEmpty(beanParams, "dataRelease",commandOptions.dataRelease, true);
-             putNestedIfNotEmpty(beanParams, "token",commandOptions.token, true);
- 
-=======
             putNestedIfNotEmpty(beanParams, "version",commandOptions.version, true);
             putNestedIfNotEmpty(beanParams, "dataRelease",commandOptions.dataRelease, true);
+            putNestedIfNotEmpty(beanParams, "token",commandOptions.token, true);
 
->>>>>>> develop
             cellBaseConfiguration = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CellBaseConfiguration.class);
@@ -830,11 +824,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-<<<<<<< HEAD
-        VariantSecondarySampleIndexParams variantSecondarySampleIndexParams= null;
-=======
         VariantSecondarySampleIndexParams variantSecondarySampleIndexParams = null;
->>>>>>> develop
         if (commandOptions.jsonDataModel) {
             variantSecondarySampleIndexParams = new VariantSecondarySampleIndexParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -847,19 +837,11 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
-<<<<<<< HEAD
-             putNestedIfNotNull(beanParams, "buildIndex",commandOptions.buildIndex, true);
-             putNestedIfNotNull(beanParams, "annotate",commandOptions.annotate, true);
-             putNestedIfNotNull(beanParams, "familyIndex",commandOptions.familyIndex, true);
-             putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
- 
-=======
             putNestedIfNotNull(beanParams, "buildIndex",commandOptions.buildIndex, true);
             putNestedIfNotNull(beanParams, "annotate",commandOptions.annotate, true);
             putNestedIfNotNull(beanParams, "familyIndex",commandOptions.familyIndex, true);
             putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
 
->>>>>>> develop
             variantSecondarySampleIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantSecondarySampleIndexParams.class);
@@ -974,7 +956,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantSecondaryAnnotationIndexParams variantSecondaryAnnotationIndexParams= null;
+        VariantSecondaryAnnotationIndexParams variantSecondaryAnnotationIndexParams = null;
         if (commandOptions.jsonDataModel) {
             variantSecondaryAnnotationIndexParams = new VariantSecondaryAnnotationIndexParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -1013,11 +995,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-<<<<<<< HEAD
-        VariantSecondarySampleIndexParams variantSecondarySampleIndexParams= null;
-=======
         VariantSecondarySampleIndexParams variantSecondarySampleIndexParams = null;
->>>>>>> develop
         if (commandOptions.jsonDataModel) {
             variantSecondarySampleIndexParams = new VariantSecondarySampleIndexParams();
             RestResponse<Job> res = new RestResponse<>();
@@ -1030,19 +1008,11 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "sample",commandOptions.sample, true);
-<<<<<<< HEAD
-             putNestedIfNotNull(beanParams, "buildIndex",commandOptions.buildIndex, true);
-             putNestedIfNotNull(beanParams, "annotate",commandOptions.annotate, true);
-             putNestedIfNotNull(beanParams, "familyIndex",commandOptions.familyIndex, true);
-             putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
- 
-=======
             putNestedIfNotNull(beanParams, "buildIndex",commandOptions.buildIndex, true);
             putNestedIfNotNull(beanParams, "annotate",commandOptions.annotate, true);
             putNestedIfNotNull(beanParams, "familyIndex",commandOptions.familyIndex, true);
             putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
 
->>>>>>> develop
             variantSecondarySampleIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), VariantSecondarySampleIndexParams.class);
@@ -1094,7 +1064,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantSecondaryAnnotationIndexParams variantSecondaryAnnotationIndexParams= null;
+        VariantSecondaryAnnotationIndexParams variantSecondaryAnnotationIndexParams = null;
         if (commandOptions.jsonDataModel) {
             variantSecondaryAnnotationIndexParams = new VariantSecondaryAnnotationIndexParams();
             RestResponse<Job> res = new RestResponse<>();
