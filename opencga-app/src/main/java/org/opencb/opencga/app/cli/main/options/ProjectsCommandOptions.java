@@ -109,10 +109,10 @@ public class ProjectsCommandOptions {
     
         @Parameter(names = {"--cellbase-data-release"}, description = "CellBase data release version to be used. If empty, will use the active one", required = false, arity = 1)
         public String cellbaseDataRelease;
-
-        @Parameter(names = {"--cellbase-token"}, description = "CellBase token to access to the licensed/restricted data sources such as Cosmic, HGMD,...", required = false, arity = 1)
+    
+        @Parameter(names = {"--cellbase-token"}, description = "CellBase token to access to the licensed/restricted data sources such as COSMIC, HGMD,...", required = false, arity = 1)
         public String cellbaseToken;
-
+    
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     

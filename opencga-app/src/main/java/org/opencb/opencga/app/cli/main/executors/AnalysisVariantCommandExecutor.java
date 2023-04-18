@@ -491,6 +491,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotEmpty(beanParams, "panelConfidence",commandOptions.panelConfidence, true);
              putNestedIfNotEmpty(beanParams, "panelRoleInCancer",commandOptions.panelRoleInCancer, true);
              putNestedIfNotNull(beanParams, "panelIntersection",commandOptions.panelIntersection, true);
+             putNestedIfNotEmpty(beanParams, "panelFeatureType",commandOptions.panelFeatureType, true);
              putNestedIfNotEmpty(beanParams, "cohortStatsRef",commandOptions.cohortStatsRef, true);
              putNestedIfNotEmpty(beanParams, "cohortStatsAlt",commandOptions.cohortStatsAlt, true);
              putNestedIfNotEmpty(beanParams, "cohortStatsMaf",commandOptions.cohortStatsMaf, true);
@@ -544,6 +545,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotEmpty(beanParams, "score",commandOptions.score, true);
              putNestedIfNotEmpty(beanParams, "polyphen",commandOptions.polyphen, true);
              putNestedIfNotEmpty(beanParams, "sift",commandOptions.sift, true);
+             putNestedIfNotEmpty(beanParams, "geneRoleInCancer",commandOptions.geneRoleInCancer, true);
              putNestedIfNotEmpty(beanParams, "geneTraitId",commandOptions.geneTraitId, true);
              putNestedIfNotEmpty(beanParams, "geneTraitName",commandOptions.geneTraitName, true);
              putNestedIfNotEmpty(beanParams, "trait",commandOptions.trait, true);
@@ -1545,6 +1547,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotEmpty(beanParams, "vsQuery.panelConfidence",commandOptions.vsQueryPanelConfidence, true);
              putNestedIfNotEmpty(beanParams, "vsQuery.panelRoleInCancer",commandOptions.vsQueryPanelRoleInCancer, true);
              putNestedIfNotNull(beanParams, "vsQuery.panelIntersection",commandOptions.vsQueryPanelIntersection, true);
+             putNestedIfNotEmpty(beanParams, "vsQuery.panelFeatureType",commandOptions.vsQueryPanelFeatureType, true);
              putNestedIfNotEmpty(beanParams, "vsQuery.cohortStatsRef",commandOptions.vsQueryCohortStatsRef, true);
              putNestedIfNotEmpty(beanParams, "vsQuery.cohortStatsAlt",commandOptions.vsQueryCohortStatsAlt, true);
              putNestedIfNotEmpty(beanParams, "vsQuery.cohortStatsMaf",commandOptions.vsQueryCohortStatsMaf, true);
@@ -1644,6 +1647,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotEmpty(beanParams, "panelConfidence",commandOptions.panelConfidence, true);
              putNestedIfNotEmpty(beanParams, "panelRoleInCancer",commandOptions.panelRoleInCancer, true);
              putNestedIfNotNull(beanParams, "panelIntersection",commandOptions.panelIntersection, true);
+             putNestedIfNotEmpty(beanParams, "panelFeatureType",commandOptions.panelFeatureType, true);
              putNestedIfNotEmpty(beanParams, "cohortStatsRef",commandOptions.cohortStatsRef, true);
              putNestedIfNotEmpty(beanParams, "cohortStatsAlt",commandOptions.cohortStatsAlt, true);
              putNestedIfNotEmpty(beanParams, "cohortStatsMaf",commandOptions.cohortStatsMaf, true);
@@ -1741,6 +1745,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
              putNestedIfNotEmpty(beanParams, "variantQuery.panelConfidence",commandOptions.variantQueryPanelConfidence, true);
              putNestedIfNotEmpty(beanParams, "variantQuery.panelRoleInCancer",commandOptions.variantQueryPanelRoleInCancer, true);
              putNestedIfNotNull(beanParams, "variantQuery.panelIntersection",commandOptions.variantQueryPanelIntersection, true);
+             putNestedIfNotEmpty(beanParams, "variantQuery.panelFeatureType",commandOptions.variantQueryPanelFeatureType, true);
              putNestedIfNotEmpty(beanParams, "variantQuery.cohortStatsRef",commandOptions.variantQueryCohortStatsRef, true);
              putNestedIfNotEmpty(beanParams, "variantQuery.cohortStatsAlt",commandOptions.variantQueryCohortStatsAlt, true);
              putNestedIfNotEmpty(beanParams, "variantQuery.cohortStatsMaf",commandOptions.variantQueryCohortStatsMaf, true);
