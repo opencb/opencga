@@ -1,6 +1,5 @@
 package org.opencb.opencga.analysis.family;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
@@ -10,27 +9,26 @@ import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.utils.PedigreeGraphUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.family.*;
+import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.FamilyUpdateParams;
+import org.opencb.opencga.core.models.family.PedigreeGraph;
+import org.opencb.opencga.core.models.family.PedigreeGraphAnalysisParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
-import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
-import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -38,10 +36,13 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class FamilyAnalysisTest extends GenericTest {
 
@@ -76,11 +77,14 @@ public class FamilyAnalysisTest extends GenericTest {
     public static void setUpCatalogManager(CatalogManager catalogManager) throws CatalogException {
         opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
+                Account.AccountType.FULL, opencgaToken);
         sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
 
-        projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens", null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first().getId();
-        studyId = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser).first().getId();
+        projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens", null, "GRCh38",
+                INCLUDE_RESULT, sessionIdUser).first().getId();
+        studyId = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null,
+                sessionIdUser).first().getId();
 
         try {
             family = createDummyFamily("Martinez-Martinez").first();
@@ -168,7 +172,8 @@ public class FamilyAnalysisTest extends GenericTest {
         QueryOptions queryOptions = new QueryOptions()
                 .append(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true)
                 .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
-        Family updatedFamily = catalogManager.getFamilyManager().update(studyId, family.getId(), updateParams, queryOptions, sessionIdUser).first();
+        Family updatedFamily = catalogManager.getFamilyManager().update(studyId, family.getId(), updateParams, queryOptions, sessionIdUser)
+                .first();
 
         PedigreeGraph pedigreeGraph = updatedFamily.getPedigreeGraph();
         assertTrue(pedigreeGraph.getBase64().startsWith("iVBORw0KGgoAAAANSUhEUgAAAeAAAAHg"));
@@ -201,10 +206,12 @@ public class FamilyAnalysisTest extends GenericTest {
     }
 
     private static DataResult<Family> createDummyFamily(String familyName) throws CatalogException {
-        return createDummyFamily(familyName, Arrays.asList("father-sample", "mother-sample", "child1-sample", "child2-sample", "child3-sample"), 2);
+        return createDummyFamily(familyName, Arrays.asList("father-sample", "mother-sample", "child1-sample", "child2-sample",
+                "child3-sample"), 2);
     }
 
-    private static DataResult<Family> createDummyFamily(String familyName, List<String> sampleNames, int numDisorders) throws CatalogException {
+    private static DataResult<Family> createDummyFamily(String familyName, List<String> sampleNames, int numDisorders)
+            throws CatalogException {
         int numMembers = sampleNames.size();
         if (numMembers > 0) {
             Sample sample = new Sample().setId(sampleNames.get(0));
@@ -318,7 +325,8 @@ public class FamilyAnalysisTest extends GenericTest {
             memberIds.add(relChild3.getId());
         }
 
-        Family family = new Family(familyName, familyName, null, null, members, "", numMembers, Collections.emptyList(), Collections.emptyMap());
+        Family family = new Family(familyName, familyName, null, null, members, "", numMembers, Collections.emptyList(),
+                Collections.emptyMap());
 
         OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(STUDY, family, null, INCLUDE_RESULT, sessionIdUser);
 
@@ -328,26 +336,26 @@ public class FamilyAnalysisTest extends GenericTest {
 
         if (numMembers > 1) {
             catalogManager.getIndividualManager().update(STUDY, relMother.getId(),
-                    new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames.get(1)))),
-                    QueryOptions.empty(), sessionIdUser);
+                    new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames
+                            .get(1)))), QueryOptions.empty(), sessionIdUser);
         }
 
         if (numMembers > 2) {
             catalogManager.getIndividualManager().update(STUDY, relChild1.getId(),
-                    new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames.get(2)))),
-                    QueryOptions.empty(), sessionIdUser);
+                    new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames
+                            .get(2)))), QueryOptions.empty(), sessionIdUser);
         }
 
         if (numMembers > 3) {
             catalogManager.getIndividualManager().update(STUDY, relChild1.getId(),
-                    new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames.get(3)))),
-                    QueryOptions.empty(), sessionIdUser);
+                    new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames
+                            .get(3)))), QueryOptions.empty(), sessionIdUser);
         }
 
         if (numMembers > 4) {
             catalogManager.getIndividualManager().update(STUDY, relChild1.getId(),
-                    new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames.get(4)))),
-                    QueryOptions.empty(), sessionIdUser);
+                    new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames
+                            .get(4)))), QueryOptions.empty(), sessionIdUser);
         }
 
         return familyOpenCGAResult;
@@ -399,95 +407,9 @@ public class FamilyAnalysisTest extends GenericTest {
             child.setDisorders(Collections.singletonList(disorder2));
         }
 
-
-
-        //        // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
-//        // ingesting references to exactly the same object and this test would not work exactly the same way.
         List<Individual> members = Arrays.asList(granma, father, mother, child);
-        List<String> memberIds = members.stream().map(m -> m.getId()).collect(Collectors.toList());
-
-//        Individual relFather, relMother = null, relChild1 = null, relChild2 = null, relChild3 = null;
-//        relFather = new Individual().setId(sampleNames.get(0)).setPhenotypes(Arrays.asList(phenotype1));
-//        members.add(father);
-//        memberIds.add(relFather.getId());
-//        if (numMembers > 1) {
-//            relMother = new Individual().setId(sampleNames.get(1)).setPhenotypes(Arrays.asList(phenotype2));
-//            members.add(mother);
-//            memberIds.add(relMother.getId());
-//        }
-//
-//        if (numMembers > 2) {
-//            relChild1 = new Individual().setId(sampleNames.get(2))
-//                    .setPhenotypes(Arrays.asList(phenotype1, phenotype2))
-//                    .setFather(father)
-//                    .setMother(mother)
-//                    .setSex(SexOntologyTermAnnotation.initMale())
-//                    .setLifeStatus(IndividualProperty.LifeStatus.ALIVE)
-//                    .setParentalConsanguinity(true);
-//            members.add(relChild1);
-//            memberIds.add(relChild1.getId());
-//        }
-//
-//        if (numMembers > 3) {
-//            relChild2 = new Individual().setId(sampleNames.get(3))
-//                    .setPhenotypes(Arrays.asList(phenotype1))
-//                    .setFather(father)
-//                    .setMother(mother)
-//                    .setSex(SexOntologyTermAnnotation.initFemale())
-//                    .setLifeStatus(IndividualProperty.LifeStatus.ALIVE)
-//                    .setParentalConsanguinity(true);
-//            if (numDisorders > 0) {
-//                relChild2.setDisorders(Collections.singletonList(disorders.get(0)));
-//            }
-//            members.add(relChild2);
-//            memberIds.add(relChild2.getId());
-//        }
-//
-//        if (numMembers > 4) {
-//            relChild3 = new Individual().setId(sampleNames.get(4))
-//                    .setPhenotypes(Arrays.asList(phenotype1))
-//                    .setFather(father)
-//                    .setMother(mother)
-//                    .setSex(SexOntologyTermAnnotation.initFemale())
-//                    .setLifeStatus(IndividualProperty.LifeStatus.DECEASED)
-//                    .setParentalConsanguinity(true);
-//            if (numDisorders > 1) {
-//                relChild3.setDisorders(Collections.singletonList(disorders.get(1)));
-//            }
-//            members.add(relChild3);
-//            memberIds.add(relChild3.getId());
-//        }
-
         Family family = new Family(familyName, familyName, null, null, members, "", numMembers, Collections.emptyList(), Collections.emptyMap());
         OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(STUDY, family, null, INCLUDE_RESULT, sessionIdUser);
-
-//        catalogManager.getIndividualManager().update(STUDY, relFather.getId(),
-//                new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames.get(0)))),
-//                QueryOptions.empty(), sessionIdUser);
-//
-//        if (numMembers > 1) {
-//            catalogManager.getIndividualManager().update(STUDY, relMother.getId(),
-//                    new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames.get(1)))),
-//                    QueryOptions.empty(), sessionIdUser);
-//        }
-//
-//        if (numMembers > 2) {
-//            catalogManager.getIndividualManager().update(STUDY, relChild1.getId(),
-//                    new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames.get(2)))),
-//                    QueryOptions.empty(), sessionIdUser);
-//        }
-//
-//        if (numMembers > 3) {
-//            catalogManager.getIndividualManager().update(STUDY, relChild1.getId(),
-//                    new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames.get(3)))),
-//                    QueryOptions.empty(), sessionIdUser);
-//        }
-//
-//        if (numMembers > 4) {
-//            catalogManager.getIndividualManager().update(STUDY, relChild1.getId(),
-//                    new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames.get(4)))),
-//                    QueryOptions.empty(), sessionIdUser);
-//        }
 
         return familyOpenCGAResult;
     }
@@ -517,8 +439,8 @@ public class FamilyAnalysisTest extends GenericTest {
 
         Individual mother = null;
 
-//        // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
-//        // ingesting references to exactly the same object and this test would not work exactly the same way.
+        // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
+        // ingesting references to exactly the same object and this test would not work exactly the same way.
         List<Individual> members = new ArrayList<>();
         List<String> memberIds = new ArrayList<>();
         Individual relFather = new Individual().setId(fatherSample).setPhenotypes(Arrays.asList(phenotype1));
