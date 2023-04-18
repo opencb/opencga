@@ -37,14 +37,13 @@ public class DummyModelUtils {
         return new Sample().setId(id);
     }
 
-    public static Individual getDummyIndividual(SexOntologyTermAnnotation sex, List<Sample> sampleList, List<Disorder> disorderList, List<Phenotype> phenotypeList) {
-        return getDummyIndividual(RandomStringUtils.randomAlphabetic(10), sex, sampleList, disorderList, phenotypeList);
+    public static Individual getDummyIndividual(List<Sample> sampleList, List<Disorder> disorderList, List<Phenotype> phenotypeList) {
+        return getDummyIndividual(RandomStringUtils.randomAlphabetic(10), sampleList, disorderList, phenotypeList);
     }
 
-    public static Individual getDummyIndividual(String id, SexOntologyTermAnnotation sex, List<Sample> sampleList, List<Disorder> disorderList, List<Phenotype> phenotypeList) {
+    public static Individual getDummyIndividual(String id, List<Sample> sampleList, List<Disorder> disorderList, List<Phenotype> phenotypeList) {
         return new Individual()
                 .setId(id)
-                .setSex(sex)
                 .setSamples(sampleList)
                 .setDisorders(disorderList)
                 .setPhenotypes(phenotypeList);
@@ -59,14 +58,18 @@ public class DummyModelUtils {
         Disorder disease1 = getDummyDisorder();
         Disorder disease2 = getDummyDisorder();
 
-        Individual father = getDummyIndividual("father_" + id, SexOntologyTermAnnotation.initMale(), Collections.singletonList(fSample), Collections.singletonList(disease2), null);
-        Individual mother = getDummyIndividual("mother_" + id, SexOntologyTermAnnotation.initFemale(), Collections.singletonList(mSample), Collections.singletonList(disease1), null);
-        Individual boy = getDummyIndividual("boy_" + id, SexOntologyTermAnnotation.initMale(), Collections.singletonList(bSample), Collections.singletonList(disease1), null)
+        Individual father = getDummyIndividual("father_" + id, Collections.singletonList(fSample), Collections.singletonList(disease2), null)
+                .setSex(new SexOntologyTermAnnotation().setId("MALE"));
+        Individual mother = getDummyIndividual("mother_" + id, Collections.singletonList(mSample), Collections.singletonList(disease1), null)
+                .setSex(new SexOntologyTermAnnotation().setId("FEMALE"));;
+        Individual boy = getDummyIndividual("boy_" + id, Collections.singletonList(bSample), Collections.singletonList(disease1), null)
                 .setFather(father)
-                .setMother(mother);
-        Individual girl = getDummyIndividual("girl_" + id, SexOntologyTermAnnotation.initFemale(), Collections.singletonList(gSample), Collections.singletonList(disease2), null)
+                .setMother(mother)
+                .setSex(new SexOntologyTermAnnotation().setId("MALE"));;
+        Individual girl = getDummyIndividual("girl_" + id, Collections.singletonList(gSample), Collections.singletonList(disease2), null)
                 .setFather(father)
-                .setMother(mother);
+                .setMother(mother)
+                .setSex(new SexOntologyTermAnnotation().setId("FEMALE"));;
 
         return getDummyFamily("family_" + id, Arrays.asList(father, mother, boy, girl));
     }
@@ -91,16 +94,15 @@ public class DummyModelUtils {
         Disorder disease1 = getDummyDisorder();
         Disorder disease2 = getDummyDisorder();
 
-        Individual father = getDummyIndividual("father", SexOntologyTermAnnotation.initMale(), Collections.singletonList(sample1),
-                Collections.singletonList(disease1), null);
-        Individual mother = getDummyIndividual("mother", SexOntologyTermAnnotation.initFemale(), Collections.singletonList(sample3), Collections.singletonList(disease2), null);
-        Individual child1 = getDummyIndividual("child1", SexOntologyTermAnnotation.initMale(), Collections.singletonList(sample2), Arrays.asList(disease1, disease2), null)
+        Individual father = getDummyIndividual("father", Collections.singletonList(sample1), Collections.singletonList(disease1), null);
+        Individual mother = getDummyIndividual("mother", Collections.singletonList(sample3), Collections.singletonList(disease2), null);
+        Individual child1 = getDummyIndividual("child1", Collections.singletonList(sample2), Arrays.asList(disease1, disease2), null)
                 .setFather(father)
                 .setMother(mother);
-        Individual child2 = getDummyIndividual("child2", SexOntologyTermAnnotation.initFemale(), Collections.singletonList(sample4), Arrays.asList(disease1, disease2), null)
+        Individual child2 = getDummyIndividual("child2", Collections.singletonList(sample4), Arrays.asList(disease1, disease2), null)
                 .setFather(father)
                 .setMother(mother);
-        Individual child3 = getDummyIndividual("child3", SexOntologyTermAnnotation.initFemale(), Collections.singletonList(sample5), Arrays.asList(disease1, disease2), null)
+        Individual child3 = getDummyIndividual("child3", Collections.singletonList(sample5), Arrays.asList(disease1, disease2), null)
                 .setFather(father)
                 .setMother(mother);
 
@@ -113,25 +115,20 @@ public class DummyModelUtils {
         Disorder disease1 = getDummyDisorder();
         Disorder disease2 = getDummyDisorder();
 
-        Individual father = getDummyIndividual("father", SexOntologyTermAnnotation.initMale(), null, Collections.singletonList(disease1), null);
-        Individual mother = getDummyIndividual("mother", SexOntologyTermAnnotation.initMale(), null, Collections.singletonList(disease2), null);
+        Individual father = getDummyIndividual("father", null, Collections.singletonList(disease1), null);
+        Individual mother = getDummyIndividual("mother", null, Collections.singletonList(disease2), null);
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setId("father")
-                .setSex(SexOntologyTermAnnotation.initMale())
-                .setDisorders(Arrays.asList(disease1))
+        Individual relFather = new Individual().setId("father").setDisorders(Arrays.asList(disease1))
                 .setSamples(Collections.singletonList(new Sample().setId("sample1")));
-        Individual relMother = new Individual().setId("mother")
-                .setSex(SexOntologyTermAnnotation.initFemale())
-                .setDisorders(Arrays.asList(disease2))
+        Individual relMother = new Individual().setId("mother").setDisorders(Arrays.asList(disease2))
                 .setSamples(Arrays.asList(new Sample().setId("sample3")));
 
         Individual relChild1 = new Individual().setId("child1")
                 .setDisorders(Arrays.asList(disease1, disease2))
                 .setFather(father)
                 .setMother(mother)
-                .setSex(SexOntologyTermAnnotation.initMale())
                 .setSamples(Arrays.asList(
                         new Sample().setId("sample2"),
                         new Sample().setId("sample4")
@@ -141,7 +138,6 @@ public class DummyModelUtils {
                 .setDisorders(Arrays.asList(disease1))
                 .setFather(father)
                 .setMother(mother)
-                .setSex(SexOntologyTermAnnotation.initFemale())
                 .setSamples(Arrays.asList(
                         new Sample().setId("sample5"),
                         new Sample().setId("sample6")
@@ -151,7 +147,6 @@ public class DummyModelUtils {
                 .setDisorders(Arrays.asList(disease1))
                 .setFather(father)
                 .setMother(mother)
-                .setSex(SexOntologyTermAnnotation.initFemale())
                 .setSamples(Arrays.asList(
                         new Sample().setId("sample7"),
                         new Sample().setId("sample8")

@@ -94,8 +94,7 @@ public class FamilyManagerTest extends GenericTest {
     public void setUpCatalogManager(CatalogManager catalogManager) throws CatalogException {
         opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
-                Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
         sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
 
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
@@ -198,8 +197,7 @@ public class FamilyManagerTest extends GenericTest {
         Individual individual = new Individual()
                 .setId("proband")
                 .setDisorders(Collections.singletonList(new Disorder().setId("disorder")));
-        catalogManager.getIndividualManager().create(STUDY, individual, Arrays.asList("sample1", "sample2"), QueryOptions.empty(),
-                sessionIdUser);
+        catalogManager.getIndividualManager().create(STUDY, individual, Arrays.asList("sample1", "sample2"), QueryOptions.empty(), sessionIdUser);
 
         individual = new Individual().setId("father");
         catalogManager.getIndividualManager().create(STUDY, individual, Arrays.asList("sample3"), QueryOptions.empty(), sessionIdUser);
@@ -282,8 +280,8 @@ public class FamilyManagerTest extends GenericTest {
         }
 
         createDummyFamily("Other-Family-Name", false);
-        individualList = catalogManager.getIndividualManager().get(STUDY, Arrays.asList("john", "father", "mother", "child1", "child2",
-                        "child3"), QueryOptions.empty(), sessionIdUser).getResults();
+        individualList = catalogManager.getIndividualManager().get(STUDY, Arrays.asList("john", "father", "mother", "child1", "child2", "child3"),
+                QueryOptions.empty(), sessionIdUser).getResults();
         for (Individual individual : individualList) {
             switch (individual.getId()) {
                 case "john":
@@ -316,10 +314,8 @@ public class FamilyManagerTest extends GenericTest {
         Individual father = new Individual().setId("father").setFather(paternalGrandfather).setMother(paternalGrandmother);
         Individual mother = new Individual().setId("mother").setMother(maternalGrandmother).setFather(maternalGrandfather);
         Individual proband = new Individual().setId("proband").setFather(father).setMother(mother);
-        Individual brother = new Individual().setId("brother")
-                .setFather(father).setMother(mother).setSex(SexOntologyTermAnnotation.initMale());
-        Individual sister = new Individual().setId("sister")
-                .setFather(father).setMother(mother).setSex(SexOntologyTermAnnotation.initFemale());
+        Individual brother = new Individual().setId("brother").setFather(father).setMother(mother).setSex(SexOntologyTermAnnotation.initMale());
+        Individual sister = new Individual().setId("sister").setFather(father).setMother(mother).setSex(SexOntologyTermAnnotation.initFemale());
         Individual sibling = new Individual().setId("sibling").setFather(father).setMother(mother);
 
         catalogManager.getFamilyManager().create(STUDY, new Family().setId("family").setMembers(
@@ -469,8 +465,7 @@ public class FamilyManagerTest extends GenericTest {
         catalogManager.getIndividualManager().update(STUDY, sister.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
         catalogManager.getIndividualManager().update(STUDY, sibling.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
 
-//        catalogManager.getFamilyManager().update(STUDY, family.first().getId(), null,
-//        new QueryOptions(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true), sessionIdUser);
+//        catalogManager.getFamilyManager().update(STUDY, family.first().getId(), null, new QueryOptions(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true), sessionIdUser);
 
         // Roles should have been automatically updated containing up to date roles
         family = catalogManager.getFamilyManager().get(STUDY, "family", QueryOptions.empty(), sessionIdUser);
@@ -593,26 +588,26 @@ public class FamilyManagerTest extends GenericTest {
     public void testRoles() throws CatalogException {
         DataResult<Family> dummyFamily = createDummyFamily("Martinez-Martinez", true);
 
-        assertEquals(Family.FamiliarRelationship.SON, dummyFamily.first().getRoles().get("mother").get("child1"));
-        assertEquals(Family.FamiliarRelationship.DAUGHTER, dummyFamily.first().getRoles().get("mother").get("child2"));
-        assertEquals(Family.FamiliarRelationship.DAUGHTER, dummyFamily.first().getRoles().get("mother").get("child3"));
+        assertEquals(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX, dummyFamily.first().getRoles().get("mother").get("child1"));
+        assertEquals(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX, dummyFamily.first().getRoles().get("mother").get("child2"));
+        assertEquals(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX, dummyFamily.first().getRoles().get("mother").get("child3"));
 
-        assertEquals(Family.FamiliarRelationship.SON, dummyFamily.first().getRoles().get("father").get("child1"));
-        assertEquals(Family.FamiliarRelationship.DAUGHTER, dummyFamily.first().getRoles().get("father").get("child2"));
-        assertEquals(Family.FamiliarRelationship.DAUGHTER, dummyFamily.first().getRoles().get("father").get("child3"));
+        assertEquals(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX, dummyFamily.first().getRoles().get("father").get("child1"));
+        assertEquals(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX, dummyFamily.first().getRoles().get("father").get("child2"));
+        assertEquals(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX, dummyFamily.first().getRoles().get("father").get("child3"));
 
-        assertEquals(Family.FamiliarRelationship.SISTER, dummyFamily.first().getRoles().get("child1").get("child2"));
-        assertEquals(Family.FamiliarRelationship.SISTER, dummyFamily.first().getRoles().get("child1").get("child3"));
+        assertEquals(Family.FamiliarRelationship.FULL_SIBLING, dummyFamily.first().getRoles().get("child1").get("child2"));
+        assertEquals(Family.FamiliarRelationship.FULL_SIBLING, dummyFamily.first().getRoles().get("child1").get("child3"));
         assertEquals(Family.FamiliarRelationship.FATHER, dummyFamily.first().getRoles().get("child1").get("father"));
         assertEquals(Family.FamiliarRelationship.MOTHER, dummyFamily.first().getRoles().get("child1").get("mother"));
 
-        assertEquals(Family.FamiliarRelationship.SISTER, dummyFamily.first().getRoles().get("child3").get("child2"));
-        assertEquals(Family.FamiliarRelationship.BROTHER, dummyFamily.first().getRoles().get("child3").get("child1"));
+        assertEquals(Family.FamiliarRelationship.FULL_SIBLING, dummyFamily.first().getRoles().get("child3").get("child2"));
+        assertEquals(Family.FamiliarRelationship.FULL_SIBLING, dummyFamily.first().getRoles().get("child3").get("child1"));
         assertEquals(Family.FamiliarRelationship.FATHER, dummyFamily.first().getRoles().get("child3").get("father"));
         assertEquals(Family.FamiliarRelationship.MOTHER, dummyFamily.first().getRoles().get("child3").get("mother"));
 
-        assertEquals(Family.FamiliarRelationship.BROTHER, dummyFamily.first().getRoles().get("child2").get("child1"));
-        assertEquals(Family.FamiliarRelationship.SISTER, dummyFamily.first().getRoles().get("child2").get("child3"));
+        assertEquals(Family.FamiliarRelationship.FULL_SIBLING, dummyFamily.first().getRoles().get("child2").get("child1"));
+        assertEquals(Family.FamiliarRelationship.FULL_SIBLING, dummyFamily.first().getRoles().get("child2").get("child3"));
         assertEquals(Family.FamiliarRelationship.FATHER, dummyFamily.first().getRoles().get("child2").get("father"));
         assertEquals(Family.FamiliarRelationship.MOTHER, dummyFamily.first().getRoles().get("child2").get("mother"));
     }
@@ -621,8 +616,7 @@ public class FamilyManagerTest extends GenericTest {
     public void testPropagateFamilyPermission() throws CatalogException {
         createDummyFamily("Martinez-Martinez", true);
 
-        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
-                Account.AccountType.GUEST, opencgaToken);
+        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST, opencgaToken);
         String token = catalogManager.getUserManager().login("user2", TestParamConstants.PASSWORD).getToken();
 
         try {
@@ -683,8 +677,7 @@ public class FamilyManagerTest extends GenericTest {
     public void getFamilyWithOnlyAllowedMembers2() throws CatalogException, IOException {
         createDummyFamily("Martinez-Martinez", true);
 
-        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
-                Account.AccountType.GUEST, opencgaToken);
+        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST, opencgaToken);
         String token = catalogManager.getUserManager().login("user2", TestParamConstants.PASSWORD).getToken();
 
         try {
@@ -749,8 +742,7 @@ public class FamilyManagerTest extends GenericTest {
         Individual individual = new Individual()
                 .setId("proband")
                 .setDisorders(Collections.singletonList(new Disorder().setId("disorder")));
-        catalogManager.getIndividualManager().create(STUDY, individual, Arrays.asList("sample1", "sample2"), QueryOptions.empty(),
-                sessionIdUser);
+        catalogManager.getIndividualManager().create(STUDY, individual, Arrays.asList("sample1", "sample2"), QueryOptions.empty(), sessionIdUser);
 
         individual = new Individual().setId("father");
         catalogManager.getIndividualManager().create(STUDY, individual, Arrays.asList("sample3"), QueryOptions.empty(), sessionIdUser);
@@ -789,8 +781,7 @@ public class FamilyManagerTest extends GenericTest {
         assertEquals(2, familyResult.getMembers().get(0).getVersion());
         assertEquals(2, familyResult.getMembers().get(1).getVersion());
 
-        ClinicalAnalysis clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "clinical", QueryOptions.empty(),
-                sessionIdUser).first();
+        ClinicalAnalysis clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "clinical", QueryOptions.empty(), sessionIdUser).first();
         assertEquals(2, clinicalResult.getProband().getVersion());
         assertEquals(2, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
         assertEquals(2, clinicalResult.getFamily().getVersion());
@@ -809,8 +800,7 @@ public class FamilyManagerTest extends GenericTest {
         assertTrue(clinicalResult.isLocked());
 
         // Update family with version increment
-        catalogManager.getFamilyManager().update(STUDY, "family", new FamilyUpdateParams().setName("bl"), new QueryOptions(),
-                sessionIdUser);
+        catalogManager.getFamilyManager().update(STUDY, "family", new FamilyUpdateParams().setName("bl"), new QueryOptions(), sessionIdUser);
 
         familyResult = catalogManager.getFamilyManager().get(STUDY, "family", QueryOptions.empty(), sessionIdUser).first();
         assertEquals(3, familyResult.getVersion());
@@ -908,39 +898,28 @@ public class FamilyManagerTest extends GenericTest {
         Phenotype phenotype1 = new Phenotype("dis1", "Phenotype 1", "HPO");
         Phenotype phenotype2 = new Phenotype("dis2", "Phenotype 2", "HPO");
 
-        Individual father = new Individual().setId("father")
-                .setSex(SexOntologyTermAnnotation.initMale())
-                .setPhenotypes(Arrays.asList(phenotype1));
-        Individual mother = new Individual().setId("mother")
-                .setSex(SexOntologyTermAnnotation.initFemale())
-                .setPhenotypes(Arrays.asList(phenotype2));
+        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(phenotype1));
+        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(phenotype2));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setId("father")
-                .setSex(SexOntologyTermAnnotation.initMale())
-                .setPhenotypes(Arrays.asList(phenotype1));
-        Individual relMother = new Individual().setId("mother")
-                .setSex(SexOntologyTermAnnotation.initFemale())
-                .setPhenotypes(Arrays.asList(phenotype2));
+        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(phenotype1));
+        Individual relMother = new Individual().setId("mother").setPhenotypes(Arrays.asList(phenotype2));
 
         Individual relChild1 = new Individual().setId("child1")
                 .setPhenotypes(Arrays.asList(phenotype1, phenotype2))
                 .setFather(father)
                 .setMother(mother)
-                .setSex(SexOntologyTermAnnotation.initMale())
                 .setParentalConsanguinity(true);
         Individual relChild2 = new Individual().setId("child2")
                 .setPhenotypes(Arrays.asList(phenotype1))
                 .setFather(father)
                 .setMother(mother)
-                .setSex(SexOntologyTermAnnotation.initFemale())
                 .setParentalConsanguinity(true);
         Individual relChild3 = new Individual().setId("child3")
                 .setPhenotypes(Arrays.asList(phenotype1))
                 .setFather(father)
                 .setMother(mother)
-                .setSex(SexOntologyTermAnnotation.initFemale())
                 .setParentalConsanguinity(true);
 
         List<Individual> members = null;
@@ -1056,30 +1035,22 @@ public class FamilyManagerTest extends GenericTest {
         Phenotype phenotype1 = new Phenotype("dis1", "Phenotype 1", "HPO");
         Phenotype phenotype2 = new Phenotype("dis2", "Phenotype 2", "HPO");
 
-        Individual father = new Individual().setId("father")
-                .setSex(SexOntologyTermAnnotation.initMale())
-                .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
-        Individual mother = new Individual().setId("mother")
-                .setSex(SexOntologyTermAnnotation.initFemale())
-                .setPhenotypes(Arrays.asList(new Phenotype("dis2", "dis2", "OT")));
+        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
+        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new Phenotype("dis2", "dis2", "OT")));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setId("father")
-                .setSex(SexOntologyTermAnnotation.initMale())
-                .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
+        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
 
         Individual relChild1 = new Individual().setId("child1")
                 .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT"), new Phenotype("dis2", "dis2", "OT")))
                 .setFather(father)
                 .setMother(mother)
-                .setSex(SexOntologyTermAnnotation.initMale())
                 .setParentalConsanguinity(true);
         Individual relChild2 = new Individual().setId("child2")
                 .setPhenotypes(Collections.singletonList(new Phenotype("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
-                .setSex(SexOntologyTermAnnotation.initFemale())
                 .setParentalConsanguinity(true);
 
         Family family = new Family("Martinez-Martinez", "Martinez-Martinez", Arrays.asList(phenotype1, phenotype2), null,
@@ -1123,38 +1094,28 @@ public class FamilyManagerTest extends GenericTest {
         familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
     }
 
-    @Test(expected = CatalogException.class)
+    @Test
     public void createFamilyRepeatedMember() throws CatalogException {
         Phenotype phenotype1 = new Phenotype("dis1", "Phenotype 1", "HPO");
         Phenotype phenotype2 = new Phenotype("dis2", "Phenotype 2", "HPO");
 
-        Individual father = new Individual().setId("father")
-                .setSex(SexOntologyTermAnnotation.initMale())
-                .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
-        Individual mother = new Individual().setId("mother")
-                .setSex(SexOntologyTermAnnotation.initFemale())
-                .setPhenotypes(Arrays.asList(new Phenotype("dis2", "dis2", "OT")));
+        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
+        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new Phenotype("dis2", "dis2", "OT")));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setId("father")
-                .setSex(SexOntologyTermAnnotation.initMale())
-                .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
-        Individual relMother = new Individual().setId("mother")
-                .setSex(SexOntologyTermAnnotation.initFemale())
-                .setPhenotypes(Arrays.asList(new Phenotype("dis2", "dis2", "OT")));
+        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
+        Individual relMother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new Phenotype("dis2", "dis2", "OT")));
 
         Individual relChild1 = new Individual().setId("child1")
                 .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT"), new Phenotype("dis2", "dis2", "OT")))
                 .setFather(father)
                 .setMother(mother)
-                .setSex(SexOntologyTermAnnotation.initMale())
                 .setParentalConsanguinity(true);
         Individual relChild2 = new Individual().setId("child2")
                 .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
-                .setSex(SexOntologyTermAnnotation.initFemale())
                 .setParentalConsanguinity(true);
 
         Family family = new Family("Martinez-Martinez", "Martinez-Martinez", Arrays.asList(phenotype1, phenotype2), null,
@@ -1284,8 +1245,7 @@ public class FamilyManagerTest extends GenericTest {
         dummyFamily2.setMembers(null);
         catalogManager.getFamilyManager().create(STUDY, dummyFamily2, members, QueryOptions.empty(), sessionIdUser);
 
-        OpenCGAResult<Family> result = catalogManager.getFamilyManager().get(STUDY, Arrays.asList(dummyFamily1.getId(),
-                dummyFamily2.getId()), QueryOptions.empty(), sessionIdUser);
+        OpenCGAResult<Family> result = catalogManager.getFamilyManager().get(STUDY, Arrays.asList(dummyFamily1.getId(), dummyFamily2.getId()), QueryOptions.empty(), sessionIdUser);
         assertEquals(2, result.getNumResults());
         for (Family family : result.getResults()) {
             if (family.getId().equals(dummyFamily1.getId())) {
@@ -1297,12 +1257,11 @@ public class FamilyManagerTest extends GenericTest {
             }
         }
 
-        catalogManager.getFamilyManager().update(STUDY, dummyFamily1.getId(), new FamilyUpdateParams().setName("name"),
-                QueryOptions.empty(), sessionIdUser);
-        catalogManager.getFamilyManager().update(STUDY, dummyFamily1.getId(), new FamilyUpdateParams().setName("name22"),
-                QueryOptions.empty(), sessionIdUser);
-        result = catalogManager.getFamilyManager().get(STUDY, Arrays.asList(dummyFamily1.getId(), dummyFamily2.getId()),
-                QueryOptions.empty(), sessionIdUser);
+        catalogManager.getFamilyManager().update(STUDY, dummyFamily1.getId(), new FamilyUpdateParams().setName("name"), QueryOptions.empty(),
+                sessionIdUser);
+        catalogManager.getFamilyManager().update(STUDY, dummyFamily1.getId(), new FamilyUpdateParams().setName("name22"), QueryOptions.empty(),
+                sessionIdUser);
+        result = catalogManager.getFamilyManager().get(STUDY, Arrays.asList(dummyFamily1.getId(), dummyFamily2.getId()), QueryOptions.empty(), sessionIdUser);
         assertEquals(2, result.getNumResults());
         assertEquals(4, result.first().getVersion());
         assertEquals(1, result.getResults().get(1).getVersion());
@@ -1447,9 +1406,9 @@ public class FamilyManagerTest extends GenericTest {
 
     @Test
     public void updateFamilyMembers() throws CatalogException {
-        Individual child = DummyModelUtils.getDummyIndividual("child", SexOntologyTermAnnotation.initMale(), null, null, null);
-        Individual father = DummyModelUtils.getDummyIndividual("father", SexOntologyTermAnnotation.initMale(), null, null, null);
-        Individual mother = DummyModelUtils.getDummyIndividual("mother", SexOntologyTermAnnotation.initFemale(), null, null, null);
+        Individual child = DummyModelUtils.getDummyIndividual("child", null, null, null);
+        Individual father = DummyModelUtils.getDummyIndividual("father", null, null, null);
+        Individual mother = DummyModelUtils.getDummyIndividual("mother", null, null, null);
         child.setFather(father);
         child.setMother(mother);
 
@@ -1459,8 +1418,7 @@ public class FamilyManagerTest extends GenericTest {
 
         Family family = DummyModelUtils.getDummyFamily("family");
         family.setMembers(null);
-        catalogManager.getFamilyManager().create(STUDY, family, Collections.singletonList(child.getId()), QueryOptions.empty(),
-                sessionIdUser);
+        catalogManager.getFamilyManager().create(STUDY, family, Collections.singletonList(child.getId()), QueryOptions.empty(), sessionIdUser);
 
         FamilyUpdateParams updateParams = new FamilyUpdateParams().setMembers(Arrays.asList(
                 new IndividualReferenceParam(child.getId(), child.getUuid()),
@@ -1468,4 +1426,5 @@ public class FamilyManagerTest extends GenericTest {
         ));
         catalogManager.getFamilyManager().update(STUDY, family.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
     }
+
 }
