@@ -199,22 +199,24 @@ public class MigrationManager {
     public MigrationSummary getMigrationSummary() throws CatalogException {
         List<Pair<Migration, MigrationRun>> runs = getMigrationRuns(null, null, null);
 
-        MigrationSummary migrationSummary = new MigrationSummary()
-                .setStatusCount(runs.stream().collect(Collectors.groupingBy(
-                        p -> p.getValue().getStatus(),
-                        () -> new EnumMap<>(MigrationRun.MigrationStatus.class),
-                        Collectors.counting())))
-                .setVersionCount(runs.stream().collect(Collectors.groupingBy(p -> p.getKey().version(), Collectors.counting())));
+        MigrationSummary migrationSummary = new MigrationSummary();
+        if (CollectionUtils.isNotEmpty(runs)) {
+            migrationSummary
+                    .setStatusCount(runs.stream().collect(Collectors.groupingBy(
+                            p -> p.getValue().getStatus(),
+                            () -> new EnumMap<>(MigrationRun.MigrationStatus.class),
+                            Collectors.counting())))
+                    .setVersionCount(runs.stream().collect(Collectors.groupingBy(p -> p.getKey().version(), Collectors.counting())));
 
-        long toBeApplied = migrationSummary
-                .getStatusCount()
-                .entrySet()
-                .stream()
-                .filter(e -> e.getKey().toBeApplied())
-                .mapToLong(Map.Entry::getValue)
-                .sum();
-        migrationSummary.setMigrationsToBeApplied(toBeApplied);
-
+            long toBeApplied = migrationSummary
+                    .getStatusCount()
+                    .entrySet()
+                    .stream()
+                    .filter(e -> e.getKey().toBeApplied())
+                    .mapToLong(Map.Entry::getValue)
+                    .sum();
+            migrationSummary.setMigrationsToBeApplied(toBeApplied);
+        }
         return migrationSummary;
     }
 
@@ -252,17 +254,21 @@ public class MigrationManager {
         // 2. Get migration runs and filter by status
         List<MigrationRun> migrationRuns = migrationDBAdaptor.get(migrations.stream().map(Migration::id).collect(Collectors.toList()))
                 .getResults();
-        for (MigrationRun migrationRun : migrationRuns) {
-            map.get(migrationRun.getId()).setValue(migrationRun);
-        }
-        if (CollectionUtils.isNotEmpty(status)) {
-            map.values().removeIf(p -> !status.contains(p.getValue().getStatus().name()));
-        }
+        if (!migrationRuns.isEmpty()) {
+            for (MigrationRun migrationRun : migrationRuns) {
+                map.get(migrationRun.getId()).setValue(migrationRun);
+            }
+            if (CollectionUtils.isNotEmpty(status)) {
+                map.values().removeIf(p -> !status.contains(p.getValue().getStatus().name()));
+            }
 
-        List<Pair<Migration, MigrationRun>> pairs = new ArrayList<>(map.values());
-        pairs.sort(Comparator.<Pair<Migration, MigrationRun>, String>comparing(p -> p.getKey().version())
-                .thenComparing(p -> p.getKey().date()));
-        return pairs;
+            List<Pair<Migration, MigrationRun>> pairs = new ArrayList<>(map.values());
+            pairs.sort(Comparator.<Pair<Migration, MigrationRun>, String>comparing(p -> p.getKey().version())
+                    .thenComparing(p -> p.getKey().date()));
+            return pairs;
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     // This method should only be called when installing OpenCGA for the first time so it skips all available (and old) migrations.
