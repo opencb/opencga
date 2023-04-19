@@ -4,6 +4,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.Disorder;
+import org.opencb.commons.io.StringDataReader;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -56,9 +57,21 @@ public class PedigreeGraphUtils {
         File pedFile;
         try {
             pedFile = createPedFile(family, outDir);
+            System.err.println("Generated file '" + pedFile + "' from familyId " + family.getId());
+            System.err.println("------------------------------");
+            new StringDataReader(pedFile.toPath()).forEach(s -> {
+                System.err.println(s);
+            });
+            System.err.println("------------------------------");
         } catch (FileNotFoundException e) {
             throw new IOException("Error creating the pedigree file", e);
         }
+        System.err.println("ped.R file '" + rScriptPath.toAbsolutePath().resolve("ped.R") + "'");
+        System.err.println("------------------------------");
+        new StringDataReader(rScriptPath.toAbsolutePath().resolve("ped.R")).forEach(s -> {
+            System.err.println(s);
+        });
+        System.err.println("------------------------------");
 
         // Build command line to execute
         List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
