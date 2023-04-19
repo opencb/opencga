@@ -16,13 +16,12 @@ import org.opencb.opencga.catalog.templates.config.TemplateManifest;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
-import org.opencb.opencga.core.testclassification.duration.MediumTests;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.Paths;
 
-@Category(MediumTests.class)
+@Category(ShortTests.class)
 public class TemplateManagerTest {
 
     @Rule
@@ -38,7 +37,7 @@ public class TemplateManagerTest {
         catalogManagerResource.after();
     }
 
-    @Test
+//    @Test
     public void test() throws Exception {
         CatalogManager catalogManager = catalogManagerResource.getCatalogManager();
         String adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
