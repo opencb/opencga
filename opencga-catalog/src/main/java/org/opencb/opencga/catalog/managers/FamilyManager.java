@@ -276,6 +276,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             options = ParamUtils.defaultObject(options, QueryOptions::new);
             family.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FAMILY));
 
+            System.err.println("Family " + family.getId());
+            System.err.println("Family.members (" + CollectionUtils.size(family.getMembers()) + ") " + family.getMembers());
+            System.err.println("existingMembers (" + CollectionUtils.size(existingMembers) + ") " + existingMembers);
             OpenCGAResult<Family> insert = familyDBAdaptor.insert(study.getUid(), family, existingMembers, study.getVariableSets(),
                     options);
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
