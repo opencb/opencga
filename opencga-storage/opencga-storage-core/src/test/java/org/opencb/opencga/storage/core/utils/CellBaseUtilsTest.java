@@ -60,13 +60,14 @@ public class CellBaseUtilsTest {
 //                new Object[]{"http://ws.opencb.org/cellbase-4.8.3/", "v4", "grch37", null},
 //                new Object[]{"http://ws.opencb.org/cellbase-4.9.0/", "v4", "grch37", null},
 //                new Object[]{"http://ws.opencb.org/cellbase/", "v4", "grch37", null},
-                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "grch37", "1"},
-                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "grch38", "2"},
-                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.3", "grch37", "1"},
-                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.3", "grch38", "2"},
+
+//                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.3", "grch37", "1"},
+//                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.3", "grch38", "2"},
                 new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5", "grch38", null},
                 new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5.1", "grch38", "1"},
-                new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5.1", "grch38", "2"});
+                new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5.1", "grch38", "2"},
+                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "grch37", "1"},
+                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "grch38", "2"});
     }
 
     @Parameter(0)

@@ -2,10 +2,7 @@ package org.opencb.opencga.templates;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
@@ -37,7 +34,8 @@ public class TemplateManagerTest {
         catalogManagerResource.after();
     }
 
-//    @Test
+    @Test
+    @Ignore
     public void test() throws Exception {
         CatalogManager catalogManager = catalogManagerResource.getCatalogManager();
         String adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
@@ -52,12 +50,13 @@ public class TemplateManagerTest {
         catalogManager.getProjectManager().create("project", "Project", "", "name", "common", "GRCh38", QueryOptions.empty(), token);
         catalogManager.getStudyManager().create("project", new Study().setId("study"), QueryOptions.empty(), token);
 
+        URI resource = catalogManagerResource.getResourceUri("templates/manifest.yml");
         catalogManagerResource.getResourceUri("templates/families.members.txt");
         catalogManagerResource.getResourceUri("templates/families.txt");
         catalogManagerResource.getResourceUri("templates/individuals.samples.txt");
         catalogManagerResource.getResourceUri("templates/individuals.txt");
         catalogManagerResource.getResourceUri("templates/samples.txt");
-        URI resource = catalogManagerResource.getResourceUri("templates/manifest.yml");
+
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
         TemplateManifest manifest = objectMapper.readValue(resource.toURL(), TemplateManifest.class);
         TemplateManager templateManager = new TemplateManager(catalogManager, false, false, token);
@@ -87,15 +86,14 @@ public class TemplateManagerTest {
         catalogManagerResource.getResourceUri("templates_yaml/families.txt");
         catalogManagerResource.getResourceUri("templates_yaml/samples.txt");
         catalogManagerResource.getResourceUri("templates_yaml/individuals.yml");
+
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
         TemplateManifest manifest = objectMapper.readValue(resource.toURL(), TemplateManifest.class);
-
         TemplateManager templateManager = new TemplateManager(catalogManager, false, false, token);
         templateManager.execute(manifest, Paths.get(resource).getParent());
 
         templateManager = new TemplateManager(catalogManager, true, true, token);
         templateManager.execute(manifest, Paths.get(resource).getParent());
-
     }
 
 }
