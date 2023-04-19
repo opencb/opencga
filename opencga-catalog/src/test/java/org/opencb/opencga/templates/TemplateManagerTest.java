@@ -37,7 +37,7 @@ public class TemplateManagerTest {
         catalogManagerResource.after();
     }
 
-    @Test
+//    @Test
     public void test() throws Exception {
         CatalogManager catalogManager = catalogManagerResource.getCatalogManager();
         String adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
@@ -67,7 +67,7 @@ public class TemplateManagerTest {
         templateManager.execute(manifest, Paths.get(resource).getParent());
     }
 
-//    @Test
+    @Test
     public void test_yaml() throws Exception {
         CatalogManager catalogManager = catalogManagerResource.getCatalogManager();
         String adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
