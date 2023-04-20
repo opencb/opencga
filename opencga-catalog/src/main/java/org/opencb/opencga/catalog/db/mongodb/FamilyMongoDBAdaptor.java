@@ -145,11 +145,20 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         List<Individual> createIndividuals = family.getMembers();
         List<Individual> allIndividuals = new LinkedList<>();
+        Set<String> allIndividualIds = new HashSet<>();
         if (CollectionUtils.isNotEmpty(family.getMembers())) {
             allIndividuals.addAll(family.getMembers());
+            for (Individual member : family.getMembers()) {
+                allIndividualIds.add(member.getId());
+            }
         }
         if (CollectionUtils.isNotEmpty(members)) {
-            allIndividuals.addAll(members);
+            for (Individual member : members) {
+                // Avoid duplications
+                if (allIndividualIds.add(member.getId())) {
+                    allIndividuals.addAll(members);
+                }
+            }
         }
         family.setMembers(allIndividuals);
 

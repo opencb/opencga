@@ -2,7 +2,10 @@ package org.opencb.opencga.templates;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
@@ -14,7 +17,6 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
-import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.net.URI;
 import java.nio.file.Paths;
@@ -36,7 +38,6 @@ public class TemplateManagerTest {
     }
 
     @Test
-    @Ignore("Test ignored temporarily as result of TASK-4204. FIXME")
     public void test() throws Exception {
         CatalogManager catalogManager = catalogManagerResource.getCatalogManager();
         String adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
@@ -68,7 +69,6 @@ public class TemplateManagerTest {
     }
 
     @Test
-    @Ignore("Test ignored temporarily as result of TASK-4204. FIXME")
     public void test_yaml() throws Exception {
         CatalogManager catalogManager = catalogManagerResource.getCatalogManager();
         String adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
