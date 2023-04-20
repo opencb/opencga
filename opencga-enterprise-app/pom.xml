@@ -39,6 +39,12 @@
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-app</artifactId>
             <version>${opencga.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpclient</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!--JLINE Terminal dependencies-->
