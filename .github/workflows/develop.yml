@@ -34,4 +34,3 @@ jobs:
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init
     secrets: inherit
-

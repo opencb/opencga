@@ -12,4 +12,3 @@ jobs:
     with:
       test_profile: runLongTests,runMediumTests,runShortTests
       report_context: development
-

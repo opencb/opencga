@@ -52,4 +52,3 @@ jobs:
     steps:
       - name: test-version-from-check
         run: echo "Project version is " ${{ needs.build.outputs.version }}
-
