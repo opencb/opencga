@@ -56,6 +56,8 @@ public class PedigreeGraphUtils {
     public static void createPedigreeGraph(Family family, Path rScriptPath, Path outDir) throws IOException {
         File pedFile;
         try {
+            System.err.println("Family " + family.getId() + " members : "
+                    + family.getMembers().stream().map(Individual::getId).collect(Collectors.toList()));
             pedFile = createPedFile(family, outDir);
             System.err.println("Generated file '" + pedFile + "' from familyId " + family.getId());
             System.err.println("------------------------------");

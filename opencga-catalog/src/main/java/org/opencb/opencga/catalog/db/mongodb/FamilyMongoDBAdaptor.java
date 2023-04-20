@@ -135,7 +135,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         if (StringUtils.isEmpty(family.getId())) {
             throw new CatalogDBException("Missing family id");
         }
-
+        logger.info("Family {}, family.members {}", family.getId(), family.getMembers());
+        logger.info("Family {}, other members {}", family.getId(), members);
         Query tmpQuery = new Query()
                 .append(QueryParams.ID.key(), family.getId())
                 .append(QueryParams.STUDY_UID.key(), studyUid);
@@ -152,6 +153,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             allIndividuals.addAll(members);
         }
         family.setMembers(allIndividuals);
+        logger.info("Family {}, allIndividuals {}", family.getId(), allIndividuals);
 
         // First we check if we need to create any individuals
         if (CollectionUtils.isNotEmpty(family.getMembers())) {
