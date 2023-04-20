@@ -244,14 +244,24 @@ public class MigrationManager {
         if (CollectionUtils.isNotEmpty(domain)) {
             migrations.removeIf(migration -> !domain.contains(migration.domain()));
         }
-        Map<String, Pair<Migration, MigrationRun>> map = new HashMap<>(migrations.size());
-        for (Migration migration : migrations) {
-            map.put(migration.id(), MutablePair.of(migration, null));
-        }
 
         // 2. Get migration runs and filter by status
         List<MigrationRun> migrationRuns = migrationDBAdaptor.get(migrations.stream().map(Migration::id).collect(Collectors.toList()))
                 .getResults();
+
+        Map<String, Pair<Migration, MigrationRun>> map = new HashMap<>(migrations.size());
+        // If no migrations can be found registered in the database is because they are actually not needed (new installation), otherwise
+        // it will be because it hadn't been checked yet
+        MigrationRun.MigrationStatus defaultMigrationStatus = migrationRuns.isEmpty()
+                ? MigrationRun.MigrationStatus.REDUNDANT
+                : MigrationRun.MigrationStatus.PENDING;
+        for (Migration migration : migrations) {
+            // Create dummy MigrationRun as if all migrations were already run
+            MigrationRun migrationRun = new MigrationRun(migration.id(), migration.description(), migration.version(),
+                    TimeUtils.getDate(), TimeUtils.getDate(), migration.patch(), defaultMigrationStatus, "");
+            map.put(migration.id(), MutablePair.of(migration, migrationRun));
+        }
+
         for (MigrationRun migrationRun : migrationRuns) {
             map.get(migrationRun.getId()).setValue(migrationRun);
         }
@@ -658,8 +668,8 @@ public class MigrationManager {
                         .createFolder(adminStudy, path, true, "Migration job " + migrationRun.getId(), null, QueryOptions.empty(), token);
                 OpenCGAResult<File> stderr = catalogManager.getFileManager()
                         .link(adminStudy, new FileLinkParams()
-                                .setPath(Paths.get(path, logFile).toString())
-                                .setUri(Paths.get(catalogManager.getConfiguration().getJobDir(), path, logFile).toUri().toString()),
+                                        .setPath(Paths.get(path, logFile).toString())
+                                        .setUri(Paths.get(catalogManager.getConfiguration().getJobDir(), path, logFile).toUri().toString()),
                                 false, token);
 
                 Job job = new Job()
