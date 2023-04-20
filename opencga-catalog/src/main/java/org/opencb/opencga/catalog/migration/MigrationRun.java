@@ -128,8 +128,10 @@ public class MigrationRun {
         sb.append(", start=").append(start);
         sb.append(", end=").append(end);
         sb.append(", patch=").append(patch);
+        sb.append(", jobs=").append(jobs);
         sb.append(", status=").append(status);
         sb.append(", exception='").append(exception).append('\'');
+        sb.append(", events=").append(events);
         sb.append('}');
         return sb.toString();
     }
