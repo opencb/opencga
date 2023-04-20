@@ -22,7 +22,7 @@ on:
         required: true
 
 env:
-  xb_version: "1.6.0-SNAPSHOT"
+  xb_version: "1.6.0"
 
 jobs:
   analysis:
