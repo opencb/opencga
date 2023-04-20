@@ -39,7 +39,7 @@ jobs:
           java-version: '8'
           cache: 'maven'
       - name: OpenCGA Maven Build (skip tests)
-        run: mvn -T 2 clean install -P storage-hadoop,hdp3.1,opencga-storage-hadoop-deps -DskipTests -f opencga-home/pom.xml
+        run: mvn -T 2 clean install -P storage-hadoop,hdp3.1,opencga-storage-hadoop-deps -DskipTests -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6' -f opencga-home/pom.xml
       - name: OpenCGA Enterprise Maven Build (skip tests)
         run: mvn -T 2 clean install -DskipTests ${{ inputs.maven_opts }}
       - uses: actions/upload-artifact@v3
