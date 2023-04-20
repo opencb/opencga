@@ -45,6 +45,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.PedigreeGraphUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.cohort.Cohort;
@@ -66,6 +67,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -116,21 +118,35 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                                         QueryOptions options) throws CatalogDBException, CatalogParameterException,
             CatalogAuthorizationException {
         try {
-            return runTransaction(clientSession -> {
+            AtomicReference<Family> familyCopy = new AtomicReference<>();
+            OpenCGAResult<Family> result = runTransaction(clientSession -> {
+                // Family is modified during insert. As the transaction might be re-run in case of
+                // transient transaction error, we need to take a new copy of the input family every time.
+                // Only if the transaction gets executed correctly, the input transaction is updated with
+                // the modified copy.
+                familyCopy.set(JacksonUtils.copySafe(family, Family.class));
                 long tmpStartTime = startQuery();
-                logger.debug("Starting family insert transaction for family id '{}'", family.getId());
-
+                logger.debug("Starting family insert transaction for family id '{}'", familyCopy.get().getId());
                 dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
-                insert(clientSession, studyId, family, members, variableSetList);
+                insert(clientSession, studyId, familyCopy.get(), members, variableSetList);
                 return endWrite(tmpStartTime, 1, 1, 0, 0, null);
             });
+            // Do we really need to propagate these changes?
+            JacksonUtils.updateSafe(family, familyCopy.get());
+            return result;
         } catch (Exception e) {
             logger.error("Could not create family {}: {}", family.getId(), e.getMessage(), e);
             throw e;
         }
     }
 
-    Family insert(ClientSession clientSession, long studyUid, Family family, List<Individual> members, List<VariableSet> variableSetList)
+    Family insert(ClientSession clientSession, long studyUid, Family family, List<VariableSet> variableSetList)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return insert(clientSession, studyUid, family, null, variableSetList);
+    }
+
+    private Family insert(ClientSession clientSession, long studyUid, Family family, List<Individual> members,
+                          List<VariableSet> variableSetList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (StringUtils.isEmpty(family.getId())) {
             throw new CatalogDBException("Missing family id");
