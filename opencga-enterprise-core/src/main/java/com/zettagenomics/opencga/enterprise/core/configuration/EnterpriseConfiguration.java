@@ -8,6 +8,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 
 public class EnterpriseConfiguration {
@@ -30,6 +33,21 @@ public class EnterpriseConfiguration {
     public void serialize(OutputStream configurationOututStream) throws IOException {
         ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
         yamlMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOututStream, this);
+    }
+
+    public static EnterpriseConfiguration load(Path opencgaHome) {
+        // Read enterprise configuration file
+        Path configDirPath = opencgaHome.resolve("conf");
+        InputStream configInputStream;
+        try {
+            String confPath = configDirPath.toFile().getAbsolutePath()  + "/enterprise-configuration.yml";
+            logger.info("Reading enterprise-configuration.yml file: '{}'", confPath);
+            configInputStream = Files.newInputStream(Paths.get(confPath));
+            return EnterpriseConfiguration.load(configInputStream);
+        } catch (IOException e) {
+            logger.error("Could not load enterprise-configuration.yml file");
+            throw new RuntimeException(e);
+        }
     }
 
     public static EnterpriseConfiguration load(InputStream configurationInputStream) throws IOException {
@@ -105,6 +123,13 @@ public class EnterpriseConfiguration {
                             configuration.getSso().getAttributes().setEmail(value);
                         } else {
                             configuration.getSso().setAttributes(new SsoPrincipalAttributesConfiguration().setEmail(value));
+                        }
+                        break;
+                    case "ENTERPRISE_SSO_ATTRIBUTES_ORGANIZATION":
+                        if (configuration.getSso().getAttributes() != null) {
+                            configuration.getSso().getAttributes().setOrganization(value);
+                        } else {
+                            configuration.getSso().setAttributes(new SsoPrincipalAttributesConfiguration().setOrganization(value));
                         }
                         break;
                     case "ENTERPRISE_SSO_ATTRIBUTES_GROUPS":

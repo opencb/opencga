@@ -50,19 +50,7 @@ public class EnterpriseRestServer extends AbstractStorageServer {
 
     public EnterpriseRestServer(Path opencgaHome, int port) {
         super(opencgaHome, port);
-
-        // Read enterprise configuration file
-        Path configDirPath = opencgaHome.resolve("conf");
-        InputStream configInputStream;
-        try {
-            String confPath = configDirPath.toFile().getAbsolutePath()  + "/enterprise-configuration.yml";
-            logger.info("Reading enterprise-configuration.yml file: '{}'", confPath);
-            configInputStream = Files.newInputStream(Paths.get(confPath));
-            enterpriseConfiguration = EnterpriseConfiguration.load(configInputStream);
-        } catch (IOException e) {
-            logger.error("Could not load enterprise-configuration.yml file");
-            throw new RuntimeException(e);
-        }
+        enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
     }
 
     @Override

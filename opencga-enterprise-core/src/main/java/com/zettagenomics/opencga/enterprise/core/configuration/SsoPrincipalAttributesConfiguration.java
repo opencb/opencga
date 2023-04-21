@@ -5,15 +5,17 @@ public class SsoPrincipalAttributesConfiguration {
     private String name;
     private String surname;
     private String email;
+    private String organization;
     private String groups;
 
     public SsoPrincipalAttributesConfiguration() {
     }
 
-    public SsoPrincipalAttributesConfiguration(String name, String surname, String email, String groups) {
+    public SsoPrincipalAttributesConfiguration(String name, String surname, String email, String organization, String groups) {
         this.name = name;
         this.surname = surname;
         this.email = email;
+        this.organization = organization;
         this.groups = groups;
     }
 
@@ -23,6 +25,7 @@ public class SsoPrincipalAttributesConfiguration {
         sb.append("name='").append(name).append('\'');
         sb.append(", surname='").append(surname).append('\'');
         sb.append(", email='").append(email).append('\'');
+        sb.append(", organization='").append(organization).append('\'');
         sb.append(", groups='").append(groups).append('\'');
         sb.append('}');
         return sb.toString();
@@ -52,6 +55,15 @@ public class SsoPrincipalAttributesConfiguration {
 
     public SsoPrincipalAttributesConfiguration setEmail(String email) {
         this.email = email;
+        return this;
+    }
+
+    public String getOrganization() {
+        return organization;
+    }
+
+    public SsoPrincipalAttributesConfiguration setOrganization(String organization) {
+        this.organization = organization;
         return this;
     }
 
