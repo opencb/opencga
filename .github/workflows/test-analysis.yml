@@ -13,7 +13,7 @@ on:
       SSH_TESTING_SERVER_PASSWORD:
         required: true
 env:
-  xb_version: "1.7.0"
+  xb_version: "1.6.1"
 jobs:
   test:
     name: Test and push Sonar analysis
