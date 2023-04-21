@@ -20,6 +20,7 @@ public class CvaWSServer extends OpenCGAWSServer {
     public CvaWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
+
     @GET
     @Path("/{caseId}/info")
     @ApiOperation(value = "Get sample information", response = Sample.class)

@@ -46,6 +46,10 @@
             <version>2.8.0-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.zettagenomics.opencga-enterprise</groupId>
+            <artifactId>opencga-enterprise-core</artifactId>
+        </dependency>
     </dependencies>
     <parent>
         <groupId>com.zettagenomics.opencga-enterprise</groupId>

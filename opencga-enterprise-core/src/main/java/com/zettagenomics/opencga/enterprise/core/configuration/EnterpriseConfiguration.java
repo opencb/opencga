@@ -13,6 +13,7 @@ import java.util.Map;
 public class EnterpriseConfiguration {
 
     private SsoConfiguration sso;
+    private CvdbConfiguration cvdb;
 
     private static final String DEFAULT_CONFIGURATION_FORMAT = "YAML";
 
@@ -24,6 +25,7 @@ public class EnterpriseConfiguration {
 
     public EnterpriseConfiguration() {
         sso = new SsoConfiguration();
+        cvdb = new CvdbConfiguration();
     }
 
 
