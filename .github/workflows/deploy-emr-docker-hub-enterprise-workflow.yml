@@ -9,6 +9,13 @@ on:
         required: true
 
 jobs:
+  build:
+    uses: ./.github/workflows/build-java-enterprise-workflow.yml
+    with:
+      maven_opts: -Dopencga.war.name=opencga
+      opencga_maven_opts: -P storage-hadoop,emr6.1
+      artifact_name: emr-build-folder
+
   deploy-docker-hub:
     name: Push Docker image
     runs-on: ubuntu-22.04
@@ -16,7 +23,7 @@ jobs:
       - name: Download build dir
         uses: actions/download-artifact@v3
         with:
-          name: build-folder
+          name: emr-build-folder
           path: build
       - name: Docker Login
         uses: docker/login-action@v2
