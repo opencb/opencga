@@ -83,6 +83,37 @@ public class EnterpriseConfiguration {
                     case "ENTERPRISE_SSO_PYTHON_BIN":
                         configuration.getSso().setPythonBin(value);
                         break;
+                    case "ENTERPRISE_SSO_PROTOCOL":
+                        configuration.getSso().setProtocol(value);
+                        break;
+                    case "ENTERPRISE_SSO_ATTRIBUTES_NAME":
+                        if (configuration.getSso().getAttributes() != null) {
+                            configuration.getSso().getAttributes().setName(value);
+                        } else {
+                            configuration.getSso().setAttributes(new SsoPrincipalAttributesConfiguration().setName(value));
+                        }
+                        break;
+                    case "ENTERPRISE_SSO_ATTRIBUTES_SURNAME":
+                        if (configuration.getSso().getAttributes() != null) {
+                            configuration.getSso().getAttributes().setSurname(value);
+                        } else {
+                            configuration.getSso().setAttributes(new SsoPrincipalAttributesConfiguration().setSurname(value));
+                        }
+                        break;
+                    case "ENTERPRISE_SSO_ATTRIBUTES_EMAIL":
+                        if (configuration.getSso().getAttributes() != null) {
+                            configuration.getSso().getAttributes().setEmail(value);
+                        } else {
+                            configuration.getSso().setAttributes(new SsoPrincipalAttributesConfiguration().setEmail(value));
+                        }
+                        break;
+                    case "ENTERPRISE_SSO_ATTRIBUTES_GROUPS":
+                        if (configuration.getSso().getAttributes() != null) {
+                            configuration.getSso().getAttributes().setGroups(value);
+                        } else {
+                            configuration.getSso().setAttributes(new SsoPrincipalAttributesConfiguration().setGroups(value));
+                        }
+                        break;
                     default:
                         break;
                 }
