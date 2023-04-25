@@ -63,7 +63,7 @@ public class VariantSolrExternalResource extends ExternalResource {
 
         Path rootDir = getTmpRootDir();
 
-        String configSet = "opencga-variant-configset-" + GitRepositoryState.get().getBuildVersion();
+        String configSet = "opencga-variant-configset-" + GitRepositoryState.getInstance().getBuildVersion();
 
         // Copy configuration
         getResourceUri("configsets/variantsCollection/solrconfig.xml", "configsets/" + configSet + "/solrconfig.xml");

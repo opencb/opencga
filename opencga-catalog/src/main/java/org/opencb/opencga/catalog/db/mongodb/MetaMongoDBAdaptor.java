@@ -55,7 +55,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
             Filters.eq(ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID),
             Filters.eq(OLD_ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID));
     private final MongoDBCollection metaCollection;
-    private static final String VERSION = GitRepositoryState.get().getBuildVersion();
+    private static final String VERSION = GitRepositoryState.getInstance().getBuildVersion();
 
     public MetaMongoDBAdaptor(MongoDBCollection metaMongoDBCollection, Configuration configuration,
                               MongoDBAdaptorFactory dbAdaptorFactory) {
