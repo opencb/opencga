@@ -184,7 +184,7 @@ public class AuditManager {
     public void audit(String operationId, String userId, Enums.Action action, Enums.Resource resource, String resourceId,
                       String resourceUuid, String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status,
                       ObjectMap attributes) {
-        String apiVersion = GitRepositoryState.get().getBuildVersion();
+        String apiVersion = GitRepositoryState.getInstance().getBuildVersion();
         Date date = TimeUtils.getDate();
 
         String auditId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
