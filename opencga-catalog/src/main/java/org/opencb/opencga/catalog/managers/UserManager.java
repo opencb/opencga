@@ -902,20 +902,37 @@ public class UserManager extends AbstractManager {
      * This method will be only callable by the system. It generates a new session id for the user.
      *
      * @param userId user id for which a session will be generated.
+     * @param attributes attributes to be put as part of the claims section in the JWT.
+     * @param expiration Expiration time in seconds.
      * @param token  Password or active session of the OpenCGA admin.
      * @return an objectMap containing the new sessionId
      * @throws CatalogException if the password is not correct or the userId does not exist.
      */
-    public String getNonExpiringToken(String userId, String token) throws CatalogException {
-        if (OPENCGA.equals(getUserId(token))) {
-            return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createNonExpiringToken(userId);
-        } else {
-            throw new CatalogException("Only user '" + OPENCGA + "' is allowed to create non expiring tokens");
+    public String getToken(String userId, Map<String, Object> attributes, long expiration, String token) throws CatalogException {
+        if (!OPENCGA.equals(getUserId(token))) {
+            throw new CatalogException("Only user '" + OPENCGA + "' is allowed to create tokens");
         }
+        if (expiration <= 0) {
+            throw new CatalogException("Expiration time must be higher than 0");
+        }
+
+        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(userId, attributes, expiration);
     }
 
-    public String getAdminNonExpiringToken(String token) throws CatalogException {
-        return getNonExpiringToken(OPENCGA, token);
+    /**
+     * This method will be only callable by the system. It generates a new session id for the user.
+     *
+     * @param userId user id for which a session will be generated.
+     * @param attributes attributes to be put as part of the claims section in the JWT.
+     * @param token  Password or active session of the OpenCGA admin.
+     * @return an objectMap containing the new sessionId
+     * @throws CatalogException if the password is not correct or the userId does not exist.
+     */
+    public String getNonExpiringToken(String userId, Map<String, Object> attributes, String token) throws CatalogException {
+        if (!OPENCGA.equals(getUserId(token))) {
+            throw new CatalogException("Only user '" + OPENCGA + "' is allowed to create tokens");
+        }
+        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createNonExpiringToken(userId, attributes);
     }
 
     /**

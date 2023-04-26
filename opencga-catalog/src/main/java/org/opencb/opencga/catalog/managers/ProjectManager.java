@@ -777,7 +777,7 @@ public class ProjectManager extends AbstractManager {
 
         String owner = studyDataResult.first().getFqn().split("@")[0];
 
-        String ownerToken = catalogManager.getUserManager().getNonExpiringToken(owner, token);
+        String ownerToken = catalogManager.getUserManager().getNonExpiringToken(owner, Collections.emptyMap(), token);
 
         try (BufferedReader buf = new BufferedReader(new FileReader(filePath))) {
 

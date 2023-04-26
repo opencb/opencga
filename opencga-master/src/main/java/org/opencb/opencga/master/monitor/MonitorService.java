@@ -33,6 +33,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Paths;
+import java.util.Collections;
+
+import static org.opencb.opencga.catalog.managers.AbstractManager.OPENCGA;
 
 /**
  * Created by imedina on 16/06/16.
@@ -92,7 +95,7 @@ public class MonitorService {
         logger = LoggerFactory.getLogger(this.getClass());
 
         this.catalogManager = new CatalogManager(this.configuration);
-        String nonExpiringToken = this.catalogManager.getUserManager().getAdminNonExpiringToken(token);
+        String nonExpiringToken = this.catalogManager.getUserManager().getNonExpiringToken(OPENCGA, Collections.emptyMap(), token);
 
         executionDaemon = new ExecutionDaemon(
                 configuration.getMonitor().getExecutionDaemonInterval(),
