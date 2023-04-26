@@ -918,8 +918,8 @@ public class UserManager extends AbstractManager {
         if (expiration <= 0) {
             throw new CatalogException("Expiration time must be higher than 0");
         }
-
-        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(userId, attributes, expiration);
+        AuthenticationManager authManager = getAuthenticationManagerForUser(userId);
+        return authManager.createToken(userId, attributes, expiration);
     }
 
     /**
@@ -935,7 +935,22 @@ public class UserManager extends AbstractManager {
         if (!OPENCGA.equals(getUserId(token))) {
             throw new CatalogException("Only user '" + OPENCGA + "' is allowed to create tokens");
         }
-        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createNonExpiringToken(userId, attributes);
+        AuthenticationManager authManager = getAuthenticationManagerForUser(userId);
+        return authManager.createNonExpiringToken(userId, attributes);
+    }
+
+    private AuthenticationManager getAuthenticationManagerForUser(String user) throws CatalogException {
+        OpenCGAResult<User> userOpenCGAResult = userDBAdaptor.get(user, INCLUDE_ACCOUNT);
+        if (userOpenCGAResult.getNumResults() == 1) {
+            String authId = userOpenCGAResult.first().getAccount().getAuthentication().getId();
+            if (!authenticationManagerMap.containsKey(authId)) {
+                throw new CatalogException("Could not authenticate user '" + user + "'. The authentication origin '" + authId
+                        + "' could not be found.");
+            }
+            return authenticationManagerMap.get(authId);
+        } else {
+            throw new CatalogException("User '" + user + "' not found.");
+        }
     }
 
     /**
