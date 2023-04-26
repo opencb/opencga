@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.server.rest.admin;
 
+import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
@@ -47,6 +48,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -335,4 +337,21 @@ public class AdminWSServer extends OpenCGAWSServer {
         }
     }
 
-}
+    @POST
+    @Path("/token")
+    @ApiOperation(value = "Obtain a valid token for a user", hidden = true)
+    public Response token(@ApiParam(value = "Token parameters", required = true) TokenParams jwtParams) {
+        try {
+            String newToken = jwtParams.getExpiration() != null
+                    ? catalogManager.getUserManager().getToken(jwtParams.getUserId(), jwtParams.getAttributes(), jwtParams.getExpiration(), token)
+                    : catalogManager.getUserManager().getNonExpiringToken(jwtParams.getUserId(), jwtParams.getAttributes(), token);
+            AuthenticationResponse authResponse = new AuthenticationResponse(newToken);
+            OpenCGAResult<AuthenticationResponse> opencgaResponse = new OpenCGAResult<>(0, Collections.emptyList(), 1,
+                    Collections.singletonList(authResponse), 1);
+            return createOkResponse(opencgaResponse);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    }
