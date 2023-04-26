@@ -95,6 +95,9 @@ public class UserManager extends AbstractManager {
                                     new AzureADAuthenticationManager(authenticationOrigin));
                             break;
                         default:
+                            logger.warn("Unexpected authentication origin type '{}' for id '{}' found in the configuration file. "
+                                    + "Authentication origin will be ignored.", authenticationOrigin.getType(),
+                                    authenticationOrigin.getId());
                             break;
                     }
                 }
