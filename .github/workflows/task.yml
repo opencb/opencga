@@ -14,5 +14,5 @@ jobs:
 
   test:
     uses: opencb/opencga/.github/workflows/build-test.yml@release-2.7.x
-    depends: build
+    needs: build
     secrets: inherit
