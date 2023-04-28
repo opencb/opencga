@@ -906,12 +906,12 @@ public class UserManager extends AbstractManager {
      *
      * @param userId user id for which a session will be generated.
      * @param attributes attributes to be put as part of the claims section in the JWT.
-     * @param expiration Expiration time in seconds.
+     * @param expiration Expiration time in seconds. If null, default expiration time will be used.
      * @param token  Password or active session of the OpenCGA admin.
      * @return an objectMap containing the new sessionId
      * @throws CatalogException if the password is not correct or the userId does not exist.
      */
-    public String getToken(String userId, Map<String, Object> attributes, long expiration, String token) throws CatalogException {
+    public String getToken(String userId, Map<String, Object> attributes, Long expiration, String token) throws CatalogException {
         if (!OPENCGA.equals(getUserId(token))) {
             throw new CatalogException("Only user '" + OPENCGA + "' is allowed to create tokens");
         }
@@ -919,7 +919,9 @@ public class UserManager extends AbstractManager {
             throw new CatalogException("Expiration time must be higher than 0");
         }
         AuthenticationManager authManager = getAuthenticationManagerForUser(userId);
-        return authManager.createToken(userId, attributes, expiration);
+        return expiration != null
+                ? authManager.createToken(userId, attributes, expiration)
+                : authManager.createToken(userId, attributes);
     }
 
     /**

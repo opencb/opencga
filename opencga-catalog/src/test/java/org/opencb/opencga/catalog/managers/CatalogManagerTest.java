@@ -91,7 +91,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         claims.put("a", "hola");
         claims.put("ab", "byw");
         // Create a token valid for 1 second
-        String expiringToken = catalogManager.getUserManager().getToken("opencga", claims, 1, token);
+        String expiringToken = catalogManager.getUserManager().getToken("opencga", claims, 1L, token);
         assertEquals("opencga", catalogManager.getUserManager().getUserId(expiringToken));
         
         String nonExpiringToken = catalogManager.getUserManager().getNonExpiringToken("opencga", claims, token);
