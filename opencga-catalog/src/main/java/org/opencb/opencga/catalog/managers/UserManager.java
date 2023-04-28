@@ -94,6 +94,11 @@ public class UserManager extends AbstractManager {
                             authenticationManagerMap.put(authenticationOrigin.getId(),
                                     new AzureADAuthenticationManager(authenticationOrigin));
                             break;
+                        case OPENCGA:
+                            authenticationManagerMap.put(authenticationOrigin.getId(),
+                                    new CatalogAuthenticationManager(catalogDBAdaptorFactory, configuration.getEmail(), secretKey,
+                                            expiration));
+                            break;
                         default:
                             logger.warn("Unexpected authentication origin type '{}' for id '{}' found in the configuration file. "
                                     + "Authentication origin will be ignored.", authenticationOrigin.getType(),
@@ -915,7 +920,7 @@ public class UserManager extends AbstractManager {
         if (!OPENCGA.equals(getUserId(token))) {
             throw new CatalogException("Only user '" + OPENCGA + "' is allowed to create tokens");
         }
-        if (expiration <= 0) {
+        if (expiration != null && expiration <= 0) {
             throw new CatalogException("Expiration time must be higher than 0");
         }
         AuthenticationManager authManager = getAuthenticationManagerForUser(userId);
