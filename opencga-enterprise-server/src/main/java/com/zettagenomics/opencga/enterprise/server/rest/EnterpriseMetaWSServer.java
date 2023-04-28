@@ -181,19 +181,12 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
                         enterpriseConfiguration.getSso().getAttributes().getOrganization(), ""));
             }
 
-            // TODO: When we create a user, OpenCGA validates the authenticationOrigin. We are now putting CAS,
-            //  which means we should also add CAS as an authentication origin in the main configuration file even if
-            //  we are not going to add any configuration. We need to think about this.
             catalogManager.getUserManager().create(user, null, opencgaToken);
         }
 
         // TODO: Check and sync groups
 
-        // TODO: We should obtain the token by calling the UserManager directly instead of this way. We should make
-        //  public a method to get a token for a user with any expiration time as long as that is requested by the admin
-        Key key = new SecretKeySpec(catalogManager.getConfiguration().getAdmin().getSecretKey().getBytes(), SignatureAlgorithm.HS256.getJcaName());
-        JwtManager jwtManager = new JwtManager(catalogManager.getConfiguration().getAdmin().getAlgorithm(), key);
-        return jwtManager.createJWTToken(principal.getName(), configuration.getAuthentication().getExpiration());
+        return catalogManager.getUserManager().getToken(principal.getName(), Collections.emptyMap(), null, opencgaToken);
     }
 
     private String getDefaultValue(Map<String, Object> attributes, String key, String defaultValue) {
