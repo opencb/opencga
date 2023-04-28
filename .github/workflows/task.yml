@@ -14,5 +14,12 @@ jobs:
 
   test:
     uses: opencb/opencga/.github/workflows/build-test.yml@release-2.7.x
-    needs: build
+    needs:
+    secrets: inherit
+
+  deploy-docker:
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    needs: test
+    with:
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag ${{ github.ref_name }}
     secrets: inherit
