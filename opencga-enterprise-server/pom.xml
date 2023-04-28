@@ -22,6 +22,10 @@
         </dependency>
         <dependency>
             <groupId>com.zettagenomics.opencga-enterprise</groupId>
+            <artifactId>opencga-enterprise-catalog</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zettagenomics.opencga-enterprise</groupId>
             <artifactId>opencga-enterprise-cva</artifactId>
         </dependency>
 

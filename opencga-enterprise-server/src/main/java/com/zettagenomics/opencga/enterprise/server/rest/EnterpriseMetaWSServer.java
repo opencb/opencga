@@ -1,21 +1,17 @@
 package com.zettagenomics.opencga.enterprise.server.rest;
 
+import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseUserManager;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.server.EnterpriseResourceConfig;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.apache.commons.lang3.StringUtils;
 import org.jasig.cas.client.authentication.AttributePrincipal;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.auth.authentication.JwtManager;
-import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.VersionException;
-import org.opencb.opencga.core.models.user.Account;
-import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Api;
 import org.opencb.opencga.core.tools.annotations.ApiOperation;
@@ -40,6 +36,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.Key;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Path("/{apiVersion}/meta")
 @Produces("application/json")
@@ -47,9 +44,9 @@ import java.util.*;
 public class EnterpriseMetaWSServer extends MetaWSServer {
 
     private final String opencgaToken;
-
     private final EnterpriseConfiguration enterpriseConfiguration;
-    private final QueryOptions userAccountInfoQueryOptions;
+
+    public static final AtomicReference<EnterpriseUserManager> enterpriseUserManagerAtomicRef = new AtomicReference<>();
 
     public EnterpriseMetaWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
@@ -60,9 +57,20 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
         this.opencgaToken = jwtManager.createJWTToken(ParamConstants.OPENCGA_USER_ID, 0L);
 
         this.enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
-        this.userAccountInfoQueryOptions = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(UserDBAdaptor.QueryParams.ID.key(), UserDBAdaptor.QueryParams.ACCOUNT.key(),
-                        UserDBAdaptor.QueryParams.ATTRIBUTES.key()));
+    }
+
+    private EnterpriseUserManager getEnterpriseUserManager() {
+        EnterpriseUserManager enterpriseUserManager = enterpriseUserManagerAtomicRef.get();
+        if (enterpriseUserManager == null) {
+            synchronized (enterpriseUserManagerAtomicRef) {
+                enterpriseUserManager = enterpriseUserManagerAtomicRef.get();
+                if (enterpriseUserManager == null) {
+                    enterpriseUserManager = new EnterpriseUserManager(catalogManager, enterpriseConfiguration, opencgaToken);
+                    enterpriseUserManagerAtomicRef.set(enterpriseUserManager);
+                }
+            }
+        }
+        return enterpriseUserManager;
     }
 
     @Override
@@ -114,7 +122,7 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
 
         URI targetURIForRedirection;
         try {
-            String token = userLoggedWithSso(principal);
+            String token = getEnterpriseUserManager().ssoLogin(principal);
 
             Cookie[] cookies = httpServletRequest.getCookies();
             logger.debug("SSO cookies: ");
@@ -139,61 +147,5 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
             return createErrorResponse(e);
         }
         return Response.temporaryRedirect(targetURIForRedirection).build();
-    }
-
-    private String userLoggedWithSso(AttributePrincipal principal) throws CatalogException {
-        for (Map.Entry<String, Object> entry : principal.getAttributes().entrySet()) {
-            // Print user attributes
-            logger.debug("{}:\t{}", entry.getKey(), entry.getValue());
-        }
-
-        String userId = principal.getName();
-        // Check user exists
-        Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), userId);
-        OpenCGAResult<User> result = catalogManager.getAdminManager().userSearch(query, userAccountInfoQueryOptions, opencgaToken);
-
-        if (result.getNumResults() == 1) {
-            // Check account
-            if (!"CAS".equals(result.first().getAccount().getAuthentication().getId())) {
-                throw new CatalogException("User '" + principal.getName() + "' was already registered from a "
-                        + "different authentication origin (" + result.first().getAccount().getAuthentication().getId()
-                        + ")");
-            }
-        } else {
-            // User does not exist
-            User user = new User()
-                    .setId(principal.getName())
-                    .setAccount(new Account(Account.AccountType.GUEST, null, null, new Account.AuthenticationOrigin("CAS", false)))
-                    .setAttributes(principal.getAttributes());
-            if (enterpriseConfiguration.getSso().getAttributes() != null) {
-                String name = getDefaultValue(principal.getAttributes(),
-                        enterpriseConfiguration.getSso().getAttributes().getName(), principal.getName());
-                String surname = getDefaultValue(principal.getAttributes(),
-                        enterpriseConfiguration.getSso().getAttributes().getSurname(), "");
-                if (StringUtils.isNotEmpty(surname)) {
-                    user.setName(name + " " + surname);
-                } else {
-                    user.setName(name);
-                }
-                user.setEmail(getDefaultValue(principal.getAttributes(),
-                        enterpriseConfiguration.getSso().getAttributes().getEmail(), ""));
-                user.setOrganization(getDefaultValue(principal.getAttributes(),
-                        enterpriseConfiguration.getSso().getAttributes().getOrganization(), ""));
-            }
-
-            catalogManager.getUserManager().create(user, null, opencgaToken);
-        }
-
-        // TODO: Check and sync groups
-
-        return catalogManager.getUserManager().getToken(principal.getName(), Collections.emptyMap(), null, opencgaToken);
-    }
-
-    private String getDefaultValue(Map<String, Object> attributes, String key, String defaultValue) {
-        if (StringUtils.isEmpty(key)) {
-            return defaultValue;
-        }
-        String value = String.valueOf(attributes.get(key));
-        return StringUtils.isNotEmpty(value) && !"null".equals(value) ? value : defaultValue;
     }
 }
