@@ -96,7 +96,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         variantStorageEngine.getConfiguration().getCellbase().setDataRelease(null);
         variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
         variantStorageEngine.reloadCellbaseConfiguration();
-        variantStorageEngine.getCellBaseUtils().validateCellBaseConnection();
+        variantStorageEngine.getCellBaseUtils().validate();
 
         runDefaultETL(smallInputUri, variantStorageEngine, newStudyMetadata(),
                 new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));

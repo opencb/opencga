@@ -34,6 +34,8 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.project.ProjectCreateParams;
+import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -227,6 +229,54 @@ public class ProjectManagerTest extends GenericTest {
     }
 
     @Test
+    public void createProjectCheckCellbase() throws CatalogException, JsonProcessingException {
+        Project pr = catalogManager.getProjectManager()
+                .create(new ProjectCreateParams()
+                                .setId("Project_1")
+                                .setName("Project about some genomes")
+                                .setOrganism(new ProjectOrganism("Homo sapiens", "grch38"))
+                                .setCellbase(new CellBaseConfiguration(
+                                        ParamConstants.CELLBASE_URL,
+                                        "v5.0")),
+                        INCLUDE_RESULT, sessionIdUser).first();
+        assertNull(pr.getCellbase().getDataRelease());
+
+        pr = catalogManager.getProjectManager()
+                .create(new ProjectCreateParams()
+                                .setId("Project_2")
+                                .setName("Project about some genomes")
+                                .setOrganism(new ProjectOrganism("Homo sapiens", "grch38"))
+                                .setCellbase(new CellBaseConfiguration(
+                                        ParamConstants.CELLBASE_URL,
+                                        "5.0")),
+                        INCLUDE_RESULT, sessionIdUser).first();
+        assertNull(pr.getCellbase().getDataRelease());
+
+        pr = catalogManager.getProjectManager()
+                .create(new ProjectCreateParams()
+                                .setId("Project_3")
+                                .setName("Project about some genomes")
+                                .setOrganism(new ProjectOrganism("Homo sapiens", "grch38"))
+                                .setCellbase(new CellBaseConfiguration(
+                                        ParamConstants.CELLBASE_URL,
+                                        ParamConstants.CELLBASE_VERSION)),
+                        INCLUDE_RESULT, sessionIdUser).first();
+        assertNotNull(pr.getCellbase().getDataRelease());
+    }
+
+    @Test
+    public void createProjectWrongCellbase() throws CatalogException, JsonProcessingException {
+        thrown.expectMessage("DataRelease 'NON_EXISTING_DR' not found on cellbase");
+        catalogManager.getProjectManager()
+                .create(new ProjectCreateParams()
+                                .setId("project2")
+                                .setName("Project about some genomes")
+                                .setOrganism(new ProjectOrganism("Homo sapiens", "grch38"))
+                                .setCellbase(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, ParamConstants.CELLBASE_VERSION, "NON_EXISTING_DR")),
+                        INCLUDE_RESULT, sessionIdUser).first();
+    }
+
+    @Test
     public void updateCellbaseInProject() throws CatalogException, JsonProcessingException {
         Project pr = catalogManager.getProjectManager().create("project2", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
@@ -236,12 +286,16 @@ public class ProjectManagerTest extends GenericTest {
 
         CellBaseConfiguration cb = new CellBaseConfiguration("https://ws.opencb.org/cellbase", "v3");
         OpenCGAResult<Project> update = catalogManager.getProjectManager().setCellbaseConfiguration(pr.getId(),
-                new CellBaseConfiguration("https://ws.opencb.org/cellbase", "v3"), sessionIdUser);
+                new CellBaseConfiguration("https://ws.opencb.org/cellbase", "v3"), false, sessionIdUser);
         assertEquals(1, update.getNumUpdated());
 
         Project project = catalogManager.getProjectManager().get(pr.getId(), QueryOptions.empty(), sessionIdUser).first();
         assertNotNull(pr.getCellbase());
         assertEquals(cb.getUrl(), project.getCellbase().getUrl());
         assertEquals(cb.getVersion(), project.getCellbase().getVersion());
+
+        thrown.expectMessage("Unable to access cellbase url");
+        catalogManager.getProjectManager().setCellbaseConfiguration(pr.getId(),
+                new CellBaseConfiguration("https://ws.opencb.org/cellbase", "v3"), true, sessionIdUser);
     }
 }

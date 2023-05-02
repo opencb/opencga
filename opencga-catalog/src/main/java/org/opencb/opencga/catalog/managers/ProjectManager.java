@@ -33,7 +33,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.cellbase.CellBaseValidator;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.audit.AuditRecord;
@@ -307,21 +307,29 @@ public class ProjectManager extends AbstractManager {
                 ProjectDBAdaptor.QueryParams.CREATION_DATE.key()));
         project.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(project.getModificationDate(),
                 ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
-        project.setModificationDate(TimeUtils.getTime());
-        project.setCellbase(ParamUtils.defaultObject(project.getCellbase(),
-                new CellBaseConfiguration(
-                        ParamConstants.CELLBASE_URL,
-                        ParamConstants.CELLBASE_VERSION,
-                        ParamConstants.CELLBASE_DATA_RELEASE)));
         project.setCurrentRelease(1);
         project.setInternal(ProjectInternal.init());
         project.setAttributes(ParamUtils.defaultObject(project.getAttributes(), HashMap::new));
 
-        if (user.getAccount().getType() != Account.AccountType.ADMINISTRATOR
-                && (project.getOrganism() == null || StringUtils.isEmpty(project.getOrganism().getAssembly())
-                || StringUtils.isEmpty(project.getOrganism().getScientificName()))) {
-            throw new CatalogParameterException("Missing mandatory organism information");
+        if (user.getAccount().getType() == Account.AccountType.ADMINISTRATOR) {
+            // Do not validate organism nor CellBase for admin account
+        } else {
+            if (project.getOrganism() == null || StringUtils.isEmpty(project.getOrganism().getAssembly())
+                    || StringUtils.isEmpty(project.getOrganism().getScientificName())) {
+                throw new CatalogParameterException("Missing mandatory organism information");
+            }
+            try {
+                CellBaseConfiguration cellBaseConfiguration = ParamUtils.defaultObject(project.getCellbase(),
+                        new CellBaseConfiguration(ParamConstants.CELLBASE_URL, ParamConstants.CELLBASE_VERSION));
+                cellBaseConfiguration = CellBaseValidator.validate(cellBaseConfiguration,
+                        project.getOrganism().getScientificName(),
+                        project.getOrganism().getAssembly(), true);
+                project.setCellbase(cellBaseConfiguration);
+            } catch (IOException e) {
+                throw new CatalogParameterException(e);
+            }
         }
+
 
         project.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PROJECT));
 
@@ -555,8 +563,18 @@ public class ProjectManager extends AbstractManager {
                 new ObjectMap(ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_VARIANT.key(), dataStore), new QueryOptions(), true, token);
     }
 
-    public OpenCGAResult<Project> setCellbaseConfiguration(String projectStr, CellBaseConfiguration configuration, String token)
+    public OpenCGAResult<Project> setCellbaseConfiguration(String projectStr, CellBaseConfiguration configuration, boolean validate,
+                                                           String token)
             throws CatalogException {
+        if (validate) {
+            try {
+                ProjectOrganism organism = get(projectStr,
+                        new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), token).first().getOrganism();
+                configuration = CellBaseValidator.validate(configuration, organism.getScientificName(), organism.getAssembly(), true);
+            } catch (IOException e) {
+                throw new CatalogParameterException(e);
+            }
+        }
         return update(projectStr,
                 new ObjectMap(ProjectDBAdaptor.QueryParams.CELLBASE.key(), configuration), new QueryOptions(), true, token);
     }
