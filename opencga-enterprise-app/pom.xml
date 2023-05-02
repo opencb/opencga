@@ -44,6 +44,10 @@
                     <groupId>org.apache.httpcomponents</groupId>
                     <artifactId>httpclient</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>commons-collections</groupId>
+                    <artifactId>commons-collections</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -95,7 +99,7 @@
                     <environmentSetupFileName>../conf/${opencga.env.file}</environmentSetupFileName>
                     <programs>
                         <program>
-                            <id>opencga-enterprise.sh</id>
+                            <id>opencga.sh</id>
                             <mainClass>com.zettagenomics.opencga.enterprise.app.cli.main.OpencgaEnterpriseMain</mainClass>
                             <platforms>
                                 <platform>unix</platform>
@@ -156,10 +160,11 @@
                                 <exec executable="cp">
                                     <arg value="-r"/>
                                     <arg value="${opencga.build.dir}/analysis"/>
-                                    <arg value="${opencga.build.dir}/bin"/>
+                                    <arg value="${opencga.build.dir}/bin/opencga-internal.sh"/>
+                                    <arg value="${opencga.build.dir}/bin/opencga-test.sh"/>
                                     <arg value="${opencga.build.dir}/cloud"/>
                                     <arg value="${opencga.build.dir}/conf"/>
-                                    <arg value="${opencga.build.dir}/libs"/>
+<!--                                    <arg value="${opencga.build.dir}/libs"/>-->
                                     <arg value="${opencga.build.dir}/misc"/>
                                     <arg value="${build.dir}"/>
                                 </exec>
@@ -353,11 +358,11 @@
                                     <arg value="${build.dir}/${opencga.client.dir}"/>
                                 </exec>
 
-                                <exec executable="cp">
-                                    <arg value="${build.dir}/bin/opencga.sh"/>
-                                    <arg value="${build.dir}/bin/opencga-enterprise.sh"/>
-                                    <arg value="${build.dir}/${opencga.client.dir}/bin"/>
-                                </exec>
+<!--                                <exec executable="cp">-->
+<!--                                    <arg value="${build.dir}/bin/opencga.sh"/>-->
+<!--                                    <arg value="${build.dir}/bin/opencga-enterprise.sh"/>-->
+<!--                                    <arg value="${build.dir}/${opencga.client.dir}/bin"/>-->
+<!--                                </exec>-->
 
                                 <exec executable="cp">
                                     <arg value="${build.dir}/conf/client-configuration.yml"/>
