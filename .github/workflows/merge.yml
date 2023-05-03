@@ -10,6 +10,6 @@ on:
 
 jobs:
   delete-docker:
-    uses: opencb/java-common-libs/.github/workflows/delete-docker-hub-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/delete-docker-hub-workflow.yml@release-4.7.x
     secrets: inherit
 
