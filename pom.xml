@@ -13,12 +13,13 @@
         <module>opencga-enterprise-app</module>
         <module>opencga-enterprise-client</module>
         <module>opencga-enterprise-core</module>
+        <module>opencga-enterprise-catalog</module>
         <module>opencga-enterprise-cva</module>
         <module>opencga-enterprise-server</module>
     </modules>
 
     <properties>
-        <opencga.version>2.8.0-SNAPSHOT</opencga.version>
+        <opencga.version>2.8.1-SNAPSHOT</opencga.version>
         <pyopencga.version>2.8.0_dev</pyopencga.version>
         <opencgar.version>2.8.0_dev</opencgar.version>
         <cellbase.version>5.4.0-SNAPSHOT</cellbase.version>
@@ -79,6 +80,11 @@
             <dependency>
                 <groupId>com.zettagenomics.opencga-enterprise</groupId>
                 <artifactId>opencga-enterprise-cva</artifactId>
+                <version>${project.parent.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.zettagenomics.opencga-enterprise</groupId>
+                <artifactId>opencga-enterprise-catalog</artifactId>
                 <version>${project.parent.version}</version>
             </dependency>
             <dependency>
