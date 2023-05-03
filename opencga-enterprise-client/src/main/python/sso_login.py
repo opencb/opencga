@@ -4,7 +4,6 @@ import json
 import os
 import sys
 import signal
-import time
 import logging
 import webbrowser
 import yaml
@@ -45,7 +44,6 @@ def create_session_file(session_info):
 
 def kill(pid):
     """Kill a process by ID"""
-    time.sleep(1)
     os.kill(pid, signal.SIGKILL)
 
 
