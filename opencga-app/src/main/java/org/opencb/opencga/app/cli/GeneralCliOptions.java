@@ -74,7 +74,7 @@ public class GeneralCliOptions {
                 + "storage-configuration.yml and client-configuration.yml files.", hidden = true)
         public String conf;
 
-        @Parameter(names = {"--opencga-token"}, description = "Token session ID", arity = 1, hidden = true)
+        @Parameter(names = {ParamConstants.OPENCGA_TOKEN_CLI_PARAM}, description = "Token session ID", arity = 1, hidden = true)
         public String token;
 
         @Parameter(names = {"--host"}, description = "Use this server host instead of the default one in the client configuration", arity = 1)

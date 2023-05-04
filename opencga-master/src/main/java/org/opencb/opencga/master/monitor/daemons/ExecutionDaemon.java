@@ -569,8 +569,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         // Create cli
         String commandLine = buildCli(internalCli, job);
-        String authenticatedCommandLine = commandLine + " --token " + userToken;
-        String shadedCommandLine = commandLine + " --token " + REDACTED_TOKEN;
+        String authenticatedCommandLine = commandLine + " " + ParamConstants.OPENCGA_TOKEN_CLI_PARAM + " " + userToken;
+        String shadedCommandLine = commandLine + " " + ParamConstants.OPENCGA_TOKEN_CLI_PARAM + " " + REDACTED_TOKEN;
 
         updateParams.setCommandLine(shadedCommandLine);
 
