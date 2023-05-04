@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.mongodb.MongoException;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.*;
 import org.bson.Document;
@@ -35,6 +36,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -76,6 +78,8 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String INTERNAL_DELIMITER = "__";
 
     public static final String NATIVE_QUERY = "nativeQuery";
+    // TEST PURPOSES ONLY
+    public static final boolean MOCK_TRANSIENT_TRANSACTION_ERRORS = false;
 
     protected MongoDBAdaptorFactory dbAdaptorFactory;
     protected Configuration configuration;
@@ -96,10 +100,26 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         return runTransaction(body, null);
     }
 
-    protected <T> T runTransaction(TransactionBodyWithException<T> body, Consumer<CatalogException> onException)
+    protected <T> T runTransaction(TransactionBodyWithException<T> inputBody, Consumer<CatalogException> onException)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         ClientSession session = dbAdaptorFactory.getMongoDataStore().startSession();
         try {
+            TransactionBodyWithException<T> body;
+            if (MOCK_TRANSIENT_TRANSACTION_ERRORS) {
+                AtomicInteger i = new AtomicInteger(0);
+                body = (s) -> {
+                    T result = inputBody.execute(s);
+                    if (i.getAndIncrement() == 0) {
+                        MongoException e = new MongoException("MOCK transient transaction error!!!");
+                        e.addLabel(MongoException.TRANSIENT_TRANSACTION_ERROR_LABEL);
+                        logger.warn(e.getMessage());
+                        throw e;
+                    }
+                    return result;
+                };
+            } else {
+                body = inputBody;
+            }
             return session.withTransaction(() -> {
                 try {
                     return body.execute(session);

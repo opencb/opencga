@@ -16,12 +16,19 @@
 
 package org.opencb.opencga.server.rest;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.family.FamilyTsvAnnotationLoader;
+import org.opencb.opencga.analysis.family.PedigreeGraphAnalysis;
+import org.opencb.opencga.analysis.tools.ToolRunner;
+import org.opencb.opencga.analysis.variant.circos.CircosAnalysis;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -31,15 +38,20 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.family.*;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
+import java.util.*;
 
 /**
  * Created by pfurio on 03/05/17.
@@ -166,9 +178,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
     })
     public Response createFamilyPOST(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
-            String studyStr,
+                    String studyStr,
             @ApiParam(value = "Comma separated list of member ids to be associated to the created family") @QueryParam("members")
-            String members,
+                    String members,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "JSON containing family information", required = true) FamilyCreateParams family) {
         try {
@@ -231,6 +243,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of family ids", required = true) @PathParam("families") String familyStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.FAMILY_UPDATE_ROLES_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.FAMILY_UPDATE_ROLES_PARAM) boolean updateRoles,
+            @ApiParam(value = ParamConstants.FAMILY_UPDATE_PEDIGREE_GRAPH_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.FAMILY_UPDATE_PEDIGREEE_GRAPH_PARAM) boolean updatePedigreeGraph,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "body") FamilyUpdateParams parameters) {
@@ -319,7 +332,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Returns the acl of the families. If member is provided, it will only return the acl for the member.",
             response = FamilyAclEntryList.class)
     public Response getAcls(@ApiParam(value = ParamConstants.FAMILIES_DESCRIPTION, required = true) @PathParam("families")
-                            String familyIdsStr,
+                                    String familyIdsStr,
                             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
                             @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
                             @ApiParam(value = "User or group id") @QueryParam("member") String member,

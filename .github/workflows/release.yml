@@ -17,8 +17,8 @@ jobs:
     needs: build
     secrets: inherit
     with:
-      report_context: xetabase
       test_profile: runShortTests,runMediumTests
+      report_context: xetabase
 
   deploy-maven:
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop

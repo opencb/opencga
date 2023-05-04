@@ -30,6 +30,8 @@ import org.opencb.cellbase.core.ParamConstants;
 import org.opencb.cellbase.core.config.SpeciesProperties;
 import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.cellbase.core.result.CellBaseDataResult;
+import org.opencb.cellbase.core.token.DataAccessTokenManager;
+import org.opencb.cellbase.core.token.DataAccessTokenSources;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.VersionUtils;
@@ -423,6 +425,15 @@ public class CellBaseUtils {
         return cellBaseClient.getDataRelease();
     }
 
+    public String getToken() {
+        return cellBaseClient.getToken();
+    }
+
+    public DataAccessTokenSources getTokenSources() {
+        DataAccessTokenManager tokenManager = new DataAccessTokenManager();
+        return tokenManager.decode(cellBaseClient.getToken());
+    }
+
     public String getURL() {
         return cellBaseClient.getClientConfiguration().getRest().getHosts().get(0);
     }
@@ -517,7 +528,8 @@ public class CellBaseUtils {
                 + "version '" + getVersion() + "', "
                 + "species '" + getSpecies() + "', "
                 + "assembly '" + getAssembly() + "', "
-                + "dataRelease '" + getDataRelease() + "'";
+                + "dataRelease '" + getDataRelease() + "', "
+                + "token '" + getToken() + "'";
 
     }
 }

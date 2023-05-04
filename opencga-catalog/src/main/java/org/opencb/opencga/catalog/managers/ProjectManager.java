@@ -312,7 +312,8 @@ public class ProjectManager extends AbstractManager {
                 new CellBaseConfiguration(
                         ParamConstants.CELLBASE_URL,
                         ParamConstants.CELLBASE_VERSION,
-                        ParamConstants.CELLBASE_DATA_RELEASE)));
+                        ParamConstants.CELLBASE_DATA_RELEASE,
+                        ParamConstants.CELLBASE_TOKEN)));
         project.setCurrentRelease(1);
         project.setInternal(ProjectInternal.init());
         project.setAttributes(ParamUtils.defaultObject(project.getAttributes(), HashMap::new));

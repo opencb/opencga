@@ -32,7 +32,7 @@ public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor
     }
 
     public String getDockerImageVersion() {
-        return GitRepositoryState.get().getBuildVersion();
+        return GitRepositoryState.getInstance().getBuildVersion();
     }
 
     private Logger privateLogger = LoggerFactory.getLogger(DockerWrapperAnalysisExecutor.class);

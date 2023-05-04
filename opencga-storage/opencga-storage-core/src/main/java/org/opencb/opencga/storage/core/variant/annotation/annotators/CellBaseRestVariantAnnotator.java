@@ -67,7 +67,7 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
                 VariantStorageOptions.ANNOTATION_TIMEOUT.defaultValue());
 
         clientConfiguration.getRest().setTimeout(timeoutMillis);
-        cellBaseClient = new CellBaseClient(species, assembly, cellbaseDataRelease, clientConfiguration);
+        cellBaseClient = new CellBaseClient(species, assembly, cellbaseDataRelease, cellbaseToken, clientConfiguration);
         cellBaseUtils = new CellBaseUtils(cellBaseClient);
         logger.info("Annotating with Cellbase REST. {}", cellBaseUtils);
 
@@ -112,10 +112,17 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
             throw new VariantAnnotatorException("Error fetching CellBase information from "
                     + getDebugInfo("/meta/" + species + "/dataReleases") + ". ");
         }
+        List<String> privateSources;
+        if (StringUtils.isNotEmpty(cellBaseUtils.getToken())) {
+            privateSources = new ArrayList<>(cellBaseUtils.getTokenSources().getSources().keySet());
+        } else {
+            privateSources = new ArrayList<>();
+        }
+
         return new ProjectMetadata.VariantAnnotationMetadata(-1, null, null,
                 getVariantAnnotatorProgram(),
                 getVariantAnnotatorSourceVersion(),
-                dataRelease);
+                dataRelease, privateSources);
     }
 
     private ProjectMetadata.VariantAnnotatorProgram getVariantAnnotatorProgram() throws VariantAnnotatorException {

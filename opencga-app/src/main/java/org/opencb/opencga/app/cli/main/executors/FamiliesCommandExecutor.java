@@ -381,6 +381,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("updateRoles", commandOptions.updateRoles);
+        queryParams.putIfNotNull("updatePedigreeGraph", commandOptions.updatePedigreeGraph);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());

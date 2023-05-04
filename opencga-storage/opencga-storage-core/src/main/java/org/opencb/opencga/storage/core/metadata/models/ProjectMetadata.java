@@ -79,6 +79,7 @@ public class ProjectMetadata {
         private VariantAnnotatorProgram annotator;
         private List<ObjectMap> sourceVersion;
         private DataRelease dataRelease;
+        private List<String> privateSources;
 
         public VariantAnnotationMetadata() {
             sourceVersion = new ArrayList<>();
@@ -86,12 +87,17 @@ public class ProjectMetadata {
 
         public VariantAnnotationMetadata(int id, String name, Date creationDate, VariantAnnotatorProgram annotator,
                                          List<ObjectMap> sourceVersion, DataRelease dataRelease) {
+
+        }
+        public VariantAnnotationMetadata(int id, String name, Date creationDate, VariantAnnotatorProgram annotator,
+                                         List<ObjectMap> sourceVersion, DataRelease dataRelease, List<String> privateSources) {
             this.id = id;
             this.name = name;
             this.creationDate = creationDate;
             this.annotator = annotator;
             this.sourceVersion = sourceVersion != null ? sourceVersion : new ArrayList<>();
             this.dataRelease = dataRelease;
+            this.privateSources = privateSources;
         }
 
         public int getId() {
@@ -145,6 +151,15 @@ public class ProjectMetadata {
 
         public VariantAnnotationMetadata setDataRelease(DataRelease dataRelease) {
             this.dataRelease = dataRelease;
+            return this;
+        }
+
+        public List<String> getPrivateSources() {
+            return privateSources;
+        }
+
+        public VariantAnnotationMetadata setPrivateSources(List<String> privateSources) {
+            this.privateSources = privateSources;
             return this;
         }
     }
@@ -217,12 +232,11 @@ public class ProjectMetadata {
                     .append("commit", commit)
                     .toString();
         }
-
-
     }
 
     public ProjectMetadata() {
         release = 1;
+        dataRelease = "";
         annotation = new VariantAnnotationSets();
         counters = new HashMap<>();
         attributes = new ObjectMap();
@@ -244,7 +258,8 @@ public class ProjectMetadata {
     }
 
     public ProjectMetadata copy() {
-        return new ProjectMetadata(species, assembly, dataRelease, release, new ObjectMap(attributes), new HashMap<>(counters), annotation);
+        return new ProjectMetadata(species, assembly, dataRelease, release, new ObjectMap(attributes), new HashMap<>(counters),
+                annotation);
     }
 
     public String getSpecies() {
