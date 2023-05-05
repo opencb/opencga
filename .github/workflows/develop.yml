@@ -19,6 +19,7 @@ jobs:
     secrets: inherit
 
   deploy-maven:
+
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@release-4.7.x
     needs: test
     with:
@@ -26,6 +27,7 @@ jobs:
     secrets: inherit
 
   deploy-docker:
+
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@release-4.7.x
     needs: test
     with:
