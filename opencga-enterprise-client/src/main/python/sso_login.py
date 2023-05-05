@@ -51,6 +51,7 @@ def create_session_file(session_info):
 
 def kill_process(pid):
     """Kill process by ID"""
+    time.sleep(0.1)      # Sleep 0.1 seconds so the server has time to give the response
     os.kill(pid, signal.SIGKILL)
 
 
