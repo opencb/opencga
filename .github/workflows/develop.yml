@@ -9,12 +9,12 @@ on:
 
 jobs:
   build:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@release-4.4.x
     with:
       maven_opts: -P storage-hadoop,hdp3.1,RClient -Dopencga.war.name=opencga
 
   sonar:
-    uses: opencb/java-common-libs/.github/workflows/sonar-analysis-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/sonar-analysis-workflow.yml@release-4.4.x
     needs: build
     with:
       sonarProjectKey: opencb_opencga
@@ -47,7 +47,7 @@ jobs:
         run: mvn -T 2 clean install -P storage-hadoop,hdp3.1 -DskipTests
 
   deploy-maven:
-    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@release-4.4.x
     needs: test
     with:
       maven_opts: -P storage-hadoop,hdp3.1 -Dopencga.war.name=opencga
@@ -58,7 +58,7 @@ jobs:
       MAVEN_GPG_PRIVATE_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
 
   deploy-docker:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@release-4.4.x
     needs: test
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init
@@ -68,13 +68,13 @@ jobs:
 
   ## Amazon AWS - build and deploy Amazon AWS libs and docker images
 #  build-aws:
-#    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+#    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@release-4.4.x
 #    needs: test
 #    with:
 #      maven_opts: -P storage-hadoop,emr6.1 -Dopencga.war.name=opencga
 #
 #  deploy-maven-aws:
-#    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
+#    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@release-4.4.x
 #    needs: build-aws
 #    with:
 #      maven_opts: -P storage-hadoop,emr6.1 -Dopencga.war.name=opencga
@@ -85,7 +85,7 @@ jobs:
 #      MAVEN_GPG_PRIVATE_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
 #
 #  deploy-docker-aws:
-#    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+#    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@release-4.4.x
 #    needs: build-aws
 #    with:
 #      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init

@@ -8,12 +8,12 @@ on:
 
 jobs:
   build:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@release-4.4.x
     with:
       maven_opts: -P storage-hadoop,hdp3.1,RClient -Dopencga.war.name=opencga
 
   sonar:
-    uses: opencb/java-common-libs/.github/workflows/sonar-analysis-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/sonar-analysis-workflow.yml@release-4.4.x
     needs: build
     with:
       sonarProjectKey: opencb_opencga
@@ -46,7 +46,7 @@ jobs:
         run: mvn -T 2 clean install -DskipTests -P storage-hadoop,hdp3.1
 
   deploy-maven:
-    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@release-4.4.x
     needs: test
     with:
       maven_opts: -P storage-hadoop,hdp3.1 -Dopencga.war.name=opencga
@@ -57,7 +57,7 @@ jobs:
       MAVEN_GPG_PRIVATE_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
 
   deploy-docker:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@release-4.4.x
     needs: test
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init
@@ -66,7 +66,7 @@ jobs:
       DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
   deploy-docker-ext-tools:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@release-4.4.x
     needs: build
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images ext-tools --tag ${{ needs.build.outputs.version }}
@@ -75,7 +75,7 @@ jobs:
       DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
   deploy-python:
-    uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@release-4.4.x
     needs: test
     with:
       cli: ./clients/python/python-build.sh push
@@ -85,7 +85,7 @@ jobs:
       PYPI_TWINE_PASSWORD: ${{ secrets.PYPI_TWINE_PASSWORD }}
 
   release:
-    uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@release-4.4.x
     needs: [ build, test ]
     with:
       artifact: build-folder
