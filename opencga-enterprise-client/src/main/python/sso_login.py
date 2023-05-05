@@ -5,6 +5,7 @@ import os
 import sys
 import signal
 import logging
+import time
 import webbrowser
 import yaml
 import argparse
@@ -14,6 +15,7 @@ from multiprocessing import Process
 
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
+SERVER = None
 
 
 @app.route('/secure')
@@ -30,6 +32,11 @@ def secure():
     # Create session file with cookies
     create_session_file(session_info)
 
+    # Stopping server
+    global SERVER
+    p = Process(target=kill_process, args=(SERVER.pid,))
+    p.start()
+
     return '<p>You are <b>logged in</b>. You can now close this tab.</p>'
 
 
@@ -42,8 +49,8 @@ def create_session_file(session_info):
     out_fpath.close()
 
 
-def kill(pid):
-    """Kill a process by ID"""
+def kill_process(pid):
+    """Kill process by ID"""
     os.kill(pid, signal.SIGKILL)
 
 
@@ -119,15 +126,17 @@ def main():
     logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
     # Starting server
-    server = Process(target=app.run)
-    server.start()
+    global SERVER
+    SERVER = Process(target=app.run)
+    SERVER.start()
 
     # Opening browser
     url = host + '/webservices/rest/v2/meta/sso?url=http://localhost:5000/secure'
     webbrowser.open(url, new=2)
 
-    # Stopping server
-    kill(server.pid)
+    # Waiting until server is killed
+    while SERVER.is_alive():
+        time.sleep(3)
 
 
 if __name__ == '__main__':
