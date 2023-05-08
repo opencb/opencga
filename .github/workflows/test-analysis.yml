@@ -1,5 +1,4 @@
 name: Build and test the project
-
 on:
   workflow_call:
     secrets:
@@ -13,7 +12,8 @@ on:
         required: true
       SSH_TESTING_SERVER_PASSWORD:
         required: true
-
+env:
+  xb_version: "1.6.1"
 jobs:
   test:
     name: Test and push Sonar analysis
@@ -38,14 +38,13 @@ jobs:
         with:
           name: workdir
           path: "**/target/site"
-
   publish-test:
     name: Publish test results
     runs-on: ubuntu-22.04
     needs: test
     strategy:
       matrix:
-        module: [ "opencga-enterprise-core","opencga-enterprise-cva" ]
+        module: ["opencga-enterprise-core", "opencga-enterprise-cva"]
     steps:
       - name: Download result dir
         uses: actions/download-artifact@v3
