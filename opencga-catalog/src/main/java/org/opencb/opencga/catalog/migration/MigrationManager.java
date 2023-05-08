@@ -20,6 +20,7 @@ import org.opencb.opencga.catalog.db.api.MigrationDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -427,7 +428,7 @@ public class MigrationManager {
         String userId = catalogManager.getUserManager().getUserId(token);
         catalogManager.getAuthorizationManager().checkIsInstallationAdministrator(userId);
         // Extend token life
-        return catalogManager.getUserManager().getAdminNonExpiringToken(token);
+        return catalogManager.getUserManager().getNonExpiringToken(AbstractManager.OPENCGA, Collections.emptyMap(), token);
     }
 
     private Set<Class<? extends MigrationTool>> getAvailableMigrations() {
