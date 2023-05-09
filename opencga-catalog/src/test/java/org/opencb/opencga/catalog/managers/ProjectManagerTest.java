@@ -275,7 +275,7 @@ public class ProjectManagerTest extends GenericTest {
                                 .setId("project2")
                                 .setName("Project about some genomes")
                                 .setOrganism(new ProjectOrganism("Homo sapiens", "grch38"))
-                                .setCellbase(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, ParamConstants.CELLBASE_VERSION, "NON_EXISTING_DR")),
+                                .setCellbase(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, ParamConstants.CELLBASE_VERSION, "NON_EXISTING_DR", null)),
                         INCLUDE_RESULT, sessionIdUser).first();
     }
 
