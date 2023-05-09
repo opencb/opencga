@@ -487,7 +487,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         for (int i = 0; i < 20; i++) {
             catalogManager.getProjectManager().create(new ProjectCreateParams()
                     .setId("project_" + i)
-                    .setOrganism(new ProjectOrganism("a", "b")), QueryOptions.empty(), token);
+                    .setOrganism(new ProjectOrganism("hsapiens", "grch38")), QueryOptions.empty(), token);
             for (int j = 0; j < 2; j++) {
                 catalogManager.getStudyManager().create("project_" + i, new Study().setId("study_" + i + "_" + j), QueryOptions.empty(),
                         token);
