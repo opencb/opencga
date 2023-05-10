@@ -49,7 +49,7 @@ public class TemplateManagerTest {
         catalogManager.getUserManager().create(new User().setId("user4").setName("User 4").setAccount(new Account().setType(Account.AccountType.GUEST)), TestParamConstants.PASSWORD, adminToken);
 
         String token = catalogManager.getUserManager().login("user1", TestParamConstants.PASSWORD).getToken();
-        catalogManager.getProjectManager().create("project", "Project", "", "name", "common", "GRCh38", QueryOptions.empty(), token);
+        catalogManager.getProjectManager().create("project", "Project", "", "hsapiens", "common", "GRCh38", QueryOptions.empty(), token);
         catalogManager.getStudyManager().create("project", new Study().setId("study"), QueryOptions.empty(), token);
 
         URI resource = catalogManagerResource.getResourceUri("templates/manifest.yml");
@@ -80,7 +80,7 @@ public class TemplateManagerTest {
         catalogManager.getUserManager().create(new User().setId("user4").setName("User 4").setAccount(new Account().setType(Account.AccountType.GUEST)), TestParamConstants.PASSWORD, adminToken);
 
         String token = catalogManager.getUserManager().login("user1", TestParamConstants.PASSWORD).getToken();
-        catalogManager.getProjectManager().create("project", "Project", "", "name", "common", "GRCh38", QueryOptions.empty(), token);
+        catalogManager.getProjectManager().create("project", "Project", "", "hsapiens", "common", "GRCh38", QueryOptions.empty(), token);
         catalogManager.getStudyManager().create("project", new Study().setId("study"), QueryOptions.empty(), token);
 
         URI resource = catalogManagerResource.getResourceUri("templates_yaml/manifest.yml");
