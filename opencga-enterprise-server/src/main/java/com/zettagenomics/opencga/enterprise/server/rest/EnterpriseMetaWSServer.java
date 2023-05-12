@@ -1,10 +1,15 @@
 package com.zettagenomics.opencga.enterprise.server.rest;
 
+import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseUserManager;
+import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.server.EnterpriseResourceConfig;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.apache.commons.lang3.StringUtils;
+import org.jasig.cas.client.authentication.AttributePrincipal;
 import org.opencb.opencga.catalog.auth.authentication.JwtManager;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -31,15 +36,41 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.Key;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Path("/{apiVersion}/meta")
 @Produces("application/json")
 @Api(value = "Meta", description = "Meta RESTful Web Services API")
 public class EnterpriseMetaWSServer extends MetaWSServer {
 
+    private final String opencgaToken;
+    private final EnterpriseConfiguration enterpriseConfiguration;
+
+    public static final AtomicReference<EnterpriseUserManager> enterpriseUserManagerAtomicRef = new AtomicReference<>();
+
     public EnterpriseMetaWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
+
+        Key key = new SecretKeySpec(catalogManager.getConfiguration().getAdmin().getSecretKey().getBytes(), SignatureAlgorithm.HS256.getJcaName());
+        JwtManager jwtManager = new JwtManager(catalogManager.getConfiguration().getAdmin().getAlgorithm(), key);
+        this.opencgaToken = jwtManager.createJWTToken(ParamConstants.OPENCGA_USER_ID, 0L);
+
+        this.enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
+    }
+
+    private EnterpriseUserManager getEnterpriseUserManager() {
+        EnterpriseUserManager enterpriseUserManager = enterpriseUserManagerAtomicRef.get();
+        if (enterpriseUserManager == null) {
+            synchronized (enterpriseUserManagerAtomicRef) {
+                enterpriseUserManager = enterpriseUserManagerAtomicRef.get();
+                if (enterpriseUserManager == null) {
+                    enterpriseUserManager = new EnterpriseUserManager(catalogManager, enterpriseConfiguration, opencgaToken);
+                    enterpriseUserManagerAtomicRef.set(enterpriseUserManager);
+                }
+            }
+        }
+        return enterpriseUserManager;
     }
 
     @Override
@@ -88,8 +119,12 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
         if (StringUtils.isEmpty(service)) {
             return createErrorResponse(new CatalogParameterException("Missing mandatory field 'service'"));
         }
+        AttributePrincipal principal = (AttributePrincipal) httpServletRequest.getUserPrincipal();
+
         URI targetURIForRedirection;
         try {
+            String token = getEnterpriseUserManager().ssoLogin(principal);
+
             Cookie[] cookies = httpServletRequest.getCookies();
             logger.debug("SSO cookies: ");
             for (Cookie cookie : cookies) {
@@ -100,12 +135,8 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
                 queryParams.append("?");
             }
 
-            Key key = new SecretKeySpec(catalogManager.getConfiguration().getAdmin().getSecretKey().getBytes(), SignatureAlgorithm.HS256.getJcaName());
-            JwtManager jwtManager = new JwtManager(catalogManager.getConfiguration().getAdmin().getAlgorithm(), key);
-            String jwtToken = jwtManager.createJWTToken(httpServletRequest.getRemoteUser(), configuration.getAuthentication().getExpiration());
-
-            queryParams.append("token").append("=").append(jwtToken);
-            queryParams.append("&").append("user").append("=").append(httpServletRequest.getRemoteUser());
+            queryParams.append("token").append("=").append(token);
+            queryParams.append("&").append("user").append("=").append(principal.getName());
             for (Cookie cookie : cookies) {
                 queryParams.append("&");
                 queryParams.append(cookie.getName()).append("=").append(cookie.getValue());
@@ -113,7 +144,7 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
 
             targetURIForRedirection = new URI(service + queryParams);
             logger.debug("Redirecting /sso call to {}", targetURIForRedirection);
-        } catch (URISyntaxException e) {
+        } catch (CatalogException | URISyntaxException e) {
             return createErrorResponse(e);
         }
         return Response.temporaryRedirect(targetURIForRedirection).build();

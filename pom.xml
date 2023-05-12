@@ -13,6 +13,7 @@
         <module>opencga-enterprise-app</module>
         <module>opencga-enterprise-client</module>
         <module>opencga-enterprise-core</module>
+        <module>opencga-enterprise-catalog</module>
         <module>opencga-enterprise-cva</module>
         <module>opencga-enterprise-server</module>
     </modules>
@@ -79,6 +80,11 @@
             <dependency>
                 <groupId>com.zettagenomics.opencga-enterprise</groupId>
                 <artifactId>opencga-enterprise-cva</artifactId>
+                <version>${project.parent.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.zettagenomics.opencga-enterprise</groupId>
+                <artifactId>opencga-enterprise-catalog</artifactId>
                 <version>${project.parent.version}</version>
             </dependency>
             <dependency>
@@ -433,9 +439,15 @@
                 <opencga.war.name>opencga-enterprise-${project.parent.version}</opencga.war.name>
 
                 <ENTERPRISE.SSO.ACTIVE>true</ENTERPRISE.SSO.ACTIVE>
-                <ENTERPRISE.SSO.CAS.SERVER.PREFIX.URL>https://reports.test.zettagenomics.com:8443/cas</ENTERPRISE.SSO.CAS.SERVER.PREFIX.URL>
+                <ENTERPRISE.SSO.CAS.SERVER.PREFIX.URL>https://localhost:8443/cas</ENTERPRISE.SSO.CAS.SERVER.PREFIX.URL>
                 <ENTERPRISE.SSO.SERVER.NAME>http://localhost:9090</ENTERPRISE.SSO.SERVER.NAME>
                 <ENTERPRISE.SSO.PYTHON.BIN>python3</ENTERPRISE.SSO.PYTHON.BIN>
+                <ENTERPRISE.SSO.PROTOCOL>SAML1</ENTERPRISE.SSO.PROTOCOL>
+                <ENTERPRISE.SSO.ATTRIBUTES.NAME>name</ENTERPRISE.SSO.ATTRIBUTES.NAME>
+                <ENTERPRISE.SSO.ATTRIBUTES.SURNAME>surname</ENTERPRISE.SSO.ATTRIBUTES.SURNAME>
+                <ENTERPRISE.SSO.ATTRIBUTES.EMAIL>email</ENTERPRISE.SSO.ATTRIBUTES.EMAIL>
+                <ENTERPRISE.SSO.ATTRIBUTES.ORGANIZATION>organization</ENTERPRISE.SSO.ATTRIBUTES.ORGANIZATION>
+                <ENTERPRISE.SSO.ATTRIBUTES.GROUPS>groups</ENTERPRISE.SSO.ATTRIBUTES.GROUPS>
 
                 <!-- General -->
                 <OPENCGA.INSTALLATION.DIR>/opt/opencga</OPENCGA.INSTALLATION.DIR>
