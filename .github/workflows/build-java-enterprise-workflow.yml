@@ -12,6 +12,9 @@ on:
       artifact_name:
         type: string
         required: false
+      release:
+        type: string
+        required: false
     outputs:
       version:
         description: "XetaBase project version"
@@ -31,7 +34,7 @@ jobs:
         name: Get OpenCGA branch from pom.xml property
         run: |
           chmod +x ./.github/workflows/scripts/opencga_branch.sh
-          echo "opencga_branch=$(./.github/workflows/scripts/opencga_branch.sh)" >> $GITHUB_OUTPUT
+          echo "opencga_branch=$(./.github/workflows/scripts/opencga_branch.sh ${{ inputs.release }})" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v3
         with:
           repository: opencb/opencga
