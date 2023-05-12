@@ -82,7 +82,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         super.setUp();
 
         String expiringToken = this.catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
-        String nonExpiringToken = this.catalogManager.getUserManager().getNonExpiringToken("opencga", expiringToken);
+        String nonExpiringToken = this.catalogManager.getUserManager().getNonExpiringToken("opencga", Collections.emptyMap(), expiringToken);
         catalogManager.getConfiguration().getAnalysis().getExecution().getMaxConcurrentJobs().put(VariantIndexOperationTool.ID, 1);
 
         daemon = new ExecutionDaemon(1000, nonExpiringToken, catalogManager,

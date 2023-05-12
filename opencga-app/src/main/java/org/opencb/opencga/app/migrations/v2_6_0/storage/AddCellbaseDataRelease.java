@@ -14,6 +14,7 @@ import org.opencb.opencga.storage.core.utils.CellBaseUtils;
         version = "2.6.0",
         domain = Migration.MigrationDomain.STORAGE,
         language = Migration.MigrationLanguage.JAVA,
+        patch = 2,
         date = 20230104
 )
 public class AddCellbaseDataRelease extends StorageMigrationTool {

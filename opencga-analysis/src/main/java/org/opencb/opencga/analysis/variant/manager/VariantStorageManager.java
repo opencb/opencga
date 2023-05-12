@@ -44,9 +44,11 @@ import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.cellbase.CellBaseValidator;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
@@ -568,9 +570,16 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             result.setResults(new ArrayList<>());
             result.setEvents(new ArrayList<>());
 
-            engine.getConfiguration().setCellbase(cellbaseConfiguration);
+            CellBaseConfiguration validatedCellbaseConfiguration;
+            try {
+                validatedCellbaseConfiguration = CellBaseValidator.validate(cellbaseConfiguration,
+                        engine.getCellBaseUtils().getSpecies(),
+                        engine.getCellBaseUtils().getAssembly(), true);
+            } catch (IOException e) {
+                throw new CatalogParameterException(e);
+            }
+            engine.getConfiguration().setCellbase(validatedCellbaseConfiguration);
             engine.reloadCellbaseConfiguration();
-            engine.getCellBaseUtils().validateCellBaseConnection();
 
             if (engine.getMetadataManager().exists()) {
                 List<String> jobDependsOn = new ArrayList<>(1);
@@ -596,7 +605,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     }
                 }
             }
-            catalogManager.getProjectManager().setCellbaseConfiguration(project, cellbaseConfiguration, token);
+            catalogManager.getProjectManager().setCellbaseConfiguration(project, validatedCellbaseConfiguration, false, token);
             result.setTime((int) stopwatch.getTime(TimeUnit.MILLISECONDS));
             return result;
         });
