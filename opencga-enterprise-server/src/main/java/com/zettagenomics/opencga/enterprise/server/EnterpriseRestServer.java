@@ -20,6 +20,7 @@ import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfigu
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.server.AbstractStorageServer;
 
 import javax.servlet.DispatcherType;
@@ -49,19 +50,7 @@ public class EnterpriseRestServer extends AbstractStorageServer {
 
     public EnterpriseRestServer(Path opencgaHome, int port) {
         super(opencgaHome, port);
-
-        // Read enterprise configuration file
-        Path configDirPath = opencgaHome.resolve("conf");
-        InputStream configInputStream;
-        try {
-            String confPath = configDirPath.toFile().getAbsolutePath()  + "/enterprise-configuration.yml";
-            logger.info("Reading enterprise-configuration.yml file: '{}'", confPath);
-            configInputStream = Files.newInputStream(Paths.get(confPath));
-            enterpriseConfiguration = EnterpriseConfiguration.load(configInputStream);
-        } catch (IOException e) {
-            logger.error("Could not load enterprise-configuration.yml file");
-            throw new RuntimeException(e);
-        }
+        enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
     }
 
     @Override
@@ -91,35 +80,7 @@ public class EnterpriseRestServer extends AbstractStorageServer {
 //        webapp.setInitParameter("log4jConfiguration", opencgaHome.resolve("conf/log4j2.server.xml").toString());
         server.setHandler(webapp);
 
-        if (enterpriseConfiguration.getSso() != null && enterpriseConfiguration.getSso().isActive()) {
-            // Start CAS configuration
-            FilterHolder validationFilterHolder = new FilterHolder();
-            validationFilterHolder.setName("CAS Validation Filter");
-            validationFilterHolder.setClassName("org.jasig.cas.client.validation.Cas20ProxyReceivingTicketValidationFilter");
-            Map<String, String> initParameters = new HashMap<>();
-            initParameters.put("casServerUrlPrefix", enterpriseConfiguration.getSso().getCasServerPrefixUrl());
-            initParameters.put("serverName", enterpriseConfiguration.getSso().getServerName());
-            validationFilterHolder.setInitParameters(initParameters);
-            webapp.addFilter(validationFilterHolder, "/webservices/rest/v2/*", EnumSet.of(DispatcherType.REQUEST));
-
-            FilterHolder authenticationFilterHolder = new FilterHolder();
-            authenticationFilterHolder.setName("CAS Authentication Filter");
-            authenticationFilterHolder.setClassName("org.jasig.cas.client.authentication.AuthenticationFilter");
-            initParameters = new HashMap<>();
-            initParameters.put("casServerUrlPrefix", enterpriseConfiguration.getSso().getCasServerPrefixUrl());
-            initParameters.put("serverName", enterpriseConfiguration.getSso().getServerName());
-            authenticationFilterHolder.setInitParameters(initParameters);
-            webapp.addFilter(authenticationFilterHolder, "/webservices/rest/v2/*", EnumSet.of(DispatcherType.REQUEST));
-
-            FilterHolder requestWrapperFilterHolder = new FilterHolder();
-            requestWrapperFilterHolder.setName("CAS HttpServletRequest Wrapper Filter");
-            requestWrapperFilterHolder.setClassName("org.jasig.cas.client.util.HttpServletRequestWrapperFilter");
-            initParameters = new HashMap<>();
-            initParameters.put("casServerUrlPrefix", enterpriseConfiguration.getSso().getCasServerPrefixUrl());
-            initParameters.put("serverName", enterpriseConfiguration.getSso().getServerName());
-            webapp.addFilter(requestWrapperFilterHolder, "/webservices/rest/v2/*", EnumSet.of(DispatcherType.REQUEST));
-            // End of CAS configuration
-        }
+        addSingleSignOnFilters(webapp);
 
         server.start();
         logger.info("REST server started, listening on {}", server.getURI());
@@ -149,6 +110,81 @@ public class EnterpriseRestServer extends AbstractStorageServer {
                 e.printStackTrace();
             }
         }).start();
+    }
+
+    private void addSingleSignOnFilters(WebAppContext webapp) throws Exception {
+        if (enterpriseConfiguration.getSso() != null && enterpriseConfiguration.getSso().isActive()) {
+            // Check all mandatory fields
+            ParamUtils.checkParameter(enterpriseConfiguration.getSso().getCasServerPrefixUrl(), "sso.casServerPrefixUrl");
+            ParamUtils.checkParameter(enterpriseConfiguration.getSso().getServerName(), "sso.serverName");
+            ParamUtils.checkParameter(enterpriseConfiguration.getSso().getProtocol(), "sso.protocol");
+
+            switch (enterpriseConfiguration.getSso().getProtocol().toUpperCase()) {
+                case "CAS":
+                    logger.info("Using CAS protocol");
+                    // Start CAS protocol configuration
+                    FilterHolder casValidationFilterHolder = new FilterHolder();
+                    casValidationFilterHolder.setName("CAS Validation Filter");
+                    casValidationFilterHolder.setClassName("org.jasig.cas.client.validation.Cas20ProxyReceivingTicketValidationFilter");
+                    Map<String, String> casInitParameters = new HashMap<>();
+                    casInitParameters.put("casServerUrlPrefix", enterpriseConfiguration.getSso().getCasServerPrefixUrl());
+                    casInitParameters.put("serverName", enterpriseConfiguration.getSso().getServerName());
+                    casValidationFilterHolder.setInitParameters(casInitParameters);
+                    webapp.addFilter(casValidationFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
+
+                    FilterHolder casAuthenticationFilterHolder = new FilterHolder();
+                    casAuthenticationFilterHolder.setName("CAS Authentication Filter");
+                    casAuthenticationFilterHolder.setClassName("org.jasig.cas.client.authentication.AuthenticationFilter");
+                    casInitParameters = new HashMap<>();
+                    casInitParameters.put("casServerUrlPrefix", enterpriseConfiguration.getSso().getCasServerPrefixUrl());
+                    casInitParameters.put("serverName", enterpriseConfiguration.getSso().getServerName());
+                    casAuthenticationFilterHolder.setInitParameters(casInitParameters);
+                    webapp.addFilter(casAuthenticationFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
+
+                    FilterHolder requestWrapperFilterHolder = new FilterHolder();
+                    requestWrapperFilterHolder.setName("CAS HttpServletRequest Wrapper Filter");
+                    requestWrapperFilterHolder.setClassName("org.jasig.cas.client.util.HttpServletRequestWrapperFilter");
+                    casInitParameters = new HashMap<>();
+                    casInitParameters.put("casServerUrlPrefix", enterpriseConfiguration.getSso().getCasServerPrefixUrl());
+                    casInitParameters.put("serverName", enterpriseConfiguration.getSso().getServerName());
+                    webapp.addFilter(requestWrapperFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
+                    // End of CAS configuration
+                    break;
+                case "SAML1":
+                    logger.info("Using SAML1 protocol");
+                    // Start SAML1 protocol configuration
+                    FilterHolder samlValidationFilterHolder = new FilterHolder();
+                    samlValidationFilterHolder.setName("CAS Validation Filter");
+                    samlValidationFilterHolder.setClassName("org.jasig.cas.client.validation.Saml11TicketValidationFilter");
+                    Map<String, String> samlInitParameters = new HashMap<>();
+                    samlInitParameters.put("casServerUrlPrefix", enterpriseConfiguration.getSso().getCasServerPrefixUrl());
+                    samlInitParameters.put("serverName", enterpriseConfiguration.getSso().getServerName());
+                    samlValidationFilterHolder.setInitParameters(samlInitParameters);
+                    webapp.addFilter(samlValidationFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
+
+                    FilterHolder samlAuthenticationFilterHolder = new FilterHolder();
+                    samlAuthenticationFilterHolder.setName("CAS Authentication Filter");
+                    samlAuthenticationFilterHolder.setClassName("org.jasig.cas.client.authentication.Saml11AuthenticationFilter");
+                    samlInitParameters = new HashMap<>();
+                    samlInitParameters.put("casServerUrlPrefix", enterpriseConfiguration.getSso().getCasServerPrefixUrl());
+                    samlInitParameters.put("serverName", enterpriseConfiguration.getSso().getServerName());
+                    samlAuthenticationFilterHolder.setInitParameters(samlInitParameters);
+                    webapp.addFilter(samlAuthenticationFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
+
+                    FilterHolder saml1RequestWrapperFilterHolder = new FilterHolder();
+                    saml1RequestWrapperFilterHolder.setName("CAS HttpServletRequest Wrapper Filter");
+                    saml1RequestWrapperFilterHolder.setClassName("org.jasig.cas.client.util.HttpServletRequestWrapperFilter");
+                    samlInitParameters = new HashMap<>();
+                    samlInitParameters.put("casServerUrlPrefix", enterpriseConfiguration.getSso().getCasServerPrefixUrl());
+                    samlInitParameters.put("serverName", enterpriseConfiguration.getSso().getServerName());
+                    webapp.addFilter(saml1RequestWrapperFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
+                    // End of SAML1 configuration
+                    break;
+                default:
+                    throw new Exception("Unsupported protocol '" + enterpriseConfiguration.getSso().getProtocol()
+                            + "' found. Supported protocols are 'CAS' and 'SAML1'");
+            }
+        }
     }
 
     @Override

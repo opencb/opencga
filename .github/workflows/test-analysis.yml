@@ -1,4 +1,4 @@
-name: Build and test the project
+name: Build and test OpenCGA Enterprise
 
 on:
   workflow_call:
@@ -13,6 +13,9 @@ on:
         required: true
       SSH_TESTING_SERVER_PASSWORD:
         required: true
+
+env:
+  xb_version: "1.7.0"
 
 jobs:
   test:
@@ -38,14 +41,13 @@ jobs:
         with:
           name: workdir
           path: "**/target/site"
-
   publish-test:
     name: Publish test results
     runs-on: ubuntu-22.04
     needs: test
     strategy:
       matrix:
-        module: [ "opencga-enterprise-core","opencga-enterprise-cva" ]
+        module: ["opencga-enterprise-core", "opencga-enterprise-cva"]
     steps:
       - name: Download result dir
         uses: actions/download-artifact@v3

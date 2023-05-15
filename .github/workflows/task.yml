@@ -1,21 +1,17 @@
-name: Push OpenCGA TASK
+name: Push to TASK branch
 
 on:
   push:
     branches:
       - TASK-*
-  workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Execute workflow'
-        default: 'develop'
-        required: true
 
 jobs:
   build:
     uses: ./.github/workflows/build-java-enterprise-workflow.yml
     with:
       maven_opts: -Dopencga.war.name=opencga
+      opencga_maven_opts: -P storage-hadoop,hdp3.1
+      artifact_name: build-folder
 
   deploy-docker:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml

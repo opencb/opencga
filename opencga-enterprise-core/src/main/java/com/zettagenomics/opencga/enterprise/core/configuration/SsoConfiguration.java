@@ -6,15 +6,34 @@ public class SsoConfiguration extends AbstractModuleConfiguration {
     private String serverName;
     private String pythonBin;
 
+    private String protocol; // CAS, SAML1 values supported
+    private SsoPrincipalAttributesConfiguration attributes;
+
     public SsoConfiguration() {
         super();
     }
 
-    public SsoConfiguration(boolean active, String casServerPrefixUrl, String serverName, String pythonBin) {
+    public SsoConfiguration(boolean active, String casServerPrefixUrl, String serverName, String pythonBin,
+                            String protocol, SsoPrincipalAttributesConfiguration attributes) {
         super(active);
         this.casServerPrefixUrl = casServerPrefixUrl;
         this.serverName = serverName;
         this.pythonBin = pythonBin;
+        this.protocol = protocol;
+        this.attributes = attributes;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("SsoConfiguration{");
+        sb.append("casServerPrefixUrl='").append(casServerPrefixUrl).append('\'');
+        sb.append(", serverName='").append(serverName).append('\'');
+        sb.append(", pythonBin='").append(pythonBin).append('\'');
+        sb.append(", protocol='").append(protocol).append('\'');
+        sb.append(", attributes=").append(attributes);
+        sb.append(", active=").append(active);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getCasServerPrefixUrl() {
@@ -41,6 +60,24 @@ public class SsoConfiguration extends AbstractModuleConfiguration {
 
     public SsoConfiguration setPythonBin(String pythonBin) {
         this.pythonBin = pythonBin;
+        return this;
+    }
+
+    public String getProtocol() {
+        return protocol;
+    }
+
+    public SsoConfiguration setProtocol(String protocol) {
+        this.protocol = protocol;
+        return this;
+    }
+
+    public SsoPrincipalAttributesConfiguration getAttributes() {
+        return attributes;
+    }
+
+    public SsoConfiguration setAttributes(SsoPrincipalAttributesConfiguration attributes) {
+        this.attributes = attributes;
         return this;
     }
 }

@@ -1,9 +1,18 @@
-name: Reusable workflow to build Java application
+name: Build OpenCGA Enterprise
 
 on:
   workflow_call:
     inputs:
       maven_opts:
+        type: string
+        required: false
+      opencga_maven_opts:
+        type: string
+        required: false
+      artifact_name:
+        type: string
+        required: false
+      release:
         type: string
         required: false
     outputs:
@@ -25,7 +34,7 @@ jobs:
         name: Get OpenCGA branch from pom.xml property
         run: |
           chmod +x ./.github/workflows/scripts/opencga_branch.sh
-          echo "opencga_branch=$(./.github/workflows/scripts/opencga_branch.sh)" >> $GITHUB_OUTPUT
+          echo "opencga_branch=$(./.github/workflows/scripts/opencga_branch.sh ${{ inputs.release }})" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v3
         with:
           repository: opencb/opencga
@@ -39,12 +48,13 @@ jobs:
           java-version: '8'
           cache: 'maven'
       - name: OpenCGA Maven Build (skip tests)
-        run: mvn -T 2 clean install -DskipTests -f opencga-home/pom.xml
+        run: mvn -T 2 clean install -DskipTests ${{ inputs.opencga_maven_opts }} -f opencga-home/pom.xml
+#        run: mvn -T 2 clean install -P storage-hadoop,hdp3.1,opencga-storage-hadoop-deps -DskipTests -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6' -f opencga-home/pom.xml
       - name: OpenCGA Enterprise Maven Build (skip tests)
         run: mvn -T 2 clean install -DskipTests ${{ inputs.maven_opts }}
       - uses: actions/upload-artifact@v3
         with:
-          name: build-folder
+          name: ${{ inputs.artifact_name }}
           path: build
       - id: get_project_version
         uses: avides/actions-project-version-check@v1.3.0
@@ -54,4 +64,3 @@ jobs:
           only-return-version: true
       - name: test-version-from-check
         run: echo "Project version is " ${{ steps.get_project_version.outputs.version }}
-

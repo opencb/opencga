@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.zettagenomics.opencga-enterprise</groupId>
         <artifactId>opencga-enterprise</artifactId>
-        <version>1.6.0-SNAPSHOT</version>
+        <version>1.7.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -39,6 +39,12 @@
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-app</artifactId>
             <version>${opencga.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpclient</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!--JLINE Terminal dependencies-->
@@ -226,9 +232,16 @@
 <!--                                <exec executable="mkdir">-->
 <!--                                    <arg value="${build.dir}/misc/git"/>-->
 <!--                                </exec>-->
+
+                                <echo>Copying git.properties and adding OpenCGA version</echo>
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/../opencga-enterprise-core/target/generated-resources/git.properties"/>
                                     <arg value="${build.dir}/misc/git"/>
+                                </exec>
+                                <exec executable="sed">
+                                    <arg value="-i"/>
+                                    <arg value="8a git.build.opencgaVersion=${opencga.version}"/>
+                                    <arg value="${build.dir}/misc/git/git.properties"/>
                                 </exec>
 
                                 <echo>Copying Python, R and JavaScript to ${build.dir}/clients</echo>
