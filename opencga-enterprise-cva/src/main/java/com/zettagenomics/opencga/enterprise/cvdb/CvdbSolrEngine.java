@@ -66,10 +66,10 @@ public class CvdbSolrEngine {
     public static final String CLINICAL_VARIANTS_COLLECTION_SUFFIX = "_cvdb_variants";
     public static final String CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX = "_cvdb_evidences";
 
-    public static final String CLINICAL_ANALYSIS_CONFIGSET = "opencga-ca-configset-" + GitRepositoryState.get().getBuildVersion();
-    public static final String INTERPRETATION_CONFIGSET = "opencga-ci-configset-" + GitRepositoryState.get().getBuildVersion();
-    public static final String CLINICAL_VARIANT_CONFIGSET = "opencga-cv-configset-" + GitRepositoryState.get().getBuildVersion();
-    public static final String CLINICAL_VARIANT_EVIDENCE_CONFIGSET = "opencga-cve-configset-" + GitRepositoryState.get().getBuildVersion();
+    public static final String CLINICAL_ANALYSIS_CONFIGSET = "opencga-ca-configset-" + GitRepositoryState.getInstance().getBuildVersion();
+    public static final String INTERPRETATION_CONFIGSET = "opencga-ci-configset-" + GitRepositoryState.getInstance().getBuildVersion();
+    public static final String CLINICAL_VARIANT_CONFIGSET = "opencga-cv-configset-" + GitRepositoryState.getInstance().getBuildVersion();
+    public static final String CLINICAL_VARIANT_EVIDENCE_CONFIGSET = "opencga-cve-configset-" + GitRepositoryState.getInstance().getBuildVersion();
 
     public static final String WITHOUT_ID = "-234";
 

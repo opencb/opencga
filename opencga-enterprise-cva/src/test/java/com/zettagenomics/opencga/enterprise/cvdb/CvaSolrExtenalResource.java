@@ -43,10 +43,10 @@ public class CvaSolrExtenalResource extends ExternalResource {
         super.before();
 
 //        Path rootDir = getTmpRootDir();
-        String caConfigSet = "opencga-ca-configset-" + GitRepositoryState.get().getBuildVersion();
-        String ciConfigSet = "opencga-ci-configset-" + GitRepositoryState.get().getBuildVersion();
-        String cvConfigSet = "opencga-cv-configset-" + GitRepositoryState.get().getBuildVersion();
-        String cveConfigSet = "opencga-cve-configset-" + GitRepositoryState.get().getBuildVersion();
+        String caConfigSet = "opencga-ca-configset-" + GitRepositoryState.getInstance().getBuildVersion();
+        String ciConfigSet = "opencga-ci-configset-" + GitRepositoryState.getInstance().getBuildVersion();
+        String cvConfigSet = "opencga-cv-configset-" + GitRepositoryState.getInstance().getBuildVersion();
+        String cveConfigSet = "opencga-cve-configset-" + GitRepositoryState.getInstance().getBuildVersion();
         copyConfigSetConfiguration(caConfigSet, "ca-managed-schema");
         copyConfigSetConfiguration(ciConfigSet, "ci-managed-schema");
         copyConfigSetConfiguration(cvConfigSet, "cv-managed-schema");
