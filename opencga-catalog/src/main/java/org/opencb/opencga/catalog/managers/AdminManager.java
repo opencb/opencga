@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -109,9 +110,13 @@ public class AdminManager extends AbstractManager {
             List<Long> studyUids = new ArrayList<>(studies.size());
             for (Study study : studies) {
                 if (ParamConstants.ADMIN_STUDY_FQN.equals(study.getFqn())) {
-                    throw new CatalogException("Cannot perform this operation on administration study '" + study.getFqn() + "'.");
+                    if (CollectionUtils.isNotEmpty(studyIds)) {
+                        // Only fail if the user is passing the list of study ids
+                        throw new CatalogException("Cannot perform this operation on administration study '" + study.getFqn() + "'.");
+                    }
+                } else {
+                    studyUids.add(study.getUid());
                 }
-                studyUids.add(study.getUid());
             }
 
             OpenCGAResult<Group> result = studyDBAdaptor.updateUserFromGroups(userId, studyUids, groupIds, action);
