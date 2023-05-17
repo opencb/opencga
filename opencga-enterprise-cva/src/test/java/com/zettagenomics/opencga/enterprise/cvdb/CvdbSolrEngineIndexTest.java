@@ -1,6 +1,9 @@
 package com.zettagenomics.opencga.enterprise.cvdb;
 
+import com.microsoft.azure.management.network.implementation.VpnClientRootCertificateInner;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -9,8 +12,20 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.FamilyManager;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.Interpretation;
+import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -23,47 +38,82 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
+import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.ADMIN_PASSWORD;
+import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.*;
 
 public class CvdbSolrEngineIndexTest {
 
-    protected CvdbSolrEngine cvaEngine;
+    protected CvdbSolrEngine cvdbEngine;
     protected String projectId = "project1";
+    protected Study study;
 
     @Rule
     public CvaSolrExtenalResource cvaSolrExternalResource = new CvaSolrExtenalResource(true, projectId);;
 
+    @Rule
+    public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
+
+    protected CatalogManager catalogManager;
+    private String opencgaToken;
+    protected String sessionIdUser;
+    private FamilyManager familyManager;
+
+    private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
+
     @Before
-    public void before() {
-        cvaEngine = cvaSolrExternalResource.configure();
+    public void before() throws CatalogException, IOException {
+        // Catalog
+        catalogManager = catalogManagerResource.getCatalogManager();
+        familyManager = catalogManager.getFamilyManager();
+        setUpCatalogManager(catalogManager);
+
+        // CVDB
+        cvdbEngine = cvaSolrExternalResource.configure();
 
         try {
-            cvaEngine.getSolrManager().remove(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX));
-            cvaEngine.getSolrManager().remove(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX));
-            cvaEngine.getSolrManager().remove(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX));
-            cvaEngine.getSolrManager().remove(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX));
+            cvdbEngine.getSolrManager().remove(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX));
+            cvdbEngine.getSolrManager().remove(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX));
+            cvdbEngine.getSolrManager().remove(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX));
+            cvdbEngine.getSolrManager().remove(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX));
         } catch (Exception e) {
             // Nothing to do
         }
 
-        cvaEngine.getSolrManager().createCore(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
+        cvdbEngine.getSolrManager().createCore(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
                 CLINICAL_ANALYSIS_CONFIGSET);
-        cvaEngine.getSolrManager().createCore(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX), INTERPRETATION_CONFIGSET);
-        cvaEngine.getSolrManager().createCore(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX),
+        cvdbEngine.getSolrManager().createCore(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX), INTERPRETATION_CONFIGSET);
+        cvdbEngine.getSolrManager().createCore(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX),
                 CLINICAL_VARIANT_CONFIGSET);
-        cvaEngine.getSolrManager().createCore(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX),
+        cvdbEngine.getSolrManager().createCore(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX),
                 CLINICAL_VARIANT_EVIDENCE_CONFIGSET);
+    }
+
+    public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
+        opencgaToken = catalogManager.getUserManager().loginAsAdmin(ADMIN_PASSWORD).getToken();
+
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null,
+                Account.AccountType.FULL, opencgaToken);
+        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+
+        catalogManager.getUserManager().create("user2", "User Name2", "mail2@ebi.ac.uk", PASSWORD, "", null,
+                Account.AccountType.GUEST, opencgaToken);
+
+        catalogManager.getProjectManager().create(projectId, "Project about some genomes", "", "Homo sapiens",
+                null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
+        study = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null,
+                sessionIdUser).first();
     }
 
     @Test
     public void testClinicalAnalsyisIndex() throws IOException, SolrServerException, CvdbException {
-        loadClinicalAnalsyses();
+        loadClinicalAnalsysesInSolr();
 
         SolrQuery solrQuery = new SolrQuery("*:*");
         solrQuery.setRows(100);
 
         // Execute the Solr query
-        QueryResponse response = cvaEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
+        QueryResponse response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
                 solrQuery);
 
         // Print out the results
@@ -76,7 +126,7 @@ public class CvdbSolrEngineIndexTest {
         }
 
         // Execute the Solr query
-        response = cvaEngine.getSolrClient().query(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX), solrQuery);
+        response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX), solrQuery);
 
         // Print out the results
         System.out.println("Number of interpretations: " + response.getResults().getNumFound());
@@ -88,7 +138,7 @@ public class CvdbSolrEngineIndexTest {
         }
 
         // Execute the Solr query
-        response = cvaEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX), solrQuery);
+        response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX), solrQuery);
         // Print out the results
         System.out.println("Number of clinical variants: " + response.getResults().getNumFound());
         Assert.assertEquals(54, response.getResults().getNumFound());
@@ -101,7 +151,7 @@ public class CvdbSolrEngineIndexTest {
         }
 
         // Execute the Solr query
-        response = cvaEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX), solrQuery);
+        response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX), solrQuery);
         // Print out the results
         System.out.println("Number of clinical variant evidences: " + response.getResults().getNumFound());
         Assert.assertEquals(59, response.getResults().getNumFound());
@@ -154,7 +204,7 @@ public class CvdbSolrEngineIndexTest {
 //
         // Execute the Solr query
         solrQuery.setShowDebugInfo(true);
-        QueryResponse response = cvaEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX),
+        QueryResponse response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX),
                 solrQuery);
 
         // Print out the results
@@ -168,13 +218,96 @@ public class CvdbSolrEngineIndexTest {
         }
     }
 
-    private void loadClinicalAnalsyses() throws IOException, CvdbException {
+    @Test
+    public void testIndexClinicalAnalysesFromCatalog() throws CatalogException, IOException, CvdbException, SolrServerException {
+        loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study.getId());
+
+        // CVDB index from catalog
+        cvdbEngine.index(projectId, catalogManager, sessionIdUser);
+
+        // CVDB queries
+        SolrQuery solrQuery = new SolrQuery("*:*");
+        solrQuery.setRows(100);
+
+        // Execute the Solr query
+        QueryResponse response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
+                solrQuery);
+
+        // Print out the results
+        System.out.println("Number of clinical analysis: " + response.getResults().getNumFound());
+        Assert.assertEquals(2, response.getResults().getNumFound());
+        for (int i = 0; i < response.getResults().size(); i++) {
+            System.out.println("Clinical analysis #" + i + ":");
+            System.out.println("\tID: " + response.getResults().get(i).getFieldValue("id"));
+            System.out.println();
+        }
+    }
+
+
+    private void loadClinicalAnalsysesInCatalog(List<String> caFilenames, String studyId) throws IOException, CatalogException {
+        for (String caFilename : caFilenames) {
+            InputStream is = ClinicalInterpretationConverterTest.class.getClassLoader().getResourceAsStream(caFilename);
+            GZIPInputStream gzipInputStream = new GZIPInputStream(is);
+            ClinicalAnalysis clinicalAnalysis = JacksonUtils.getDefaultObjectMapper().readerFor(ClinicalAnalysis.class)
+                    .readValue(gzipInputStream);
+
+            // Import panels
+            try {
+                List<String> panelIds = new ArrayList<>();
+                if (CollectionUtils.isNotEmpty(clinicalAnalysis.getPanels())) {
+                    panelIds = clinicalAnalysis.getPanels().stream().map(p -> p.getId()).collect(Collectors.toList());
+                }
+                catalogManager.getPanelManager().importFromSource(studyId, "panelapp", StringUtils.join(panelIds, ","), sessionIdUser);
+            } catch (CatalogException e) {
+                System.out.println("---------------------------------------------------------------------------------");
+                System.out.println("Impossible to load clinical analysis file " + caFilename + ": " + e.getMessage());
+                System.out.println("---------------------------------------------------------------------------------");
+                continue;
+            }
+
+            // Create family
+            if (clinicalAnalysis.getFamily() != null) {
+                catalogManager.getFamilyManager().create(studyId, clinicalAnalysis.getFamily(), INCLUDE_RESULT, sessionIdUser);
+            }
+
+            // Create clinical analysis
+            clinicalAnalysis.getInterpretation().setId(null);
+            if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
+                for (Interpretation secondaryInterpretation : clinicalAnalysis.getSecondaryInterpretations()) {
+                    secondaryInterpretation.setId(null);
+                }
+            }
+            catalogManager.getClinicalAnalysisManager().create(studyId, clinicalAnalysis, true, INCLUDE_RESULT, sessionIdUser);
+        }
+    }
+
+    private void loadClinicalAnalsysesInSolr() throws IOException, CvdbException {
         List<String> names = Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz");
         for (String name : names) {
             InputStream is = ClinicalInterpretationConverterTest.class.getClassLoader().getResourceAsStream(name);
             GZIPInputStream gzipInputStream = new GZIPInputStream(is);
-            ClinicalAnalysis clinicalAnalysis = JacksonUtils.getDefaultObjectMapper().readerFor(ClinicalAnalysis.class).readValue(gzipInputStream);
-            cvaEngine.index(clinicalAnalysis, projectId);
+            ClinicalAnalysis clinicalAnalysis = JacksonUtils.getDefaultObjectMapper().readerFor(ClinicalAnalysis.class)
+                    .readValue(gzipInputStream);
+
+            // Path to fix accession from SO terms
+//            List<Interpretation> interpretations = new ArrayList<>();
+//            interpretations.add(clinicalAnalysis.getInterpretation());
+//            interpretations.addAll(clinicalAnalysis.getSecondaryInterpretations());
+//            for (Interpretation interpretation : interpretations) {
+//                for (ClinicalVariant cv : interpretation.getPrimaryFindings()) {
+//                    for (ConsequenceType ct : cv.getAnnotation().getConsequenceTypes()) {
+//                        for (SequenceOntologyTerm so : ct.getSequenceOntologyTerms()) {
+//                            if (!so.getAccession().startsWith("SO")) {
+//                                so.setAccession(ConsequenceTypeMappings.getSoAccessionString(so.getName()));
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//            JacksonUtils.getDefaultObjectMapper().writerFor(ClinicalAnalysis.class).writeValue(Paths.get("/tmp")
+//                    .resolve(name).toFile(), clinicalAnalysis);
+
+            cvdbEngine.index(clinicalAnalysis, projectId);
             System.out.println("Clinical analysis " + clinicalAnalysis.getId() + " loaded !");
         }
     }
@@ -189,7 +322,7 @@ public class CvdbSolrEngineIndexTest {
         for (ClinicalVariant cv : cvs.values()) {
             clinicalVariantList.add(cv);
         }
-        cvaEngine.index(clinicalVariantList, false, projectId);
+        cvdbEngine.index(clinicalVariantList, false, projectId);
     }
 }
 

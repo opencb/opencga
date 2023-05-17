@@ -32,11 +32,17 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.SolrManager;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +50,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by jtarraga on 11/11/17.
@@ -107,6 +114,20 @@ public class CvdbSolrEngine {
     public static String getCollectionName(String projectId, String suffix) {
         return "opencga_" + projectId + suffix;
     }
+
+    public void index(String projectId, CatalogManager catalogManager, String sessionIdUser) throws CatalogException, CvdbException {
+        OpenCGAResult<Study> studyResults = catalogManager.getStudyManager().search(projectId, new Query(), QueryOptions.empty(),
+                sessionIdUser);
+        List<String> studyIds = studyResults.getResults().stream().map(s -> s.getId()).collect(Collectors.toList());
+        for (String studyId : studyIds) {
+            OpenCGAResult<ClinicalAnalysis> caResults = catalogManager.getClinicalAnalysisManager().search(studyId, new Query(),
+                    QueryOptions.empty(), sessionIdUser);
+            for (ClinicalAnalysis clinicalAnalysis : caResults.getResults()) {
+                index(clinicalAnalysis, projectId);
+            }
+        }
+    }
+
 
     public void index(ClinicalAnalysis clinicalAnalysis, String projectId) throws CvdbException {
         SolrClient solrClient = solrManager.getSolrClient();
