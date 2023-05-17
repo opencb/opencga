@@ -38,57 +38,78 @@ public class ClinicalQueryParser {
         String key;
 
         // ---------- ClinicalAnalysis ----------
-        //
-        // ID, Name, description, disease, files, proband ID, family ID, family phenotype name, family member ID
 
-        // ClinicalAnalysis name
-        key = ClinicalVariantQueryParam.CA_NAME.key();
+        // ID
+        key = ClinicalVariantQueryParam.CA_ID.key();
         if (StringUtils.isNotEmpty(key)) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
-        // ClinicalAnalysis description
+        // Description
         key = ClinicalVariantQueryParam.CA_DESCRIPTION.key();
+        if (StringUtils.isNotEmpty(key)) {
+            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
+        }
+
+        // Type
+        key = ClinicalVariantQueryParam.CA_TYPE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
-        // ClinicalAnalysis disease
-        key = ClinicalVariantQueryParam.CA_DISEASE.key();
+        // Disorder ID
+        key = ClinicalVariantQueryParam.CA_DISORDER_ID.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
-        // ClinicalAnalysis germline and somatic files
-        key = ClinicalVariantQueryParam.CA_FILE.key();
+        // Filename
+        key = ClinicalVariantQueryParam.CA_FILENAME.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
-        // ClinicalAnalysis proband ID
+        // Proband ID
         key = ClinicalVariantQueryParam.CA_PROBAND_ID.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
-        // ClinicalAnalysis family ID
+        // Family ID
         key = ClinicalVariantQueryParam.CA_FAMILY_ID.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
-        // ClinicalAnalasys family phenotype names
-        key = ClinicalVariantQueryParam.CA_FAMILY_PHENOTYPE_NAMES.key();
+        // Family phenotype name
+        key = ClinicalVariantQueryParam.CA_FAMILY_PHENOTYPE_NAME.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
-        // ClinicalAnalasys family member IDs
-        key = ClinicalVariantQueryParam.CA_FAMILY_MEMBER_IDS.key();
+        // Family member ID
+        key = ClinicalVariantQueryParam.CA_FAMILY_MEMBER_ID.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
+        // Report
+        key = ClinicalVariantQueryParam.CA_REPORT.key();
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
+        }
+
+        // Status
+        key = ClinicalVariantQueryParam.CA_STATUS.key();
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
+        }
+
+        // Lock
+        key = ClinicalVariantQueryParam.CA_FAMILY_PHENOTYPE_NAME.key();
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
+        }
         // ---------- Interpretation ----------
         //
         //    ID, software name, software version, analyst name, panel name, creation date, more info

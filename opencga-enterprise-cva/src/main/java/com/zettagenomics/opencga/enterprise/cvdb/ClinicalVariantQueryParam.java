@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static org.opencb.commons.datastore.core.QueryParam.Type.BOOLEAN;
 import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
@@ -35,42 +36,52 @@ public final class ClinicalVariantQueryParam implements QueryParam {
     private static final String ACCEPTS_ALL_NONE = "Accepts '" + ALL + "' and '" + NONE + "'.";
     private static final String ACCEPTS_AND_OR = "Accepts AND (" + AND + ") and OR (" + OR + ") operators.";
 
-    // ---------- Clinical Analysis (aka CA)
+    // ---------- Clinical analysis (aka CA)
 
     public static final String CA_ID_DESCR = "List of clinical analysis IDs";
-    public static final ClinicalVariantQueryParam CA_ID = new ClinicalVariantQueryParam("intClinicalAnalysisId", TEXT_ARRAY,
+    public static final ClinicalVariantQueryParam CA_ID = new ClinicalVariantQueryParam("caId", TEXT_ARRAY,
             CA_ID_DESCR);
-
-    public static final String CA_NAME_DESCR = "List of clinical analysis names";
-    public static final ClinicalVariantQueryParam CA_NAME = new ClinicalVariantQueryParam("caName", TEXT_ARRAY, CA_NAME_DESCR);
 
     public static final String CA_DESCRIPTION_DESCR = "Clinical analysis description";
     public static final ClinicalVariantQueryParam CA_DESCRIPTION = new ClinicalVariantQueryParam("caDescription", TEXT_ARRAY,
             CA_DESCRIPTION_DESCR);
 
-    public static final String CA_DISEASE_DESCR = "List of clinical analysis diseases";
-    public static final ClinicalVariantQueryParam CA_DISEASE = new ClinicalVariantQueryParam("caDisease", TEXT_ARRAY, CA_DISEASE_DESCR);
+    public static final String CA_TYPE_DESCR = "List of clinical analysis types";
+    public static final ClinicalVariantQueryParam CA_TYPE = new ClinicalVariantQueryParam("caType", TEXT_ARRAY, CA_TYPE_DESCR);
 
-    public static final String CA_FILE_DESCR = "List of clinical analysis files";
-    public static final ClinicalVariantQueryParam CA_FILE = new ClinicalVariantQueryParam("caFiles", TEXT_ARRAY, CA_FILE_DESCR);
+    public static final String CA_DISORDER_ID_DESCR = "List of clinical analysis disorder IDs";
+    public static final ClinicalVariantQueryParam CA_DISORDER_ID = new ClinicalVariantQueryParam("caDisorderId", TEXT_ARRAY,
+            CA_DISORDER_ID_DESCR);
 
-    public static final String CA_PROBAND_ID_DESCR = "List of proband IDs";
+    public static final String CA_FILENAME_DESCR = "List of clinical analysis file names";
+    public static final ClinicalVariantQueryParam CA_FILENAME = new ClinicalVariantQueryParam("caFilename", TEXT_ARRAY, CA_FILENAME_DESCR);
+
+    public static final String CA_PROBAND_ID_DESCR = "List of clinical analysis proband IDs";
     public static final ClinicalVariantQueryParam CA_PROBAND_ID = new ClinicalVariantQueryParam("caProbandId", TEXT_ARRAY,
             CA_PROBAND_ID_DESCR);
 
-    public static final String CA_FAMILY_ID_DESCR = "List of family IDs";
+    public static final String CA_FAMILY_ID_DESCR = "List of clinical analysis family IDs";
     public static final ClinicalVariantQueryParam CA_FAMILY_ID = new ClinicalVariantQueryParam("caFamilyId", TEXT_ARRAY,
             CA_FAMILY_ID_DESCR);
 
-    public static final String CA_FAMILY_PHENOTYPE_NAMES_DESCR = "List of clinical analysis family phenotype names";
-    public static final ClinicalVariantQueryParam CA_FAMILY_PHENOTYPE_NAMES = new ClinicalVariantQueryParam("caFamilyPhenotypeNames",
-            TEXT_ARRAY, CA_FAMILY_PHENOTYPE_NAMES_DESCR);
+    public static final String CA_FAMILY_PHENOTYPE_NAME_DESCR = "List of clinical analysis family phenotype names";
+    public static final ClinicalVariantQueryParam CA_FAMILY_PHENOTYPE_NAME = new ClinicalVariantQueryParam("caFamilyPhenotypeName",
+            TEXT_ARRAY, CA_FAMILY_PHENOTYPE_NAME_DESCR);
 
-    public static final String CA_FAMILY_MEMBER_IDS_DESCR = "List of clinical analysis family member IDs";
-    public static final ClinicalVariantQueryParam CA_FAMILY_MEMBER_IDS = new ClinicalVariantQueryParam("caFamilyMemberIds", TEXT_ARRAY,
-            CA_FAMILY_MEMBER_IDS_DESCR);
+    public static final String CA_FAMILY_MEMBER_ID_DESCR = "List of clinical analysis family member IDs";
+    public static final ClinicalVariantQueryParam CA_FAMILY_MEMBER_ID = new ClinicalVariantQueryParam("caFamilyMemberId", TEXT_ARRAY,
+            CA_FAMILY_MEMBER_ID_DESCR);
 
-    // ---------- Interpretation (aka INT)
+    public static final String CA_REPORT_DESCR = "List of clinical analysis reports";
+    public static final ClinicalVariantQueryParam CA_REPORT = new ClinicalVariantQueryParam("caReport", TEXT_ARRAY, CA_REPORT_DESCR);
+
+    public static final String CA_STATUS_DESCR = "List of clinical analysis status";
+    public static final ClinicalVariantQueryParam CA_STATUS = new ClinicalVariantQueryParam("caStatus", TEXT_ARRAY, CA_STATUS_DESCR);
+
+    public static final String CA_LOCK_DESCR = "Filter by (un)locked clinical analyses";
+    public static final ClinicalVariantQueryParam CA_LOCK = new ClinicalVariantQueryParam("caLock", BOOLEAN, CA_LOCK_DESCR);
+
+    // ---------- Clinical interpretation (aka CI)
 
     public static final String INT_ID_DESCR = "List of interpretation IDs";
     public static final ClinicalVariantQueryParam INT_ID = new ClinicalVariantQueryParam("intId", TEXT_ARRAY, INT_ID_DESCR);
