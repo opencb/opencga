@@ -59,7 +59,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
 
     public MetaMongoDBAdaptor(MongoDBCollection metaMongoDBCollection, Configuration configuration,
                               MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(configuration, LoggerFactory.getLogger(ProjectMongoDBAdaptor.class));
+        super(configuration, LoggerFactory.getLogger(MetaMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.metaCollection = metaMongoDBCollection;
     }

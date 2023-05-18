@@ -261,6 +261,35 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
+    public void createMultipleCasesSameFamily() throws CatalogException {
+        ClinicalAnalysis case1 = createDummyEnvironment(true, true).first();
+        createDummyEnvironment(false, true).first();
+        createDummyEnvironment(false, true).first();
+        createDummyEnvironment(false, true).first();
+        createDummyEnvironment(false, true).first();
+
+        catalogManager.getClinicalAnalysisManager().update(STUDY, case1.getId(), new ClinicalAnalysisUpdateParams().setLocked(true), QueryOptions.empty(), sessionIdUser);
+        // Update proband's sample
+        catalogManager.getSampleManager().update(STUDY, case1.getProband().getSamples().get(0).getId(),
+                new SampleUpdateParams().setDescription("new description"), QueryOptions.empty(), sessionIdUser);
+
+        OpenCGAResult<ClinicalAnalysis> search = catalogManager.getClinicalAnalysisManager().search(STUDY, new Query(), new QueryOptions(),
+                sessionIdUser);
+        assertEquals(5, search.getNumResults());
+        for (ClinicalAnalysis casee : search.getResults()) {
+            if (casee.getId().equals(case1.getId())) {
+                assertEquals(1, casee.getProband().getVersion());
+                assertEquals(1, casee.getProband().getSamples().get(0).getVersion());
+                assertEquals(1, casee.getFamily().getVersion());
+            } else {
+                assertEquals(2, casee.getProband().getVersion());
+                assertEquals(2, casee.getProband().getSamples().get(0).getVersion());
+                assertEquals(2, casee.getFamily().getVersion());
+            }
+        }
+    }
+
+    @Test
     public void createAndUpdateClinicalAnalysisWithQualityControl() throws CatalogException, InterruptedException {
         Individual individual = new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2")));
         catalogManager.getIndividualManager().create(STUDY, individual, null, sessionIdUser);

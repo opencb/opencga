@@ -72,7 +72,7 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
         logger.info("Annotating with Cellbase REST. {}", cellBaseUtils);
 
         try {
-            cellBaseUtils.validateCellBaseConnection();
+            cellBaseUtils.validate();
         } catch (IOException e) {
             throw new VariantAnnotatorException(e.getMessage(), e);
         }

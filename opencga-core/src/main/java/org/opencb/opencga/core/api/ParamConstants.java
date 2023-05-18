@@ -83,6 +83,8 @@ public class ParamConstants {
     public static final String POP_FREQ_1000G = POP_FREQ_1000G_CB_V5;
     public static final String POP_FREQ_GNOMAD_GENOMES = "GNOMAD_GENOMES";
 
+    public static final String OPENCGA_TOKEN_CLI_PARAM = "--opencga-token";
+
     // ---------------------------------------------
     public static final String FORCE = "force";
     public static final String ANNOTATION_DOC_URL = "http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0";

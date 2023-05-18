@@ -85,6 +85,24 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testGetToken() throws Exception {
+        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("a", "hola");
+        claims.put("ab", "byw");
+        // Create a token valid for 1 second
+        String expiringToken = catalogManager.getUserManager().getToken("opencga", claims, 1L, token);
+        assertEquals("opencga", catalogManager.getUserManager().getUserId(expiringToken));
+        
+        String nonExpiringToken = catalogManager.getUserManager().getNonExpiringToken("opencga", claims, token);
+        assertEquals("opencga", catalogManager.getUserManager().getUserId(nonExpiringToken));
+
+        Thread.sleep(1000);
+        thrown.expect(CatalogAuthenticationException.class);
+        thrown.expectMessage("expired");
+        assertEquals("opencga", catalogManager.getUserManager().getUserId(expiringToken));
+    }
+    @Test
     public void testCreateExistingUser() throws Exception {
         thrown.expect(CatalogException.class);
         thrown.expectMessage(containsString("already exists"));
@@ -469,7 +487,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         for (int i = 0; i < 20; i++) {
             catalogManager.getProjectManager().create(new ProjectCreateParams()
                     .setId("project_" + i)
-                    .setOrganism(new ProjectOrganism("a", "b")), QueryOptions.empty(), token);
+                    .setOrganism(new ProjectOrganism("hsapiens", "grch38")), QueryOptions.empty(), token);
             for (int j = 0; j < 2; j++) {
                 catalogManager.getStudyManager().create("project_" + i, new Study().setId("study_" + i + "_" + j), QueryOptions.empty(),
                         token);

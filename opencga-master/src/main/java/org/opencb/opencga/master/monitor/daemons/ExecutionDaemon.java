@@ -82,10 +82,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.IOManager;
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.FileManager;
-import org.opencb.opencga.catalog.managers.JobManager;
-import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -524,7 +521,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         String userToken;
         try {
-            userToken = catalogManager.getUserManager().getNonExpiringToken(job.getUserId(), token);
+            userToken = catalogManager.getUserManager().getNonExpiringToken(job.getUserId(), Collections.emptyMap(), token);
         } catch (CatalogException e) {
             return abortJob(job, "Internal error. Could not obtain token for user '" + job.getUserId() + "'", e);
         }
@@ -569,8 +566,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         // Create cli
         String commandLine = buildCli(internalCli, job);
-        String authenticatedCommandLine = commandLine + " --token " + userToken;
-        String shadedCommandLine = commandLine + " --token " + REDACTED_TOKEN;
+        String authenticatedCommandLine = commandLine + " " + ParamConstants.OPENCGA_TOKEN_CLI_PARAM + " " + userToken;
+        String shadedCommandLine = commandLine + " " + ParamConstants.OPENCGA_TOKEN_CLI_PARAM + " " + REDACTED_TOKEN;
 
         updateParams.setCommandLine(shadedCommandLine);
 
