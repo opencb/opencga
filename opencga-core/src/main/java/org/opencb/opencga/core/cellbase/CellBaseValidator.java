@@ -228,7 +228,7 @@ public class CellBaseValidator {
 
     public static boolean supportsDataReleaseActiveByDefaultIn(String serverVersion) {
         // Data Release Default Active In Version support starts at version 5.5.0 , TASK-4157
-        return VersionUtils.isMinVersion("5.5.0", serverVersion);
+        return VersionUtils.isMinVersion("5.5.0", serverVersion, true);
     }
 
     public String getVersionFromServerMajor() throws IOException {
