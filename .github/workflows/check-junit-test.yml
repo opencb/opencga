@@ -1,4 +1,4 @@
-name: LONG TEST ANALYSIS
+name: Check junits
 
 on:
   workflow_dispatch:
