@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class CellBaseValidator {
 
@@ -94,17 +94,33 @@ public class CellBaseValidator {
         return new CellBaseConfiguration(getURL(), getVersion(), getDataRelease(), getToken());
     }
 
-    public String getLatestActiveDataRelease() throws IOException {
+    public String getDefaultDataRelease() throws IOException {
         if (supportsDataRelease()) {
-            Optional<DataRelease> dataRelease = cellBaseClient.getMetaClient().dataReleases()
-                    .allResults()
-                    .stream()
-                    .filter(DataRelease::isActive)
-                    .max(Comparator.comparing(DataRelease::getDate));
-            if (!dataRelease.isPresent()) {
+            List<DataRelease> dataReleases = cellBaseClient.getMetaClient().dataReleases()
+                    .allResults();
+            DataRelease dataRelease = null;
+            if (supportsDataReleaseActiveByDefaultIn()) {
+                // ActiveByDefault versions are stored in form `v<major>.<minor>` , i.e. v5.5 , v5.7, ...
+                String majorMinor = "v" + getVersionFromServerMajorMinor();
+                List<DataRelease> drs = dataReleases
+                        .stream()
+                        .filter(dr -> dr.getActiveByDefaultIn() != null && dr.getActiveByDefaultIn().contains(majorMinor))
+                        .collect(Collectors.toList());
+                if (drs.size() == 1) {
+                    dataRelease = drs.get(0);
+                } else if (drs.size() > 1) {
+                    throw new IllegalArgumentException("More than one default active data releases found on cellbase " + this);
+                }
+            } else {
+                dataRelease = dataReleases
+                        .stream()
+                        .filter(DataRelease::isActive)
+                        .max(Comparator.comparing(DataRelease::getDate)).orElse(null);
+            }
+            if (dataRelease == null) {
                 throw new IllegalArgumentException("No active data releases found on cellbase " + this);
             } else {
-                return String.valueOf(dataRelease.get().getRelease());
+                return String.valueOf(dataRelease.getRelease());
             }
         } else {
             return null;
@@ -149,7 +165,7 @@ public class CellBaseValidator {
             String dataRelease = getDataRelease();
             if (dataRelease == null) {
                 if (autoComplete) {
-                    cellBaseConfiguration.setDataRelease(getLatestActiveDataRelease());
+                    cellBaseConfiguration.setDataRelease(getDefaultDataRelease());
                 } else {
                     throw new IllegalArgumentException("Missing DataRelease for cellbase "
                             + "url: '" + getURL() + "'"
@@ -202,8 +218,17 @@ public class CellBaseValidator {
     }
 
     public static boolean supportsDataRelease(String serverVersion) {
-        // Data Release support starts at versio 5.1.0
+        // Data Release support starts at version 5.1.0
         return VersionUtils.isMinVersion("5.1.0", serverVersion);
+    }
+
+    public boolean supportsDataReleaseActiveByDefaultIn() throws IOException {
+        return supportsDataReleaseActiveByDefaultIn(getVersionFromServer());
+    }
+
+    public static boolean supportsDataReleaseActiveByDefaultIn(String serverVersion) {
+        // Data Release Default Active In Version support starts at version 5.5.0 , TASK-4157
+        return VersionUtils.isMinVersion("5.5.0", serverVersion, true);
     }
 
     public String getVersionFromServerMajor() throws IOException {
@@ -217,10 +242,13 @@ public class CellBaseValidator {
     }
 
     private static String major(String version) {
+//        return String.valueOf(new VersionUtils.Version(version).getMajor());
         return version.split("\\.")[0];
     }
 
     private static String majorMinor(String version) {
+//        VersionUtils.Version v = new VersionUtils.Version(version);
+//        return v.getMajor() + "." + v.getMinor();
         String[] split = version.split("\\.");
         if (split.length > 1) {
             version = split[0] + "." + split[1];
