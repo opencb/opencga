@@ -1,0 +1,41 @@
+name: LONG TEST ANALYSIS
+
+on:
+  workflow_dispatch:
+    inputs:
+      short_tests:
+        type: boolean
+        required: false
+        default: true
+      medium_tests:
+        type: boolean
+        required: false
+        default: false
+      long_tests:
+        type: boolean
+        required: false
+        default: false
+      mvn_opts:
+        type: string
+        required: false
+        default: ""
+
+jobs:
+  test:
+    name: Test JUnit
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Building string profiles to run
+        id: get_profiles
+        run: |
+          if [ -f "./.github/workflows/scripts/get_profiles.sh" ]; then
+            chmod +x ./.github/workflows/scripts/get_profiles.sh
+            echo "profiles=$(./.github/workflows/scripts/get_profiles.sh ${{ inputs.short_tests }} ${{ inputs.medium_tests }} ${{ inputs.long_tests }})" >> $GITHUB_OUTPUT
+          fi
+      - name: Building string profiles to run
+        uses: ./.github/workflows/test-analysis.yml
+        secrets: inherit
+        with:
+          test_profile: ${{ steps.get_profiles.outputs.profiles }}
+          report_context: development
+          mvn_opts: ${{ inputs.mvn_opts }}
