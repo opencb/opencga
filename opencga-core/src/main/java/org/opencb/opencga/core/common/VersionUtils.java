@@ -13,7 +13,11 @@ public class VersionUtils {
     }
 
     public static boolean isMinVersion(String minVersion, String version) {
-        return new Version(minVersion).compareTo(new Version(version)) <= 0;
+        return isMinVersion(minVersion, version, false);
+    }
+
+    public static boolean isMinVersion(String minVersion, String version, boolean ignorePreReleaseVersioning) {
+        return new Version(minVersion).compareTo(new Version(version), ignorePreReleaseVersioning) <= 0;
     }
 
     public static class Version implements Comparable<Version> {
@@ -48,6 +52,12 @@ public class VersionUtils {
                     return o1.other.compareTo(o2.other);
                 });
 
+        public static final Comparator<Version> COMPARATOR_NO_PR = Comparator
+                .comparingInt(Version::getMajor)
+                .thenComparingInt(Version::getMinor)
+                .thenComparingInt(Version::getPatch)
+                .thenComparingInt(Version::getRepatch);
+
         public Version(String version) {
             String[] split = StringUtils.split(version, ".", 4);
             major = Integer.parseInt(split[0]);
@@ -79,6 +89,14 @@ public class VersionUtils {
         @Override
         public int compareTo(Version o) {
             return COMPARATOR.compare(this, o);
+        }
+
+        public int compareTo(Version o, boolean ignorePreReleaseVersioning) {
+            if (ignorePreReleaseVersioning) {
+                return COMPARATOR_NO_PR.compare(this, o);
+            } else {
+                return COMPARATOR.compare(this, o);
+            }
         }
 
         public int getMajor() {

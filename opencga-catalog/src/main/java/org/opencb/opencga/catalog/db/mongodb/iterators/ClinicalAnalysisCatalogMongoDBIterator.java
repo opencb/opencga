@@ -208,10 +208,16 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
 
             if (familyMap.containsKey(familyId)) {
                 Document completeFamilyDocument = familyMap.get(familyId);
+                Document familyCopy;
+                try {
+                    familyCopy = JacksonUtils.copy(completeFamilyDocument, Document.class);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
 
                 // Search for members
-                List<Document> completeMembers = (List<Document>) completeFamilyDocument.get(FamilyDBAdaptor.QueryParams.MEMBERS.key());
-                List<Document> members = (List<Document>) familyDocument.get(FamilyDBAdaptor.QueryParams.MEMBERS.key());
+                List<Document> completeMembers = completeFamilyDocument.getList(FamilyDBAdaptor.QueryParams.MEMBERS.key(), Document.class);
+                List<Document> members = familyDocument.getList(FamilyDBAdaptor.QueryParams.MEMBERS.key(), Document.class);
                 if (members != null && !members.isEmpty() && completeMembers != null && !completeMembers.isEmpty()) {
                     // First, we create a map with references to the complete member information
                     Map<Long, Document> memberMap = new HashMap<>();
@@ -226,10 +232,10 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
                                     memberMap.get(memberDocument.get(UID, Number.class).longValue())));
                         }
                     }
-                    completeFamilyDocument.put(FamilyDBAdaptor.QueryParams.MEMBERS.key(), finalMembers);
+                    familyCopy.put(FamilyDBAdaptor.QueryParams.MEMBERS.key(), finalMembers);
                 }
 
-                return completeFamilyDocument;
+                return familyCopy;
             }
         }
 
@@ -255,8 +261,8 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
             throw new RuntimeException(e);
         }
 
-        List<Document> samples = (List<Document>) individualDoc.get(IndividualDBAdaptor.QueryParams.SAMPLES.key());
-        List<Document> completeSamples = (List<Document>) completeIndividualDoc.get(IndividualDBAdaptor.QueryParams.SAMPLES.key());
+        List<Document> samples = individualDoc.getList(IndividualDBAdaptor.QueryParams.SAMPLES.key(), Document.class);
+        List<Document> completeSamples = completeIndividualDoc.getList(IndividualDBAdaptor.QueryParams.SAMPLES.key(), Document.class);
 
         if (samples != null && !samples.isEmpty() && completeSamples != null && !completeSamples.isEmpty()) {
             // First, we store the samples present in the complete individual

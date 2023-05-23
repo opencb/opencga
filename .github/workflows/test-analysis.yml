@@ -8,6 +8,10 @@ on:
       report_context:
         type: string
         required: true
+      mvn_opts:
+        type: string
+        required: false
+        default: ""
     secrets:
       SONAR_TOKEN:
         required: true
@@ -35,6 +39,14 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
           cache: 'maven'
+      - name: Install dependencies branches
+        run: |
+          if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
+            chmod +x ./.github/workflows/scripts/get_same_branch.sh
+            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }}
+          else
+             echo "./.github/workflows/scripts/get_same_branch.sh does not exist."
+          fi
       - name: Test and Analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
@@ -53,6 +65,14 @@ jobs:
           distribution: 'temurin'
           java-version: '8'
           cache: 'maven'
+      - name: Install dependencies branches
+        run: |
+          if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
+            chmod +x ./.github/workflows/scripts/get_same_branch.sh
+            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }}
+          else
+             echo "./.github/workflows/scripts/get_same_branch.sh does not exist."
+          fi
       - name: Install Samtools
         run: sudo apt-get install samtools python3-deeptools
       - name: Start MongoDB v6.0
@@ -61,7 +81,7 @@ jobs:
           mongodb-version: 6.0
           mongodb-replica-set: rs-test
       - name: Run Junit tests
-        run: mvn -B verify surefire-report:report -P storage-hadoop,hdp3.1,${{ inputs.test_profile }} -Dcheckstyle.skip -Popencga-storage-hadoop-deps -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
+        run: mvn -B verify surefire-report:report -P storage-hadoop,hdp3.1,${{ inputs.test_profile }} -Dcheckstyle.skip -Popencga-storage-hadoop-deps -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6' ${{ inputs.mvn_opts }}
       - name: Upload result dir
         uses: actions/upload-artifact@v3
         with:
