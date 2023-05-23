@@ -34,8 +34,8 @@ jobs:
           fi
       - name: Building string profiles to run
         uses: ./.github/workflows/test-analysis.yml
-        secrets: inherit
         with:
           test_profile: ${{ steps.get_profiles.outputs.profiles }}
           report_context: development
           mvn_opts: ${{ inputs.mvn_opts }}
+        secrets: inherit
