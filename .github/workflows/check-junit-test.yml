@@ -41,10 +41,13 @@ jobs:
   echo_log:
     needs: get_profiles
     runs-on: ubuntu-22.04
-    run: echo "Executing testing profiles -> ${{ needs.get_profiles.outputs.profiles }}"
+    steps:
+      - name: Echo profiles
+        id: log
+        run: echo "Executing testing profiles -> ${{ needs.get_profiles.outputs.profiles }}"
 
   test:
-    needs: get_profiles
+    needs: [ get_profiles, echo_log ]
     uses: ./.github/workflows/test-analysis.yml
     with:
       test_profile: ${{ needs.get_profiles.outputs.profiles }}
