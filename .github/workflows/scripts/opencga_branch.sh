@@ -6,7 +6,7 @@ cd /home/runner/work/opencga-enterprise/opencga-enterprise || exit 2
 ## Read the opencga version from the pom.xml
 BUILD_VERSION=$(mvn help:evaluate -Dexpression=opencga.version -q -DforceStdout)
 
-if [ -z "$1" ]; then
+if [ -n "$1" ]; then
   echo "v$BUILD_VERSION"
   exit 0
 fi
