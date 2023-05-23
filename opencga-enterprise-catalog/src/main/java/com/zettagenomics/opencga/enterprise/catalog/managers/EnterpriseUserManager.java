@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 public class EnterpriseUserManager extends EnterpriseAbstractManager {
@@ -76,9 +77,39 @@ public class EnterpriseUserManager extends EnterpriseAbstractManager {
             catalogManager.getUserManager().create(user, null, opencgaToken);
         }
 
-        // TODO: Check and sync groups
+        syncGroups(principal);
 
         return catalogManager.getUserManager().getToken(principal.getName(), Collections.emptyMap(), null, opencgaToken);
+    }
+
+    private void syncGroups(AttributePrincipal principal) throws CatalogException {
+        List<String> groups = getGroupsFromSSO(principal);
+        catalogManager.getAdminManager().syncRemoteGroups(principal.getName(), groups, "CAS", opencgaToken);
+    }
+
+    private List<String> getGroupsFromSSO(AttributePrincipal principal) {
+        if (enterpriseConfiguration.getSso() == null || enterpriseConfiguration.getSso().getAttributes() == null
+                || StringUtils.isEmpty(enterpriseConfiguration.getSso().getAttributes().getGroups())) {
+            logger.warn("Cannot fetch groups from SSO user '{}'. Field 'sso.attributes.groups' from the "
+                    + "enterprise-configuration.yml file is undefined.", principal.getName());
+            return Collections.emptyList();
+        }
+        String groupsKey = enterpriseConfiguration.getSso().getAttributes().getGroups();
+        if (principal.getAttributes() == null || !principal.getAttributes().containsKey(groupsKey)) {
+            logger.warn("No remote groups found for SSO user '{}'.", principal.getName());
+            return Collections.emptyList();
+        }
+        Object o = principal.getAttributes().get(groupsKey);
+        if (o instanceof List) {
+            return (List<String>) o;
+        } else if (o instanceof String) {
+            logger.debug("Groups value is instance of String: {}.", o);
+            return Arrays.asList(((String) o).split(","));
+        } else {
+            logger.warn("Cannot fetch groups from SSO user '{}'. Groups value is instance of '{}'.",
+                    principal.getName(), o.getClass());
+            return Collections.emptyList();
+        }
     }
 
     private String getDefaultValue(Map<String, Object> attributes, String key, String defaultValue) {
