@@ -1,4 +1,4 @@
-name: Reusable workflow to push in DockerHub
+name: Deploy OpenCGA Enterprise HDP to DockerHub
 
 on:
   workflow_call:
