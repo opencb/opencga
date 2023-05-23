@@ -25,6 +25,9 @@ jobs:
     name: Test JUnit
     runs-on: ubuntu-22.04
     steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: '10'
       - name: Building string profiles to run
         id: get_profiles
         run: |
