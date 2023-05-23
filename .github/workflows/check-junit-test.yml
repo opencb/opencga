@@ -38,6 +38,11 @@ jobs:
             echo "profiles=$(./.github/workflows/scripts/get_profiles.sh ${{ inputs.short_tests }} ${{ inputs.medium_tests }} ${{ inputs.long_tests }})" >> $GITHUB_OUTPUT
           fi
 
+  echo_log:
+    needs: get_profiles
+    runs-on: ubuntu-22.04
+    run: echo "Executing testing profiles -> ${{ needs.get_profiles.outputs.profiles }}"
+
   test:
     needs: get_profiles
     uses: ./.github/workflows/test-analysis.yml
