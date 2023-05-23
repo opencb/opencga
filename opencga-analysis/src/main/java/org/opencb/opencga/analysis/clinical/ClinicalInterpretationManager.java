@@ -321,14 +321,27 @@ public class ClinicalInterpretationManager extends StorageManager {
                                         .setAttributes(primaryFinding.getAttributes());
 
                                 // Update clinical evidence review if it is necessary
-                                if (CollectionUtils.isNotEmpty(primaryFinding.getEvidences())
-                                        && CollectionUtils.isNotEmpty(clinicalVariant.getEvidences())) {
-                                    for (ClinicalVariantEvidence primaryFindingEvidence : primaryFinding.getEvidences()) {
-                                        for (ClinicalVariantEvidence clinicalVariantEvidence : clinicalVariant.getEvidences()) {
-                                            if (ClinicalUtils.matchEvidence(primaryFindingEvidence, clinicalVariantEvidence)) {
-                                                clinicalVariantEvidence.setReview(primaryFindingEvidence.getReview());
-                                                clinicalVariantEvidence.setAttributes(primaryFindingEvidence.getAttributes());
+                                if (CollectionUtils.isNotEmpty(primaryFinding.getEvidences())) {
+                                    if (CollectionUtils.isEmpty(clinicalVariant.getEvidences())) {
+                                        clinicalVariant.setEvidences(primaryFinding.getEvidences());
+                                    } else {
+                                        List<ClinicalVariantEvidence> evidencesToAdd = new ArrayList<>();
+                                        for (ClinicalVariantEvidence primaryFindingEvidence : primaryFinding.getEvidences()) {
+                                            boolean found = false;
+                                            for (ClinicalVariantEvidence clinicalVariantEvidence : clinicalVariant.getEvidences()) {
+                                                if (ClinicalUtils.matchEvidence(primaryFindingEvidence, clinicalVariantEvidence)) {
+                                                    clinicalVariantEvidence.setReview(primaryFindingEvidence.getReview());
+                                                    clinicalVariantEvidence.setAttributes(primaryFindingEvidence.getAttributes());
+                                                    found = true;
+                                                    break;
+                                                }
                                             }
+                                            if (!found) {
+                                                evidencesToAdd.add(primaryFindingEvidence);
+                                            }
+                                        }
+                                        if (CollectionUtils.isNotEmpty(evidencesToAdd)) {
+                                            clinicalVariant.getEvidences().addAll(evidencesToAdd);
                                         }
                                     }
                                 }
