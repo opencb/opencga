@@ -380,7 +380,7 @@ public class VariantAnalysisTest {
     private java.io.File getOutputFile(Path outDir) {
         return FileUtils.listFiles(outDir.toFile(), null, false)
                 .stream()
-                .filter(f -> !f.getName().endsWith(ExecutionResultManager.FILE_EXTENSION))
+                .filter(f -> !ExecutionResultManager.isExecutionResultFile(f.getName()))
                 .findFirst().orElse(null);
     }
 
