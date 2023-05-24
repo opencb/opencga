@@ -53,9 +53,9 @@ jobs:
 
   release:
     uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop
-    needs: test
-    with:
-      artifact: build-folder
-      file: |
-        opencga-client-${{ needs.build.outputs.version }}.tar.gz
-        clients/R/opencgaR_${{ needs.build.outputs.version }}.tar.gz
+    needs: [ build,test ]
+      with:
+        artifact: build-folder
+        file: |
+          opencga-client-${{ needs.build.outputs.version }}.tar.gz
+          clients/R/opencgaR_${{ needs.build.outputs.version }}.tar.gz
