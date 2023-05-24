@@ -15,6 +15,7 @@ on:
       release:
         type: string
         required: false
+        default: ""
     outputs:
       version:
         description: "XetaBase project version"
