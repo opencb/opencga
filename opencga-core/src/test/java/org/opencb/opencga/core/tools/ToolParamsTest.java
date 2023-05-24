@@ -351,6 +351,12 @@ public class ToolParamsTest {
     }
 
     @Test
+    public void testThatWillFail() {
+        assertEquals(1, 1);
+        assertEquals("These values are not going to be the same, at all!", 1, 2);
+    }
+
+    @Test
     public void testList() {
         MyToolParams p = new MyToolParams();
         p.updateParams(new ObjectMap("myList", "1,2,3"));
