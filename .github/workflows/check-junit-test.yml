@@ -19,6 +19,11 @@ on:
         type: string
         required: false
         default: ""
+      ref:
+        description: "The branch, tag or SHA to test. Otherwise, uses the default branch."
+        type: string
+        required: false
+        default: ""
 
 jobs:
   get_profiles:
@@ -53,4 +58,5 @@ jobs:
       test_profile: ${{ needs.get_profiles.outputs.profiles }}
       report_context: development
       mvn_opts: ${{ inputs.mvn_opts }}
+      ref: ${{ inputs.ref }}
     secrets: inherit

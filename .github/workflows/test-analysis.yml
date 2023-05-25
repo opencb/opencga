@@ -8,6 +8,11 @@ on:
       report_context:
         type: string
         required: true
+      ref:
+        description: "The branch, tag or SHA to test. Otherwise, uses the default branch."
+        type: string
+        required: false
+        default: ""
       mvn_opts:
         type: string
         required: false
@@ -43,11 +48,17 @@ jobs:
         run: |
           if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
             chmod +x ./.github/workflows/scripts/get_same_branch.sh
-            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }}
+            ./.github/workflows/scripts/get_same_branch.sh $(git -C ./opencga_to_test/ rev-parse --abbrev-ref HEAD)
           else
              echo "./.github/workflows/scripts/get_same_branch.sh does not exist."
           fi
+      - uses: actions/checkout@v3
+        with:
+          ref: "${{ inputs.ref }}"
+          fetch-depth: '0'
+          path: './opencga_to_test/'
       - name: Test and Analyze
+        working-directory: './opencga_to_test/'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -59,6 +70,15 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: '0'
+      - uses: actions/checkout@v3
+        with:
+          ref: "${{ inputs.ref }}"
+          fetch-depth: '0'
+          path: './opencga_to_test/'
+      - name: "Get commit sha to test"
+        working-directory: './opencga_to_test/'
+        run: |
+          echo "opencga_test_commit=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
       - name: Set up JDK 8
         uses: actions/setup-java@v3
         with:
@@ -69,7 +89,7 @@ jobs:
         run: |
           if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
             chmod +x ./.github/workflows/scripts/get_same_branch.sh
-            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }}
+            ./.github/workflows/scripts/get_same_branch.sh $(git -C ./opencga_to_test/ rev-parse --abbrev-ref HEAD)
           else
              echo "./.github/workflows/scripts/get_same_branch.sh does not exist."
           fi
@@ -81,12 +101,17 @@ jobs:
           mongodb-version: 6.0
           mongodb-replica-set: rs-test
       - name: Run Junit tests
+        working-directory: './opencga_to_test/'
         run: mvn -B verify surefire-report:report --fail-never -P storage-hadoop,hdp3.1,${{ inputs.test_profile }} -Dcheckstyle.skip -Popencga-storage-hadoop-deps -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6' ${{ inputs.mvn_opts }}
       - name: Publish Test Report
         uses: scacap/action-surefire-report@v1
+        ## Skip cancelled()
+        ## https://docs.github.com/en/actions/learn-github-actions/expressions#cancelled
         if: success() || failure()
         with:
           check_name: "Surefire tests report"
+          report_paths: './opencga_to_test/**/surefire-reports/TEST-*.xml'
+          commit: '${{ env.opencga_test_commit }}'
           fail_on_test_failures: true
 #      - name: Upload result dir
 #        uses: actions/upload-artifact@v3
