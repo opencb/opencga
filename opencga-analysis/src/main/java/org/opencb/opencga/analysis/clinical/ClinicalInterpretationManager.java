@@ -330,6 +330,10 @@ public class ClinicalInterpretationManager extends StorageManager {
                                             boolean found = false;
                                             for (ClinicalVariantEvidence clinicalVariantEvidence : clinicalVariant.getEvidences()) {
                                                 if (ClinicalUtils.matchEvidence(primaryFindingEvidence, clinicalVariantEvidence)) {
+                                                    clinicalVariantEvidence.setInterpretationMethodName(primaryFindingEvidence
+                                                            .getInterpretationMethodName());
+                                                    clinicalVariantEvidence.setModeOfInheritances(primaryFindingEvidence
+                                                            .getModeOfInheritances());
                                                     clinicalVariantEvidence.setReview(primaryFindingEvidence.getReview());
                                                     clinicalVariantEvidence.setAttributes(primaryFindingEvidence.getAttributes());
                                                     found = true;
