@@ -41,8 +41,6 @@ jobs:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init
     secrets: inherit
 
-
-
   deploy-python:
     uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
     needs: test
@@ -54,8 +52,8 @@ jobs:
   release:
     uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop
     needs: [ build,test ]
-      with:
-        artifact: build-folder
-        file: |
-          opencga-client-${{ needs.build.outputs.version }}.tar.gz
-          clients/R/opencgaR_${{ needs.build.outputs.version }}.tar.gz
+    with:
+      artifact: build-folder
+      file: |
+        opencga-client-${{ needs.build.outputs.version }}.tar.gz
+        clients/R/opencgaR_${{ needs.build.outputs.version }}.tar.gz
