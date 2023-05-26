@@ -24,12 +24,12 @@ public class ClinicalUtilsTest {
         GenomicFeature gf2 = new GenomicFeature();
         gf2.setType("GENE");
         ev2.setGenomicFeature(gf2);
-        assertTrue(ClinicalUtils.matchEvidence(ev1, ev2));
+        assertTrue(ClinicalUtils.matchEvidences(ev1, ev2));
 
         // false
         gf2.setType("REGION");
         ev2.setGenomicFeature(gf2);
-        assertFalse(ClinicalUtils.matchEvidence(ev1, ev2));
+        assertFalse(ClinicalUtils.matchEvidences(ev1, ev2));
 
         // true
         gf1.setType("");
@@ -40,24 +40,24 @@ public class ClinicalUtilsTest {
         gf2.setId("1");
         gf2.setTranscriptId("a");
         ev2.setGenomicFeature(gf2);
-        assertTrue(ClinicalUtils.matchEvidence(ev1, ev2));
+        assertTrue(ClinicalUtils.matchEvidences(ev1, ev2));
 
         // false
         gf2.setTranscriptId("b");
         ev2.setGenomicFeature(gf2);
-        assertFalse(ClinicalUtils.matchEvidence(ev1, ev2));
+        assertFalse(ClinicalUtils.matchEvidences(ev1, ev2));
 
         gf2.setTranscriptId("a");
 
         // true
         ev1.setPanelId("b");
         ev2.setPanelId("b");
-        assertTrue(ClinicalUtils.matchEvidence(ev1, ev2));
+        assertTrue(ClinicalUtils.matchEvidences(ev1, ev2));
 
         // false
         ev1.setPanelId("c");
         ev2.setPanelId("b");
-        assertFalse(ClinicalUtils.matchEvidence(ev1, ev2));
+        assertFalse(ClinicalUtils.matchEvidences(ev1, ev2));
     }
 
 

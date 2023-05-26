@@ -311,7 +311,7 @@ public class ClinicalInterpretationManager extends StorageManager {
                             query.getString(ParamConstants.INCLUDE_INTERPRETATION));
                     for (ClinicalVariant primaryFinding : interpretation.getPrimaryFindings()) {
                         for (ClinicalVariant clinicalVariant : clinicalVariants) {
-                            if (clinicalVariant.toStringSimple().equals(primaryFinding.toStringSimple())) {
+                            if (clinicalVariant.sameGenomicVariant(primaryFinding)) {
                                 // Only it's updated the following fields
                                 // Important to note that the results include the "new" clinical evidences
                                 clinicalVariant.setComments(primaryFinding.getComments())
@@ -329,7 +329,7 @@ public class ClinicalInterpretationManager extends StorageManager {
                                         for (ClinicalVariantEvidence primaryFindingEvidence : primaryFinding.getEvidences()) {
                                             boolean found = false;
                                             for (ClinicalVariantEvidence clinicalVariantEvidence : clinicalVariant.getEvidences()) {
-                                                if (ClinicalUtils.matchEvidence(primaryFindingEvidence, clinicalVariantEvidence)) {
+                                                if (ClinicalUtils.matchEvidences(primaryFindingEvidence, clinicalVariantEvidence)) {
                                                     clinicalVariantEvidence.setInterpretationMethodName(primaryFindingEvidence
                                                             .getInterpretationMethodName());
                                                     clinicalVariantEvidence.setModeOfInheritances(primaryFindingEvidence
