@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>2.9.0-SNAPSHOT</version>
+    <version>2.9.0</version>
     <packaging>pom</packaging>
     <name>OpenCGA</name>
     <description>OenCGA projects implements a big data platform for genomic data analysis</description>
@@ -44,10 +44,10 @@
     <properties>
         <pyopencga.version>2.9.0-dev</pyopencga.version>
         <opencgar.version>2.9.0-dev</opencgar.version>
-        <cellbase.version>5.5.0-SNAPSHOT</cellbase.version>
-        <biodata.version>2.9.0-SNAPSHOT</biodata.version>
-        <java-common-libs.version>4.9.0-SNAPSHOT</java-common-libs.version>
-        <iva.version>2.9.0-SNAPSHOT</iva.version>
+        <cellbase.version>5.5.0</cellbase.version>
+        <biodata.version>2.9.0</biodata.version>
+        <java-common-libs.version>4.9.0</java-common-libs.version>
+        <iva.version>2.9.0</iva.version>
 
         <oskar.version>0.2.0</oskar.version>
         <jackson.version>2.11.4</jackson.version>
