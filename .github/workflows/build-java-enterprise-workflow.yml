@@ -15,7 +15,7 @@ on:
       release:
         type: string
         required: false
-        default: "" ## Important!!! empty is the default value don't remove it
+        default: ""
     outputs:
       version:
         description: "XetaBase project version"

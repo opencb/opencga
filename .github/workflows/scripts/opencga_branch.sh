@@ -35,4 +35,3 @@ else #Is release branch
   echo "release-$MAJOR.$MINOR.x"
   exit 0
 fi
-
