@@ -60,5 +60,27 @@ public class ClinicalUtilsTest {
         assertFalse(ClinicalUtils.matchEvidences(ev1, ev2));
     }
 
+    @Test
+    public void testTranscriptMatchEvidence() throws IOException {
+        ClinicalVariantEvidence ev1 = new ClinicalVariantEvidence();
+        GenomicFeature gf1 = new GenomicFeature();
+        gf1.setType("GENE");
+        gf1.setTranscriptId("ESNT00001.1");
+        ev1.setGenomicFeature(gf1);
+        ClinicalVariantEvidence ev2 = new ClinicalVariantEvidence();
+        GenomicFeature gf2 = new GenomicFeature();
+        gf2.setType("GENE");
+        gf2.setTranscriptId("ESNT00001.2");
+        ev2.setGenomicFeature(gf2);
+        assertTrue(ClinicalUtils.matchEvidences(ev1, ev2));
+
+        gf1.setTranscriptId("ESNT00001.1");
+        gf2.setTranscriptId("ESNT00002.2");
+        assertFalse(ClinicalUtils.matchEvidences(ev1, ev2));
+
+        gf1.setTranscriptId("NM00003");
+        gf2.setTranscriptId("NM00003");
+        assertTrue(ClinicalUtils.matchEvidences(ev1, ev2));
+    }
 
 }

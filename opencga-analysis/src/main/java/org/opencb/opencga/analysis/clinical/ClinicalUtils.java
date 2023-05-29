@@ -345,10 +345,10 @@ public class ClinicalUtils {
             String transcriptId1 = null;
             String transcriptId2 = null;
             if (StringUtils.isNotEmpty(gf1.getTranscriptId())) {
-                transcriptId1 = gf1.getTranscriptId().split("\\.")[0];
+                transcriptId1 = removeVersion(gf1.getTranscriptId());
             }
             if (StringUtils.isNotEmpty(gf2.getTranscriptId())) {
-                transcriptId2 = gf2.getTranscriptId().split("\\.")[0];
+                transcriptId2 = removeVersion(gf2.getTranscriptId());
             }
             if (!matchValues(transcriptId1, transcriptId2)) {
                 return false;
@@ -356,6 +356,10 @@ public class ClinicalUtils {
             count += (areNotEmptyValues(transcriptId1, transcriptId2) ? 1 : 0);
         }
         return count > 0 ? true : false;
+    }
+
+    public static String removeVersion(String value) {
+        return value.split("\\.")[0];
     }
 
     private static boolean areNotEmptyValues(String value1, String value2) {
