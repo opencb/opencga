@@ -16,7 +16,7 @@ fi
 CLEAN_BUILD_VERSION=$(echo "$BUILD_VERSION" | cut -d "-" -f 1)
 
 ## Read the numbers separately to compose the name of the branch
-MAJOR=$(echo "$CLEAN_BUILD_VERSION" | cut -d "." -f 1)
+  MAJOR=$(echo "$CLEAN_BUILD_VERSION" | cut -d "." -f 1)
 MINOR=$(echo "$CLEAN_BUILD_VERSION" | cut -d "." -f 2)
 PATCH=$(echo "$CLEAN_BUILD_VERSION" | cut -d "." -f 3)
 
