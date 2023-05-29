@@ -14,6 +14,7 @@ on:
         required: true
 env:
   xb_version: "1.8.0"
+
 jobs:
   test:
     name: Test and push Sonar analysis
