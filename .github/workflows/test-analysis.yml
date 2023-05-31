@@ -1,5 +1,4 @@
 name: Build and test OpenCGA Enterprise
-
 on:
   workflow_call:
     secrets:
@@ -13,9 +12,8 @@ on:
         required: true
       SSH_TESTING_SERVER_PASSWORD:
         required: true
-
 env:
-  xb_version: "1.7.0"
+  xb_version: "1.8.0"
 
 jobs:
   test:

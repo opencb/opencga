@@ -12,6 +12,7 @@ jobs:
       maven_opts: -Dopencga.war.name=opencga
       opencga_maven_opts: -P storage-hadoop,hdp3.1
       artifact_name: build-folder
+      release: true
 
   deploy-docker:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
@@ -22,6 +23,8 @@ jobs:
     uses: ./.github/workflows/deploy-emr-docker-hub-enterprise-workflow.yml
     needs: build
     secrets: inherit
+    with:
+      release: true
 
   release:
     name: Create GitHub Release

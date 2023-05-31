@@ -7,6 +7,11 @@ on:
         required: true
       DOCKER_HUB_PASSWORD:
         required: true
+    inputs:
+      release:
+        type: string
+        required: false
+        default: ""
 
 jobs:
   build:
@@ -15,9 +20,11 @@ jobs:
       maven_opts: -Dopencga.war.name=opencga
       opencga_maven_opts: -P storage-hadoop,emr6.1
       artifact_name: emr-build-folder
+      release: ${{ inputs.release }}
 
   deploy-docker-hub:
     name: Push Docker image
+    needs: build
     runs-on: ubuntu-22.04
     steps:
       - name: Download build dir
