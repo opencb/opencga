@@ -35,10 +35,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.KeyOpValue;
-import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
-import org.opencb.opencga.storage.core.variant.query.Values;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.*;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
 import org.slf4j.Logger;
@@ -349,7 +346,8 @@ public class SolrQueryParser {
         // Gene Trait Name
         key = ANNOT_GENE_TRAIT_NAME.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parseCategoryTermValue("traits", query.getString(key)));
+            String traits = parseCategoryTermValue("traits", query.getString(key));
+            filterList.add(traits);
         }
 
         // hpo
@@ -956,15 +954,15 @@ public class SolrQueryParser {
         StringBuilder filter = new StringBuilder();
         if (StringUtils.isNotEmpty(val)) {
             String negation;
-            String value = val.replace("\"", "");
 
+            Values<String> values = splitValues(val).map(s -> StringUtils.remove(s, '"'));
             QueryOperation queryOperation = parseOrAndFilter(name, val);
             String logicalComparator = queryOperation == QueryOperation.OR ? " OR " : " AND ";
             String wildcard = partialSearch ? "*" : "";
 
-            String[] values = splitValue(value, queryOperation).toArray(new String[0]);
-            if (values.length == 1) {
+            if (values.size() == 1) {
                 negation = "";
+                String value = values.get(0);
                 if (isNegated(value)) {
                     negation = "-";
                     value = removeNegation(value);
@@ -974,21 +972,23 @@ public class SolrQueryParser {
             } else {
                 filter.append("(");
                 negation = "";
-                if (isNegated(values[0])) {
+                String value = values.get(0);
+                if (isNegated(value)) {
                     negation = "-";
-                    values[0] = removeNegation(values[0]);
+                    value = removeNegation(value);
                 }
                 filter.append(negation).append(name).append(":\"").append(valuePrefix).append(wildcard)
-                        .append(values[0]).append(wildcard).append("\"");
-                for (int i = 1; i < values.length; i++) {
+                        .append(value).append(wildcard).append("\"");
+                for (int i = 1; i < values.size(); i++) {
                     filter.append(logicalComparator);
                     negation = "";
-                    if (isNegated(values[i])) {
+                    value = values.get(i);
+                    if (isNegated(value)) {
                         negation = "-";
-                        values[i] = removeNegation(values[i]);
+                        value = removeNegation(value);
                     }
                     filter.append(negation).append(name).append(":\"").append(valuePrefix).append(wildcard)
-                            .append(values[i]).append(wildcard).append("\"");
+                            .append(value).append(wildcard).append("\"");
                 }
                 filter.append(")");
             }

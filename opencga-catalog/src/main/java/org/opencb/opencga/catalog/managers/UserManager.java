@@ -99,7 +99,15 @@ public class UserManager extends AbstractManager {
                             authenticationManagerMap.put(authenticationOrigin.getId(),
                                     new AzureADAuthenticationManager(authenticationOrigin));
                             break;
+                        case OPENCGA:
+                            authenticationManagerMap.put(authenticationOrigin.getId(),
+                                    new CatalogAuthenticationManager(catalogDBAdaptorFactory, configuration.getEmail(), secretKey,
+                                            expiration));
+                            break;
                         default:
+                            logger.warn("Unexpected authentication origin type '{}' for id '{}' found in the configuration file. "
+                                    + "Authentication origin will be ignored.", authenticationOrigin.getType(),
+                                    authenticationOrigin.getId());
                             break;
                     }
                 }
@@ -195,8 +203,7 @@ public class UserManager extends AbstractManager {
         }
 
         String userId = user.getId();
-        // We add a condition to check if the registration is private + user (or system) is not trying to create the ADMINISTRATOR user
-        if (!authorizationManager.isPublicRegistration() && !OPENCGA.equals(user.getId())) {
+        if (!OPENCGA.equals(user.getId())) {
             userId = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token);
             if (!OPENCGA.equals(userId)) {
                 String errorMsg = "The registration is closed to the public: Please talk to your administrator.";
@@ -915,20 +922,54 @@ public class UserManager extends AbstractManager {
      * This method will be only callable by the system. It generates a new session id for the user.
      *
      * @param userId user id for which a session will be generated.
+     * @param attributes attributes to be put as part of the claims section in the JWT.
+     * @param expiration Expiration time in seconds. If null, default expiration time will be used.
      * @param token  Password or active session of the OpenCGA admin.
      * @return an objectMap containing the new sessionId
      * @throws CatalogException if the password is not correct or the userId does not exist.
      */
-    public String getNonExpiringToken(String userId, String token) throws CatalogException {
-        if (OPENCGA.equals(getUserId(token))) {
-            return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createNonExpiringToken(userId);
-        } else {
-            throw new CatalogException("Only user '" + OPENCGA + "' is allowed to create non expiring tokens");
+    public String getToken(String userId, Map<String, Object> attributes, Long expiration, String token) throws CatalogException {
+        if (!OPENCGA.equals(getUserId(token))) {
+            throw new CatalogException("Only user '" + OPENCGA + "' is allowed to create tokens");
         }
+        if (expiration != null && expiration <= 0) {
+            throw new CatalogException("Expiration time must be higher than 0");
+        }
+        AuthenticationManager authManager = getAuthenticationManagerForUser(userId);
+        return expiration != null
+                ? authManager.createToken(userId, attributes, expiration)
+                : authManager.createToken(userId, attributes);
     }
 
-    public String getAdminNonExpiringToken(String token) throws CatalogException {
-        return getNonExpiringToken(OPENCGA, token);
+    /**
+     * This method will be only callable by the system. It generates a new session id for the user.
+     *
+     * @param userId user id for which a session will be generated.
+     * @param attributes attributes to be put as part of the claims section in the JWT.
+     * @param token  Password or active session of the OpenCGA admin.
+     * @return an objectMap containing the new sessionId
+     * @throws CatalogException if the password is not correct or the userId does not exist.
+     */
+    public String getNonExpiringToken(String userId, Map<String, Object> attributes, String token) throws CatalogException {
+        if (!OPENCGA.equals(getUserId(token))) {
+            throw new CatalogException("Only user '" + OPENCGA + "' is allowed to create tokens");
+        }
+        AuthenticationManager authManager = getAuthenticationManagerForUser(userId);
+        return authManager.createNonExpiringToken(userId, attributes);
+    }
+
+    private AuthenticationManager getAuthenticationManagerForUser(String user) throws CatalogException {
+        OpenCGAResult<User> userOpenCGAResult = userDBAdaptor.get(user, INCLUDE_ACCOUNT);
+        if (userOpenCGAResult.getNumResults() == 1) {
+            String authId = userOpenCGAResult.first().getAccount().getAuthentication().getId();
+            if (!authenticationManagerMap.containsKey(authId)) {
+                throw new CatalogException("Could not authenticate user '" + user + "'. The authentication origin '" + authId
+                        + "' could not be found.");
+            }
+            return authenticationManagerMap.get(authId);
+        } else {
+            throw new CatalogException("User '" + user + "' not found.");
+        }
     }
 
     /**

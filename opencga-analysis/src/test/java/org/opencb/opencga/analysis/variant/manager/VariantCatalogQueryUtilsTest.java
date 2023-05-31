@@ -20,6 +20,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.Disorder;
@@ -55,6 +56,7 @@ import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
@@ -82,6 +84,7 @@ import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(MediumTests.class)
 public class VariantCatalogQueryUtilsTest {
 
     @ClassRule
@@ -109,7 +112,7 @@ public class VariantCatalogQueryUtilsTest {
     public static void setUp() throws Exception {
         catalog = catalogManagerExternalResource.getCatalogManager();
 
-        User user = catalog.getUserManager().create("user", "user", "my@email.org", TestParamConstants.PASSWORD, "ACME", 1000L, Account.AccountType.FULL, null).first();
+        User user = catalog.getUserManager().create("user", "user", "my@email.org", TestParamConstants.PASSWORD, "ACME", 1000L, Account.AccountType.FULL, catalogManagerExternalResource.getAdminToken()).first();
 
         sessionId = catalog.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
         assembly = "GRCh38";
@@ -188,7 +191,7 @@ public class VariantCatalogQueryUtilsTest {
                 .setVersion("v5")
                 .setDefaultSpecies("hsapiens")
                 .setRest(new RestConfig(Collections.singletonList("https://ws.zettagenomics.com/cellbase"), 10000));
-        cellBaseUtils = new CellBaseUtils(new CellBaseClient(clientConfiguration), assembly);
+        cellBaseUtils = new CellBaseUtils(new CellBaseClient(clientConfiguration));
 
 
         Region cadm1 = cellBaseUtils.getGeneRegion("CADM1");
@@ -584,8 +587,50 @@ public class VariantCatalogQueryUtilsTest {
     public void queryByPanel() throws Exception {
         Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel"), null, cellBaseUtils, sessionId);
         assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL", "BEX2"), set(query, GENE));
-        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel").append(GENE.key(), "ASDF"), null, sessionId);
-        assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL", "ASDF", "BEX2"), set(query, GENE));
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel").append(GENE.key(), "BRCA1"), null, cellBaseUtils, sessionId);
+        assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL", "BRCA1", "BEX2"), set(query, GENE));
+        assertEquals(true, query.getBoolean(SKIP_MISSING_GENES, false));
+        assertNull(query.get(ANNOT_GENE_REGIONS.key()));
+    }
+
+    @Test
+    public void queryByPanelEmpty() throws Exception {
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1")
+                        .append(PANEL.key(), "MyPanel")
+                        .append(PANEL_ROLE_IN_CANCER.key(), ClinicalProperty.RoleInCancer.FUSION)
+                , null, cellBaseUtils, sessionId);
+        assertEquals(set(), set(query, GENE));
+        assertEquals(set(NON_EXISTING_REGION), set(query, REGION));
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1")
+                        .append(REGION.key(), "4")
+                        .append(PANEL.key(), "MyPanel")
+                        .append(PANEL_ROLE_IN_CANCER.key(), ClinicalProperty.RoleInCancer.FUSION)
+                , null, cellBaseUtils, sessionId);
+        assertEquals(set(), set(query, GENE));
+        assertEquals(set("4"), set(query, REGION));
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1")
+                        .append(GENE.key(), "BRCA1")
+                        .append(PANEL.key(), "MyPanel")
+                        .append(PANEL_ROLE_IN_CANCER.key(), ClinicalProperty.RoleInCancer.FUSION)
+                , null, cellBaseUtils, sessionId);
+        assertEquals(set("BRCA1"), set(query, GENE));
+        assertEquals(set(), set(query, REGION));
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel")
+                .append(REGION.key(), "21")
+                .append(PANEL_INTERSECTION.key(), true), null, cellBaseUtils, sessionId);
+        assertEquals(set(), set(query, GENE));
+        assertEquals(set(NON_EXISTING_REGION), set(query, REGION));
+        assertEquals(true, query.getBoolean(SKIP_MISSING_GENES, false));
+        assertNull(query.get(ANNOT_GENE_REGIONS.key()));
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel")
+                .append(GENE.key(), "BRCA1")
+                .append(PANEL_INTERSECTION.key(), true), null, cellBaseUtils, sessionId);
+        assertEquals(set(), set(query, GENE));
+        assertEquals(set(NON_EXISTING_REGION), set(query, REGION));
         assertEquals(true, query.getBoolean(SKIP_MISSING_GENES, false));
         assertNull(query.get(ANNOT_GENE_REGIONS.key()));
     }
@@ -850,17 +895,17 @@ public class VariantCatalogQueryUtilsTest {
     public void testPanels() {
         assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL", "BEX2"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(), myPanel));
-        assertEquals(set("BRCA2", "CTBP2P1", "ADSL"),
+        assertEquals(set("BRCA2"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_ROLE_IN_CANCER.key(), "TUMOR_SUPPRESSOR_GENE"), myPanel));
-        assertEquals(set("BRCA2", "CTBP2P1", "ADSL"),
+        assertEquals(set("BRCA2"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_ROLE_IN_CANCER.key(), "TUMORSUPPRESSORGENE"), myPanel));
-        assertEquals(set("BRCA2", "CTBP2P1", "ADSL"),
+        assertEquals(set("BRCA2"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_ROLE_IN_CANCER.key(), "tumor_suppressor_gene"), myPanel));
-        assertEquals(set("BRCA2", "CTBP2P1", "ADSL"),
+        assertEquals(set("BRCA2"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_ROLE_IN_CANCER.key(), "tumorSuppressorGene"), myPanel));
-        assertEquals(set("CADM1", "CTBP2P1", "ADSL"),
+        assertEquals(set("CADM1"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_ROLE_IN_CANCER.key(), "oncogene"), myPanel));
-        assertEquals(set("BRCA2", "CADM1", "ADSL"),
+        assertEquals(set("CADM1"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_MODE_OF_INHERITANCE.key(), "AUTOSOMAL_RECESSIVE"), myPanel));
     }
 

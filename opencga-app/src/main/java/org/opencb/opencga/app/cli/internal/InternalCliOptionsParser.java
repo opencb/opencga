@@ -49,6 +49,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GenomePlotCommandOptions.GENOME_PLOT_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.HRDetectCommandOptions.HRDETECT_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.IndividualQcCommandOptions.INDIVIDUAL_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.JulieRunCommandOptions.JULIE_RUN_COMMAND;
@@ -169,6 +170,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(KNOCKOUT_RUN_COMMAND, variantCommandOptions.knockoutCommandOptions);
         variantSubCommands.addCommand(SAMPLE_ELIGIBILITY_RUN_COMMAND, variantCommandOptions.sampleEligibilityCommandOptions);
         variantSubCommands.addCommand(MUTATIONAL_SIGNATURE_RUN_COMMAND, variantCommandOptions.mutationalSignatureCommandOptions);
+        variantSubCommands.addCommand(HRDETECT_RUN_COMMAND, variantCommandOptions.hrDetectCommandOptions);
         variantSubCommands.addCommand(GENOME_PLOT_RUN_COMMAND, variantCommandOptions.genomePlotInternalCommandOptions);
         variantSubCommands.addCommand(MENDELIAN_ERROR_RUN_COMMAND, variantCommandOptions.mendelianErrorCommandOptions);
         variantSubCommands.addCommand(INFERRED_SEX_RUN_COMMAND, variantCommandOptions.inferredSexCommandOptions);
@@ -466,8 +468,8 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         if (parsedCommand.isEmpty()) {
             System.err.println("");
             System.err.println("Program:     OpenCGA Analysis (OpenCB)");
-            System.err.println("Version:     " + GitRepositoryState.get().getBuildVersion());
-            System.err.println("Git commit:  " + GitRepositoryState.get().getCommitId());
+            System.err.println("Version:     " + GitRepositoryState.getInstance().getBuildVersion());
+            System.err.println("Git commit:  " + GitRepositoryState.getInstance().getCommitId());
             System.err.println("Description: Big Data platform for processing and analysing NGS data");
             System.err.println("");
             System.err.println("Usage:       opencga-internal.sh [-h|--help] [--version] <command> [options]");

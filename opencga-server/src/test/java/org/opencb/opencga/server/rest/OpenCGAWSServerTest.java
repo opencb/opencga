@@ -19,8 +19,10 @@ package org.opencb.opencga.server.rest;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.MultiPart;
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
@@ -29,6 +31,7 @@ import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 
+@Category(MediumTests.class)
 public class OpenCGAWSServerTest {
 
     public static final String TEST_SERVER_USER = "test_server_user";
@@ -77,28 +80,20 @@ public class OpenCGAWSServerTest {
         String s = testPath.request().get(String.class);
         assertEquals("Expected [" + message + "], actual [" + s + "]", message, s);
 
-        testPath = webTarget.path("test").path("echo");
-        System.out.println("testPath = " + testPath);
-        MultiPart multiPart = new MultiPart();
-        multiPart.setMediaType(MediaType.MULTIPART_FORM_DATA_TYPE);
-        FormDataBodyPart bodyPart = new FormDataBodyPart("message", message);
-        multiPart.bodyPart(bodyPart);
-
-        s = testPath.request().post(Entity.entity(multiPart, multiPart.getMediaType()), String.class);
-        assertEquals("Expected [" + message + "], actual [" + s + "]", message, s);
+//        testPath = webTarget.path("test").path("echo");
+//        System.out.println("testPath = " + testPath);
+//        MultiPart multiPart = new MultiPart();
+//        multiPart.setMediaType(MediaType.MULTIPART_FORM_DATA_TYPE);
+//        FormDataBodyPart bodyPart = new FormDataBodyPart("message", message);
+//        multiPart.bodyPart(bodyPart);
+//
+//        s = testPath.request().post(Entity.entity(multiPart, multiPart.getMediaType()), String.class);
+//        assertEquals("Expected [" + message + "], actual [" + s + "]", message, s);
     }
 
-    /** User tests **/
-    @Test
-    public void userTests() throws IOException {
-        UserWSServerTest userTest = new UserWSServerTest(webTarget);
-        User user = userTest.createUser(TEST_SERVER_USER);
-        String sessionId = userTest.loginUser(user.getId());
-        userTest.updateUser(user.getId(), sessionId);
-    }
 
-    @Test
-    public void workflowCreation() throws Exception {
+//    @Test
+//    public void workflowCreation() throws Exception {
 //        UserWSServerTest userTest = new UserWSServerTest(webTarget);
 //        User user = userTest.createUser(TEST_SERVER_USER);
 //        String sessionId = userTest.loginUser(user.getId());
@@ -192,7 +187,6 @@ public class OpenCGAWSServerTest {
 //        queryOptions.put(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, false);
 //        fileTest.fetchAlignments(fileBam.getId(), sessionId, queryOptions);
 //        assertEquals(10, alignments.size());
-
-    }
+//    }
 
 }

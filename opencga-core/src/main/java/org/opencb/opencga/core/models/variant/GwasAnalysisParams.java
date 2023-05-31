@@ -16,13 +16,12 @@
 
 package org.opencb.opencga.core.models.variant;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
 import java.util.List;
-
-import org.opencb.commons.annotations.DataField;
-import org.opencb.opencga.core.api.ParamConstants;
 
 public class GwasAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Gwas analysis params";
@@ -30,6 +29,7 @@ public class GwasAnalysisParams extends ToolParams {
     private String phenotype;
     @DataField(description = ParamConstants.GWAS_ANALYSIS_PARAMS_INDEX_DESCRIPTION)
     private Boolean index;
+    
     @DataField(description = ParamConstants.GWAS_ANALYSIS_PARAMS_INDEX_SCORE_ID_DESCRIPTION)
     private String indexScoreId;
     @DataField(description = ParamConstants.GWAS_ANALYSIS_PARAMS_METHOD_DESCRIPTION)
@@ -82,11 +82,11 @@ public class GwasAnalysisParams extends ToolParams {
         return this;
     }
 
-    public Boolean isIndex() {
+    public boolean isIndex() {
         return index;
     }
 
-    public GwasAnalysisParams setIndex(Boolean index) {
+    public GwasAnalysisParams setIndex(boolean index) {
         this.index = index;
         return this;
     }

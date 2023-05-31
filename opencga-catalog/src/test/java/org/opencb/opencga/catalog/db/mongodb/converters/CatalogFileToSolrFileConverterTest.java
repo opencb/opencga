@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.opencga.catalog.stats.solr.FileSolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogFileToSolrFileConverter;
@@ -24,6 +25,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -38,6 +40,7 @@ import static org.junit.Assert.assertNull;
 /**
  * Created by wasim on 13/08/18.
  */
+@Category(ShortTests.class)
 public class CatalogFileToSolrFileConverterTest {
 
     @Test

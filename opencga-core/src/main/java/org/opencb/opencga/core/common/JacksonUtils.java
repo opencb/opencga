@@ -48,6 +48,7 @@ import org.opencb.opencga.core.models.study.VariableSet;
 
 import javax.ws.rs.ext.ContextResolver;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
 public class JacksonUtils {
 
@@ -193,6 +194,14 @@ public class JacksonUtils {
         }
     }
 
+    public static <T> T copySafe(T instance, Class<T> clazz) {
+        try {
+            return copy(instance, clazz);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     public static <T> T copy(T instance, Class<T> clazz) throws IOException {
         if (instance == null) {
             return null;
@@ -200,6 +209,21 @@ public class JacksonUtils {
         TokenBuffer tokenBuffer = new TokenBuffer(defaultObjectMapper, false);
         defaultObjectMapper.writeValue(tokenBuffer, instance);
         return defaultObjectMapper.readValue(tokenBuffer.asParser(), clazz);
+    }
+
+    public static <T> void updateSafe(T valueToUpdate, Object overrides) {
+        try {
+            update(valueToUpdate, overrides);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public static <T> void update(T valueToUpdate, Object overrides) throws IOException {
+        if (valueToUpdate == null || overrides == null) {
+            return;
+        }
+        defaultObjectMapper.updateValue(valueToUpdate, overrides);
     }
 
 }

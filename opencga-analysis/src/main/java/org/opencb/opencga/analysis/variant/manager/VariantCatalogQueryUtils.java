@@ -58,6 +58,7 @@ import org.opencb.opencga.core.models.user.UserFilter;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -557,7 +558,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                                 "Require at least one parent to get compound heterozygous");
                     }
 
-                    query.append(SAMPLE_COMPOUND_HETEROZYGOUS.key(), Arrays.asList(childId, fatherId, motherId));
+                    query.append(SAMPLE_COMPOUND_HETEROZYGOUS.key(), new Trio(fatherId, motherId, childId));
                 } else {
                     if (family.getDisorders().isEmpty()) {
                         throw VariantQueryException.malformedParam(FAMILY, familyId, "Family doesn't have disorders");
@@ -830,9 +831,15 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 } else {
                     query.put(REGION.key(), regionsFinal);
                 }
-                if (genesFinal.isEmpty() && geneRegionsFinal.isEmpty() && variantsFinal.isEmpty() && regionsFinal.isEmpty()) {
-                    query.put(REGION.key(), VariantQueryUtils.NON_EXISTING_REGION);
-                }
+            }
+
+            // If the panel (with or without intersection) resulted in an empty set of positional
+            // filters (gene,region and id) , add a dummy region filter by a "non_existing_region"
+            if (!isValidParam(query, GENE)
+                    && !isValidParam(query, REGION)
+                    && !isValidParam(query, ID)
+                    && CollectionUtils.sizeIsEmpty(query.get(ANNOT_GENE_REGIONS_MAP.key()))) {
+                query.put(REGION.key(), VariantQueryUtils.NON_EXISTING_REGION);
             }
         } else {
             if (isValidParam(query, PANEL_CONFIDENCE)) {
@@ -905,26 +912,32 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 new HashSet<>(getAsEnumList(query, PANEL_ROLE_IN_CANCER, ClinicalProperty.RoleInCancer.class));
 
         for (GenePanel genePanel : panel.getGenes()) {
-            // Do not filter out if undefined
-            if (!panelConfidence.isEmpty()
-                    && genePanel.getConfidence() != null
-                    && !panelConfidence.contains(genePanel.getConfidence())) {
-                // Discard this gene
-                continue;
+            if (!panelConfidence.isEmpty())
+                if (!panelConfidence.contains(genePanel.getConfidence())) {
+                    // Discard this gene
+                    continue;
+                }
+            if (!panelModeOfInheritance.isEmpty()) {
+                if (!panelModeOfInheritance.contains(genePanel.getModeOfInheritance())) {
+                    // Discard this gene
+                    continue;
+                }
             }
             // Do not filter out if undefined
-            if (!panelModeOfInheritance.isEmpty()
-                    && genePanel.getModeOfInheritance() != null
-                    && !panelModeOfInheritance.contains(genePanel.getModeOfInheritance())) {
-                // Discard this gene
-                continue;
+            if (!panelModeOfInheritance.isEmpty()) {
+                if (CollectionUtils.isEmpty(genePanel.getModesOfInheritance())
+                        || genePanel.getModesOfInheritance().stream().noneMatch(panelModeOfInheritance::contains)) {
+                    // Discard this gene
+                    continue;
+                }
             }
             // Do not filter out if undefined
-            if (!panelRoleInCancer.isEmpty()
-                    && genePanel.getCancer() != null && genePanel.getCancer().getRole() != null
-                    && !panelRoleInCancer.contains(genePanel.getCancer().getRole())) {
-                // Discard this gene
-                continue;
+            if (!panelRoleInCancer.isEmpty()) {
+                if (genePanel.getCancer() == null || CollectionUtils.isEmpty(genePanel.getCancer().getRoles())
+                        || genePanel.getCancer().getRoles().stream().noneMatch(panelRoleInCancer::contains)) {
+                    // Discard this gene
+                    continue;
+                }
             }
             String gene = genePanel.getName();
             if (StringUtils.isEmpty(gene)) {
@@ -1050,7 +1063,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     String fatherId = member.getFather() != null ? member.getFather().getId() : MISSING_SAMPLE;
                     String motherId = member.getMother() != null ? member.getMother().getId() : MISSING_SAMPLE;
 
-                    query.put(SAMPLE_COMPOUND_HETEROZYGOUS.key(), Arrays.asList(member.getId(), fatherId, motherId));
+                    query.put(SAMPLE_COMPOUND_HETEROZYGOUS.key(), new Trio(fatherId, motherId, member.getId()));
                     query.remove(SAMPLE.key());
                 } else if (moi == SegregationMode.DE_NOVO) {
                     query.put(SAMPLE_DE_NOVO.key(), member.getId());

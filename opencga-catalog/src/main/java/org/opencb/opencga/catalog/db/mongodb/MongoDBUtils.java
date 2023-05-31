@@ -25,20 +25,26 @@ import com.mongodb.ErrorCategory;
 import com.mongodb.MongoWriteException;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.client.utils.URIBuilder;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -794,4 +800,79 @@ public class MongoDBUtils {
             throw e;
         }
     }
+    public static String getMongoDBCli(DatabaseCredentials credentials, String database) {
+        String sb = "mongo" + getMongoDBCliOpts(credentials)
+                + "'" + getMongoDBUri(credentials, database) + "'";
+        return sb;
+
+    }
+
+    public static String getMongoDBCliOpts(DatabaseCredentials credentials) {
+        StringBuilder sb = new StringBuilder();
+        Map<String, String> options = credentials.getOptions();
+        if (options == null) {
+            options = new HashMap<>();
+        }
+        if (options.containsKey(MongoDBConfiguration.SSL_ENABLED) && Boolean.parseBoolean(options.get(MongoDBConfiguration.SSL_ENABLED))) {
+            sb.append(" --tls ");
+        }
+        if (options.containsKey(MongoDBConfiguration.SSL_INVALID_CERTIFICATES_ALLOWED) && Boolean.parseBoolean(options
+                .get(MongoDBConfiguration.SSL_INVALID_CERTIFICATES_ALLOWED))) {
+            sb.append(" --tlsAllowInvalidCertificates ");
+        }
+        if (options.containsKey(MongoDBConfiguration.SSL_INVALID_HOSTNAME_ALLOWED)
+                && Boolean.parseBoolean(options.get(MongoDBConfiguration.SSL_INVALID_HOSTNAME_ALLOWED))) {
+            sb.append(" --tlsAllowInvalidHostnames ");
+        }
+        return sb.toString();
+    }
+
+    public static URI getMongoDBUri(DatabaseCredentials credentials) {
+        return getMongoDBUri(credentials, null);
+    }
+
+    public static URI getMongoDBUri(DatabaseCredentials credentials, String database) {
+        Map<String, String> options = credentials.getOptions();
+        if (options == null) {
+            options = new HashMap<>();
+        }
+        URIBuilder builder = new URIBuilder();
+        builder.setScheme("mongodb");
+        builder.setHost(String.join(",", credentials.getHosts()));
+        if (StringUtils.isNotEmpty(database)) {
+            builder.setPath(database);
+        } else {
+            // Mandatory `/` , otherwise will fail with this error:
+            // > error parsing command line options: error parsing uri: must have a / before the query ?
+            builder.setPath("/");
+        }
+        if (StringUtils.isNotEmpty(credentials.getUser())
+                && StringUtils.isNotEmpty(credentials.getPassword())) {
+            builder.setUserInfo(credentials.getUser(), credentials.getPassword());
+            builder.addParameter("authSource", options.getOrDefault(MongoDBConfiguration.AUTHENTICATION_DATABASE, "admin"));
+        }
+        if (StringUtils.isNotEmpty(options.get(MongoDBConfiguration.REPLICA_SET))) {
+            builder.addParameter("replicaSet", options.get(MongoDBConfiguration.REPLICA_SET));
+        }
+        if (options.containsKey(MongoDBConfiguration.SSL_ENABLED) && Boolean.parseBoolean(options.get(MongoDBConfiguration.SSL_ENABLED))) {
+            builder.addParameter("tls", "true");
+        }
+        if (options.containsKey(MongoDBConfiguration.SSL_INVALID_CERTIFICATES_ALLOWED) && Boolean.parseBoolean(options
+                .get(MongoDBConfiguration.SSL_INVALID_CERTIFICATES_ALLOWED))) {
+            builder.addParameter("tlsAllowInvalidCertificates", "true");
+        }
+        if (options.containsKey(MongoDBConfiguration.SSL_INVALID_HOSTNAME_ALLOWED)
+                && Boolean.parseBoolean(options.get(MongoDBConfiguration.SSL_INVALID_HOSTNAME_ALLOWED))) {
+            builder.addParameter("tlsAllowInvalidHostnames", "true");
+        }
+        if (StringUtils.isNotEmpty(options.get(MongoDBConfiguration.AUTHENTICATION_MECHANISM))) {
+            builder.addParameter("authMechanism", options.get(MongoDBConfiguration.AUTHENTICATION_MECHANISM));
+        }
+        try {
+            return builder.build();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }

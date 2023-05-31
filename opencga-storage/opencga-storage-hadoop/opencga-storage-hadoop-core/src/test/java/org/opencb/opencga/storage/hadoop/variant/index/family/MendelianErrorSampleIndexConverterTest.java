@@ -1,7 +1,9 @@
 package org.opencb.opencga.storage.hadoop.variant.index.family;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
@@ -13,6 +15,7 @@ import java.util.function.Supplier;
 
 import static org.junit.Assert.*;
 
+@Category(ShortTests.class)
 public class MendelianErrorSampleIndexConverterTest {
 
     final int numVariants = 500;

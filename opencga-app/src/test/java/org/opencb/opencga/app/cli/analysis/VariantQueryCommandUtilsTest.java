@@ -17,10 +17,12 @@
 package org.opencb.opencga.app.cli.analysis;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.app.cli.internal.executors.VariantQueryCommandUtils;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.util.Collections;
@@ -33,6 +35,7 @@ import static org.junit.Assert.assertEquals;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(ShortTests.class)
 public class VariantQueryCommandUtilsTest {
 
     @Test

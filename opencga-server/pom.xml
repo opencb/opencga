@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>2.6.0-SNAPSHOT</version>
+        <version>2.10.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -125,7 +125,7 @@
             <extension>
                 <groupId>kr.motd.maven</groupId>
                 <artifactId>os-maven-plugin</artifactId>
-                <version>1.4.0.Final</version>
+                <version>1.7.1</version>
             </extension>
         </extensions>
 
@@ -176,6 +176,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-install-plugin</artifactId>
+                <version>3.1.1</version>
                 <executions>
                     <execution>
                         <phase>install</phase>
@@ -240,27 +241,12 @@
 
     <profiles>
         <profile>
-            <id>storage-mongodb</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>org.opencb.opencga</groupId>
-                    <artifactId>opencga-storage-mongodb</artifactId>
-                    <version>${project.parent.version}</version>
-                </dependency>
-            </dependencies>
-            <properties>
-                <!--<app.name>opencga-mongo.sh</app.name>-->
-            </properties>
-        </profile>
-        <profile>
             <id>storage-hadoop</id>
             <activation>
                 <property>
                     <name>storage-hadoop</name>
                 </property>
+                <activeByDefault>true</activeByDefault>
             </activation>
             <dependencies>
                 <dependency>
@@ -278,7 +264,7 @@
         </profile>
 
         <profile>
-            <id>GenerateCLIProfile</id>
+            <id>CodeGen</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
@@ -298,7 +284,7 @@
                             </execution>
                         </executions>
                         <configuration>
-                            <mainClass>org.opencb.opencga.server.generator.ClientsGenerator</mainClass>
+                            <mainClass>org.opencb.opencga.server.generator.ClientsGeneratorMain</mainClass>
                         </configuration>
                     </plugin>
                 </plugins>

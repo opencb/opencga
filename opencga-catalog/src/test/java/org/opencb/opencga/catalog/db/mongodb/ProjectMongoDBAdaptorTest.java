@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -27,12 +28,14 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectInternal;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import static org.junit.Assert.*;
 
 /**
  * Created by pfurio on 3/2/16.
  */
+@Category(MediumTests.class)
 public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
@@ -156,7 +159,11 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
         catalogProjectDBAdaptor.insert(new Project("p2", "project2", null, null, "Cool", null, 1, ProjectInternal.init()), user1.getId(), null);
         Project p2 = getProject(user1.getId(), "p2");
 
-        catalogProjectDBAdaptor.update(p1.getUid(), new ObjectMap("internal.cellbase", new CellBaseConfiguration("url", "v")), new QueryOptions());
+        catalogProjectDBAdaptor.update(p1.getUid(), new ObjectMap(ProjectDBAdaptor.QueryParams.CELLBASE.key(),
+                new CellBaseConfiguration("url", "v")), QueryOptions.empty());
+        p1 = catalogProjectDBAdaptor.get(p1.getUid(), QueryOptions.empty()).first();
+        assertEquals("url", p1.getCellbase().getUrl());
+        assertEquals("v", p1.getCellbase().getVersion());
     }
 
 }

@@ -18,6 +18,10 @@ package org.opencb.opencga.storage.hadoop.mr;
 
 //import org.apache.hadoop.mrunit.mapreduce.MapDriver;
 
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
+
+@Category(ShortTests.class)
 public class GenomeVariantTransformMapperTest {
 //    private VariantTableMapper mapper;
 //    private MapDriver<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put> mapDriver;

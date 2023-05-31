@@ -39,6 +39,7 @@ import org.opencb.opencga.analysis.variant.circos.CircosAnalysis;
 import org.opencb.opencga.analysis.variant.circos.CircosLocalAnalysisExecutor;
 import org.opencb.opencga.analysis.variant.genomePlot.GenomePlotAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.hrdetect.HRDetectAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysisResultReader;
@@ -61,10 +62,12 @@ import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.VersionException;
@@ -100,6 +103,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.SAVED_FILTER_DESCR;
+import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.geneRegionIntersect;
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -943,6 +947,7 @@ public class VariantWebService extends AnalysisWebService {
     @ApiImplicitParams({
             @ApiImplicitParam(name = "study", value = STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "sample", value = "Sample name", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "type", value = "Variant type. Valid values: SNV, SV", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "ct", value = ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "biotype", value = ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "fileData", value = FILE_DATA_DESCR, dataType = "string", paramType = "query"),
@@ -958,59 +963,52 @@ public class VariantWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "panelIntersection", value = VariantCatalogQueryUtils.PANEL_INTERSECTION_DESC, dataType = "boolean", paramType = "query"),
     })
     public Response mutationalSignatureQuery(
-            // For fitting method
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_CATALOGUES_DESCRIPTION) @QueryParam("catalogues") String catalogues,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_CATALOGUES_CONTENT_DESCRIPTION) @QueryParam("cataloguesContent") String cataloguesContent,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION, defaultValue = "FitMS") @QueryParam("fitMethod") String fitMethod,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_N_BOOT_DESCRIPTION) @QueryParam("nBoot") Integer nBoot,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_SIG_VERSION_DESCRIPTION, defaultValue = "RefSigv2") @QueryParam("sigVersion") String sigVersion,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_ORGAN_DESCRIPTION) @QueryParam("organ") String organ,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PERC_DESCRIPTION, defaultValue = "5f") @QueryParam("thresholdPerc") Float thresholdPerc,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PVAL_DESCRIPTION, defaultValue = "0.05f") @QueryParam("thresholdPval") Float thresholdPval,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION, defaultValue = "1") @QueryParam("maxRareSigs") Integer maxRareSigs,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_SIGNATURES_FILE_DESCRIPTION) @QueryParam("signaturesFile") String signaturesFile,
-                    @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_RARE_SIGNATURES_FILE_DESCRIPTION) @QueryParam("rareSignaturesFile") String rareSignaturesFile
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_ID_DESCRIPTION) @QueryParam("msId") String msId,
+            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_DESCRIPTION_DESCRIPTION) @QueryParam("msDescription") String msDescription
     ) {
-        File outDir = null;
+        java.nio.file.Path outDir = null;
         try {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
-
-            if (!query.containsKey(SAMPLE.key())) {
-                return createErrorResponse(new Exception("Missing sample name"));
-            }
 
             if (!query.containsKey(STUDY.key())) {
                 return createErrorResponse(new Exception("Missing study name"));
             }
 
+            if (!query.containsKey(SAMPLE.key())) {
+                return createErrorResponse(new Exception("Missing sample name"));
+            }
+
+            // Check for genome context index
+            File genomeContextFile = MutationalSignatureAnalysis.getGenomeContextFile(query.getString(SAMPLE.key()),
+                    query.getString(STUDY.key()), catalogManager, token);
+            if (genomeContextFile == null || !genomeContextFile.exists()) {
+                return createErrorResponse(new Exception("Build the genome context file for sample " + query.getString(SAMPLE.key())
+                        + " before running mutational signature queries. To create the genome context file you can use the command"
+                        + " mutational-signature-run."));
+            }
+
             // Create temporal directory
-            outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "mutational-signature-" + TimeUtils.getTimeMillis()).toFile();
+            outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "mutational-signature-" + TimeUtils.getTimeMillis());
             try {
-                FileUtils.forceMkdir(outDir);
+                FileUtils.forceMkdir(outDir.toFile());
+                Runtime.getRuntime().exec("chmod 777 " + outDir.toAbsolutePath());
             } catch (IOException e) {
                 throw new IOException("Error creating temporal directory for mutational-signature/query analysis. " + e.getMessage(), e);
             }
 
             MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
-            params.setQuery(query.toJson())
-                    .setCatalogues(catalogues)
-                    .setCataloguesContent(cataloguesContent)
-                    .setFitMethod(fitMethod)
-                    .setSigVersion(sigVersion)
-                    .setOrgan(organ)
-                    .setnBoot(nBoot)
-                    .setThresholdPerc(thresholdPerc)
-                    .setThresholdPval(thresholdPval)
-                    .setMaxRareSigs(maxRareSigs)
-                    .setSignaturesFile(signaturesFile)
-                    .setRareSignaturesFile(rareSignaturesFile);
+            params.setId(msId)
+                    .setDescription(msDescription)
+                    .setQuery(query.toJson())
+                    .setSample(query.getString(SAMPLE.key()))
+                    .setSkip(MutationalSignatureAnalysisParams.SIGNATURE_FITTING_SKIP_VALUE);
 
             logger.info("MutationalSignatureAnalysisParams: {}", params);
 
             MutationalSignatureAnalysis mutationalSignatureAnalysis = new MutationalSignatureAnalysis();
-            mutationalSignatureAnalysis.setUp(opencgaHome.toString(), catalogManager, storageEngineFactory, new ObjectMap(),
-                    outDir.toPath(), null, token);
+            mutationalSignatureAnalysis.setUp(opencgaHome.toString(), catalogManager, storageEngineFactory, new ObjectMap(), outDir, null,
+                    token);
             mutationalSignatureAnalysis.setStudy(query.getString(STUDY.key()));
             mutationalSignatureAnalysis.setSignatureParams(params);
 
@@ -1018,25 +1016,44 @@ public class VariantWebService extends AnalysisWebService {
             mutationalSignatureAnalysis.start();
             watch.stop();
 
-            Signature signature = mutationalSignatureAnalysis.parse(outDir.toPath());
-
-            OpenCGAResult<Signature> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
-                    Collections.singletonList(signature), 1);
-            return createOkResponse(result);
-        } catch (ToolException | IOException e) {
+            logger.info("Parsing mutational signature catalogue results from {}", outDir);
+            File signatureFile = outDir.resolve(MutationalSignatureAnalysis.MUTATIONAL_SIGNATURE_DATA_MODEL_FILENAME).toFile();
+            if (outDir.resolve(MutationalSignatureAnalysis.MUTATIONAL_SIGNATURE_DATA_MODEL_FILENAME).toFile().exists()) {
+                Signature signature = JacksonUtils.getDefaultObjectMapper().readerFor(Signature.class).readValue(signatureFile);
+                OpenCGAResult<Signature> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
+                        Collections.singletonList(signature), 1);
+                return createOkResponse(result);
+            } else {
+                return createErrorResponse(new ToolException("Something wrong happened: it could not find the signature output file"));
+            }
+        } catch (ToolException | IOException | CatalogException e) {
             return createErrorResponse(e);
         } finally {
             if (outDir != null) {
                 // Delete temporal directory
                 try {
-                    if (outDir.exists()) {
-                        FileUtils.deleteDirectory(outDir);
+                    if (outDir.toFile().exists()) {
+                        logger.info("Deleting scratch directory {}", outDir);
+                        FileUtils.deleteDirectory(outDir.toFile());
                     }
                 } catch (IOException e) {
-                    logger.warn("Error cleaning scratch directory " + outDir, e);
+                    logger.warn("Error cleaning scratch directory {}", outDir, e);
                 }
             }
         }
+    }
+
+    @POST
+    @Path("/hrDetect/run")
+    @ApiOperation(value = HRDetectAnalysis.DESCRIPTION, response = Job.class)
+    public Response hrDetectRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = HRDetectAnalysisParams.DESCRIPTION, required = true) HRDetectAnalysisParams params) {
+        return submitJob(HRDetectAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST

@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
@@ -169,7 +168,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     OpenCGAResult<Long> count(ClientSession clientSession, final Query query, final String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, user);
-        logger.debug("Clinical count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Clinical count: query : {}", bson.toBsonDocument());
         return new OpenCGAResult<>(clinicalCollection.count(clientSession, bson));
     }
 
@@ -236,8 +235,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             if (!updateOperation.isEmpty()) {
                 Bson bsonQuery = Filters.eq(PRIVATE_UID, clinicalAnalysisUid);
 
-                logger.debug("Update clinical analysis. Query: {}, Update: {}", bsonQuery.toBsonDocument(Document.class,
-                        MongoClient.getDefaultCodecRegistry()), updateDocument);
+                logger.debug("Update clinical analysis. Query: {}, Update: {}", bsonQuery.toBsonDocument(), updateDocument);
                 update = clinicalCollection.update(clientSession, bsonQuery, updateOperation, null);
 
                 if (update.getNumMatches() == 0) {
@@ -262,7 +260,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
                     Bson bsonQuery = parseQuery(nestedDocument.getQuery().append(QueryParams.UID.key(), clinicalAnalysisUid));
                     logger.debug("Update nested element from Clinical Analysis. Query: {}, Update: {}",
-                            bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()), nestedDocument.getSet());
+                            bsonQuery.toBsonDocument(), nestedDocument.getSet());
 
                     update = clinicalCollection.update(clientSession, bsonQuery, nestedDocument.getSet(), null);
 
@@ -339,7 +337,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         String[] acceptedObjectParams = {QueryParams.FAMILY.key(), QueryParams.DISORDER.key(), QUALITY_CONTROL.key(),
                 QueryParams.PROBAND.key(), QueryParams.ALERTS.key(), QueryParams.INTERNAL_STATUS.key(), QueryParams.PRIORITY.key(),
                 QueryParams.ANALYST.key(), QueryParams.CONSENT.key(), QueryParams.STATUS.key(), QueryParams.INTERPRETATION.key(),
-                REPORT.key()};
+                REPORT.key(), ATTRIBUTES.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         if (parameters.containsKey(INTERPRETATION.key()) && parameters.get(INTERPRETATION.key()) == null) {
@@ -745,7 +743,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         qOptions = removeInnerProjections(qOptions, QueryParams.INTERPRETATION.key());
         qOptions = removeInnerProjections(qOptions, QueryParams.SECONDARY_INTERPRETATIONS.key());
 
-        logger.debug("Clinical analysis query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Clinical analysis query : {}", bson.toBsonDocument());
 
         if (!query.getBoolean(QueryParams.DELETED.key())) {
             return clinicalCollection.iterator(clientSession, bson, null, null, qOptions);

@@ -1,13 +1,16 @@
 package org.opencb.opencga.storage.hadoop.variant.index.core.filters;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.variant.query.OpValue;
 import org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.core.config.storage.IndexFieldConfiguration.Source.SAMPLE;
 
+@Category(ShortTests.class)
 public class RangeIndexFieldFilterTest {
 
     @Test

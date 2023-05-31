@@ -4,14 +4,17 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 
+@Category(ShortTests.class)
 public class VariantAnnotationMixinTest {
 
 

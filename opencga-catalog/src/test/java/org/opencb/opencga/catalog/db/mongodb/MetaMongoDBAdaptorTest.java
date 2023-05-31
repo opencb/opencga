@@ -17,17 +17,18 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 /**
  * Created by imedina on 07/04/16.
  */
+@Category(MediumTests.class)
 public class MetaMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void createIndex() throws Exception {
-        catalogDBAdaptor.getCatalogMetaDBAdaptor().createIndexes(true);
+        catalogDBAdaptor.getCatalogMetaDBAdaptor().createIndexes();
     }
 
 }

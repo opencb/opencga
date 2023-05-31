@@ -8,6 +8,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 
@@ -29,7 +30,7 @@ public abstract class VariantStorageEngineNumericSampleTest extends VariantStora
                         .append(VariantStorageOptions.ANNOTATE.key(), true)
                         .append(VariantStorageOptions.STATS_CALCULATE.key(), true)
         );
-        VariantDBIterator iterator = engine.iterator(new Query(VariantQueryParam.INCLUDE_SAMPLE_ID.key(), true), new QueryOptions());
+        VariantDBIterator iterator = engine.iterator(new VariantQuery().includeSampleId(true).includeSampleAll(), new QueryOptions());
         while (iterator.hasNext()) {
             Variant variant = iterator.next();
             StudyEntry study = variant.getStudy(STUDY_NAME);

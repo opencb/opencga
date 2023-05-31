@@ -16,12 +16,11 @@
 
 package org.opencb.opencga.core.models.file;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
-
-import org.opencb.commons.annotations.DataField;
-import org.opencb.opencga.core.api.ParamConstants;
 
 public class FileLinkToolParams extends ToolParams {
     @DataField(description = ParamConstants.FILE_LINK_TOOL_PARAMS_URI_DESCRIPTION)
@@ -30,17 +29,21 @@ public class FileLinkToolParams extends ToolParams {
     private String path;
     @DataField(description = ParamConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+
     @DataField(description = ParamConstants.FILE_LINK_TOOL_PARAMS_PARENTS_DESCRIPTION)
     private boolean parents;
+    private String virtualFileName;
     private boolean skipPostLink;
 
     public FileLinkToolParams() {
     }
 
-    public FileLinkToolParams(List<String> uri, String path, String description, boolean parents, boolean skipPostLink) {
+    public FileLinkToolParams(List<String> uri, String path, String description, String virtualFileName, boolean parents,
+                              boolean skipPostLink) {
         this.uri = uri;
         this.path = path;
         this.description = description;
+        this.virtualFileName = virtualFileName;
         this.parents = parents;
         this.skipPostLink = skipPostLink;
     }
@@ -69,6 +72,15 @@ public class FileLinkToolParams extends ToolParams {
 
     public FileLinkToolParams setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public String getVirtualFileName() {
+        return virtualFileName;
+    }
+
+    public FileLinkToolParams setVirtualFileName(String virtualFileName) {
+        this.virtualFileName = virtualFileName;
         return this;
     }
 

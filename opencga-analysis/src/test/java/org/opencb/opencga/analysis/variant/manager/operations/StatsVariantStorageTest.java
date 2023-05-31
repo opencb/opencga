@@ -18,6 +18,7 @@ package org.opencb.opencga.analysis.variant.manager.operations;
 
 import org.junit.After;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
@@ -47,6 +48,7 @@ import org.opencb.opencga.core.models.operations.variant.VariantStatsIndexParams
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyUpdateParams;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -76,6 +78,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.get
  *
  * Created by hpccoll1 on 08/07/15.
  */
+@Category(MediumTests.class)
 public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest {
 
     Logger logger = LoggerFactory.getLogger(StatsVariantStorageTest.class);
@@ -146,8 +149,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
                 DataResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, new Cohort()
                         .setId(cohortName)
                         .setSamples(Collections.emptyList())
-                        .setType(Enums.CohortType.COLLECTION),
-                        new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId);
+                        .setType(Enums.CohortType.COLLECTION), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId);
                 queryResults.add(cohort.first());
             } else {
                 logger.warn("cohort {} was already created", cohortName);

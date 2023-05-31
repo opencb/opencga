@@ -19,8 +19,10 @@ package org.opencb.opencga.master.monitor.executors;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.config.Execution;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,6 +31,7 @@ import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
 
+@Category(ShortTests.class)
 public class LocalExecutorTest {
     private LocalExecutor localExecutor;
     private Path rootDir;

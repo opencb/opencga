@@ -1,0 +1,14 @@
+##fileformat=VCFv4.2
+##FILTER=<ID=PASS,Description="Passed all variant filters">
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Alternate allele count">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total number of alleles">
+##INFO=<ID=AF,Number=A,Type=Float,Description="Alternate allele frequency">
+##INFO=<ID=nhomalt,Number=A,Type=Integer,Description="Count of homozygous individuals">
+##INFO=<ID=AC_afr,Number=A,Type=Integer,Description="Alternate allele count for samples of African/African-American ancestry">
+##INFO=<ID=AN_afr,Number=1,Type=Integer,Description="Total number of alleles in samples of African/African-American ancestry">
+##INFO=<ID=AF_afr,Number=A,Type=Float,Description="Alternate allele frequency in samples of African/African-American ancestry">
+##INFO=<ID=nhomalt_afr,Number=A,Type=Integer,Description="Count of homozygous individuals in samples of African/African-American ancestry">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+chr22	10511069	.	T	C	.	PASS	AC=8;AN=28186;AF=0.000283829;nhomalt=3;AC_afr=0;AN_afr=7616;AF_afr=0.00000;nhomalt_afr=0
+
+

@@ -19,6 +19,7 @@ package org.opencb.opencga.analysis.variant.manager;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.DataResult;
@@ -35,6 +36,7 @@ import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.StudyAclParams;
 import org.opencb.opencga.core.models.study.StudyPermissions;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
@@ -51,6 +53,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.get
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(MediumTests.class)
 public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest {
 
     @Before
@@ -117,12 +120,12 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
         // Without studies
         Map<String, List<String>> samples = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
-        Assert.assertEquals(Collections.singletonMap(studyFqn, Collections.emptyList()), samples);
+        Assert.assertEquals(Collections.emptyMap(), samples);
 
         // With studies
         query.append(VariantQueryParam.STUDY.key(), studyFqn);
         samples = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
-        Assert.assertEquals(Collections.singletonMap(studyFqn, Collections.emptyList()), samples);
+        Assert.assertEquals(Collections.emptyMap(), samples);
     }
 
     @Test
@@ -259,8 +262,9 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
     @Test
     public void testQueryAnonymousWithoutPermissions() throws Exception {
         Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
-        thrown.expectMessage("cannot view study");
-        thrown.expect(CatalogAuthorizationException.class);
+        CatalogAuthorizationException expected = CatalogAuthorizationException.denyAny(ParamConstants.ANONYMOUS_USER_ID, "view", "study");
+        thrown.expectMessage(expected.getMessage());
+        thrown.expect(expected.getClass());
         variantManager.get(query, new QueryOptions(), null);
     }
 
@@ -319,8 +323,9 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
             Assert.assertEquals(0, variant.getStudies().size());
         }
 
-        thrown.expectMessage("cannot view study");
-        thrown.expect(CatalogAuthorizationException.class);
+        CatalogAuthorizationException expected = CatalogAuthorizationException.denyAny(ParamConstants.ANONYMOUS_USER_ID, "view", "study");
+        thrown.expectMessage(expected.getMessage());
+        thrown.expect(expected.getClass());
         variantManager.get(new Query(VariantQueryParam.INCLUDE_STUDY.key(), studyId + "," + studyId2), new QueryOptions(), null);
     }
 

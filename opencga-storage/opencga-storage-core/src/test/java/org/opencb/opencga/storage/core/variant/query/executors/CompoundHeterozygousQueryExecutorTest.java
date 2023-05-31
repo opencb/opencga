@@ -2,9 +2,12 @@ package org.opencb.opencga.storage.core.variant.query.executors;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.mockito.Mockito;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
+import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -19,12 +22,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.ALL;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS;
 
 /**
  * Created on 09/04/19.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(ShortTests.class)
 public class CompoundHeterozygousQueryExecutorTest {
 
     private VariantIterable iterable;
@@ -60,9 +65,22 @@ public class CompoundHeterozygousQueryExecutorTest {
         );
         includeFields = getIncludeFields(options);
         assertEquals(new HashSet<>(
-                Arrays.asList(ID, CHROMOSOME, START, END, REFERENCE, ALTERNATE, TYPE, LENGTH, SV,
+                Arrays.asList(ID, NAMES, CHROMOSOME, START, END, REFERENCE, ALTERNATE, STRAND, TYPE, LENGTH, SV,
                         ANNOTATION, ANNOTATION_CONSEQUENCE_TYPES,
                         STUDIES, STUDIES_SAMPLES)), includeFields);
+    }
+
+    @Test
+    public void getCompHetTrio() {
+        Trio expected = new Trio("F", "M", "C");
+        Trio actual = ch.getCompHetTrio(new Query(SAMPLE_COMPOUND_HETEROZYGOUS.key(), expected.toList()));
+        assertEquals(expected, actual);
+
+        actual = ch.getCompHetTrio(new Query(SAMPLE_COMPOUND_HETEROZYGOUS.key(), expected.toString()));
+        assertEquals(expected, actual);
+
+        actual = ch.getCompHetTrio(new Query(SAMPLE_COMPOUND_HETEROZYGOUS.key(), expected));
+        assertEquals(expected, actual);
     }
 
     @Test

@@ -1,11 +1,10 @@
 package org.opencb.opencga.core.models.variant;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.core.tools.ToolParams;
-
 import org.opencb.commons.annotations.DataField;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.tools.ToolParams;
 
 public class AnnotationVariantQueryParams extends ToolParams {
     @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_ID_DESCRIPTION)
@@ -27,9 +26,13 @@ public class AnnotationVariantQueryParams extends ToolParams {
     @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_PANEL_INTERSECTION_DESCRIPTION)
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private boolean panelIntersection;
-    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_COHORT_STATS_REF_DESCRIPTION)
 
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_COHORT_STATS_REF_DESCRIPTION)
     private String cohortStatsRef;
+
+    @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_PANEL_FEATURE_TYPE_DESCRIPTION)
+    private String panelFeatureType;
+
     @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_COHORT_STATS_ALT_DESCRIPTION)
     private String cohortStatsAlt;
     @DataField(description = ParamConstants.ANNOTATION_VARIANT_QUERY_PARAMS_COHORT_STATS_MAF_DESCRIPTION)
@@ -157,6 +160,15 @@ public class AnnotationVariantQueryParams extends ToolParams {
 
     public AnnotationVariantQueryParams setPanelIntersection(boolean panelIntersection) {
         this.panelIntersection = panelIntersection;
+        return this;
+    }
+
+    public String getPanelFeatureType() {
+        return panelFeatureType;
+    }
+
+    public AnnotationVariantQueryParams setPanelFeatureType(String panelFeatureType) {
+        this.panelFeatureType = panelFeatureType;
         return this;
     }
 

@@ -38,8 +38,7 @@ class _ParentRestClient(object):
         query_ids_str = self._get_query_id_str(query_id)
 
         def exec_retry():
-            return execute(host=self._cfg.host,
-                           version=self._cfg.version,
+            return execute(config=self._cfg,
                            sid=self.token,
                            category=category,
                            subcategory=subcategory,

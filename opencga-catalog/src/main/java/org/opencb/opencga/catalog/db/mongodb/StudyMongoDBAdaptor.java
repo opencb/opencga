@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
@@ -30,7 +29,6 @@ import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
@@ -41,6 +39,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.cohort.Cohort;
@@ -269,7 +268,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         studyObject.put(PRIVATE_UID, studyUid);
         studyObject.put(QueryParams.VARIABLE_SET.key(), variableSetDocuments);
 
-        //Set ProjectId
+        //Set ProjectId - This is in use in ProjectMongoDBAdaptor. Any changes here should force changes in ProjectMongoDBAdaptor as well
         studyObject.put(PRIVATE_PROJECT, new Document()
                 .append(ID, project.getId())
                 .append(PRIVATE_UID, project.getUid())
@@ -311,7 +310,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         if (families != null) {
             for (Family family : families) {
-                dbAdaptorFactory.getCatalogFamilyDBAdaptor().insert(clientSession, study.getUid(), family, null, Collections.emptyList());
+                dbAdaptorFactory.getCatalogFamilyDBAdaptor().insert(clientSession, study.getUid(), family, Collections.emptyList());
             }
         }
 
@@ -483,8 +482,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         return new OpenCGAResult<>(result);
     }
 
-    void addUsersToGroup(long studyId, String groupId, List<String> members, ClientSession clientSession) throws CatalogDBException {
-        if (ListUtils.isEmpty(members)) {
+    void addUsersToGroup(ClientSession clientSession, long studyId, String groupId, List<String> members) throws CatalogDBException {
+        if (CollectionUtils.isEmpty(members)) {
             return;
         }
 
@@ -492,7 +491,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 .append(PRIVATE_UID, studyId)
                 .append(QueryParams.GROUP_ID.key(), groupId);
         Document update = new Document("$addToSet", new Document("groups.$.userIds", new Document("$each", members)));
-        DataResult result = studyCollection.update(clientSession, query, update, null);
+        DataResult<?> result = studyCollection.update(clientSession, query, update, null);
 
         if (result.getNumMatches() != 1) {
             throw new CatalogDBException("Unable to add members to group " + groupId + ". The group does not exist.");
@@ -501,7 +500,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public OpenCGAResult<Group> addUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
-        if (ListUtils.isEmpty(members)) {
+        if (CollectionUtils.isEmpty(members)) {
             throw new CatalogDBException("List of 'members' is missing or empty.");
         }
 
@@ -590,56 +589,145 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         return new OpenCGAResult<>(studyCollection.update(query, updates, null));
     }
 
-    // TODO: Make this transactional
     @Override
     public OpenCGAResult<Group> resyncUserWithSyncedGroups(String user, List<String> groupList, String authOrigin)
-            throws CatalogDBException {
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (StringUtils.isEmpty(user)) {
             throw new CatalogDBException("Missing user field");
         }
 
-        // 1. Take the user out from all synced groups
-        Document query = new Document()
-                .append(QueryParams.GROUPS.key(), new Document("$elemMatch", new Document()
-                        .append("userIds", user)
-                        .append("syncedFrom.authOrigin", authOrigin)
-                ));
-        Bson pull = Updates.pull("groups.$.userIds", user);
-
-        // Pull the user while it still belongs to a synced group
-        QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
-        DataResult update;
-        do {
-            update = studyCollection.update(query, pull, multi);
-        } while (update.getNumUpdated() > 0);
-
-        // 2. Add user to all synced groups
-        if (groupList != null && groupList.size() > 0) {
-            // Add the user to all the synced groups matching
-            query = new Document()
+        return runTransaction(clientSession -> {
+            // 1. Take the user out from all synced groups
+            Document query = new Document()
                     .append(QueryParams.GROUPS.key(), new Document("$elemMatch", new Document()
-                            .append("userIds", new Document("$ne", user))
-                            .append("syncedFrom.remoteGroup", new Document("$in", groupList))
+                            .append("userIds", user)
                             .append("syncedFrom.authOrigin", authOrigin)
                     ));
-            Document push = new Document("$addToSet", new Document("groups.$.userIds", user));
+            Bson pull = Updates.pull("groups.$.userIds", user);
+
+            // Pull the user while it still belongs to a synced group
+            QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+            DataResult<?> update;
             do {
-                update = studyCollection.update(query, push, multi);
+                update = studyCollection.update(clientSession, query, pull, multi);
             } while (update.getNumUpdated() > 0);
 
-            // We need to be updated with the internal @members group, so we fetch all the studies where the user has been added
-            // and attempt to add it to the each @members group
-            query = new Document()
-                    .append(QueryParams.GROUP_USER_IDS.key(), user)
-                    .append(QueryParams.GROUP_SYNCED_FROM_AUTH_ORIGIN.key(), authOrigin);
-            DataResult<Study> studyDataResult = studyCollection.find(query, studyConverter, new QueryOptions(QueryOptions.INCLUDE,
-                    QueryParams.UID.key()));
-            for (Study study : studyDataResult.getResults()) {
-                addUsersToGroup(study.getUid(), "@members", Arrays.asList(user));
+            // 2. Add user to all synced groups
+            if (groupList != null && groupList.size() > 0) {
+                // Add the user to all the synced groups matching
+                query = new Document()
+                        .append(QueryParams.GROUPS.key(), new Document("$elemMatch", new Document()
+                                .append("userIds", new Document("$ne", user))
+                                .append("syncedFrom.remoteGroup", new Document("$in", groupList))
+                                .append("syncedFrom.authOrigin", authOrigin)
+                        ));
+                Document push = new Document("$addToSet", new Document("groups.$.userIds", user));
+                do {
+                    update = studyCollection.update(clientSession, query, push, multi);
+                } while (update.getNumUpdated() > 0);
+
+                // We need to be updated with the internal @members group, so we fetch all the studies where the user has been added
+                // and attempt to add it to all @members groups
+                query = new Document()
+                        .append(QueryParams.GROUP_USER_IDS.key(), user)
+                        .append(QueryParams.GROUP_SYNCED_FROM_AUTH_ORIGIN.key(), authOrigin);
+                DataResult<Study> studyDataResult = studyCollection.find(clientSession, query, studyConverter,
+                        new QueryOptions(QueryOptions.INCLUDE, QueryParams.UID.key()));
+                for (Study study : studyDataResult.getResults()) {
+                    addUsersToGroup(clientSession, study.getUid(), "@members", Collections.singletonList(user));
+                }
             }
+
+            return OpenCGAResult.empty(Group.class);
+        });
+    }
+
+    @Override
+    public OpenCGAResult<Group> updateUserFromGroups(String user, List<Long> studyUids, List<String> groupList,
+                                                     ParamUtils.AddRemoveAction action)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+
+        if (StringUtils.isEmpty(user)) {
+            throw new CatalogParameterException("Missing user parameter");
+        }
+        if (action == null) {
+            throw new CatalogParameterException("Missing action parameter");
+        }
+        if (CollectionUtils.isEmpty(groupList)) {
+            throw new CatalogParameterException("Missing list of groups");
         }
 
-        return OpenCGAResult.empty();
+        // Fix group ids
+        List<String> fixedGroupList = groupList.stream()
+                .map((group) -> {
+                    if (!group.startsWith("@")) {
+                        return "@" + group;
+                    }
+                    return group;
+                })
+                .collect(Collectors.toList());
+
+        QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+
+        return runTransaction(clientSession -> {
+            switch (action) {
+                case ADD:
+                    Document addQuery = new Document()
+                            // Do not apply changes in the admin study
+                            .append(QueryParams.FQN.key(), new Document("$ne", ParamConstants.ADMIN_STUDY_FQN))
+                            // Add the user to all the groups matching the list
+                            .append(QueryParams.GROUPS.key(), new Document("$elemMatch", new Document()
+                                    .append("userIds", new Document("$ne", user))
+                                    .append("id", new Document("$in", fixedGroupList))
+                            ));
+                    if (studyUids != null) {
+                        addQuery.put(QueryParams.UID.key(), new Document("$in", studyUids));
+                    }
+
+                    Document push = new Document("$addToSet", new Document("groups.$.userIds", user));
+                    DataResult<?> update;
+                    do {
+                        update = studyCollection.update(clientSession, addQuery, push, multi);
+                    } while (update.getNumUpdated() > 0);
+
+                    // We need to be updated with the internal @members group, so we fetch all the studies where the user has been added
+                    // and attempt to add it to all @members groups
+                    addQuery = new Document()
+                            .append(QueryParams.GROUP_USER_IDS.key(), user)
+                            .append(QueryParams.GROUP_ID.key(), new Document("$in", fixedGroupList));
+                    if (studyUids != null) {
+                        addQuery.put(QueryParams.UID.key(), new Document("$in", studyUids));
+                    }
+
+                    DataResult<Study> studyDataResult = studyCollection.find(clientSession, addQuery, studyConverter,
+                            new QueryOptions(QueryOptions.INCLUDE, QueryParams.UID.key()));
+                    for (Study study : studyDataResult.getResults()) {
+                        addUsersToGroup(clientSession, study.getUid(), "@members", Collections.singletonList(user));
+                    }
+                    break;
+                case REMOVE:
+                    // 1. Take the user out from all groups
+                    Document removeQuery = new Document()
+                            .append(QueryParams.GROUPS.key(), new Document("$elemMatch", new Document()
+                                    .append("userIds", user)
+                                    .append("id", new Document("$in", fixedGroupList))
+                            ));
+                    if (studyUids != null) {
+                        removeQuery.put(QueryParams.UID.key(), new Document("$in", studyUids));
+                    }
+                    Bson pull = Updates.pull("groups.$.userIds", user);
+                    DataResult<?> pullUpdate;
+                    do {
+                        pullUpdate = studyCollection.update(clientSession, removeQuery, pull, multi);
+                    } while (pullUpdate.getNumUpdated() > 0);
+
+                    break;
+                default:
+                    break;
+            }
+
+            return OpenCGAResult.empty(Group.class);
+        });
     }
 
     @Override
@@ -693,9 +781,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         Document update = new Document("$set", new Document(QueryParams.PERMISSION_RULES.key() + "." + entry + ".$.id",
                 newPermissionRuleId));
 
-        logger.debug("Mark permission rule for deletion: Query {}, Update {}",
-                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Mark permission rule for deletion: Query {}, Update {}", query.toBsonDocument(), update.toBsonDocument());
 
         DataResult result = studyCollection.update(query, update, QueryOptions.empty());
         if (result.getNumMatches() == 0) {
@@ -1435,9 +1521,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             Query tmpQuery = new Query(QueryParams.UID.key(), study.getUid());
             Bson finalQuery = parseQuery(tmpQuery);
 
-            logger.debug("Update study. Query: {}, update: {}",
-                    finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    updates.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            logger.debug("Update study. Query: {}, update: {}", finalQuery.toBsonDocument(), updates.toBsonDocument());
             DataResult result = studyCollection.update(clientSession, finalQuery, updates, null);
 
             if (result.getNumMatches() == 0) {
@@ -1686,7 +1770,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         return nativeGet(null, query, options);
     }
 
-    OpenCGAResult<Document> nativeGet(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Document> nativeGet(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options)) {
             return endQuery(startTime, dbIterator);
@@ -1699,7 +1783,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         return nativeGet(null, query, options, user);
     }
 
-    OpenCGAResult nativeGet(ClientSession clientSession, Query query, QueryOptions options, String user)
+    public OpenCGAResult nativeGet(ClientSession clientSession, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options, user)) {
@@ -1769,7 +1853,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         Bson bson = parseQuery(query);
 
-        logger.debug("Study native get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Study native get: query : {}", bson.toBsonDocument());
         if (!query.getBoolean(QueryParams.DELETED.key())) {
             return studyCollection.iterator(clientSession, bson, null, null, qOptions);
         } else {

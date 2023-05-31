@@ -16,15 +16,14 @@
 
 package org.opencb.opencga.core.models.file;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.tools.annotations.CliParam;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import org.opencb.commons.annotations.DataField;
-import org.opencb.opencga.core.api.ParamConstants;
 
 public class FileLinkParams {
     @CliParam(required = true)
@@ -38,6 +37,8 @@ public class FileLinkParams {
     private String creationDate;
     @DataField(description = ParamConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
+    private String virtualFileName;
+
     @DataField(description = ParamConstants.FILE_LINK_PARAMS_RELATED_FILES_DESCRIPTION)
     private List<SmallRelatedFileParams> relatedFiles;
     @DataField(description = ParamConstants.GENERIC_STATUS_DESCRIPTION)
@@ -48,23 +49,35 @@ public class FileLinkParams {
     public FileLinkParams() {
     }
 
-    public FileLinkParams(String uri, String path, String description, String creationDate, String modificationDate,
+    public FileLinkParams(String uri, String path, String description, String creationDate, String modificationDate, String virtualFile,
                           List<SmallRelatedFileParams> relatedFiles, StatusParams status, FileLinkInternalParams internal) {
         this.uri = uri;
         this.path = path;
         this.description = description;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
+        this.virtualFileName = virtualFile;
         this.relatedFiles = relatedFiles;
         this.status = status;
         this.internal = internal;
     }
 
     public static FileLinkParams of(File file) {
+        String virtualFile = null;
+        if (file.getType() != File.Type.VIRTUAL && file.getRelatedFiles() != null) {
+            for (FileRelatedFile relatedFile : file.getRelatedFiles()) {
+                if (relatedFile.getRelation().equals(FileRelatedFile.Relation.MULTIPART)) {
+                    virtualFile = relatedFile.getFile().getId();
+                    break;
+                }
+            }
+        }
+
         return new FileLinkParams(file.getUri().toString(), file.getPath(), file.getDescription(), file.getCreationDate(),
-                file.getModificationDate(), file.getRelatedFiles() != null
-                ? file.getRelatedFiles().stream().map(SmallRelatedFileParams::of).collect(Collectors.toList())
-                : Collections.emptyList(), StatusParams.of(file.getStatus()),
+                file.getModificationDate(), virtualFile,
+                file.getRelatedFiles() != null
+                        ? file.getRelatedFiles().stream().map(SmallRelatedFileParams::of).collect(Collectors.toList())
+                        : Collections.emptyList(), StatusParams.of(file.getStatus()),
                 new FileLinkInternalParams(file.getInternal().getSampleMap()));
     }
 
@@ -76,6 +89,7 @@ public class FileLinkParams {
         sb.append(", description='").append(description).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
+        sb.append(", virtualFile='").append(virtualFileName).append('\'');
         sb.append(", relatedFiles=").append(relatedFiles);
         sb.append(", status=").append(status);
         sb.append(", internal=").append(internal);
@@ -154,6 +168,15 @@ public class FileLinkParams {
 
     public FileLinkParams setStatus(StatusParams status) {
         this.status = status;
+        return this;
+    }
+
+    public String getVirtualFileName() {
+        return virtualFileName;
+    }
+
+    public FileLinkParams setVirtualFileName(String virtualFileName) {
+        this.virtualFileName = virtualFileName;
         return this;
     }
 

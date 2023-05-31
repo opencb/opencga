@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
@@ -121,6 +120,47 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
                     dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
                     insert(clientSession, studyId, file, existingSamples, nonExistingSamples, variableSetList);
+                    return endWrite(tmpStartTime, 1, 1, 0, 0, null);
+                },
+                (e) -> logger.error("Could not create file {}: {}", file.getId(), e.getMessage()));
+    }
+
+    @Override
+    public OpenCGAResult insertWithVirtualFile(long studyId, File file, File virtualFile, List<Sample> existingSamples,
+                                               List<Sample> nonExistingSamples, List<VariableSet> variableSetList, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return runTransaction(
+                (clientSession) -> {
+                    long tmpStartTime = startQuery();
+                    logger.debug("Starting file insert transaction for file id '{}' and virtual file id '{}'", file.getId(),
+                            virtualFile.getId());
+
+                    dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
+                    insert(clientSession, studyId, file, null, null, variableSetList);
+
+                    Map<String, Object> actionMap = new HashMap<>();
+                    actionMap.put(QueryParams.RELATED_FILES.key(), BasicUpdateAction.ADD);
+                    QueryOptions qOptions = new QueryOptions(Constants.ACTIONS, actionMap);
+                    if (virtualFile.getUid() <= 0) {
+                        // Add multipart file and insert virtual file
+                        virtualFile.setRelatedFiles(Collections.singletonList(
+                                new FileRelatedFile(file, FileRelatedFile.Relation.MULTIPART))
+                        );
+                        insert(clientSession, studyId, virtualFile, existingSamples, nonExistingSamples, variableSetList);
+                    } else {
+                        // Add multipart file in virtual file
+                        ObjectMap params = new ObjectMap(QueryParams.RELATED_FILES.key(), Collections.singletonList(
+                                new FileRelatedFile(file, FileRelatedFile.Relation.MULTIPART)
+                        ));
+                        privateUpdate(clientSession, virtualFile, params, null, qOptions);
+                    }
+
+                    // Add multipart file in physical file
+                    ObjectMap params = new ObjectMap(QueryParams.RELATED_FILES.key(), Collections.singletonList(
+                            new FileRelatedFile(virtualFile, FileRelatedFile.Relation.MULTIPART)
+                    ));
+                    privateUpdate(clientSession, file, params, null, qOptions);
+
                     return endWrite(tmpStartTime, 1, 1, 0, 0, null);
                 },
                 (e) -> logger.error("Could not create file {}: {}", file.getId(), e.getMessage()));
@@ -361,9 +401,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         List<Event> events = new ArrayList<>();
         if (!fileUpdate.isEmpty()) {
-            logger.debug("Update file. Query: {}, Update: {}",
-                    queryBson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    fileUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            logger.debug("Update file. Query: {}, Update: {}", queryBson.toBsonDocument(), fileUpdate.toBsonDocument());
 
             result = fileCollection.update(clientSession, queryBson, fileUpdate, null);
 
@@ -673,7 +711,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
         String[] acceptedObjectParams = {QueryParams.INTERNAL_VARIANT_INDEX.key(), QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(),
-                QueryParams.INTERNAL_VARIANT_SECONDARY_INDEX.key(), QueryParams.INTERNAL_ALIGNMENT_INDEX.key(), QueryParams.SOFTWARE.key(),
+                QueryParams.INTERNAL_VARIANT_SECONDARY_INDEX.key(), QueryParams.INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX.key(),
+                QueryParams.INTERNAL_ALIGNMENT_INDEX.key(), QueryParams.SOFTWARE.key(),
                 QueryParams.EXPERIMENT.key(), QueryParams.STATUS.key(), QueryParams.INTERNAL_MISSING_SAMPLES.key(),
                 QueryParams.QUALITY_CONTROL.key(), QueryParams.INTERNAL_STATUS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
@@ -981,7 +1020,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     public OpenCGAResult<Long> count(final Query query, final String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, user);
-        logger.debug("File count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("File count: query : {}", bson.toBsonDocument());
         return new OpenCGAResult<>(fileCollection.count(bson));
     }
 
@@ -1134,7 +1173,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         }
         qOptions = fixQueryOptions(qOptions);
 
-        logger.debug("File query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("File query: {}", bson.toBsonDocument());
         if (!query.getBoolean(QueryParams.DELETED.key())) {
             return fileCollection.iterator(clientSession, bson, null, null, qOptions);
         } else {
@@ -1147,6 +1186,10 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         options = filterOptions(options, FILTER_ROUTE_FILES);
         options = changeProjectionKey(options, QueryParams.SAMPLE_IDS.key(), PRIVATE_SAMPLES);
         fixAclProjection(options);
+
+        // type must always be there when relatedFiles is included
+        options = filterQueryOptions(options, Collections.singletonList(QueryParams.TYPE.key()));
+
         return options;
     }
 
@@ -1312,6 +1355,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     case INTERNAL_STATUS_ID:
                     case INTERNAL_VARIANT_ANNOTATION_INDEX_STATUS_ID:
                     case INTERNAL_VARIANT_SECONDARY_INDEX_STATUS_ID:
+                    case INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX_STATUS_ID:
                     case INTERNAL_ALIGNMENT_INDEX_STATUS_ID:
                         // Convert the status to a positive status
                         myQuery.put(queryParam.key(),
@@ -1417,9 +1461,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         Bson bsonQuery = parseQuery(query);
 
-        logger.debug("Sample references extraction. Query: {}, update: {}",
-                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Sample references extraction. Query: {}, update: {}", bsonQuery.toBsonDocument(), update.toBsonDocument());
         DataResult result = fileCollection.update(clientSession, bsonQuery, update, multi);
         logger.debug("Sample '" + sample.getId() + "' references removed from " + result.getNumUpdated() + " out of "
                 + result.getNumMatches() + " files");

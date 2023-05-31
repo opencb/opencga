@@ -8,6 +8,8 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.project.Project;
 
+import java.util.Collections;
+
 import static org.opencb.opencga.core.api.ParamConstants.USER_PROJECT_SEPARATOR;
 
 @Migration(id = "add_cellbase_configuration_to_project", description = "Add cellbase configuration from storage-configuration.yml to project.internal.cellbase", version = "2.1.0",
@@ -23,12 +25,11 @@ public class AddCellbaseConfigurationToProject extends MigrationTool {
 //        StorageEngineFactory engineFactory = StorageEngineFactory.get(storageConfiguration);
 //        VariantStorageManager variantStorageManager = new VariantStorageManager(catalogManager, engineFactory);
 
-        for (Project project : catalogManager.getProjectManager().search(new Query(), new QueryOptions(), token).getResults()) {
+        for (Project project : catalogManager.getProjectManager().search(new Query(), QueryOptions.empty(), token).getResults()) {
             if (project.getInternal() == null || project.getCellbase() == null) {
-                String userToken = catalogManager.getUserManager()
-                        .getNonExpiringToken(project.getFqn().split(USER_PROJECT_SEPARATOR)[0], token);
+                String userToken = catalogManager.getUserManager().getNonExpiringToken(project.getFqn().split(USER_PROJECT_SEPARATOR)[0], Collections.emptyMap(), token);
                 catalogManager.getProjectManager()
-                        .setCellbaseConfiguration(project.getFqn(), storageConfiguration.getCellbase(), userToken);
+                        .setCellbaseConfiguration(project.getFqn(), storageConfiguration.getCellbase(), false, userToken);
             }
         }
     }

@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.server.rest.admin;
 
-import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -30,6 +29,7 @@ import org.opencb.opencga.analysis.job.JobIndexTask;
 import org.opencb.opencga.analysis.sample.SampleIndexTask;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.admin.*;
@@ -38,8 +38,10 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.annotations.*;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 
 import javax.servlet.http.HttpServletRequest;
@@ -47,6 +49,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -146,6 +149,22 @@ public class AdminWSServer extends OpenCGAWSServer {
             }
 
             return createOkResponse("OK");
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/users/{user}/groups/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Add or remove users from existing groups", response = Group.class)
+    public Response updateGroups(
+            @ApiParam(value = ParamConstants.USER_DESCRIPTION) @PathParam(ParamConstants.USER) String user,
+            @ApiParam(value = "Action to be performed: ADD or REMOVE user to/from groups", allowableValues = "ADD,REMOVE",
+                    defaultValue = "ADD") @QueryParam("action") ParamUtils.AddRemoveAction action,
+            @ApiParam(value = "JSON containing the parameters", required = true) UserUpdateGroup updateParams) {
+        try {
+            return createOkResponse(catalogManager.getAdminManager().updateGroups(user, updateParams.getStudyIds(), updateParams.getGroupIds(), action, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -267,7 +286,7 @@ public class AdminWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing the mandatory parameters", required = true) InstallationParams installParams) {
         try {
             catalogManager.installCatalogDB(installParams.getSecretKey(), installParams.getPassword(), installParams.getEmail(),
-                    installParams.getOrganization(), false, true);
+                    installParams.getOrganization(), false);
             return createOkResponse(DataResult.empty());
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -335,4 +354,21 @@ public class AdminWSServer extends OpenCGAWSServer {
         }
     }
 
-}
+    @POST
+    @Path("/token")
+    @ApiOperation(value = "Obtain a valid token for a user", hidden = true)
+    public Response token(@ApiParam(value = "Token parameters", required = true) TokenParams jwtParams) {
+        try {
+            String newToken = jwtParams.getExpiration() != null
+                    ? catalogManager.getUserManager().getToken(jwtParams.getUserId(), jwtParams.getAttributes(), jwtParams.getExpiration(), token)
+                    : catalogManager.getUserManager().getNonExpiringToken(jwtParams.getUserId(), jwtParams.getAttributes(), token);
+            AuthenticationResponse authResponse = new AuthenticationResponse(newToken);
+            OpenCGAResult<AuthenticationResponse> opencgaResponse = new OpenCGAResult<>(0, Collections.emptyList(), 1,
+                    Collections.singletonList(authResponse), 1);
+            return createOkResponse(opencgaResponse);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    }

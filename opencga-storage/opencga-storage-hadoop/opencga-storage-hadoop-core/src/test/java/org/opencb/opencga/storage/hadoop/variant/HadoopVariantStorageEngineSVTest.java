@@ -3,11 +3,13 @@ package org.opencb.opencga.storage.hadoop.variant;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngineSVTest;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
@@ -25,6 +27,7 @@ import static org.junit.Assert.assertEquals;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(LongTests.class)
 public class HadoopVariantStorageEngineSVTest extends VariantStorageEngineSVTest implements HadoopVariantStorageTest {
 
     @ClassRule

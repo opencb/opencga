@@ -2,30 +2,22 @@ package org.opencb.opencga.storage.benchmark.queryGenerator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.junit.Before;
 import org.junit.Test;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.storage.benchmark.BenchmarkRunner;
-import org.opencb.opencga.storage.benchmark.variant.generators.FixedQueryGenerator;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.benchmark.variant.queries.FixedQueries;
-import org.opencb.opencga.storage.benchmark.variant.queries.RandomQueries;
-import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
 /**
  * Created by wasim on 31/10/18.
  */
-public class FixedQueryGeneratorTest extends VariantStorageBaseTest implements MongoDBVariantStorageTest {
+@Category(ShortTests.class)
+public class FixedQueryGeneratorTest {
 
 
     @Test

@@ -2,6 +2,7 @@ package org.opencb.opencga.app.cli.admin.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
 import org.opencb.opencga.app.cli.main.io.Table;
@@ -100,7 +101,21 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                         .addColumn("ExecutionTime", p -> p.getValue().getStart() + " " + TimeUtils.durationToString(ChronoUnit.MILLIS.between(
                                 p.getValue().getStart().toInstant(),
                                 p.getValue().getEnd().toInstant())))
-                        .addColumn("Exception", p -> p.getValue().getException());
+                        .addColumn("Events", p -> {
+                            StringBuilder v = new StringBuilder();
+                            if (StringUtils.isNotEmpty(p.getValue().getException())) {
+                                v.append("Exception: ").append(p.getValue().getException());
+                            }
+                            if (p.getValue().getEvents() != null) {
+                                for (Event event : p.getValue().getEvents()) {
+                                    if (v.length() > 0) {
+                                        v.append("\n");
+                                    }
+                                    v.append(event.getType()).append(": ").append(event.getMessage());
+                                }
+                            }
+                            return v.toString();
+                        });
                 table.printTable(rows);
             }
         }
@@ -152,7 +167,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
     public static String getDefaultVersion() {
         String version;
-        version = GitRepositoryState.get().getBuildVersion();
+        version = GitRepositoryState.getInstance().getBuildVersion();
         // Remove extra information
         version = version.split("-")[0];
         return version;

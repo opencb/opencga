@@ -32,6 +32,7 @@ public class JulieParams extends ToolParams {
 
     public JulieParams(List<String> cohorts, String region, boolean overwrite) {
         this.cohorts = cohorts;
+        this.region = region;
         this.overwrite = overwrite;
     }
 

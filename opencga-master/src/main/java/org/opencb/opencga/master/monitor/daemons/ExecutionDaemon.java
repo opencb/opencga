@@ -51,6 +51,7 @@ import org.opencb.opencga.analysis.templates.TemplateRunner;
 import org.opencb.opencga.analysis.tools.ToolFactory;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.hrdetect.HRDetectAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.julie.JulieTool;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
@@ -81,10 +82,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.IOManager;
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.FileManager;
-import org.opencb.opencga.catalog.managers.JobManager;
-import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -92,6 +90,7 @@ import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Execution;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
@@ -145,6 +144,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     public static final String OUTDIR_PARAM = "outdir";
     public static final int EXECUTION_RESULT_FILE_EXPIRATION_MINUTES = 10;
     public static final String REDACTED_TOKEN = "xxxxxxxxxxxxxxxxxxxxx";
+    private final StorageConfiguration storageConfiguration;
     private String internalCli;
     private JobManager jobManager;
     private FileManager fileManager;
@@ -214,11 +214,11 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(GatkWrapperAnalysis.ID, "variant " + GatkWrapperAnalysis.ID + "-run");
             put(ExomiserWrapperAnalysis.ID, "variant " + ExomiserWrapperAnalysis.ID + "-run");
             put(VariantFileDeleteOperationTool.ID, "variant file-delete");
-            put(VariantSecondaryIndexOperationTool.ID, "variant secondary-index");
+            put(VariantSecondaryAnnotationIndexOperationTool.ID, "variant secondary-index");
             put(VariantSecondaryIndexSamplesDeleteOperationTool.ID, "variant secondary-index-delete");
             put(VariantScoreDeleteOperationTool.ID, "variant score-delete");
             put(VariantScoreIndexOperationTool.ID, "variant score-index");
-            put(VariantSampleIndexOperationTool.ID, "variant sample-index");
+            put(VariantSecondarySampleIndexOperationTool.ID, "variant sample-index");
             put(VariantFamilyIndexOperationTool.ID, "variant family-index");
             put(VariantAggregateFamilyOperationTool.ID, "variant aggregate-family");
             put(VariantAggregateOperationTool.ID, "variant aggregate");
@@ -229,6 +229,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(KnockoutAnalysis.ID, "variant knockout-run");
             put(SampleEligibilityAnalysis.ID, "variant " + SampleEligibilityAnalysis.ID + "-run");
             put(MutationalSignatureAnalysis.ID, "variant " + MutationalSignatureAnalysis.ID + "-run");
+            put(HRDetectAnalysis.ID, "variant " + HRDetectAnalysis.ID + "-run");
             put(MendelianErrorAnalysis.ID, "variant " + MendelianErrorAnalysis.ID + "-run");
             put(InferredSexAnalysis.ID, "variant " + InferredSexAnalysis.ID + "-run");
             put(RelatednessAnalysis.ID, "variant " + RelatednessAnalysis.ID + "-run");
@@ -251,11 +252,14 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }};
     }
 
-    public ExecutionDaemon(int interval, String token, CatalogManager catalogManager, String appHome) throws CatalogDBException {
+    public ExecutionDaemon(int interval, String token,
+                           CatalogManager catalogManager, StorageConfiguration storageConfiguration, String appHome)
+            throws CatalogDBException {
         super(interval, token, catalogManager);
 
         this.jobManager = catalogManager.getJobManager();
         this.fileManager = catalogManager.getFileManager();
+        this.storageConfiguration = storageConfiguration;
         this.internalCli = appHome + "/bin/opencga-internal.sh";
 
         this.defaultJobDir = Paths.get(catalogManager.getConfiguration().getJobDir());
@@ -517,7 +521,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         String userToken;
         try {
-            userToken = catalogManager.getUserManager().getNonExpiringToken(job.getUserId(), token);
+            userToken = catalogManager.getUserManager().getNonExpiringToken(job.getUserId(), Collections.emptyMap(), token);
         } catch (CatalogException e) {
             return abortJob(job, "Internal error. Could not obtain token for user '" + job.getUserId() + "'", e);
         }
@@ -562,8 +566,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         // Create cli
         String commandLine = buildCli(internalCli, job);
-        String authenticatedCommandLine = commandLine + " --token " + userToken;
-        String shadedCommandLine = commandLine + " --token " + REDACTED_TOKEN;
+        String authenticatedCommandLine = commandLine + " " + ParamConstants.OPENCGA_TOKEN_CLI_PARAM + " " + userToken;
+        String shadedCommandLine = commandLine + " " + ParamConstants.OPENCGA_TOKEN_CLI_PARAM + " " + REDACTED_TOKEN;
 
         updateParams.setCommandLine(shadedCommandLine);
 
@@ -608,7 +612,17 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
             // Validate user is owner or belongs to the right group
             String requiredGroup;
-            if (tool.type().equals(Tool.Type.OPERATION)) {
+            if (tool.type() == Tool.Type.OPERATION) {
+                if (storageConfiguration.getMode() == StorageConfiguration.Mode.READ_ONLY) {
+                    if (tool.resource() == Enums.Resource.VARIANT
+                            || tool.resource() == Enums.Resource.RGA
+                            || tool.resource() == Enums.Resource.ALIGNMENT) {
+                        // Forbid storage operations!
+                        abortJob(job, "Unable to execute tool '" + tool.id() + "', "
+                                + "which is an " + Tool.Type.OPERATION + " on resource " + tool.resource() + ". "
+                                + "The storage engine is in mode=" + storageConfiguration.getMode());
+                    }
+                }
                 requiredGroup = ParamConstants.ADMINS_GROUP;
             } else {
                 requiredGroup = ParamConstants.MEMBERS_GROUP;

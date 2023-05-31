@@ -18,16 +18,16 @@ public class CommandLineUtils {
     private static final Logger logger = LoggerFactory.getLogger(CommandLineUtils.class);
 
     public static String getVersionString() {
-        String res = PrintUtils.getKeyValueAsFormattedString("\tOpenCGA CLI version: ", "\t" + GitRepositoryState.get().getBuildVersion() + "\n");
-        res += PrintUtils.getKeyValueAsFormattedString("\tGit version:", "\t\t" + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId() + "\n");
+        String res = PrintUtils.getKeyValueAsFormattedString("\tOpenCGA CLI version: ", "\t" + GitRepositoryState.getInstance().getBuildVersion() + "\n");
+        res += PrintUtils.getKeyValueAsFormattedString("\tGit version:", "\t\t" + GitRepositoryState.getInstance().getBranch() + " " + GitRepositoryState.getInstance().getCommitId() + "\n");
         res += PrintUtils.getKeyValueAsFormattedString("\tProgram:", "\t\tOpenCGA (OpenCB)" + "\n");
         res += PrintUtils.getKeyValueAsFormattedString("\tDescription: ", "\t\tBig Data platform for processing and analysing NGS data" + "\n");
         return res;
     }
 
     public static String getHelpVersionString() {
-        String res = PrintUtils.getHelpVersionFormattedString("OpenCGA CLI version: ", "\t" + GitRepositoryState.get().getBuildVersion() + "\n");
-        res += PrintUtils.getHelpVersionFormattedString("Git version:", "\t\t" + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId() + "\n");
+        String res = PrintUtils.getHelpVersionFormattedString("OpenCGA CLI version: ", "\t" + GitRepositoryState.getInstance().getBuildVersion() + "\n");
+        res += PrintUtils.getHelpVersionFormattedString("Git version:", "\t\t" + GitRepositoryState.getInstance().getBranch() + " " + GitRepositoryState.getInstance().getCommitId() + "\n");
         res += PrintUtils.getHelpVersionFormattedString("Program:", "\t\tOpenCGA (OpenCB)" + "\n");
         res += PrintUtils.getHelpVersionFormattedString("Description: ", "\t\tBig Data platform for processing and analysing NGS data" + "\n");
         return res;
@@ -90,7 +90,7 @@ public class CommandLineUtils {
                 break;
             case "--build-version":
             case "build-version":
-                println(GitRepositoryState.get().getBuildVersion());
+                println(GitRepositoryState.getInstance().getBuildVersion());
                 break;
             case "logout":
                 return ArrayUtils.addAll(new String[]{"users"}, args);
@@ -99,7 +99,7 @@ public class CommandLineUtils {
                     if (args.length > 1 && args[1].equals("studies")) {
                         println(String.join(", ", OpencgaMain.getShell().getSessionManager().getSession().getStudies()), Color.GREEN);
                     } else {
-                        printWarn("Opencga version " + GitRepositoryState.get().getBuildVersion() + " can only list studies");
+                        printWarn("Opencga version " + GitRepositoryState.getInstance().getBuildVersion() + " can only list studies");
                     }
                 } else {
                     printWarn("List studies is only available in Shell mode");

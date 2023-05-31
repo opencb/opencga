@@ -183,14 +183,18 @@ public class Table<T> {
         }
 
         public List<String> getMultiLineValue(int idx, String indent) {
-            String value = getValue(idx);
+            String[] values = getValue(idx).split("\n");
             List<String> lines = new ArrayList<>();
-            while (value.length() > getMaxWidth()) {
-                int splitPosition = getMultiLineSplitPosition(value, indent.length(), '\n', '\t', ' ', ',', ':', '/', '.', '_', '-');
-                lines.add(StringUtils.rightPad(value.substring(0, splitPosition), width));
-                value = indent + value.substring(splitPosition);
+            for (int i = 0; i < values.length; i++) {
+                String value = values[i];
+                value = escapeSpecial(value);
+                while (value.length() > getMaxWidth()) {
+                    int splitPosition = getMultiLineSplitPosition(value, indent.length(), '\n', '\t', ' ', ',', ':', '/', '.', '_', '-');
+                    lines.add(StringUtils.rightPad(value.substring(0, splitPosition), width));
+                    value = indent + value.substring(splitPosition);
+                }
+                lines.add(StringUtils.rightPad(value, width));
             }
-            lines.add(StringUtils.rightPad(value, width));
             return lines;
         }
 
@@ -208,10 +212,11 @@ public class Table<T> {
         }
 
         public String getPrintValue(int idx) {
-            return getPrintValue(values.get(idx));
+            return getPrintValue(getValue(idx));
         }
 
         public String getPrintValue(String value) {
+            value = escapeSpecial(value);
             if (value.length() > width) {
                 return value.substring(0, width - 3) + "...";
             } else {
@@ -335,6 +340,7 @@ public class Table<T> {
         default <T> void printRowMultiLine(List<TableColumn<T>> columns, int i) {
             printRow(columns, i);
         }
+
     }
 
     public static class JAnsiTablePrinter implements TablePrinter {
@@ -541,6 +547,10 @@ public class Table<T> {
         }
 
         @Override
+        public <T> void printFooter(List<TableColumn<T>> tableColumns) {
+        }
+
+        @Override
         public <T> void printLine(List<TableColumn<T>> columns) {
             out.print(sep);
             for (TableColumn<T> column : columns) {
@@ -649,13 +659,23 @@ public class Table<T> {
             Iterator<TableColumn<T>> iterator = columns.iterator();
             while (iterator.hasNext()) {
                 TableColumn<T> column = iterator.next();
-                out.print(column.getValue(i));
+                String value = column.getValue(i);
+                value = escapeSpecial(value);
+                out.print(value);
                 if (iterator.hasNext()) {
                     out.print(sep);
                 }
             }
             out.println();
         }
+    }
+
+    private static String escapeSpecial(String value) {
+        value = value.replace("\\", "\\\\");
+        value = value.replace("\n", "\\n");
+        value = value.replace("\t", "\\t");
+        value = value.replace("\r", "\\r");
+        return value;
     }
 }
 

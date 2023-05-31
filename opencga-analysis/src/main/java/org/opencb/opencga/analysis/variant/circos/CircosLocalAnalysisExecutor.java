@@ -58,7 +58,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implements StorageToolExecutor {
 
     public final static String R_DOCKER_IMAGE = "opencb/opencga-ext-tools:"
-            + GitRepositoryState.get().getBuildVersion();
+            + GitRepositoryState.getInstance().getBuildVersion();
     private VariantStorageManager storageManager;
 
     private File snvsFile;

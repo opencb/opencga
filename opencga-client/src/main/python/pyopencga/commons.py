@@ -27,6 +27,12 @@ def deprecated(func):
     return new_func
 
 
+def snake_to_camel_case(text):
+    """Converts snake_case to camelCase"""
+    components = text.split('_')
+    return components[0] + ''.join(x.title() for x in components[1:])
+
+
 def _create_rest_url(host, version, sid, category, resource, subcategory=None, query_id=None,
                      second_query_id=None, options=None):
     """Creates the URL for querying the REST service"""
@@ -58,6 +64,7 @@ def _create_rest_url(host, version, sid, category, resource, subcategory=None, q
     if options is not None:
         opts = []
         for k, v in options.items():
+            k = snake_to_camel_case(k)
             if k == 'debug':
                 continue
             if isinstance(v, list):
@@ -69,7 +76,7 @@ def _create_rest_url(host, version, sid, category, resource, subcategory=None, q
     return url, header
 
 
-def _fetch(host, version, sid, category, resource, method, subcategory=None, query_id=None,
+def _fetch(config, sid, category, resource, method, subcategory=None, query_id=None,
            second_query_id=None, data=None, options=None):
     """Queries the REST service retrieving results until exhaustion or limit"""
     # HERE BE DRAGONS
@@ -121,8 +128,8 @@ def _fetch(host, version, sid, category, resource, method, subcategory=None, que
                 current_id_indexes = next_id_indexes
 
         # Retrieving url
-        url, header = _create_rest_url(host=host,
-                                       version=version,
+        url, header = _create_rest_url(host=config.host,
+                                       version=config.version,
                                        category=category,
                                        sid=sid,
                                        subcategory=subcategory,
@@ -138,22 +145,22 @@ def _fetch(host, version, sid, category, resource, method, subcategory=None, que
         # Getting REST response
         if method == 'get':
             try:
-                r = requests.get(url, headers=header)
+                r = requests.get(url, headers=header, cookies=config.cookies)
             except requests.exceptions.ConnectionError:
                 sleep(1)
-                r = requests.get(url, headers=header)
+                r = requests.get(url, headers=header, cookies=config.cookies)
         elif method == 'post':
             try:
-                r = requests.post(url, json=data, headers=header)
+                r = requests.post(url, json=data, headers=header, cookies=config.cookies)
             except requests.exceptions.ConnectionError:
                 sleep(1)
-                r = requests.post(url, json=data, headers=header)
+                r = requests.post(url, json=data, headers=header, cookies=config.cookies)
         elif method == 'delete':
             try:
-                r = requests.delete(url, headers=header)
+                r = requests.delete(url, headers=header, cookies=config.cookies)
             except requests.exceptions.ConnectionError:
                 sleep(1)
-                r = requests.delete(url, headers=header)
+                r = requests.delete(url, headers=header, cookies=config.cookies)
         else:
             raise NotImplementedError('method: ' + method + ' not implemented.')
 
@@ -228,14 +235,14 @@ def _fetch(host, version, sid, category, resource, method, subcategory=None, que
     return final_response
 
 
-def _worker(queue, results, host, version, sid, category, resource, method, subcategory=None,
+def _worker(queue, results, config, sid, category, resource, method, subcategory=None,
             second_query_id=None, data=None, options=None):
 
     """Manages the queue system for the threads"""
     while True:
         # Fetching new element from the queue
         index, query_id = queue.get()
-        response = _fetch(host=host, version=version, sid=sid, category=category, subcategory=subcategory,
+        response = _fetch(config=config, sid=sid, category=category, subcategory=subcategory,
                           resource=resource, method=method, data=data, query_id=query_id,
                           second_query_id=second_query_id, options=options)
         # Store data in results at correct index
@@ -268,7 +275,7 @@ def merge_query_responses(query_response_list):
     return final_response
 
 
-def execute(host, version, sid, category, resource, method, subcategory=None, query_id=None,
+def execute(config, sid, category, resource, method, subcategory=None, query_id=None,
             second_query_id=None, data=None, options=None):
     """Queries the REST service using multiple threads if needed"""
 
@@ -281,7 +288,7 @@ def execute(host, version, sid, category, resource, method, subcategory=None, qu
 
     # Multithread if the number of queries is greater than _CALL_BATCH_SIZE
     if query_id is None or len(query_id.split(',')) <= _CALL_BATCH_SIZE:
-        response = _fetch(host=host, version=version, sid=sid, category=category, subcategory=subcategory,
+        response = _fetch(config=config, sid=sid, category=category, subcategory=subcategory,
                           resource=resource, method=method, data=data, query_id=query_id,
                           second_query_id=second_query_id, options=options)
         return response
@@ -306,8 +313,7 @@ def execute(host, version, sid, category, resource, method, subcategory=None, qu
             t = threading.Thread(target=_worker,
                                  kwargs={'queue': q,
                                          'results': res,
-                                         'host': host,
-                                         'version': version,
+                                         'config': config,
                                          'sid': sid,
                                          'category': category,
                                          'subcategory': subcategory,

@@ -20,18 +20,13 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.SolrResourceLoader;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 
 /**
  * @see org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource
@@ -46,7 +41,7 @@ public class SolrExternalResource extends CatalogManagerExternalResource {
 
         Path rootDir = getOpencgaHome();
 
-        String version = GitRepositoryState.get().getBuildVersion();
+        String version = GitRepositoryState.getInstance().getBuildVersion();
 
         // Copy configuration
         copyConfiguration("cohort-managed-schema", CatalogSolrManager.COHORT_CONF_SET + "-" + version);
@@ -159,19 +154,6 @@ public class SolrExternalResource extends CatalogManagerExternalResource {
                 getConfiguration().getDatabasePrefix() + "_" + CatalogSolrManager.SAMPLE_SOLR_COLLECTION);
 
         return embeddedSolrServer;
-    }
-
-    private URI getResourceUri(String resourceName, String targetName) throws IOException {
-        Path rootDir = getOpencgaHome();
-        Path resourcePath = rootDir.resolve(targetName);
-        if (!resourcePath.getParent().toFile().exists()) {
-            Files.createDirectories(resourcePath.getParent());
-        }
-        if (!resourcePath.toFile().exists()) {
-            InputStream stream = SolrExternalResource.class.getClassLoader().getResourceAsStream(resourceName);
-            Files.copy(stream, resourcePath, StandardCopyOption.REPLACE_EXISTING);
-        }
-        return resourcePath.toUri();
     }
 
     private static class MyEmbeddedSolrServer extends EmbeddedSolrServer {

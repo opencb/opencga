@@ -4,7 +4,9 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -20,6 +22,7 @@ import java.nio.file.Paths;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(ShortTests.class)
 public class AzureBlobStorageIOConnectorTest {
 
     private AzureBlobStorageIOConnector io;

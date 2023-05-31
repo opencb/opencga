@@ -242,8 +242,8 @@ public class OpenCGAWSServer {
         }
 
         logger.info("| OpenCGA REST successfully started!");
-        logger.info("| - Version " + GitRepositoryState.get().getBuildVersion());
-        logger.info("| - Git version: " + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
+        logger.info("| - Version " + GitRepositoryState.getInstance().getBuildVersion());
+        logger.info("| - Git version: " + GitRepositoryState.getInstance().getBranch() + " " + GitRepositoryState.getInstance().getCommitId());
         logger.info("========================================================================\n");
     }
 
@@ -410,8 +410,8 @@ public class OpenCGAWSServer {
     }
 
     public static void setFederationServer(OpenCGAResult result, String baseuri) {
-        result.setFederationNode(new FederationNode(baseuri, GitRepositoryState.get().getCommitId(),
-                GitRepositoryState.get().getBuildVersion()));
+        result.setFederationNode(new FederationNode(baseuri, GitRepositoryState.getInstance().getCommitId(),
+                GitRepositoryState.getInstance().getBuildVersion()));
     }
 
     public static void logResponse(Response.StatusType statusInfo, RestResponse<?> queryResponse, long startTime,
@@ -570,6 +570,9 @@ public class OpenCGAWSServer {
                     break;
                 case ParamConstants.FAMILY_UPDATE_ROLES_PARAM:
                     queryOptions.put(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, Boolean.parseBoolean(value));
+                    break;
+                case ParamConstants.FAMILY_UPDATE_PEDIGREEE_GRAPH_PARAM:
+                    queryOptions.put(ParamConstants.FAMILY_UPDATE_PEDIGREEE_GRAPH_PARAM, Boolean.parseBoolean(value));
                     break;
                 case ParamConstants.OTHER_STUDIES_FLAG:
                     queryOptions.put(ParamConstants.OTHER_STUDIES_FLAG, Boolean.parseBoolean(value));

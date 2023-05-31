@@ -17,13 +17,8 @@
 package org.opencb.opencga.core.models.variant;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import org.opencb.commons.datastore.core.Query;
-
-/**
- * When using native values (like boolean or int), set add
- * {@code @JsonInclude(JsonInclude.Include.NON_DEFAULT)} so they are null by default.
- */
 import org.opencb.commons.annotations.DataField;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.api.ParamConstants;
 
 public class VariantQueryParams extends BasicVariantQueryParams {
@@ -105,9 +100,15 @@ public class VariantQueryParams extends BasicVariantQueryParams {
     private String score;
 
     @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_POLYPHEN_DESCRIPTION)
-    @Deprecated private String polyphen;
+    @Deprecated
+    private String polyphen;
     @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_SIFT_DESCRIPTION)
-    @Deprecated private String sift;
+    @Deprecated
+    private String sift;
+
+    @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_GENE_ROLE_IN_CANCER_DESCRIPTION)
+    private String geneRoleInCancer;
+
     @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_GENE_TRAIT_ID_DESCRIPTION)
     private String geneTraitId;
     @DataField(description = ParamConstants.VARIANT_QUERY_PARAMS_GENE_TRAIT_NAME_DESCRIPTION)
@@ -463,6 +464,15 @@ public class VariantQueryParams extends BasicVariantQueryParams {
 
     public VariantQueryParams setSift(String sift) {
         this.sift = sift;
+        return this;
+    }
+
+    public String getGeneRoleInCancer() {
+        return geneRoleInCancer;
+    }
+
+    public VariantQueryParams setGeneRoleInCancer(String geneRoleInCancer) {
+        this.geneRoleInCancer = geneRoleInCancer;
         return this;
     }
 

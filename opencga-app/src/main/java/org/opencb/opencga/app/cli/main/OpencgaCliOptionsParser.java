@@ -1,5 +1,9 @@
 /*
+<<<<<<< HEAD
 * Copyright 2015-2022 OpenCB
+=======
+* Copyright 2015-2023-04-18 OpenCB
+>>>>>>> develop
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -19,7 +23,7 @@ package org.opencb.opencga.app.cli.main;
 import com.beust.jcommander.JCommander;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.*;
-import org.opencb.opencga.app.cli.main.parent.ParentCliOptionsParser;
+import org.opencb.opencga.app.cli.main.custom.CustomCliOptionsParser;
 
 
 /*
@@ -32,7 +36,7 @@ import org.opencb.opencga.app.cli.main.parent.ParentCliOptionsParser;
 */
 
 
-public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
+public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
 
     private final AnalysisVariantCommandOptions analysisVariantCommandOptions;
     private final ProjectsCommandOptions projectsCommandOptions;
@@ -75,6 +79,7 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         analysisVariantSubCommands.addCommand("gatk-run", analysisVariantCommandOptions.runGatkCommandOptions);
         analysisVariantSubCommands.addCommand("genome-plot-run", analysisVariantCommandOptions.runGenomePlotCommandOptions);
         analysisVariantSubCommands.addCommand("gwas-run", analysisVariantCommandOptions.runGwasCommandOptions);
+        analysisVariantSubCommands.addCommand("hr-detect-run", analysisVariantCommandOptions.runHrDetectCommandOptions);
         analysisVariantSubCommands.addCommand("index-run", analysisVariantCommandOptions.runIndexCommandOptions);
         analysisVariantSubCommands.addCommand("individual-qc-run", analysisVariantCommandOptions.runIndividualQcCommandOptions);
         analysisVariantSubCommands.addCommand("inferred-sex-run", analysisVariantCommandOptions.runInferredSexCommandOptions);
@@ -222,7 +227,6 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         usersCommandOptions = new UsersCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("users", usersCommandOptions);
         JCommander usersSubCommands = jCommander.getCommands().get("users");
-        usersSubCommands.addCommand("create", usersCommandOptions.createCommandOptions);
         usersSubCommands.addCommand("login", usersCommandOptions.loginCommandOptions);
         usersSubCommands.addCommand("password", usersCommandOptions.passwordCommandOptions);
         usersSubCommands.addCommand("info", usersCommandOptions.infoCommandOptions);

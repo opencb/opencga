@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.stats;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
@@ -9,10 +10,10 @@ import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.tools.variant.stats.SampleVariantStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -27,6 +28,7 @@ import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Category(MediumTests.class)
 public class SampleVariantStatsTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     private static boolean loaded = false;
@@ -88,7 +90,7 @@ public class SampleVariantStatsTest extends VariantStorageBaseTest implements Ha
 
         ObjectMap params = new ObjectMap(SampleVariantStatsDriver.SAMPLES, father);
 
-        getMrExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(null, engine.getVariantTableName(), 1, null, params));
+        getMrExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(null, engine.getVariantTableName(), 1, null, params), "");
 
         List<SampleVariantStats> actualStats = readStatsFromMeta();
 
@@ -106,7 +108,7 @@ public class SampleVariantStatsTest extends VariantStorageBaseTest implements Ha
         URI localOutputUri = newOutputUri();
         ObjectMap params = new ObjectMap().append(SampleVariantStatsDriver.SAMPLES, "auto")
                 .append(SampleVariantStatsDriver.OUTPUT, localOutputUri);
-        getMrExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(null, engine.getVariantTableName(), 1, null, params));
+        getMrExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(null, engine.getVariantTableName(), 1, null, params), "");
 
 
         List<SampleVariantStats> actualStats = readStatsFromMeta();
@@ -129,7 +131,7 @@ public class SampleVariantStatsTest extends VariantStorageBaseTest implements Ha
         URI localOutputUri = newOutputUri();
         ObjectMap params = new ObjectMap().append(SampleVariantStatsDriver.SAMPLES, mother)
                 .append(SampleVariantStatsDriver.OUTPUT, localOutputUri.resolve("mother_stats.json"));
-        getMrExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(null, engine.getVariantTableName(), 1, null, params));
+        getMrExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(null, engine.getVariantTableName(), 1, null, params), "");
 
 
         List<SampleVariantStats> actualStats = readStatsFromMeta();
@@ -144,7 +146,7 @@ public class SampleVariantStatsTest extends VariantStorageBaseTest implements Ha
         URI localOutputUri = newOutputUri();
         ObjectMap params = new ObjectMap().append(SampleVariantStatsDriver.SAMPLES, child)
                 .append(SampleVariantStatsDriver.OUTPUT, localOutputUri.resolve("child_stats.json"));
-        getMrExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(null, engine.getVariantTableName(), 1, null, params));
+        getMrExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(null, engine.getVariantTableName(), 1, null, params), "");
 
 
         List<SampleVariantStats> actualStats = readStatsFromMeta();

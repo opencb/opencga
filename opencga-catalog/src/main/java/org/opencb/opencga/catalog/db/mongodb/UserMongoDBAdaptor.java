@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
@@ -290,7 +289,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
 
     OpenCGAResult<Long> count(ClientSession clientSession, Query query) throws CatalogDBException {
         Bson bsonDocument = parseQuery(query);
-        logger.debug("User count: {}", bsonDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("User count: {}", bsonDocument.toBsonDocument());
         return new OpenCGAResult<>(userCollection.count(clientSession, bsonDocument));
     }
 

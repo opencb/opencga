@@ -2,7 +2,6 @@ package org.opencb.opencga.app.cli.internal.executors;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.file.*;
-import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.app.cli.internal.options.FileCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -58,7 +57,6 @@ public class FileCommandExecutor extends InternalCommandExecutor {
         FileCommandOptions.DeleteCommandOptions options = fileCommandOptions.deleteCommandOptions;
 
         Path outDir = Paths.get(options.outDir);
-        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
 
         // Prepare analysis parameters and config
         FileDeleteTask delete = new FileDeleteTask()
@@ -74,7 +72,6 @@ public class FileCommandExecutor extends InternalCommandExecutor {
         FileCommandOptions.UnlinkCommandOptions options = fileCommandOptions.unlinkCommandOptions;
 
         Path outDir = Paths.get(options.outDir);
-        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
 
         // Prepare analysis parameters and config
         FileUnlinkTask unlink = new FileUnlinkTask()
@@ -104,8 +101,7 @@ public class FileCommandExecutor extends InternalCommandExecutor {
 
         Path outDir = Paths.get(options.outDir);
 
-        toolRunner.execute(FetchAndRegisterTask.class, new FileFetch(options.url, options.path),
-                new ObjectMap(), outDir, null, options.commonOptions.token);
+        toolRunner.execute(FetchAndRegisterTask.class, new FileFetch(options.url, options.path), outDir, null, options.commonOptions.token);
     }
 
     private void secondaryIndex() throws ToolException {
@@ -118,7 +114,6 @@ public class FileCommandExecutor extends InternalCommandExecutor {
         FileCommandOptions.TsvLoad options = fileCommandOptions.tsvLoad;
 
         Path outDir = Paths.get(options.outDir);
-        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
 
         FileTsvAnnotationLoader annotationLoader = new FileTsvAnnotationLoader();
         annotationLoader.setAnnotationSetId(options.annotationSetId);

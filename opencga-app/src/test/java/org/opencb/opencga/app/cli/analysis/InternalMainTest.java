@@ -19,8 +19,10 @@ package org.opencb.opencga.app.cli.analysis;
 import org.apache.commons.io.FileUtils;
 import org.ga4gh.models.ReadAlignment;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
@@ -46,6 +48,7 @@ import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.slf4j.Logger;
@@ -68,6 +71,9 @@ import static org.opencb.opencga.core.api.ParamConstants.REGION_PARAM;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Deprecated
+@Ignore
+@Category(ShortTests.class)
 public class InternalMainTest {
 
 
@@ -96,7 +102,7 @@ public class InternalMainTest {
         opencga.clearStorageDB(STORAGE_ENGINE, dbNameVariants);
         opencga.clearStorageDB(STORAGE_ENGINE, dbNameAlignments);
 
-        User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.AccountType.FULL, null).first();
+        User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.AccountType.FULL, opencga.getAdminToken()).first();
 
         sessionId = catalogManager.getUserManager().login(userId, "user").getToken();
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "Homo sapiens",

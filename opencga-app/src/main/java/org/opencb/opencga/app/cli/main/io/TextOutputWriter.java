@@ -119,7 +119,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
 
 
         if (CollectionUtils.isNotEmpty(queryResultList) && ((OpenCGAResult) queryResultList.get(0)) != null
-                && ((OpenCGAResult) queryResultList.get(0)).getNumMatches() > -1 && !isEdition(queryResultList)) {
+                && ((OpenCGAResult) queryResultList.get(0)).getNumMatches() > -1 && !isEdition(queryResultList) && isNotAnIdOrMessage(queryResultList)) {
             PrintUtils.print("Number of matches: ", PrintUtils.Color.YELLOW);
             PrintUtils.println(String.valueOf(((OpenCGAResult) queryResultList.get(0)).getNumMatches()), PrintUtils.Color.GREEN);
         } else if (queryResultList.size() == 0 || ((OpenCGAResult) queryResultList.get(0)).getNumResults() == 0) {
@@ -181,6 +181,11 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 yamlOutputWriter.print(queryResponse, false);
                 break;
         }
+    }
+
+    private boolean isNotAnIdOrMessage(List<DataResult> queryResultList) {
+        return !(queryResultList.get(0).getResultType().equals("java.lang.String") &&
+                ((OpenCGAResult) queryResultList.get(0)).getNumMatches() == 1);
     }
 
     private boolean isEdition(List<DataResult> queryResultList) {

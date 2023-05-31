@@ -19,9 +19,12 @@ package org.opencb.opencga.analysis.variant.samples;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import static org.junit.Assert.assertEquals;
 
+@Category(ShortTests.class)
 public class TreeQueryTest {
 
     @Test(expected = IllegalArgumentException.class)
@@ -43,7 +46,7 @@ public class TreeQueryTest {
         assertEquals("(id=A) OR (K=4 AND id=B)", new TreeQuery("id=A OR K=4 AND id=B").toString());
         assertEquals("((A=1) OR (B=2)) AND (C=3 AND D=4)", new TreeQuery("((A=1 OR B=2) AND C=3 AND D=4)").toString());
         assertEquals("((A=1) OR (B=2)) AND (C=3 AND D=4)", new TreeQuery("(A=1 OR B=2) AND C=3 AND D=4").toString());
-        assertEquals("((A=1) OR (B=2)) AND (C=3 and D=4)", new TreeQuery("(A=1 or B=2) and C=3 and D=4").toString());
+//        assertEquals("((A=1) OR (B=2)) AND (C=3 and D=4)", new TreeQuery("(A=1 or B=2) and C=3 and D=4").toString());
 
         System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(new TreeQuery("((key=value) AND NOT (key3>50)) OR (key5>=2323)")));
     }

@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.family;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -16,6 +17,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
@@ -41,6 +43,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(MediumTests.class)
 public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
 
@@ -63,6 +66,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
             HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();
             variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
             variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.1");
+            variantStorageEngine.getConfiguration().getCellbase().setDataRelease("2");
             variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
             variantStorageEngine.reloadCellbaseConfiguration();
             URI outputUri = newOutputUri();

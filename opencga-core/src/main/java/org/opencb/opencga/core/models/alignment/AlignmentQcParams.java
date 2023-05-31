@@ -1,41 +1,36 @@
 package org.opencb.opencga.core.models.alignment;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
-import org.opencb.commons.annotations.DataField;
-import org.opencb.opencga.core.api.ParamConstants;
-
 public class AlignmentQcParams extends ToolParams {
-    public static String STATS_SKIP_VALUE = "stats";
-    public static String FLAGSTATS_SKIP_VALUE = "flagstats";
-    public static String FASTQC_METRICS_SKIP_VALUE = "fastqc";
-    public static String HS_METRICS_SKIP_VALUE = "hsmetrics";
+    public static final String STATS_SKIP_VALUE = "stats";
+    public static final String FLAGSTATS_SKIP_VALUE = "flagstats";
+    public static final String FASTQC_METRICS_SKIP_VALUE = "fastqc";
 
-    public static final String DESCRIPTION = "Alignment quality control (QC) parameters. It computes: stats, flag stats, fastqc and"
-            + " hybrid-selection metrics. The BAM file is mandatory ever but the BED fileand the dictionary files are only mandatory for"
-            + " computing hybrid-selection (HS) metrics. In order to skip some metrics, use the following keywords (separated by commas): "
-            + "stats, flagstats, fastqc and hsmetrics";
+    public static final String DESCRIPTION = "Alignment quality control (QC) parameters. It computes: stats, flag stats and fastqc metrics."
+            + " The BAM file ID is mandatory and in order to skip some metrics, use the following keywords (separated by commas): "
+            + STATS_SKIP_VALUE + ", " + FLAGSTATS_SKIP_VALUE + ", " + FASTQC_METRICS_SKIP_VALUE;
 
-    @DataField(description = ParamConstants.ALIGNMENT_QC_PARAMS_BAM_FILE_DESCRIPTION)
+    @DataField(id = "bamFile", description = FieldConstants.ALIGNMENT_QC_BAM_FILE_DESCRIPTION)
     private String bamFile;
-    @DataField(description = ParamConstants.ALIGNMENT_QC_PARAMS_BED_FILE_DESCRIPTION)
-    private String bedFile;
-    @DataField(description = ParamConstants.ALIGNMENT_QC_PARAMS_DICT_FILE_DESCRIPTION)
-    private String dictFile;
-    @DataField(description = ParamConstants.ALIGNMENT_QC_PARAMS_SKIP_DESCRIPTION)
+
+    @DataField(id = "skip", description = FieldConstants.ALIGNMENT_QC_SKIP_DESCRIPTION)
     private String skip;
-    @DataField(description = ParamConstants.ALIGNMENT_QC_PARAMS_OVERWRITE_DESCRIPTION)
+
+    @DataField(id = "overwrite", description = FieldConstants.ALIGNMENT_QC_OVERWRITE_DESCRIPTION)
     private boolean overwrite;
-    @DataField(description = ParamConstants.ALIGNMENT_QC_PARAMS_OUTDIR_DESCRIPTION)
+
+    @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
+
     private String outdir;
 
     public AlignmentQcParams() {
     }
 
-    public AlignmentQcParams(String bamFile, String bedFile, String dictFile, String skip, boolean overwrite, String outdir) {
+    public AlignmentQcParams(String bamFile, String skip, boolean overwrite, String outdir) {
         this.bamFile = bamFile;
-        this.bedFile = bedFile;
-        this.dictFile = dictFile;
         this.skip = skip;
         this.overwrite = overwrite;
         this.outdir = outdir;
@@ -45,8 +40,6 @@ public class AlignmentQcParams extends ToolParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("AlignmentQcParams{");
         sb.append("bamFile='").append(bamFile).append('\'');
-        sb.append(", bedFile='").append(bedFile).append('\'');
-        sb.append(", dictFile='").append(dictFile).append('\'');
         sb.append(", skip='").append(skip).append('\'');
         sb.append(", overwrite=").append(overwrite);
         sb.append(", outdir='").append(outdir).append('\'');
@@ -60,24 +53,6 @@ public class AlignmentQcParams extends ToolParams {
 
     public AlignmentQcParams setBamFile(String bamFile) {
         this.bamFile = bamFile;
-        return this;
-    }
-
-    public String getBedFile() {
-        return bedFile;
-    }
-
-    public AlignmentQcParams setBedFile(String bedFile) {
-        this.bedFile = bedFile;
-        return this;
-    }
-
-    public String getDictFile() {
-        return dictFile;
-    }
-
-    public AlignmentQcParams setDictFile(String dictFile) {
-        this.dictFile = dictFile;
         return this;
     }
 

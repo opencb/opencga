@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.bson.Document;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -38,6 +39,7 @@ import org.opencb.opencga.core.models.file.FilePermissions;
 import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleInternal;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
 import java.util.*;
@@ -48,6 +50,7 @@ import static org.junit.Assert.*;
 /**
  * Created by pfurio on 3/2/16.
  */
+@Category(MediumTests.class)
 public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test

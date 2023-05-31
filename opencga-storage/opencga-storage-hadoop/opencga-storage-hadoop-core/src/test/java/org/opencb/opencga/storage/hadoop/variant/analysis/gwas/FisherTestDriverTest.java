@@ -4,8 +4,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.testclassification.duration.LongTests;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -21,10 +24,13 @@ import java.io.*;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
+@Category(LongTests.class)
 public class FisherTestDriverTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     @Rule
@@ -51,8 +57,6 @@ public class FisherTestDriverTest extends VariantStorageBaseTest implements Hado
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
         URI input = getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
-        IntStream controlCohort = IntStream.range(1, 250);
-        IntStream caseCohort = IntStream.range(250, 500);
 
 //        URI input = smallInputUri;
 //        IntStream controlCohort = IntStream.of(1, 2);
@@ -62,15 +66,27 @@ public class FisherTestDriverTest extends VariantStorageBaseTest implements Hado
         runDefaultETL(input, variantStorageEngine, studyMetadata, params);
         VariantHadoopDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
 
+        VariantStorageMetadataManager metadataManager = variantStorageEngine.getMetadataManager();
+        List<String> controlCohort = metadataManager.getIndexedSamples(studyMetadata.getId())
+                .subList(0, 250)
+                .stream()
+                .map(s -> metadataManager.getSampleName(studyMetadata.getId(), s))
+                .collect(Collectors.toList());
+        List<String> caseCohort = metadataManager.getIndexedSamples(studyMetadata.getId())
+                .subList(250, 500)
+                .stream()
+                .map(s -> metadataManager.getSampleName(studyMetadata.getId(), s))
+                .collect(Collectors.toList());
+
         ObjectMap objectMap = new ObjectMap()
-                .append(FisherTestDriver.CONTROL_COHORT, controlCohort.boxed().collect(Collectors.toList()))
-                .append(FisherTestDriver.CASE_COHORT, caseCohort.boxed().collect(Collectors.toList()))
+                .append(FisherTestDriver.CONTROL_COHORT, controlCohort)
+                .append(FisherTestDriver.CASE_COHORT, caseCohort)
                 .append(FisherTestDriver.OUTPUT, "fisher_result");
         getMrExecutor().run(FisherTestDriver.class, FisherTestDriver.buildArgs(
                 dbAdaptor.getArchiveTableName(1),
                 dbAdaptor.getVariantTable(),
                 1,
-                Collections.emptySet(), objectMap));
+                Collections.emptySet(), objectMap), "");
 
         URI local1 = copyToLocal("fisher_result");
 
@@ -82,7 +98,7 @@ public class FisherTestDriverTest extends VariantStorageBaseTest implements Hado
                 dbAdaptor.getArchiveTableName(1),
                 dbAdaptor.getVariantTable(),
                 1,
-                Collections.emptySet(), objectMap));
+                Collections.emptySet(), objectMap), "");
 
 //        URI local2 = copyToLocal("fisher_result2");
 

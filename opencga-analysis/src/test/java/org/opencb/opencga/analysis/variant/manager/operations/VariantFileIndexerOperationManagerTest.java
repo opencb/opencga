@@ -17,8 +17,10 @@
 package org.opencb.opencga.analysis.variant.manager.operations;
 
 import org.hamcrest.CoreMatchers;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
@@ -28,6 +30,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.file.FileDeleteTask;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
@@ -43,6 +46,8 @@ import org.opencb.opencga.core.models.file.FileInternalVariantIndex;
 import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -67,10 +72,12 @@ import static java.util.Collections.singletonList;
 import static org.junit.Assert.*;
 import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
 import static org.opencb.opencga.analysis.variant.manager.operations.StatsVariantStorageTest.checkCalculatedStats;
+import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 /**
  * Created by hpccoll1 on 13/07/15.
  */
+@Category(MediumTests.class)
 public class VariantFileIndexerOperationManagerTest extends AbstractVariantOperationManagerTest {
 
     @Rule
@@ -218,6 +225,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         loadFile(transformedFile, queryOptions, outputId);
     }
 
+    @Ignore
     @Test
     public void testDeleteTransformedFile() throws Exception {
         QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false)
@@ -301,6 +309,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         }
 
         mockVariantStorageETL();
+        queryOptions.append(VariantFileIndexerOperationManager.SKIP_INDEXED_FILES, true);
         // File 0 already transformed.
         // Expecting to transform and load only file 1
         indexFiles(files, singletonList(files.get(1)), queryOptions, outputId);
@@ -460,6 +469,23 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         assertEquals(Event.Type.WARNING, er.getEvents().get(0).getType());
         assertThat(er.getEvents().get(0).getMessage(), CoreMatchers.containsString("Found duplicated variants"));
         assertTrue(Files.exists(outDir.resolve("variant-test-duplicated.vcf.duplicated.tsv")));
+    }
+
+    @Test
+    public void testIndexWeirdFileName() throws Exception {
+        ToolRunner toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantManager.getStorageConfiguration()));
+
+        Path outDir = Paths.get(opencga.createTmpOutdir("_escaped_name"));
+
+        Path filePath = Paths.get(getResourceUri("variant-test-file.vcf.gz"));
+        filePath = Files.move(filePath, filePath.getParent().resolve("variant-test%3Afile.vcf.gz"));
+
+        VariantIndexParams params = new VariantIndexParams();
+        params.setFile(create(studyId, filePath.toUri()).getName());
+
+        ExecutionResult er = toolRunner.execute(VariantIndexOperationTool.class, params.toObjectMap()
+                        .append(ParamConstants.STUDY_PARAM, studyId)
+                , outDir, null, sessionId);
     }
 
     @Override

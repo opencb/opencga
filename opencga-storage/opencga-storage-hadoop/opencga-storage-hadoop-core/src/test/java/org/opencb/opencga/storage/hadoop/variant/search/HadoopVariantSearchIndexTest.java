@@ -2,8 +2,10 @@ package org.opencb.opencga.storage.hadoop.variant.search;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchIndexTest;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
@@ -15,6 +17,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(LongTests.class)
 public class HadoopVariantSearchIndexTest extends VariantSearchIndexTest implements HadoopVariantStorageTest {
 
     @ClassRule

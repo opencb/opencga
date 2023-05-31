@@ -222,12 +222,15 @@ public class AlignmentStorageManager extends StorageManager {
         // Get species and assembly from catalog
         OpenCGAResult<Project> projectQueryResult = catalogManager.getProjectManager().search(
                 new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyIdStr),
-                new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), token);
+                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(ProjectDBAdaptor.QueryParams.ORGANISM.key(),
+                        ProjectDBAdaptor.QueryParams.CELLBASE.key())), token);
         if (projectQueryResult.getNumResults() != 1) {
             throw new CatalogException("Error getting species and assembly from catalog");
         }
         String species = projectQueryResult.first().getOrganism().getScientificName();
         String assembly = projectQueryResult.first().getOrganism().getAssembly();
+        String dataRelease = projectQueryResult.first().getCellbase().getDataRelease();
+        String cellbaseToken = projectQueryResult.first().getCellbase().getToken();
 
         for (String geneName : geneNames) {
 
@@ -248,9 +251,9 @@ public class AlignmentStorageManager extends StorageManager {
 
 
             // Query CellBase to get gene coordinates and then apply the offset (up and downstream) to create a gene region
-            CellBaseClient cellBaseClient = new CellBaseClient(storageEngineFactory.getVariantStorageEngine().getConfiguration().getCellbase()
-                    .toClientConfiguration());
-            GeneClient geneClient = new GeneClient(species, assembly, cellBaseClient.getClientConfiguration());
+            CellBaseClient cellBaseClient = new CellBaseClient(species, assembly, dataRelease, cellbaseToken,
+                    projectQueryResult.first().getCellbase().toClientConfiguration());
+            GeneClient geneClient = cellBaseClient.getGeneClient();
             Gene gene = geneClient.get(Collections.singletonList(geneName), QueryOptions.empty()).firstResult();
             if (gene != null) {
                 List<TranscriptCoverageStats> transcriptCoverageStatsList = new ArrayList<>();
@@ -437,7 +440,9 @@ public class AlignmentStorageManager extends StorageManager {
         // Get species and assembly from catalog
         OpenCGAResult<Project> projectQueryResult = catalogManager.getProjectManager().search(
                 new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), study),
-                new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), token);
+                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                        ProjectDBAdaptor.QueryParams.ORGANISM.key(),
+                        ProjectDBAdaptor.QueryParams.CELLBASE.key())), token);
         if (projectQueryResult.getNumResults() != 1) {
             throw new CatalogException("Error getting species and assembly from catalog");
         }
@@ -445,9 +450,11 @@ public class AlignmentStorageManager extends StorageManager {
         // Query CellBase to get gene coordinates and then apply the offset (up and downstream) to create a gene region
         String species = projectQueryResult.first().getOrganism().getScientificName();
         String assembly = projectQueryResult.first().getOrganism().getAssembly();
-        CellBaseClient cellBaseClient = new CellBaseClient(storageEngineFactory.getVariantStorageEngine().getConfiguration().getCellbase()
-                .toClientConfiguration());
-        GeneClient geneClient = new GeneClient(species, assembly, cellBaseClient.getClientConfiguration());
+        String dataRelease = projectQueryResult.first().getCellbase().getDataRelease();
+        String cellbaseToken = projectQueryResult.first().getCellbase().getToken();
+        CellBaseClient cellBaseClient = new CellBaseClient(species, assembly, dataRelease, cellbaseToken,
+                projectQueryResult.first().getCellbase().toClientConfiguration());
+        GeneClient geneClient = cellBaseClient.getGeneClient();
         List<Gene> response = geneClient.get(genes, QueryOptions.empty()).allResults();
         if (CollectionUtils.isNotEmpty(response)) {
             for (Gene gene : response) {
@@ -500,15 +507,13 @@ public class AlignmentStorageManager extends StorageManager {
 // PRIVATE METHODS
 //-------------------------------------------------------------------------
 
-    public Map<String, List<Region>> getExonRegionsPerTranscript(String geneName, String species, String assembly)
+    public Map<String, List<Region>> getExonRegionsPerTranscript(String geneName, CellBaseClient cellBaseClient)
             throws StorageEngineException, IOException {
         // Init region map, where key = transcript and value = list of exon regions
         Map<String, List<Region>> regionMap = new HashMap<>();
 
         // Query CellBase to get gene coordinates and then apply the offset (up and downstream) to create a gene region
-        CellBaseClient cellBaseClient = new CellBaseClient(storageEngineFactory.getVariantStorageEngine().getConfiguration().getCellbase()
-                .toClientConfiguration());
-        GeneClient geneClient = new GeneClient(species, assembly, cellBaseClient.getClientConfiguration());
+        GeneClient geneClient = cellBaseClient.getGeneClient();
         Gene gene = geneClient.get(Collections.singletonList(geneName), QueryOptions.empty()).firstResult();
         if (gene != null) {
             // Create region from gene coordinates

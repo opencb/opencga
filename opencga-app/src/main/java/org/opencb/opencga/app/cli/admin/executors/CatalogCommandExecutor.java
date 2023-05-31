@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.mongodb.MongoDBUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -36,7 +37,6 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.Collections;
 
@@ -122,11 +122,19 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         if (catalogManager.getDatabaseStatus()) {
             result.put("mongodbStatus", true);
             result.put("catalogDBName", catalogManager.getCatalogDatabase());
+            result.put("databasePrefix", catalogManager.getConfiguration().getDatabasePrefix());
+            if (commandOptions.uri) {
+                // check login
+                catalogManager.getUserManager().loginAsAdmin(getAdminPassword(true));
+                result.put("mongodbUri", MongoDBUtils.getMongoDBUri(configuration.getCatalog().getDatabase()));
+                result.put("mongodbUriWithDatabase", MongoDBUtils.getMongoDBUri(
+                        configuration.getCatalog().getDatabase(), catalogManager.getCatalogDatabase()));
+                result.put("mongodbCliOpts", MongoDBUtils.getMongoDBCliOpts(configuration.getCatalog().getDatabase()));
+                result.put("mongodbCli", MongoDBUtils.getMongoDBCli(
+                        configuration.getCatalog().getDatabase(), catalogManager.getCatalogDatabase()));
+            }
             if (catalogManager.existsCatalogDB()) {
                 result.put("installed", true);
-
-//                // check login
-//                catalogManager.getUserManager().loginAsAdmin(commandOptions.commonOptions.adminPassword);
 
                 MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(configuration);
                 MongoDBCollection metaCollection = factory.getMongoDBCollectionMap().get(MongoDBAdaptorFactory.METADATA_COLLECTION);
@@ -178,7 +186,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             catalogManager.installCatalogDB(configuration.getAdmin().getSecretKey(), commandOptions.commonOptions.adminPassword,
-                    commandOptions.email, commandOptions.organization, commandOptions.force, true);
+                    commandOptions.email, commandOptions.organization, commandOptions.force);
         }
     }
 
@@ -215,7 +223,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         if (catalogCommandOptions.daemonCatalogCommandOptions.start) {
             // Server crated and started
             MonitorService monitorService =
-                    new MonitorService(configuration, appHome, token);
+                    new MonitorService(configuration, storageConfiguration, appHome, token);
             monitorService.start();
             monitorService.blockUntilShutdown();
             logger.info("Shutting down OpenCGA Storage REST server");

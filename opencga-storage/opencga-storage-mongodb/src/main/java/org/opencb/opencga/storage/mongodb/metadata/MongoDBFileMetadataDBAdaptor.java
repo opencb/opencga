@@ -90,7 +90,7 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
     }
 
     @Override
-    public LinkedHashSet<Integer> getIndexedFiles(int studyId) {
+    public LinkedHashSet<Integer> getIndexedFiles(int studyId, boolean includePartial) {
         Document document = collectionStudies.find(Filters.eq("_id", studyId), null).first();
         if (document != null) {
             List list = document.get("indexedFiles", List.class);

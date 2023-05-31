@@ -1,8 +1,10 @@
 package org.opencb.opencga.catalog.migration;
 
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobReferenceParam;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -53,6 +55,11 @@ public class MigrationRun {
      * Exception message raised if the migration fails.
      */
     private String exception;
+
+    /**
+     * Execution events.
+     */
+    private List<Event> events;
 
     public enum MigrationStatus {
         /**
@@ -121,8 +128,10 @@ public class MigrationRun {
         sb.append(", start=").append(start);
         sb.append(", end=").append(end);
         sb.append(", patch=").append(patch);
+        sb.append(", jobs=").append(jobs);
         sb.append(", status=").append(status);
         sb.append(", exception='").append(exception).append('\'');
+        sb.append(", events=").append(events);
         sb.append('}');
         return sb.toString();
     }
@@ -220,6 +229,23 @@ public class MigrationRun {
 
     public MigrationRun setException(String exception) {
         this.exception = exception;
+        return this;
+    }
+
+    public List<Event> getEvents() {
+        return events;
+    }
+
+    public MigrationRun setEvents(List<Event> events) {
+        this.events = events;
+        return this;
+    }
+
+    public MigrationRun addEvent(Event.Type type, String message) {
+        if (this.events == null) {
+            this.events = new ArrayList<>();
+        }
+        events.add(new Event(type, message));
         return this;
     }
 }

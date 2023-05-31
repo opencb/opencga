@@ -6,6 +6,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.DataResult;
@@ -25,12 +26,14 @@ import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.*;
 
+@Category(MediumTests.class)
 public class InterpretationManagerTest extends GenericTest {
 
     public final static String STUDY = "user@1000G:phase1";
@@ -41,6 +44,7 @@ public class InterpretationManagerTest extends GenericTest {
     public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
 
     protected CatalogManager catalogManager;
+    private String opencgaToken;
     protected String sessionIdUser;
     private FamilyManager familyManager;
 
@@ -54,12 +58,13 @@ public class InterpretationManagerTest extends GenericTest {
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
+        opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
         sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
 
         catalogManager.getUserManager().create("user2", "User Name2", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST,
-                null);
+                opencgaToken);
 
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first().getId();
@@ -97,16 +102,16 @@ public class InterpretationManagerTest extends GenericTest {
         List<File> files = new LinkedList<>();
 
         String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
-        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(vcfFile, "", "", "", null, null, null,
+        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(vcfFile, "", "", "", null, null, null, null,
                 null), false, sessionIdUser).first());
         vcfFile = getClass().getResource("/biofiles/family.vcf").getFile();
-        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(vcfFile, "", "", "", null, null, null,
+        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(vcfFile, "", "", "", null, null, null, null,
                 null), false, sessionIdUser).first());
         String bamFile = getClass().getResource("/biofiles/HG00096.chrom20.small.bam").getFile();
-        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFile, "", "", "", null, null, null,
+        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFile, "", "", "", null, null, null, null,
                 null), false, sessionIdUser).first());
         bamFile = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
-        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFile, "", "", "", null, null, null,
+        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFile, "", "", "", null, null, null, null,
                 null), false, sessionIdUser).first());
 
         return files;

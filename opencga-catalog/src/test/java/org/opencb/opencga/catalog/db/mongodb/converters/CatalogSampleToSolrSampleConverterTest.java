@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.core.OntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.opencga.catalog.stats.solr.SampleSolrModel;
@@ -35,6 +36,7 @@ import org.opencb.opencga.core.models.sample.SampleInternal;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.util.*;
 
@@ -44,6 +46,7 @@ import static org.junit.Assert.assertNull;
 /**
  * Created by wasim on 13/08/18.
  */
+@Category(ShortTests.class)
 public class CatalogSampleToSolrSampleConverterTest {
 
     @Test

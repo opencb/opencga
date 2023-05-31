@@ -19,7 +19,10 @@ package org.opencb.opencga.catalog.managers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.clinical.ClinicalProperty;
+import org.opencb.biodata.models.clinical.interpretation.CancerPanel;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.core.OntologyTerm;
 import org.opencb.commons.datastore.core.DataResult;
@@ -40,6 +43,7 @@ import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelUpdateParams;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -48,6 +52,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
+@Category(MediumTests.class)
 public class PanelManagerTest extends GenericTest {
 
     private String studyFqn = "user@1000G:phase1";
@@ -61,7 +66,7 @@ public class PanelManagerTest extends GenericTest {
     protected String sessionIdUser;
 
     private PanelManager panelManager;
-    private String adminToken;
+    private String opencgaToken;
 
     private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
@@ -70,11 +75,12 @@ public class PanelManagerTest extends GenericTest {
         catalogManager = catalogManagerResource.getCatalogManager();
         panelManager = catalogManager.getPanelManager();
         setUpCatalogManager(catalogManager);
-        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
     }
 
     private void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
+        opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
         sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
 
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
@@ -94,7 +100,7 @@ public class PanelManagerTest extends GenericTest {
 
     @Test
     public void importFromSource() throws CatalogException {
-        OpenCGAResult<Panel> cancer = panelManager.importFromSource(studyFqn, "cancer-gene-census", null, sessionIdUser);
+        OpenCGAResult<Panel> cancer = panelManager.importFromSource(studyFqn, "gene-census", null, sessionIdUser);
         assertEquals(1, cancer.getNumInserted());
 
         OpenCGAResult<Panel> panelApp = panelManager.importFromSource(studyFqn, "panelapp", "Thoracic_aortic_aneurysm_and_dissection-PanelAppId-700,VACTERL-like_phenotypes-PanelAppId-101", sessionIdUser);
@@ -105,19 +111,19 @@ public class PanelManagerTest extends GenericTest {
     public void importFromSourceInvalidId() throws CatalogException {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Unknown panel");
-        panelManager.importFromSource(studyFqn, "cancer-gene-census", "ZSR222", sessionIdUser);
+        panelManager.importFromSource(studyFqn, "gene-census", "ZSR222", sessionIdUser);
     }
 
     @Test
     public void importFromInvalidSource() throws CatalogException {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Unknown source");
-        panelManager.importFromSource(studyFqn, "cancer-gene-census-wrong", null, sessionIdUser);
+        panelManager.importFromSource(studyFqn, "gene-census-wrong", null, sessionIdUser);
     }
 
     @Test
     public void updateTest() throws CatalogException {
-        panelManager.importFromSource(studyFqn, "cancer-gene-census", null, sessionIdUser);
+        panelManager.importFromSource(studyFqn, "gene-census", null, sessionIdUser);
         Panel panel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
         assertEquals(1, panel.getVersion());
         assertEquals((int) panel.getStats().get("numberOfRegions"), panel.getVariants().size());
@@ -168,7 +174,7 @@ public class PanelManagerTest extends GenericTest {
 
     @Test
     public void deletePanelTest() throws CatalogException {
-        panelManager.importFromSource(studyFqn, "cancer-gene-census", null, sessionIdUser);
+        panelManager.importFromSource(studyFqn, "gene-census", null, sessionIdUser);
         Panel panel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
         assertEquals(1, panel.getVersion());
 
@@ -186,7 +192,7 @@ public class PanelManagerTest extends GenericTest {
 
     @Test
     public void deletePanelWithVersionsTest() throws CatalogException {
-        panelManager.importFromSource(studyFqn, "cancer-gene-census", null, sessionIdUser);
+        panelManager.importFromSource(studyFqn, "gene-census", null, sessionIdUser);
         Panel panel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
         assertEquals(1, panel.getVersion());
 
@@ -361,6 +367,8 @@ public class PanelManagerTest extends GenericTest {
         DiseasePanel.GenePanel gene = new DiseasePanel.GenePanel();
         gene.setId(id);
         gene.setName(name);
+        gene.setModesOfInheritance(Arrays.asList(ClinicalProperty.ModeOfInheritance.AUTOSOMAL_DOMINANT, ClinicalProperty.ModeOfInheritance.AUTOSOMAL_RECESSIVE));
+        gene.setCancer(new CancerPanel().setRoles(Arrays.asList(ClinicalProperty.RoleInCancer.BOTH, ClinicalProperty.RoleInCancer.ONCOGENE)));
         return gene;
     }
 

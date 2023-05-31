@@ -21,6 +21,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.*;
@@ -43,11 +44,14 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.project.ProjectCreateParams;
+import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import javax.naming.NamingException;
 import java.io.IOException;
@@ -58,6 +62,7 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
 
+@Category(MediumTests.class)
 public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
@@ -80,10 +85,28 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testGetToken() throws Exception {
+        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("a", "hola");
+        claims.put("ab", "byw");
+        // Create a token valid for 1 second
+        String expiringToken = catalogManager.getUserManager().getToken("opencga", claims, 1L, token);
+        assertEquals("opencga", catalogManager.getUserManager().getUserId(expiringToken));
+        
+        String nonExpiringToken = catalogManager.getUserManager().getNonExpiringToken("opencga", claims, token);
+        assertEquals("opencga", catalogManager.getUserManager().getUserId(nonExpiringToken));
+
+        Thread.sleep(1000);
+        thrown.expect(CatalogAuthenticationException.class);
+        thrown.expectMessage("expired");
+        assertEquals("opencga", catalogManager.getUserManager().getUserId(expiringToken));
+    }
+    @Test
     public void testCreateExistingUser() throws Exception {
         thrown.expect(CatalogException.class);
         thrown.expectMessage(containsString("already exists"));
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
     }
 
     @Test
@@ -91,7 +114,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogParameterException.class);
         thrown.expectMessage(containsString("reserved"));
         catalogManager.getUserManager().create(ParamConstants.ANONYMOUS_USER_ID, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
-                Account.AccountType.FULL, null);
+                Account.AccountType.FULL, opencgaToken);
     }
 
     @Test
@@ -99,7 +122,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogParameterException.class);
         thrown.expectMessage(containsString("reserved"));
         catalogManager.getUserManager().create(ParamConstants.REGISTERED_USERS, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
-                Account.AccountType.FULL, null);
+                Account.AccountType.FULL, opencgaToken);
     }
 
     @Test
@@ -359,7 +382,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void createEmptyGroup() throws CatalogException {
-        catalogManager.getUserManager().create("test", "test", "test@mail.com", TestParamConstants.PASSWORD, null, 100L, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("test", "test", "test@mail.com", TestParamConstants.PASSWORD, null, 100L, Account.AccountType.GUEST, opencgaToken);
         catalogManager.getStudyManager().createGroup("user@1000G:phase1", "group_cancer_some_thing_else", null, token);
         catalogManager.getStudyManager().updateGroup("user@1000G:phase1", "group_cancer_some_thing_else", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("test")), token);
@@ -367,7 +390,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void testAssignPermissions() throws CatalogException {
-        catalogManager.getUserManager().create("test", "test", "test@mail.com", TestParamConstants.PASSWORD, null, 100L, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("test", "test", "test@mail.com", TestParamConstants.PASSWORD, null, 100L, Account.AccountType.GUEST, opencgaToken);
 
         catalogManager.getStudyManager().createGroup("user@1000G:phase1", "group_cancer_some_thing_else",
                 Collections.singletonList("test"), token);
@@ -457,6 +480,23 @@ public class CatalogManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not found");
         catalogManager.getProjectManager().update(projectId, options, null, token);
+    }
+
+    @Test
+    public void testLimitProjects() throws CatalogException {
+        for (int i = 0; i < 20; i++) {
+            catalogManager.getProjectManager().create(new ProjectCreateParams()
+                    .setId("project_" + i)
+                    .setOrganism(new ProjectOrganism("hsapiens", "grch38")), QueryOptions.empty(), token);
+            for (int j = 0; j < 2; j++) {
+                catalogManager.getStudyManager().create("project_" + i, new Study().setId("study_" + i + "_" + j), QueryOptions.empty(),
+                        token);
+            }
+        }
+
+        OpenCGAResult<Project> results = catalogManager.getProjectManager().search(new Query(), new QueryOptions(QueryOptions.LIMIT, 10),
+                token);
+        assertEquals(10, results.getNumResults());
     }
 
     /**
@@ -1092,16 +1132,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     /**
-     * <<<<<<< HEAD
      * VariableSet methods ***************************
-     * =======
-     * <<<<<<< HEAD
-     * VariableSet methods ***************************
-     * =======
-     * VariableSet methods
-     * ***************************
-     * >>>>>>> release-2.1.x
-     * >>>>>>> develop
      */
 
     @Test

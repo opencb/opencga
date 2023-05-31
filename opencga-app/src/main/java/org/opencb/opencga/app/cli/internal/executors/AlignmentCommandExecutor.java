@@ -156,8 +156,6 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
         ObjectMap params = new AlignmentQcParams(
                 cliOptions.bamFile,
-                cliOptions.bedFile,
-                cliOptions.dictFile,
                 cliOptions.skip,
                 cliOptions.overwrite,
                 cliOptions.outdir
