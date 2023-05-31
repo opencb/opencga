@@ -25,6 +25,8 @@ jobs:
         with:
           name: emr-build-folder
           path: build
+      - name: Chmod
+        run: "find build -regex '.*sh' | while read file ; do chmod u+x $file ; done"
       - name: Docker Login
         uses: docker/login-action@v2
         with:
