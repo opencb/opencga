@@ -156,11 +156,10 @@
                                 <exec executable="cp">
                                     <arg value="-r"/>
                                     <arg value="${opencga.build.dir}/analysis"/>
-                                    <arg value="${opencga.build.dir}/bin"/>
                                     <arg value="${opencga.build.dir}/cloud"/>
                                     <arg value="${opencga.build.dir}/conf"/>
-                                    <arg value="${opencga.build.dir}/libs"/>
                                     <arg value="${opencga.build.dir}/misc"/>
+                                    <arg value="${opencga.build.dir}/opencga-storage-hadoop-core-${opencga.version}-jar-with-dependencies.jar"/>
                                     <arg value="${build.dir}"/>
                                 </exec>
 
