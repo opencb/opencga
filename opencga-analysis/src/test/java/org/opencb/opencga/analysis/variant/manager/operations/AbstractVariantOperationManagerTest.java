@@ -379,7 +379,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
             logger.info("Scanning files from {} to move to {}", tmpOutdirPath, outDir.getUri());
             // Avoid copy the job.status file!
             Predicate<URI> fileStatusFilter = uri -> !uri.getPath().endsWith(JOB_STATUS_FILE)
-                    && !uri.getPath().endsWith(ExecutionResultManager.FILE_EXTENSION)
+                    && !ExecutionResultManager.isExecutionResultFile(uri.getPath())
                     && !uri.getPath().endsWith(OUT_LOG_EXTENSION)
                     && !uri.getPath().endsWith(ERR_LOG_EXTENSION);
             files = fileScanner.scan(outDir, tmpOutdirPath.toUri(), FileScanner.FileScannerPolicy.DELETE, false, true, fileStatusFilter,
