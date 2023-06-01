@@ -34,6 +34,12 @@
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-analysis</artifactId>
             <version>${project.parent.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.opencb.ga4gh</groupId>
+                    <artifactId>ga4gh</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>

@@ -124,6 +124,12 @@
             <groupId>org.opencb.ga4gh</groupId>
             <artifactId>ga4gh</artifactId>
             <version>0.6.0a5</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>arg.apache.avro</groupId>
+                    <artifactId>avro-ipc</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.google.code.findbugs</groupId>
