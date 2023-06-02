@@ -82,12 +82,14 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.IOManager;
-import org.opencb.opencga.catalog.managers.*;
+import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.catalog.managers.JobManager;
+import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.ExceptionUtils;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
@@ -112,10 +114,7 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -123,14 +122,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.opencb.opencga.catalog.utils.ParamUtils.AclAction.SET;
 import static org.opencb.opencga.core.api.ParamConstants.JOB_PARAM;
@@ -142,7 +139,7 @@ import static org.opencb.opencga.core.api.ParamConstants.STUDY_PARAM;
 public class ExecutionDaemon extends MonitorParentDaemon {
 
     public static final String OUTDIR_PARAM = "outdir";
-    public static final int EXECUTION_RESULT_FILE_EXPIRATION_MINUTES = 10;
+    public static final int EXECUTION_RESULT_FILE_EXPIRATION_SECONDS = (int) TimeUnit.MINUTES.toSeconds(10);
     public static final String REDACTED_TOKEN = "xxxxxxxxxxxxxxxxxxxxx";
     private final StorageConfiguration storageConfiguration;
     private String internalCli;
@@ -922,27 +919,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private Enums.ExecutionStatus getCurrentStatus(Job job) {
-
-        Path resultJson = getExecutionResultPath(job);
-
         // Check if analysis result file is there
-        if (resultJson != null && Files.exists(resultJson)) {
-            ExecutionResult execution = readExecutionResult(resultJson);
-            if (execution != null) {
-                Instant lastStatusUpdate = execution.getStatus().getDate().toInstant();
-                if (lastStatusUpdate.until(Instant.now(), ChronoUnit.MINUTES) > EXECUTION_RESULT_FILE_EXPIRATION_MINUTES) {
-                    logger.warn("Ignoring file '" + resultJson + "'. The file is more than "
-                            + EXECUTION_RESULT_FILE_EXPIRATION_MINUTES + " minutes old");
-                } else {
-                    return new Enums.ExecutionStatus(execution.getStatus().getName().name());
-                }
-            } else {
-                if (Files.exists(resultJson)) {
-                    logger.warn("File '" + resultJson + "' seems corrupted.");
-                } else {
-                    logger.warn("Could not find file '" + resultJson + "'.");
-                }
-            }
+        ExecutionResult execution = readExecutionResult(job, EXECUTION_RESULT_FILE_EXPIRATION_SECONDS);
+        if (execution != null) {
+            return new Enums.ExecutionStatus(execution.getStatus().getName().name());
         }
 
         String status = batchExecutor.getStatus(job.getId());
@@ -967,100 +947,41 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
     }
 
-    private Path getExecutionResultPath(Job job) {
-        Path resultJson = null;
-        try (Stream<Path> stream = Files.list(Paths.get(job.getOutDir().getUri()))) {
-            resultJson = stream
-                    .filter(path -> {
-                        String str = path.toString();
-                        return str.endsWith(ExecutionResultManager.FILE_EXTENSION)
-                                && !str.endsWith(ExecutionResultManager.SWAP_FILE_EXTENSION);
-                    })
-                    .findFirst()
-                    .orElse(null);
-        } catch (IOException e) {
-            logger.warn("Could not find AnalysisResult file", e);
-        }
-        return resultJson;
+    private ExecutionResult readExecutionResult(Job job, int expirationTimeInSeconds) {
+        return ExecutionResultManager.findAndRead(Paths.get(job.getOutDir().getUri()), expirationTimeInSeconds);
     }
 
     private ExecutionResult readExecutionResult(Job job) {
-        Path resultJson = getExecutionResultPath(job);
-        if (resultJson != null) {
-            return readExecutionResult(resultJson);
-        }
-        return null;
-    }
-
-    private ExecutionResult readExecutionResult(Path file) {
-        if (file == null) {
-            return null;
-        }
-        int attempts = 0;
-        int maxAttempts = 3;
-        while (attempts < maxAttempts) {
-            attempts++;
-            try {
-                try (InputStream is = new BufferedInputStream(new FileInputStream(file.toFile()))) {
-                    return JacksonUtils.getDefaultObjectMapper().readValue(is, ExecutionResult.class);
-                }
-            } catch (IOException e) {
-                if (attempts == maxAttempts) {
-                    logger.error("Could not load AnalysisResult file: " + file.toAbsolutePath(), e);
-                } else {
-                    logger.warn("Could not load AnalysisResult file: " + file.toAbsolutePath()
-                            + ". Retry " + attempts + "/" + maxAttempts
-                            + ". " + e.getMessage()
-                    );
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException interruption) {
-                        // Ignore interruption
-                        Thread.currentThread().interrupt();
-                    }
-                }
-            }
-        }
-
-        return null;
+        return ExecutionResultManager.findAndRead(Paths.get(job.getOutDir().getUri()));
     }
 
     private int processFinishedJob(Job job, Enums.ExecutionStatus status) {
         logger.info("[{}] - Processing finished job with status {}", job.getId(), status.getId());
+        logger.info("[{}] - Registering job results from '{}'", job.getId(), Paths.get(job.getOutDir().getUri()));
 
-        Path outDirUri = Paths.get(job.getOutDir().getUri());
-        Path analysisResultPath = getExecutionResultPath(job);
-
-        logger.info("[{}] - Registering job results from '{}'", job.getId(), outDirUri);
-
-        ExecutionResult execution;
-        if (analysisResultPath != null) {
-            execution = readExecutionResult(analysisResultPath);
-            if (execution != null) {
-                if (execution.getEnd() == null) {
-                    // This could happen if the job finished abruptly
-                    logger.info("[{}] Missing end date at ExecutionResult", job.getId());
-                    execution.setEnd(Date.from(Instant.now()));
-                    execution.getEvents().add(new Event(Event.Type.WARNING, "missing-execution-end-date",
-                            "Missing execution field 'end'. Using an approximate end date."));
-                }
-                PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setExecution(execution);
-                try {
-                    jobManager.update(job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);
-                } catch (CatalogException e) {
-                    logger.error("[{}] - Catastrophic error. Could not update job information with final result {}: {}", job.getId(),
-                            updateParams.toString(), e.getMessage(), e);
-                    return 0;
-                }
+        ExecutionResult execution = readExecutionResult(job);
+        if (execution != null) {
+            if (execution.getEnd() == null) {
+                // This could happen if the job finished abruptly
+                logger.info("[{}] Missing end date at ExecutionResult", job.getId());
+                execution.setEnd(Date.from(Instant.now()));
+                execution.getEvents().add(new Event(Event.Type.WARNING, "missing-execution-end-date",
+                        "Missing execution field 'end'. Using an approximate end date."));
             }
-        } else {
-            execution = null;
+            PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setExecution(execution);
+            try {
+                jobManager.update(job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);
+            } catch (CatalogException e) {
+                logger.error("[{}] - Catastrophic error. Could not update job information with final result {}: {}", job.getId(),
+                        updateParams.toString(), e.getMessage(), e);
+                return 0;
+            }
         }
 
         List<File> registeredFiles;
         try {
-            Predicate<URI> uriPredicate = uri -> !uri.getPath().endsWith(ExecutionResultManager.FILE_EXTENSION)
-                    && !uri.getPath().endsWith(ExecutionResultManager.SWAP_FILE_EXTENSION)
+            Predicate<URI> uriPredicate = uri -> !ExecutionResultManager.isExecutionResultFile(uri.getPath())
+                    && !ExecutionResultManager.isExecutionResultSwapFile(uri.getPath())
                     && !uri.getPath().contains("/scratch_");
             registeredFiles = fileManager.syncUntrackedFiles(job.getStudy().getId(), job.getOutDir().getPath(), uriPredicate, job.getId(),
                     token).getResults();
@@ -1147,7 +1068,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         // If it is a template, we will store the execution results in the same template folder
         String toolId = job.getTool().getId();
         if (toolId.equals(TemplateRunner.ID)) {
-            copyJobResultsInTemplateFolder(job, outDirUri);
+            copyJobResultsInTemplateFolder(job, Paths.get(job.getOutDir().getUri()));
         }
 
         return 1;
