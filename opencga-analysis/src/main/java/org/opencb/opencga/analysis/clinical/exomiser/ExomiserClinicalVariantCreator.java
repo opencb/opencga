@@ -21,6 +21,7 @@ import java.util.*;
 
 import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.calculateAcmgClassification;
 import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.computeClinicalSignificance;
+import static org.opencb.opencga.analysis.clinical.ClinicalUtils.*;
 
 public class ExomiserClinicalVariantCreator {
 
@@ -59,7 +60,7 @@ public class ExomiserClinicalVariantCreator {
             boolean found = false;
             for (ConsequenceType ct : clinicalVariant.getAnnotation().getConsequenceTypes()) {
                 if (StringUtils.isNotEmpty(exomisertranscript.getAccession()) && StringUtils.isNotEmpty(ct.getEnsemblTranscriptId())
-                        && exomisertranscript.getAccession().equals(ct.getEnsemblTranscriptId())) {
+                        && removeVersion(exomisertranscript.getAccession()).equals(removeVersion(ct.getEnsemblTranscriptId()))) {
                     clinicalVariantEvidences.add(createClinicalVariantEvidences(ct, moi, attributes, clinicalVariant));
                     found = true;
                     break;
